@@ -1,0 +1,397 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0f0720;
+  color: #e9d5ff;
+}
+
+/* Original Purple Static Background */
+.static-purple-bg {
+  background: radial-gradient(circle at 50% 50%, #1e0b3b 0%, #0f0720 100%);
+  background-attachment: fixed;
+}
+
+/* Performance Mode Tweaks */
+.perf-mode .backdrop-blur-md,
+.perf-mode .backdrop-blur-xl,
+.perf-mode .backdrop-blur-2xl,
+.perf-mode .backdrop-blur-[3px] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.perf-mode .animate-glass-turn,
+.perf-mode .animate-fade-in,
+.perf-mode .animate-slide-up,
+.perf-mode .animate-fade-slide-up {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1); 
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.3); 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.5); 
+}
+
+/* Animations */
+@keyframes glass-turn-in {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(-30deg) translateX(-50px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(0) translateX(0) scale(1);
+  }
+}
+
+@keyframes fade-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(20px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-glass-turn {
+  animation: glass-turn-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* === Gamification Animations === */
+@keyframes shimmerSweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes holoShift {
+  0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+  50% { background-position: 100% 50%; filter: hue-rotate(40deg); }
+  100% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+}
+@keyframes xpFloat {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  70% { opacity: 0.8; transform: translateY(-30px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
+}
+@keyframes levelUpBurst {
+  0% { transform: scale(0.3); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes confettiDrift {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(80px) rotate(720deg); opacity: 0; }
+}
+@keyframes typeReveal {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes buttonFadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes countUp {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes tabEnter {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes hexDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 104px; }
+}
+
+/* Rarity Shimmer Classes */
+.rarity-shimmer-uncommon {
+  background-image: linear-gradient(110deg, transparent 30%, rgba(16,185,129,0.15) 45%, transparent 60%);
+  background-size: 200% 100%;
+}
+.rarity-shimmer-uncommon:hover { animation: shimmerSweep 1.2s ease-in-out; }
+.rarity-shimmer-rare {
+  background-image: linear-gradient(110deg, transparent 25%, rgba(234,179,8,0.2) 40%, rgba(234,179,8,0.08) 55%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmerSweep 3s ease-in-out infinite;
+}
+.rarity-shimmer-rare:hover { animation: shimmerSweep 1s ease-in-out infinite; }
+.rarity-shimmer-unique {
+  background-image: linear-gradient(110deg, rgba(249,115,22,0.1), rgba(234,179,8,0.15), rgba(168,85,247,0.1), rgba(249,115,22,0.1));
+  background-size: 300% 100%;
+  animation: holoShift 4s ease-in-out infinite;
+}
+
+/* XP Float + Level Up */
+.xp-float-anim {
+  animation: xpFloat 1.8s ease-out forwards;
+  pointer-events: none;
+}
+.level-up-burst { animation: levelUpBurst 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Loadout hex grid background */
+.loadout-hex-bg {
+  background-image:
+    linear-gradient(rgba(147,51,234,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(147,51,234,0.03) 1px, transparent 1px),
+    radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 70%);
+  background-size: 60px 52px, 60px 52px, 100% 100%;
+  animation: hexDrift 8s linear infinite;
+}
+
+/* Input Clarity Fixes */
+.bg-white input,
+.bg-white textarea,
+.bg-white select {
+  color: #111827;
+}
+
+/* Proctor Content Styling */
+.proctor-content {
+  color: #e5e7eb;
+  line-height: 1.7;
+}
+
+.proctor-content h1, 
+.proctor-content h2, 
+.proctor-content h3, 
+.proctor-content h4, 
+.proctor-content h5, 
+.proctor-content h6 {
+  color: #ffffff !important;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.proctor-content p {
+  margin-bottom: 1.25em;
+}
+
+.proctor-content ul, 
+.proctor-content ol {
+  margin-bottom: 1.25em;
+  padding-left: 1.5em;
+  color: #d1d5db;
+}
+
+.proctor-content li {
+  margin-bottom: 0.5em;
+}
+
+.proctor-content ul {
+  list-style-type: disc;
+}
+.proctor-content ul li::marker {
+  color: #a855f7;
+}
+
+.proctor-content ol {
+  list-style-type: decimal;
+}
+.proctor-content ol li::marker {
+  color: #a855f7;
+  font-weight: 600;
+}
+
+.proctor-content a {
+  color: #d8b4fe;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(216, 180, 254, 0.4);
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
+  padding-bottom: 1px;
+}
+
+.proctor-content a:hover {
+  color: #ffffff;
+  border-bottom-color: #ffffff;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+}
+
+.proctor-content blockquote {
+  border-left: 4px solid #9333ea;
+  background: linear-gradient(to right, rgba(147, 51, 234, 0.1), transparent);
+  padding: 1rem 1.5rem;
+  font-style: italic;
+  color: #e9d5ff;
+  margin-bottom: 1.5em;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.proctor-content code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.2em 0.4em;
+  border-radius: 0.375rem;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  color: #f472b6;
+  font-size: 0.9em;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.proctor-content pre {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  margin-bottom: 1.5em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.proctor-content pre code {
+  background: none;
+  padding: 0;
+  border: none;
+  color: #e5e7eb;
+}
+
+.proctor-content input,
+.proctor-content textarea,
+.proctor-content select {
+  color: #f3f4f6 !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+.proctor-content input:focus,
+.proctor-content textarea:focus,
+.proctor-content select:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: #9333ea !important;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+}
+
+.proctor-content label {
+  color: #d1d5db !important;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95em;
+}
+
+.proctor-content hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2em 0;
+}
+
+/* Study Material Content Styles */
+.study-content {
+  color: #d1d5db;
+  line-height: 1.8;
+}
+
+.study-content p {
+  margin-bottom: 0.75em;
+}
+
+.study-content ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.study-content li {
+  margin-bottom: 0.4em;
+  color: #d1d5db;
+}
+
+.study-content li::marker {
+  color: #a855f7;
+}
+
+.study-content strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.study-content code.math-inline {
+  background: rgba(147, 51, 234, 0.15);
+  color: #e9d5ff;
+  padding: 0.15em 0.5em;
+  border-radius: 0.375rem;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85em;
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.study-content code.math-block {
+  display: block;
+  background: rgba(147, 51, 234, 0.1);
+  color: #e9d5ff;
+  padding: 0.75em 1em;
+  border-radius: 0.5rem;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  border: 1px solid rgba(147, 51, 234, 0.15);
+  text-align: center;
+  margin: 0.75em 0;
+}
+
+.study-content .katex {
+  color: #e9d5ff;
+  font-size: 1.05em;
+}
+
+.study-content .katex-display {
+  margin: 1em 0;
+}

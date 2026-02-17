@@ -1,0 +1,5 @@
+{
+  "name": "Porter's Physics & Forensics Portal",
+  "description": "A high-school student portal and assignment platform featuring advanced telemetry (the 'Proctor' engine), strict RBAC, and HTML-based assignment hosting.",
+  "requestFramePermissions": []
+}

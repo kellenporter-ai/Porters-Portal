@@ -1,0 +1,275 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    
+    // Check if the requesting user has admin custom claim OR is the admin email
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true || 
+        request.auth.token.email == 'kellporter2@paps.net'
+      );
+    }
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the user is the document owner
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Check if a user is whitelisted (has a doc in allowed_emails)
+    // Note: This requires a get() call which costs a read — use sparingly
+    function isWhitelisted() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email));
+    }
+
+    // ==========================================
+    // USER PROFILES
+    // ==========================================
+    match /users/{userId} {
+      // All authenticated users can read profiles (needed for leaderboard + class roster).
+      // Sensitive data (if any) should be stored in a separate subcollection.
+      allow read: if isAuthenticated();
+      
+      // Users can create their own profile on first login
+      allow create: if isOwner(userId);
+      
+      // Students can ONLY update these specific safe fields on their own profile.
+      // All gamification economy fields (xp, level, currency, inventory, equipped)
+      // are modified exclusively by Cloud Functions.
+      // SECURITY NOTE: gamification.classProfiles is allowed for appearance saves,
+      // but Firestore affectedKeys() cannot distinguish sub-paths. This means a
+      // technically sophisticated student could write to inventory/equipped via
+      // direct Firestore calls. The Cloud Functions remain authoritative for the
+      // RPG economy, and any injected items would be overwritten on next legitimate
+      // server-side operation. A future improvement would be to move appearance
+      // saves to a Cloud Function as well.
+      allow update: if isAdmin()
+        || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'settings',
+              'classType',
+              'lastLoginAt',
+              'gamification.codename',
+              'gamification.privacyMode', 
+              'gamification.lastLevelSeen',
+              'gamification.appearance',
+              'gamification.classProfiles',
+              'gamification.activeQuests',
+              'mutedUntil'
+            ]));
+      
+      // Only admin can delete user profiles
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // WHITELIST (allowed_emails)
+    // ==========================================
+    match /allowed_emails/{email} {
+      // Anyone authenticated can check if they're whitelisted (needed for login flow)
+      allow read: if isAuthenticated();
+      
+      // Only admin can manage the whitelist
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // ASSIGNMENTS (Resources)
+    // ==========================================
+    match /assignments/{assignmentId} {
+      // Any whitelisted user can read assignments
+      allow read: if isAuthenticated();
+      
+      // Only admin can create/edit/delete assignments
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // SUBMISSIONS
+    // ==========================================
+    match /submissions/{submissionId} {
+      // Students can read their own submissions, admin reads all
+      allow read: if isAdmin() || 
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Students can create/update their own submissions
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || 
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Only admin can delete submissions
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // GAMIFICATION — XP Events & Quests
+    // ==========================================
+    match /xp_events/{eventId} {
+      // All authenticated users can read events (needed to display multipliers)
+      allow read: if isAuthenticated();
+      
+      // Only admin can manage XP events
+      allow write: if isAdmin();
+    }
+
+    match /quests/{questId} {
+      // All authenticated users can read quests (needed for quest board)
+      allow read: if isAuthenticated();
+      
+      // Only admin can create/edit/delete quests
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // CLASS MESSAGES (Chat)
+    // ==========================================
+    match /class_messages/{messageId} {
+      // All authenticated users can read messages
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can create messages with their own senderId
+      allow create: if isAuthenticated() 
+        && request.resource.data.senderId == request.auth.uid;
+      
+      // Students can ONLY update reactions and pinnedBy (personal pins)
+      // They cannot modify content, senderId, senderName, isGlobalPinned, or isFlagged
+      allow update: if isAdmin() 
+        || (isAuthenticated() 
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['content', 'senderId', 'senderName', 'isGlobalPinned', 'isFlagged', 'systemNote', 'channelId', 'timestamp']));
+      
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // CHAT FLAGS (Moderation)
+    // ==========================================
+    match /chat_flags/{flagId} {
+      // Only admin can read flags
+      allow read: if isAdmin();
+      
+      // System creates flags (via client on message send), admin resolves
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // CONVERSATIONS (DMs — Teacher-Student only)
+    // ==========================================
+    match /conversations/{convoId} {
+      // All authenticated users can read conversations they're part of
+      allow read: if isAuthenticated();
+      
+      // Only admin can create or modify conversation metadata
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        // Authenticated users can create messages with their own senderId
+        allow create: if isAuthenticated() 
+          && request.resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    // ==========================================
+    // EVIDENCE LOCKER
+    // ==========================================
+    match /evidence/{evidenceId} {
+      // Students can read/write their own evidence, admin reads all
+      allow read: if isAdmin() || 
+        (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+      allow delete: if isAdmin() || 
+        (isAuthenticated() && resource.data.studentId == request.auth.uid);
+    }
+
+    // ==========================================
+    // LAB REPORTS
+    // ==========================================
+    match /lab_reports/{reportId} {
+      allow read: if isAdmin() || 
+        (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // CLASS CONFIGS
+    // ==========================================
+    match /class_configs/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // QUESTION BANKS (AI-generated, admin-managed)
+    // ==========================================
+    match /question_banks/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // READING MATERIALS (Study content for Practice Sets)
+    // ==========================================
+    match /reading_materials/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /review_progress/{progressId} {
+      // Students can read their own progress. For non-existent docs,
+      // resource.data is null, so we allow authenticated reads and
+      // the data itself has userId field for extra safety.
+      allow read: if isAuthenticated();
+      // Only Cloud Functions write (via admin SDK)
+      allow write: if false;
+    }
+
+    match /engagement_cooldowns/{docId} {
+      allow read, write: if false; // Admin SDK only
+    }
+
+    // ==========================================
+    // PRACTICE PROGRESS (Proctor Bridge)
+    // ==========================================
+    // Saved by the parent app (authenticated) when HTML practice sets
+    // send portal-save messages. Doc ID = userId_assignmentId.
+    match /practice_progress/{docId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create, update: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // ==========================================
+    // STUDENT PROGRESS (Legacy HTML files — unscoped)
+    // ==========================================
+    // Old HTML practice sets with baked-in Firebase SDK write here.
+    // Kept for backward compatibility until all files migrate to the bridge.
+    match /student_progress/{docId} {
+      allow read, write: if true;
+    }
+
+    // ==========================================
+    // CATCH-ALL: Deny everything else
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

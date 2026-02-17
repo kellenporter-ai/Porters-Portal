@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Physics Bar Chart (Final Polish)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* --- THEME COLORS --- */
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
+            /* Glass Effects */
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            --backdrop-blur: blur(12px);
+
+            /* Section Tints */
+            --glass-initial: rgba(232, 245, 233, 0.75);
+            --glass-delta:   rgba(227, 242, 253, 0.75);
+            --glass-final:   rgba(255, 235, 238, 0.75);
+
+            /* Accents */
+            --accent-blue: #007aff;
+            --accent-green: #34C759;
+            --accent-red: #FF3B30;
+            --text-dark: #333;
+
+            /* Physics Label Colors */
+            --phys-purple: #9c27b0;
+            --phys-pink: #e91e63;
+            --phys-blue: #2962ff;
+
+            /* Bar Colors */
+            --bar-initial-color: #557A45;
+            --bar-delta-color: #3333cc;
+            --bar-final-color: #A03322;
+
+            /* Grid */
+            --grid-line: rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-gradient);
+            color: var(--text-dark);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- LAYOUT --- */
+        .chart-wrapper {
+            display: flex; width: 100%; height: 100%; gap: 15px; position: relative;
+        }
+
+        .section {
+            position: relative; height: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            border-radius: 16px;
+            border: var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            overflow: hidden;
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px);
+            background-size: 100% 10%; background-position: 0 0;
+        }
+
+        .section-initial { flex: 4; background-color: var(--glass-initial); }
+        .section-delta   { flex: 1.5; background-color: var(--glass-delta); border-left: 6px solid var(--bar-delta-color); border-right: 6px solid var(--bar-delta-color); }
+        .section-final   { flex: 4; background-color: var(--glass-final); }
+
+        /* --- LAYERS --- */
+        .axis-line {
+            position: absolute; top: 50%; left: 0; width: 100%; height: 4px;
+            background-color: #000; transform: translateY(-50%);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* --- HEADERS --- */
+        .header-badge {
+            margin-top: 0; padding: 8px 25px; border-radius: 0 0 12px 12px;
+            font-weight: 700; font-size: 1.1rem; color: #000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;
+            position: relative; text-transform: capitalize; border: 1px solid rgba(0,0,0,0.1);
+        }
+        .header-initial { background-color: #9CCC65; }
+        .header-final   { background-color: #ef5350; color: white; }
+
+        .delta-header {
+            background: white; color: var(--bar-delta-color);
+            font-size: 1.5rem; font-weight: 900; padding: 5px 15px;
+            border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 0; border: 1px solid rgba(0,0,0,0.1); z-index: 100;
+        }
+
+        /* --- BUTTONS --- */
+        .btn-add {
+            position: absolute; top: 15px;
+            background: rgba(45, 45, 45, 0.9); color: white;
+            border: none; padding: 8px 16px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 100;
+        }
+        .btn-add:hover { background: black; transform: translateY(-1px); }
+        .section-initial .btn-add { left: 15px; }
+        .section-final .btn-add { right: 15px; }
+        .section-delta .btn-add { top: 60px; left: 50%; transform: translateX(-50%); }
+
+        /* CONTROL BUTTONS */
+        .controls-container {
+            position: fixed; bottom: 20px; left: 20px;
+            display: flex; gap: 10px; z-index: 3000;
+        }
+        .control-btn {
+            width: 40px; height: 40px;
+            background: var(--glass-bg); backdrop-filter: blur(10px);
+            border: var(--glass-border); border-radius: 50%;
+            color: var(--accent-blue); font-weight: bold; font-size: 20px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s;
+        }
+        .control-btn:hover { background: white; transform: scale(1.1); }
+
+        /* HELP BUTTON */
+        #help-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 40px; height: 40px;
+            background: var(--glass-bg); backdrop-filter: blur(10px);
+            border: var(--glass-border); border-radius: 50%;
+            color: var(--accent-blue); font-weight: bold; font-size: 22px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s;
+            z-index: 3000;
+        }
+        #help-btn:hover { background: white; transform: scale(1.1); }
+
+        /* --- BARS --- */
+        .bars-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: row; align-items: stretch; justify-content: center;
+            padding: 0 10px; pointer-events: none;
+        }
+        .bar-column {
+            flex: 1; height: 100%; max-width: 120px; position: relative; margin: 0 8px; pointer-events: none;
+        }
+        .section-delta .bar-column { max-width: 70%; }
+
+        .bar {
+            position: absolute; left: 0; right: 0; width: 100%; height: 0;
+            opacity: 1; pointer-events: auto; cursor: pointer;
+            transition: height 0.05s ease; border: 2px solid rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+        .bar:hover { filter: brightness(1.1); }
+        .section-initial .bar { background-color: var(--bar-initial-color); }
+        .section-delta .bar   { background-color: var(--bar-delta-color); }
+        .section-final .bar   { background-color: var(--bar-final-color); }
+
+        /* --- LABELS --- */
+        .bar-label-container {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            width: 90px; display: flex; flex-direction: column; align-items: center;
+            z-index: 30; pointer-events: auto; top: 50%; margin-top: -15px;
+            transition: transform 0.1s;
+        }
+        .bar-label-container:hover { z-index: 40; }
+        .bar-label-container:hover .delete-btn { display: flex; transform: scale(1); }
+
+        .input-wrapper {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            background: rgba(227, 242, 253, 0.95); backdrop-filter: blur(6px);
+            border: 1px solid rgba(66, 165, 245, 0.5); border-radius: 8px;
+            padding: 0; box-shadow: 0 4px 8px rgba(33, 150, 243, 0.15);
+            width: 100%; height: 36px;
+        }
+
+        .label-select-btn {
+            width: 100%; height: 100%; background: transparent; border: none;
+            font-family: inherit; font-size: 1.1rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            padding: 0 5px; color: #333;
+        }
+        .label-select-btn sub { font-size: 0.7em; margin-left: 1px; color: #333; }
+
+        .drag-handle {
+            width: 30px; height: 8px; background-color: rgba(0,0,0,0.15);
+            border-radius: 4px; margin-bottom: 4px; cursor: ns-resize;
+            transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);
+        }
+        .drag-handle:hover { background-color: var(--accent-blue); }
+
+        .delete-btn {
+            display: none; position: absolute; top: -10px; right: -10px;
+            width: 22px; height: 22px; background-color: var(--accent-red);
+            color: white; border: 2px solid white; border-radius: 50%;
+            font-size: 14px; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transform: scale(0); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50;
+        }
+
+        /* --- GLASS MENU --- */
+        #label-menu {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 15px; width: 260px;
+            display: none; flex-direction: column; gap: 10px;
+            z-index: 4000;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        #label-menu::-webkit-scrollbar { width: 6px; }
+        #label-menu::-webkit-scrollbar-track { background: transparent; }
+        #label-menu::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        #label-menu::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.4); }
+
+        .menu-title {
+            font-size: 0.85rem; font-weight: 700; color: #666;
+            text-transform: uppercase; margin-bottom: 5px;
+            padding-bottom: 5px; border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .menu-btn {
+            background: white; border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px; padding: 8px 0;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer;
+            transition: all 0.1s; display: flex; justify-content: center; align-items: center;
+        }
+        .menu-btn:hover { background: #f0f8ff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: translateY(-1px); }
+        .menu-btn sub { font-size: 0.7em; margin-left: 1px; color: #333; }
+
+        /* CUSTOM LABEL SECTION */
+        .custom-label-area {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        .menu-subtitle { font-size: 0.8rem; font-weight: 700; color: #888; }
+
+        .custom-input {
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+            text-align: center; font-weight: bold; background: rgba(255,255,255,0.8);
+            font-size: 0.95rem;
+        }
+        .apply-btn {
+            width: 100%; background: var(--text-dark); color: white; border: none;
+            border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem; padding: 8px;
+        }
+        .apply-btn:hover { background: black; }
+
+        /* --- TOOLTIP & PRECISION --- */
+        #tooltip { position: fixed; background: #fff9c4; border: 1px solid #fbc02d; padding: 5px 10px; border-radius: 4px; pointer-events: none; display: none; z-index: 3000; }
+
+        #precision-editor {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95); padding: 20px; border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; z-index: 3000; text-align: center; width: 220px;
+        }
+        .pe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: #555;}
+        .pe-close { cursor: pointer; color: #aaa; font-size: 1.5rem; line-height: 1; }
+        .pe-close:hover { color: var(--accent-red); }
+        .pe-input { width: 100%; padding: 8px; font-size: 1.2rem; text-align: center; border: 1px solid #ccc; border-radius: 6px; }
+
+        /* --- HELP MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); display: none;
+            justify-content: center; align-items: center; z-index: 4000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+            border: 1px solid white; width: 450px; padding: 30px;
+            border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute; top: 15px; right: 20px;
+            font-size: 24px; cursor: pointer; color: #999;
+        }
+        .modal-close:hover { color: var(--text-dark); }
+        .modal-title {
+            margin-top: 0; color: var(--accent-blue);
+            font-size: 1.5rem; font-weight: 700;
+            border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;
+        }
+        .help-list { list-style: none; padding: 0; margin: 0; }
+        .help-list li {
+            margin-bottom: 15px; display: flex; align-items: center;
+            font-size: 0.95rem; color: #444;
+        }
+        .help-icon { margin-right: 15px; font-size: 1.4rem; width: 30px; text-align: center; }
+        .key-badge {
+            background: #eee; border: 1px solid #ccc;
+            border-radius: 5px; padding: 2px 6px;
+            font-family: monospace; font-size: 0.8rem; font-weight: bold;
+            box-shadow: 0 2px 0 #ccc; margin: 0 4px;
+        }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .chart-wrapper { flex-direction: column; overflow-y: auto; padding-bottom: 80px; }
+            .section { flex: none; height: 300px; width: 100%; margin-bottom: 10px; }
+            .controls-container {
+                position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+                background: rgba(255,255,255,0.9); padding: 8px 20px; border-radius: 30px;
+                backdrop-filter: blur(10px); width: max-content; justify-content: center;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid rgba(0,0,0,0.1);
+            }
+            #help-btn { bottom: 80px; right: 10px; }
+            /* Axis adjustment for stacked layout */
+            .axis-line { top: auto; bottom: 20px; width: 100%; transform: none; }
+            .bar { top: auto; bottom: 20px; height: 0; transform-origin: bottom; }
+            .bars-container { top: auto; bottom: 0; height: 100%; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="help-btn" title="How to use this tool">?</div>
+
+    <div class="controls-container">
+        <button class="control-btn" id="reset-btn" title="Reset Chart">🔄</button>
+        <button class="control-btn" id="save-btn" title="Save Project">💾</button>
+        <button class="control-btn" id="load-btn" title="Load Project">📂</button>
+        <button class="control-btn" id="snap-btn" title="Save Image">📸</button>
+    </div>
+    <input type="file" id="file-input" style="display:none" accept=".json">
+
+    <div class="chart-wrapper" id="capture-area">
+        <div class="section section-initial" id="initial-section">
+            <div class="header-badge header-initial">Initial State</div>
+            <button class="btn-add" onclick="addBar('initial')">+ Add Bar</button>
+            <div class="axis-line"></div>
+            <div class="bars-container" id="initial-bars"></div>
+        </div>
+
+        <div class="section section-delta" id="delta-section">
+            <div class="delta-header">Δ</div>
+            <button class="btn-add" id="btn-add-delta" onclick="addBar('delta')">+ Add</button>
+            <div class="axis-line"></div>
+            <div class="bars-container" id="delta-bars"></div>
+        </div>
+
+        <div class="section section-final" id="final-section">
+            <div class="header-badge header-final">Final State</div>
+            <button class="btn-add" onclick="addBar('final')">+ Add Bar</button>
+            <div class="axis-line"></div>
+            <div class="bars-container" id="final-bars"></div>
+        </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <div id="precision-editor">
+        <div class="pe-header">
+            <span>Set Exact Height</span>
+            <span class="pe-close" onclick="closeEditor()">&times;</span>
+        </div>
+        <input type="number" id="pe-input" class="pe-input" placeholder="px">
+    </div>
+
+    <div id="label-menu">
+        <div class="menu-title">Select Label</div>
+        <div class="menu-grid" id="menu-options"></div>
+
+        <div class="custom-label-area">
+            <div class="menu-subtitle">Custom Label</div>
+            <input type="text" class="custom-input" id="custom-base" placeholder="Symbol" maxlength="10">
+            <input type="text" class="custom-input" id="custom-sub" placeholder="Subscript" maxlength="10">
+            <button class="apply-btn" id="custom-apply">Apply</button>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3 class="modal-title">How to Use</h3>
+            <ul class="help-list">
+                <li>
+                    <span class="help-icon">➕</span>
+                    <div><b>Add Bars:</b> Click the "Add Bar" buttons at the top of each section.</div>
+                </li>
+                <li>
+                    <span class="help-icon">↕️</span>
+                    <div><b>Resize:</b> Click and drag the <span style="background:rgba(0,0,0,0.1); padding:2px 8px; border-radius:4px;">handle</span> above the label.</div>
+                </li>
+                <li>
+                    <span class="help-icon">🏷️</span>
+                    <div><b>Labeling:</b> Click "Select" to choose a physics label.</div>
+                </li>
+                <li>
+                    <span class="help-icon">🎯</span>
+                    <div><b>Precision:</b> Hold <span class="key-badge">Ctrl</span> + <b>Click</b> a bar to type an exact value.</div>
+                </li>
+                <li>
+                    <span class="help-icon">💾</span>
+                    <div><b>Save/Load:</b> Save your work to a file to resume later.</div>
+                </li>
+                <li>
+                    <span class="help-icon">📸</span>
+                    <div><b>Snapshot:</b> Download an image of your chart.</div>
+                </li>
+                <li>
+                    <span class="help-icon">❌</span>
+                    <div><b>Delete:</b> Hover over a label box and click the red <b>×</b>.</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+<script>
+    let state = { initial: 0, delta: 0, final: 0 };
+    const LIMITS = { initial: 10, delta: 1, final: 10 };
+
+    // --- HTML GENERATORS ---
+    const gen = {
+        m: (sub) => `<span style="color:var(--phys-purple)">m</span><sub>${sub}</sub>`,
+        P: (sub) => `<span style="color:var(--phys-pink)">P</span><sub>${sub}</sub>`,
+        U: (sub) => `<span style="color:var(--phys-pink)">U</span><sub>${sub}</sub>`,
+        K: (sub) => `<span style="color:var(--phys-pink)">K</span><sub>${sub}</sub>`,
+        E: (sub) => `<span style="color:var(--phys-pink)">E</span><sub>${sub}</sub>`,
+
+        DeltaM: () => `<span style="color:var(--phys-blue)">Δ</span><span style="color:var(--phys-purple)">m</span>`,
+        DeltaP: () => `<span style="color:var(--phys-blue)">Δ</span><span style="color:var(--phys-pink)">P</span>`,
+        DeltaE: () => `<span style="color:var(--phys-blue)">Δ</span><span style="color:var(--phys-pink)">E</span>`,
+
+        DeltaU: (sub) => `<span style="color:var(--phys-blue)">Δ</span><span style="color:var(--phys-pink)">U</span><sub>${sub}</sub>`
+    };
+
+    const LABEL_DEFS = {
+        'initial': [
+            { type: 'm', sub: 'i,#' },
+            { type: 'P', sub: 'i,#' },
+            { type: 'U', sub: 'g,i,#' },
+            { type: 'U', sub: 's,i,#' },
+            { type: 'K', sub: 'i,#' }
+        ],
+        'delta': [
+            { type: 'DeltaM', sub: '' },
+            { type: 'DeltaP', sub: '' },
+            { type: 'DeltaE', sub: '' }
+        ],
+        'final': [
+            { type: 'm', sub: 'f,#' },
+            { type: 'P', sub: 'f,#' },
+            { type: 'U', sub: 'g,f,#' },
+            { type: 'U', sub: 's,f,#' },
+            { type: 'K', sub: 'f,#' },
+            { type: 'DeltaU', sub: 'int' }
+        ]
+    };
+
+    const menu = document.getElementById('label-menu');
+    const menuOptions = document.getElementById('menu-options');
+    const customBase = document.getElementById('custom-base');
+    const customSub = document.getElementById('custom-sub');
+    const customApply = document.getElementById('custom-apply');
+    let activeLabelButton = null;
+    let activeColumn = null;
+    let activeSection = null;
+
+    function addBar(type) {
+        if (state[type] >= LIMITS[type]) return;
+        const container = document.getElementById(`${type}-bars`);
+        const column = document.createElement('div');
+        column.className = 'bar-column';
+        column.dataset.value = 0;
+
+        const bar = document.createElement('div');
+        bar.className = 'bar'; bar.style.top = '50%';
+
+        const labelContainer = document.createElement('div');
+        labelContainer.className = 'bar-label-container';
+        const handle = document.createElement('div');
+        handle.className = 'drag-handle';
+
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'input-wrapper';
+
+        const selectBtn = document.createElement('button');
+        selectBtn.className = 'label-select-btn';
+        selectBtn.innerHTML = 'Select';
+        selectBtn.onclick = (e) => openMenu(e, selectBtn, type, column);
+
+        const deleteBtn = document.createElement('div');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            container.removeChild(column);
+            state[type]--;
+            updateSectionLabels(type);
+            if (type === 'delta') document.getElementById('btn-add-delta').style.display = 'block';
+        };
+
+        inputWrapper.append(deleteBtn, selectBtn);
+        labelContainer.append(handle, inputWrapper);
+        column.append(bar, labelContainer);
+        container.appendChild(column);
+
+        attachDragListeners(handle, column);
+        attachBarInteractivity(bar, column);
+
+        state[type]++;
+        if (type === 'delta' && state.delta >= 1) document.getElementById('btn-add-delta').style.display = 'none';
+
+        return column;
+    }
+
+    function updateSectionLabels(section) {
+        if (section === 'delta') return;
+
+        const container = document.getElementById(`${section}-bars`);
+        const cols = Array.from(container.children);
+
+        const counts = {};
+        cols.forEach(col => {
+            const tmpl = col.dataset.labelTemplate;
+            if (tmpl && tmpl.includes('#')) {
+                const type = col.dataset.labelType;
+                const key = type + '::' + tmpl;
+                counts[key] = (counts[key] || 0) + 1;
+            }
+        });
+
+        const currentIndices = {};
+        cols.forEach(col => {
+            const tmpl = col.dataset.labelTemplate;
+            if (tmpl && tmpl.includes('#')) {
+                const type = col.dataset.labelType;
+                const key = type + '::' + tmpl;
+
+                let sub = tmpl;
+                if (counts[key] > 1) {
+                    currentIndices[key] = (currentIndices[key] || 0) + 1;
+                    sub = sub.replace('#', currentIndices[key]);
+                } else {
+                    sub = sub.replace(',#', '').replace('#', '');
+                }
+
+                const html = gen[type] ? gen[type](sub) : 'ERR';
+                const btn = col.querySelector('.label-select-btn');
+                if (btn) btn.innerHTML = html;
+            }
+        });
+    }
+
+    // Parse existing HTML label to prefill custom inputs
+    function parseLabelToInputs(html) {
+        // Create temp element to parse HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // Remove any delta spans first if they exist
+        const deltas = temp.querySelectorAll('span[style*="var(--phys-blue)"]');
+        deltas.forEach(d => {
+            if(d.innerText === 'Δ') d.remove();
+        });
+
+        // Now extract what's left
+        const subEl = temp.querySelector('sub');
+        let sub = '';
+        if(subEl) {
+            sub = subEl.innerText;
+            subEl.remove();
+        }
+
+        const sym = temp.innerText.trim();
+        return { sym, sub };
+    }
+
+    function openMenu(e, btn, type, column) {
+        e.stopPropagation();
+        activeLabelButton = btn;
+        activeColumn = column;
+        activeSection = type;
+
+        menuOptions.innerHTML = '';
+        const options = LABEL_DEFS[type] || [];
+
+        const container = document.getElementById(`${type}-bars`);
+        const cols = Array.from(container.children);
+
+        options.forEach(opt => {
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'menu-btn';
+
+            let nextIndex = 1;
+            if (opt.sub.includes('#')) {
+                const existing = cols.filter(c =>
+                    c.dataset.labelType === opt.type && c.dataset.labelTemplate === opt.sub
+                ).length;
+                const isSelf = (column.dataset.labelType === opt.type && column.dataset.labelTemplate === opt.sub);
+                nextIndex = isSelf ? existing : existing + 1;
+            }
+
+            const finalSub = opt.sub.replace('#', nextIndex);
+            const htmlContent = gen[opt.type] ? gen[opt.type](finalSub) : 'ERR';
+
+            menuBtn.innerHTML = htmlContent;
+            menuBtn.onclick = () => {
+                setLabel(opt.type, opt.sub);
+                closeMenu();
+            };
+            menuOptions.appendChild(menuBtn);
+        });
+
+        // PRE-FILL INPUTS IF CUSTOM
+        if(!column.dataset.labelTemplate) {
+            // It's likely custom or not a standard template
+            const currentHTML = btn.innerHTML;
+            if(currentHTML !== 'Select') {
+                const parsed = parseLabelToInputs(currentHTML);
+                customBase.value = parsed.sym;
+                customSub.value = parsed.sub;
+            } else {
+                customBase.value = '';
+                customSub.value = '';
+            }
+        } else {
+            customBase.value = '';
+            customSub.value = '';
+        }
+
+        // SMART POSITIONING LOGIC
+        const rect = btn.getBoundingClientRect();
+        const menuWidth = 260;
+        const viewportHeight = window.innerHeight;
+
+        let left = rect.left - (menuWidth/2) + (rect.width/2);
+        if (left < 10) left = 10;
+        if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 10;
+
+        menu.style.display = 'flex';
+        menu.style.left = left + 'px';
+
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const minHeightNeeded = 250;
+
+        if (spaceBelow < minHeightNeeded && spaceAbove > spaceBelow) {
+            const height = Math.min(spaceAbove - 20, 400);
+            menu.style.top = 'auto';
+            menu.style.bottom = (viewportHeight - rect.top + 8) + 'px';
+            menu.style.maxHeight = height + 'px';
+        } else {
+            const height = Math.min(spaceBelow - 20, 400);
+            menu.style.bottom = 'auto';
+            menu.style.top = (rect.bottom + 8) + 'px';
+            menu.style.maxHeight = height + 'px';
+        }
+
+        // Focus first input for ease
+        setTimeout(() => customBase.focus(), 50);
+    }
+
+    function setLabel(type, template) {
+        if (!activeColumn) return;
+        activeColumn.dataset.labelType = type;
+        activeColumn.dataset.labelTemplate = template;
+        updateSectionLabels(activeSection);
+        if (!template.includes('#')) {
+             const html = gen[type] ? gen[type](template) : 'ERR';
+             activeLabelButton.innerHTML = html;
+        }
+    }
+
+    function applyCustomLabel(html) {
+        if (!activeLabelButton) return;
+        delete activeColumn.dataset.labelType;
+        delete activeColumn.dataset.labelTemplate;
+        activeLabelButton.innerHTML = html;
+    }
+
+    function closeMenu() { menu.style.display = 'none'; activeLabelButton = null; activeColumn = null; activeSection = null; }
+
+    function triggerCustomApply() {
+        const b = customBase.value || '?';
+        const s = customSub.value || '';
+        let html = `${b}<sub>${s}</sub>`;
+        if (activeSection === 'delta') html = `<span style="color:var(--phys-blue)">Δ</span>` + html;
+        applyCustomLabel(html);
+        closeMenu();
+    }
+
+    customApply.onclick = triggerCustomApply;
+
+    // Enter key support for inputs
+    customBase.addEventListener('keydown', (e) => { if(e.key === 'Enter') triggerCustomApply(); });
+    customSub.addEventListener('keydown', (e) => { if(e.key === 'Enter') triggerCustomApply(); });
+
+    window.addEventListener('click', (e) => { if (!menu.contains(e.target)) closeMenu(); });
+
+    // --- INTERACTIVITY ---
+    let isDragging = false;
+    let dragColumn = null;
+    const tooltip = document.getElementById('tooltip');
+    const pEditor = document.getElementById('precision-editor');
+    const pInput = document.getElementById('pe-input');
+    let editingCol = null;
+
+    function attachBarInteractivity(bar, col) {
+        bar.addEventListener('mouseenter', () => {
+            const val = parseInt(col.dataset.value);
+            tooltip.innerText = `Length: ${val > 0 ? '+' : ''}${val} px`;
+            tooltip.style.display = 'block';
+        });
+        bar.addEventListener('mousemove', (e) => {
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY + 15) + 'px';
+        });
+        bar.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+        bar.addEventListener('click', (e) => {
+            if (e.ctrlKey) {
+                editingCol = col;
+                pInput.value = col.dataset.value;
+                pEditor.style.display = 'block';
+                pInput.focus();
+                pInput.select();
+                e.preventDefault();
+            }
+        });
+    }
+
+    function closeEditor() { pEditor.style.display = 'none'; editingCol = null; }
+
+    pInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') {
+            const val = parseInt(pInput.value) || 0;
+            if (editingCol) setBarHeight(editingCol, val);
+            closeEditor();
+        }
+    });
+
+    function attachDragListeners(handle, col) {
+        const start = (e, y) => { isDragging = true; dragColumn = col; updateBar(col, y); e.preventDefault(); };
+        handle.addEventListener('mousedown', (e) => start(e, e.clientY));
+        handle.addEventListener('touchstart', (e) => start(e, e.touches[0].clientY), {passive: false});
+    }
+
+    function updateBar(col, clientY) {
+        let boxRect;
+        const section = col.closest('.section');
+        if(section) boxRect = section.getBoundingClientRect();
+        
+        if (boxRect && window.innerWidth <= 768) {
+             const centerY = boxRect.top + boxRect.height / 2;
+             let delta = Math.round(centerY - clientY);
+             const max = (boxRect.height / 2) - 40; 
+             if (delta > max) delta = max; if (delta < -max) delta = -max;
+             setBarHeight(col, delta);
+             return;
+        }
+
+        const zeroY = window.innerHeight / 2;
+        let delta = Math.round(zeroY - clientY);
+        const max = (window.innerHeight/2) - 60;
+        if (delta > max) delta = max; if (delta < -max) delta = -max;
+        setBarHeight(col, delta);
+    }
+
+    function setBarHeight(col, val) {
+        col.dataset.value = val;
+        const bar = col.querySelector('.bar');
+        const label = col.querySelector('.bar-label-container');
+        const abs = Math.abs(val);
+
+        if (val > 0) {
+            bar.style.top = 'auto'; bar.style.bottom = '50%'; bar.style.height = abs + 'px';
+            label.style.bottom = `calc(50% + ${abs}px + 5px)`; label.style.top = 'auto';
+        } else {
+            bar.style.bottom = 'auto'; bar.style.top = '50%'; bar.style.height = abs + 'px';
+            label.style.top = `calc(50% + ${abs}px + 5px)`; label.style.bottom = 'auto';
+        }
+        if (val === 0) {
+            bar.style.height = '0'; bar.style.top = '50%';
+            label.style.top = '50%'; label.style.marginTop = '-18px';
+        } else {
+            label.style.marginTop = '0';
+        }
+    }
+
+    window.addEventListener('mousemove', (e) => { if(isDragging) updateBar(dragColumn, e.clientY); });
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('touchmove', (e) => { if(isDragging) { e.preventDefault(); updateBar(dragColumn, e.touches[0].clientY); } }, {passive: false});
+    window.addEventListener('touchend', () => isDragging = false);
+
+    // --- SAVE / LOAD / RESET / SNAPSHOT ---
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+        if(confirm("Clear the entire chart?")) resetChart();
+    });
+
+    function resetChart() {
+        ['initial', 'delta', 'final'].forEach(type => {
+            const container = document.getElementById(`${type}-bars`);
+            container.innerHTML = '';
+        });
+        state = { initial: 0, delta: 0, final: 0 };
+        document.getElementById('btn-add-delta').style.display = 'block';
+    }
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+        const data = {
+            initial: getSectionData('initial'),
+            delta: getSectionData('delta'),
+            final: getSectionData('final')
+        };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'bar-chart-project.json';
+        link.click();
+    });
+
+    function getSectionData(section) {
+        const cols = Array.from(document.getElementById(`${section}-bars`).children);
+        return cols.map(col => ({
+            value: parseInt(col.dataset.value) || 0,
+            labelHTML: col.querySelector('.label-select-btn').innerHTML,
+            labelType: col.dataset.labelType || null,
+            labelTemplate: col.dataset.labelTemplate || null
+        }));
+    }
+
+    const fileInput = document.getElementById('file-input');
+    document.getElementById('load-btn').addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = JSON.parse(evt.target.result);
+                resetChart();
+                ['initial', 'delta', 'final'].forEach(section => {
+                    if(data[section]) {
+                        data[section].forEach(item => {
+                            const col = addBar(section);
+                            setBarHeight(col, item.value);
+                            const btn = col.querySelector('.label-select-btn');
+                            btn.innerHTML = item.labelHTML;
+                            if(item.labelType) col.dataset.labelType = item.labelType;
+                            if(item.labelTemplate) col.dataset.labelTemplate = item.labelTemplate;
+                        });
+                    }
+                });
+                updateSectionLabels('initial');
+                updateSectionLabels('final');
+            } catch(err) {
+                alert("Error loading file: " + err);
+            }
+        };
+        reader.readAsText(file);
+        fileInput.value = '';
+    });
+
+    document.getElementById('snap-btn').addEventListener('click', () => {
+        const uiElements = document.querySelectorAll('.btn-add, .controls-container, #help-btn');
+        uiElements.forEach(el => el.style.display = 'none');
+
+        const captureElement = document.getElementById('capture-area');
+
+        html2canvas(captureElement, {
+            backgroundColor: null,
+            scale: 2
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'physics-bar-chart.png';
+            link.href = canvas.toDataURL();
+            link.click();
+
+            uiElements.forEach(el => el.style.display = '');
+            if(state.delta >= 1) document.getElementById('btn-add-delta').style.display = 'none';
+        });
+    });
+
+    const helpBtn = document.getElementById('help-btn');
+    const helpModal = document.getElementById('help-modal');
+    helpBtn.addEventListener('click', () => helpModal.style.display = 'flex');
+    document.querySelector('.modal-close').addEventListener('click', () => helpModal.style.display = 'none');
+    helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AP Physics Grapher Pro</title>
+    <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+    <script src="https://unpkg.com/function-plot@1.23.3/dist/function-plot.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --sidebar-bg: #252525;
+            --modal-bg: #2a2a2a;
+            --text-color: #f5f5f7;
+            --text-dim: rgba(245, 245, 247, 0.5);
+            --accent-color: #0a84ff;
+            --success-color: #30d158;
+            --error-color: #ff453a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color); /* Flat background for embed */
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+
+        /* --- Main Layout --- */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 290px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 10;
+            position: relative;
+            flex-shrink: 0; /* Prevent sidebar from squishing */
+        }
+
+        .input-group {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid transparent;
+            transition: 0.2s;
+            position: relative;
+        }
+        .input-group:focus-within {
+            background: rgba(0,0,0,0.4);
+            border-color: var(--accent-color);
+        }
+
+        .indicator {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            border-radius: 8px 0 0 8px;
+        }
+
+        label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: "SF Mono", "Menlo", monospace;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .status {
+            font-size: 11px;
+            height: 14px;
+            margin-top: 4px;
+            text-align: right;
+            font-weight: 500;
+        }
+        .status.error { color: var(--error-color); }
+
+        .calc-area {
+            margin-top: auto;
+            margin-bottom: 40px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+        }
+        .calc-result {
+            font-family: "SF Mono", monospace;
+            color: var(--accent-color);
+            font-size: 14px;
+            margin-top: 5px;
+            text-align: right;
+            min-height: 20px;
+            /* Fix for long text overflow */
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .fab-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .fab-btn:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .graph-container {
+            flex: 1;
+            position: relative;
+            background: #111;
+            overflow: hidden;
+        }
+        #graph { width: 100%; height: 100%; }
+
+        /* Graph Styling */
+        .function-plot .x.axis .tick line, .function-plot .y.axis .tick line { stroke: rgba(255,255,255,0.1); }
+        .function-plot .x.axis text, .function-plot .y.axis text { fill: rgba(255,255,255,0.4); }
+        .function-plot .domain { display: none; }
+
+        .function-plot .tip {
+            background: rgba(40,40,40, 0.95) !important;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: "SF Mono", monospace;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .modal-card {
+            width: 650px;
+            max-height: 80%;
+            background: var(--modal-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;
+        }
+        .modal-header h2 { margin: 0; font-size: 20px; font-weight: 500; }
+        .modal-close { background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; }
+        .modal-close:hover { color: white; }
+
+        .glossary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .glossary-section h3 { font-size: 12px; text-transform: uppercase; color: var(--accent-color); margin-bottom: 12px; letter-spacing: 0.5px; }
+        .glossary-list { list-style: none; padding: 0; margin: 0; font-size: 13px; color: var(--text-dim); line-height: 1.8; }
+        .glossary-list li strong { color: #fff; font-weight: 600; font-family: "SF Mono", monospace; }
+
+        .badge-rad { color: #0a84ff; font-size: 10px; border: 1px solid #0a84ff; padding: 1px 4px; border-radius: 4px; margin-left: 6px; }
+        .badge-deg { color: #30d158; font-size: 10px; border: 1px solid #30d158; padding: 1px 4px; border-radius: 4px; margin-left: 6px; }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .sidebar { width: 100%; height: 45%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px; gap: 10px; overflow-y: auto; }
+            .graph-container { height: 55%; }
+            /* Moved FAB to top right to avoid input overlap */
+            .fab-btn { position: absolute; top: 10px; right: 10px; bottom: auto; left: auto; width: 36px; height: 36px; }
+            .input-group { padding: 8px; }
+            input[type="text"] { font-size: 16px; } 
+            .modal-card { width: 90%; padding: 20px; }
+            .glossary-grid { grid-template-columns: 1fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="input-group">
+                <div class="indicator" style="background: #0a84ff;"></div>
+                <label>f(x)</label>
+                <input type="text" id="input1" value="sin(x)" placeholder="...">
+                <div id="status1" class="status"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="indicator" style="background: #30d158;"></div>
+                <label>g(x)</label>
+                <input type="text" id="input2" value="x^2" placeholder="...">
+                <div id="status2" class="status"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="indicator" style="background: #bf5af2;"></div>
+                <label>h(x)</label>
+                <input type="text" id="input3" placeholder="...">
+                <div id="status3" class="status"></div>
+            </div>
+
+            <div class="calc-area">
+                <div class="input-group">
+                    <label>Quick Calc (Degrees)</label>
+                    <input type="text" id="calcInput" placeholder="g * sin(30)">
+                </div>
+                <div id="calcResult" class="calc-result"></div>
+            </div>
+
+            <button class="fab-btn" onclick="toggleModal()" title="Reference Guide">
+                <i class="ph ph-question"></i>
+            </button>
+        </div>
+
+        <div class="graph-container">
+            <div id="graph"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Reference Guide</h2>
+                <button class="modal-close" onclick="toggleModal()">&times;</button>
+            </div>
+            <div class="glossary-grid">
+                <div class="glossary-section">
+                    <h3>Graphing Mode <span class="badge-rad">RAD</span></h3>
+                    <ul class="glossary-list">
+                        <li><strong>sin(x)</strong> - Sine (Radians)</li>
+                        <li><strong>cos(x)</strong> - Cosine (Radians)</li>
+                        <li><strong>tan(x)</strong> - Tangent (Radians)</li>
+                        <li><strong>log(x)</strong> - Natural Log</li>
+                        <li><strong>abs(x)</strong> - Absolute Value</li>
+                    </ul>
+                </div>
+                <div class="glossary-section">
+                    <h3>Quick Calc Mode <span class="badge-deg">DEG</span></h3>
+                    <ul class="glossary-list">
+                        <li><strong>sin(30)</strong> = 0.5 (Degrees)</li>
+                        <li><strong>asin(0.5)</strong> = 30 (Degrees)</li>
+                        <li>Calculates expressions instantly.</li>
+                        <li>Use <strong>Enter</strong> to solve.</li>
+                    </ul>
+                </div>
+                <div class="glossary-section">
+                    <h3>Physics Constants</h3>
+                    <ul class="glossary-list">
+                        <li><strong>g</strong> = 9.8 (Gravity)</li>
+                        <li><strong>c</strong> = 3.00e8 (Speed of Light)</li>
+                        <li><strong>G</strong> = 6.67e-11 (Univ. Grav)</li>
+                        <li><strong>k</strong> = 9.00e9 (Coulomb)</li>
+                        <li><strong>e</strong> = 1.60e-19 (Elem. Charge)</li>
+                    </ul>
+                </div>
+                <div class="glossary-section">
+                    <h3>Math Constants</h3>
+                    <ul class="glossary-list">
+                        <li><strong>pi</strong> = 3.14159...</li>
+                        <li><strong>phi</strong> = 1.618... (Golden Ratio)</li>
+                        <li><strong>e</strong> = 2.718... (Euler's Number)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const physicsScope = {
+            g: 9.8,
+            G: 6.67e-11,
+            c: 3.00e8,
+            k: 9.00e9,
+            qe: 1.60e-19
+        };
+
+        const inputs = [
+            { el: document.getElementById('input1'), status: document.getElementById('status1'), color: '#0a84ff' },
+            { el: document.getElementById('input2'), status: document.getElementById('status2'), color: '#30d158' },
+            { el: document.getElementById('input3'), status: document.getElementById('status3'), color: '#bf5af2' }
+        ];
+
+        // --- AST TRANSFORMER (Degrees for Quick Calc) ---
+        function transformToDegrees(expr) {
+            try {
+                const node = math.parse(expr);
+                const toRadConst = math.parse('0.017453292519943295');
+                const toDegConst = math.parse('57.29577951308232');
+
+                const transformed = node.transform(function (node, path, parent) {
+                    if (node.isFunctionNode) {
+                        const name = node.fn.name || node.name;
+                        if (['sin', 'cos', 'tan', 'sec', 'csc', 'cot'].includes(name)) {
+                            const arg = node.args[0];
+                            node.args[0] = new math.OperatorNode('*', 'multiply', [arg, toRadConst]);
+                        }
+                        else if (['asin', 'acos', 'atan', 'asec', 'acsc', 'acot'].includes(name)) {
+                            return new math.OperatorNode('*', 'multiply', [node, toDegConst]);
+                        }
+                    }
+                    return node;
+                });
+                return transformed.toString();
+            } catch(e) {
+                return expr;
+            }
+        }
+
+        // --- Intersection Solver ---
+        function findRoots(fn1Compiled, fn2Compiled, xMin, xMax) {
+            const steps = 300;
+            const stepSize = (xMax - xMin) / steps;
+            const roots = [];
+
+            const diff = (x) => {
+                try {
+                    const scope = { x: x, ...physicsScope };
+                    return fn1Compiled.evaluate(scope) - fn2Compiled.evaluate(scope);
+                } catch(e) { return NaN; }
+            };
+
+            let prevX = xMin;
+            let prevDiff = diff(prevX);
+
+            for (let i = 1; i <= steps; i++) {
+                let currX = xMin + i * stepSize;
+                let currDiff = diff(currX);
+
+                if (Math.sign(prevDiff) !== Math.sign(currDiff) && !isNaN(prevDiff) && !isNaN(currDiff)) {
+                    const intersectX = prevX + (currX - prevX) * (0 - prevDiff) / (currDiff - prevDiff);
+                    const intersectY = fn1Compiled.evaluate({ x: intersectX, ...physicsScope });
+                    if(Math.abs(intersectY) < 100) {
+                        roots.push([intersectX, intersectY]);
+                    }
+                }
+                prevX = currX;
+                prevDiff = currDiff;
+            }
+            return roots;
+        }
+
+        // --- Render Graph ---
+        let functionPlotInstance = null;
+
+        function renderGraph() {
+            let width = document.querySelector('.graph-container').clientWidth;
+            let height = document.querySelector('.graph-container').clientHeight;
+
+            const graphData = [];
+            const compiledForSolver = [];
+            let hasError = false;
+
+            inputs.forEach(inp => {
+                const rawVal = inp.el.value.trim();
+                inp.status.textContent = '';
+
+                if (rawVal) {
+                    try {
+                        math.parse(rawVal);
+
+                        const node = math.parse(rawVal);
+                        const compiled = node.compile();
+                        compiledForSolver.push(compiled);
+
+                        graphData.push({
+                            fn: rawVal,
+                            color: inp.color,
+                            graphType: 'polyline',
+                            skipTip: false,
+                            scope: physicsScope
+                        });
+                    } catch (err) {
+                        inp.status.textContent = "Err";
+                        inp.status.classList.add('error');
+                        compiledForSolver.push(null);
+                        hasError = true;
+                    }
+                } else {
+                    compiledForSolver.push(null);
+                }
+            });
+
+            // Intersections
+            let points = [];
+            const range = [-20, 20];
+            const validFns = compiledForSolver;
+
+            if (!hasError) {
+                for(let i=0; i<validFns.length; i++) {
+                    for(let j=i+1; j<validFns.length; j++) {
+                        if (validFns[i] && validFns[j]) {
+                            const roots = findRoots(validFns[i], validFns[j], range[0], range[1]);
+                            roots.forEach(r => points.push(r));
+                        }
+                    }
+                }
+            }
+
+            if(points.length > 0) {
+                graphData.push({
+                    points: points,
+                    fnType: 'points',
+                    graphType: 'scatter',
+                    color: '#888',
+                    attr: { r: 5, fill: '#ccc', stroke: 'none' },
+                    skipTip: false
+                });
+            }
+
+            try {
+                document.getElementById('graph').innerHTML = '';
+
+                functionPlotInstance = functionPlot({
+                    target: '#graph',
+                    width: width,
+                    height: height,
+                    xAxis: { domain: [-10, 10] },
+                    yAxis: { domain: [-6, 6] },
+                    grid: true,
+                    data: graphData,
+                    tip: {
+                        xLine: true,
+                        yLine: true,
+                        renderer: function (x, y, index) {
+                            return `(${x.toFixed(3)}, ${y.toFixed(3)})`;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.log("Graphing error", e);
+            }
+        }
+
+        inputs.forEach(item => {
+            item.el.addEventListener('blur', renderGraph);
+            item.el.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') {
+                    item.el.blur();
+                    renderGraph();
+                }
+            });
+            item.el.addEventListener('input', () => { renderGraph(); });
+        });
+
+        window.addEventListener('resize', () => {
+            if(functionPlotInstance) renderGraph();
+        });
+
+        const modal = document.getElementById('helpModal');
+        function toggleModal() { modal.classList.toggle('open'); }
+        modal.addEventListener('click', (e) => { if(e.target === modal) toggleModal(); });
+
+        const calcInput = document.getElementById('calcInput');
+        const calcResult = document.getElementById('calcResult');
+
+        function runCalc() {
+            const expr = calcInput.value;
+            if(!expr) { calcResult.textContent = ""; return; }
+            try {
+                const evalExpr = transformToDegrees(expr);
+                const res = math.evaluate(evalExpr, physicsScope);
+                calcResult.textContent = "= " + math.format(res, {precision: 5});
+            } catch(e) {
+                calcResult.textContent = "Err";
+            }
+        }
+        calcInput.addEventListener('keydown', (e) => { if(e.key==='Enter') runCalc(); });
+        calcInput.addEventListener('blur', runCalc);
+
+        renderGraph();
+
+    </script>
+</body>
+</html>
