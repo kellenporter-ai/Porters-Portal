@@ -88,11 +88,17 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
       e.preventDefault();
-      await dataService.saveXPEvent({
-          id: Math.random().toString(36).substring(2, 9), title: newEventData.title,
-          multiplier: newEventData.multiplier, isActive: true, type: newEventData.type,
-          targetClass: newEventData.type === 'CLASS_SPECIFIC' ? newEventData.targetClass : undefined
-      });
+      const event: XPEvent = {
+          id: Math.random().toString(36).substring(2, 9),
+          title: newEventData.title,
+          multiplier: newEventData.multiplier,
+          isActive: true,
+          type: newEventData.type,
+      };
+      if (newEventData.type === 'CLASS_SPECIFIC') {
+          event.targetClass = newEventData.targetClass;
+      }
+      await dataService.saveXPEvent(event);
       setIsEventModalOpen(false);
       setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: DefaultClassTypes.AP_PHYSICS });
   };
@@ -198,12 +204,13 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         <div className="p-6">
           {activeTab === 'OPERATIVES' && (
             <div className="space-y-6">
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col md:flex-row gap-4 items-center">
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input type="text" placeholder="Search name, operative ID or email..." className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <input type="text" placeholder="Search by name or email..." className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">{filteredStudents.length} operatives</span>
                   <div className="relative">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                     <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50">
@@ -230,21 +237,49 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead><tr className="text-[10px] text-gray-500 uppercase font-black tracking-widest border-b border-white/5">
-                    <th className="pb-4 pl-4">Operative</th><th className="pb-4">Status</th><th className="pb-4 text-center">XP Points</th><th className="pb-4 text-center">Gear Score</th><th className="pb-4 text-right pr-4">Action</th>
+                    <th className="pb-4 pl-4">Operative</th><th className="pb-4">Class</th><th className="pb-4 text-center">Level</th><th className="pb-4 text-center">XP</th><th className="pb-4 text-center">Flux</th><th className="pb-4 text-center">Gear</th><th className="pb-4 text-right pr-4">Actions</th>
                   </tr></thead>
                   <tbody className="divide-y divide-white/5">
-                    {filteredStudents.map(student => (
+                    {filteredStudents.map(student => {
+                      const level = student.gamification?.level || 1;
+                      const flux = student.gamification?.currency || 0;
+                      const classes = student.enrolledClasses || (student.classType ? [student.classType] : []);
+                      return (
                       <tr key={student.id} className="group hover:bg-white/5 transition-colors">
-                        <td className="py-4 pl-4"><div className="flex items-center gap-3"><img src={student.avatarUrl} className="w-10 h-10 rounded-xl border border-white/10" alt={student.name} /><div><div className="font-bold text-gray-200">{student.name}</div><div className="text-[10px] font-mono text-gray-500 uppercase">{student.gamification?.codename || 'UNASSIGNED'}</div></div></div></td>
-                        <td className="py-4"><span className="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-1 rounded border border-purple-500/20 font-bold uppercase">{student.classType}</span></td>
-                        <td className="py-4 text-center"><div className="text-xl font-black text-white">{student.gamification?.xp?.toLocaleString() || 0}</div><div className="text-[8px] text-gray-500 font-bold uppercase tracking-tighter">Accumulated XP</div></td>
-                        <td className="py-4 text-center"><span className="text-sm font-bold text-yellow-400 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-500/20">{calculateGearScore(student.gamification?.equipped)}</span></td>
-                        <td className="py-4 text-right pr-4"><div className="flex justify-end gap-2">
-                          <button onClick={() => setInspectingUser(student)} className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20" title="Inspect Inventory"><Briefcase className="w-4 h-4" /></button>
-                          <button onClick={() => setAdjustingUser(student)} className="p-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20" title="Adjust XP"><Plus className="w-4 h-4" /></button>
-                        </div></td>
+                        <td className="py-3 pl-4">
+                          <div className="flex items-center gap-3">
+                            <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-white/10" alt={student.name} />
+                            <div>
+                              <div className="font-bold text-sm text-gray-200">{student.name}</div>
+                              <div className="text-[10px] font-mono text-gray-500 uppercase">{student.gamification?.codename || 'UNASSIGNED'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {classes.map(c => <span key={c} className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 font-bold">{c}</span>)}
+                          </div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <span className="text-lg font-black text-white">{level}</span>
+                        </td>
+                        <td className="py-3 text-center">
+                          <span className="text-sm font-bold text-gray-300">{student.gamification?.xp?.toLocaleString() || 0}</span>
+                        </td>
+                        <td className="py-3 text-center">
+                          <span className="text-sm font-bold text-cyan-400">{flux}</span>
+                        </td>
+                        <td className="py-3 text-center">
+                          <span className="text-sm font-bold text-yellow-400">{calculateGearScore(student.gamification?.equipped)}</span>
+                        </td>
+                        <td className="py-3 text-right pr-4">
+                          <div className="flex justify-end gap-1.5">
+                            <button onClick={() => setInspectingUser(student)} className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><Briefcase className="w-3 h-3" /> Inventory</button>
+                            <button onClick={() => setAdjustingUser(student)} className="px-2.5 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><Plus className="w-3 h-3" /> XP</button>
+                          </div>
+                        </td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table>
               </div>
