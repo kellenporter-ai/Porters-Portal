@@ -80,8 +80,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   useEffect(() => {
       const currentLevel = user.gamification?.level || 1;
       const lastSeen = Math.max(user.gamification?.lastLevelSeen || 1, acknowledgedLevelRef.current);
-      
+
       if (currentLevel > lastSeen) {
+          acknowledgedLevelRef.current = currentLevel;
           const inventory = user.gamification?.inventory || [];
           const latestItem = inventory.length > 0 ? inventory[inventory.length - 1] : null;
           setNewlyAcquiredItem(latestItem);

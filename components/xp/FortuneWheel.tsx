@@ -71,11 +71,11 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
         {/* Pointer */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[24px] border-t-yellow-400 drop-shadow-lg" />
 
-        <svg viewBox="-160 -160 320 320" className="w-full h-full drop-shadow-2xl">
+        <svg viewBox="-160 -160 320 320" className="w-full h-full drop-shadow-2xl overflow-visible">
           <g
             style={{
               transform: `rotate(${rotation}deg)`,
-              transformOrigin: 'center',
+              transformOrigin: '0px 0px',
               transition: spinning ? 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
             }}
             ref={wheelRef}
