@@ -28,8 +28,10 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [flaggedMessages, setFlaggedMessages] = useState<ChatMessage[]>([]);
+  const [muteMenuTarget, setMuteMenuTarget] = useState<{ id: string; senderId: string; senderName: string } | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const msgEmojiPickerRef = useRef<HTMLDivElement>(null);
+  const muteMenuRef = useRef<HTMLDivElement>(null);
   
   const chatEnabledClasses = useMemo(() => {
       return Object.values(DefaultClassTypes).filter(c => {
@@ -177,12 +179,28 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       } catch (err) { console.error(err); }
   };
 
-  const handleMuteUser = async (senderId: string, senderName: string) => {
-      if (!await confirm({ message: `Mute ${senderName} for 1 hour?`, confirmLabel: "Mute", variant: "warning" })) return;
+  const MUTE_DURATIONS = [
+      { label: '15 min', minutes: 15 },
+      { label: '1 hour', minutes: 60 },
+      { label: '24 hours', minutes: 1440 },
+      { label: 'Indefinite', minutes: dataService.INDEFINITE_MUTE },
+  ];
+
+  const handleMuteUser = async (minutes: number) => {
+      if (!muteMenuTarget) return;
       try {
-          await dataService.muteUser(senderId, 60);
+          await dataService.muteUser(muteMenuTarget.senderId, minutes);
       } catch (err) { console.error(err); }
+      setMuteMenuTarget(null);
   };
+
+  useEffect(() => {
+      const handleClickOutsideMute = (e: MouseEvent) => {
+          if (muteMenuRef.current && !muteMenuRef.current.contains(e.target as Node)) setMuteMenuTarget(null);
+      };
+      if (muteMenuTarget) document.addEventListener('mousedown', handleClickOutsideMute);
+      return () => document.removeEventListener('mousedown', handleClickOutsideMute);
+  }, [muteMenuTarget]);
 
   if (!isOpen) return null;
 
@@ -285,9 +303,19 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                         <button onClick={() => handleDeleteFlagged(msg.id)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold transition">
                                             <Trash2 className="w-3.5 h-3.5" /> Delete
                                         </button>
-                                        <button onClick={() => handleMuteUser(msg.senderId, msg.senderName)} className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-xl text-xs font-bold transition" title="Mute 1hr">
-                                            <MicOff className="w-3.5 h-3.5" />
-                                        </button>
+                                        <div className="relative">
+                                            <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === `flag-${msg.id}` ? null : { id: `flag-${msg.id}`, senderId: msg.senderId, senderName: msg.senderName })} className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-xl text-xs font-bold transition" title="Mute">
+                                                <MicOff className="w-3.5 h-3.5" />
+                                            </button>
+                                            {muteMenuTarget?.id === `flag-${msg.id}` && (
+                                                <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
+                                                    <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
+                                                    {MUTE_DURATIONS.map(d => (
+                                                        <button key={d.minutes} onClick={() => handleMuteUser(d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -323,7 +351,19 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                                 <>
                                                     <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-3.5 h-3.5" /></button>
                                                     <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition" aria-label="Delete message"><Trash2 className="w-3.5 h-3.5" /></button>
-                                                    {msg.senderId !== user.id && <button onClick={() => handleMuteUser(msg.senderId, msg.senderName)} className="p-1 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition" aria-label="Mute user 1hr"><MicOff className="w-3.5 h-3.5" /></button>}
+                                                    {msg.senderId !== user.id && (
+                                                        <div className="relative">
+                                                            <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-1 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition" aria-label="Mute user"><MicOff className="w-3.5 h-3.5" /></button>
+                                                            {muteMenuTarget?.id === msg.id && (
+                                                                <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
+                                                                    <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
+                                                                    {MUTE_DURATIONS.map(d => (
+                                                                        <button key={d.minutes} onClick={() => handleMuteUser(d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

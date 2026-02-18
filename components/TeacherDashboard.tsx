@@ -19,6 +19,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [now, setNow] = useState(Date.now());
+  const [muteMenuFlagId, setMuteMenuFlagId] = useState<string | null>(null);
 
   useEffect(() => {
       const unsub = dataService.subscribeToChatFlags(setFlags);
@@ -48,10 +49,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       }
   };
 
-  const handleMuteFromFlag = async (senderId: string, senderName: string) => {
-      if (await confirm({ message: `Mute ${senderName} for 1 hour?`, confirmLabel: "Mute", variant: "warning" })) {
-          await dataService.muteUser(senderId, 60);
-      }
+  const MUTE_DURATIONS = [
+      { label: '15 min', minutes: 15 },
+      { label: '1 hour', minutes: 60 },
+      { label: '24 hours', minutes: 1440 },
+      { label: 'Indefinite', minutes: dataService.INDEFINITE_MUTE },
+  ];
+
+  const handleMuteFromFlag = async (senderId: string, minutes: number) => {
+      await dataService.muteUser(senderId, minutes);
+      setMuteMenuFlagId(null);
   };
 
   const handleExtendMute = async (userId: string, currentMute: string) => {
@@ -152,9 +159,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(() => {}); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
                                       <Trash2 className="w-3 h-3" /> Delete
                                   </button>
-                                  <button onClick={() => handleMuteFromFlag(flag.senderId, flag.senderName)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" title="Mute 1hr">
-                                      <MicOff className="w-3 h-3" />
-                                  </button>
+                                  <div className="relative">
+                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" title="Mute">
+                                          <MicOff className="w-3 h-3" />
+                                      </button>
+                                      {muteMenuFlagId === flag.id && (
+                                          <div className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
+                                              <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {flag.senderName}</div>
+                                              {MUTE_DURATIONS.map(d => (
+                                                  <button key={d.minutes} onClick={() => handleMuteFromFlag(flag.senderId, d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
+                                              ))}
+                                          </div>
+                                      )}
+                                  </div>
                               </div>
                           </div>
                       ))}

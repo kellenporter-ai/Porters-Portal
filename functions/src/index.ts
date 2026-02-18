@@ -333,6 +333,17 @@ function buildXPUpdates(
 
   if (leveledUp) {
     updates["gamification.currency"] = (gam.currency || 0) + 100;
+
+    // Award 1 skill point every 2 levels (on even levels)
+    // Count how many even levels were crossed from currentLevel+1 to newLevel
+    const spEarned = Array.from(
+      { length: newLevel - currentLevel },
+      (_, i) => currentLevel + 1 + i
+    ).filter(lvl => lvl % 2 === 0).length;
+    if (spEarned > 0) {
+      updates["gamification.skillPoints"] = (gam.skillPoints || 0) + spEarned;
+    }
+
     const newItem = generateLoot(newLevel);
     if (classType && classType !== "Uncategorized") {
       const cp = data.gamification?.classProfiles?.[classType] || {};

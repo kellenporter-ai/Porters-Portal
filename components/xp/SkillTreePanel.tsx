@@ -48,7 +48,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-bold text-white">Specialization</h3>
-          <p className="text-[10px] text-gray-500 mt-0.5">You earn 1 Skill Point each time you level up</p>
+          <p className="text-[10px] text-gray-500 mt-0.5">You earn 1 Skill Point every 2 levels</p>
         </div>
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5">
           <Zap className="w-4 h-4 text-yellow-400" />
