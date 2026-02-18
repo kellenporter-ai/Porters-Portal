@@ -713,15 +713,24 @@ export const craftItem = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
-    const { inventory } = getProfileData(data, classType);
+    const { inventory, equipped } = getProfileData(data, classType);
     const currentCurrency = data.gamification?.currency || 0;
     const playerLevel = data.gamification?.level || 1;
 
     if (currentCurrency < cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
-    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
-    if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
 
-    const item = JSON.parse(JSON.stringify(inventory[itemIdx]));
+    // Item can be in inventory OR currently equipped — check both
+    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
+    let equippedSlot: string | null = null;
+    if (itemIdx === -1) {
+      for (const [slot, eqItem] of Object.entries(equipped)) {
+        if (eqItem && (eqItem as LootItem).id === itemId) { equippedSlot = slot; break; }
+      }
+      if (!equippedSlot) throw new HttpsError("not-found", "Item not in inventory.");
+    }
+
+    const sourceItem = equippedSlot ? equipped[equippedSlot] : inventory[itemIdx];
+    const item = JSON.parse(JSON.stringify(sourceItem));
     if (item.rarity === "UNIQUE" && action === "REFORGE") throw new HttpsError("failed-precondition", "Cannot reforge unique items.");
 
     if (action === "RECALIBRATE") {
@@ -791,8 +800,15 @@ export const craftItem = onCall(async (request) => {
       }
     }
 
-    inventory[itemIdx] = item;
-    transaction.update(userRef, { [paths.inventory]: inventory, "gamification.currency": currentCurrency - cost });
+    // Write modified item back to wherever it was found
+    const updates: Record<string, unknown> = { "gamification.currency": currentCurrency - cost };
+    if (equippedSlot) {
+      updates[`${paths.equipped}.${equippedSlot}`] = item;
+    } else {
+      inventory[itemIdx] = item;
+      updates[paths.inventory] = inventory;
+    }
+    transaction.update(userRef, updates);
     return { item, newCurrency: currentCurrency - cost };
   });
 });

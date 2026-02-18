@@ -418,8 +418,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           setInspectItem(null);
           sfx.craft();
           toast.success(`${action.charAt(0) + action.slice(1).toLowerCase()} complete.`);
-      } catch(e) {
-          toast.error('Fabrication protocol failed.');
+      } catch(e: any) {
+          const msg = e?.message || e?.code || 'Unknown error';
+          toast.error(`Fabrication failed: ${msg}`);
       } finally {
           setIsProcessing(false);
       }
