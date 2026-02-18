@@ -11,7 +11,7 @@ import { sfx } from '../lib/sfx';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
-import OperativeAvatar from './dashboard/OperativeAvatar';
+import OperativeAvatar, { SKIN_TONES, HAIR_COLORS, HAIR_STYLE_NAMES } from './dashboard/OperativeAvatar';
 import { Announcement } from '../types';
 import AchievementPanel from './xp/AchievementPanel';
 import SkillTreePanel from './xp/SkillTreePanel';
@@ -80,6 +80,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewHue, setPreviewHue] = useState<number | null>(null);
   const [previewBodyType, setPreviewBodyType] = useState<'A' | 'B' | null>(null);
+  const [previewSkinTone, setPreviewSkinTone] = useState<number | null>(null);
+  const [previewHairStyle, setPreviewHairStyle] = useState<number | null>(null);
+  const [previewHairColor, setPreviewHairColor] = useState<number | null>(null);
   const [xpFloatAmount, setXpFloatAmount] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
@@ -195,8 +198,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(() => {});
   };
 
-  const handleCustomizeSave = async (hue: number, bodyType: 'A' | 'B') => {
-      await dataService.updateUserAppearance(user.id, { hue, bodyType }, activeClass);
+  const handleCustomizeSave = async (appearance: { hue: number; bodyType: 'A' | 'B'; skinTone: number; hairStyle: number; hairColor: number }) => {
+      try {
+          await dataService.updateUserAppearance(user.id, appearance, activeClass);
+          toast.success('Profile updated!');
+      } catch {
+          toast.error('Failed to save — try again');
+      }
       setShowCustomize(false);
   };
 
@@ -1016,63 +1024,114 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       </div>
 
       {/* MODALS RENDERED AT ROOT OF DASHBOARD FOR Z-INDEX CLARITY */}
-      <Modal isOpen={showCustomize} onClose={() => { setShowCustomize(false); setPreviewHue(null); setPreviewBodyType(null); }} title="Operative DNA Profile" maxWidth="max-w-md">
-          <div className="p-4 space-y-8">
+      <Modal isOpen={showCustomize} onClose={() => { setShowCustomize(false); setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null); }} title="Customize Your Agent" maxWidth="max-w-lg">
+          <div className="p-4 space-y-6">
+              {/* Live preview */}
               <div className="flex justify-center">
-                  <div className="w-48 h-72 bg-black/40 rounded-3xl p-4 border border-purple-500/20 shadow-inner loadout-hex-bg">
-                      <OperativeAvatar equipped={equipped} appearance={{ 
-                          ...classProfile.appearance, 
+                  <div className="w-44 h-64 bg-black/40 rounded-3xl p-3 border border-purple-500/20 shadow-inner loadout-hex-bg">
+                      <OperativeAvatar equipped={equipped} appearance={{
+                          ...classProfile.appearance,
                           hue: previewHue ?? classProfile.appearance?.hue ?? 0,
-                          bodyType: previewBodyType ?? classProfile.appearance?.bodyType ?? 'A'
+                          bodyType: previewBodyType ?? classProfile.appearance?.bodyType ?? 'A',
+                          skinTone: previewSkinTone ?? classProfile.appearance?.skinTone ?? 0,
+                          hairStyle: previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1,
+                          hairColor: previewHairColor ?? classProfile.appearance?.hairColor ?? 0,
                       }} />
                   </div>
               </div>
 
-              {/* Body Type Selector */}
-              <div className="bg-white/5 p-5 rounded-3xl border border-white/10">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Agent Frame</label>
-                  <div className="flex justify-center gap-3">
-                      {(['A', 'B'] as const).map(type => {
-                          const isActive = (previewBodyType ?? classProfile.appearance?.bodyType ?? 'A') === type;
+              {/* Skin Tone */}
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
+                  <div className="flex justify-center gap-2">
+                      {SKIN_TONES.map((tone, i) => {
+                          const isActive = (previewSkinTone ?? classProfile.appearance?.skinTone ?? 0) === i;
                           return (
-                              <button key={type} onClick={() => setPreviewBodyType(type)}
-                                  className={`px-6 py-3 rounded-xl border-2 transition-all font-bold text-sm ${isActive ? 'border-purple-500 bg-purple-500/20 text-white scale-105' : 'border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-300'}`}>
-                                  Frame {type === 'A' ? 'Alpha' : 'Beta'}
+                              <button key={i} onClick={() => setPreviewSkinTone(i)}
+                                  className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
+                                  style={{ backgroundColor: tone }} />
+                          );
+                      })}
+                  </div>
+              </div>
+
+              {/* Hair Style */}
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Style</label>
+                  <div className="grid grid-cols-3 gap-2">
+                      {HAIR_STYLE_NAMES.map((name, i) => {
+                          const isActive = (previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1) === i;
+                          return (
+                              <button key={i} onClick={() => setPreviewHairStyle(i)}
+                                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500/30 border-purple-500 text-white border-2' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}>
+                                  {name}
                               </button>
                           );
                       })}
                   </div>
               </div>
-              
-              <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 text-center">Bio-Signature Tint (Hue-Shift)</label>
-                  <div className="grid grid-cols-6 gap-3">
-                      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(hue => {
-                          const isActive = (previewHue ?? classProfile.appearance?.hue ?? 0) === hue;
+
+              {/* Hair Color */}
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
+                  <div className="flex justify-center gap-2">
+                      {HAIR_COLORS.map((color, i) => {
+                          const isActive = (previewHairColor ?? classProfile.appearance?.hairColor ?? 0) === i;
                           return (
-                              <button 
-                                key={hue}
-                                onClick={() => setPreviewHue(hue)}
-                                className={`aspect-square rounded-xl border-3 transition-all hover:scale-110 shadow-lg ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-transparent'}`}
-                                style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }}
-                              />
+                              <button key={i} onClick={() => setPreviewHairColor(i)}
+                                  className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
+                                  style={{ backgroundColor: color }} />
                           );
                       })}
                   </div>
               </div>
 
+              {/* Body Type + Hue row */}
+              <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Body Frame</label>
+                      <div className="flex justify-center gap-2">
+                          {(['A', 'B'] as const).map(type => {
+                              const isActive = (previewBodyType ?? classProfile.appearance?.bodyType ?? 'A') === type;
+                              return (
+                                  <button key={type} onClick={() => setPreviewBodyType(type)}
+                                      className={`px-4 py-2 rounded-xl border-2 transition-all font-bold text-xs ${isActive ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 text-gray-500 hover:border-white/20'}`}>
+                                      {type === 'A' ? 'Alpha' : 'Beta'}
+                                  </button>
+                              );
+                          })}
+                      </div>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Energy Color</label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                          {[0, 30, 60, 90, 120, 180, 240, 300].map(hue => {
+                              const isActive = (previewHue ?? classProfile.appearance?.hue ?? 0) === hue;
+                              return (
+                                  <button key={hue} onClick={() => setPreviewHue(hue)}
+                                      className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 mx-auto ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
+                                      style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }} />
+                              );
+                          })}
+                      </div>
+                  </div>
+              </div>
+
+              {/* Actions */}
               <div className="flex gap-3">
-                  <button onClick={() => { setShowCustomize(false); setPreviewHue(null); setPreviewBodyType(null); }}
+                  <button onClick={() => { setShowCustomize(false); setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null); }}
                       className="flex-1 py-3 bg-white/5 border border-white/10 text-gray-400 font-bold rounded-xl hover:bg-white/10 transition">
                       Cancel
                   </button>
-                  <button onClick={() => { 
-                      handleCustomizeSave(
-                          previewHue ?? classProfile.appearance?.hue ?? 0,
-                          previewBodyType ?? classProfile.appearance?.bodyType ?? 'A'
-                      ); 
-                      setPreviewHue(null); 
-                      setPreviewBodyType(null); 
+                  <button onClick={() => {
+                      handleCustomizeSave({
+                          hue: previewHue ?? classProfile.appearance?.hue ?? 0,
+                          bodyType: previewBodyType ?? classProfile.appearance?.bodyType ?? 'A',
+                          skinTone: previewSkinTone ?? classProfile.appearance?.skinTone ?? 0,
+                          hairStyle: previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1,
+                          hairColor: previewHairColor ?? classProfile.appearance?.hairColor ?? 0,
+                      });
+                      setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null);
                   }}
                       className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-500 transition shadow-lg shadow-purple-900/20">
                       Save Profile
