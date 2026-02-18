@@ -20,7 +20,7 @@ export const HAIR_STYLE_NAMES = [
 interface OperativeAvatarProps {
     equipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
     appearance?: {
-        bodyType?: 'A' | 'B';
+        bodyType?: 'A' | 'B' | 'C';
         hue?: number;
         skinTone?: number;
         hairStyle?: number;
@@ -79,7 +79,9 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
 
 const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance, evolutionLevel = 1, activeCosmetic, cosmeticColor }) => {
     const hue = appearance?.hue || 0;
-    const isTypeB = appearance?.bodyType === 'B';
+    const bodyType = appearance?.bodyType || 'A';
+    const isTypeB = bodyType === 'B';
+    const isTypeC = bodyType === 'C';
     const skin = SKIN_TONES[appearance?.skinTone ?? 0];
     const hair = HAIR_COLORS[appearance?.hairColor ?? 0];
     const hairStyle = appearance?.hairStyle ?? 1;
@@ -165,11 +167,15 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                 )}
 
                 {/* === LEGS === */}
-                <path d={isTypeB
+                <path d={isTypeC
+                    ? "M82 200 L80 270 Q80 282 87 282 L94 282 Q98 282 97 276 L94 200"
+                    : isTypeB
                     ? "M80 198 L78 272 Q78 282 86 282 L94 282 Q98 282 97 276 L93 198"
                     : "M82 198 L79 270 Q79 282 86 282 L94 282 Q99 282 98 276 L94 198"}
                       fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" />
-                <path d={isTypeB
+                <path d={isTypeC
+                    ? "M106 200 L104 270 Q104 282 111 282 L118 282 Q122 282 121 276 L120 200"
+                    : isTypeB
                     ? "M107 198 L105 272 Q105 282 112 282 L120 282 Q124 282 123 276 L121 198"
                     : "M106 198 L103 270 Q103 282 110 282 L118 282 Q123 282 122 276 L120 198"}
                       fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" />
@@ -201,11 +207,15 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                 )}
 
                 {/* === TORSO === */}
-                <path d={isTypeB
+                <path d={isTypeC
+                    ? "M70 88 Q100 82 130 88 L124 140 Q100 136 76 140 L74 200 Q100 208 126 200 L124 140 Z"
+                    : isTypeB
                     ? "M64 88 Q100 82 136 88 L128 200 Q100 206 72 200 Z"
                     : "M68 88 Q100 82 132 88 L126 200 Q100 206 74 200 Z"}
                       fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="1" />
-                <path d={isTypeB
+                <path d={isTypeC
+                    ? "M70 88 Q100 82 100 88 L100 140 Q88 138 76 140 L74 200 Q88 204 100 200 L100 140 Z"
+                    : isTypeB
                     ? "M64 88 Q100 82 100 88 L100 200 Q86 203 72 200 Z"
                     : "M68 88 Q100 82 100 88 L100 200 Q86 204 74 200 Z"}
                       fill="url(#av-hl)" />
@@ -219,13 +229,15 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                     const s = getRarityStyle(chest)!;
                     return (
                         <g filter={s.intensity > 0.5 ? "url(#av-soft)" : undefined}>
-                            <path d={isTypeB
+                            <path d={isTypeC
+                                ? "M72 92 Q100 86 128 92 L122 175 Q100 180 78 175 Z"
+                                : isTypeB
                                 ? "M70 92 Q100 86 130 92 L126 175 Q100 180 74 175 Z"
                                 : "M72 92 Q100 86 128 92 L124 175 Q100 180 76 175 Z"}
                                   fill={s.primary} fillOpacity="0.3" stroke={s.primary} strokeWidth="1" strokeOpacity="0.6" />
                             {/* Shoulder plates */}
-                            <path d={`M${isTypeB ? 64 : 68} 88 Q${isTypeB ? 56 : 60} 86 ${isTypeB ? 56 : 60} 96 L${isTypeB ? 66 : 70} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
-                            <path d={`M${isTypeB ? 136 : 132} 88 Q${isTypeB ? 144 : 140} 86 ${isTypeB ? 144 : 140} 96 L${isTypeB ? 134 : 130} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
+                            <path d={`M${isTypeC ? 70 : isTypeB ? 64 : 68} 88 Q${isTypeC ? 62 : isTypeB ? 56 : 60} 86 ${isTypeC ? 62 : isTypeB ? 56 : 60} 96 L${isTypeC ? 72 : isTypeB ? 66 : 70} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
+                            <path d={`M${isTypeC ? 130 : isTypeB ? 136 : 132} 88 Q${isTypeC ? 138 : isTypeB ? 144 : 140} 86 ${isTypeC ? 138 : isTypeB ? 144 : 140} 96 L${isTypeC ? 128 : isTypeB ? 134 : 130} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
                             <line x1="80" y1="115" x2="120" y2="115" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.3" />
                             <line x1="82" y1="140" x2="118" y2="140" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.2" />
                             <circle cx="100" cy="120" r="5" fill="none" stroke={s.primary} strokeWidth="1.2" strokeOpacity="0.7" />
@@ -258,11 +270,15 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                 })() : <line x1="74" y1="195" x2="126" y2="195" stroke={`hsl(${hue + 240},15%,25%)`} strokeWidth="1.5" />}
 
                 {/* === ARMS === */}
-                <path d={isTypeB
+                <path d={isTypeC
+                    ? "M70 90 L52 94 Q46 96 46 103 L45 155 Q45 160 49 160 L59 160 L66 155 Z"
+                    : isTypeB
                     ? "M64 90 L46 94 Q40 96 40 103 L40 155 Q40 160 44 160 L56 160 L64 155 Z"
                     : "M68 90 L50 94 Q44 96 43 103 L42 155 Q42 160 46 160 L58 160 L66 155 Z"}
                       fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" />
-                <path d={isTypeB
+                <path d={isTypeC
+                    ? "M130 90 L148 94 Q154 96 154 103 L155 155 Q155 160 151 160 L141 160 L134 155 Z"
+                    : isTypeB
                     ? "M136 90 L154 94 Q160 96 160 103 L160 155 Q160 160 156 160 L144 160 L136 155 Z"
                     : "M132 90 L150 94 Q156 96 157 103 L158 155 Q158 160 154 160 L142 160 L134 155 Z"}
                       fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" />

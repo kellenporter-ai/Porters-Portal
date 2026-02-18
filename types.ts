@@ -170,14 +170,14 @@ export interface User {
       [classType: string]: {
         inventory: RPGItem[];
         equipped: Partial<Record<EquipmentSlot, RPGItem>>;
-        appearance?: { bodyType: 'A' | 'B'; hue: number; skinTone?: number; hairStyle?: number; hairColor?: number };
+        appearance?: { bodyType: 'A' | 'B' | 'C'; hue: number; skinTone?: number; hairStyle?: number; hairColor?: number };
       };
     };
     // === LEGACY GLOBAL FIELDS (deprecated — kept for migration) ===
     inventory?: RPGItem[];
     equipped?: Partial<Record<EquipmentSlot, RPGItem>>;
     appearance?: {
-        bodyType: 'A' | 'B';
+        bodyType: 'A' | 'B' | 'C';
         hue: number; // 0-360
         skinTone?: number; // 0-7 index into SKIN_TONES palette
         hairStyle?: number; // 0-5 index into hair styles

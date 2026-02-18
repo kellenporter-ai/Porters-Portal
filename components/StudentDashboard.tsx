@@ -79,7 +79,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewHue, setPreviewHue] = useState<number | null>(null);
-  const [previewBodyType, setPreviewBodyType] = useState<'A' | 'B' | null>(null);
+  const [previewBodyType, setPreviewBodyType] = useState<'A' | 'B' | 'C' | null>(null);
   const [previewSkinTone, setPreviewSkinTone] = useState<number | null>(null);
   const [previewHairStyle, setPreviewHairStyle] = useState<number | null>(null);
   const [previewHairColor, setPreviewHairColor] = useState<number | null>(null);
@@ -198,14 +198,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(() => {});
   };
 
-  const handleCustomizeSave = async (appearance: { hue: number; bodyType: 'A' | 'B'; skinTone: number; hairStyle: number; hairColor: number }) => {
+  const handleCustomizeSave = async (appearance: { hue: number; bodyType: 'A' | 'B' | 'C'; skinTone: number; hairStyle: number; hairColor: number }) => {
       try {
           await dataService.updateUserAppearance(user.id, appearance, activeClass);
           toast.success('Profile updated!');
+          setShowCustomize(false);
+          setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null);
       } catch {
           toast.error('Failed to save — try again');
       }
-      setShowCustomize(false);
   };
 
   const enrolledClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
@@ -1091,12 +1092,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
                       <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Body Frame</label>
                       <div className="flex justify-center gap-2">
-                          {(['A', 'B'] as const).map(type => {
+                          {(['A', 'B', 'C'] as const).map(type => {
                               const isActive = (previewBodyType ?? classProfile.appearance?.bodyType ?? 'A') === type;
                               return (
                                   <button key={type} onClick={() => setPreviewBodyType(type)}
-                                      className={`px-4 py-2 rounded-xl border-2 transition-all font-bold text-xs ${isActive ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 text-gray-500 hover:border-white/20'}`}>
-                                      {type === 'A' ? 'Alpha' : 'Beta'}
+                                      className={`px-3 py-2 rounded-xl border-2 transition-all font-bold text-xs ${isActive ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 text-gray-500 hover:border-white/20'}`}>
+                                      {type === 'A' ? 'Alpha' : type === 'B' ? 'Beta' : 'Femme'}
                                   </button>
                               );
                           })}
@@ -1123,16 +1124,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       className="flex-1 py-3 bg-white/5 border border-white/10 text-gray-400 font-bold rounded-xl hover:bg-white/10 transition">
                       Cancel
                   </button>
-                  <button onClick={() => {
-                      handleCustomizeSave({
+                  <button onClick={() => handleCustomizeSave({
                           hue: previewHue ?? classProfile.appearance?.hue ?? 0,
                           bodyType: previewBodyType ?? classProfile.appearance?.bodyType ?? 'A',
                           skinTone: previewSkinTone ?? classProfile.appearance?.skinTone ?? 0,
                           hairStyle: previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1,
                           hairColor: previewHairColor ?? classProfile.appearance?.hairColor ?? 0,
-                      });
-                      setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null);
-                  }}
+                      })}
                       className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-500 transition shadow-lg shadow-purple-900/20">
                       Save Profile
                   </button>

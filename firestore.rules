@@ -45,27 +45,23 @@ service cloud.firestore {
       // Students can ONLY update these specific safe fields on their own profile.
       // All gamification economy fields (xp, level, currency, inventory, equipped)
       // are modified exclusively by Cloud Functions.
-      // SECURITY NOTE: gamification.classProfiles is allowed for appearance saves,
-      // but Firestore affectedKeys() cannot distinguish sub-paths. This means a
-      // technically sophisticated student could write to inventory/equipped via
-      // direct Firestore calls. The Cloud Functions remain authoritative for the
-      // RPG economy, and any injected items would be overwritten on next legitimate
-      // server-side operation. A future improvement would be to move appearance
-      // saves to a Cloud Function as well.
+      //
+      // Two-level check: affectedKeys() returns TOP-LEVEL keys only, so we first
+      // gate on the top-level field ('gamification'), then drill into it to verify
+      // only safe sub-fields changed (codename, appearance, classProfiles, etc.).
+      //
+      // SECURITY NOTE: classProfiles is allowed for appearance saves, but Firestore
+      // affectedKeys() cannot distinguish deeper sub-paths within classProfiles.
+      // Cloud Functions remain authoritative for the RPG economy.
       allow update: if isAdmin()
-        || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly([
-              'settings',
-              'classType',
-              'lastLoginAt',
-              'gamification.codename',
-              'gamification.privacyMode', 
-              'gamification.lastLevelSeen',
-              'gamification.appearance',
-              'gamification.classProfiles',
-              'gamification.activeQuests',
-              'mutedUntil'
-            ]));
+        || (isOwner(userId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification', 'mutedUntil'])
+            && (
+              !request.resource.data.diff(resource.data).affectedKeys().hasAny(['gamification'])
+              || request.resource.data.gamification.diff(resource.data.gamification).affectedKeys()
+                  .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeQuests'])
+            ));
       
       // Only admin can delete user profiles
       allow delete: if isAdmin();

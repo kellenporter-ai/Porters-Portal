@@ -8,7 +8,7 @@ import { User, RPGItem, EquipmentSlot } from '../types';
 export interface ClassProfile {
     inventory: RPGItem[];
     equipped: Partial<Record<EquipmentSlot, RPGItem>>;
-    appearance: { bodyType: 'A' | 'B'; hue: number; skinTone?: number; hairStyle?: number; hairColor?: number };
+    appearance: { bodyType: 'A' | 'B' | 'C'; hue: number; skinTone?: number; hairStyle?: number; hairColor?: number };
 }
 
 export function getClassProfile(user: User, classType: string): ClassProfile {
