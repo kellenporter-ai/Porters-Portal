@@ -1,5 +1,5 @@
 
-import { Achievement, AchievementCategory, SkillNode, SpecializationType, ItemSet, FortuneWheelPrize, DailyChallenge, ChallengeType, EvolutionTier, SeasonalCosmetic } from '../types';
+import { Achievement, AchievementCategory, SkillNode, SpecializationType, ItemSet, FortuneWheelPrize, DailyChallenge, EvolutionTier, SeasonalCosmetic } from '../types';
 
 // ========================================
 // ACHIEVEMENT DEFINITIONS

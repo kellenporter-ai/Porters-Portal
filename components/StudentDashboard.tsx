@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Trophy, Sparkles, Dices, GitBranch, GraduationCap, Eye } from 'lucide-react';
@@ -690,7 +690,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <div className="text-center py-20 text-gray-500 italic">No resources released for this class node.</div>
                     ) : (
                         <div className="space-y-4">
-                            {(Object.entries(unitGroups) as [string, (Assignment & { lastEngagement: string | null })[]][]).sort().map(([unit, items]) => (
+                            {(Object.entries(unitGroups) as [string, (Assignment & { lastEngagement: string | null; engagementTime: number })[]][]).sort().map(([unit, items]) => (
                                 <div key={unit} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
                                     <button onClick={() => toggleUnit(unit)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition">
                                         <div className="flex items-center gap-3">

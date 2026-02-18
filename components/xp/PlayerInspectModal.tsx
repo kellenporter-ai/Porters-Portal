@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../../types';
 import { dataService } from '../../services/dataService';
-import { getRankDetails, getGearScore, calculatePlayerStats, getAssetColors } from '../../lib/gamification';
+import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColors } from '../../lib/gamification';
 import { getEvolutionTier, getActiveSetBonuses } from '../../lib/achievements';
-import { getProfileData } from '../../lib/classProfile';
+import { getClassProfile } from '../../lib/classProfile';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
 import { X, Shield, Zap, Trophy, Star, Target } from 'lucide-react';
 
@@ -58,9 +58,9 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
   const level = gam.level || 1;
   const rankDetails = getRankDetails(level);
   const evolutionTier = getEvolutionTier(level);
-  const { equipped, appearance } = getProfileData(player, classType);
-  const stats = calculatePlayerStats(equipped);
-  const gearScore = getGearScore(equipped);
+  const { equipped, appearance } = getClassProfile(player, classType);
+  const stats = calculatePlayerStats({ gamification: { ...gam, equipped } } as any);
+  const gearScore = calculateGearScore(equipped);
   const classXP = gam.classXp?.[classType] || 0;
 
   const equippedItems = Object.values(equipped).filter(Boolean) as RPGItem[];

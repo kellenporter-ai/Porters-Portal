@@ -1,11 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { User, ChatFlag, Announcement, Assignment, Submission } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronRight, X } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
-import { getRankDetails, calculateGearScore } from '../lib/gamification';
 import StudentDetailDrawer from './StudentDetailDrawer';
 
 interface TeacherDashboardProps {

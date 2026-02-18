@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { User, Submission, Assignment } from '../types';
-import { X, Zap, Clock, BookOpen, Trophy, Shield, Crosshair, Flame, Package } from 'lucide-react';
+import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 

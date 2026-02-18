@@ -12,7 +12,7 @@ interface DailyChallengesPanelProps {
   classType?: string;
 }
 
-const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ userId, activeChallenges, classType }) => {
+const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChallenges, classType }) => {
   const [challenges, setChallenges] = useState<DailyChallenge[]>([]);
   const [claiming, setClaiming] = useState<string | null>(null);
   const toast = useToast();

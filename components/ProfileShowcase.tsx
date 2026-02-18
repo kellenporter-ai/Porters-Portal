@@ -1,9 +1,9 @@
 
 import React, { useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../types';
-import { getRankDetails, getGearScore, calculatePlayerStats, getAssetColors } from '../lib/gamification';
+import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColors } from '../lib/gamification';
 import { getEvolutionTier, getActiveSetBonuses, ACHIEVEMENTS } from '../lib/achievements';
-import { getProfileData } from '../lib/classProfile';
+import { getClassProfile } from '../lib/classProfile';
 import OperativeAvatar from './dashboard/OperativeAvatar';
 import { Shield, Zap, Trophy, Star, Target, Flame, Swords, GraduationCap, Copy, Check } from 'lucide-react';
 
@@ -28,9 +28,9 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
   const level = gam.level || 1;
   const rankDetails = getRankDetails(level);
   const evolutionTier = getEvolutionTier(level);
-  const { equipped, appearance } = getProfileData(user, classType);
-  const stats = calculatePlayerStats(equipped);
-  const gearScore = getGearScore(equipped);
+  const { equipped, appearance } = getClassProfile(user, classType);
+  const stats = calculatePlayerStats({ gamification: { ...gam, equipped } } as any);
+  const gearScore = calculateGearScore(equipped);
   const classXP = gam.classXp?.[classType] || 0;
   const isPrivate = user.settings?.privacyMode;
   const displayName = isPrivate ? (gam.codename || 'Unknown Agent') : user.name;

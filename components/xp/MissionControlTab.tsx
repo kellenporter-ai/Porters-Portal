@@ -1,12 +1,12 @@
 import React from 'react';
-import { Quest } from '../../types';
+import { Quest, User } from '../../types';
 import { Target, X, Check, Dice5 } from 'lucide-react';
 
 interface Deployment {
-    user: { id: string; name: string; avatarUrl: string; classType?: string };
+    user: User;
     quest: Quest;
     status: string;
-    roll: number;
+    roll?: number;
     acceptedAt?: string;
 }
 

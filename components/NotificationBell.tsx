@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Notification } from '../types';
-import { Bell, CheckCheck, Zap, Trophy, Crosshair, Megaphone, Package, ArrowUp, Radio } from 'lucide-react';
+import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { sfx } from '../lib/sfx';
 

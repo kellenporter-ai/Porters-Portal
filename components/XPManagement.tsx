@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot } from '../types';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity } from '../types';
 import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, Award, Rocket, Filter, Briefcase } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { calculateGearScore } from '../lib/gamification';
