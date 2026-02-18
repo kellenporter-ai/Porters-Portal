@@ -30,11 +30,11 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
   const treeNodes = SKILL_NODES.filter(n => n.specialization === activeSpec);
   const tiers = [1, 2, 3, 4];
 
-  const handleUnlock = async (skillId: string, cost: number) => {
+  const handleUnlock = async (skillId: string) => {
     if (unlocking) return;
     setUnlocking(skillId);
     try {
-      await dataService.unlockSkill(skillId, activeSpec, cost);
+      await dataService.unlockSkill(skillId, activeSpec);
       sfx.skillUnlock();
       toast.success('Skill unlocked!');
     } catch (err) {
@@ -108,7 +108,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                           ? 'border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer'
                           : 'border-white/5 bg-white/3 opacity-50'
                       }`}
-                      onClick={() => canUnlock && handleUnlock(node.id, node.cost)}
+                      onClick={() => canUnlock && handleUnlock(node.id)}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm">{node.icon}</span>

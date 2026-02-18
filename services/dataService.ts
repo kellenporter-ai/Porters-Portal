@@ -902,8 +902,8 @@ export const dataService = {
 
   // --- SKILL TREE ---
 
-  unlockSkill: async (skillId: string, specialization: string, cost: number) => {
-    const result = await callUnlockSkill({ skillId, specialization, cost });
+  unlockSkill: async (skillId: string, specialization: string) => {
+    const result = await callUnlockSkill({ skillId, specialization });
     return result.data as { success: boolean; remainingPoints: number };
   },
 

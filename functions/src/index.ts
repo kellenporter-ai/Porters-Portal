@@ -414,7 +414,7 @@ export const awardXP = onCall(async (request) => {
 
   // Non-admin students can only earn positive XP, capped per-event
   if (effectiveUserId === uid && !request.auth?.token?.admin) {
-    if (xpAmount < 0 || xpAmount > 500) {
+    if (xpAmount < 0 || xpAmount > MAX_XP_PER_SUBMISSION) {
       throw new HttpsError("invalid-argument", "XP amount out of range.");
     }
   }
@@ -1000,7 +1000,7 @@ export const submitEngagement = onCall(async (request) => {
   let leveledUp = false;
   await db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
-    if (!userSnap.exists) return;
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
     const result = buildXPUpdates(data, xpEarned, effectiveClass);
@@ -1487,10 +1487,28 @@ export const spinFortuneWheel = onCall(async (request) => {
 // SKILL TREE
 // ==========================================
 
+// Server-side skill cost map — prevents client from sending a fake cost
+const SKILL_COSTS: Record<string, number> = {
+  // THEORIST
+  th_1: 1, th_2: 1, th_3: 2, th_4: 2, th_5: 3, th_6: 5,
+  // EXPERIMENTALIST
+  ex_1: 1, ex_2: 1, ex_3: 2, ex_4: 2, ex_5: 3, ex_6: 5,
+  // ANALYST
+  an_1: 1, an_2: 1, an_3: 2, an_4: 2, an_5: 3, an_6: 5,
+  // DIPLOMAT
+  di_1: 1, di_2: 1, di_3: 2, di_4: 2, di_5: 3, di_6: 5,
+};
+
 export const unlockSkill = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const { skillId, specialization } = request.data;
   if (!skillId) throw new HttpsError("invalid-argument", "Skill ID required.");
+
+  // Look up cost server-side — never trust client-sent cost
+  const cost = SKILL_COSTS[skillId];
+  if (cost === undefined) {
+    throw new HttpsError("invalid-argument", `Unknown skill: ${skillId}`);
+  }
 
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
@@ -1518,9 +1536,6 @@ export const unlockSkill = onCall(async (request) => {
         "Cannot unlock skills from a different specialization.");
     }
 
-    // Validate cost (simplified — real cost would be looked up from skill defs)
-    // Cost is encoded in the request since skill defs are shared
-    const cost = request.data.cost || 1;
     if (skillPoints < cost) {
       throw new HttpsError("failed-precondition", "Insufficient skill points.");
     }

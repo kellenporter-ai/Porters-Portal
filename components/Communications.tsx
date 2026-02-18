@@ -328,9 +328,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 <>
                     {/* Bug Fix #1: Added top padding to container and adjusted toolbar positioning logic */}
                     <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pt-12 space-y-6 custom-scrollbar scroll-smooth">
-                        {(activeTab === 'Bookmarks' ? pinnedMessages : messages).map((msg, idx) => {
+                        {(activeTab === 'Bookmarks' ? pinnedMessages : messages).map((msg, idx, arr) => {
                             const isMe = msg.senderId === user.id;
-                            const isContinuation = idx > 0 && messages[idx - 1].senderId === msg.senderId && (new Date(msg.timestamp).getTime() - new Date(messages[idx - 1].timestamp).getTime() < 300000);
+                            const isContinuation = idx > 0 && arr[idx - 1].senderId === msg.senderId && (new Date(msg.timestamp).getTime() - new Date(arr[idx - 1].timestamp).getTime() < 300000);
                             
                             return (
                                 <div key={msg.id} className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isContinuation ? 'mt-1' : 'mt-4'}`}>
