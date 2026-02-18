@@ -18,8 +18,13 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
   const toast = useToast();
 
   useEffect(() => {
-    const unsub = dataService.subscribeToDailyChallenges(setChallenges);
-    return () => unsub();
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = dataService.subscribeToDailyChallenges(setChallenges);
+    } catch {
+      // Firestore permission error — feature not available for this user
+    }
+    return () => unsub?.();
   }, []);
 
   const getProgress = (challengeId: string): DailyChallengeProgress | undefined => {

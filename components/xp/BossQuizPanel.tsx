@@ -19,8 +19,13 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType }) => {
   const toast = useToast();
 
   useEffect(() => {
-    const unsub = dataService.subscribeToBossQuizzes(classType, setQuizzes);
-    return () => unsub();
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = dataService.subscribeToBossQuizzes(classType, setQuizzes);
+    } catch {
+      // Firestore permission error — feature not available for this user
+    }
+    return () => unsub?.();
   }, [classType]);
 
   const handleAnswer = async (quizId: string, questionId: string, answer: number) => {

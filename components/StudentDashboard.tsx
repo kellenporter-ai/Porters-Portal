@@ -91,24 +91,29 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, [user.gamification?.level, user.gamification?.lastLevelSeen, user.gamification?.inventory]);
 
   useEffect(() => {
-    const unsubEvents = dataService.subscribeToXPEvents((events) => {
-      const active = events.find(e => 
-        e.isActive && (e.type === 'GLOBAL' || e.targetClass === activeClass)
-      );
-      setActiveEvent(active || null);
-    });
+    const unsubs: (() => void)[] = [];
+    try {
+      unsubs.push(dataService.subscribeToXPEvents((events) => {
+        const active = events.find(e =>
+          e.isActive && (e.type === 'GLOBAL' || e.targetClass === activeClass)
+        );
+        setActiveEvent(active || null);
+      }));
+    } catch { /* permission error — not available */ }
 
-    const unsubQuests = dataService.subscribeToQuests((quests) => {
-        setAvailableQuests(quests.filter(q => {
-            if (!q.isActive) return false;
-            const now = new Date();
-            if (q.startsAt && new Date(q.startsAt) > now) return false;
-            if (q.expiresAt && new Date(q.expiresAt) < now) return false;
-            return true;
-        }));
-    });
+    try {
+      unsubs.push(dataService.subscribeToQuests((quests) => {
+          setAvailableQuests(quests.filter(q => {
+              if (!q.isActive) return false;
+              const now = new Date();
+              if (q.startsAt && new Date(q.startsAt) > now) return false;
+              if (q.expiresAt && new Date(q.expiresAt) < now) return false;
+              return true;
+          }));
+      }));
+    } catch { /* permission error — not available */ }
 
-    return () => { unsubEvents(); unsubQuests(); };
+    return () => unsubs.forEach(u => u());
   }, [activeClass]);
 
   // Detect XP changes and show floating animation
@@ -127,8 +132,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       prevXpRef.current = classXp;
   }, [classXp]);
 
-  // Daily login reward — auto-claim on mount
+  // Daily login reward — single attempt on mount, no retry
+  const dailyLoginAttempted = React.useRef(false);
   useEffect(() => {
+    if (dailyLoginAttempted.current) return;
+    dailyLoginAttempted.current = true;
     const today = new Date().toISOString().split('T')[0];
     const lastClaim = user.gamification?.lastLoginRewardDate;
     if (lastClaim !== today && !dailyLoginClaimed) {
@@ -138,20 +146,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           sfx.dailyReward();
           toast.success(`Daily login: +${result.xpReward} XP, +${result.fluxReward} Flux (${result.streak}-day streak!)`);
         }
-      }).catch(() => { /* silent fail — not critical */ });
+      }).catch(() => { /* Cloud function not deployed yet — silent */ });
     }
   }, []); // Run once on mount
 
-  // Update engagement streak when viewing dashboard
+  // Update engagement streak — single attempt, no retry
+  const streakAttempted = React.useRef(false);
   useEffect(() => {
+    if (streakAttempted.current) return;
+    streakAttempted.current = true;
     dataService.updateEngagementStreak().catch(() => { /* silent */ });
   }, []);
 
   // Announcements
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   useEffect(() => {
-    const unsub = dataService.subscribeToAnnouncements(setAnnouncements);
-    return () => unsub();
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = dataService.subscribeToAnnouncements(setAnnouncements);
+    } catch { /* permission error — not available */ }
+    return () => unsub?.();
   }, []);
 
   const visibleAnnouncements = useMemo(() => {
@@ -182,6 +196,82 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const enrolledClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
   const playerStats = useMemo(() => calculatePlayerStats(user), [user]);
   const gearScore = useMemo(() => calculateGearScore(user.gamification?.equipped), [user.gamification?.equipped]);
+
+  // Compute achievement progress client-side from available user data
+  const computedProgress = useMemo(() => {
+    const gam = user.gamification || {} as any;
+    const serverProgress: Record<string, number> = gam.achievementProgress || {};
+    const progress: Record<string, number> = { ...serverProgress };
+    const totalXp = gam.xp || 0;
+    const level = gam.level || 1;
+    const inventory = gam.inventory || [];
+    const completedQuests = gam.completedQuests || [];
+    const streak = gam.engagementStreak || 0;
+    const loginStreak = gam.loginStreak || 0;
+    const tutoringDone = gam.tutoringSessionsCompleted || 0;
+    const bossKills = gam.bossesDefeated || 0;
+    const challengesDone = gam.challengesCompleted || 0;
+    const craftCount = gam.itemsCrafted || 0;
+
+    const setProgress = (id: string, val: number) => {
+      // Only override if server doesn't have it or client value is higher
+      if (!progress[id] || val > progress[id]) progress[id] = val;
+    };
+
+    // XP_TOTAL
+    setProgress('first_steps', totalXp);
+    setProgress('xp_5k', totalXp);
+    setProgress('xp_25k', totalXp);
+
+    // LEVEL_REACHED
+    setProgress('rising_star', level);
+    setProgress('veteran', level);
+    setProgress('elite', level);
+    setProgress('legend', level);
+
+    // ITEMS_COLLECTED
+    setProgress('collector_10', inventory.length);
+    setProgress('collector_50', inventory.length);
+
+    // GEAR_SCORE
+    setProgress('gear_score_100', gearScore);
+    setProgress('gear_score_500', gearScore);
+
+    // QUESTS_COMPLETED
+    setProgress('first_mission', completedQuests.length);
+    setProgress('mission_5', completedQuests.length);
+    setProgress('mission_20', completedQuests.length);
+
+    // BOSS_KILLS
+    setProgress('boss_slayer', bossKills);
+
+    // STREAK_WEEKS
+    setProgress('streak_3', streak);
+    setProgress('streak_8', streak);
+    setProgress('streak_16', streak);
+
+    // LOGIN_STREAK
+    setProgress('login_7', loginStreak);
+    setProgress('login_30', loginStreak);
+
+    // CHALLENGES_COMPLETED
+    setProgress('challenges_10', challengesDone);
+
+    // TUTORING_SESSIONS
+    setProgress('tutor_1', tutoringDone);
+    setProgress('tutor_10', tutoringDone);
+
+    // STAT_THRESHOLD
+    setProgress('tech_50', playerStats.tech);
+    setProgress('focus_50', playerStats.focus);
+    setProgress('analysis_50', playerStats.analysis);
+    setProgress('charisma_50', playerStats.charisma);
+
+    // ITEMS_CRAFTED
+    setProgress('craft_10', craftCount);
+
+    return progress;
+  }, [user, gearScore, playerStats]);
 
   const radarData = [
       { subject: 'Tech', A: playerStats.tech, fullMark: 100 },
@@ -866,7 +956,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  <div key="achievements" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <AchievementPanel
                          unlockedAchievements={user.gamification?.unlockedAchievements || []}
-                         achievementProgress={user.gamification?.achievementProgress || {}}
+                         achievementProgress={computedProgress}
                      />
                  </div>
              )}

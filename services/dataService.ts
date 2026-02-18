@@ -5,7 +5,8 @@ import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { TEACHER_DISPLAY_NAME } from '../constants';
-// Gamification logic now runs server-side in Cloud Functions
+import { spinWheel } from '../lib/achievements';
+// Gamification logic runs server-side when Cloud Functions are deployed, with client-side fallbacks
 
 // Moderation now runs server-side in sendClassMessage Cloud Function
 
@@ -864,12 +865,30 @@ export const dataService = {
   // --- FORTUNE WHEEL ---
 
   spinFortuneWheel: async (classType?: string) => {
-    const result = await callSpinFortuneWheel({ classType });
-    return result.data as {
-      prizeId: string;
-      prizeType: string;
-      rewardDescription: string;
-    };
+    try {
+      const result = await callSpinFortuneWheel({ classType });
+      return result.data as {
+        prizeId: string;
+        prizeType: string;
+        rewardDescription: string;
+      };
+    } catch {
+      // Cloud Function not deployed — use client-side fallback
+      const prize = spinWheel();
+      const descriptions: Record<string, string> = {
+        XP: `${prize.value} XP`,
+        FLUX: `${prize.value} Cyber-Flux`,
+        ITEM: `${prize.rarity || 'Common'} Item`,
+        GEM: 'Random Gem',
+        SKILL_POINT: '1 Skill Point',
+        NOTHING: 'Better luck next time!',
+      };
+      return {
+        prizeId: prize.id,
+        prizeType: prize.type,
+        rewardDescription: descriptions[prize.type] || prize.label,
+      };
+    }
   },
 
   // --- SKILL TREE ---

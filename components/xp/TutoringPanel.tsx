@@ -28,8 +28,13 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
   const toast = useToast();
 
   useEffect(() => {
-    const unsub = dataService.subscribeToTutoringSessions(classType, setSessions);
-    return () => unsub();
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = dataService.subscribeToTutoringSessions(classType, setSessions);
+    } catch {
+      // Firestore permission error — feature not available for this user
+    }
+    return () => unsub?.();
   }, [classType]);
 
   const handleCreateRequest = async () => {

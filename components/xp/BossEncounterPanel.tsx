@@ -19,14 +19,18 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
   const toast = useToast();
 
   useEffect(() => {
-    const unsub = dataService.subscribeToBossEncounters((b) => {
-      // Filter to relevant bosses
-      const relevant = b.filter(boss =>
-        !boss.classType || boss.classType === classType || boss.classType === 'GLOBAL'
-      );
-      setBosses(relevant);
-    });
-    return () => unsub();
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = dataService.subscribeToBossEncounters((b) => {
+        const relevant = b.filter(boss =>
+          !boss.classType || boss.classType === classType || boss.classType === 'GLOBAL'
+        );
+        setBosses(relevant);
+      });
+    } catch {
+      // Firestore permission error — feature not available for this user
+    }
+    return () => unsub?.();
   }, [classType]);
 
   const handleAttack = async (bossId: string) => {
