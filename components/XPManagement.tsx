@@ -115,7 +115,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
               expiresAt: missionForm.durationHours > 0 ? expiryDate.toISOString() : null,
               itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
-              rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup
+              rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
+              targetClass: missionForm.targetClass || undefined
           };
           await dataService.saveQuest(newQuest);
           toast.success(`Mission "${newQuest.title}" deployed.`);
@@ -126,7 +127,14 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   };
 
   const handleToggleEvent = async (event: XPEvent) => { await dataService.saveXPEvent({ ...event, isActive: !event.isActive }); };
-  const handleToggleQuest = async (quest: Quest) => { await dataService.saveQuest({ ...quest, isActive: !quest.isActive }); };
+  const handleToggleQuest = async (quest: Quest) => {
+      const updated = { ...quest, isActive: !quest.isActive };
+      // When re-enabling, clear stale expiry so the mission isn't immediately filtered out
+      if (updated.isActive) {
+          updated.expiresAt = null;
+      }
+      await dataService.saveQuest(updated);
+  };
 
   const handleDeleteItem = async (user: User, item: RPGItem) => {
       if(!await confirm({ message: `Confiscate ${item.name} from ${user.name}? This cannot be undone.`, confirmLabel: "Confiscate" })) return;
@@ -278,7 +286,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                       <div className="flex gap-3 mt-2">
                         <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{quest.type}</span>
                         <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">+{quest.xpReward} XP</span>
-                        {quest.itemRewardRarity && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-purple-500/20">LOOT DROP</span>}
+                        {quest.itemRewardRarity && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">LOOT DROP</span>}
+                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quest.targetClass || 'All Classes'}</span>
                       </div>
                     </div>
                   </div>

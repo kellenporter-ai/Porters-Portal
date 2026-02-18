@@ -1,5 +1,5 @@
 import React from 'react';
-import { ItemRarity } from '../../types';
+import { ItemRarity, DefaultClassTypes } from '../../types';
 import Modal from '../Modal';
 
 export interface MissionFormState {
@@ -18,6 +18,7 @@ export interface MissionFormState {
     dieSides: number;
     consequence: string;
     isGroup: boolean;
+    targetClass: string;
 }
 
 export const INITIAL_MISSION_STATE: MissionFormState = {
@@ -35,7 +36,8 @@ export const INITIAL_MISSION_STATE: MissionFormState = {
     charismaReq: 0,
     dieSides: 20,
     consequence: '',
-    isGroup: false
+    isGroup: false,
+    targetClass: ''
 };
 
 interface MissionFormModalProps {
@@ -109,11 +111,11 @@ const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, fo
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Objective Category</label>
-                        <select 
-                            value={form.type} 
+                        <select
+                            value={form.type}
                             onChange={e => setForm({...form, type: e.target.value})}
                             className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none"
                         >
@@ -125,22 +127,37 @@ const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, fo
                         </select>
                     </div>
                     <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Class</label>
+                        <select
+                            value={form.targetClass}
+                            onChange={e => setForm({...form, targetClass: e.target.value})}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none"
+                        >
+                            <option value="">All Classes</option>
+                            {Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized').map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Starts At</label>
-                        <input 
-                            type="datetime-local" 
-                            value={form.startsAt} 
+                        <input
+                            type="datetime-local"
+                            value={form.startsAt}
                             onChange={e => setForm({...form, startsAt: e.target.value})}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none" 
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none"
                         />
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Duration (Hours)</label>
-                        <input 
-                            type="number" 
-                            value={form.durationHours} 
+                        <input
+                            type="number"
+                            value={form.durationHours}
                             onChange={e => setForm({...form, durationHours: parseInt(e.target.value)})}
-                            placeholder="0 (Infinite)" 
-                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none" 
+                            placeholder="0 (Infinite)"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none"
                         />
                     </div>
                 </div>

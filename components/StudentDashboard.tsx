@@ -123,11 +123,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
     try {
       unsubs.push(dataService.subscribeToQuests((quests) => {
+          const myClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
           setAvailableQuests(quests.filter(q => {
               if (!q.isActive) return false;
               const now = new Date();
               if (q.startsAt && new Date(q.startsAt) > now) return false;
               if (q.expiresAt && new Date(q.expiresAt) < now) return false;
+              // If quest targets a specific class, only show to students in that class
+              if (q.targetClass && !myClasses.includes(q.targetClass)) return false;
               return true;
           }));
       }));
