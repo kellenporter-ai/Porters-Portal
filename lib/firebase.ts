@@ -41,6 +41,7 @@ export const callAcceptQuest = httpsCallable(functions, 'acceptQuest');
 export const callDeployMission = httpsCallable(functions, 'deployMission');
 export const callResolveQuest = httpsCallable(functions, 'resolveQuest');
 export const callEquipItem = httpsCallable(functions, 'equipItem');
+export const callUnequipItem = httpsCallable(functions, 'unequipItem');
 export const callDisenchantItem = httpsCallable(functions, 'disenchantItem');
 export const callCraftItem = httpsCallable(functions, 'craftItem');
 export const callAdminUpdateInventory = httpsCallable(functions, 'adminUpdateInventory');

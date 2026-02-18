@@ -4,7 +4,7 @@ import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, Quest } 
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
-import { getRankDetails, calculatePlayerStats, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
+import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
@@ -210,8 +210,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   };
 
   const enrolledClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
-  const playerStats = useMemo(() => calculatePlayerStats(user), [user]);
-  const gearScore = useMemo(() => calculateGearScore(user.gamification?.equipped), [user.gamification?.equipped]);
+  const classProfile = useMemo(() => getClassProfile(user, activeClass), [user, activeClass]);
+  const equipped = classProfile.equipped;
+  const inventory = classProfile.inventory;
+  const playerStats = useMemo(() => {
+      const base = { tech: 10, focus: 10, analysis: 10, charisma: 10 };
+      const items: RPGItem[] = Object.values(equipped).filter(Boolean) as RPGItem[];
+      items.forEach(item => {
+          if (item.stats) Object.entries(item.stats).forEach(([key, val]) => { base[key as keyof typeof base] += (val as number); });
+      });
+      return base;
+  }, [equipped]);
+  const gearScore = useMemo(() => calculateGearScore(equipped), [equipped]);
 
   // Compute achievement progress client-side from available user data
   const computedProgress = useMemo(() => {
@@ -341,6 +351,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       }
   };
 
+  const handleUnequip = async (slot: string) => {
+      setIsProcessing(true);
+      try {
+          await dataService.unequipItem(user.id, slot, activeClass);
+          setInspectItem(null);
+          toast.success('Item unequipped.');
+      } catch (e) {
+          toast.error('Failed to unequip item.');
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
   const handleDisenchant = async () => {
       if(!inspectItem) return;
       const val = getDisenchantValue(inspectItem);
@@ -409,10 +432,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           toast.error('Deployment failed.');
       }
   };
-
-  const classProfile = useMemo(() => getClassProfile(user, activeClass), [user, activeClass]);
-  const equipped = classProfile.equipped;
-  const inventory = classProfile.inventory;
 
   // UI layout for slots
   const LEFT_SLOTS: EquipmentSlot[] = ['HEAD', 'HANDS', 'RING1', 'AMULET'];
@@ -1215,13 +1234,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                           );
                       })()}
 
-                      <button 
-                          onClick={() => handleEquip(inspectItem)} 
-                          className="col-span-2 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition shadow-lg shadow-green-900/20"
-                          disabled={isProcessing}
-                      >
-                          Equip Gear
-                      </button>
+                      {(() => {
+                          const equippedSlot = Object.entries(equipped).find(([, item]) => item && item.id === inspectItem.id)?.[0];
+                          return equippedSlot ? (
+                              <button
+                                  onClick={() => handleUnequip(equippedSlot)}
+                                  className="col-span-2 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition shadow-lg shadow-orange-900/20"
+                                  disabled={isProcessing}
+                              >
+                                  Unequip Gear
+                              </button>
+                          ) : (
+                              <button
+                                  onClick={() => handleEquip(inspectItem)}
+                                  className="col-span-2 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition shadow-lg shadow-green-900/20"
+                                  disabled={isProcessing}
+                              >
+                                  Equip Gear
+                              </button>
+                          );
+                      })()}
 
                       <div className="col-span-2 border-t border-white/10 my-2"></div>
                       <div className="col-span-2 text-center text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Fabrication Protocols</div>

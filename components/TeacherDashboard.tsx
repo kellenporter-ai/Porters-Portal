@@ -48,6 +48,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       }
   };
 
+  const handleMuteFromFlag = async (senderId: string, senderName: string) => {
+      if (await confirm({ message: `Mute ${senderName} for 1 hour?`, confirmLabel: "Mute", variant: "warning" })) {
+          await dataService.muteUser(senderId, 60);
+      }
+  };
+
   const handleExtendMute = async (userId: string, currentMute: string) => {
       const currentEnd = new Date(currentMute).getTime();
       // Add 1 hour to the current expiry
@@ -145,6 +151,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   </button>
                                   <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(() => {}); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
                                       <Trash2 className="w-3 h-3" /> Delete
+                                  </button>
+                                  <button onClick={() => handleMuteFromFlag(flag.senderId, flag.senderName)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" title="Mute 1hr">
+                                      <MicOff className="w-3 h-3" />
                                   </button>
                               </div>
                           </div>

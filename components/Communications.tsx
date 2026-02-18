@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { User, ChatMessage, DefaultClassTypes, Assignment, ClassConfig } from '../types';
-import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check } from 'lucide-react';
+import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check, MicOff } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 
@@ -177,6 +177,13 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       } catch (err) { console.error(err); }
   };
 
+  const handleMuteUser = async (senderId: string, senderName: string) => {
+      if (!await confirm({ message: `Mute ${senderName} for 1 hour?`, confirmLabel: "Mute", variant: "warning" })) return;
+      try {
+          await dataService.muteUser(senderId, 60);
+      } catch (err) { console.error(err); }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -278,6 +285,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                         <button onClick={() => handleDeleteFlagged(msg.id)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold transition">
                                             <Trash2 className="w-3.5 h-3.5" /> Delete
                                         </button>
+                                        <button onClick={() => handleMuteUser(msg.senderId, msg.senderName)} className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-xl text-xs font-bold transition" title="Mute 1hr">
+                                            <MicOff className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -313,6 +323,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                                 <>
                                                     <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-3.5 h-3.5" /></button>
                                                     <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition" aria-label="Delete message"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                    {msg.senderId !== user.id && <button onClick={() => handleMuteUser(msg.senderId, msg.senderName)} className="p-1 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition" aria-label="Mute user 1hr"><MicOff className="w-3.5 h-3.5" /></button>}
                                                 </>
                                             )}
                                         </div>

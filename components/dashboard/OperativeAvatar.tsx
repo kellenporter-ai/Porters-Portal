@@ -208,13 +208,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
 
                 {/* === TORSO === */}
                 <path d={isTypeC
-                    ? "M70 88 Q100 82 130 88 L124 140 Q100 136 76 140 L74 200 Q100 208 126 200 L124 140 Z"
+                    ? "M70 88 Q100 82 130 88 L122 140 L128 200 Q100 208 72 200 L78 140 Z"
                     : isTypeB
                     ? "M64 88 Q100 82 136 88 L128 200 Q100 206 72 200 Z"
                     : "M68 88 Q100 82 132 88 L126 200 Q100 206 74 200 Z"}
                       fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="1" />
                 <path d={isTypeC
-                    ? "M70 88 Q100 82 100 88 L100 140 Q88 138 76 140 L74 200 Q88 204 100 200 L100 140 Z"
+                    ? "M70 88 Q100 82 100 88 L100 200 Q86 204 72 200 L78 140 Z"
                     : isTypeB
                     ? "M64 88 Q100 82 100 88 L100 200 Q86 203 72 200 Z"
                     : "M68 88 Q100 82 100 88 L100 200 Q86 204 74 200 Z"}

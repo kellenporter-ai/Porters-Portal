@@ -608,6 +608,40 @@ export const equipItem = onCall(async (request) => {
 });
 
 /**
+ * unequipItem — Student moves an equipped item back to inventory.
+ */
+export const unequipItem = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { slot, classType } = request.data;
+  if (!slot) throw new HttpsError("invalid-argument", "Slot required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const paths = getProfilePaths(classType);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const { inventory, equipped } = getProfileData(data, classType);
+
+    const item = equipped[slot];
+    if (!item) throw new HttpsError("not-found", "No item in that slot.");
+
+    const newInventory = [...inventory, item];
+    const newEquipped = { ...equipped };
+    delete newEquipped[slot];
+
+    transaction.update(userRef, {
+      [paths.inventory]: newInventory,
+      [paths.equipped]: newEquipped,
+    });
+    return { unequipped: slot };
+  });
+});
+
+/**
  * disenchantItem — Student disenchants an item for Cyber-Flux.
  */
 export const disenchantItem = onCall(async (request) => {
