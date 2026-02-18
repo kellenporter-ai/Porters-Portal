@@ -273,6 +273,80 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // ANNOUNCEMENTS
+    // ==========================================
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // NOTIFICATIONS
+    // ==========================================
+    match /notifications/{notificationId} {
+      // Students can read their own notifications
+      allow read: if isAuthenticated() &&
+        (isAdmin() || resource.data.userId == request.auth.uid);
+      // Cloud Functions / admin create notifications
+      allow create: if isAdmin();
+      // Students can mark their own notifications as read
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // BOSS ENCOUNTERS & QUIZZES
+    // ==========================================
+    match /boss_encounters/{encounterId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /boss_quizzes/{quizId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // DAILY CHALLENGES
+    // ==========================================
+    match /daily_challenges/{challengeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // PEER TUTORING SESSIONS
+    // ==========================================
+    match /tutoring_sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      // Students can create tutoring requests with their own ID
+      allow create: if isAuthenticated() &&
+        request.resource.data.requesterId == request.auth.uid;
+      // Students can claim tutor role; Cloud Functions complete sessions
+      allow update: if isAdmin() || isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // KNOWLEDGE GATES
+    // ==========================================
+    match /knowledge_gates/{gateId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // SEASONAL COSMETICS
+    // ==========================================
+    match /seasonal_cosmetics/{cosmeticId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {
