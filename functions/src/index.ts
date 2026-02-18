@@ -1187,7 +1187,7 @@ export const awardQuestionXP = onCall(async (request) => {
     }
 
     const data = userSnap.data()!;
-    const { updates } = buildXPUpdates(data, serverXP, classType);
+    const { updates, newXP, leveledUp } = buildXPUpdates(data, serverXP, classType);
 
     // ALL WRITES AFTER READS
     const newAnswered = [...answeredQuestions, questionId];
@@ -1203,7 +1203,7 @@ export const awardQuestionXP = onCall(async (request) => {
       awarded: true,
       xpAmount: serverXP,
       newXP,
-      leveledUp: newLevel > currentLevel,
+      leveledUp,
     };
   }).catch((err) => {
     // Rec 2: Log unexpected errors for debugging
