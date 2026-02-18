@@ -52,6 +52,11 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-5 h-5" />
 };
 
+// Module-level state: survives ErrorBoundary remounts that reset useRef/useState
+let _acknowledgedLevel = 0;
+let _dailyLoginAttempted = false;
+let _streakAttempted = false;
+
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -65,7 +70,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // RPG State
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
-  const acknowledgedLevelRef = React.useRef<number>(user.gamification?.lastLevelSeen || 1);
+  // Initialize module-level acknowledged level on first render (but don't reset on remount)
+  if (_acknowledgedLevel === 0) {
+    _acknowledgedLevel = user.gamification?.lastLevelSeen || 1;
+  }
   const activeTab = studentTab;
   const [showCustomize, setShowCustomize] = useState(false);
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
@@ -79,10 +87,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   useEffect(() => {
       const currentLevel = user.gamification?.level || 1;
-      const lastSeen = Math.max(user.gamification?.lastLevelSeen || 1, acknowledgedLevelRef.current);
+      const lastSeen = Math.max(user.gamification?.lastLevelSeen || 1, _acknowledgedLevel);
 
       if (currentLevel > lastSeen) {
-          acknowledgedLevelRef.current = currentLevel;
+          _acknowledgedLevel = currentLevel;
           const inventory = user.gamification?.inventory || [];
           const latestItem = inventory.length > 0 ? inventory[inventory.length - 1] : null;
           setNewlyAcquiredItem(latestItem);
@@ -134,10 +142,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, [classXp]);
 
   // Daily login reward — single attempt on mount, no retry
-  const dailyLoginAttempted = React.useRef(false);
   useEffect(() => {
-    if (dailyLoginAttempted.current) return;
-    dailyLoginAttempted.current = true;
+    if (_dailyLoginAttempted) return;
+    _dailyLoginAttempted = true;
     const today = new Date().toISOString().split('T')[0];
     const lastClaim = user.gamification?.lastLoginRewardDate;
     if (lastClaim !== today && !dailyLoginClaimed) {
@@ -152,10 +159,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, []); // Run once on mount
 
   // Update engagement streak — single attempt, no retry
-  const streakAttempted = React.useRef(false);
   useEffect(() => {
-    if (streakAttempted.current) return;
-    streakAttempted.current = true;
+    if (_streakAttempted) return;
+    _streakAttempted = true;
     dataService.updateEngagementStreak().catch(() => { /* silent */ });
   }, []);
 
@@ -181,12 +187,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     await dataService.dismissAnnouncement(user.id, id);
   };
 
-  const handleLevelUpAck = async () => {
+  const handleLevelUpAck = () => {
       const currentLevel = user.gamification?.level || 1;
-      acknowledgedLevelRef.current = currentLevel;
+      _acknowledgedLevel = currentLevel;
       setShowLevelUp(false);
       setNewlyAcquiredItem(null);
-      await dataService.updateUserLastLevelSeen(user.id, currentLevel);
+      dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(() => {});
   };
 
   const handleCustomizeSave = async (hue: number, bodyType: 'A' | 'B') => {
