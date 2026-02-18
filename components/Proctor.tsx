@@ -4,7 +4,7 @@ import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Zap, CheckCircle2, XCircle } from 'lucide-react';
+import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle } from 'lucide-react';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
@@ -57,7 +57,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
   
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const iframeWrapperRef = useRef<HTMLDivElement>(null);
   const awardedQuestionsRef = useRef<Set<string>>(new Set());
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
@@ -211,6 +213,27 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
     return () => window.removeEventListener('message', handleMessage);
   }, [userId, assignmentId, classType, handleInteraction]);
 
+  // Fullscreen toggle for iframe
+  const toggleFullscreen = useCallback(() => {
+    const wrapper = iframeWrapperRef.current;
+    if (!wrapper) return;
+    if (!document.fullscreenElement) {
+      wrapper.requestFullscreen().catch(() => {
+        // Fullscreen API not available — fall back to CSS-only expand
+        setIsFullscreen(prev => !prev);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
+
+  // Sync state when exiting fullscreen via Escape key
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
   // LaTeX Rendering
   useEffect(() => {
     if (contentRef.current && htmlContent) {
@@ -249,6 +272,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                 )}
             </div>
             <div className="flex items-center gap-3">
+                {contentUrl && (
+                    <button
+                        onClick={toggleFullscreen}
+                        className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
+                        title={isFullscreen ? 'Exit full screen (Esc)' : 'Full screen'}
+                    >
+                        {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+                        {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+                    </button>
+                )}
                 {bridgeConnected && (
                     <div className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
                         <Zap className="w-3 h-3" /> XP Linked
@@ -279,14 +312,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
             {contentUrl ? (
-                <iframe 
-                    ref={iframeRef}
-                    src={contentUrl}
-                    className="w-full flex-1 border-none bg-white"
-                    title="Resource Viewer"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-                    onLoad={handleInteraction}
-                />
+                <div ref={iframeWrapperRef} className="flex-1 flex flex-col bg-white">
+                    <iframe
+                        ref={iframeRef}
+                        src={contentUrl}
+                        className="w-full flex-1 border-none bg-white"
+                        title="Resource Viewer"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                        onLoad={handleInteraction}
+                    />
+                </div>
             ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-600 italic">
                     <div className="text-center">
