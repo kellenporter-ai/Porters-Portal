@@ -15,7 +15,8 @@ service firebase.storage {
     }
 
     // EVIDENCE — students can only read/write to their own folder (10MB max)
-    match /evidence/{userId}/{fileName} {
+    // Upload path is evidence/{userId}/{weekId}/{fileName}
+    match /evidence/{userId}/{allPaths=**} {
       allow read: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
       allow write: if request.auth != null && request.auth.uid == userId
         && request.resource.size < 10 * 1024 * 1024;
