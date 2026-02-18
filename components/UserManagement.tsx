@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser } from '../types';
-import { ChevronDown, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Clock, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Clock, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
@@ -26,7 +26,31 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const [targetClass, setTargetClass] = useState<ClassType>(DefaultClassTypes.AP_PHYSICS);
   const [isWhitelistOpen, setIsWhitelistOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
-  
+  const [classSort, setClassSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({});
+
+  const handleClassSort = (type: string, col: string) => {
+    setClassSort(prev => {
+      const cur = prev[type] || { col: 'name', dir: 'asc' };
+      return { ...prev, [type]: { col, dir: cur.col === col ? (cur.dir === 'asc' ? 'desc' : 'asc') : 'asc' } };
+    });
+  };
+
+  const SortableHeader = ({ label, col, type, className }: { label: string; col: string; type: string; className?: string }) => {
+    const sort = classSort[type] || { col: 'name', dir: 'asc' };
+    const active = sort.col === col;
+    return (
+      <th className={`cursor-pointer select-none group p-4 ${className ?? ''}`} onClick={() => handleClassSort(type, col)}>
+        <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : 'justify-start'}`}>
+          <span>{label}</span>
+          <span className="flex flex-col gap-px">
+            <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${active && sort.dir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+            <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${active && sort.dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+          </span>
+        </div>
+      </th>
+    );
+  };
+
   // Whitelist Form
   const [newEmail, setNewEmail] = useState('');
   const [newClass, setNewClass] = useState<ClassType>(DefaultClassTypes.AP_PHYSICS);
@@ -276,10 +300,18 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const renderClassSection = (type: ClassType) => {
     const isUncategorized = type === DefaultClassTypes.UNCATEGORIZED;
     // Filter by enrolledClasses array, or catch "ghosts" in Uncategorized
-    const classStudents = students.filter(s => 
-        (s.enrolledClasses?.includes(type)) || 
+    const sort = classSort[type] || { col: 'name', dir: 'asc' };
+    const classStudents = [...students.filter(s =>
+        (s.enrolledClasses?.includes(type)) ||
         (isUncategorized && (!s.enrolledClasses || s.enrolledClasses.length === 0))
-    );
+    )].sort((a, b) => {
+        switch (sort.col) {
+            case 'status': { const av = a.isWhitelisted ? 1 : 0; const bv = b.isWhitelisted ? 1 : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
+            case 'lastSeen': { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
+            case 'xp': { const av = a.gamification?.classXp?.[type] || 0; const bv = b.gamification?.classXp?.[type] || 0; return sort.dir === 'asc' ? av - bv : bv - av; }
+            case 'name': default: return sort.dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        }
+    });
     const config = classConfigs.find(c => c.className === type);
 
     return (
@@ -335,10 +367,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       </button>
                   )}
                 </th>
-                <th className="text-left p-4">Operative</th>
-                <th className="text-center p-4">System Status</th>
-                <th className="text-center p-4">Last Seen</th>
-                <th className="text-center p-4">Class XP</th>
+                <SortableHeader label="Operative"     col="name"    type={type} />
+                <SortableHeader label="System Status" col="status"  type={type} className="text-center" />
+                <SortableHeader label="Last Seen"     col="lastSeen" type={type} className="text-center" />
+                <SortableHeader label="Class XP"      col="xp"      type={type} className="text-center" />
                 <th className="text-center p-4 w-12">Action</th>
               </tr>
             </thead>

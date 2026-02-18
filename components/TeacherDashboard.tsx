@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { User, ChatFlag, Announcement, Assignment, Submission } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2 } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
@@ -20,6 +20,25 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [now, setNow] = useState(Date.now());
   const [muteMenuFlagId, setMuteMenuFlagId] = useState<string | null>(null);
+  const [sortCol, setSortCol] = useState<string>('xp');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (col: string) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
+
+  const SortableHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => (
+    <th className={`cursor-pointer select-none group p-3 ${className ?? ''}`} onClick={() => handleSort(col)}>
+      <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
+        <span>{label}</span>
+        <span className="flex flex-col gap-px">
+          <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+          <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+        </span>
+      </div>
+    </th>
+  );
 
   useEffect(() => {
       const unsub = dataService.subscribeToChatFlags(setFlags);
@@ -252,19 +271,28 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <table className="w-full text-left">
                   <thead>
                       <tr className="border-b border-white/10 text-gray-400 text-sm">
-                          <th className="p-3">Student</th>
-                          <th className="p-3">Class</th>
-                          <th className="p-3 text-center">Last Seen</th>
-                          <th className="p-3 text-center">Total Time</th>
-                          <th className="p-3 text-center">Resources</th>
-                          <th className="p-3 text-right">XP</th>
+                          <SortableHeader label="Student"   col="name"      />
+                          <SortableHeader label="Class"     col="class"     />
+                          <SortableHeader label="Last Seen" col="lastSeen"  className="text-center" />
+                          <SortableHeader label="Total Time" col="time"     className="text-center" />
+                          <SortableHeader label="Resources" col="resources" className="text-center" />
+                          <SortableHeader label="XP"        col="xp"       className="text-right"  />
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                       {(() => {
+                          const sorted = [...students].sort((a, b) => {
+                              switch (sortCol) {
+                                  case 'name':      return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+                                  case 'class':     return sortDir === 'asc' ? (a.classType||'').localeCompare(b.classType||'') : (b.classType||'').localeCompare(a.classType||'');
+                                  case 'lastSeen':  { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sortDir === 'asc' ? av - bv : bv - av; }
+                                  case 'time':      { const av = a.stats?.totalTime || 0; const bv = b.stats?.totalTime || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+                                  case 'resources': { const av = a.stats?.problemsCompleted || 0; const bv = b.stats?.problemsCompleted || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+                                  case 'xp': default: { const av = a.gamification?.xp || 0; const bv = b.gamification?.xp || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+                              }
+                          });
                           const maxXP = Math.max(1, ...students.map(s => s.gamification?.xp || 0));
-                          return students
-                              .sort((a,b) => (b.gamification?.xp || 0) - (a.gamification?.xp || 0))
+                          return sorted
                               .map(student => {
                                   const xp = student.gamification?.xp || 0;
                                   const xpPct = Math.round((xp / maxXP) * 100);

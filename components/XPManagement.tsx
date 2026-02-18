@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity } from '../types';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, Award, Rocket, Filter, Briefcase, Pencil, Check, X } from 'lucide-react';
+import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -24,7 +24,25 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');
   const [filterSection, setFilterSection] = useState('All Sections');
-  const [sortOrder, setSortOrder] = useState<'XP_DESC' | 'XP_ASC' | 'NAME'>('XP_DESC');
+  const [sortCol, setSortCol] = useState<string>('xp');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleOperativesSort = (col: string) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
+
+  const OpSortHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => (
+    <th className={`cursor-pointer select-none group pb-4 ${className ?? ''}`} onClick={() => handleOperativesSort(col)}>
+      <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
+        <span>{label}</span>
+        <span className="flex flex-col gap-px">
+          <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+          <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+        </span>
+      </div>
+    </th>
+  );
   const [events, setEvents] = useState<XPEvent[]>([]);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [adjustingUser, setAdjustingUser] = useState<User | null>(null);
@@ -66,6 +84,14 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
     return Array.from(sections).sort();
   }, [students]);
 
+  const getAggregateGearScore = (student: User): number => {
+      const profiles = student.gamification?.classProfiles;
+      if (profiles && Object.keys(profiles).length > 0) {
+          return Object.values(profiles).reduce((sum, p) => sum + calculateGearScore(p.equipped), 0);
+      }
+      return calculateGearScore(student.gamification?.equipped);
+  };
+
   const filteredStudents = useMemo(() => {
     return students
       .filter(s => {
@@ -75,11 +101,16 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         return matchesSearch && matchesClass && matchesSection;
       })
       .sort((a, b) => {
-        if (sortOrder === 'XP_DESC') return (b.gamification?.xp || 0) - (a.gamification?.xp || 0);
-        if (sortOrder === 'XP_ASC') return (a.gamification?.xp || 0) - (b.gamification?.xp || 0);
-        return a.name.localeCompare(b.name);
+        switch (sortCol) {
+          case 'name':  return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+          case 'class': return sortDir === 'asc' ? (a.classType||'').localeCompare(b.classType||'') : (b.classType||'').localeCompare(a.classType||'');
+          case 'level': { const av = a.gamification?.level || 1; const bv = b.gamification?.level || 1; return sortDir === 'asc' ? av - bv : bv - av; }
+          case 'flux':  { const av = a.gamification?.currency || 0; const bv = b.gamification?.currency || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+          case 'gear':  { const av = getAggregateGearScore(a); const bv = getAggregateGearScore(b); return sortDir === 'asc' ? av - bv : bv - av; }
+          case 'xp': default: { const av = a.gamification?.xp || 0; const bv = b.gamification?.xp || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+        }
       });
-  }, [students, searchTerm, filterClass, filterSection, sortOrder]);
+  }, [students, searchTerm, filterClass, filterSection, sortCol, sortDir]);
 
   const handleAdjustXP = async (user: User, amount: number) => {
     try {
@@ -192,14 +223,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       await handleResolveQuest(deployment.user.id, deployment.quest, roll === sides, deployment.user.classType);
   };
 
-  const getAggregateGearScore = (student: User): number => {
-      const profiles = student.gamification?.classProfiles;
-      if (profiles && Object.keys(profiles).length > 0) {
-          return Object.values(profiles).reduce((sum, p) => sum + calculateGearScore(p.equipped), 0);
-      }
-      return calculateGearScore(student.gamification?.equipped);
-  };
-
   const handleSaveCodename = async (userId: string) => {
       try {
           await dataService.updateCodename(userId, codenameValue.trim().slice(0, 24));
@@ -260,17 +283,18 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                   </div>)}
-                  <div className="relative">
-                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'XP_DESC' | 'XP_ASC' | 'NAME')} className="bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50">
-                      <option value="XP_DESC">Highest XP</option><option value="XP_ASC">Lowest XP</option><option value="NAME">Alphabetical</option>
-                    </select>
-                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead><tr className="text-[10px] text-gray-500 uppercase font-black tracking-widest border-b border-white/5">
-                    <th className="pb-4 pl-4">Operative</th><th className="pb-4">Class</th><th className="pb-4 text-center">Level</th><th className="pb-4 text-center">XP</th><th className="pb-4 text-center">Flux</th><th className="pb-4 text-center">Gear</th><th className="pb-4 text-right pr-4">Actions</th>
+                    <OpSortHeader label="Operative" col="name"  className="pl-4" />
+                    <OpSortHeader label="Class"     col="class" />
+                    <OpSortHeader label="Level"     col="level" className="text-center" />
+                    <OpSortHeader label="XP"        col="xp"   className="text-center" />
+                    <OpSortHeader label="Flux"      col="flux"  className="text-center" />
+                    <OpSortHeader label="Gear"      col="gear"  className="text-center" />
+                    <th className="pb-4 text-right pr-4">Actions</th>
                   </tr></thead>
                   <tbody className="divide-y divide-white/5">
                     {filteredStudents.map(student => {
