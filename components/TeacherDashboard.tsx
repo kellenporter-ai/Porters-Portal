@@ -15,7 +15,7 @@ interface TeacherDashboardProps {
 
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments = [], submissions = [] }) => {
   const { confirm } = useConfirm();
-  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [now, setNow] = useState(Date.now());
@@ -282,7 +282,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       : 'bg-gray-600';
 
                                   return (
-                                      <tr key={student.id} className="hover:bg-white/5 transition cursor-pointer" onClick={() => setSelectedStudent(student)}>
+                                      <tr key={student.id} className="hover:bg-white/5 transition cursor-pointer" onClick={() => setSelectedStudentId(student.id)}>
                                           <td className="p-3 font-bold text-white">
                                               <div className="flex items-center gap-2">
                                                   <div className="relative">
@@ -320,14 +320,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       </div>
 
       {/* STUDENT DETAIL DRAWER */}
-      {selectedStudent && (
-        <StudentDetailDrawer
-          student={selectedStudent}
-          submissions={submissions.filter(s => s.userId === selectedStudent.id)}
-          assignments={assignments}
-          onClose={() => setSelectedStudent(null)}
-        />
-      )}
+      {selectedStudentId && (() => {
+        const liveStudent = students.find(s => s.id === selectedStudentId);
+        if (!liveStudent) return null;
+        return (
+          <StudentDetailDrawer
+            student={liveStudent}
+            submissions={submissions.filter(s => s.userId === selectedStudentId)}
+            assignments={assignments}
+            onClose={() => setSelectedStudentId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };

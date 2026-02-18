@@ -565,10 +565,10 @@ export const resolveQuest = onCall(async (request) => {
       // Quest item rewards (separate from level-up loot)
       if (quest.itemRewardRarity) {
         const currentLevel = gamification.level || 1;
-        const invKey = updates["gamification.inventory"] !== undefined
-          ? "gamification.inventory" : `gamification.classProfiles.${effectiveClass}.inventory`;
-        const currentInv = updates[invKey] || gamification.inventory || [];
-        updates[invKey] = [...currentInv, generateLoot(currentLevel, quest.itemRewardRarity), generateLoot(currentLevel)];
+        const paths = getProfilePaths(effectiveClass);
+        // Use whatever inventory buildXPUpdates already wrote (includes level-up loot), or the profile inventory
+        const currentInv = updates[paths.inventory] || getProfileData(data, effectiveClass || undefined).inventory;
+        updates[paths.inventory] = [...currentInv, generateLoot(currentLevel, quest.itemRewardRarity), generateLoot(currentLevel)];
       }
     }
 
@@ -1351,15 +1351,17 @@ export const claimDailyLogin = onCall(async (request) => {
     const dayIndex = (newStreak - 1) % 7;
     const reward = DAILY_LOGIN_REWARDS[dayIndex];
 
+    // Award XP via shared helper (must come first so we can layer currency on top)
+    const xpResult = buildXPUpdates(data, reward.xp);
     const updates: Record<string, unknown> = {
+      ...xpResult.updates,
       "gamification.lastLoginRewardDate": today,
       "gamification.loginStreak": newStreak,
-      "gamification.currency": (gam.currency || 0) + reward.flux,
     };
 
-    // Award XP via shared helper
-    const xpResult = buildXPUpdates(data, reward.xp);
-    Object.assign(updates, xpResult.updates);
+    // Add daily login flux ON TOP of any level-up currency bonus
+    const baseCurrency = xpResult.updates["gamification.currency"] ?? (gam.currency || 0);
+    updates["gamification.currency"] = baseCurrency + reward.flux;
 
     transaction.update(userRef, updates);
 
@@ -1446,17 +1448,23 @@ export const spinFortuneWheel = onCall(async (request) => {
 
     const updates: Record<string, unknown> = {
       "gamification.lastWheelSpin": today,
-      "gamification.currency": (gam.currency || 0) - WHEEL_COST,
     };
+    // Start from current currency minus wheel cost
+    let currencyAfter = (gam.currency || 0) - WHEEL_COST;
 
     let rewardDescription = "";
 
     if (prize.type === "XP") {
       const xpResult = buildXPUpdates(data, prize.value);
       Object.assign(updates, xpResult.updates);
+      // If level-up occurred, buildXPUpdates already set currency to (old + 100).
+      // We need to layer the wheel cost deduction on top of that.
+      if (xpResult.leveledUp) {
+        currencyAfter = (xpResult.updates["gamification.currency"] as number) - WHEEL_COST;
+      }
       rewardDescription = `${prize.value} XP`;
     } else if (prize.type === "FLUX") {
-      updates["gamification.currency"] = ((updates["gamification.currency"] as number) || 0) + prize.value;
+      currencyAfter += prize.value;
       rewardDescription = `${prize.value} Cyber-Flux`;
     } else if (prize.type === "ITEM") {
       const item = generateLoot(gam.level || 1, prize.rarity);
@@ -1476,6 +1484,9 @@ export const spinFortuneWheel = onCall(async (request) => {
     } else {
       rewardDescription = "Better luck next time!";
     }
+
+    // Always set final currency (accounts for wheel cost + any prize/level-up bonuses)
+    updates["gamification.currency"] = currencyAfter;
 
     transaction.update(userRef, updates);
 
@@ -1669,7 +1680,7 @@ export const dealBossDamage = onCall(async (request) => {
     if (!boss.isActive) throw new HttpsError("failed-precondition", "Boss is not active.");
     if (new Date(boss.deadline) < new Date()) throw new HttpsError("failed-precondition", "Boss encounter has expired.");
 
-    const validDamage = Math.min(Number(damage), 100); // Cap per-hit damage
+    const validDamage = Math.max(1, Math.min(Number(damage), 100)); // Clamp to 1-100
     const newHp = Math.max(0, boss.currentHp - validDamage);
     const damageLog = boss.damageLog || [];
     damageLog.push({
@@ -1865,12 +1876,18 @@ export const completeTutoring = onCall(async (request) => {
     if (!tutorSnap.exists) throw new HttpsError("not-found", "Tutor not found.");
 
     const session = sessionSnap.data()!;
+    if (session.status === "VERIFIED") {
+      throw new HttpsError("already-exists", "Session already verified.");
+    }
     const xpReward = session.xpReward || 75;
     const fluxReward = session.fluxReward || 25;
 
     const tutorData = tutorSnap.data()!;
     const xpResult = buildXPUpdates(tutorData, xpReward);
     const gam = tutorData.gamification || {};
+
+    // Add flux ON TOP of any level-up currency bonus
+    const baseCurrency = xpResult.updates["gamification.currency"] ?? (gam.currency || 0);
 
     transaction.update(sessionRef, {
       status: "VERIFIED",
@@ -1880,7 +1897,7 @@ export const completeTutoring = onCall(async (request) => {
 
     transaction.update(tutorRef, {
       ...xpResult.updates,
-      "gamification.currency": (gam.currency || 0) + fluxReward,
+      "gamification.currency": baseCurrency + fluxReward,
       "gamification.tutoringSessionsCompleted": (gam.tutoringSessionsCompleted || 0) + 1,
       "gamification.tutoringXpEarned": (gam.tutoringXpEarned || 0) + xpReward,
     });
@@ -1940,13 +1957,17 @@ export const claimKnowledgeLoot = onCall(async (request) => {
     const { inventory } = getProfileData(userData, classType);
 
     const xpResult = buildXPUpdates(userData, gate.rewards.xpBonus);
+    // Use level-up inventory if buildXPUpdates already appended loot to the same path
+    const existingInv = xpResult.updates[paths.inventory] || inventory;
     const updates: Record<string, unknown> = {
       ...xpResult.updates,
-      [paths.inventory]: [...inventory, item],
+      [paths.inventory]: [...existingInv, item],
     };
 
     if (gate.rewards.fluxBonus) {
-      updates["gamification.currency"] = (gam.currency || 0) + gate.rewards.fluxBonus;
+      // Add flux ON TOP of any level-up currency bonus
+      const baseCurrency = xpResult.updates["gamification.currency"] ?? (gam.currency || 0);
+      updates["gamification.currency"] = baseCurrency + gate.rewards.fluxBonus;
     }
 
     transaction.set(claimRef, { userId: uid, gateId, claimedAt: new Date().toISOString() });
@@ -2038,7 +2059,9 @@ export const claimDailyChallenge = onCall(async (request) => {
       "gamification.activeDailyChallenges": updatedChallenges,
     };
     if (fluxReward > 0) {
-      updates["gamification.currency"] = (gam.currency || 0) + fluxReward;
+      // Add flux ON TOP of any level-up currency bonus
+      const baseCurrency = xpResult.updates["gamification.currency"] ?? (gam.currency || 0);
+      updates["gamification.currency"] = baseCurrency + fluxReward;
     }
 
     transaction.update(userRef, updates);

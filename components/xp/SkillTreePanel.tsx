@@ -95,7 +95,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
               <div className="grid grid-cols-2 gap-2">
                 {tierNodes.map(node => {
                   const isUnlocked = unlockedSkills.includes(node.id);
-                  const canUnlock = !isUnlocked && canUnlockSkill(node.id, unlockedSkills) && skillPoints >= node.cost;
+                  const canUnlock = hasChosen && !isUnlocked && canUnlockSkill(node.id, unlockedSkills) && skillPoints >= node.cost;
                   const isUnlockable = canUnlockSkill(node.id, unlockedSkills);
 
                   return (

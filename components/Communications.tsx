@@ -45,7 +45,16 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   }, [classConfigs, user.role, user.enrolledClasses]);
 
   const [selectedClass, setSelectedClass] = useState<string>(chatEnabledClasses[0] || '');
-  
+
+  // Sync selectedClass when chatEnabledClasses loads (may start empty before configs arrive)
+  useEffect(() => {
+      if (!selectedClass || !chatEnabledClasses.includes(selectedClass)) {
+          if (chatEnabledClasses.length > 0) {
+              setSelectedClass(chatEnabledClasses[0]);
+          }
+      }
+  }, [chatEnabledClasses]);
+
   const activeChannelId = useMemo(() => {
       if (activeTab === 'Resources' && selectedResourceId) return `res_${selectedResourceId}`;
       if (activeTab === 'Resources' && !selectedResourceId) return '';

@@ -56,6 +56,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 let _acknowledgedLevel = 0;
 let _dailyLoginAttempted = false;
 let _streakAttempted = false;
+let _lastSessionUserId = '';
 
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
@@ -70,7 +71,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // RPG State
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
-  // Initialize module-level acknowledged level on first render (but don't reset on remount)
+  // Reset module-level flags when user identity changes (logout/login)
+  if (_lastSessionUserId !== user.id) {
+    _lastSessionUserId = user.id;
+    _acknowledgedLevel = user.gamification?.lastLevelSeen || 1;
+    _dailyLoginAttempted = false;
+    _streakAttempted = false;
+  }
+  // Initialize on first render (but don't reset on remount for same user)
   if (_acknowledgedLevel === 0) {
     _acknowledgedLevel = user.gamification?.lastLevelSeen || 1;
   }
@@ -131,7 +139,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // Detect XP changes and show floating animation
   const classXp = user.gamification?.classXp?.[activeClass] || 0;
   const prevXpRef = React.useRef(classXp);
+  const prevClassRef = React.useRef(activeClass);
   useEffect(() => {
+      // Reset ref when switching classes to avoid spurious animations
+      if (prevClassRef.current !== activeClass) {
+          prevClassRef.current = activeClass;
+          prevXpRef.current = classXp;
+          return;
+      }
       if (classXp > prevXpRef.current && prevXpRef.current >= 0) {
           const gained = classXp - prevXpRef.current;
           if (gained > 0 && gained < 500) {
@@ -341,6 +356,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   };
 
   const handleEquip = async (item: RPGItem) => {
+      if (isProcessing) return;
+      setIsProcessing(true);
       try {
           await dataService.equipItem(user.id, item, activeClass);
           setInspectItem(null);
@@ -348,6 +365,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           toast.success(`${item.name} equipped.`);
       } catch (e) {
           toast.error('Failed to equip item.');
+      } finally {
+          setIsProcessing(false);
       }
   };
 
@@ -366,6 +385,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const handleDisenchant = async () => {
       if(!inspectItem) return;
+      // Prevent salvaging currently equipped items
+      const isEquipped = Object.values(equipped).some(e => e && (e as RPGItem).id === inspectItem.id);
+      if (isEquipped) {
+          toast.error('Unequip this item before salvaging.');
+          return;
+      }
       const val = getDisenchantValue(inspectItem);
       if(await confirm({ message: `Salvage ${inspectItem.name} for ${val} Cyber-Flux? This item will be destroyed.`, confirmLabel: "Salvage" })) {
           setIsProcessing(true);

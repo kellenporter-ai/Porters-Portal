@@ -113,16 +113,11 @@ export const dataService = {
       try {
           const userRef = doc(db, 'users', userId);
           if (classType) {
-              // Read current profiles, merge appearance, then write the whole
-              // classProfiles key so the Firestore rule's affectedKeys() check
-              // sees 'gamification.classProfiles' (not a deeper sub-path).
-              const snap = await getDoc(userRef);
-              const profiles = snap.data()?.gamification?.classProfiles ?? {};
+              // Use dot-notation to write ONLY the appearance for this class profile.
+              // This avoids a read-modify-write race that could overwrite concurrent
+              // inventory/equipment changes to other class profiles.
               await updateDoc(userRef, {
-                  'gamification.classProfiles': {
-                      ...profiles,
-                      [classType]: { ...(profiles[classType] ?? {}), appearance }
-                  }
+                  [`gamification.classProfiles.${classType}.appearance`]: appearance
               });
           } else {
               // Legacy fallback
