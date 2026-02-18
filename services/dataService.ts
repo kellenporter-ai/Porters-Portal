@@ -100,12 +100,12 @@ export const dataService = {
   },
 
   // Admin Tools — via Cloud Functions
-  adminUpdateInventory: async (userId: string, inventory: RPGItem[], currency: number) => {
-      await callAdminUpdateInventory({ userId, inventory, currency });
+  adminUpdateInventory: async (userId: string, inventory: RPGItem[], currency: number, classType?: string) => {
+      await callAdminUpdateInventory({ userId, inventory, currency, classType });
   },
 
-  adminUpdateEquipped: async (userId: string, equipped: Partial<Record<EquipmentSlot, RPGItem>>) => {
-      await callAdminUpdateEquipped({ userId, equipped });
+  adminUpdateEquipped: async (userId: string, equipped: Partial<Record<EquipmentSlot, RPGItem>>, classType?: string) => {
+      await callAdminUpdateEquipped({ userId, equipped, classType });
   },
 
   // Write only the appearance sub-field — all other gamification fields are Cloud-Function-only

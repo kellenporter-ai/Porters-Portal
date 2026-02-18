@@ -818,13 +818,19 @@ export const craftItem = onCall(async (request) => {
  */
 export const adminUpdateInventory = onCall(async (request) => {
   await verifyAdmin(request.auth);
-  const { userId, inventory, currency } = request.data;
+  const { userId, inventory, currency, classType } = request.data;
   if (!userId || typeof userId !== "string") throw new HttpsError("invalid-argument", "User ID required.");
   if (!Array.isArray(inventory)) throw new HttpsError("invalid-argument", "Inventory must be an array.");
   const validatedCurrency = Number(currency);
   if (isNaN(validatedCurrency) || validatedCurrency < 0) throw new HttpsError("invalid-argument", "Currency must be a non-negative number.");
   const db = admin.firestore();
-  await db.doc(`users/${userId}`).update({ "gamification.inventory": inventory, "gamification.currency": validatedCurrency });
+  const updates: Record<string, unknown> = { "gamification.currency": validatedCurrency };
+  if (classType && typeof classType === "string") {
+    updates[`gamification.classProfiles.${classType}.inventory`] = inventory;
+  } else {
+    updates["gamification.inventory"] = inventory;
+  }
+  await db.doc(`users/${userId}`).update(updates);
   return { success: true };
 });
 
@@ -833,13 +839,19 @@ export const adminUpdateInventory = onCall(async (request) => {
  */
 export const adminUpdateEquipped = onCall(async (request) => {
   await verifyAdmin(request.auth);
-  const { userId, equipped } = request.data;
+  const { userId, equipped, classType } = request.data;
   if (!userId || typeof userId !== "string") throw new HttpsError("invalid-argument", "User ID required.");
   if (typeof equipped !== "object" || equipped === null || Array.isArray(equipped)) {
     throw new HttpsError("invalid-argument", "Equipped must be an object.");
   }
   const db = admin.firestore();
-  await db.doc(`users/${userId}`).update({ "gamification.equipped": equipped });
+  const updates: Record<string, unknown> = {};
+  if (classType && typeof classType === "string") {
+    updates[`gamification.classProfiles.${classType}.equipped`] = equipped;
+  } else {
+    updates["gamification.equipped"] = equipped;
+  }
+  await db.doc(`users/${userId}`).update(updates);
   return { success: true };
 });
 

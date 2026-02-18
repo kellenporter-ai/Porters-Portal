@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity } from '../types';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, Award, Rocket, Filter, Briefcase } from 'lucide-react';
+import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, Award, Rocket, Filter, Briefcase, Pencil, Check, X } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { calculateGearScore } from '../lib/gamification';
+import { getClassProfile } from '../lib/classProfile';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
@@ -33,6 +34,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const [missionForm, setMissionForm] = useState(INITIAL_MISSION_STATE);
   const [isSubmittingQuest, setIsSubmittingQuest] = useState(false);
   const [activeDeployments, setActiveDeployments] = useState<{ user: User; quest: Quest; status: string; roll?: number; acceptedAt?: string }[]>([]);
+  const [editingCodename, setEditingCodename] = useState<string | null>(null);
+  const [codenameValue, setCodenameValue] = useState('');
   const [newEventData, setNewEventData] = useState({
       title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS
   });
@@ -142,19 +145,33 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       await dataService.saveQuest(updated);
   };
 
-  const handleDeleteItem = async (user: User, item: RPGItem) => {
+  const handleDeleteItem = async (user: User, item: RPGItem, classType?: string) => {
       if(!await confirm({ message: `Confiscate ${item.name} from ${user.name}? This cannot be undone.`, confirmLabel: "Confiscate" })) return;
-      const newInventory = (user.gamification?.inventory || []).filter(i => i.id !== item.id);
-      await dataService.adminUpdateInventory(user.id, newInventory, user.gamification?.currency || 0);
-      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, inventory: newInventory}} as User) : null);
+      const profile = classType ? getClassProfile(user, classType) : { inventory: user.gamification?.inventory || [] };
+      const newInventory = profile.inventory.filter(i => i.id !== item.id);
+      await dataService.adminUpdateInventory(user.id, newInventory, user.gamification?.currency || 0, classType);
+      setInspectingUser(prev => {
+          if (!prev) return null;
+          if (classType && prev.gamification?.classProfiles?.[classType]) {
+              return {...prev, gamification: {...prev.gamification, classProfiles: {...prev.gamification.classProfiles, [classType]: {...prev.gamification.classProfiles[classType], inventory: newInventory}}}} as User;
+          }
+          return {...prev, gamification: {...prev.gamification, inventory: newInventory}} as User;
+      });
   };
 
-  const handleUnequipItem = async (user: User, slot: EquipmentSlot) => {
+  const handleUnequipItem = async (user: User, slot: EquipmentSlot, classType?: string) => {
       if(!await confirm({ message: `Force unequip ${slot} from ${user.name}?`, confirmLabel: "Unequip", variant: "warning" })) return;
-      const currentEquipped = { ...user.gamification?.equipped };
-      delete currentEquipped[slot];
-      await dataService.adminUpdateEquipped(user.id, currentEquipped);
-      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, equipped: currentEquipped}} as User) : null);
+      const profile = classType ? getClassProfile(user, classType) : { equipped: { ...user.gamification?.equipped } };
+      const newEquipped = { ...profile.equipped };
+      delete newEquipped[slot];
+      await dataService.adminUpdateEquipped(user.id, newEquipped, classType);
+      setInspectingUser(prev => {
+          if (!prev) return null;
+          if (classType && prev.gamification?.classProfiles?.[classType]) {
+              return {...prev, gamification: {...prev.gamification, classProfiles: {...prev.gamification.classProfiles, [classType]: {...prev.gamification.classProfiles[classType], equipped: newEquipped}}}} as User;
+          }
+          return {...prev, gamification: {...prev.gamification, equipped: newEquipped}} as User;
+      });
   };
 
   const handleGrantFlux = async (user: User, amount: number) => {
@@ -173,6 +190,22 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       const roll = Math.floor(Math.random() * sides) + 1;
       toast.info(`Rolled a ${roll} on a D${sides}. ${roll === sides ? "CRITICAL SUCCESS!" : "Failure confirmed."}`);
       await handleResolveQuest(deployment.user.id, deployment.quest, roll === sides, deployment.user.classType);
+  };
+
+  const getAggregateGearScore = (student: User): number => {
+      const profiles = student.gamification?.classProfiles;
+      if (profiles && Object.keys(profiles).length > 0) {
+          return Object.values(profiles).reduce((sum, p) => sum + calculateGearScore(p.equipped), 0);
+      }
+      return calculateGearScore(student.gamification?.equipped);
+  };
+
+  const handleSaveCodename = async (userId: string) => {
+      try {
+          await dataService.updateCodename(userId, codenameValue.trim().slice(0, 24));
+          toast.success('Code name updated.');
+      } catch { toast.error('Failed to update code name.'); }
+      setEditingCodename(null);
   };
 
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => (
@@ -251,7 +284,19 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                             <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-white/10" alt={student.name} />
                             <div>
                               <div className="font-bold text-sm text-gray-200">{student.name}</div>
-                              <div className="text-[10px] font-mono text-gray-500 uppercase">{student.gamification?.codename || 'UNASSIGNED'}</div>
+                              {editingCodename === student.id ? (
+                                <div className="flex items-center gap-1">
+                                  <input autoFocus value={codenameValue} onChange={e => setCodenameValue(e.target.value)} maxLength={24} onKeyDown={e => { if (e.key === 'Enter') handleSaveCodename(student.id); if (e.key === 'Escape') setEditingCodename(null); }}
+                                    className="bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-[10px] text-white font-mono w-28 focus:outline-none focus:border-purple-500" />
+                                  <button onClick={() => handleSaveCodename(student.id)} className="text-green-400 hover:text-green-300"><Check className="w-3 h-3" /></button>
+                                  <button onClick={() => setEditingCodename(null)} className="text-gray-500 hover:text-gray-300"><X className="w-3 h-3" /></button>
+                                </div>
+                              ) : (
+                                <button onClick={() => { setEditingCodename(student.id); setCodenameValue(student.gamification?.codename || ''); }} className="text-[10px] font-mono text-gray-500 uppercase hover:text-purple-400 transition flex items-center gap-1 group/cn">
+                                  {student.gamification?.codename || 'UNASSIGNED'}
+                                  <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/cn:opacity-100 transition" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -270,7 +315,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                           <span className="text-sm font-bold text-cyan-400">{flux}</span>
                         </td>
                         <td className="py-3 text-center">
-                          <span className="text-sm font-bold text-yellow-400">{calculateGearScore(student.gamification?.equipped)}</span>
+                          <span className="text-sm font-bold text-yellow-400">{getAggregateGearScore(student)}</span>
                         </td>
                         <td className="py-3 text-right pr-4">
                           <div className="flex justify-end gap-1.5">

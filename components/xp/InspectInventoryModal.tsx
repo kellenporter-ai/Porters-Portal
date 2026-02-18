@@ -1,22 +1,48 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../../types';
 import { Plus, X, Trash2 } from 'lucide-react';
 import { getAssetColors } from '../../lib/gamification';
+import { getClassProfile } from '../../lib/classProfile';
 import Modal from '../Modal';
 
 interface InspectInventoryModalProps {
     user: User | null;
     onClose: () => void;
-    onDeleteItem: (user: User, item: RPGItem) => void;
-    onUnequipItem: (user: User, slot: EquipmentSlot) => void;
+    onDeleteItem: (user: User, item: RPGItem, classType?: string) => void;
+    onUnequipItem: (user: User, slot: EquipmentSlot, classType?: string) => void;
     onGrantFlux: (user: User, amount: number) => void;
 }
 
 const EQUIPMENT_SLOTS: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'FEET', 'BELT', 'AMULET', 'RING1', 'RING2'];
 
 const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({ user, onClose, onDeleteItem, onUnequipItem, onGrantFlux }) => {
+    const [activeClassTab, setActiveClassTab] = useState<string | null>(null);
+
+    const classTabs = useMemo(() => {
+        if (!user) return [];
+        const profileKeys = Object.keys(user.gamification?.classProfiles || {});
+        if (profileKeys.length > 0) return profileKeys;
+        // Fallback: if no class profiles, show a single legacy tab
+        return ['_legacy'];
+    }, [user]);
+
+    // Auto-select first tab when user changes
+    const selectedClass = activeClassTab && classTabs.includes(activeClassTab) ? activeClassTab : classTabs[0] || '_legacy';
+
+    const profile = useMemo(() => {
+        if (!user) return { inventory: [] as RPGItem[], equipped: {} as Partial<Record<EquipmentSlot, RPGItem>> };
+        if (selectedClass === '_legacy') {
+            return {
+                inventory: user.gamification?.inventory || [],
+                equipped: user.gamification?.equipped || {},
+            };
+        }
+        const cp = getClassProfile(user, selectedClass);
+        return { inventory: cp.inventory, equipped: cp.equipped };
+    }, [user, selectedClass]);
+
     if (!user) return null;
-    
+
     return (
         <Modal isOpen={!!user} onClose={onClose} title="Inventory Inspection" maxWidth="max-w-2xl">
             <div className="space-y-6 text-gray-100 p-2">
@@ -40,18 +66,30 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({ user, onC
                     </div>
                 </div>
 
+                {/* CLASS PROFILE TABS */}
+                {classTabs.length > 1 && (
+                    <div className="flex gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5">
+                        {classTabs.map(cls => (
+                            <button key={cls} onClick={() => setActiveClassTab(cls)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition ${selectedClass === cls ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                {cls === '_legacy' ? 'Global' : cls}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* EQUIPPED SECTION */}
                 <div className="border-b border-white/5 pb-6">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Active Loadout</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Active Loadout {selectedClass !== '_legacy' && <span className="text-purple-400 ml-1">({selectedClass})</span>}</h4>
                     <div className="flex gap-2 flex-wrap">
                         {EQUIPMENT_SLOTS.map(slot => {
-                            const item = user.gamification?.equipped?.[slot];
+                            const item = profile.equipped?.[slot];
                             return (
                                 <div key={slot} className={`w-16 h-16 rounded-xl border flex items-center justify-center relative group ${item ? getAssetColors(item.rarity).border + ' ' + getAssetColors(item.rarity).bg : 'border-white/10 bg-black/20'}`}>
                                     {item ? (
                                         <>
                                           <div className="text-[8px] text-center px-1 font-bold truncate w-full text-white/90">{item.name}</div>
-                                          <button onClick={() => onUnequipItem(user, slot)} className="absolute top-[-5px] right-[-5px] bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow-md"><X className="w-3 h-3" /></button>
+                                          <button onClick={() => onUnequipItem(user, slot, selectedClass === '_legacy' ? undefined : selectedClass)} className="absolute top-[-5px] right-[-5px] bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow-md"><X className="w-3 h-3" /></button>
                                         </>
                                     ) : <span className="text-[8px] text-gray-600">{slot}</span>}
                                 </div>
@@ -63,18 +101,18 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({ user, onC
                 <div>
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Stored Gear</h4>
                     <div className="grid grid-cols-6 gap-2">
-                        {user.gamification?.inventory?.map((item, i) => (
+                        {profile.inventory.map((item, i) => (
                             <div key={i} className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group p-1 bg-white/5 ${getAssetColors(item.rarity).border}`}>
                                 <div className={`text-[8px] font-bold ${getAssetColors(item.rarity).text} text-center truncate w-full`}>{item.name}</div>
                                 <div className="text-[8px] text-gray-500">{item.slot}</div>
                                 <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-xl">
-                                    <button onClick={() => onDeleteItem(user, item)} className="p-2 text-red-400 hover:text-red-200">
+                                    <button onClick={() => onDeleteItem(user, item, selectedClass === '_legacy' ? undefined : selectedClass)} className="p-2 text-red-400 hover:text-red-200">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                         ))}
-                        {(user.gamification?.inventory?.length || 0) === 0 && (
+                        {profile.inventory.length === 0 && (
                             <div className="col-span-6 text-center py-8 text-gray-500 italic">Inventory Empty</div>
                         )}
                     </div>
