@@ -66,3 +66,4 @@ export const callCompleteTutoring = httpsCallable(functions, 'completeTutoring')
 export const callClaimKnowledgeLoot = httpsCallable(functions, 'claimKnowledgeLoot');
 export const callPurchaseCosmetic = httpsCallable(functions, 'purchaseCosmetic');
 export const callClaimDailyChallenge = httpsCallable(functions, 'claimDailyChallenge');
+export const callDismissAlert = httpsCallable(functions, 'dismissAlert');

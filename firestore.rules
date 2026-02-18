@@ -343,6 +343,18 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // EARLY WARNING SYSTEM (Student Alerts)
+    // ==========================================
+    match /student_alerts/{alertId} {
+      // Only admin/teacher can read alerts
+      allow read: if isAdmin();
+      // Only Cloud Functions create alerts; admin can update (dismiss)
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {

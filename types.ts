@@ -642,3 +642,33 @@ export interface EvolutionTier {
     crownType?: 'NONE' | 'CIRCLET' | 'HALO' | 'CROWN';
   };
 }
+
+// ========================================
+// EARLY WARNING SYSTEM (EWS)
+// ========================================
+
+export type RiskLevel = 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+
+export type AlertReason =
+  | 'LOW_ENGAGEMENT'       // ES well below class mean
+  | 'DECLINING_TREND'      // ES dropping over consecutive days
+  | 'NO_ACTIVITY'          // Zero submissions in analysis window
+  | 'HIGH_PASTE_RATE'      // Consistently high paste counts
+  | 'STRUGGLING';          // High effort, low XP yield
+
+export interface StudentAlert {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classType: string;
+  riskLevel: RiskLevel;
+  reason: AlertReason;
+  message: string;                    // Human-readable summary
+  engagementScore: number;            // The student's ES at time of alert
+  classMean: number;                  // Class mean ES for context
+  classStdDev: number;                // Standard deviation for context
+  createdAt: string;                  // ISO timestamp
+  isDismissed: boolean;
+  dismissedBy?: string;               // Admin who dismissed
+  dismissedAt?: string;
+}

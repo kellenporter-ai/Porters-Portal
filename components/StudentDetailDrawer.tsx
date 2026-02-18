@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { User, Submission, Assignment } from '../types';
-import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package } from 'lucide-react';
+import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 
@@ -76,6 +76,32 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
       else break;
     }
     return count;
+  }, [submissions]);
+
+  // Engagement trend: last 7 days activity heatmap + trend direction
+  const engagementTrend = useMemo(() => {
+    const days: { label: string; time: number; subs: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const daySubs = submissions.filter(s => s.submittedAt?.startsWith(dateStr));
+      const dayTime = daySubs.reduce((acc, s) => acc + (s.metrics?.engagementTime || 0), 0);
+      days.push({
+        label: d.toLocaleDateString([], { weekday: 'short' }),
+        time: Math.round(dayTime / 60), // minutes
+        subs: daySubs.length,
+      });
+    }
+    // Trend: compare last 3 days vs previous 4 days
+    const recent = days.slice(4).reduce((a, d) => a + d.time, 0);
+    const earlier = days.slice(0, 4).reduce((a, d) => a + d.time, 0);
+    const recentAvg = recent / 3;
+    const earlierAvg = earlier / 4;
+    const trend: 'up' | 'down' | 'flat' = recentAvg > earlierAvg * 1.2 ? 'up' : recentAvg < earlierAvg * 0.6 ? 'down' : 'flat';
+    const maxTime = Math.max(1, ...days.map(d => d.time));
+    return { days, trend, maxTime };
   }, [submissions]);
 
   return (
@@ -162,6 +188,40 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                   <span className="text-xs text-white font-bold w-8 text-right">{val}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Engagement Trend (7-day) */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">7-Day Engagement</h4>
+              <div className="flex items-center gap-1">
+                {engagementTrend.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-green-400" />}
+                {engagementTrend.trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-400" />}
+                {engagementTrend.trend === 'flat' && <Minus className="w-3.5 h-3.5 text-gray-400" />}
+                <span className={`text-[10px] font-bold uppercase ${engagementTrend.trend === 'up' ? 'text-green-400' : engagementTrend.trend === 'down' ? 'text-red-400' : 'text-gray-400'}`}>
+                  {engagementTrend.trend === 'up' ? 'Trending Up' : engagementTrend.trend === 'down' ? 'Declining' : 'Stable'}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-end gap-1 h-16">
+              {engagementTrend.days.map((day, i) => {
+                const height = engagementTrend.maxTime > 0 ? Math.max(2, (day.time / engagementTrend.maxTime) * 100) : 2;
+                const isToday = i === engagementTrend.days.length - 1;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+                    <div
+                      className={`w-full rounded-t transition-all ${day.time > 0 ? (isToday ? 'bg-purple-400' : 'bg-purple-500/60') : 'bg-white/5'}`}
+                      style={{ height: `${height}%` }}
+                    />
+                    <span className="text-[8px] text-gray-500">{day.label}</span>
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-black/90 border border-white/10 rounded px-2 py-1 text-[10px] text-white whitespace-nowrap z-10 pointer-events-none">
+                      {day.time}m · {day.subs} sub{day.subs !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

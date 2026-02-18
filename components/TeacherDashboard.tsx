@@ -1,7 +1,7 @@
 
-import React, { useEffect, useState } from 'react';
-import { User, ChatFlag, Announcement, Assignment, Submission } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert } from '../types';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
@@ -18,6 +18,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [alerts, setAlerts] = useState<StudentAlert[]>([]);
   const [now, setNow] = useState(Date.now());
   const [muteMenuFlagId, setMuteMenuFlagId] = useState<string | null>(null);
   const [sortCol, setSortCol] = useState<string>('xp');
@@ -43,15 +44,30 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   useEffect(() => {
       const unsub = dataService.subscribeToChatFlags(setFlags);
       const unsubAnnouncements = dataService.subscribeToAnnouncements(setAnnouncements);
+      const unsubAlerts = dataService.subscribeToStudentAlerts(setAlerts);
       const interval = setInterval(() => setNow(Date.now()), 60000); // Update 'expires in' every minute
       return () => {
           unsub();
           unsubAnnouncements();
+          unsubAlerts();
           clearInterval(interval);
       };
   }, []);
 
   const students = users.filter(u => u.role === 'STUDENT');
+
+  // EWS: Build alert lookup by student ID (highest severity per student)
+  const alertsByStudent = useMemo(() => {
+    const map = new Map<string, StudentAlert>();
+    for (const alert of alerts) {
+      const existing = map.get(alert.studentId);
+      const severity: Record<string, number> = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1 };
+      if (!existing || (severity[alert.riskLevel] || 0) > (severity[existing.riskLevel] || 0)) {
+        map.set(alert.studentId, alert);
+      }
+    }
+    return map;
+  }, [alerts]);
   
   // Stats
   const totalStudents = students.length;
@@ -259,6 +275,72 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
       </div>
 
+      {/* EARLY WARNING SYSTEM */}
+      {alerts.length > 0 && (
+        <div className="bg-amber-900/10 border border-amber-500/30 rounded-3xl p-6 backdrop-blur-md">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-amber-400 flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Early Warning System
+            </h3>
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-300">
+              {alerts.length} Alert{alerts.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="space-y-3 max-h-72 overflow-y-auto custom-scrollbar pr-2">
+            {alerts.map(alert => {
+              const riskColors: Record<string, string> = {
+                CRITICAL: 'border-red-500/40 bg-red-900/20',
+                HIGH: 'border-orange-500/30 bg-orange-900/10',
+                MODERATE: 'border-yellow-500/20 bg-yellow-900/10',
+                LOW: 'border-blue-500/20 bg-blue-900/10',
+              };
+              const riskBadge: Record<string, string> = {
+                CRITICAL: 'bg-red-500 text-white',
+                HIGH: 'bg-orange-500 text-white',
+                MODERATE: 'bg-yellow-500/80 text-black',
+                LOW: 'bg-blue-500/60 text-white',
+              };
+              return (
+                <div key={alert.id} className={`border p-4 rounded-xl ${riskColors[alert.riskLevel] || riskColors.LOW}`}>
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${riskBadge[alert.riskLevel] || riskBadge.LOW}`}>
+                          {alert.riskLevel}
+                        </span>
+                        <span className="text-sm font-bold text-white truncate">{alert.studentName}</span>
+                        <span className="text-[10px] text-gray-500">{alert.classType}</span>
+                      </div>
+                      <p className="text-xs text-gray-300 leading-relaxed">{alert.message}</p>
+                      <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
+                        <span>ES: {alert.engagementScore}</span>
+                        <span>Class Avg: {alert.classMean}</span>
+                        <span>{new Date(alert.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => setSelectedStudentId(alert.studentId)}
+                        className="px-2 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-lg text-[11px] font-bold transition"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={async () => { await dataService.dismissAlert(alert.id); }}
+                        className="px-2 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ANNOUNCEMENTS */}
       <div className="mt-8">
           <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} />
@@ -309,8 +391,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       : msSinceLogin < Infinity ? 'bg-red-500' 
                                       : 'bg-gray-600';
 
+                                  const studentAlert = alertsByStudent.get(student.id);
+                                  const riskDot: Record<string, string> = {
+                                    CRITICAL: 'bg-red-500 animate-pulse',
+                                    HIGH: 'bg-orange-500',
+                                    MODERATE: 'bg-yellow-500',
+                                  };
+
                                   return (
-                                      <tr key={student.id} className="hover:bg-white/5 transition cursor-pointer" onClick={() => setSelectedStudentId(student.id)}>
+                                      <tr key={student.id} className={`hover:bg-white/5 transition cursor-pointer ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''}`} onClick={() => setSelectedStudentId(student.id)}>
                                           <td className="p-3 font-bold text-white">
                                               <div className="flex items-center gap-2">
                                                   <div className="relative">
@@ -324,6 +413,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                       <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`}></div>
                                                   </div>
                                                   <span className="truncate max-w-[120px]">{student.name}</span>
+                                                  {studentAlert && riskDot[studentAlert.riskLevel] && (
+                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
+                                                  )}
                                               </div>
                                           </td>
                                           <td className="p-3 text-sm text-gray-400">{student.classType}</td>

@@ -901,6 +901,297 @@ export const sundayReset = onSchedule(
 );
 
 // ==========================================
+// EARLY WARNING SYSTEM — Predictive Analytics
+// ==========================================
+
+/**
+ * dailyAnalysis — Runs every day at 6 AM EST.
+ * Computes an Engagement Score (ES) per student, compares against class
+ * mean/std-dev, and writes alerts for at-risk students.
+ *
+ * ES = (timeOnTask weight 0.4) + (submissionCount weight 0.3) + (resourceClicks weight 0.3)
+ * All components are normalized to 0-100 before weighting.
+ */
+export const dailyAnalysis = onSchedule(
+  { schedule: "0 6 * * *", timeZone: "America/New_York" },
+  async () => {
+    const db = admin.firestore();
+    const now = new Date();
+
+    // Analysis window: last 7 days of submissions
+    const windowStart = new Date(now);
+    windowStart.setDate(windowStart.getDate() - 7);
+    const windowStartISO = windowStart.toISOString();
+
+    logger.info(`dailyAnalysis: Analyzing submissions since ${windowStartISO}`);
+
+    // 1. Fetch all students
+    const usersSnap = await db.collection("users")
+      .where("role", "==", "STUDENT").get();
+    if (usersSnap.empty) {
+      logger.info("dailyAnalysis: No students found. Skipping.");
+      return;
+    }
+
+    // 2. Fetch recent submissions (from archived + current)
+    const submissionsSnap = await db.collection("submissions")
+      .where("submittedAt", ">=", windowStartISO).get();
+
+    // Build per-student metrics
+    const studentMetrics: Map<string, {
+      totalTime: number;       // seconds of engagement
+      submissionCount: number; // number of submissions
+      totalClicks: number;     // total click count
+      totalPastes: number;     // total paste count
+      totalXP: number;         // XP earned in window
+      classTypes: Set<string>;
+    }> = new Map();
+
+    // Initialize all students with zero metrics
+    usersSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      const classes = data.enrolledClasses || (data.classType ? [data.classType] : []);
+      studentMetrics.set(doc.id, {
+        totalTime: 0,
+        submissionCount: 0,
+        totalClicks: 0,
+        totalPastes: 0,
+        totalXP: 0,
+        classTypes: new Set(classes),
+      });
+    });
+
+    // Aggregate submission data
+    submissionsSnap.docs.forEach((doc) => {
+      const sub = doc.data();
+      const existing = studentMetrics.get(sub.userId);
+      if (!existing) return; // Not a current student
+      existing.totalTime += Number(sub.metrics?.engagementTime || 0);
+      existing.submissionCount += 1;
+      existing.totalClicks += Number(sub.metrics?.clickCount || 0);
+      existing.totalPastes += Number(sub.metrics?.pasteCount || 0);
+      existing.totalXP += Number(sub.score || 0);
+    });
+
+    // 3. Compute Engagement Scores per class
+    // Group students by class for relative comparison
+    const classBuckets: Map<string, { studentId: string; name: string; es: number; metrics: typeof studentMetrics extends Map<string, infer V> ? V : never }[]> = new Map();
+
+    usersSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      const m = studentMetrics.get(doc.id);
+      if (!m) return;
+
+      // Normalize each component to 0-100 range
+      // Time: 0 = 0, 3600s (1hr) = 100 (capped)
+      const timeNorm = Math.min(100, (m.totalTime / 3600) * 100);
+      // Submissions: 0 = 0, 10 submissions = 100 (capped)
+      const subNorm = Math.min(100, (m.submissionCount / 10) * 100);
+      // Clicks: 0 = 0, 200 clicks = 100 (capped)
+      const clickNorm = Math.min(100, (m.totalClicks / 200) * 100);
+
+      const es = (timeNorm * 0.4) + (subNorm * 0.3) + (clickNorm * 0.3);
+
+      const classes = data.enrolledClasses || (data.classType ? [data.classType] : ["Uncategorized"]);
+      for (const cls of classes) {
+        if (!classBuckets.has(cls)) classBuckets.set(cls, []);
+        classBuckets.get(cls)!.push({
+          studentId: doc.id,
+          name: data.name || "Unknown",
+          es,
+          metrics: m,
+        });
+      }
+    });
+
+    // 4. For each class, compute mean/stddev and flag outliers
+    const alerts: {
+      studentId: string;
+      studentName: string;
+      classType: string;
+      riskLevel: string;
+      reason: string;
+      message: string;
+      engagementScore: number;
+      classMean: number;
+      classStdDev: number;
+    }[] = [];
+
+    classBuckets.forEach((students, classType) => {
+      if (students.length < 3) return; // Need enough students for meaningful stats
+
+      const scores = students.map((s) => s.es);
+      const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const variance = scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length;
+      const stdDev = Math.sqrt(variance);
+
+      // Skip if everyone is at zero (e.g. summer break)
+      if (mean < 1) return;
+
+      for (const student of students) {
+        const zScore = stdDev > 0 ? (student.es - mean) / stdDev : 0;
+
+        // CRITICAL: ES is more than 2 std devs below mean AND below 10 absolute
+        if (zScore < -2 && student.es < 10) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "CRITICAL",
+            reason: "LOW_ENGAGEMENT",
+            message: `Engagement score (${student.es.toFixed(1)}) is critically below class average (${mean.toFixed(1)}). No meaningful activity detected this week.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        // HIGH: ES is 1.5+ std devs below mean
+        } else if (zScore < -1.5) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "HIGH",
+            reason: "LOW_ENGAGEMENT",
+            message: `Engagement score (${student.es.toFixed(1)}) is significantly below class average (${mean.toFixed(1)}). Student may need intervention.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        // MODERATE: ES is 1+ std devs below mean
+        } else if (zScore < -1) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "MODERATE",
+            reason: "LOW_ENGAGEMENT",
+            message: `Engagement score (${student.es.toFixed(1)}) is below class average (${mean.toFixed(1)}). Monitor for declining trend.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // STRUGGLING: High effort (lots of time/keystrokes) but low XP yield
+        if (student.metrics.totalTime > 1800 && student.metrics.totalXP < 50 && student.metrics.submissionCount >= 2) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "MODERATE",
+            reason: "STRUGGLING",
+            message: `High engagement time (${Math.round(student.metrics.totalTime / 60)}m) but low XP earned (${student.metrics.totalXP}). Student may be struggling with material.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // NO ACTIVITY: Zero submissions in the analysis window
+        if (student.metrics.submissionCount === 0) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "HIGH",
+            reason: "NO_ACTIVITY",
+            message: "No submissions recorded in the past 7 days. Student may be disengaged.",
+            engagementScore: 0,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // HIGH PASTE RATE: Consistently high paste counts
+        if (student.metrics.totalPastes > 15 && student.metrics.submissionCount >= 3) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "MODERATE",
+            reason: "HIGH_PASTE_RATE",
+            message: `High paste frequency (${student.metrics.totalPastes} pastes across ${student.metrics.submissionCount} submissions). May indicate copy-paste behavior.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+      }
+    });
+
+    // 5. Deduplicate: keep highest severity per student+class
+    const deduped = new Map<string, typeof alerts[0]>();
+    const severityOrder: Record<string, number> = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1 };
+    for (const alert of alerts) {
+      const key = `${alert.studentId}_${alert.classType}`;
+      const existing = deduped.get(key);
+      if (!existing || (severityOrder[alert.riskLevel] || 0) > (severityOrder[existing.riskLevel] || 0)) {
+        deduped.set(key, alert);
+      }
+    }
+
+    // 6. Write alerts to Firestore (batch for efficiency)
+    const finalAlerts = Array.from(deduped.values());
+    if (finalAlerts.length === 0) {
+      logger.info("dailyAnalysis: No at-risk students detected.");
+      return;
+    }
+
+    // Clear old undismissed alerts before writing new ones
+    const oldAlerts = await db.collection("student_alerts")
+      .where("isDismissed", "==", false).get();
+    let batch = db.batch();
+    let count = 0;
+    for (const doc of oldAlerts.docs) {
+      batch.delete(doc.ref);
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    // Write new alerts
+    batch = db.batch();
+    count = 0;
+    const timestamp = new Date().toISOString();
+    for (const alert of finalAlerts) {
+      const ref = db.collection("student_alerts").doc();
+      batch.set(ref, {
+        ...alert,
+        createdAt: timestamp,
+        isDismissed: false,
+      });
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    logger.info(`dailyAnalysis: Generated ${finalAlerts.length} alerts (${Array.from(deduped.values()).filter((a) => a.riskLevel === "CRITICAL").length} critical, ${Array.from(deduped.values()).filter((a) => a.riskLevel === "HIGH").length} high).`);
+  }
+);
+
+/**
+ * dismissAlert — Teacher dismisses an EWS alert.
+ */
+export const dismissAlert = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { alertId } = request.data;
+  if (!alertId) throw new HttpsError("invalid-argument", "Alert ID required.");
+
+  const db = admin.firestore();
+  const alertRef = db.doc(`student_alerts/${alertId}`);
+  const snap = await alertRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Alert not found.");
+
+  await alertRef.update({
+    isDismissed: true,
+    dismissedBy: request.auth?.uid || "unknown",
+    dismissedAt: new Date().toISOString(),
+  });
+
+  return { success: true };
+});
+
+// ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
 
