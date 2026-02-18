@@ -32,7 +32,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const [missionForm, setMissionForm] = useState(INITIAL_MISSION_STATE);
   const [isSubmittingQuest, setIsSubmittingQuest] = useState(false);
-  const [activeDeployments, setActiveDeployments] = useState<any[]>([]);
+  const [activeDeployments, setActiveDeployments] = useState<{ user: User; quest: Quest; status: string; roll?: number; acceptedAt?: string }[]>([]);
   const [newEventData, setNewEventData] = useState({
       title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS
   });
@@ -44,7 +44,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   }, []);
 
   useEffect(() => {
-      const deployments: any[] = [];
+      const deployments: { user: User; quest: Quest; status: string; roll?: number; acceptedAt?: string }[] = [];
       users.forEach(u => {
           u.gamification?.activeQuests?.forEach(aq => {
               const quest = quests.find(q => q.id === aq.questId);
@@ -101,7 +101,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       e.preventDefault();
       setIsSubmittingQuest(true);
       try {
-          const statRequirements: any = {};
+          const statRequirements: Record<string, number> = {};
           if (missionForm.techReq > 0) statRequirements.tech = missionForm.techReq;
           if (missionForm.focusReq > 0) statRequirements.focus = missionForm.focusReq;
           if (missionForm.analysisReq > 0) statRequirements.analysis = missionForm.analysisReq;
@@ -111,10 +111,10 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           const newQuest: Quest = {
               id: Math.random().toString(36).substring(2, 9), title: missionForm.title,
               description: missionForm.description, xpReward: missionForm.xpReward, fluxReward: missionForm.fluxReward,
-              isActive: true, type: missionForm.type as any, statRequirements,
+              isActive: true, type: missionForm.type as Quest['type'], statRequirements,
               startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
               expiresAt: missionForm.durationHours > 0 ? expiryDate.toISOString() : null,
-              itemRewardRarity: (missionForm.lootRarity as any) || null,
+              itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
               rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup
           };
           await dataService.saveQuest(newQuest);
@@ -132,7 +132,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       if(!await confirm({ message: `Confiscate ${item.name} from ${user.name}? This cannot be undone.`, confirmLabel: "Confiscate" })) return;
       const newInventory = (user.gamification?.inventory || []).filter(i => i.id !== item.id);
       await dataService.adminUpdateInventory(user.id, newInventory, user.gamification?.currency || 0);
-      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, inventory: newInventory}} as any) : null);
+      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, inventory: newInventory}} as User) : null);
   };
 
   const handleUnequipItem = async (user: User, slot: EquipmentSlot) => {
@@ -140,13 +140,13 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       const currentEquipped = { ...user.gamification?.equipped };
       delete currentEquipped[slot];
       await dataService.adminUpdateEquipped(user.id, currentEquipped);
-      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, equipped: currentEquipped}} as any) : null);
+      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, equipped: currentEquipped}} as User) : null);
   };
 
   const handleGrantFlux = async (user: User, amount: number) => {
       const newAmount = Math.max(0, (user.gamification?.currency || 0) + amount);
       await dataService.adminUpdateInventory(user.id, user.gamification?.inventory || [], newAmount);
-      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, currency: newAmount}} as any) : null);
+      setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, currency: newAmount}} as User) : null);
   };
 
   const handleResolveQuest = async (userId: string, quest: Quest, success: boolean, classType?: string) => {
@@ -154,14 +154,14 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       catch (e) { toast.error('Failed to resolve mission.'); }
   };
 
-  const handleRollForSalvation = async (deployment: any) => {
+  const handleRollForSalvation = async (deployment: { user: User; quest: Quest; status: string; roll?: number }) => {
       const sides = deployment.quest.rollDieSides || 20;
       const roll = Math.floor(Math.random() * sides) + 1;
       toast.info(`Rolled a ${roll} on a D${sides}. ${roll === sides ? "CRITICAL SUCCESS!" : "Failure confirmed."}`);
       await handleResolveQuest(deployment.user.id, deployment.quest, roll === sides, deployment.user.classType);
   };
 
-  const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: any }) => (
+  const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => (
     <button onClick={() => setActiveTab(id)} className={`px-6 py-4 flex items-center gap-2 border-b-2 font-bold transition-all ${activeTab === id ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
       <Icon className="w-4 h-4" />{label}
     </button>
@@ -213,7 +213,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                   </div>)}
                   <div className="relative">
-                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as any)} className="bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50">
+                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'XP_DESC' | 'XP_ASC' | 'NAME')} className="bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50">
                       <option value="XP_DESC">Highest XP</option><option value="XP_ASC">Lowest XP</option><option value="NAME">Alphabetical</option>
                     </select>
                   </div>
@@ -306,7 +306,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Protocol Title</label><input value={newEventData.title} onChange={e => setNewEventData({...newEventData, title: e.target.value})} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. Double XP Weekend" /></div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Multiplier</label><input type="number" step="0.5" value={newEventData.multiplier} onChange={e => setNewEventData({...newEventData, multiplier: parseFloat(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" /></div>
-            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Uplink Type</label><select value={newEventData.type} onChange={e => setNewEventData({...newEventData, type: e.target.value as any})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold"><option value="GLOBAL">Global Node</option><option value="CLASS_SPECIFIC">Class Sub-Node</option></select></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Uplink Type</label><select value={newEventData.type} onChange={e => setNewEventData({...newEventData, type: e.target.value as 'GLOBAL' | 'CLASS_SPECIFIC'})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold"><option value="GLOBAL">Global Node</option><option value="CLASS_SPECIFIC">Class Sub-Node</option></select></div>
           </div>
           {newEventData.type === 'CLASS_SPECIFIC' && <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Sub-Node</label><select value={newEventData.targetClass} onChange={e => setNewEventData({...newEventData, targetClass: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">{Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}</select></div>}
           <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-blue-700">Initiate Uplink</button>

@@ -158,7 +158,7 @@ const App: React.FC = () => {
             await setDoc(userRef, newUserProfile);
         } else {
             const existingData = userSnap.data();
-            const updates: any = { 
+            const updates: Record<string, unknown> = {
                 lastLoginAt: new Date().toISOString(),
                 isWhitelisted: isWhitelisted
             };
@@ -213,7 +213,7 @@ const App: React.FC = () => {
             metrics,
             a.classType
         );
-    } catch (err: any) {
+    } catch (err) {
         console.error("Engagement submission failed:", err);
     }
   };
@@ -370,7 +370,7 @@ const App: React.FC = () => {
                     <AdminPanel 
                       assignments={assignments} 
                       submissions={submissions} 
-                      onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as any); }} 
+                      onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }} 
                       classConfigs={classConfigs} 
                       onPreviewAssignment={(id) => {
                         setAdminViewMode('STUDENT');

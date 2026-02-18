@@ -50,7 +50,34 @@ async function getActiveXPMultiplier(classType?: string): Promise<number> {
   return multiplier;
 }
 
-async function verifyAdmin(auth: any): Promise<void> {
+interface CallableAuth {
+  uid: string;
+  token?: Record<string, unknown>;
+}
+
+interface Affix {
+  name: string;
+  type: "PREFIX" | "SUFFIX";
+  stat: string;
+  value: number;
+  tier: number;
+}
+
+interface LootItem {
+  id: string;
+  name: string;
+  baseName: string;
+  rarity: string;
+  slot: string;
+  visualId: string;
+  stats: Record<string, number>;
+  affixes: Affix[];
+  effects?: { id: string; name: string; description: string; type: string }[];
+  description: string;
+  obtainedAt: string;
+}
+
+async function verifyAdmin(auth: CallableAuth | undefined): Promise<void> {
   if (!auth) throw new HttpsError("unauthenticated", "Must be logged in.");
   const user = await admin.auth().getUser(auth.uid);
   if (!user.customClaims?.admin) {
@@ -58,7 +85,7 @@ async function verifyAdmin(auth: any): Promise<void> {
   }
 }
 
-function verifyAuth(auth: any): string {
+function verifyAuth(auth: CallableAuth | undefined): string {
   if (!auth?.uid) throw new HttpsError("unauthenticated", "Must be logged in.");
   return auth.uid;
 }
@@ -90,11 +117,11 @@ function getProfilePaths(classType?: string) {
 
 /**
  * Reads the inventory and equipped for a given class (or legacy global).
- * @param {any} data - The user document data.
+ * @param {FirebaseFirestore.DocumentData} data - The user document data.
  * @param {string} classType - The class to resolve profile for.
  * @return {object} Object with inventory and equipped arrays.
  */
-function getProfileData(data: any, classType?: string) {
+function getProfileData(data: FirebaseFirestore.DocumentData, classType?: string) {
   if (classType && data.gamification?.classProfiles?.[classType]) {
     const profile = data.gamification.classProfiles[classType];
     return {
@@ -163,7 +190,7 @@ const rollTier = (level: number, rarity: string): number => {
 
 const rollValue = (tier: number): number => Math.max(1, tier * 5 + Math.floor(Math.random() * 5) - 2);
 
-function generateLoot(level: number, forcedRarity?: string) {
+function generateLoot(level: number, forcedRarity?: string): LootItem {
   let rarity = "COMMON";
   if (forcedRarity) {
     rarity = forcedRarity;
@@ -175,10 +202,10 @@ function generateLoot(level: number, forcedRarity?: string) {
   }
 
   if (rarity === "UNIQUE") {
-    const template: any = pick(UNIQUES);
+    const template = pick(UNIQUES) as Record<string, any>;
     const slot = template.slot || pick(SLOTS);
     const base = pick(BASE_ITEMS[slot] || BASE_ITEMS["HEAD"]);
-    const stats: any = {}; const affixes: any[] = [];
+    const stats: Record<string, number> = {}; const affixes: Affix[] = [];
     stats[template.uniqueStat.stat] = template.uniqueStat.val;
     const tier = rollTier(level, "UNIQUE");
     const pref = pick(PREFIX_DEFS); const pVal = rollValue(tier);
@@ -197,7 +224,7 @@ function generateLoot(level: number, forcedRarity?: string) {
 
   const slot = pick(SLOTS);
   const baseItem = pick(BASE_ITEMS[slot] || BASE_ITEMS["HEAD"]);
-  const affixes: any[] = [];
+  const affixes: Affix[] = [];
   let prefixCount = 0;
   let suffixCount = 0;
   if (rarity === "COMMON") {
@@ -235,14 +262,14 @@ function generateLoot(level: number, forcedRarity?: string) {
     affixes.push({ name: def.name, type: "SUFFIX", stat: def.stat, value: val, tier });
   }
 
-  const primaryPrefix = affixes.filter((a: any) => a.type === "PREFIX").sort((a: any, b: any) => b.tier - a.tier)[0];
-  const primarySuffix = affixes.filter((a: any) => a.type === "SUFFIX").sort((a: any, b: any) => b.tier - a.tier)[0];
+  const primaryPrefix = affixes.filter((a) => a.type === "PREFIX").sort((a, b) => b.tier - a.tier)[0];
+  const primarySuffix = affixes.filter((a) => a.type === "SUFFIX").sort((a, b) => b.tier - a.tier)[0];
   let name = baseItem.name;
   if (primaryPrefix) name = `${primaryPrefix.name} ${name}`;
   if (primarySuffix) name = `${name} ${primarySuffix.name}`;
 
-  const stats: any = {};
-  affixes.forEach((aff: any) => { stats[aff.stat] = (stats[aff.stat] || 0) + aff.value; });
+  const stats: Record<string, number> = {};
+  affixes.forEach((aff) => { stats[aff.stat] = (stats[aff.stat] || 0) + aff.value; });
 
   return {
     id: Math.random().toString(36).substring(2, 9), name, baseName: baseItem.name,
@@ -251,8 +278,8 @@ function generateLoot(level: number, forcedRarity?: string) {
   };
 }
 
-function getDisenchantValue(item: any): number {
-  const totalTier = (item.affixes || []).reduce((acc: number, a: any) => acc + a.tier, 0);
+function getDisenchantValue(item: LootItem): number {
+  const totalTier = (item.affixes || []).reduce((acc: number, a: Affix) => acc + a.tier, 0);
   const avgTier = item.affixes?.length > 0 ? totalTier / item.affixes.length : 1;
   let base = 2;
   if (item.rarity === "UNCOMMON") base = 5;
@@ -261,14 +288,15 @@ function getDisenchantValue(item: any): number {
   return Math.floor(base * (1 + avgTier * 0.2));
 }
 
-function calculatePlayerStats(userData: any) {
-  const base = { tech: 10, focus: 10, analysis: 10, charisma: 10 };
+function calculatePlayerStats(userData: FirebaseFirestore.DocumentData) {
+  const base: Record<string, number> = { tech: 10, focus: 10, analysis: 10, charisma: 10 };
   const equipped = userData.gamification?.equipped;
   if (!equipped) return base;
-  Object.values(equipped).filter(Boolean).forEach((item: any) => {
-    if (item.stats) {
-      Object.entries(item.stats).forEach(([key, val]) => {
-        (base as any)[key] = ((base as any)[key] || 0) + (val as number);
+  Object.values(equipped).filter(Boolean).forEach((item) => {
+    const lootItem = item as LootItem;
+    if (lootItem.stats) {
+      Object.entries(lootItem.stats).forEach(([key, val]) => {
+        base[key] = (base[key] || 0) + (val as number);
       });
     }
   });
@@ -424,7 +452,7 @@ export const acceptQuest = onCall(async (request) => {
     const activeQuests = gamification.activeQuests || [];
     const completedQuests = gamification.completedQuests || [];
 
-    if (activeQuests.some((q: any) => q.questId === questId)) {
+    if (activeQuests.some((q: { questId: string }) => q.questId === questId)) {
       throw new HttpsError("already-exists", "Quest already accepted.");
     }
     if (completedQuests.includes(questId)) {
@@ -461,7 +489,7 @@ export const deployMission = onCall(async (request) => {
     const userData = userSnap.data()!;
     const quest = questSnap.data()!;
     const activeQuests = userData.gamification?.activeQuests || [];
-    const questIdx = activeQuests.findIndex((q: any) => q.questId === questId);
+    const questIdx = activeQuests.findIndex((q: { questId: string }) => q.questId === questId);
     if (questIdx === -1) throw new HttpsError("not-found", "Quest not in active list.");
 
     const stats = calculatePlayerStats(userData);
@@ -501,7 +529,7 @@ export const resolveQuest = onCall(async (request) => {
     const activeQuests = gamification.activeQuests || [];
     const completedQuests = gamification.completedQuests || [];
 
-    const updatedQuests = activeQuests.filter((q: any) => q.questId !== questId);
+    const updatedQuests = activeQuests.filter((q: { questId: string }) => q.questId !== questId);
     const updates: Record<string, any> = { "gamification.activeQuests": updatedQuests };
 
     if (success) {
@@ -557,7 +585,7 @@ export const equipItem = onCall(async (request) => {
     const data = userSnap.data()!;
     const { inventory, equipped } = getProfileData(data, classType);
 
-    const itemIdx = inventory.findIndex((i: any) => i.id === itemId);
+    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
     if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
     const item = inventory[itemIdx];
 
@@ -565,7 +593,7 @@ export const equipItem = onCall(async (request) => {
     if (item.slot === "RING") targetSlot = !equipped.RING1 ? "RING1" : "RING2";
 
     // Swap: if a different item is already in the target slot, return it to inventory
-    const newInventory = inventory.filter((_: any, i: number) => i !== itemIdx);
+    const newInventory = inventory.filter((_: LootItem, i: number) => i !== itemIdx);
     const existingItem = equipped[targetSlot];
     if (existingItem) {
       newInventory.push(existingItem);
@@ -598,16 +626,16 @@ export const disenchantItem = onCall(async (request) => {
     const data = userSnap.data()!;
     const { inventory, equipped } = getProfileData(data, classType);
     const currentCurrency = data.gamification?.currency || 0;
-    const item = inventory.find((i: any) => i.id === itemId);
+    const item = inventory.find((i: LootItem) => i.id === itemId);
     if (!item) throw new HttpsError("not-found", "Item not in inventory.");
 
     const fluxValue = getDisenchantValue(item);
-    const newInventory = inventory.filter((i: any) => i.id !== itemId);
+    const newInventory = inventory.filter((i: LootItem) => i.id !== itemId);
 
     // Also unequip if the item is currently equipped in any slot
     const newEquipped = { ...equipped };
     for (const [slot, eqItem] of Object.entries(newEquipped)) {
-      if (eqItem && (eqItem as any).id === itemId) {
+      if (eqItem && (eqItem as LootItem).id === itemId) {
         delete newEquipped[slot];
       }
     }
@@ -645,16 +673,16 @@ export const craftItem = onCall(async (request) => {
     const playerLevel = data.gamification?.level || 1;
 
     if (currentCurrency < cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
-    const itemIdx = inventory.findIndex((i: any) => i.id === itemId);
+    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
     if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
 
     const item = JSON.parse(JSON.stringify(inventory[itemIdx]));
     if (item.rarity === "UNIQUE" && action === "REFORGE") throw new HttpsError("failed-precondition", "Cannot reforge unique items.");
 
     if (action === "RECALIBRATE") {
-      item.affixes.forEach((aff: any) => { aff.value = rollValue(aff.tier); });
+      item.affixes.forEach((aff: Affix) => { aff.value = rollValue(aff.tier); });
       item.stats = {};
-      item.affixes.forEach((aff: any) => { item.stats[aff.stat] = (item.stats[aff.stat] || 0) + aff.value; });
+      item.affixes.forEach((aff: Affix) => { item.stats[aff.stat] = (item.stats[aff.stat] || 0) + aff.value; });
       if (item.rarity === "UNIQUE") {
         const template = UNIQUES.find((u) => u.name === item.name);
         if (template) item.stats[template.uniqueStat.stat] = template.uniqueStat.val;
@@ -698,15 +726,15 @@ export const craftItem = onCall(async (request) => {
         item.affixes.push({ name: def.name, type: "SUFFIX", stat: def.stat, value: val, tier });
         item.stats[def.stat] = (item.stats[def.stat] || 0) + val;
       }
-      const pp = item.affixes.filter((a: any) => a.type === "PREFIX").sort((a: any, b: any) => b.tier - a.tier)[0];
-      const ps = item.affixes.filter((a: any) => a.type === "SUFFIX").sort((a: any, b: any) => b.tier - a.tier)[0];
+      const pp = item.affixes.filter((a: Affix) => a.type === "PREFIX").sort((a: Affix, b: Affix) => b.tier - a.tier)[0];
+      const ps = item.affixes.filter((a: Affix) => a.type === "SUFFIX").sort((a: Affix, b: Affix) => b.tier - a.tier)[0];
       let newName = item.baseName;
       if (pp) newName = `${pp.name} ${newName}`;
       if (ps) newName = `${newName} ${ps.name}`;
       item.name = newName;
     } else if (action === "OPTIMIZE") {
       item.stats = {};
-      item.affixes.forEach((aff: any) => {
+      item.affixes.forEach((aff: Affix) => {
         const newTier = rollTier(playerLevel, item.rarity);
         aff.tier = Math.max(aff.tier, newTier);
         aff.value = rollValue(aff.tier);
@@ -1051,12 +1079,12 @@ export const uploadQuestionBank = onCall(async (request) => {
   }
 
   // Validate question structure
-  const valid = questions.every((q: any) =>
-    typeof q.id === "string" && q.id.length > 0 &&
+  const valid = questions.every((q: Record<string, unknown>) =>
+    typeof q.id === "string" && (q.id as string).length > 0 &&
     typeof q.tier === "string" &&
     typeof q.type === "string" &&
-    typeof q.stem === "string" && q.stem.length > 0 &&
-    Array.isArray(q.options) && q.options.length >= 2 &&
+    typeof q.stem === "string" && (q.stem as string).length > 0 &&
+    Array.isArray(q.options) && (q.options as unknown[]).length >= 2 &&
     q.correctAnswer !== undefined &&
     (typeof q.xp === "undefined" || (typeof q.xp === "number" && q.xp >= 0 && q.xp <= 50)));
   if (!valid) {
@@ -1108,7 +1136,7 @@ export const awardQuestionXP = onCall(async (request) => {
   let serverXP = xpAmount; // fallback to client value if bank not found
   if (bankSnap.exists) {
     const questions = bankSnap.data()!.questions || [];
-    const question = questions.find((q: any) => q.id === questionId);
+    const question = questions.find((q: { id: string; xp?: number }) => q.id === questionId);
     if (question) {
       serverXP = question.xp || 0;
       if (serverXP <= 0 || serverXP > 50) {
@@ -1177,7 +1205,7 @@ export const awardQuestionXP = onCall(async (request) => {
       newXP,
       leveledUp: newLevel > currentLevel,
     };
-  }).catch((err: any) => {
+  }).catch((err) => {
     // Rec 2: Log unexpected errors for debugging
     if (err instanceof HttpsError) throw err;
     logger.error(`awardQuestionXP failed for ${uid}:`, err);

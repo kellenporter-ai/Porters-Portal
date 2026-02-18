@@ -20,7 +20,7 @@ interface BankQuestion {
     bloomsLevel: string; stem: string; context?: string | null;
     options: { id: string; text: string }[];
     correctAnswer: string | string[]; explanation: string;
-    linkedFollowUp?: any;
+    linkedFollowUp?: { id: string; stem: string } | null;
 }
 
 const TIER_COLORS: Record<number, { text: string; bg: string; border: string }> = {
@@ -194,8 +194,8 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                 updatedAt: new Date().toISOString(),
             });
             setQuestions(updated);
-        } catch (err: any) {
-            toast.error('Failed to save: ' + (err.message || 'Unknown error'));
+        } catch (err) {
+            toast.error('Failed to save: ' + (err instanceof Error ? err.message : 'Unknown error'));
         } finally {
             setIsSaving(false);
         }
@@ -215,7 +215,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
             await deleteDoc(doc(db, 'question_banks', assignment.id));
             setQuestions([]);
             toast.success('Question bank cleared.');
-        } catch (err: any) {
+        } catch (err) {
             toast.error('Failed to clear bank.');
         }
     };
@@ -260,13 +260,13 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
             if (!parsed.title || !parsed.sections || !Array.isArray(parsed.sections)) {
                 throw new Error('Missing required fields: title and sections array.');
             }
-            const invalidSections = parsed.sections.filter((s: any) => !s.title || !s.content);
+            const invalidSections = parsed.sections.filter((s: { title?: string; content?: string }) => !s.title || !s.content);
             if (invalidSections.length > 0) {
                 throw new Error(`${invalidSections.length} section(s) missing title or content.`);
             }
             setPendingReading(parsed as ReadingMaterial);
-        } catch (err: any) {
-            setReadingParseError(err.message || 'Parse failed.');
+        } catch (err) {
+            setReadingParseError(err instanceof Error ? err.message : 'Parse failed.');
         }
         if (readingFileRef.current) readingFileRef.current.value = '';
     };
@@ -284,8 +284,8 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
             setReadingMaterial(pendingReading);
             setPendingReading(null);
             toast.success(`Study material uploaded: ${pendingReading.sections.length} sections!`);
-        } catch (err: any) {
-            toast.error('Failed to save: ' + (err.message || 'Unknown error'));
+        } catch (err) {
+            toast.error('Failed to save: ' + (err instanceof Error ? err.message : 'Unknown error'));
         } finally {
             setIsSaving(false);
         }
@@ -298,7 +298,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
             await deleteDoc(doc(db, 'reading_materials', assignment.id));
             setReadingMaterial(null);
             toast.success('Study material removed.');
-        } catch (err: any) {
+        } catch (err) {
             toast.error('Failed to delete.');
         } finally {
             setIsSaving(false);
@@ -358,23 +358,23 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
             if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Must be a non-empty JSON array.');
             
             // Filter out questions missing required fields instead of rejecting all
-            const valid = parsed.filter((q: any) => q.id && q.tier && q.type && q.stem && q.options && q.correctAnswer);
+            const valid = parsed.filter((q: Record<string, unknown>) => q.id && q.tier && q.type && q.stem && q.options && q.correctAnswer);
             const skipped = parsed.length - valid.length;
-            
+
             if (valid.length === 0) {
                 setParseError('All questions are missing required fields (id, tier, type, stem, options, correctAnswer).');
                 return;
             }
 
             const tiers: Record<number, number> = {};
-            valid.forEach((q: any) => { tiers[q.tier] = (tiers[q.tier] || 0) + 1; });
+            valid.forEach((q: Record<string, unknown>) => { const t = q.tier as number; tiers[t] = (tiers[t] || 0) + 1; });
             setPendingQuestions(valid);
             setPendingTiers(tiers);
             if (skipped > 0) {
                 toast.success(`Parsed ${valid.length} questions (${skipped} skipped — missing fields).`);
             }
-        } catch (err: any) {
-            setParseError(err.message || 'Parse failed.');
+        } catch (err) {
+            setParseError(err instanceof Error ? err.message : 'Parse failed.');
         }
         if (fileRef.current) fileRef.current.value = '';
     };

@@ -35,7 +35,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
   // Set active day to current day if it's a weekday
   useEffect(() => {
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-      if (DAYS_OF_WEEK.includes(today as any)) {
+      if ((DAYS_OF_WEEK as readonly string[]).includes(today)) {
           setActiveDay(today as DayName);
       }
   }, []);
@@ -116,8 +116,8 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
         };
 
         await dataService.uploadEvidence(newLog);
-    } catch (err: any) {
-        toast.error("Upload failed: " + err.message);
+    } catch (err) {
+        toast.error("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
         setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -145,7 +145,8 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
       setIsGeneratingPdf(true);
       
       try {
-          const doc = new jsPDF() as any;
+          // jsPDF types are incomplete — cast to access internal APIs
+          const doc = new jsPDF() as InstanceType<typeof jsPDF> & Record<string, any>;
           const pageWidth = doc.internal.pageSize.getWidth();
           const pageHeight = doc.internal.pageSize.getHeight();
           const margin = 20;

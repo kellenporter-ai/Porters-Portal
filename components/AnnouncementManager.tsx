@@ -127,7 +127,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Priority</label>
-              <select value={priority} onChange={(e) => setPriority(e.target.value as any)} className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
+              <select value={priority} onChange={(e) => setPriority(e.target.value as Announcement['priority'])} className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
                 <option value="INFO">Info</option>
                 <option value="WARNING">Warning</option>
                 <option value="URGENT">Urgent</option>

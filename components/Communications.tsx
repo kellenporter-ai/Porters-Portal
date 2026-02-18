@@ -131,7 +131,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
         await dataService.sendMessage(user, inputText, activeChannelId, selectedClass);
         setInputText('');
         setShowEmojiPicker(false);
-    } catch (err: any) {
+    } catch (err) {
         console.error("Failed to send message:", err);
     }
   }, [inputText, activeChannelId, isMuted, user, selectedClass]);

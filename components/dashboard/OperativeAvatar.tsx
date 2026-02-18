@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 
 interface OperativeAvatarProps {
-    equipped: Record<string, any>;
+    equipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
     appearance?: { bodyType?: 'A' | 'B'; hue?: number };
 }
 
@@ -12,9 +12,9 @@ const RARITY_COLORS: Record<string, { primary: string; glow: string; particle: s
     UNIQUE:   { primary: '#f59e0b', glow: 'rgba(245,158,11,0.7)',  particle: '#fbbf24' },
 };
 
-const getRarityStyle = (item: any) => {
+const getRarityStyle = (item: { rarity?: string } | null | undefined) => {
     if (!item) return null;
-    return RARITY_COLORS[item.rarity] || RARITY_COLORS.COMMON;
+    return RARITY_COLORS[item.rarity as keyof typeof RARITY_COLORS] || RARITY_COLORS.COMMON;
 };
 
 const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance }) => {

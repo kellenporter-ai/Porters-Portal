@@ -303,7 +303,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
                         <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
                         <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
-                        <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]: [string, any]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+                        <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
                     </div>
                   </>
@@ -770,7 +770,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                          <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 content-start">
                              {inventory.map((item, idx) => {
                                  // Check equality loosely by ID
-                                 const isEquipped = Object.values(equipped).some((e: any) => e?.id === item.id);
+                                 const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
                                  const colors = getAssetColors(item.rarity);
                                  
                                  return (
@@ -942,8 +942,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                   </div>
                                   <div className="flex flex-wrap gap-x-4 gap-y-1">
                                       {Array.from(allStats).map(stat => {
-                                          const newVal = (inspectItem.stats as any)[stat] || 0;
-                                          const oldVal = (currentlyEquipped.stats as any)[stat] || 0;
+                                          const newVal = (inspectItem.stats as Record<string, number>)[stat] || 0;
+                                          const oldVal = (currentlyEquipped.stats as Record<string, number>)[stat] || 0;
                                           const diff = newVal - oldVal;
                                           if (diff === 0) return <span key={stat} className="text-[10px] text-gray-600 font-mono">{stat.slice(0,3).toUpperCase()}: ±0</span>;
                                           return (

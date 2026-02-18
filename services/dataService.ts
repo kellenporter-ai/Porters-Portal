@@ -1,5 +1,5 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -119,7 +119,7 @@ export const dataService = {
         }
 
         await callSendClassMessage({ content, channelId, classType });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error sending message:", error);
         throw error;
     }
@@ -662,9 +662,9 @@ export const dataService = {
           const userData = userSnap.data();
           const email = userData.email;
           
-          const updates: any = { 
+          const updates: Record<string, unknown> = {
             enrolledClasses: classes,
-            classType: classes.length > 0 ? classes[0] : 'Uncategorized' 
+            classType: classes.length > 0 ? classes[0] : 'Uncategorized'
           };
           
           if (classes.length === 0) {
@@ -720,9 +720,9 @@ export const dataService = {
       await callAwardXP({ targetUserId: userId, amount, classType });
   },
 
-  submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: any, classType: string) => {
+  submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: TelemetryMetrics, classType: string) => {
       const result = await callSubmitEngagement({ assignmentId, assignmentTitle, userName, metrics, classType });
-      return result.data as { xpEarned: number; status: string };
+      return result.data as { xpEarned: number; leveledUp: boolean; status: string };
   },
 
   subscribeToLeaderboard: (callback: (users: User[]) => void) => {

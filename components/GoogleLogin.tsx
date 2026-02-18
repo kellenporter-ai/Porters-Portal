@@ -14,9 +14,9 @@ const GoogleLogin: React.FC = () => {
     
     try {
         await signInWithPopup(auth, googleProvider);
-    } catch (error: any) {
+    } catch (error) {
         console.error("Login Error:", error);
-        setErrorMessage(error.message);
+        setErrorMessage(error instanceof Error ? error.message : "Login failed");
         setLoading(false);
     }
   };

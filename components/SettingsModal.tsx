@@ -53,7 +53,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
     value, 
     onToggle 
   }: { 
-    icon: any, 
+    icon: React.ElementType,
     title: string, 
     description: string, 
     value: boolean, 
