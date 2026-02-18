@@ -218,6 +218,16 @@ const App: React.FC = () => {
     }
   };
 
+  // Must be before early returns to satisfy Rules of Hooks (constant hook order)
+  const enabledFeatures = useMemo(() => {
+    const defaults = { physicsLab: true, evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true };
+    if (user && user.role === 'STUDENT' && user.classType) {
+        const config = classConfigs.find(c => c.className === user.classType);
+        if (config) return config.features;
+    }
+    return defaults;
+  }, [user?.role, user?.classType, classConfigs]);
+
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#0f0720] text-white font-mono">ESTABLISHING CONNECTION...</div>;
   if (!user) return <GoogleLogin />;
 
@@ -233,15 +243,6 @@ const App: React.FC = () => {
       </div>
     );
   }
-
-  const enabledFeatures = useMemo(() => {
-    const defaults = { physicsLab: true, evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true };
-    if (user.role === 'STUDENT' && user.classType) {
-        const config = classConfigs.find(c => c.className === user.classType);
-        if (config) return config.features;
-    }
-    return defaults;
-  }, [user.role, user.classType, classConfigs]);
 
   const showTools = user.role === UserRole.ADMIN || enabledFeatures.physicsTools;
   const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
