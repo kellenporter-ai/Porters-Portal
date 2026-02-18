@@ -7,7 +7,7 @@ import * as logger from "firebase-functions/logger";
 admin.initializeApp();
 
 
-const ADMIN_EMAIL = "kellporter2@paps.net";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "kellporter2@paps.net";
 
 // ==========================================
 // SHARED CONSTANTS (Bug 1 fix: single source of truth)
@@ -275,21 +275,77 @@ function calculatePlayerStats(userData: any) {
   return base;
 }
 
+/**
+ * Shared helper: applies XP to a user document inside a transaction.
+ * Handles level-up detection, loot generation, class XP, and currency bonus.
+ * Returns the computed update fields and whether a level-up occurred.
+ */
+function buildXPUpdates(
+  data: FirebaseFirestore.DocumentData,
+  xpAmount: number,
+  classType?: string,
+): { updates: Record<string, any>; newXP: number; newLevel: number; leveledUp: boolean } {
+  const gam = data.gamification || {};
+  const currentXP = gam.xp || 0;
+  const currentLevel = gam.level || 1;
+  const newXP = Math.max(0, currentXP + xpAmount);
+  const newLevel = Math.floor(newXP / XP_PER_LEVEL) + 1;
+  const leveledUp = newLevel > currentLevel;
+
+  const updates: Record<string, any> = {
+    "gamification.xp": newXP,
+    "gamification.level": newLevel,
+  };
+
+  if (classType) {
+    const classXpMap = gam.classXp || {};
+    const currentClassXp = classXpMap[classType] || 0;
+    updates[`gamification.classXp.${classType}`] = Math.max(0, currentClassXp + xpAmount);
+  }
+
+  if (leveledUp) {
+    updates["gamification.currency"] = (gam.currency || 0) + 100;
+    const newItem = generateLoot(newLevel);
+    if (classType && classType !== "Uncategorized") {
+      const cp = data.gamification?.classProfiles?.[classType] || {};
+      const inv = cp.inventory || [];
+      updates[`gamification.classProfiles.${classType}.inventory`] = [...inv, newItem];
+    } else {
+      const inv = data.gamification?.inventory || [];
+      updates["gamification.inventory"] = [...inv, newItem];
+    }
+  }
+
+  return { updates, newXP, newLevel, leveledUp };
+}
+
 // ==========================================
 // ADMIN SETUP — Set Custom Claims
 // ==========================================
 
 // Call this ONCE via browser URL after deploy to bootstrap your admin account.
-// e.g., https://us-central1-porters-portal.cloudfunctions.net/setAdminClaim
-export const setAdminClaim = onRequest(async (_req, res) => {
+// Requires the X-Admin-Secret header to match the ADMIN_BOOTSTRAP_SECRET env var.
+export const setAdminClaim = onRequest(async (req, res) => {
   try {
+    // Authenticate the request with a secret token
+    const secret = req.headers["x-admin-secret"];
+    const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
+    if (!expectedSecret) {
+      res.status(500).send("FAILED: ADMIN_BOOTSTRAP_SECRET environment variable not set.");
+      return;
+    }
+    if (secret !== expectedSecret) {
+      res.status(403).send("FORBIDDEN: Invalid or missing X-Admin-Secret header.");
+      return;
+    }
+
     const userRecord = await admin.auth().getUserByEmail(ADMIN_EMAIL);
     await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
     logger.info(`Admin claim set for ${ADMIN_EMAIL}`);
     res.status(200).send(`SUCCESS: Admin claim set for ${ADMIN_EMAIL}. Sign out and back in for it to take effect.`);
   } catch (error) {
     logger.error("Failed to set admin claim", error);
-    res.status(500).send("FAILED: " + error);
+    res.status(500).send("FAILED: An internal error occurred.");
   }
 });
 
@@ -332,37 +388,10 @@ export const awardXP = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
-    const currentXP = data.gamification?.xp || 0;
-    const currentLevel = data.gamification?.level || 1;
-    const newXP = Math.max(0, currentXP + xpAmount);
-    const newLevel = Math.floor(newXP / XP_PER_LEVEL) + 1;
-
-    const updates: any = {
-      "gamification.xp": newXP,
-      "gamification.level": newLevel,
-    };
-
-    if (classType) {
-      const classXpMap = data.gamification?.classXp || {};
-      const currentClassXp = classXpMap[classType] || 0;
-      updates[`gamification.classXp.${classType}`] = Math.max(0, currentClassXp + xpAmount);
-    }
-
-    // Level-up loot drop — goes to the class profile if classType specified
-    if (newLevel > currentLevel) {
-      const newItem = generateLoot(newLevel);
-      if (classType) {
-        const classProfile = data.gamification?.classProfiles?.[classType] || {};
-        const classInventory = classProfile.inventory || [];
-        updates[`gamification.classProfiles.${classType}.inventory`] = [...classInventory, newItem];
-      } else {
-        const currentInventory = data.gamification?.inventory || [];
-        updates["gamification.inventory"] = [...currentInventory, newItem];
-      }
-    }
+    const { updates, newXP, newLevel, leveledUp } = buildXPUpdates(data, xpAmount, classType);
 
     transaction.update(userRef, updates);
-    return { newXP, newLevel, leveledUp: newLevel > currentLevel };
+    return { newXP, newLevel, leveledUp };
   });
 });
 
@@ -473,41 +502,34 @@ export const resolveQuest = onCall(async (request) => {
     const completedQuests = gamification.completedQuests || [];
 
     const updatedQuests = activeQuests.filter((q: any) => q.questId !== questId);
-    const updates: any = { "gamification.activeQuests": updatedQuests };
+    const updates: Record<string, any> = { "gamification.activeQuests": updatedQuests };
 
     if (success) {
       if (!completedQuests.includes(questId)) {
         completedQuests.push(questId);
         updates["gamification.completedQuests"] = completedQuests;
       }
-      const currentXP = gamification.xp || 0;
-      const currentFlux = gamification.currency || 0;
-      const currentLevel = gamification.level || 1;
-      const newInventory = [...(gamification.inventory || [])];
 
-      const newXP = currentXP + quest.xpReward;
-      const newFlux = currentFlux + (quest.fluxReward || 0);
-      const newLevel = Math.floor(newXP / XP_PER_LEVEL) + 1;
-
-      if (quest.itemRewardRarity) {
-        newInventory.push(generateLoot(currentLevel, quest.itemRewardRarity));
-        newInventory.push(generateLoot(currentLevel)); // Bonus random item
-      }
-      if (newLevel > currentLevel) {
-        newInventory.push(generateLoot(newLevel));
-      }
-
-      updates["gamification.xp"] = newXP;
-      updates["gamification.currency"] = newFlux;
-      updates["gamification.inventory"] = newInventory;
-      updates["gamification.level"] = newLevel;
-
-      // Update class-specific XP so student dashboard reflects the change
       const effectiveClass = classType || data.classType || "";
-      if (effectiveClass) {
-        const classXpMap = gamification.classXp || {};
-        const currentClassXp = classXpMap[effectiveClass] || 0;
-        updates[`gamification.classXp.${effectiveClass}`] = currentClassXp + quest.xpReward;
+      const xpReward = Number(quest.xpReward) || 0;
+      const fluxReward = Number(quest.fluxReward) || 0;
+
+      // Use shared XP helper for level-up + loot + class XP
+      const xpResult = buildXPUpdates(data, xpReward, effectiveClass || undefined);
+      Object.assign(updates, xpResult.updates);
+
+      // Add quest-specific flux reward (on top of the level-up currency bonus)
+      if (fluxReward > 0) {
+        updates["gamification.currency"] = (updates["gamification.currency"] || (gamification.currency || 0)) + fluxReward;
+      }
+
+      // Quest item rewards (separate from level-up loot)
+      if (quest.itemRewardRarity) {
+        const currentLevel = gamification.level || 1;
+        const invKey = updates["gamification.inventory"] !== undefined
+          ? "gamification.inventory" : `gamification.classProfiles.${effectiveClass}.inventory`;
+        const currentInv = updates[invKey] || gamification.inventory || [];
+        updates[invKey] = [...currentInv, generateLoot(currentLevel, quest.itemRewardRarity), generateLoot(currentLevel)];
       }
     }
 
@@ -535,13 +557,24 @@ export const equipItem = onCall(async (request) => {
     const data = userSnap.data()!;
     const { inventory, equipped } = getProfileData(data, classType);
 
-    const item = inventory.find((i: any) => i.id === itemId);
-    if (!item) throw new HttpsError("not-found", "Item not in inventory.");
+    const itemIdx = inventory.findIndex((i: any) => i.id === itemId);
+    if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
+    const item = inventory[itemIdx];
 
     let targetSlot = item.slot;
     if (item.slot === "RING") targetSlot = !equipped.RING1 ? "RING1" : "RING2";
 
-    transaction.update(userRef, { [`${paths.equipped}.${targetSlot}`]: item });
+    // Swap: if a different item is already in the target slot, return it to inventory
+    const newInventory = inventory.filter((_: any, i: number) => i !== itemIdx);
+    const existingItem = equipped[targetSlot];
+    if (existingItem) {
+      newInventory.push(existingItem);
+    }
+
+    transaction.update(userRef, {
+      [paths.inventory]: newInventory,
+      [`${paths.equipped}.${targetSlot}`]: item,
+    });
     return { equipped: targetSlot };
   });
 });
@@ -697,9 +730,12 @@ export const craftItem = onCall(async (request) => {
 export const adminUpdateInventory = onCall(async (request) => {
   await verifyAdmin(request.auth);
   const { userId, inventory, currency } = request.data;
-  if (!userId) throw new HttpsError("invalid-argument", "User ID required.");
+  if (!userId || typeof userId !== "string") throw new HttpsError("invalid-argument", "User ID required.");
+  if (!Array.isArray(inventory)) throw new HttpsError("invalid-argument", "Inventory must be an array.");
+  const validatedCurrency = Number(currency);
+  if (isNaN(validatedCurrency) || validatedCurrency < 0) throw new HttpsError("invalid-argument", "Currency must be a non-negative number.");
   const db = admin.firestore();
-  await db.doc(`users/${userId}`).update({ "gamification.inventory": inventory || [], "gamification.currency": currency ?? 0 });
+  await db.doc(`users/${userId}`).update({ "gamification.inventory": inventory, "gamification.currency": validatedCurrency });
   return { success: true };
 });
 
@@ -709,9 +745,12 @@ export const adminUpdateInventory = onCall(async (request) => {
 export const adminUpdateEquipped = onCall(async (request) => {
   await verifyAdmin(request.auth);
   const { userId, equipped } = request.data;
-  if (!userId) throw new HttpsError("invalid-argument", "User ID required.");
+  if (!userId || typeof userId !== "string") throw new HttpsError("invalid-argument", "User ID required.");
+  if (typeof equipped !== "object" || equipped === null || Array.isArray(equipped)) {
+    throw new HttpsError("invalid-argument", "Equipped must be an object.");
+  }
   const db = admin.firestore();
-  await db.doc(`users/${userId}`).update({ "gamification.equipped": equipped || {} });
+  await db.doc(`users/${userId}`).update({ "gamification.equipped": equipped });
   return { success: true };
 });
 
@@ -764,19 +803,32 @@ export const sundayReset = onSchedule(
 // UTILITY FUNCTIONS
 // ==========================================
 
-export const fixCors = onRequest(async (_req, res) => {
+export const fixCors = onRequest(async (req, res) => {
   try {
+    // Authenticate the request with a secret token
+    const secret = req.headers["x-admin-secret"];
+    const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
+    if (!expectedSecret) {
+      res.status(500).send("FAILED: ADMIN_BOOTSTRAP_SECRET environment variable not set.");
+      return;
+    }
+    if (secret !== expectedSecret) {
+      res.status(403).send("FORBIDDEN: Invalid or missing X-Admin-Secret header.");
+      return;
+    }
+
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || "https://porters-portal.web.app";
     const bucket = admin.storage().bucket();
     await bucket.setCorsConfiguration([{
-      origin: ["*"],
-      method: ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
+      origin: [allowedOrigin],
+      method: ["GET", "HEAD", "OPTIONS"],
       maxAgeSeconds: 3600,
     }]);
     logger.info("CORS configuration updated for bucket");
     res.status(200).send("SUCCESS: Storage permissions fixed.");
   } catch (error) {
     logger.error("Failed to set CORS", error);
-    res.status(500).send("FAILED: " + error);
+    res.status(500).send("FAILED: An internal error occurred.");
   }
 });
 
@@ -836,17 +888,20 @@ export const submitEngagement = onCall(async (request) => {
     return { xpEarned: 0, status: "NO_XP" };
   }
 
-  // Rate limiting: use a dedicated doc to avoid composite index requirement
+  // Rate limiting: use a transaction to prevent concurrent bypass
   const rateLimitRef = db.doc(`engagement_cooldowns/${uid}_${assignmentId}`);
-  const rateLimitSnap = await rateLimitRef.get();
-  if (rateLimitSnap.exists) {
-    const lastTime = rateLimitSnap.data()!.lastSubmitted || 0;
-    const cooldownMs = ENGAGEMENT_COOLDOWN_MS;
-    if (Date.now() - lastTime < cooldownMs) {
-      throw new HttpsError("resource-exhausted",
-        "Please wait before resubmitting this resource.");
+  const now = Date.now();
+  await db.runTransaction(async (transaction) => {
+    const rateLimitSnap = await transaction.get(rateLimitRef);
+    if (rateLimitSnap.exists) {
+      const lastTime = rateLimitSnap.data()!.lastSubmitted || 0;
+      if (now - lastTime < ENGAGEMENT_COOLDOWN_MS) {
+        throw new HttpsError("resource-exhausted",
+          "Please wait before resubmitting this resource.");
+      }
     }
-  }
+    transaction.set(rateLimitRef, { lastSubmitted: now }, { merge: true });
+  });
 
   // Create submission
   const submission = {
@@ -865,54 +920,24 @@ export const submitEngagement = onCall(async (request) => {
 
   await db.collection("submissions").add(submission);
 
-  // Update rate limit timestamp
-  await rateLimitRef.set({ lastSubmitted: Date.now() }, { merge: true });
-
   // Award XP via transaction (same logic as awardXP)
   const effectiveClass = classType || "Uncategorized";
   const userRef = db.doc(`users/${uid}`);
 
+  let leveledUp = false;
   await db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
     if (!userSnap.exists) return;
 
     const data = userSnap.data()!;
-    const gam = data.gamification || {};
-    const currentXP = gam.xp || 0;
-    const newXP = currentXP + xpEarned;
-    const currentClassXP = gam.classXp?.[effectiveClass] || 0;
-    const newClassXP = currentClassXP + xpEarned;
-    const currentLevel = gam.level || 1;
-    const newLevel = Math.floor(newXP / XP_PER_LEVEL) + 1;
+    const result = buildXPUpdates(data, xpEarned, effectiveClass);
+    leveledUp = result.leveledUp;
 
-    // Use dot-notation to avoid stomping concurrent gamification changes
-    const updates: Record<string, any> = {
-      "gamification.xp": newXP,
-      [`gamification.classXp.${effectiveClass}`]: newClassXP,
-    };
-
-    if (newLevel > currentLevel) {
-      updates["gamification.level"] = newLevel;
-      updates["gamification.currency"] = (gam.currency || 0) + 100;
-
-      // Generate loot drop on level-up (matches awardXP/awardQuestionXP behavior)
-      const newItem = generateLoot(newLevel);
-      if (effectiveClass && effectiveClass !== "Uncategorized") {
-        const cp = data.gamification?.classProfiles?.[effectiveClass] || {};
-        const inv = cp.inventory || [];
-        updates[`gamification.classProfiles.${effectiveClass}.inventory`] =
-          [...inv, newItem];
-      } else {
-        const inv = data.gamification?.inventory || [];
-        updates["gamification.inventory"] = [...inv, newItem];
-      }
-    }
-
-    transaction.update(userRef, updates);
+    transaction.update(userRef, result.updates);
   });
 
   logger.info(`submitEngagement: ${uid} earned ${xpEarned} XP (${multiplier}x) on ${assignmentId}`);
-  return { xpEarned, baseXP, multiplier, status: "SUCCESS" };
+  return { xpEarned, baseXP, multiplier, leveledUp, status: "SUCCESS" };
 });
 
 // ==========================================
@@ -1025,13 +1050,19 @@ export const uploadQuestionBank = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Questions must be a non-empty array.");
   }
 
-  // Light validation — check a few required fields
+  // Validate question structure
   const valid = questions.every((q: any) =>
-    q.id && q.tier && q.type && q.stem && q.options && q.correctAnswer);
+    typeof q.id === "string" && q.id.length > 0 &&
+    typeof q.tier === "string" &&
+    typeof q.type === "string" &&
+    typeof q.stem === "string" && q.stem.length > 0 &&
+    Array.isArray(q.options) && q.options.length >= 2 &&
+    q.correctAnswer !== undefined &&
+    (typeof q.xp === "undefined" || (typeof q.xp === "number" && q.xp >= 0 && q.xp <= 50)));
   if (!valid) {
     throw new HttpsError(
       "invalid-argument",
-      "Some questions are missing required fields (id, tier, type, stem, options, correctAnswer).",
+      "Some questions have invalid structure. Required: id (string), tier (string), type (string), stem (string), options (array, 2+), correctAnswer, xp (0-50 if provided).",
     );
   }
 
@@ -1128,36 +1159,7 @@ export const awardQuestionXP = onCall(async (request) => {
     }
 
     const data = userSnap.data()!;
-    const currentXP = data.gamification?.xp || 0;
-    const newXP = currentXP + serverXP;
-    const newLevel = Math.floor(newXP / XP_PER_LEVEL) + 1;
-    const currentLevel = data.gamification?.level || 1;
-
-    const updates: any = {
-      "gamification.xp": newXP,
-      "gamification.level": newLevel,
-    };
-
-    if (classType) {
-      const classXpMap = data.gamification?.classXp || {};
-      updates[`gamification.classXp.${classType}`] =
-        (classXpMap[classType] || 0) + serverXP;
-    }
-
-    if (newLevel > currentLevel) {
-      const newItem = generateLoot(newLevel);
-      if (classType) {
-        const cp =
-          data.gamification?.classProfiles?.[classType] || {};
-        const inv = cp.inventory || [];
-        const pth = "gamification.classProfiles" +
-          `.${classType}.inventory`;
-        updates[pth] = [...inv, newItem];
-      } else {
-        const inv = data.gamification?.inventory || [];
-        updates["gamification.inventory"] = [...inv, newItem];
-      }
-    }
+    const { updates } = buildXPUpdates(data, serverXP, classType);
 
     // ALL WRITES AFTER READS
     const newAnswered = [...answeredQuestions, questionId];

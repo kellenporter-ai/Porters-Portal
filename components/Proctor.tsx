@@ -102,7 +102,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
     const handleMessage = async (event: MessageEvent) => {
       const iframe = iframeRef.current;
       if (!iframe) return;
-      
+
+      // Only accept messages from the iframe's own origin or our app origin
+      const iframeSrc = iframe.src ? new URL(iframe.src).origin : '';
+      if (event.origin !== window.location.origin && event.origin !== iframeSrc) return;
+
+      const targetOrigin = event.origin;
       const data = event.data;
       if (!data || typeof data !== 'object' || !data.type?.startsWith('portal-')) return;
 
@@ -122,13 +127,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
               payload: { userId, savedState }
-            }, '*');
+            }, targetOrigin);
           } catch (err) {
             console.error('Bridge: Failed to load saved state', err);
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
               payload: { userId, savedState: null }
-            }, '*');
+            }, targetOrigin);
           }
           break;
         }
@@ -145,10 +150,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
               answeredQuestions: Array.from(awardedQuestionsRef.current),
               lastUpdated: new Date().toISOString()
             }, { merge: true });
-            iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, '*');
+            iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, targetOrigin);
           } catch (err) {
             console.error('Bridge: Save failed', err);
-            iframe.contentWindow?.postMessage({ type: 'portal-save-error' }, '*');
+            iframe.contentWindow?.postMessage({ type: 'portal-save-error' }, targetOrigin);
           }
           break;
         }
@@ -156,13 +161,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
         case 'portal-answer': {
           const { questionId, correct, attempts } = data.payload || {};
           if (!questionId) break;
-          
+
           if (correct && !awardedQuestionsRef.current.has(questionId)) {
             awardedQuestionsRef.current.add(questionId);
             setQuestionsAnswered(prev => prev + 1);
-            
+
             const xpAmount = attempts === 1 ? 15 : 10;
-            
+
             try {
               const result = await callAwardQuestionXP({
                 assignmentId,
@@ -171,7 +176,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                 classType: classType || 'Uncategorized'
               });
               const resultData = result.data as { awarded: boolean; serverXP?: number };
-              
+
               if (resultData.awarded) {
                 const earnedXP = resultData.serverXP || xpAmount;
                 setXpEarnedSession(prev => prev + earnedXP);
@@ -179,23 +184,23 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                 sfx.xpGain();
                 setTimeout(() => setXpToast(null), 2000);
               }
-              
+
               iframe.contentWindow?.postMessage({
                 type: 'portal-xp-result',
                 payload: { questionId, awarded: resultData.awarded, xp: resultData.serverXP || xpAmount }
-              }, '*');
+              }, targetOrigin);
             } catch (err) {
               console.error('Bridge: XP award failed', err);
               iframe.contentWindow?.postMessage({
                 type: 'portal-xp-result',
                 payload: { questionId, awarded: false, xp: 0 }
-              }, '*');
+              }, targetOrigin);
             }
           } else if (correct) {
             iframe.contentWindow?.postMessage({
               type: 'portal-xp-result',
               payload: { questionId, awarded: false, xp: 0 }
-            }, '*');
+            }, targetOrigin);
           }
           break;
         }

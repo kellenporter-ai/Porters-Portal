@@ -16,6 +16,14 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// Validate required environment variables at startup
+const requiredEnvVars = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'appId'] as const;
+for (const key of requiredEnvVars) {
+  if (!firebaseConfig[key]) {
+    throw new Error(`Missing required Firebase config: ${key}. Check your .env.local file.`);
+  }
+}
+
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);

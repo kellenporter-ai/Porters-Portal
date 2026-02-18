@@ -1,5 +1,5 @@
 
-import { ItemRarity, RPGItem, EquipmentSlot } from '../types';
+import { ItemRarity, RPGItem, EquipmentSlot, User } from '../types';
 
 // --- VISUALIZATION HELPERS ---
 const ELEMENT_NAMES = [
@@ -63,8 +63,8 @@ export const getDisenchantValue = (item: RPGItem): number => {
 
 // craftItem, generateLoot, generateQuestRewards — removed (server-side only)
 
-export const calculatePlayerStats = (user: any) => {
-  const base = { tech: 10, focus: 10, analysis: 10, charisma: 10 }; 
+export const calculatePlayerStats = (user: Pick<User, 'gamification'>) => {
+  const base = { tech: 10, focus: 10, analysis: 10, charisma: 10 };
   if (!user.gamification?.equipped) return base;
 
   const equipped = user.gamification.equipped;

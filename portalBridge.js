@@ -43,6 +43,7 @@
 (function() {
     'use strict';
 
+    var ALLOWED_ORIGIN = 'https://porters-portal.web.app';
     var saveStatusEl = null;
     var _onLoad = null;
     var _saveTimeout = null;
@@ -69,8 +70,9 @@
             opts = opts || {};
             _onLoad = opts.onLoad || null;
 
-            // Listen for messages from parent
+            // Listen for messages from parent (validate origin)
             window.addEventListener('message', function(event) {
+                if (event.origin !== ALLOWED_ORIGIN) return;
                 var data = event.data;
                 if (!data || typeof data !== 'object') return;
 
@@ -112,7 +114,7 @@
 
             // Tell parent we're ready
             updateStatus('Connecting...');
-            window.parent.postMessage({ type: 'portal-ready' }, '*');
+            window.parent.postMessage({ type: 'portal-ready' }, ALLOWED_ORIGIN);
 
             // If parent doesn't respond in 3 seconds, fall back to standalone mode
             setTimeout(function() {
@@ -139,7 +141,7 @@
                 window.parent.postMessage({
                     type: 'portal-save',
                     payload: data
-                }, '*');
+                }, ALLOWED_ORIGIN);
             }, 500);
         },
 
@@ -159,7 +161,7 @@
                     correct: correct,
                     attempts: attempts || 1
                 }
-            }, '*');
+            }, ALLOWED_ORIGIN);
         },
 
         // Internal: last state for auto-save on unload

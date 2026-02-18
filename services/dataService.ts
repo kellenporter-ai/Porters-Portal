@@ -1,7 +1,7 @@
 
 import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage } from '../lib/firebase';
-import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { TEACHER_DISPLAY_NAME } from '../constants';
@@ -12,11 +12,14 @@ import { TEACHER_DISPLAY_NAME } from '../constants';
 export const dataService = {
   // --- HELPERS ---
   getWeekId: (): string => {
+      // ISO 8601 week calculation
       const now = new Date();
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      const pastDays = (now.getTime() - startOfYear.getTime()) / 86400000;
-      const weekNum = Math.ceil((pastDays + startOfYear.getDay() + 1) / 7);
-      return `${now.getFullYear()}-W${weekNum}`;
+      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      // Set to nearest Thursday: current date + 4 - current day number (Monday=1, Sunday=7)
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+      return `${d.getUTCFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
   },
 
   // --- XP & GAMIFICATION ---
@@ -124,41 +127,45 @@ export const dataService = {
 
   toggleReaction: async (messageId: string, emoji: string, userId: string) => {
     const msgRef = doc(db, 'class_messages', messageId);
-    const snap = await getDoc(msgRef);
-    if (!snap.exists()) return;
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(msgRef);
+      if (!snap.exists()) return;
 
-    const data = snap.data() as ChatMessage;
-    const reactions = { ...(data.reactions || {}) };
-    
-    // Fix #2: Strip their ID from all other emoji sets first
-    const hadThisEmoji = (reactions[emoji] || []).includes(userId);
-    
-    Object.keys(reactions).forEach(e => {
-        reactions[e] = (reactions[e] || []).filter(id => id !== userId);
-        if (reactions[e].length === 0) delete reactions[e];
+      const data = snap.data() as ChatMessage;
+      const reactions = { ...(data.reactions || {}) };
+
+      // Strip their ID from all other emoji sets first
+      const hadThisEmoji = (reactions[emoji] || []).includes(userId);
+
+      Object.keys(reactions).forEach(e => {
+          reactions[e] = (reactions[e] || []).filter((id: string) => id !== userId);
+          if (reactions[e].length === 0) delete reactions[e];
+      });
+
+      if (!hadThisEmoji) {
+        if (!reactions[emoji]) reactions[emoji] = [];
+        reactions[emoji].push(userId);
+      }
+
+      transaction.update(msgRef, { reactions });
     });
-
-    if (!hadThisEmoji) {
-      if (!reactions[emoji]) reactions[emoji] = [];
-      reactions[emoji].push(userId);
-    }
-
-    await updateDoc(msgRef, { reactions });
   },
 
   togglePersonalPin: async (messageId: string, userId: string) => {
     const msgRef = doc(db, 'class_messages', messageId);
-    const snap = await getDoc(msgRef);
-    if (!snap.exists()) return;
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(msgRef);
+      if (!snap.exists()) return;
 
-    const data = snap.data() as ChatMessage;
-    const pinnedBy = [...(data.pinnedBy || [])];
+      const data = snap.data() as ChatMessage;
+      const pinnedBy = [...(data.pinnedBy || [])];
 
-    if (pinnedBy.includes(userId)) {
-      await updateDoc(msgRef, { pinnedBy: pinnedBy.filter(id => id !== userId) });
-    } else {
-      await updateDoc(msgRef, { pinnedBy: [...pinnedBy, userId] });
-    }
+      if (pinnedBy.includes(userId)) {
+        transaction.update(msgRef, { pinnedBy: pinnedBy.filter((id: string) => id !== userId) });
+      } else {
+        transaction.update(msgRef, { pinnedBy: [...pinnedBy, userId] });
+      }
+    });
   },
 
   toggleGlobalPin: async (messageId: string, isPinned: boolean) => {
@@ -200,10 +207,12 @@ export const dataService = {
     }
   },
 
+  INDEFINITE_MUTE: -2 as const,
+
   muteUser: async (userId: string, durationMinutes: number) => {
       try {
           let dateStr = null;
-          if (durationMinutes === -2) { // Indefinite
+          if (durationMinutes === dataService.INDEFINITE_MUTE) {
               dateStr = new Date('9999-12-31').toISOString();
           } else if (durationMinutes > 0) {
               dateStr = new Date(Date.now() + durationMinutes * 60000).toISOString();

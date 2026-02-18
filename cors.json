@@ -1,8 +1,8 @@
 
 [
   {
-    "origin": ["*"],
-    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
+    "origin": ["https://porters-portal.web.app"],
+    "method": ["GET", "HEAD", "OPTIONS"],
     "maxAgeSeconds": 3600
   }
 ]

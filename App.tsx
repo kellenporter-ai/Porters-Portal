@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, WhitelistedUser, DefaultClassTypes } from './types';
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { ToastProvider } from './components/ToastProvider';
 import ConnectionStatus from './components/ConnectionStatus';
@@ -118,14 +118,14 @@ const App: React.FC = () => {
 
         return () => unsubs.forEach(u => u());
     }
-  }, [user?.id, user?.isWhitelisted]);
+  }, [user?.id, user?.isWhitelisted, user?.role]);
 
   // Sync sound effects setting
   useEffect(() => {
     setSfxEnabled(user?.settings?.soundEffects !== false);
   }, [user?.settings?.soundEffects]);
 
-  const handleSession = async (firebaseUser: any) => {
+  const handleSession = async (firebaseUser: FirebaseUser) => {
     try {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
@@ -234,12 +234,15 @@ const App: React.FC = () => {
     );
   }
 
-  let enabledFeatures = { physicsLab: true, evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true };
-  if (user.role === 'STUDENT' && user.classType) {
-      const config = classConfigs.find(c => c.className === user.classType);
-      if (config) enabledFeatures = config.features;
-  }
-  
+  const enabledFeatures = useMemo(() => {
+    const defaults = { physicsLab: true, evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true };
+    if (user.role === 'STUDENT' && user.classType) {
+        const config = classConfigs.find(c => c.className === user.classType);
+        if (config) return config.features;
+    }
+    return defaults;
+  }, [user.role, user.classType, classConfigs]);
+
   const showTools = user.role === UserRole.ADMIN || enabledFeatures.physicsTools;
   const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
 
