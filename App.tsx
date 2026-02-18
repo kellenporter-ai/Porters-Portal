@@ -54,7 +54,9 @@ const App: React.FC = () => {
   // UI States
   const [activeAssignmentId, setActiveAssignmentId] = useState<string | null>(null);
   const [adminViewMode, setAdminViewMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
-  const [assignViewMode, setAssignViewMode] = useState<'WORK' | 'REVIEW'>('WORK');
+  const [assignViewMode, setAssignViewMode] = useState<'WORK' | 'REVIEW' | 'STUDY'>('WORK');
+  const [hasQuestionBank, setHasQuestionBank] = useState(false);
+  const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCommOpen, setIsCommOpen] = useState(false);
 
@@ -85,9 +87,24 @@ const App: React.FC = () => {
     });
   }, [rawUsers, submissions]);
 
-  const activeAssignment = useMemo(() => 
+  const activeAssignment = useMemo(() =>
     assignments.find(a => a.id === activeAssignmentId) || null
   , [assignments, activeAssignmentId]);
+
+  // Probe which supplemental tabs exist for the active assignment
+  useEffect(() => {
+    setHasQuestionBank(false);
+    setHasStudyMaterial(false);
+    if (!activeAssignmentId) return;
+    const checkQuestions = getDoc(doc(db, 'question_banks', activeAssignmentId)).then(snap => {
+      if (snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
+    }).catch(() => {});
+    const checkStudy = getDoc(doc(db, 'reading_materials', activeAssignmentId)).then(snap => {
+      if (snap.exists()) setHasStudyMaterial(true);
+    }).catch(() => {});
+    // If the view was on a tab that no longer exists, reset to WORK
+    Promise.all([checkQuestions, checkStudy]).then(() => {});
+  }, [activeAssignmentId]);
 
   // Auth Init
   useEffect(() => {
@@ -302,10 +319,11 @@ const App: React.FC = () => {
                 </h2>
                 <div className="flex gap-4 mt-2">
                     <button onClick={() => setAssignViewMode('WORK')} className={`text-sm font-bold pb-1 border-b-2 transition ${assignViewMode === 'WORK' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}>Resource</button>
-                    {activeAssignment.category === 'Practice Set' ? (
-                        <button onClick={() => setAssignViewMode('REVIEW')} className={`text-sm font-bold pb-1 border-b-2 transition flex items-center gap-1.5 ${assignViewMode === 'REVIEW' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}><BookOpenIcon className="w-3.5 h-3.5" /> Study Material</button>
-                    ) : (
+                    {hasQuestionBank && (
                         <button onClick={() => setAssignViewMode('REVIEW')} className={`text-sm font-bold pb-1 border-b-2 transition flex items-center gap-1.5 ${assignViewMode === 'REVIEW' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}><Brain className="w-3.5 h-3.5" /> Review</button>
+                    )}
+                    {hasStudyMaterial && (
+                        <button onClick={() => setAssignViewMode('STUDY')} className={`text-sm font-bold pb-1 border-b-2 transition flex items-center gap-1.5 ${assignViewMode === 'STUDY' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}><BookOpenIcon className="w-3.5 h-3.5" /> Study Material</button>
                     )}
                 </div>
               </div>
@@ -368,11 +386,12 @@ const App: React.FC = () => {
                 )}
                 {assignViewMode === 'REVIEW' && (
                     <div className="h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                        {activeAssignment.category === 'Practice Set' ? (
-                            <StudyMaterial assignment={activeAssignment} onComplete={handleEngagementComplete} />
-                        ) : (
-                            <ReviewQuestions assignment={activeAssignment} />
-                        )}
+                        <ReviewQuestions assignment={activeAssignment} />
+                    </div>
+                )}
+                {assignViewMode === 'STUDY' && (
+                    <div className="h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                        <StudyMaterial assignment={activeAssignment} onComplete={handleEngagementComplete} />
                     </div>
                 )}
             </div>
