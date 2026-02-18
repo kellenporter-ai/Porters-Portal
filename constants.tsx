@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target } from 'lucide-react';
+import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -24,8 +24,17 @@ export const CLASS_CONFIGS = {
 };
 
 export const NAVIGATION = [
-  { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, role: 'ANY' },
+  // Admin navigation
+  { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Admin Panel', icon: <ShieldAlert className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'User Management', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'XP Command', icon: <Target className="w-5 h-5" />, role: 'ADMIN' },
+  // Student navigation
+  { name: 'Resources', icon: <Layers className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Missions', icon: <Target className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Skills', icon: <GitBranch className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Tutoring', icon: <GraduationCap className="w-5 h-5" />, role: 'STUDENT' },
 ];

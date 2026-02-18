@@ -30,6 +30,16 @@ import ReviewQuestions from './components/ReviewQuestions';
 import StudyMaterial from './components/StudyMaterial';
 import { setSfxEnabled } from './lib/sfx';
 
+const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
+  'Resources': 'RESOURCES',
+  'Agent Loadout': 'LOADOUT',
+  'Missions': 'MISSIONS',
+  'Badges': 'ACHIEVEMENTS',
+  'Skills': 'SKILLS',
+  'Fortune': 'FORTUNE',
+  'Tutoring': 'TUTORING',
+};
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -119,6 +129,13 @@ const App: React.FC = () => {
         return () => unsubs.forEach(u => u());
     }
   }, [user?.id, user?.isWhitelisted, user?.role]);
+
+  // Redirect students from Dashboard to Resources (their default view)
+  useEffect(() => {
+    if (user?.role === UserRole.STUDENT && activeTab === 'Dashboard') {
+      setActiveTab('Resources');
+    }
+  }, [user?.role, activeTab]);
 
   // Sync sound effects setting
   useEffect(() => {
@@ -385,7 +402,7 @@ const App: React.FC = () => {
 
             {user.role === UserRole.STUDENT && (
                <>
-                  {activeTab === 'Dashboard' && <StudentDashboard user={user} assignments={assignments} submissions={submissions} enabledFeatures={enabledFeatures} onNavigate={setActiveTab} onStartAssignment={openAssignment} />}
+                  {activeTab in STUDENT_TAB_MAP && <StudentDashboard user={user} assignments={assignments} submissions={submissions} enabledFeatures={enabledFeatures} onNavigate={setActiveTab} onStartAssignment={openAssignment} studentTab={STUDENT_TAB_MAP[activeTab]} />}
                   {activeTab === 'Forensics' && enabledFeatures.evidenceLocker && <EvidenceLocker user={user} />}
                   {activeTab === 'Physics Lab' && enabledFeatures.physicsLab && <PhysicsLab user={user} />}
                   {activeTab === 'Leaderboard' && enabledFeatures.leaderboard && <Leaderboard />}

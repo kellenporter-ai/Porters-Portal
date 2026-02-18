@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Trophy, Sparkles, Dices, GitBranch, GraduationCap, Eye } from 'lucide-react';
+import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { getRankDetails, calculatePlayerStats, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -24,6 +24,8 @@ import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
 
+type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING';
+
 interface StudentDashboardProps {
   user: User;
   assignments: Assignment[];
@@ -37,6 +39,7 @@ interface StudentDashboardProps {
   };
   onNavigate: (tab: string) => void;
   onStartAssignment?: (id: string) => void;
+  studentTab?: StudentTab;
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -49,7 +52,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-5 h-5" />
 };
 
-const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, enabledFeatures, onNavigate, onStartAssignment }) => {
+const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
@@ -63,7 +66,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
   const acknowledgedLevelRef = React.useRef<number>(user.gamification?.lastLevelSeen || 1);
-  const [activeTab, setActiveTab] = useState<'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'>('RESOURCES');
+  const activeTab = studentTab;
   const [showCustomize, setShowCustomize] = useState(false);
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -535,32 +538,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       <div className="lg:col-span-9 space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col">
              
-             <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
-                 <button onClick={() => setActiveTab('RESOURCES')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'RESOURCES' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <Layers className="w-4 h-4" /> Resources
-                 </button>
-                 <button onClick={() => setActiveTab('LOADOUT')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'LOADOUT' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <Briefcase className="w-4 h-4" /> Agent Loadout
-                 </button>
-                 <button onClick={() => setActiveTab('MISSIONS')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg relative ${activeTab === 'MISSIONS' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <Target className="w-4 h-4" /> Missions
-                     {newQuests.length > 0 && (
-                         <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-black"></span>
-                     )}
-                 </button>
-                 <button onClick={() => setActiveTab('ACHIEVEMENTS')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'ACHIEVEMENTS' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <Trophy className="w-4 h-4" /> Badges
-                 </button>
-                 <button onClick={() => setActiveTab('SKILLS')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'SKILLS' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <GitBranch className="w-4 h-4" /> Skills
-                 </button>
-                 <button onClick={() => setActiveTab('FORTUNE')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'FORTUNE' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <Dices className="w-4 h-4" /> Fortune
-                 </button>
-                 <button onClick={() => setActiveTab('TUTORING')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'TUTORING' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                     <GraduationCap className="w-4 h-4" /> Tutoring
-                 </button>
-             </div>
 
              {activeTab === 'MISSIONS' && (
                  <div key="missions" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>

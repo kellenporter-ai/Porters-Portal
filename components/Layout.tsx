@@ -52,33 +52,37 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
     await dataService.updateUserSettings(user.id, newSettings);
   };
 
-  const NavItems = () => (
-    <>
-      {NAVIGATION.filter(item => {
-        if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return false;
-        if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return false;
-        return true;
-      }).map((item) => (
-        <button
-          key={item.name}
-          onClick={() => {
-              setActiveTab(item.name);
-              setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-3' : 'py-4'} ${
-            activeTab === item.name 
-              ? 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50' 
-              : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
-          }`}
-        >
-          <span className={`${activeTab === item.name ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
-            {item.icon}
-          </span>
-          <span className="font-medium text-sm">{item.name}</span>
-        </button>
-      ))}
-    </>
-  );
+  const NavItems = () => {
+    const filteredItems = NAVIGATION.filter(item => {
+      if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return false;
+      if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return false;
+      return true;
+    });
+
+    return (
+      <>
+        {filteredItems.map((item) => (
+          <button
+            key={item.name}
+            onClick={() => {
+                setActiveTab(item.name);
+                setIsMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
+              activeTab === item.name
+                ? 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
+            }`}
+          >
+            <span className={`${activeTab === item.name ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
+              {item.icon}
+            </span>
+            <span className="font-medium text-sm">{item.name}</span>
+          </button>
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className={`flex flex-col md:flex-row h-screen overflow-hidden text-gray-100 relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
