@@ -167,7 +167,7 @@ const UNIQUES = [
   { name: "Einstein's Relativistic Boots", slot: "FEET", uniqueStat: { stat: "tech", val: 50 }, effect: "Time dilation allows late submission grace period" },
 ];
 
-const FLUX_COSTS: Record<string, number> = { RECALIBRATE: 5, REFORGE: 25, OPTIMIZE: 50 };
+const FLUX_COSTS: Record<string, number> = { RECALIBRATE: 5, REFORGE: 25, OPTIMIZE: 50, SOCKET: 30, ENCHANT: 15 };
 
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
@@ -1210,5 +1210,778 @@ export const awardQuestionXP = onCall(async (request) => {
     if (err instanceof HttpsError) throw err;
     logger.error(`awardQuestionXP failed for ${uid}:`, err);
     throw new HttpsError("internal", "Failed to award XP.");
+  });
+});
+
+// ==========================================
+// ENGAGEMENT STREAK LOGIC
+// ==========================================
+
+/**
+ * updateStreak — Called after engagement submission to update weekly streak.
+ */
+export const updateStreak = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) return { streak: 0 };
+
+    const data = userSnap.data()!;
+    const gam = data.gamification || {};
+    const currentStreak = gam.engagementStreak || 0;
+    const lastWeek = gam.lastStreakWeek || "";
+
+    // Calculate current ISO week
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    const currentWeekId = `${d.getUTCFullYear()}-W${weekNum.toString().padStart(2, "0")}`;
+
+    if (lastWeek === currentWeekId) {
+      return { streak: currentStreak, alreadyUpdated: true };
+    }
+
+    // Check if last week was the previous week (consecutive)
+    const lastWeekNum = lastWeek ? parseInt(lastWeek.split("-W")[1]) : 0;
+    const lastYear = lastWeek ? parseInt(lastWeek.split("-W")[0]) : 0;
+    const isConsecutive =
+      (lastYear === d.getUTCFullYear() && lastWeekNum === weekNum - 1) ||
+      (lastYear === d.getUTCFullYear() - 1 && weekNum === 1 && lastWeekNum >= 52);
+
+    const newStreak = isConsecutive ? currentStreak + 1 : 1;
+
+    transaction.update(userRef, {
+      "gamification.engagementStreak": newStreak,
+      "gamification.lastStreakWeek": currentWeekId,
+    });
+
+    return { streak: newStreak, weekId: currentWeekId };
+  });
+});
+
+// ==========================================
+// DAILY LOGIN REWARD
+// ==========================================
+
+const DAILY_LOGIN_REWARDS = [
+  { day: 1, xp: 25, flux: 5 },
+  { day: 2, xp: 30, flux: 5 },
+  { day: 3, xp: 40, flux: 10 },
+  { day: 4, xp: 50, flux: 10 },
+  { day: 5, xp: 75, flux: 15 },
+  { day: 6, xp: 100, flux: 20 },
+  { day: 7, xp: 150, flux: 50 },
+];
+
+export const claimDailyLogin = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const gam = data.gamification || {};
+    const today = new Date().toISOString().split("T")[0];
+    const lastClaim = gam.lastLoginRewardDate || "";
+
+    if (lastClaim === today) {
+      return { alreadyClaimed: true, streak: gam.loginStreak || 0 };
+    }
+
+    // Check if yesterday was claimed (consecutive)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+    const isConsecutive = lastClaim === yesterdayStr;
+    const newStreak = isConsecutive ? (gam.loginStreak || 0) + 1 : 1;
+
+    const dayIndex = (newStreak - 1) % 7;
+    const reward = DAILY_LOGIN_REWARDS[dayIndex];
+
+    const updates: Record<string, unknown> = {
+      "gamification.lastLoginRewardDate": today,
+      "gamification.loginStreak": newStreak,
+      "gamification.currency": (gam.currency || 0) + reward.flux,
+    };
+
+    // Award XP via shared helper
+    const xpResult = buildXPUpdates(data, reward.xp);
+    Object.assign(updates, xpResult.updates);
+
+    transaction.update(userRef, updates);
+
+    return {
+      alreadyClaimed: false,
+      streak: newStreak,
+      xpReward: reward.xp,
+      fluxReward: reward.flux,
+      leveledUp: xpResult.leveledUp,
+    };
+  });
+});
+
+// ==========================================
+// FORTUNE WHEEL
+// ==========================================
+
+const WHEEL_PRIZES = [
+  { id: "w_xp_50", type: "XP", value: 50, weight: 25 },
+  { id: "w_xp_100", type: "XP", value: 100, weight: 18 },
+  { id: "w_xp_250", type: "XP", value: 250, weight: 8 },
+  { id: "w_flux_10", type: "FLUX", value: 10, weight: 20 },
+  { id: "w_flux_25", type: "FLUX", value: 25, weight: 12 },
+  { id: "w_flux_100", type: "FLUX", value: 100, weight: 3 },
+  { id: "w_item_common", type: "ITEM", value: 1, weight: 15, rarity: "COMMON" },
+  { id: "w_item_uncommon", type: "ITEM", value: 1, weight: 8, rarity: "UNCOMMON" },
+  { id: "w_item_rare", type: "ITEM", value: 1, weight: 3, rarity: "RARE" },
+  { id: "w_gem", type: "GEM", value: 1, weight: 10 },
+  { id: "w_skillpt", type: "SKILL_POINT", value: 1, weight: 5 },
+  { id: "w_nothing", type: "NOTHING", value: 0, weight: 15 },
+];
+
+const GEM_TYPES = [
+  { name: "Ruby", stat: "tech", color: "#ef4444" },
+  { name: "Emerald", stat: "focus", color: "#22c55e" },
+  { name: "Sapphire", stat: "analysis", color: "#3b82f6" },
+  { name: "Amethyst", stat: "charisma", color: "#a855f7" },
+];
+
+function generateGem(level: number) {
+  const gemType = pick(GEM_TYPES);
+  const tier = Math.min(5, Math.max(1, Math.floor(level / 10) + 1));
+  return {
+    id: Math.random().toString(36).substring(2, 9),
+    name: `${gemType.name} (T${tier})`,
+    stat: gemType.stat,
+    value: tier * 3 + Math.floor(Math.random() * 3),
+    tier,
+    color: gemType.color,
+  };
+}
+
+export const spinFortuneWheel = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { classType } = request.data;
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const WHEEL_COST = 25; // Flux cost to spin
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const gam = data.gamification || {};
+    const today = new Date().toISOString().split("T")[0];
+
+    if (gam.lastWheelSpin === today) {
+      throw new HttpsError("failed-precondition", "Already spun today. Come back tomorrow!");
+    }
+
+    if ((gam.currency || 0) < WHEEL_COST) {
+      throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+    }
+
+    // Spin the wheel
+    const totalWeight = WHEEL_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let prize = WHEEL_PRIZES[WHEEL_PRIZES.length - 1];
+    for (const p of WHEEL_PRIZES) {
+      roll -= p.weight;
+      if (roll <= 0) { prize = p; break; }
+    }
+
+    const updates: Record<string, unknown> = {
+      "gamification.lastWheelSpin": today,
+      "gamification.currency": (gam.currency || 0) - WHEEL_COST,
+    };
+
+    let rewardDescription = "";
+
+    if (prize.type === "XP") {
+      const xpResult = buildXPUpdates(data, prize.value);
+      Object.assign(updates, xpResult.updates);
+      rewardDescription = `${prize.value} XP`;
+    } else if (prize.type === "FLUX") {
+      updates["gamification.currency"] = ((updates["gamification.currency"] as number) || 0) + prize.value;
+      rewardDescription = `${prize.value} Cyber-Flux`;
+    } else if (prize.type === "ITEM") {
+      const item = generateLoot(gam.level || 1, prize.rarity);
+      const paths = getProfilePaths(classType);
+      const { inventory } = getProfileData(data, classType);
+      updates[paths.inventory] = [...inventory, item];
+      rewardDescription = item.name;
+    } else if (prize.type === "GEM") {
+      const gem = generateGem(gam.level || 1);
+      // Store gems in a global gems collection on user
+      const currentGems = gam.gemsInventory || [];
+      updates["gamification.gemsInventory"] = [...currentGems, gem];
+      rewardDescription = gem.name;
+    } else if (prize.type === "SKILL_POINT") {
+      updates["gamification.skillPoints"] = (gam.skillPoints || 0) + 1;
+      rewardDescription = "1 Skill Point";
+    } else {
+      rewardDescription = "Better luck next time!";
+    }
+
+    transaction.update(userRef, updates);
+
+    return { prizeId: prize.id, prizeType: prize.type, rewardDescription };
+  });
+});
+
+// ==========================================
+// SKILL TREE
+// ==========================================
+
+export const unlockSkill = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { skillId, specialization } = request.data;
+  if (!skillId) throw new HttpsError("invalid-argument", "Skill ID required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const gam = data.gamification || {};
+    const currentSpec = gam.specialization;
+    const skillPoints = gam.skillPoints || 0;
+    const unlockedSkills = gam.unlockedSkills || [];
+
+    if (unlockedSkills.includes(skillId)) {
+      throw new HttpsError("already-exists", "Skill already unlocked.");
+    }
+
+    // If first skill, set specialization
+    const updates: Record<string, unknown> = {};
+    if (!currentSpec) {
+      updates["gamification.specialization"] = specialization;
+    } else if (currentSpec !== specialization) {
+      throw new HttpsError("failed-precondition",
+        "Cannot unlock skills from a different specialization.");
+    }
+
+    // Validate cost (simplified — real cost would be looked up from skill defs)
+    // Cost is encoded in the request since skill defs are shared
+    const cost = request.data.cost || 1;
+    if (skillPoints < cost) {
+      throw new HttpsError("failed-precondition", "Insufficient skill points.");
+    }
+
+    updates["gamification.skillPoints"] = skillPoints - cost;
+    updates["gamification.unlockedSkills"] = [...unlockedSkills, skillId];
+
+    transaction.update(userRef, updates);
+
+    return { success: true, remainingPoints: skillPoints - cost };
+  });
+});
+
+// ==========================================
+// ITEM ENCHANTING / SOCKETING
+// ==========================================
+
+export const addSocket = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { itemId, classType } = request.data;
+  if (!itemId) throw new HttpsError("invalid-argument", "Item ID required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const paths = getProfilePaths(classType);
+  const SOCKET_ADD_COST = FLUX_COSTS.SOCKET;
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const { inventory } = getProfileData(data, classType);
+    const currency = data.gamification?.currency || 0;
+
+    if (currency < SOCKET_ADD_COST) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+
+    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
+    if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
+
+    const item = JSON.parse(JSON.stringify(inventory[itemIdx]));
+    const currentSockets = item.sockets || 0;
+    if (currentSockets >= 3) throw new HttpsError("failed-precondition", "Maximum sockets reached.");
+
+    item.sockets = currentSockets + 1;
+    inventory[itemIdx] = item;
+
+    transaction.update(userRef, {
+      [paths.inventory]: inventory,
+      "gamification.currency": currency - SOCKET_ADD_COST,
+    });
+
+    return { item, newCurrency: currency - SOCKET_ADD_COST };
+  });
+});
+
+export const socketGem = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { itemId, gemId, classType } = request.data;
+  if (!itemId || !gemId) throw new HttpsError("invalid-argument", "Item ID and Gem ID required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const paths = getProfilePaths(classType);
+  const ENCHANT_COST_VAL = FLUX_COSTS.ENCHANT;
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const { inventory } = getProfileData(data, classType);
+    const gam = data.gamification || {};
+    const currency = gam.currency || 0;
+    const gemsInventory = gam.gemsInventory || [];
+
+    if (currency < ENCHANT_COST_VAL) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+
+    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
+    if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
+
+    const gemIdx = gemsInventory.findIndex((g: { id: string }) => g.id === gemId);
+    if (gemIdx === -1) throw new HttpsError("not-found", "Gem not found.");
+
+    const item = JSON.parse(JSON.stringify(inventory[itemIdx]));
+    const gem = gemsInventory[gemIdx];
+    const sockets = item.sockets || 0;
+    const currentGems = item.gems || [];
+
+    if (currentGems.length >= sockets) throw new HttpsError("failed-precondition", "No empty sockets.");
+
+    item.gems = [...currentGems, gem];
+    // Update item stats with gem bonus
+    item.stats[gem.stat] = (item.stats[gem.stat] || 0) + gem.value;
+
+    inventory[itemIdx] = item;
+    const newGemsInv = gemsInventory.filter((_: unknown, i: number) => i !== gemIdx);
+
+    transaction.update(userRef, {
+      [paths.inventory]: inventory,
+      "gamification.currency": currency - ENCHANT_COST_VAL,
+      "gamification.gemsInventory": newGemsInv,
+    });
+
+    return { item, newCurrency: currency - ENCHANT_COST_VAL };
+  });
+});
+
+// ==========================================
+// BOSS ENCOUNTERS
+// ==========================================
+
+export const dealBossDamage = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { bossId, damage, userName } = request.data;
+  if (!bossId || !damage) throw new HttpsError("invalid-argument", "Boss ID and damage required.");
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const bossRef = db.doc(`boss_encounters/${bossId}`);
+    const userRef = db.doc(`users/${uid}`);
+    const [bossSnap, userSnap] = await Promise.all([
+      transaction.get(bossRef), transaction.get(userRef),
+    ]);
+
+    if (!bossSnap.exists) throw new HttpsError("not-found", "Boss not found.");
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const boss = bossSnap.data()!;
+    if (!boss.isActive) throw new HttpsError("failed-precondition", "Boss is not active.");
+    if (new Date(boss.deadline) < new Date()) throw new HttpsError("failed-precondition", "Boss encounter has expired.");
+
+    const validDamage = Math.min(Number(damage), 100); // Cap per-hit damage
+    const newHp = Math.max(0, boss.currentHp - validDamage);
+    const damageLog = boss.damageLog || [];
+    damageLog.push({
+      userId: uid,
+      userName: userName || "Student",
+      damage: validDamage,
+      timestamp: new Date().toISOString(),
+    });
+
+    const bossUpdates: Record<string, unknown> = { currentHp: newHp, damageLog };
+
+    // Award XP for contributing
+    const userData = userSnap.data()!;
+    const xpReward = boss.xpRewardPerHit || 10;
+    const xpResult = buildXPUpdates(userData, xpReward);
+
+    // Track total damage dealt by this user
+    const gam = userData.gamification || {};
+    const bossDamageDealt = gam.bossDamageDealt || {};
+    bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + validDamage;
+
+    const userUpdates: Record<string, unknown> = {
+      ...xpResult.updates,
+      "gamification.bossDamageDealt": bossDamageDealt,
+    };
+
+    // Check if boss is defeated
+    let bossDefeated = false;
+    if (newHp <= 0) {
+      bossUpdates.isActive = false;
+      bossDefeated = true;
+    }
+
+    transaction.update(bossRef, bossUpdates);
+    transaction.update(userRef, userUpdates);
+
+    return {
+      newHp,
+      damageDealt: validDamage,
+      xpEarned: xpReward,
+      bossDefeated,
+      leveledUp: xpResult.leveledUp,
+    };
+  });
+});
+
+// ==========================================
+// BOSS QUIZ
+// ==========================================
+
+export const answerBossQuiz = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { quizId, questionId, answer } = request.data;
+  if (!quizId || !questionId || answer === undefined) {
+    throw new HttpsError("invalid-argument", "Quiz ID, question ID, and answer required.");
+  }
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const quizRef = db.doc(`boss_quizzes/${quizId}`);
+    const userRef = db.doc(`users/${uid}`);
+    const progressRef = db.doc(`boss_quiz_progress/${uid}_${quizId}`);
+
+    const [quizSnap, userSnap, progressSnap] = await Promise.all([
+      transaction.get(quizRef), transaction.get(userRef), transaction.get(progressRef),
+    ]);
+
+    if (!quizSnap.exists) throw new HttpsError("not-found", "Quiz not found.");
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const quiz = quizSnap.data()!;
+    if (!quiz.isActive) throw new HttpsError("failed-precondition", "Quiz is not active.");
+
+    const questions = quiz.questions || [];
+    const question = questions.find((q: { id: string }) => q.id === questionId);
+    if (!question) throw new HttpsError("not-found", "Question not found.");
+
+    // Check if already answered
+    const progress = progressSnap.exists ? progressSnap.data()! : { answeredQuestions: [] };
+    if (progress.answeredQuestions.includes(questionId)) {
+      return { alreadyAnswered: true, correct: false, damage: 0 };
+    }
+
+    const isCorrect = Number(answer) === question.correctAnswer;
+    let damage = 0;
+
+    if (isCorrect) {
+      damage = quiz.damagePerCorrect || 10;
+      if (question.damageBonus) damage += question.damageBonus;
+
+      // Apply damage to boss quiz
+      const newHp = Math.max(0, quiz.currentHp - damage);
+      transaction.update(quizRef, { currentHp: newHp });
+
+      // Award XP
+      const userData = userSnap.data()!;
+      const xpResult = buildXPUpdates(userData, damage); // XP = damage dealt
+      transaction.update(userRef, xpResult.updates);
+    }
+
+    // Track progress
+    transaction.set(progressRef, {
+      userId: uid,
+      quizId,
+      answeredQuestions: [...progress.answeredQuestions, questionId],
+      lastUpdated: new Date().toISOString(),
+    }, { merge: true });
+
+    return { correct: isCorrect, damage, newHp: Math.max(0, quiz.currentHp - damage) };
+  });
+});
+
+// ==========================================
+// GROUP QUESTS / PARTIES
+// ==========================================
+
+export const createParty = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { questId, userName } = request.data;
+  if (!questId) throw new HttpsError("invalid-argument", "Quest ID required.");
+
+  const db = admin.firestore();
+  const questSnap = await db.doc(`quests/${questId}`).get();
+  if (!questSnap.exists) throw new HttpsError("not-found", "Quest not found.");
+
+  const quest = questSnap.data()!;
+  if (!quest.isGroupQuest) throw new HttpsError("failed-precondition", "Not a group quest.");
+
+  const partyId = Math.random().toString(36).substring(2, 9);
+  await db.doc(`parties/${partyId}`).set({
+    id: partyId,
+    leaderId: uid,
+    leaderName: userName || "Leader",
+    members: [{ userId: uid, userName: userName || "Leader", joinedAt: new Date().toISOString() }],
+    questId,
+    status: "FORMING",
+    createdAt: new Date().toISOString(),
+    maxSize: quest.maxPlayers || 4,
+  });
+
+  await db.doc(`users/${uid}`).update({ "gamification.partyId": partyId });
+
+  return { partyId };
+});
+
+export const joinParty = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { partyId, userName } = request.data;
+  if (!partyId) throw new HttpsError("invalid-argument", "Party ID required.");
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const partyRef = db.doc(`parties/${partyId}`);
+    const partySnap = await transaction.get(partyRef);
+    if (!partySnap.exists) throw new HttpsError("not-found", "Party not found.");
+
+    const party = partySnap.data()!;
+    if (party.status !== "FORMING") throw new HttpsError("failed-precondition", "Party is no longer accepting members.");
+    if (party.members.length >= party.maxSize) throw new HttpsError("failed-precondition", "Party is full.");
+    if (party.members.some((m: { userId: string }) => m.userId === uid)) {
+      throw new HttpsError("already-exists", "Already in this party.");
+    }
+
+    const newMembers = [...party.members, { userId: uid, userName: userName || "Agent", joinedAt: new Date().toISOString() }];
+    transaction.update(partyRef, { members: newMembers });
+    transaction.update(db.doc(`users/${uid}`), { "gamification.partyId": partyId });
+
+    return { success: true, memberCount: newMembers.length };
+  });
+});
+
+// ==========================================
+// PEER TUTORING
+// ==========================================
+
+export const completeTutoring = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { sessionId, tutorId } = request.data;
+  if (!sessionId || !tutorId) throw new HttpsError("invalid-argument", "Session ID and tutor ID required.");
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const sessionRef = db.doc(`tutoring_sessions/${sessionId}`);
+    const tutorRef = db.doc(`users/${tutorId}`);
+    const [sessionSnap, tutorSnap] = await Promise.all([
+      transaction.get(sessionRef), transaction.get(tutorRef),
+    ]);
+
+    if (!sessionSnap.exists) throw new HttpsError("not-found", "Session not found.");
+    if (!tutorSnap.exists) throw new HttpsError("not-found", "Tutor not found.");
+
+    const session = sessionSnap.data()!;
+    const xpReward = session.xpReward || 75;
+    const fluxReward = session.fluxReward || 25;
+
+    const tutorData = tutorSnap.data()!;
+    const xpResult = buildXPUpdates(tutorData, xpReward);
+    const gam = tutorData.gamification || {};
+
+    transaction.update(sessionRef, {
+      status: "VERIFIED",
+      completedAt: new Date().toISOString(),
+      verifiedBy: request.auth?.uid,
+    });
+
+    transaction.update(tutorRef, {
+      ...xpResult.updates,
+      "gamification.currency": (gam.currency || 0) + fluxReward,
+      "gamification.tutoringSessionsCompleted": (gam.tutoringSessionsCompleted || 0) + 1,
+      "gamification.tutoringXpEarned": (gam.tutoringXpEarned || 0) + xpReward,
+    });
+
+    return { xpAwarded: xpReward, fluxAwarded: fluxReward };
+  });
+});
+
+// ==========================================
+// KNOWLEDGE-GATED LOOT
+// ==========================================
+
+export const claimKnowledgeLoot = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { gateId, classType } = request.data;
+  if (!gateId) throw new HttpsError("invalid-argument", "Gate ID required.");
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const gateRef = db.doc(`knowledge_gates/${gateId}`);
+    const userRef = db.doc(`users/${uid}`);
+    const claimRef = db.doc(`knowledge_claims/${uid}_${gateId}`);
+
+    const [gateSnap, userSnap, claimSnap] = await Promise.all([
+      transaction.get(gateRef), transaction.get(userRef), transaction.get(claimRef),
+    ]);
+
+    if (!gateSnap.exists) throw new HttpsError("not-found", "Knowledge gate not found.");
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+    if (claimSnap.exists) throw new HttpsError("already-exists", "Already claimed this reward.");
+
+    const gate = gateSnap.data()!;
+    if (!gate.isActive) throw new HttpsError("failed-precondition", "Gate is not active.");
+
+    // Check if student meets the score requirement
+    const progressRef = db.doc(`review_progress/${uid}_${gate.assignmentId}`);
+    const progressSnap = await transaction.get(progressRef);
+    if (!progressSnap.exists) {
+      throw new HttpsError("failed-precondition", "No quiz progress found. Complete the review questions first.");
+    }
+
+    const progress = progressSnap.data()!;
+    const answeredCount = (progress.answeredQuestions || []).length;
+    if (answeredCount < gate.requiredQuestions) {
+      throw new HttpsError("failed-precondition",
+        `Need ${gate.requiredQuestions} correct answers, have ${answeredCount}.`);
+    }
+
+    // Award rewards
+    const userData = userSnap.data()!;
+    const gam = userData.gamification || {};
+    const level = gam.level || 1;
+
+    const item = generateLoot(level, gate.rewards.itemRarity);
+    const paths = getProfilePaths(classType);
+    const { inventory } = getProfileData(userData, classType);
+
+    const xpResult = buildXPUpdates(userData, gate.rewards.xpBonus);
+    const updates: Record<string, unknown> = {
+      ...xpResult.updates,
+      [paths.inventory]: [...inventory, item],
+    };
+
+    if (gate.rewards.fluxBonus) {
+      updates["gamification.currency"] = (gam.currency || 0) + gate.rewards.fluxBonus;
+    }
+
+    transaction.set(claimRef, { userId: uid, gateId, claimedAt: new Date().toISOString() });
+    transaction.update(userRef, updates);
+
+    return { item, xpBonus: gate.rewards.xpBonus, fluxBonus: gate.rewards.fluxBonus || 0 };
+  });
+});
+
+// ==========================================
+// SEASONAL COSMETICS
+// ==========================================
+
+export const purchaseCosmetic = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { cosmeticId } = request.data;
+  if (!cosmeticId) throw new HttpsError("invalid-argument", "Cosmetic ID required.");
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const cosmeticRef = db.doc(`seasonal_cosmetics/${cosmeticId}`);
+    const userRef = db.doc(`users/${uid}`);
+    const [cosmeticSnap, userSnap] = await Promise.all([
+      transaction.get(cosmeticRef), transaction.get(userRef),
+    ]);
+
+    if (!cosmeticSnap.exists) throw new HttpsError("not-found", "Cosmetic not found.");
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const cosmetic = cosmeticSnap.data()!;
+    if (!cosmetic.isAvailable) throw new HttpsError("failed-precondition", "Cosmetic not currently available.");
+
+    const userData = userSnap.data()!;
+    const gam = userData.gamification || {};
+    const owned = gam.ownedCosmetics || [];
+
+    if (owned.includes(cosmeticId)) throw new HttpsError("already-exists", "Already owned.");
+    if ((gam.currency || 0) < cosmetic.cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+
+    transaction.update(userRef, {
+      "gamification.ownedCosmetics": [...owned, cosmeticId],
+      "gamification.currency": (gam.currency || 0) - cosmetic.cost,
+    });
+
+    return { success: true };
+  });
+});
+
+// ==========================================
+// DAILY CHALLENGES
+// ==========================================
+
+export const claimDailyChallenge = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { challengeId, classType } = request.data;
+  if (!challengeId) throw new HttpsError("invalid-argument", "Challenge ID required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const gam = data.gamification || {};
+    const challenges = gam.activeDailyChallenges || [];
+
+    const challenge = challenges.find((c: { challengeId: string }) => c.challengeId === challengeId);
+    if (!challenge) throw new HttpsError("not-found", "Challenge not found in active list.");
+    if (!challenge.completed) throw new HttpsError("failed-precondition", "Challenge not completed yet.");
+    if (challenge.claimedAt) throw new HttpsError("already-exists", "Already claimed.");
+
+    // Look up challenge rewards from the challenges collection
+    const challengeRef = db.doc(`daily_challenges/${challengeId}`);
+    const challengeSnap = await transaction.get(challengeRef);
+    const xpReward = challengeSnap.exists ? challengeSnap.data()!.xpReward || 50 : 50;
+    const fluxReward = challengeSnap.exists ? challengeSnap.data()!.fluxReward || 0 : 0;
+
+    // Mark as claimed
+    const updatedChallenges = challenges.map((c: { challengeId: string; claimedAt?: string }) =>
+      c.challengeId === challengeId ? { ...c, claimedAt: new Date().toISOString() } : c
+    );
+
+    const xpResult = buildXPUpdates(data, xpReward, classType);
+    const updates: Record<string, unknown> = {
+      ...xpResult.updates,
+      "gamification.activeDailyChallenges": updatedChallenges,
+    };
+    if (fluxReward > 0) {
+      updates["gamification.currency"] = (gam.currency || 0) + fluxReward;
+    }
+
+    transaction.update(userRef, updates);
+    return { xpReward, fluxReward, leveledUp: xpResult.leveledUp };
   });
 });

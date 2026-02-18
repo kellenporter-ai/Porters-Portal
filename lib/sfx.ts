@@ -107,4 +107,76 @@ export const sfx = {
     playTone(800, 0.1, 'sine', 0.06);
     setTimeout(() => playTone(1000, 0.12, 'sine', 0.04), 120);
   },
+
+  /** Achievement unlocked — triumphant fanfare */
+  achievement: () => {
+    const notes = [440, 554, 659, 880, 1047];
+    notes.forEach((freq, i) => {
+      setTimeout(() => playTone(freq, 0.25, 'triangle', 0.1), i * 100);
+    });
+  },
+
+  /** Daily login reward — warm ascending chime */
+  dailyReward: () => {
+    playTone(523, 0.12, 'sine', 0.08);
+    setTimeout(() => playTone(659, 0.12, 'sine', 0.07), 100);
+    setTimeout(() => playTone(784, 0.2, 'triangle', 0.06), 200);
+  },
+
+  /** Fortune wheel spin — escalating ticking */
+  wheelSpin: () => {
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => playTone(400 + i * 50, 0.04, 'square', 0.04), i * 60);
+    }
+  },
+
+  /** Fortune wheel prize — big reveal */
+  wheelPrize: () => {
+    playTone(523, 0.15, 'triangle', 0.1);
+    setTimeout(() => playTone(784, 0.15, 'triangle', 0.1), 120);
+    setTimeout(() => playTone(1047, 0.3, 'sine', 0.12), 240);
+  },
+
+  /** Skill unlock — tech power-up */
+  skillUnlock: () => {
+    playTone(300, 0.1, 'sawtooth', 0.06);
+    setTimeout(() => playTone(600, 0.1, 'sawtooth', 0.06), 80);
+    setTimeout(() => playTone(900, 0.15, 'sine', 0.08), 160);
+  },
+
+  /** Boss hit — impact sound */
+  bossHit: () => {
+    playTone(100, 0.1, 'square', 0.12);
+    setTimeout(() => playTone(80, 0.15, 'sawtooth', 0.08), 50);
+  },
+
+  /** Boss defeated — epic victory */
+  bossDefeated: () => {
+    const notes = [262, 330, 392, 523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      setTimeout(() => playTone(freq, 0.3, 'triangle', 0.08), i * 90);
+    });
+  },
+
+  /** Gem socket — crystalline click */
+  gemSocket: () => {
+    playTone(1200, 0.08, 'sine', 0.08);
+    setTimeout(() => playTone(1600, 0.1, 'sine', 0.06), 60);
+    setTimeout(() => playTone(2000, 0.15, 'triangle', 0.04), 120);
+  },
+
+  /** Party join — friendly chime */
+  partyJoin: () => {
+    playTone(440, 0.1, 'sine', 0.06);
+    setTimeout(() => playTone(554, 0.1, 'sine', 0.06), 80);
+    setTimeout(() => playTone(659, 0.15, 'sine', 0.05), 160);
+  },
+
+  /** Chest opening — dramatic reveal */
+  chestOpen: () => {
+    playTone(200, 0.15, 'square', 0.06);
+    setTimeout(() => playTone(300, 0.1, 'square', 0.05), 100);
+    setTimeout(() => playTone(500, 0.1, 'triangle', 0.06), 200);
+    setTimeout(() => playTone(800, 0.2, 'sine', 0.08), 350);
+  },
 };

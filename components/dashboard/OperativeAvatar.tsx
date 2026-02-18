@@ -3,6 +3,9 @@ import React, { useMemo } from 'react';
 interface OperativeAvatarProps {
     equipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
     appearance?: { bodyType?: 'A' | 'B'; hue?: number };
+    evolutionLevel?: number; // Player level for evolution visuals
+    activeCosmetic?: string; // Active seasonal cosmetic type
+    cosmeticColor?: string; // Cosmetic particle color
 }
 
 const RARITY_COLORS: Record<string, { primary: string; glow: string; particle: string }> = {
@@ -17,7 +20,7 @@ const getRarityStyle = (item: { rarity?: string } | null | undefined) => {
     return RARITY_COLORS[item.rarity as keyof typeof RARITY_COLORS] || RARITY_COLORS.COMMON;
 };
 
-const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance }) => {
+const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance, evolutionLevel = 1, activeCosmetic, cosmeticColor }) => {
     const hue = appearance?.hue || 0;
     const isTypeB = appearance?.bodyType === 'B';
 
@@ -330,18 +333,141 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance 
                 {/* === SUIT ENERGY LINES (3+ items equipped) === */}
                 {equippedCount >= 3 && (
                     <g>
-                        <line x1="100" y1="92" x2="100" y2="195" 
+                        <line x1="100" y1="92" x2="100" y2="195"
                               stroke={`hsl(${hue + 180}, 80%, 55%)`} strokeWidth="0.6" strokeOpacity="0.2" strokeDasharray="4 6">
                             <animate attributeName="strokeDashoffset" values="0;-20" dur="2s" repeatCount="indefinite" />
                         </line>
-                        <line x1="62" y1="94" x2="48" y2="165" 
+                        <line x1="62" y1="94" x2="48" y2="165"
                               stroke={`hsl(${hue + 180}, 80%, 55%)`} strokeWidth="0.5" strokeOpacity="0.15" strokeDasharray="3 5">
                             <animate attributeName="strokeDashoffset" values="0;-16" dur="1.8s" repeatCount="indefinite" />
                         </line>
-                        <line x1="138" y1="94" x2="152" y2="165" 
+                        <line x1="138" y1="94" x2="152" y2="165"
                               stroke={`hsl(${hue + 180}, 80%, 55%)`} strokeWidth="0.5" strokeOpacity="0.15" strokeDasharray="3 5">
                             <animate attributeName="strokeDashoffset" values="0;-16" dur="1.8s" repeatCount="indefinite" />
                         </line>
+                    </g>
+                )}
+
+                {/* === EVOLUTION: CIRCLET (Level 15+) === */}
+                {evolutionLevel >= 15 && (
+                    <g filter="url(#av-glow)">
+                        <ellipse cx="100" cy="24" rx="18" ry="4" fill="none"
+                                 stroke={evolutionLevel >= 50 ? '#fbbf24' : evolutionLevel >= 30 ? '#a78bfa' : '#60a5fa'}
+                                 strokeWidth="1.5" strokeOpacity="0.7">
+                            <animate attributeName="strokeOpacity" values="0.7;0.4;0.7" dur="2s" repeatCount="indefinite" />
+                        </ellipse>
+                        {evolutionLevel >= 30 && (
+                            /* Halo for Commander+ */
+                            <ellipse cx="100" cy="20" rx="22" ry="5" fill="none"
+                                     stroke={evolutionLevel >= 50 ? '#fbbf24' : '#a78bfa'}
+                                     strokeWidth="0.8" strokeOpacity="0.4" strokeDasharray="3 3">
+                                <animate attributeName="strokeDashoffset" values="0;-12" dur="3s" repeatCount="indefinite" />
+                            </ellipse>
+                        )}
+                        {evolutionLevel >= 50 && (
+                            /* Crown points for Mythic */
+                            <g>
+                                {[-12, 0, 12].map((x, i) => (
+                                    <polygon key={i} points={`${100 + x},18 ${97 + x},24 ${103 + x},24`}
+                                             fill="#fbbf24" fillOpacity="0.6">
+                                        <animate attributeName="fillOpacity" values="0.6;0.3;0.6"
+                                                 dur={`${1.5 + i * 0.2}s`} repeatCount="indefinite" />
+                                    </polygon>
+                                ))}
+                            </g>
+                        )}
+                    </g>
+                )}
+
+                {/* === EVOLUTION: ENERGY WINGS (Level 30+) === */}
+                {evolutionLevel >= 30 && (
+                    <g filter="url(#av-bloom)">
+                        {/* Left wing */}
+                        <path d={evolutionLevel >= 50
+                            ? "M60 100 Q20 60 30 30 Q40 50 55 70 Q35 60 25 40 Q38 55 55 80 Z"
+                            : "M62 110 Q35 80 42 55 Q48 70 58 85 Z"
+                        }
+                              fill={evolutionLevel >= 50 ? 'rgba(251,191,36,0.15)' : 'rgba(139,92,246,0.12)'}
+                              stroke={evolutionLevel >= 50 ? '#fbbf24' : '#a78bfa'}
+                              strokeWidth="0.5" strokeOpacity="0.4">
+                            <animate attributeName="opacity" values="0.8;0.5;0.8" dur="3s" repeatCount="indefinite" />
+                        </path>
+                        {/* Right wing */}
+                        <path d={evolutionLevel >= 50
+                            ? "M140 100 Q180 60 170 30 Q160 50 145 70 Q165 60 175 40 Q162 55 145 80 Z"
+                            : "M138 110 Q165 80 158 55 Q152 70 142 85 Z"
+                        }
+                              fill={evolutionLevel >= 50 ? 'rgba(251,191,36,0.15)' : 'rgba(139,92,246,0.12)'}
+                              stroke={evolutionLevel >= 50 ? '#fbbf24' : '#a78bfa'}
+                              strokeWidth="0.5" strokeOpacity="0.4">
+                            <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3s" repeatCount="indefinite" />
+                        </path>
+                    </g>
+                )}
+
+                {/* === EVOLUTION: ENHANCED ARMOR DETAILS (Level 5+) === */}
+                {evolutionLevel >= 5 && (
+                    <g>
+                        {/* Shoulder accents */}
+                        <line x1="56" y1="92" x2="48" y2="98"
+                              stroke={`hsl(${hue + 180}, 70%, 50%)`} strokeWidth="1" strokeOpacity={0.15 + evolutionLevel * 0.005} />
+                        <line x1="144" y1="92" x2="152" y2="98"
+                              stroke={`hsl(${hue + 180}, 70%, 50%)`} strokeWidth="1" strokeOpacity={0.15 + evolutionLevel * 0.005} />
+                        {/* Energy conduit lines on torso */}
+                        {evolutionLevel >= 15 && (
+                            <>
+                                <line x1="85" y1="105" x2="80" y2="180"
+                                      stroke={`hsl(${hue + 180}, 60%, 50%)`} strokeWidth="0.4"
+                                      strokeOpacity="0.15" strokeDasharray="2 4">
+                                    <animate attributeName="strokeDashoffset" values="0;-12" dur="2.5s" repeatCount="indefinite" />
+                                </line>
+                                <line x1="115" y1="105" x2="120" y2="180"
+                                      stroke={`hsl(${hue + 180}, 60%, 50%)`} strokeWidth="0.4"
+                                      strokeOpacity="0.15" strokeDasharray="2 4">
+                                    <animate attributeName="strokeDashoffset" values="0;-12" dur="2.5s" repeatCount="indefinite" />
+                                </line>
+                            </>
+                        )}
+                    </g>
+                )}
+
+                {/* === EVOLUTION: AMBIENT PARTICLES (Level 5+) === */}
+                {evolutionLevel >= 5 && (
+                    <g filter="url(#av-soft)">
+                        {Array.from({ length: Math.min(10, Math.floor(evolutionLevel / 5)) }).map((_, i) => {
+                            const angle = (i * 360 / Math.min(10, Math.floor(evolutionLevel / 5))) * (Math.PI / 180);
+                            const cx = 100 + Math.cos(angle) * (40 + i * 3);
+                            const cy = 140 + Math.sin(angle) * (60 + i * 2);
+                            const particleColor = evolutionLevel >= 50 ? '#fbbf24'
+                                : evolutionLevel >= 30 ? '#a78bfa'
+                                : evolutionLevel >= 15 ? '#60a5fa' : `hsl(${hue + 180}, 70%, 60%)`;
+                            return (
+                                <circle key={i} cx={cx} cy={cy} r="1" fill={particleColor} fillOpacity="0.4">
+                                    <animate attributeName="cy" values={`${cy};${cy - 15};${cy}`}
+                                             dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />
+                                    <animate attributeName="fillOpacity" values="0.4;0;0.4"
+                                             dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />
+                                </circle>
+                            );
+                        })}
+                    </g>
+                )}
+
+                {/* === SEASONAL COSMETIC PARTICLES === */}
+                {activeCosmetic && cosmeticColor && (
+                    <g filter="url(#av-soft)">
+                        {Array.from({ length: 8 }).map((_, i) => {
+                            const cx = 60 + Math.random() * 80;
+                            const cy = 20 + Math.random() * 260;
+                            return (
+                                <circle key={`cosmetic-${i}`} cx={cx} cy={cy} r={1 + Math.random()} fill={cosmeticColor} fillOpacity="0.5">
+                                    <animate attributeName="cy" values={`${cy};${cy - 30};${cy}`}
+                                             dur={`${3 + i * 0.5}s`} repeatCount="indefinite" />
+                                    <animate attributeName="fillOpacity" values="0.5;0;0.5"
+                                             dur={`${3 + i * 0.5}s`} repeatCount="indefinite" />
+                                </circle>
+                            );
+                        })}
                     </g>
                 )}
             </g>

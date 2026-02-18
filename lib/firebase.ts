@@ -55,3 +55,19 @@ export const callSubmitEngagement = httpsCallable(functions, 'submitEngagement')
 export const callSendClassMessage = httpsCallable(functions, 'sendClassMessage');
 export const callUploadQuestionBank = httpsCallable(functions, 'uploadQuestionBank');
 export const callAwardQuestionXP = httpsCallable(functions, 'awardQuestionXP');
+
+// New gamification Cloud Functions
+export const callUpdateStreak = httpsCallable(functions, 'updateStreak');
+export const callClaimDailyLogin = httpsCallable(functions, 'claimDailyLogin');
+export const callSpinFortuneWheel = httpsCallable(functions, 'spinFortuneWheel');
+export const callUnlockSkill = httpsCallable(functions, 'unlockSkill');
+export const callAddSocket = httpsCallable(functions, 'addSocket');
+export const callSocketGem = httpsCallable(functions, 'socketGem');
+export const callDealBossDamage = httpsCallable(functions, 'dealBossDamage');
+export const callAnswerBossQuiz = httpsCallable(functions, 'answerBossQuiz');
+export const callCreateParty = httpsCallable(functions, 'createParty');
+export const callJoinParty = httpsCallable(functions, 'joinParty');
+export const callCompleteTutoring = httpsCallable(functions, 'completeTutoring');
+export const callClaimKnowledgeLoot = httpsCallable(functions, 'claimKnowledgeLoot');
+export const callPurchaseCosmetic = httpsCallable(functions, 'purchaseCosmetic');
+export const callClaimDailyChallenge = httpsCallable(functions, 'claimDailyChallenge');

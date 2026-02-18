@@ -2,8 +2,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { User, DefaultClassTypes } from '../types';
 import { dataService } from '../services/dataService';
-import { Trophy, Medal, Lock, ChevronDown, Users } from 'lucide-react';
+import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
 import { getRankDetails } from '../lib/gamification';
+import PlayerInspectModal from './xp/PlayerInspectModal';
 
 const LeaderboardSkeleton = () => (
     <div className="grid grid-cols-1 divide-y divide-white/5">
@@ -28,6 +29,7 @@ const Leaderboard: React.FC = () => {
   const [allStudents, setAllStudents] = useState<User[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>(DefaultClassTypes.AP_PHYSICS);
   const [isLoading, setIsLoading] = useState(true);
+  const [inspectUserId, setInspectUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = dataService.subscribeToLeaderboard((users) => {
@@ -114,6 +116,9 @@ const Leaderboard: React.FC = () => {
                                     <div className={`font-bold truncate max-w-[100px] ${isFirst ? 'text-sm text-white' : 'text-xs text-gray-300'} ${isPrivate ? 'italic' : ''}`}>{displayName}</div>
                                     <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
                                     <div className={`text-[9px] font-mono uppercase ${rd.tierColor.split(' ')[1]}`}>{rd.rankName}</div>
+                                    <button onClick={() => setInspectUserId(u.id)} className="mt-1 text-[10px] text-gray-500 hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
+                                        <Eye className="w-3 h-3" /> Inspect
+                                    </button>
                                 </div>
                                 {/* Podium bar */}
                                 <div className={`${heights[rank]} w-20 mt-2 rounded-t-lg bg-gradient-to-t ${rank === 0 ? 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30' : rank === 1 ? 'from-gray-400/15 to-gray-400/5 border-gray-400/20' : 'from-amber-600/15 to-amber-600/5 border-amber-600/20'} border border-b-0`}></div>
@@ -166,6 +171,13 @@ const Leaderboard: React.FC = () => {
                                 </div>
                                 <div className="text-[9px] text-gray-500 font-mono tracking-widest">CLASS XP</div>
                             </div>
+                            <button
+                                onClick={() => setInspectUserId(u.id)}
+                                className="p-2 text-gray-600 hover:text-purple-400 transition rounded-lg hover:bg-white/5"
+                                title="Inspect player"
+                            >
+                                <Eye className="w-4 h-4" />
+                            </button>
                         </div>
                     );
                 })}
@@ -179,6 +191,15 @@ const Leaderboard: React.FC = () => {
             </>
             )}
         </div>
+
+        {/* Player Inspect Modal */}
+        {inspectUserId && (
+            <PlayerInspectModal
+                userId={inspectUserId}
+                classType={selectedClass}
+                onClose={() => setInspectUserId(null)}
+            />
+        )}
     </div>
   );
 };

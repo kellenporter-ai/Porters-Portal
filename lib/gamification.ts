@@ -109,6 +109,34 @@ export const calculateGearScore = (equipped: Partial<Record<EquipmentSlot, RPGIt
     return Math.floor(totalScore);
 };
 
+// --- SET BONUS HELPERS ---
+export const calculateSetBonusStats = (equipped: Partial<Record<EquipmentSlot, RPGItem>> | undefined): Record<string, number> => {
+    if (!equipped) return {};
+    const { getActiveSetBonuses } = require('./achievements');
+    const items = Object.values(equipped).filter(Boolean) as RPGItem[];
+    const activeSets = getActiveSetBonuses(items);
+    const bonusStats: Record<string, number> = {};
+    activeSets.forEach(({ activeBonus }: { activeBonus: { effects: { stat: string; value: number }[] } }) => {
+        activeBonus.effects.forEach((e: { stat: string; value: number }) => {
+            bonusStats[e.stat] = (bonusStats[e.stat] || 0) + e.value;
+        });
+    });
+    return bonusStats;
+};
+
+// --- GEM STAT HELPERS ---
+export const calculateGemStats = (equipped: Partial<Record<EquipmentSlot, RPGItem>> | undefined): Record<string, number> => {
+    if (!equipped) return {};
+    const gemStats: Record<string, number> = {};
+    const items = Object.values(equipped).filter(Boolean) as RPGItem[];
+    items.forEach(item => {
+        (item.gems || []).forEach(gem => {
+            gemStats[gem.stat] = (gemStats[gem.stat] || 0) + gem.value;
+        });
+    });
+    return gemStats;
+};
+
 export const getAssetColors = (rarity: ItemRarity): { border: string; text: string; bg: string; glow: string; shimmer: string } => {
     switch(rarity) {
         case 'COMMON': return { border: 'border-slate-500', text: 'text-slate-300', bg: 'bg-slate-500/10', glow: 'shadow-none', shimmer: '' };

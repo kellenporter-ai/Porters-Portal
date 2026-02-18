@@ -1,8 +1,8 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame } from 'lucide-react';
+import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Trophy, Sparkles, Dices, GitBranch, GraduationCap, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { getRankDetails, calculatePlayerStats, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -13,6 +13,16 @@ import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
 import OperativeAvatar from './dashboard/OperativeAvatar';
 import { Announcement } from '../types';
+import AchievementPanel from './xp/AchievementPanel';
+import SkillTreePanel from './xp/SkillTreePanel';
+import FortuneWheel from './xp/FortuneWheel';
+import BossEncounterPanel from './xp/BossEncounterPanel';
+import BossQuizPanel from './xp/BossQuizPanel';
+import DailyChallengesPanel from './xp/DailyChallengesPanel';
+import TutoringPanel from './xp/TutoringPanel';
+import LootDropAnimation from './xp/LootDropAnimation';
+import ProfileShowcase from './ProfileShowcase';
+import { getStreakMultiplier } from '../lib/achievements';
 
 interface StudentDashboardProps {
   user: User;
@@ -53,13 +63,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
   const acknowledgedLevelRef = React.useRef<number>(user.gamification?.lastLevelSeen || 1);
-  const [activeTab, setActiveTab] = useState<'RESOURCES' | 'LOADOUT' | 'MISSIONS'>('RESOURCES');
+  const [activeTab, setActiveTab] = useState<'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'>('RESOURCES');
   const [showCustomize, setShowCustomize] = useState(false);
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewHue, setPreviewHue] = useState<number | null>(null);
   const [previewBodyType, setPreviewBodyType] = useState<'A' | 'B' | null>(null);
   const [xpFloatAmount, setXpFloatAmount] = useState<number | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
+  const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
 
   useEffect(() => {
       const currentLevel = user.gamification?.level || 1;
@@ -110,6 +123,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       }
       prevXpRef.current = classXp;
   }, [classXp]);
+
+  // Daily login reward — auto-claim on mount
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastClaim = user.gamification?.lastLoginRewardDate;
+    if (lastClaim !== today && !dailyLoginClaimed) {
+      dataService.claimDailyLogin().then(result => {
+        if (!result.alreadyClaimed) {
+          setDailyLoginClaimed(true);
+          sfx.dailyReward();
+          toast.success(`Daily login: +${result.xpReward} XP, +${result.fluxReward} Flux (${result.streak}-day streak!)`);
+        }
+      }).catch(() => { /* silent fail — not critical */ });
+    }
+  }, []); // Run once on mount
+
+  // Update engagement streak when viewing dashboard
+  useEffect(() => {
+    dataService.updateEngagementStreak().catch(() => { /* silent */ });
+  }, []);
 
   // Announcements
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -424,20 +457,49 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             </div>
         </div>
 
-        {/* Engagement Streak */}
-        {(user.gamification?.engagementStreak || 0) > 0 && (
-            <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center">
-                        <Flame className="w-6 h-6" />
+        {/* Engagement Streak + Multiplier */}
+        {(user.gamification?.engagementStreak || 0) > 0 && (() => {
+            const streak = user.gamification?.engagementStreak || 0;
+            const multiplier = getStreakMultiplier(streak);
+            return (
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                            <Flame className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Streak</div>
+                            <div className="text-xl font-black text-orange-400 leading-none">{streak}w</div>
+                        </div>
+                        {multiplier > 1 && (
+                            <div className="text-right">
+                                <div className="text-[9px] text-gray-500 uppercase">XP Bonus</div>
+                                <div className="text-sm font-black text-yellow-400">+{Math.round((multiplier - 1) * 100)}%</div>
+                            </div>
+                        )}
                     </div>
-                    <div>
-                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Streak</div>
-                        <div className="text-xl font-black text-orange-400 leading-none">{user.gamification?.engagementStreak || 0}w</div>
-                    </div>
+                </div>
+            );
+        })()}
+
+        {/* Login Streak */}
+        {(user.gamification?.loginStreak || 0) > 1 && (
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-3 flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <div>
+                    <div className="text-[10px] text-gray-500 uppercase font-bold">Daily Login</div>
+                    <div className="text-sm font-black text-purple-400">{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
         )}
+
+        {/* Profile Showcase Button */}
+        <button
+            onClick={() => setShowProfile(true)}
+            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-2xl flex items-center justify-center gap-2 transition text-gray-400 hover:text-white text-sm font-bold"
+        >
+            <Eye className="w-4 h-4" /> View Profile
+        </button>
 
         <div className="space-y-2">
              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">Access Nodes</label>
@@ -485,6 +547,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      {newQuests.length > 0 && (
                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-black"></span>
                      )}
+                 </button>
+                 <button onClick={() => setActiveTab('ACHIEVEMENTS')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'ACHIEVEMENTS' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                     <Trophy className="w-4 h-4" /> Badges
+                 </button>
+                 <button onClick={() => setActiveTab('SKILLS')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'SKILLS' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                     <GitBranch className="w-4 h-4" /> Skills
+                 </button>
+                 <button onClick={() => setActiveTab('FORTUNE')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'FORTUNE' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                     <Dices className="w-4 h-4" /> Fortune
+                 </button>
+                 <button onClick={() => setActiveTab('TUTORING')} className={`flex items-center gap-2 font-bold text-sm transition px-4 py-2 rounded-lg ${activeTab === 'TUTORING' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                     <GraduationCap className="w-4 h-4" /> Tutoring
                  </button>
              </div>
 
@@ -704,7 +778,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
                                  {/* AVATAR CENTER */}
                                  <div className="w-40 h-full relative">
-                                     <OperativeAvatar equipped={equipped} appearance={classProfile.appearance} />
+                                     <OperativeAvatar equipped={equipped} appearance={classProfile.appearance} evolutionLevel={level} />
                                  </div>
 
                                  {/* RIGHT SLOTS */}
@@ -811,6 +885,59 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      </div>
                  </div>
              )}
+             {activeTab === 'ACHIEVEMENTS' && (
+                 <div key="achievements" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <AchievementPanel
+                         unlockedAchievements={user.gamification?.unlockedAchievements || []}
+                         achievementProgress={user.gamification?.achievementProgress || {}}
+                     />
+                 </div>
+             )}
+
+             {activeTab === 'SKILLS' && (
+                 <div key="skills" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <SkillTreePanel
+                         specialization={user.gamification?.specialization}
+                         skillPoints={user.gamification?.skillPoints || 0}
+                         unlockedSkills={user.gamification?.unlockedSkills || []}
+                     />
+                 </div>
+             )}
+
+             {activeTab === 'FORTUNE' && (
+                 <div key="fortune" className="space-y-8" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <FortuneWheel
+                         currency={currency}
+                         lastSpin={user.gamification?.lastWheelSpin}
+                         classType={activeClass}
+                     />
+                 </div>
+             )}
+
+             {activeTab === 'TUTORING' && (
+                 <div key="tutoring" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <TutoringPanel
+                         userId={user.id}
+                         userName={user.name}
+                         classType={activeClass}
+                     />
+                 </div>
+             )}
+          </div>
+      </div>
+
+      {/* SIDEBAR PANELS - Boss Encounters & Daily Challenges */}
+      <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+              <DailyChallengesPanel
+                  userId={user.id}
+                  activeChallenges={user.gamification?.activeDailyChallenges || []}
+                  classType={activeClass}
+              />
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
+              <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
+              <BossQuizPanel classType={activeClass} />
           </div>
       </div>
 
@@ -1019,6 +1146,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               </div>
           )}
       </Modal>
+
+      {/* Profile Showcase */}
+      {showProfile && (
+          <ProfileShowcase user={user} classType={activeClass} onClose={() => setShowProfile(false)} />
+      )}
+
+      {/* Loot Drop Animation */}
+      {lootDropItem && (
+          <LootDropAnimation item={lootDropItem} onClose={() => setLootDropItem(null)} />
+      )}
 
       <Modal isOpen={showLevelUp} onClose={handleLevelUpAck} title="PROMOTION GRANTED" maxWidth="max-w-md">
           <div className="text-center py-6 relative overflow-hidden">

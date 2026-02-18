@@ -1,6 +1,6 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage } from '../lib/firebase';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge } from '../types';
+import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -843,10 +843,219 @@ export const dataService = {
 
   // --- ENGAGEMENT STREAKS ---
 
-  updateEngagementStreak: async (userId: string, currentStreak: number, weekId: string) => {
-    await updateDoc(doc(db, 'users', userId), {
-        'gamification.engagementStreak': currentStreak,
-        'gamification.lastStreakWeek': weekId
+  updateEngagementStreak: async () => {
+    const result = await callUpdateStreak({});
+    return result.data as { streak: number; alreadyUpdated?: boolean };
+  },
+
+  // --- DAILY LOGIN REWARD ---
+
+  claimDailyLogin: async () => {
+    const result = await callClaimDailyLogin({});
+    return result.data as {
+      alreadyClaimed: boolean;
+      streak: number;
+      xpReward?: number;
+      fluxReward?: number;
+      leveledUp?: boolean;
+    };
+  },
+
+  // --- FORTUNE WHEEL ---
+
+  spinFortuneWheel: async (classType?: string) => {
+    const result = await callSpinFortuneWheel({ classType });
+    return result.data as {
+      prizeId: string;
+      prizeType: string;
+      rewardDescription: string;
+    };
+  },
+
+  // --- SKILL TREE ---
+
+  unlockSkill: async (skillId: string, specialization: string, cost: number) => {
+    const result = await callUnlockSkill({ skillId, specialization, cost });
+    return result.data as { success: boolean; remainingPoints: number };
+  },
+
+  // --- ITEM ENCHANTING / SOCKETING ---
+
+  addSocket: async (itemId: string, classType?: string) => {
+    const result = await callAddSocket({ itemId, classType });
+    return result.data as { item: RPGItem; newCurrency: number };
+  },
+
+  socketGem: async (itemId: string, gemId: string, classType?: string) => {
+    const result = await callSocketGem({ itemId, gemId, classType });
+    return result.data as { item: RPGItem; newCurrency: number };
+  },
+
+  // --- BOSS ENCOUNTERS ---
+
+  subscribeToBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
+    const q = query(collection(db, 'boss_encounters'), where('isActive', '==', true));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BossEncounter)));
+    }, (error) => console.error("Boss encounters subscription error:", error));
+  },
+
+  dealBossDamage: async (bossId: string, damage: number, userName: string) => {
+    const result = await callDealBossDamage({ bossId, damage, userName });
+    return result.data as {
+      newHp: number;
+      damageDealt: number;
+      xpEarned: number;
+      bossDefeated: boolean;
+      leveledUp: boolean;
+    };
+  },
+
+  // --- BOSS QUIZ ---
+
+  subscribeToBossQuizzes: (classType: string, callback: (quizzes: BossQuizEvent[]) => void) => {
+    const q = query(collection(db, 'boss_quizzes'), where('isActive', '==', true));
+    return onSnapshot(q, (snapshot) => {
+      const quizzes = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() } as BossQuizEvent))
+        .filter(q => q.classType === classType || q.classType === 'GLOBAL');
+      callback(quizzes);
+    }, (error) => console.error("Boss quiz subscription error:", error));
+  },
+
+  answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
+    const result = await callAnswerBossQuiz({ quizId, questionId, answer });
+    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean };
+  },
+
+  // --- GROUP QUESTS / PARTIES ---
+
+  createParty: async (questId: string, userName: string) => {
+    const result = await callCreateParty({ questId, userName });
+    return result.data as { partyId: string };
+  },
+
+  joinParty: async (partyId: string, userName: string) => {
+    const result = await callJoinParty({ partyId, userName });
+    return result.data as { success: boolean; memberCount: number };
+  },
+
+  subscribeToParty: (partyId: string, callback: (party: QuestParty | null) => void) => {
+    return onSnapshot(doc(db, 'parties', partyId), (snapshot) => {
+      if (snapshot.exists()) {
+        callback({ id: snapshot.id, ...snapshot.data() } as QuestParty);
+      } else {
+        callback(null);
+      }
+    }, (error) => console.error("Party subscription error:", error));
+  },
+
+  // --- PEER TUTORING ---
+
+  createTutoringRequest: async (requesterId: string, requesterName: string, topic: string, classType: string) => {
+    await addDoc(collection(db, 'tutoring_sessions'), {
+      requesterId, requesterName, topic, classType,
+      status: 'OPEN',
+      createdAt: new Date().toISOString(),
+      xpReward: 75,
+      fluxReward: 25,
     });
-  }
+  },
+
+  claimTutorRole: async (sessionId: string, tutorId: string, tutorName: string) => {
+    await updateDoc(doc(db, 'tutoring_sessions', sessionId), {
+      tutorId, tutorName, status: 'MATCHED',
+    });
+  },
+
+  subscribeToTutoringSessions: (classType: string, callback: (sessions: TutoringSession[]) => void) => {
+    const q = query(collection(db, 'tutoring_sessions'), where('classType', '==', classType), limit(50));
+    return onSnapshot(q, (snapshot) => {
+      const sessions = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TutoringSession));
+      sessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      callback(sessions);
+    }, (error) => console.error("Tutoring subscription error:", error));
+  },
+
+  completeTutoring: async (sessionId: string, tutorId: string) => {
+    const result = await callCompleteTutoring({ sessionId, tutorId });
+    return result.data as { xpAwarded: number; fluxAwarded: number };
+  },
+
+  // --- KNOWLEDGE-GATED LOOT ---
+
+  subscribeToKnowledgeGates: (callback: (gates: KnowledgeGate[]) => void) => {
+    const q = query(collection(db, 'knowledge_gates'), where('isActive', '==', true));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as KnowledgeGate)));
+    }, (error) => console.error("Knowledge gates subscription error:", error));
+  },
+
+  claimKnowledgeLoot: async (gateId: string, classType?: string) => {
+    const result = await callClaimKnowledgeLoot({ gateId, classType });
+    return result.data as { item: RPGItem; xpBonus: number; fluxBonus: number };
+  },
+
+  // --- SEASONAL COSMETICS ---
+
+  subscribeToSeasonalCosmetics: (callback: (cosmetics: SeasonalCosmetic[]) => void) => {
+    const q = query(collection(db, 'seasonal_cosmetics'), where('isAvailable', '==', true));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SeasonalCosmetic)));
+    }, (error) => console.error("Seasonal cosmetics subscription error:", error));
+  },
+
+  purchaseCosmetic: async (cosmeticId: string) => {
+    const result = await callPurchaseCosmetic({ cosmeticId });
+    return result.data as { success: boolean };
+  },
+
+  equipCosmetic: async (userId: string, cosmeticId: string | null) => {
+    await updateDoc(doc(db, 'users', userId), {
+      'gamification.activeCosmetic': cosmeticId,
+    });
+  },
+
+  // --- DAILY CHALLENGES ---
+
+  subscribeToDailyChallenges: (callback: (challenges: DailyChallenge[]) => void) => {
+    const today = new Date().toISOString().split('T')[0];
+    const q = query(collection(db, 'daily_challenges'), where('date', '==', today));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DailyChallenge)));
+    }, (error) => console.error("Daily challenges subscription error:", error));
+  },
+
+  claimDailyChallenge: async (challengeId: string, classType?: string) => {
+    const result = await callClaimDailyChallenge({ challengeId, classType });
+    return result.data as { xpReward: number; fluxReward: number; leveledUp: boolean };
+  },
+
+  updateDailyChallengeProgress: async (userId: string, challengeId: string, progress: number, completed: boolean) => {
+    const userRef = doc(db, 'users', userId);
+    await runTransaction(db, async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+      if (!userSnap.exists()) return;
+      const challenges = userSnap.data().gamification?.activeDailyChallenges || [];
+      const existing = challenges.find((c: { challengeId: string }) => c.challengeId === challengeId);
+      if (existing) {
+        const updated = challenges.map((c: { challengeId: string }) =>
+          c.challengeId === challengeId ? { ...c, progress, completed } : c
+        );
+        transaction.update(userRef, { 'gamification.activeDailyChallenges': updated });
+      } else {
+        transaction.update(userRef, {
+          'gamification.activeDailyChallenges': [...challenges, { challengeId, progress, completed }],
+        });
+      }
+    });
+  },
+
+  // --- PROFILE / INSPECT ---
+
+  getPublicProfile: async (userId: string): Promise<User | null> => {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as User;
+  },
 };

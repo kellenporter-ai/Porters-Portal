@@ -98,6 +98,15 @@ export interface ItemEffect {
   type: 'XP_BOOST' | 'STAT_BOOST' | 'SPECIAL';
 }
 
+export interface ItemGem {
+  id: string;
+  name: string;
+  stat: 'tech' | 'focus' | 'analysis' | 'charisma';
+  value: number;
+  tier: number; // 1-5
+  color: string; // hex color for display
+}
+
 export interface RPGItem {
   id: string;
   name: string; // Constructed name: "Prefix Base Suffix"
@@ -115,6 +124,9 @@ export interface RPGItem {
   effects?: ItemEffect[]; // For Uniques
   description: string;
   obtainedAt: string;
+  setId?: string; // If part of an item set
+  sockets?: number; // Number of gem sockets (0-3)
+  gems?: ItemGem[]; // Socketed gems
 }
 
 export interface PlayerStats {
@@ -179,6 +191,35 @@ export interface User {
         deploymentRoll?: number; // The result of their skill check
     }[];
     completedQuests?: string[]; // Permanent record of completed mission IDs
+
+    // === ACHIEVEMENTS ===
+    unlockedAchievements?: string[]; // Achievement IDs
+    achievementProgress?: { [achievementId: string]: number }; // Progress tracking
+
+    // === DAILY ENGAGEMENT ===
+    lastLoginRewardDate?: string; // ISO date of last daily login reward
+    loginStreak?: number; // Consecutive days logged in
+    lastWheelSpin?: string; // ISO date of last fortune wheel spin
+    activeDailyChallenges?: DailyChallengeProgress[];
+
+    // === SKILL TREE ===
+    specialization?: SpecializationType;
+    skillPoints?: number;
+    unlockedSkills?: string[]; // Skill node IDs
+
+    // === SEASONAL ===
+    ownedCosmetics?: string[]; // Cosmetic IDs
+    activeCosmetic?: string; // Currently displayed cosmetic
+
+    // === GROUP QUESTS ===
+    partyId?: string; // Current quest party
+
+    // === BOSS ENCOUNTERS ===
+    bossDamageDealt?: { [bossId: string]: number };
+
+    // === PEER TUTORING ===
+    tutoringXpEarned?: number;
+    tutoringSessionsCompleted?: number;
   };
 }
 
@@ -284,6 +325,8 @@ export interface Quest {
   // Multi-user
   isGroupQuest?: boolean;
   minPlayers?: number;
+  maxPlayers?: number;
+  targetClass?: string; // Class restriction for quest
 }
 
 export interface EvidenceLog {
@@ -330,13 +373,269 @@ export interface Announcement {
   createdBy: string;
 }
 
+export type NotificationType =
+  | 'QUEST_APPROVED' | 'QUEST_REJECTED' | 'LOOT_DROP' | 'NEW_MISSION'
+  | 'NEW_RESOURCE' | 'LEVEL_UP' | 'ANNOUNCEMENT' | 'XP_EVENT'
+  | 'ACHIEVEMENT_UNLOCKED' | 'DAILY_REWARD' | 'STREAK_MILESTONE'
+  | 'BOSS_DEFEATED' | 'PARTY_INVITE' | 'WHEEL_PRIZE' | 'SKILL_UNLOCKED'
+  | 'SET_BONUS_ACTIVE' | 'TUTORING_REWARD' | 'BOSS_QUIZ_START';
+
 export interface Notification {
   id: string;
   userId: string;
-  type: 'QUEST_APPROVED' | 'QUEST_REJECTED' | 'LOOT_DROP' | 'NEW_MISSION' | 'NEW_RESOURCE' | 'LEVEL_UP' | 'ANNOUNCEMENT' | 'XP_EVENT';
+  type: NotificationType;
   title: string;
   message: string;
   timestamp: string;
   isRead: boolean;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
+}
+
+// ========================================
+// ACHIEVEMENTS / BADGES
+// ========================================
+
+export type AchievementCategory = 'PROGRESSION' | 'COMBAT' | 'SOCIAL' | 'COLLECTION' | 'DEDICATION' | 'MASTERY';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string; // Emoji or icon key
+  category: AchievementCategory;
+  condition: {
+    type: 'XP_TOTAL' | 'LEVEL_REACHED' | 'ITEMS_COLLECTED' | 'QUESTS_COMPLETED' | 'STREAK_WEEKS'
+      | 'GEAR_SCORE' | 'STAT_THRESHOLD' | 'LOGIN_STREAK' | 'BOSS_KILLS' | 'TUTORING_SESSIONS'
+      | 'ITEMS_CRAFTED' | 'WHEEL_SPINS' | 'CHALLENGES_COMPLETED';
+    target: number;
+    stat?: string; // For STAT_THRESHOLD: which stat
+  };
+  xpReward: number;
+  fluxReward?: number;
+  isSecret?: boolean; // Hidden until unlocked
+}
+
+// ========================================
+// DAILY / WEEKLY CHALLENGES
+// ========================================
+
+export type ChallengeType = 'EARN_XP' | 'COMPLETE_RESOURCE' | 'ANSWER_QUESTIONS' | 'ENGAGE_MINUTES' | 'CRAFT_ITEM' | 'EQUIP_GEAR' | 'WIN_QUIZ';
+
+export interface DailyChallenge {
+  id: string;
+  title: string;
+  description: string;
+  type: ChallengeType;
+  target: number; // e.g., earn 200 XP, answer 5 questions
+  xpReward: number;
+  fluxReward?: number;
+  date: string; // ISO date this challenge is for
+  isWeekly?: boolean;
+}
+
+export interface DailyChallengeProgress {
+  challengeId: string;
+  progress: number;
+  completed: boolean;
+  claimedAt?: string;
+}
+
+// ========================================
+// FORTUNE WHEEL / MYSTERY BOX
+// ========================================
+
+export type WheelPrizeType = 'XP' | 'FLUX' | 'ITEM' | 'GEM' | 'SKILL_POINT' | 'NOTHING';
+
+export interface FortuneWheelPrize {
+  id: string;
+  label: string;
+  type: WheelPrizeType;
+  value: number; // XP amount, Flux amount, etc.
+  rarity?: ItemRarity; // For ITEM prizes
+  weight: number; // Probability weight (higher = more common)
+  color: string; // Segment color
+}
+
+// ========================================
+// SKILL TREES / SPECIALIZATIONS
+// ========================================
+
+export type SpecializationType = 'THEORIST' | 'EXPERIMENTALIST' | 'ANALYST' | 'DIPLOMAT';
+
+export interface SkillNode {
+  id: string;
+  name: string;
+  description: string;
+  specialization: SpecializationType;
+  tier: number; // 1-4 (depth in tree)
+  cost: number; // Skill points required
+  prerequisites: string[]; // Skill node IDs that must be unlocked first
+  effect: {
+    type: 'STAT_BOOST' | 'XP_MULTIPLIER' | 'FLUX_DISCOUNT' | 'CRAFT_BONUS' | 'STREAK_BONUS' | 'QUEST_BONUS';
+    stat?: string;
+    value: number;
+  };
+  icon: string;
+}
+
+// ========================================
+// SET BONUSES
+// ========================================
+
+export interface ItemSet {
+  id: string;
+  name: string;
+  description: string;
+  itemIds: string[]; // Base item names that belong to this set
+  bonuses: {
+    count: number; // Number of pieces needed
+    label: string; // e.g., "2-Piece Bonus"
+    effects: { stat: string; value: number }[];
+  }[];
+}
+
+// ========================================
+// BOSS ENCOUNTERS
+// ========================================
+
+export interface BossEncounter {
+  id: string;
+  name: string;
+  description: string;
+  maxHp: number;
+  currentHp: number;
+  classType?: string; // Class-specific or GLOBAL
+  xpRewardPerHit: number; // XP for contributing
+  completionRewards: {
+    xp: number;
+    flux: number;
+    itemRarity?: ItemRarity;
+  };
+  deadline: string; // ISO date — boss despawns
+  isActive: boolean;
+  imageUrl?: string; // Boss visual
+  damageLog: { userId: string; userName: string; damage: number; timestamp: string }[];
+}
+
+// ========================================
+// BOSS QUIZ EVENTS
+// ========================================
+
+export interface BossQuizEvent {
+  id: string;
+  bossName: string;
+  description: string;
+  maxHp: number;
+  currentHp: number;
+  classType: string;
+  isActive: boolean;
+  deadline: string;
+  questions: BossQuizQuestion[];
+  damagePerCorrect: number; // HP damage per correct answer
+  rewards: {
+    xp: number;
+    flux: number;
+    itemRarity?: ItemRarity;
+  };
+}
+
+export interface BossQuizQuestion {
+  id: string;
+  stem: string;
+  options: string[];
+  correctAnswer: number; // Index
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  damageBonus?: number; // Extra damage for hard questions
+}
+
+// ========================================
+// KNOWLEDGE-GATED LOOT
+// ========================================
+
+export interface KnowledgeGate {
+  id: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  requiredScore: number; // Minimum quiz score % (e.g., 85)
+  requiredQuestions: number; // Minimum questions answered correctly
+  rewards: {
+    itemRarity: ItemRarity;
+    xpBonus: number;
+    fluxBonus?: number;
+  };
+  isActive: boolean;
+  classType?: string;
+}
+
+// ========================================
+// PEER TUTORING
+// ========================================
+
+export type TutoringStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'VERIFIED';
+
+export interface TutoringSession {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  tutorId?: string;
+  tutorName?: string;
+  topic: string;
+  classType: string;
+  status: TutoringStatus;
+  createdAt: string;
+  completedAt?: string;
+  verifiedBy?: string; // Admin who verified
+  xpReward: number; // XP for the tutor
+  fluxReward?: number;
+}
+
+// ========================================
+// QUEST PARTY (GROUP QUESTS)
+// ========================================
+
+export interface QuestParty {
+  id: string;
+  leaderId: string;
+  leaderName: string;
+  members: { userId: string; userName: string; joinedAt: string }[];
+  questId: string;
+  status: 'FORMING' | 'READY' | 'DEPLOYED' | 'COMPLETED' | 'FAILED';
+  createdAt: string;
+  maxSize: number;
+}
+
+// ========================================
+// SEASONAL COSMETICS
+// ========================================
+
+export type SeasonType = 'SPRING' | 'SUMMER' | 'FALL' | 'WINTER' | 'HALLOWEEN' | 'HOLIDAY' | 'EXAM_SEASON';
+
+export interface SeasonalCosmetic {
+  id: string;
+  name: string;
+  description: string;
+  season: SeasonType;
+  type: 'AURA' | 'PARTICLE' | 'FRAME' | 'TRAIL';
+  hueOverride?: number;
+  particleColor?: string;
+  isAvailable: boolean;
+  cost: number; // Flux cost
+  expiresAt?: string;
+}
+
+// ========================================
+// AVATAR EVOLUTION
+// ========================================
+
+export interface EvolutionTier {
+  level: number; // Minimum level for this tier
+  name: string;
+  description: string;
+  visualEffects: {
+    glowIntensity: number; // 0-1
+    particleCount: number;
+    armorDetail: 'BASIC' | 'ENHANCED' | 'ADVANCED' | 'LEGENDARY' | 'MYTHIC';
+    wingType?: 'NONE' | 'ENERGY' | 'CRYSTAL' | 'PHOENIX';
+    crownType?: 'NONE' | 'CIRCLET' | 'HALO' | 'CROWN';
+  };
 }
