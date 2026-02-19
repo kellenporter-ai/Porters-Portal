@@ -860,8 +860,14 @@ export const dataService = {
 
   // --- CODENAME ---
 
-  updateCodename: async (userId: string, codename: string) => {
-    await updateDoc(doc(db, 'users', userId), { 'gamification.codename': codename });
+  updateCodename: async (userId: string, codename: string, lock?: boolean) => {
+    const updates: Record<string, unknown> = { 'gamification.codename': codename };
+    if (lock !== undefined) updates['gamification.codenameLocked'] = lock;
+    await updateDoc(doc(db, 'users', userId), updates);
+  },
+
+  toggleCodenameLock: async (userId: string, locked: boolean) => {
+    await updateDoc(doc(db, 'users', userId), { 'gamification.codenameLocked': locked });
   },
 
   // --- ENGAGEMENT STREAKS ---
@@ -921,6 +927,32 @@ export const dataService = {
     return guardedSnapshot('boss_encounters', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as BossEncounter)));
     });
+  },
+
+  // Admin: subscribe to ALL boss encounters (including inactive)
+  subscribeToAllBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
+    const q = collection(db, 'boss_encounters');
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as BossEncounter)));
+    });
+  },
+
+  // Admin: create or update a boss encounter
+  saveBossEncounter: async (boss: BossEncounter) => {
+    const ref = doc(db, 'boss_encounters', boss.id);
+    await setDoc(ref, boss);
+  },
+
+  // Admin: toggle boss active state
+  toggleBossActive: async (bossId: string, isActive: boolean) => {
+    const ref = doc(db, 'boss_encounters', bossId);
+    await updateDoc(ref, { isActive });
+  },
+
+  // Admin: delete a boss encounter
+  deleteBossEncounter: async (bossId: string) => {
+    const ref = doc(db, 'boss_encounters', bossId);
+    await deleteDoc(ref);
   },
 
   // Subscribe to a boss's distributed damage shards for real-time HP aggregation

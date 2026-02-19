@@ -36,5 +36,6 @@ export const NAVIGATION = [
   { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Skills', icon: <GitBranch className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Tutoring', icon: <GraduationCap className="w-5 h-5" />, role: 'STUDENT' },
 ];

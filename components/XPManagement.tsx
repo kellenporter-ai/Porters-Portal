@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity } from '../types';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X } from 'lucide-react';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossEncounter } from '../types';
+import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Skull, Lock, Unlock } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -20,7 +20,7 @@ interface XPManagementProps {
 const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
-  const [activeTab, setActiveTab] = useState<'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL'>('OPERATIVES');
+  const [activeTab, setActiveTab] = useState<'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS'>('OPERATIVES');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');
   const [filterSection, setFilterSection] = useState('All Sections');
@@ -58,10 +58,21 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS
   });
 
+  // Boss management state
+  const [bosses, setBosses] = useState<BossEncounter[]>([]);
+  const [isBossModalOpen, setIsBossModalOpen] = useState(false);
+  const [editingBoss, setEditingBoss] = useState<BossEncounter | null>(null);
+  const [bossForm, setBossForm] = useState({
+      name: '', description: '', maxHp: 5000, classType: 'GLOBAL',
+      xpRewardPerHit: 10, rewardXp: 500, rewardFlux: 100,
+      rewardItemRarity: '' as string, deadline: '', imageUrl: '',
+  });
+
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
     const unsubQuests = dataService.subscribeToQuests(setQuests);
-    return () => { unsubEvents(); unsubQuests(); };
+    const unsubBosses = dataService.subscribeToAllBossEncounters(setBosses);
+    return () => { unsubEvents(); unsubQuests(); unsubBosses(); };
   }, []);
 
   useEffect(() => {
@@ -231,6 +242,63 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       setEditingCodename(null);
   };
 
+  const handleSaveCodenameLocked = async (userId: string, locked: boolean) => {
+      try {
+          await dataService.toggleCodenameLock(userId, locked);
+          toast.success(locked ? 'Codename locked.' : 'Codename unlocked.');
+      } catch { toast.error('Failed to update lock.'); }
+  };
+
+  const openBossForm = (boss?: BossEncounter) => {
+      if (boss) {
+          setEditingBoss(boss);
+          setBossForm({
+              name: boss.name, description: boss.description, maxHp: boss.maxHp,
+              classType: boss.classType || 'GLOBAL', xpRewardPerHit: boss.xpRewardPerHit || 10,
+              rewardXp: boss.completionRewards?.xp || 500, rewardFlux: boss.completionRewards?.flux || 100,
+              rewardItemRarity: boss.completionRewards?.itemRarity || '',
+              deadline: boss.deadline ? boss.deadline.slice(0, 16) : '', imageUrl: boss.imageUrl || '',
+          });
+      } else {
+          setEditingBoss(null);
+          const defaultDeadline = new Date();
+          defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+          setBossForm({ name: '', description: '', maxHp: 5000, classType: 'GLOBAL', xpRewardPerHit: 10, rewardXp: 500, rewardFlux: 100, rewardItemRarity: '', deadline: defaultDeadline.toISOString().slice(0, 16), imageUrl: '' });
+      }
+      setIsBossModalOpen(true);
+  };
+
+  const handleSaveBoss = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+          const bossData: BossEncounter = {
+              id: editingBoss?.id || Math.random().toString(36).substring(2, 12),
+              name: bossForm.name, description: bossForm.description,
+              maxHp: bossForm.maxHp, currentHp: editingBoss?.currentHp ?? bossForm.maxHp,
+              classType: bossForm.classType === 'GLOBAL' ? undefined : bossForm.classType,
+              xpRewardPerHit: bossForm.xpRewardPerHit,
+              completionRewards: { xp: bossForm.rewardXp, flux: bossForm.rewardFlux, itemRarity: (bossForm.rewardItemRarity as ItemRarity) || undefined },
+              deadline: new Date(bossForm.deadline).toISOString(),
+              isActive: editingBoss?.isActive ?? true,
+              imageUrl: bossForm.imageUrl || undefined,
+              damageLog: editingBoss?.damageLog || [],
+          };
+          await dataService.saveBossEncounter(bossData);
+          toast.success(editingBoss ? 'Boss updated.' : 'Boss deployed!');
+          setIsBossModalOpen(false);
+      } catch (err) { toast.error('Failed to save boss.'); }
+  };
+
+  const handleToggleBoss = async (boss: BossEncounter) => {
+      await dataService.toggleBossActive(boss.id, !boss.isActive);
+  };
+
+  const handleDeleteBoss = async (boss: BossEncounter) => {
+      if (!await confirm({ message: `Delete boss "${boss.name}"? This cannot be undone.`, confirmLabel: "Delete" })) return;
+      await dataService.deleteBossEncounter(boss.id);
+      toast.success('Boss deleted.');
+  };
+
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => (
     <button onClick={() => setActiveTab(id)} className={`px-6 py-4 flex items-center gap-2 border-b-2 font-bold transition-all ${activeTab === id ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
       <Icon className="w-4 h-4" />{label}
@@ -247,6 +315,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         <div className="flex gap-2">
           {activeTab === 'PROTOCOLS' && <button onClick={() => setIsEventModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-blue-900/20"><Rocket className="w-4 h-4" /> Deploy Protocol</button>}
           {activeTab === 'MISSIONS' && <button onClick={() => setIsQuestModalOpen(true)} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-purple-900/20"><Award className="w-4 h-4" /> Issue Mission</button>}
+          {activeTab === 'BOSS_OPS' && <button onClick={() => openBossForm()} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-red-900/20"><Skull className="w-4 h-4" /> Deploy Boss</button>}
         </div>
       </div>
 
@@ -256,6 +325,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           <TabButton id="PROTOCOLS" label="XP Protocols" icon={Zap} />
           <TabButton id="MISSIONS" label="Missions" icon={Target} />
           <TabButton id="MISSION_CONTROL" label="Mission Control" icon={Briefcase} />
+          <TabButton id="BOSS_OPS" label="Boss Ops" icon={Skull} />
         </div>
         <div className="p-6">
           {activeTab === 'OPERATIVES' && (
@@ -312,14 +382,23 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                                 <div className="flex items-center gap-1">
                                   <input autoFocus value={codenameValue} onChange={e => setCodenameValue(e.target.value)} maxLength={24} onKeyDown={e => { if (e.key === 'Enter') handleSaveCodename(student.id); if (e.key === 'Escape') setEditingCodename(null); }}
                                     className="bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-[10px] text-white font-mono w-28 focus:outline-none focus:border-purple-500" />
-                                  <button onClick={() => handleSaveCodename(student.id)} className="text-green-400 hover:text-green-300"><Check className="w-3 h-3" /></button>
-                                  <button onClick={() => setEditingCodename(null)} className="text-gray-500 hover:text-gray-300"><X className="w-3 h-3" /></button>
+                                  <button onClick={() => handleSaveCodename(student.id)} className="text-green-400 hover:text-green-300" title="Save"><Check className="w-3 h-3" /></button>
+                                  <button onClick={() => setEditingCodename(null)} className="text-gray-500 hover:text-gray-300" title="Cancel"><X className="w-3 h-3" /></button>
                                 </div>
                               ) : (
-                                <button onClick={() => { setEditingCodename(student.id); setCodenameValue(student.gamification?.codename || ''); }} className="text-[10px] font-mono text-gray-500 uppercase hover:text-purple-400 transition flex items-center gap-1 group/cn">
-                                  {student.gamification?.codename || 'UNASSIGNED'}
-                                  <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/cn:opacity-100 transition" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => { setEditingCodename(student.id); setCodenameValue(student.gamification?.codename || ''); }} className="text-[10px] font-mono text-gray-500 uppercase hover:text-purple-400 transition flex items-center gap-1 group/cn">
+                                    {student.gamification?.codename || 'UNASSIGNED'}
+                                    <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/cn:opacity-100 transition" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveCodenameLocked(student.id, !student.gamification?.codenameLocked)}
+                                    className={`transition ${student.gamification?.codenameLocked ? 'text-red-400 hover:text-red-300' : 'text-gray-600 hover:text-gray-400'}`}
+                                    title={student.gamification?.codenameLocked ? 'Codename locked — click to unlock' : 'Click to lock codename'}
+                                  >
+                                    {student.gamification?.codenameLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -409,6 +488,51 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
             </div>
           )}
           {activeTab === 'MISSION_CONTROL' && <MissionControlTab deployments={activeDeployments} onResolveQuest={handleResolveQuest} onRollForSalvation={handleRollForSalvation} />}
+
+          {activeTab === 'BOSS_OPS' && (
+            <div className="space-y-4">
+              {bosses.length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                  <Skull className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold">No boss encounters deployed.</p>
+                  <p className="text-sm mt-1">Deploy a boss to challenge your operatives.</p>
+                </div>
+              )}
+              {bosses.map(boss => {
+                const hpPercent = boss.maxHp > 0 ? Math.max(0, boss.currentHp / boss.maxHp * 100) : 0;
+                const isExpired = new Date(boss.deadline) < new Date();
+                return (
+                <div key={boss.id} className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all ${boss.isActive && !isExpired ? 'bg-red-600/10 border-red-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${boss.isActive && !isExpired ? 'bg-red-600 text-white shadow-lg shadow-red-900/40' : 'bg-gray-800 text-gray-400'}`}>
+                      <Skull className="w-7 h-7" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-lg text-white truncate">{boss.name}</h4>
+                      <p className="text-sm text-gray-500 truncate">{boss.description}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {boss.currentHp.toLocaleString()}/{boss.maxHp.toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">+{boss.xpRewardPerHit} XP/hit</span>
+                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{boss.classType || 'GLOBAL'}</span>
+                        {isExpired && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">EXPIRED</span>}
+                      </div>
+                      {/* HP bar */}
+                      <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                        <div className={`h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-green-500' : hpPercent > 20 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${hpPercent}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => openBossForm(boss)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
+                    <button onClick={() => handleToggleBoss(boss)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${boss.isActive ? 'bg-red-600' : 'bg-gray-700'}`}>
+                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${boss.isActive ? 'translate-x-6' : ''}`} />
+                    </button>
+                    <button onClick={() => handleDeleteBoss(boss)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              );})}
+            </div>
+          )}
         </div>
       </div>
 
@@ -426,6 +550,73 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         </form>
       </Modal>
       <AdjustXPModal user={adjustingUser} onClose={() => setAdjustingUser(null)} onAdjust={handleAdjustXP} />
+
+      {/* Boss Create/Edit Modal */}
+      <Modal isOpen={isBossModalOpen} onClose={() => setIsBossModalOpen(false)} title={editingBoss ? 'Edit Boss Encounter' : 'Deploy Boss Encounter'} maxWidth="max-w-lg">
+        <form onSubmit={handleSaveBoss} className="space-y-4 text-gray-100 p-2">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Boss Name</label>
+            <input value={bossForm.name} onChange={e => setBossForm({ ...bossForm, name: e.target.value })} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. The Entropy Wyrm" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Description</label>
+            <textarea value={bossForm.description} onChange={e => setBossForm({ ...bossForm, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white resize-none h-20" placeholder="A fearsome creature that feeds on disorder..." />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Max HP</label>
+              <input type="number" value={bossForm.maxHp} onChange={e => setBossForm({ ...bossForm, maxHp: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">XP Per Hit</label>
+              <input type="number" value={bossForm.xpRewardPerHit} onChange={e => setBossForm({ ...bossForm, xpRewardPerHit: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Class</label>
+              <select value={bossForm.classType} onChange={e => setBossForm({ ...bossForm, classType: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">
+                <option value="GLOBAL">All Classes</option>
+                {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Deadline</label>
+              <input type="datetime-local" value={bossForm.deadline} onChange={e => setBossForm({ ...bossForm, deadline: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" />
+            </div>
+          </div>
+          <div className="border-t border-white/10 pt-4">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2 px-1">Completion Rewards</label>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[9px] text-gray-500 mb-1 px-1">XP</label>
+                <input type="number" value={bossForm.rewardXp} onChange={e => setBossForm({ ...bossForm, rewardXp: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 mb-1 px-1">Flux</label>
+                <input type="number" value={bossForm.rewardFlux} onChange={e => setBossForm({ ...bossForm, rewardFlux: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 mb-1 px-1">Loot Rarity</label>
+                <select value={bossForm.rewardItemRarity} onChange={e => setBossForm({ ...bossForm, rewardItemRarity: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold">
+                  <option value="">None</option>
+                  <option value="COMMON">Common</option>
+                  <option value="UNCOMMON">Uncommon</option>
+                  <option value="RARE">Rare</option>
+                  <option value="UNIQUE">Unique</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Image URL (optional)</label>
+            <input value={bossForm.imageUrl} onChange={e => setBossForm({ ...bossForm, imageUrl: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white" placeholder="https://..." />
+          </div>
+          <button type="submit" className="w-full bg-red-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-red-700">
+            {editingBoss ? 'Update Boss' : 'Deploy Boss'}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 };

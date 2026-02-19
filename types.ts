@@ -185,6 +185,7 @@ export interface User {
     currency: number; // Cyber-Flux (GLOBAL — shared across classes)
     badges: string[];
     codename?: string;
+    codenameLocked?: boolean; // If true, student cannot change their own codename
     privacyMode: boolean;
     // === PER-CLASS PROFILES (new) ===
     // Each class gets its own inventory, equipment, and appearance
