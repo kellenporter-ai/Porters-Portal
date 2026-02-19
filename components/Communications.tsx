@@ -28,6 +28,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [myGroups, setMyGroups] = useState<StudentGroup[]>([]);
+  const [allGroups, setAllGroups] = useState<StudentGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [flaggedMessages, setFlaggedMessages] = useState<ChatMessage[]>([]);
   const [muteMenuTarget, setMuteMenuTarget] = useState<{ id: string; senderId: string; senderName: string } | null>(null);
@@ -81,11 +82,14 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       return new Date(user.mutedUntil) > new Date();
   }, [user.mutedUntil]);
 
+  // Admin sees ALL groups for the selected class; students see only their own
   useEffect(() => {
     if (!isOpen) return;
-    const unsub = dataService.subscribeToMyGroups(user.id, setMyGroups);
+    const unsub = user.role === 'ADMIN'
+        ? dataService.subscribeToStudentGroups(selectedClass, setMyGroups)
+        : dataService.subscribeToMyGroups(user.id, setMyGroups);
     return () => unsub();
-  }, [isOpen, user.id]);
+  }, [isOpen, user.id, user.role, selectedClass]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -112,10 +116,12 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
   useEffect(() => {
     if (!isOpen || user.role !== 'ADMIN') return;
-    const unsub = dataService.subscribeToFlaggedMessages((msgs) => {
+    const unsubFlags = dataService.subscribeToFlaggedMessages((msgs) => {
         setFlaggedMessages(msgs);
     });
-    return () => unsub();
+    // Subscribe to ALL groups so moderation can resolve group channel names
+    const unsubGroups = dataService.subscribeToAllGroups(setAllGroups);
+    return () => { unsubFlags(); unsubGroups(); };
   }, [isOpen, user.role]);
 
   useEffect(() => {
@@ -263,10 +269,10 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
         <div className="w-16 bg-black/20 border-r border-white/5 flex flex-col items-center py-4 gap-4">
             <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><MessageSquare className="w-5 h-5" /></button>
             <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><BookOpen className="w-5 h-5" /></button>
-            {myGroups.length > 0 && (
+            {(myGroups.length > 0 || user.role === 'ADMIN') && (
                 <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                     <Users className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{myGroups.length}</span>
+                    {myGroups.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{myGroups.length}</span>}
                 </button>
             )}
             <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><Bookmark className="w-5 h-5" /></button>
@@ -346,7 +352,11 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                     </div>
                                     <p className="text-sm text-gray-200 mb-1">{msg.content}</p>
                                     {msg.systemNote && <p className="text-[10px] text-red-400 mb-2 italic">{msg.systemNote}</p>}
-                                    <div className="text-[10px] text-gray-500 mb-3">{msg.channelId?.replace('class_', '').replace(/_/g, ' ') || 'unknown channel'}</div>
+                                    <div className="text-[10px] text-gray-500 mb-3">{
+                                        msg.channelId?.startsWith('group_')
+                                            ? `Group: ${allGroups.find(g => g.id === msg.channelId!.replace('group_', ''))?.name || msg.channelId.replace('group_', '')}`
+                                            : msg.channelId?.replace('class_', '').replace('res_', 'Resource: ').replace(/_/g, ' ') || 'unknown channel'
+                                    }</div>
                                     <div className="flex gap-2">
                                         <button onClick={() => handleApproveMessage(msg.id)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold transition">
                                             <Check className="w-3.5 h-3.5" /> Approve

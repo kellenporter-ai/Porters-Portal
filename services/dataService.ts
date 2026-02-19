@@ -278,6 +278,12 @@ export const dataService = {
     }, (error) => console.error('Student groups subscription error:', error));
   },
 
+  subscribeToAllGroups: (callback: (groups: StudentGroup[]) => void) => {
+    return onSnapshot(collection(db, 'student_groups'), (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup)));
+    }, (error) => console.error('All groups subscription error:', error));
+  },
+
   subscribeToMyGroups: (userId: string, callback: (groups: StudentGroup[]) => void) => {
     // Use memberIds flat array for an efficient server-side array-contains query
     const q = query(collection(db, 'student_groups'), where('memberIds', 'array-contains', userId));
