@@ -4,6 +4,24 @@ import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { getEventCoordinates } from '@dnd-kit/utilities';
+
+// Inline modifier: snaps the drag overlay center to the cursor position.
+// Replicates @dnd-kit/modifiers snapCenterToCursor without the extra package.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function snapCenterToCursor(args: any) {
+  const { activatorEvent, draggingNodeRect, transform } = args;
+  if (draggingNodeRect && activatorEvent) {
+    const coords = getEventCoordinates(activatorEvent);
+    if (!coords) return transform;
+    return {
+      ...transform,
+      x: transform.x + coords.x - (draggingNodeRect.left + draggingNodeRect.width / 2),
+      y: transform.y + coords.y - (draggingNodeRect.top + draggingNodeRect.height / 2),
+    };
+  }
+  return transform;
+}
 import { dataService } from '../services/dataService';
 import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -977,7 +995,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
              
              {activeTab === 'LOADOUT' && (
-               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+               <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[snapCenterToCursor]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                  <div key="loadout" className="flex flex-col h-full" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
 
