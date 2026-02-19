@@ -6,11 +6,21 @@ import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { Brain, CheckCircle2, XCircle, Zap, Heart } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
+import BattleScene from './BattleScene';
 
 interface BossQuizPanelProps {
   classType: string;
   userSection?: string;
   playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
+  playerAppearance?: {
+    bodyType?: 'A' | 'B' | 'C';
+    hue?: number;
+    skinTone?: number;
+    hairStyle?: number;
+    hairColor?: number;
+  };
+  playerEquipped?: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
+  playerEvolutionLevel?: number;
 }
 
 // Aggregates distributed shard damage for a single quiz boss
@@ -36,7 +46,13 @@ const QuizBossCard: React.FC<{
   playerHp: number;
   playerMaxHp: number;
   knockedOut: boolean;
-}> = ({ quiz, onAnswer, submitting, currentQuestion, selectedAnswer, answerResult, playerHp, playerMaxHp, knockedOut }) => {
+  playerAppearance?: BossQuizPanelProps['playerAppearance'];
+  playerEquipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
+  playerEvolutionLevel: number;
+  attackState: 'idle' | 'player-attack' | 'boss-attack';
+  attackDamage?: number;
+}> = ({ quiz, onAnswer, submitting, currentQuestion, selectedAnswer, answerResult, playerHp, playerMaxHp, knockedOut,
+        playerAppearance, playerEquipped, playerEvolutionLevel, attackState, attackDamage }) => {
   const currentHp = useQuizBossHealth(quiz.id, quiz.maxHp);
   const hpPercent = (currentHp / quiz.maxHp) * 100;
   const playerHpPercent = playerMaxHp > 0 ? (playerHp / playerMaxHp) * 100 : 100;
@@ -49,6 +65,20 @@ const QuizBossCard: React.FC<{
       <div>
         <h4 className="text-base font-black text-amber-400">{quiz.bossName}</h4>
         <p className="text-xs text-gray-500">{quiz.description}</p>
+      </div>
+
+      {/* Battle Scene — animated player vs boss */}
+      <div className="rounded-xl bg-black/30 border border-white/5 overflow-hidden">
+        <BattleScene
+          playerAppearance={playerAppearance}
+          playerEquipped={playerEquipped}
+          playerEvolutionLevel={playerEvolutionLevel}
+          bossAppearance={quiz.bossAppearance}
+          attackState={attackState}
+          damage={attackDamage}
+          playerHpPercent={playerHpPercent}
+          bossHpPercent={hpPercent}
+        />
       </div>
 
       {/* Boss HP bar */}
@@ -163,7 +193,7 @@ const QuizBossCard: React.FC<{
   );
 };
 
-const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, playerStats }) => {
+const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
   const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -172,6 +202,8 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, p
   const [playerHp, setPlayerHp] = useState<number>(-1); // -1 = not initialized
   const [playerMaxHp, setPlayerMaxHp] = useState<number>(100);
   const [knockedOut, setKnockedOut] = useState(false);
+  const [attackState, setAttackState] = useState<'idle' | 'player-attack' | 'boss-attack'>('idle');
+  const [attackDamage, setAttackDamage] = useState<number | undefined>(undefined);
   const toast = useToast();
 
   useEffect(() => {
@@ -208,6 +240,11 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, p
       if (result.alreadyAnswered) {
         toast.info('Already answered this question!');
       } else if (result.correct) {
+        // Trigger player-attack animation
+        setAttackDamage(result.damage);
+        setAttackState('player-attack');
+        setTimeout(() => setAttackState('idle'), 800);
+
         sfx.bossHit();
         if (result.bossDefeated) {
           sfx.bossDefeated();
@@ -216,7 +253,11 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, p
           toast.success(`Correct! Dealt ${result.damage} damage!`);
         }
       } else {
+        // Trigger boss-attack animation
         if (result.playerDamage && result.playerDamage > 0) {
+          setAttackDamage(result.playerDamage);
+          setAttackState('boss-attack');
+          setTimeout(() => setAttackState('idle'), 800);
           toast.error(`Wrong! The boss hits you for ${result.playerDamage} damage!`);
         } else {
           toast.error('Incorrect. No damage dealt.');
@@ -274,6 +315,11 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, p
           playerHp={playerHp === -1 ? playerMaxHp : playerHp}
           playerMaxHp={playerMaxHp}
           knockedOut={knockedOut}
+          playerAppearance={playerAppearance}
+          playerEquipped={playerEquipped || {}}
+          playerEvolutionLevel={playerEvolutionLevel || 1}
+          attackState={attackState}
+          attackDamage={attackDamage}
         />
       ))}
     </div>

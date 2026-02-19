@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent } from '../types';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType } from '../types';
+import BossAvatar from './xp/BossAvatar';
 import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import SectionPicker from './SectionPicker';
@@ -69,6 +70,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       rewardItemRarity: '' as string, deadline: '',
       questions: [] as { id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; damageBonus: number }[],
       targetSections: [] as string[],
+      bossType: 'BRUTE' as BossType,
+      bossHue: 0,
   });
   const [promptCopied, setPromptCopied] = useState(false);
   const quizFileRef = useRef<HTMLInputElement>(null);
@@ -276,6 +279,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               deadline: quiz.deadline ? quiz.deadline.slice(0, 16) : '',
               questions: quiz.questions.map(q => ({ ...q, damageBonus: q.damageBonus || 0 })),
               targetSections: quiz.targetSections || [],
+              bossType: quiz.bossAppearance?.bossType || 'BRUTE',
+              bossHue: quiz.bossAppearance?.hue ?? 0,
           });
       } else {
           setEditingQuizBoss(null);
@@ -286,6 +291,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               damagePerCorrect: 50, rewardXp: 500, rewardFlux: 100, rewardItemRarity: '',
               deadline: defaultDeadline.toISOString().slice(0, 16), questions: [],
               targetSections: [],
+              bossType: 'BRUTE',
+              bossHue: 0,
           });
       }
       setIsQuizBossModalOpen(true);
@@ -358,6 +365,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                   ...(quizBossForm.rewardItemRarity ? { itemRarity: quizBossForm.rewardItemRarity } : {}),
               },
               ...(quizBossForm.targetSections.length > 0 ? { targetSections: quizBossForm.targetSections } : {}),
+              bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
           };
           await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
           toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
@@ -854,6 +862,43 @@ RULES:
             <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Description</label>
             <textarea value={quizBossForm.description} onChange={e => setQuizBossForm({ ...quizBossForm, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white resize-none h-16" placeholder="A mythical beast that can only be defeated by knowledge..." />
           </div>
+          {/* Boss Appearance Editor */}
+          <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+            <label className="block text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3">Boss Appearance</label>
+            <div className="flex items-start gap-4">
+              {/* Live preview */}
+              <div className="flex-shrink-0 w-24 h-32 bg-black/40 rounded-xl border border-white/5 flex items-center justify-center p-1">
+                <BossAvatar bossType={quizBossForm.bossType} hue={quizBossForm.bossHue} />
+              </div>
+              {/* Controls */}
+              <div className="flex-1 space-y-3">
+                <div>
+                  <label className="block text-[9px] text-gray-500 mb-1">Boss Type</label>
+                  <div className="flex gap-2">
+                    {(['BRUTE', 'PHANTOM', 'SERPENT'] as BossType[]).map(type => (
+                      <button key={type} type="button" onClick={() => setQuizBossForm({ ...quizBossForm, bossType: type })}
+                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                          quizBossForm.bossType === type
+                            ? 'bg-amber-600/20 border-amber-500/40 text-amber-400'
+                            : 'bg-black/30 border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
+                        }`}>
+                        {type.charAt(0) + type.slice(1).toLowerCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] text-gray-500 mb-1">Color Hue: {quizBossForm.bossHue}&deg;</label>
+                  <input type="range" min="0" max="360" value={quizBossForm.bossHue}
+                    onChange={e => setQuizBossForm({ ...quizBossForm, bossHue: parseInt(e.target.value) })}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ background: 'linear-gradient(to right, hsl(0,80%,50%), hsl(60,80%,50%), hsl(120,80%,50%), hsl(180,80%,50%), hsl(240,80%,50%), hsl(300,80%,50%), hsl(360,80%,50%))' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Max HP</label>

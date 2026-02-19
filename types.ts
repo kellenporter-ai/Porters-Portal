@@ -564,6 +564,13 @@ export interface BossEncounter {
 // BOSS QUIZ EVENTS
 // ========================================
 
+export type BossType = 'BRUTE' | 'PHANTOM' | 'SERPENT';
+
+export interface BossAppearance {
+  bossType: BossType;
+  hue: number; // 0-360 colour wheel
+}
+
 export interface BossQuizEvent {
   id: string;
   bossName: string;
@@ -581,6 +588,7 @@ export interface BossQuizEvent {
     itemRarity?: ItemRarity;
   };
   targetSections?: string[];
+  bossAppearance?: BossAppearance;
 }
 
 export interface BossQuizQuestion {
