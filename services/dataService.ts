@@ -254,6 +254,7 @@ export const dataService = {
       name,
       classType,
       members,
+      memberIds: members.map(m => m.userId), // flat array for Firestore rules + array-contains queries
       createdAt: new Date().toISOString(),
       createdBy: 'ADMIN',
     });
@@ -261,7 +262,9 @@ export const dataService = {
   },
 
   updateStudentGroup: async (groupId: string, data: Partial<Pick<StudentGroup, 'name' | 'members'>>) => {
-    await updateDoc(doc(db, 'student_groups', groupId), data);
+    const update: Record<string, unknown> = { ...data };
+    if (data.members) update.memberIds = data.members.map(m => m.userId);
+    await updateDoc(doc(db, 'student_groups', groupId), update);
   },
 
   deleteStudentGroup: async (groupId: string) => {
@@ -276,11 +279,10 @@ export const dataService = {
   },
 
   subscribeToMyGroups: (userId: string, callback: (groups: StudentGroup[]) => void) => {
-    // Firestore doesn't support array-contains on nested objects.
-    // Subscribe to all groups and filter client-side (groups are small).
-    return onSnapshot(collection(db, 'student_groups'), (snapshot) => {
-      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup));
-      callback(all.filter(g => g.members.some(m => m.userId === userId)));
+    // Use memberIds flat array for an efficient server-side array-contains query
+    const q = query(collection(db, 'student_groups'), where('memberIds', 'array-contains', userId));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup)));
     }, (error) => console.error('My groups subscription error:', error));
   },
 

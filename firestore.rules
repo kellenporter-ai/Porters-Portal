@@ -392,6 +392,20 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // STUDENT GROUPS (Group Chat)
+    // ==========================================
+    match /student_groups/{groupId} {
+      // Admin can read all groups; students can read groups they belong to
+      allow read: if isAdmin() ||
+        (isAuthenticated() && request.auth.uid in resource.data.memberIds);
+
+      // Only admin can create, update, or delete groups
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {
