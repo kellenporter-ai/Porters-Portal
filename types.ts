@@ -129,6 +129,7 @@ export interface RPGItem {
   sockets?: number; // Number of gem sockets (0-3)
   gems?: ItemGem[]; // Socketed gems
   runewordActive?: string; // ID of activated runeword (set by server when gem pattern matches)
+  unsocketCount?: number; // Number of times gems have been unsocketed from this item
 }
 
 // ========================================
@@ -305,6 +306,15 @@ export interface ChatMessage {
   reactions?: { [emoji: string]: string[] }; 
   pinnedBy?: string[]; 
   isGlobalPinned?: boolean; 
+}
+
+export interface StudentGroup {
+  id: string;
+  name: string;
+  classType: string;
+  members: { userId: string; userName: string }[];
+  createdAt: string;
+  createdBy: string;
 }
 
 // Conversation interface for messaging services

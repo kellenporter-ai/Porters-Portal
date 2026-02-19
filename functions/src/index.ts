@@ -1497,6 +1497,20 @@ export const sendClassMessage = onCall(async (request) => {
     }
   }
 
+  // Validate group membership for group channels
+  if (channelId.startsWith("group_")) {
+    const groupId = channelId.replace("group_", "");
+    const groupSnap = await db.doc(`student_groups/${groupId}`).get();
+    if (!groupSnap.exists) {
+      throw new HttpsError("not-found", "Group not found.");
+    }
+    const members = groupSnap.data()!.members || [];
+    const isMember = members.some((m: { userId: string }) => m.userId === uid);
+    if (!isMember && userData.role !== "ADMIN") {
+      throw new HttpsError("permission-denied", "Not a member of this group.");
+    }
+  }
+
   // Server-side moderation
   const isFlagged = checkModeration(content);
 
@@ -2193,6 +2207,86 @@ export const socketGem = onCall(async (request) => {
       newCurrency: currency - ENCHANT_COST_VAL,
       runewordActivated: runewordActivated ? { id: runewordActivated.id, name: runewordActivated.name } : null,
     };
+  });
+});
+
+/**
+ * unsocketGem — Removes a gem from an item and returns it to the gem inventory.
+ * Cost scales with item rarity, gem tier, and number of prior unsockets on the item.
+ * Formula: ceil(10 * rarityMult * gemTier * (1 + unsocketCount))
+ */
+const UNSOCKET_RARITY_MULT: Record<string, number> = {
+  COMMON: 1, UNCOMMON: 2, RARE: 4, UNIQUE: 8,
+};
+
+export const unsocketGem = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { itemId, gemIndex, classType } = request.data;
+  if (!itemId || gemIndex === undefined || gemIndex === null) {
+    throw new HttpsError("invalid-argument", "Item ID and gem index required.");
+  }
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const paths = getProfilePaths(classType);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const { inventory } = getProfileData(data, classType);
+    const gam = data.gamification || {};
+    const currency = gam.currency || 0;
+    const gemsInventory = gam.gemsInventory || [];
+
+    const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
+    if (itemIdx === -1) throw new HttpsError("not-found", "Item not in inventory.");
+
+    const item = JSON.parse(JSON.stringify(inventory[itemIdx]));
+    const gems: { id: string; name: string; stat: string; value: number; tier: number; color: string }[] = item.gems || [];
+    if (gemIndex < 0 || gemIndex >= gems.length) {
+      throw new HttpsError("invalid-argument", "Invalid gem index.");
+    }
+
+    const gem = gems[gemIndex];
+    const unsocketCount = item.unsocketCount || 0;
+    const rarityMult = UNSOCKET_RARITY_MULT[item.rarity] || 1;
+    const cost = Math.ceil(10 * rarityMult * Math.max(1, gem.tier) * (1 + unsocketCount));
+
+    if (currency < cost) {
+      throw new HttpsError("failed-precondition", `Insufficient Cyber-Flux. Need ${cost}.`);
+    }
+
+    // Remove gem stat bonus from item
+    item.stats[gem.stat] = Math.max(0, (item.stats[gem.stat] || 0) - gem.value);
+
+    // If runeword was active, remove its bonus stats
+    if (item.runewordActive) {
+      const rw = RUNEWORD_DEFS.find((r: RunewordDef) => r.id === item.runewordActive);
+      if (rw) {
+        for (const [stat, val] of Object.entries(rw.bonusStats)) {
+          item.stats[stat] = Math.max(0, (item.stats[stat] || 0) - val);
+        }
+      }
+      item.runewordActive = null;
+    }
+
+    // Remove gem from item, return to inventory
+    gems.splice(gemIndex, 1);
+    item.gems = gems;
+    item.unsocketCount = unsocketCount + 1;
+    inventory[itemIdx] = item;
+
+    const newGemsInv = [...gemsInventory, gem];
+
+    transaction.update(userRef, {
+      [paths.inventory]: inventory,
+      "gamification.currency": currency - cost,
+      "gamification.gemsInventory": newGemsInv,
+    });
+
+    return { item, newCurrency: currency - cost, cost, gem };
   });
 });
 

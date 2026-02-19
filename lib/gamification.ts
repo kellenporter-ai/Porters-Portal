@@ -46,6 +46,22 @@ export const FLUX_COSTS: Record<string, number> = {
     OPTIMIZE: 50,
     SOCKET: 30,
     ENCHANT: 15,
+    UNSOCKET_BASE: 10,
+};
+
+const RARITY_MULTIPLIER: Record<ItemRarity, number> = {
+    COMMON: 1,
+    UNCOMMON: 2,
+    RARE: 4,
+    UNIQUE: 8,
+};
+
+export const getUnsocketCost = (itemRarity: ItemRarity, gemTier: number, unsocketCount: number): number => {
+    const base = FLUX_COSTS.UNSOCKET_BASE;
+    const rarityMult = RARITY_MULTIPLIER[itemRarity];
+    const tierMult = Math.max(1, gemTier);
+    const repeatMult = 1 + unsocketCount;
+    return Math.ceil(base * rarityMult * tierMult * repeatMult);
 };
 
 export const getDisenchantValue = (item: RPGItem): number => {

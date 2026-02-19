@@ -1,6 +1,6 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert } from '../lib/firebase';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup } from '../types';
+import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -245,6 +245,43 @@ export const dataService = {
           console.error("Error muting user:", error);
           throw error;
       }
+  },
+
+  // --- STUDENT GROUPS ---
+
+  createStudentGroup: async (name: string, classType: string, members: { userId: string; userName: string }[]) => {
+    const ref = await addDoc(collection(db, 'student_groups'), {
+      name,
+      classType,
+      members,
+      createdAt: new Date().toISOString(),
+      createdBy: 'ADMIN',
+    });
+    return ref.id;
+  },
+
+  updateStudentGroup: async (groupId: string, data: Partial<Pick<StudentGroup, 'name' | 'members'>>) => {
+    await updateDoc(doc(db, 'student_groups', groupId), data);
+  },
+
+  deleteStudentGroup: async (groupId: string) => {
+    await deleteDoc(doc(db, 'student_groups', groupId));
+  },
+
+  subscribeToStudentGroups: (classType: string, callback: (groups: StudentGroup[]) => void) => {
+    const q = query(collection(db, 'student_groups'), where('classType', '==', classType));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup)));
+    }, (error) => console.error('Student groups subscription error:', error));
+  },
+
+  subscribeToMyGroups: (userId: string, callback: (groups: StudentGroup[]) => void) => {
+    // Firestore doesn't support array-contains on nested objects.
+    // Subscribe to all groups and filter client-side (groups are small).
+    return onSnapshot(collection(db, 'student_groups'), (snapshot) => {
+      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup));
+      callback(all.filter(g => g.members.some(m => m.userId === userId)));
+    }, (error) => console.error('My groups subscription error:', error));
   },
 
   subscribeToChannelMessages: (channelId: string, callback: (msgs: ChatMessage[]) => void) => {
@@ -963,6 +1000,11 @@ export const dataService = {
   socketGem: async (itemId: string, gemId: string, classType?: string) => {
     const result = await callSocketGem({ itemId, gemId, classType });
     return result.data as { item: RPGItem; newCurrency: number; runewordActivated?: { id: string; name: string } | null };
+  },
+
+  unsocketGem: async (itemId: string, gemIndex: number, classType?: string) => {
+    const result = await callUnsocketGem({ itemId, gemIndex, classType });
+    return result.data as { item: RPGItem; newCurrency: number; cost: number; gem: { id: string; name: string } };
   },
 
   // --- BOSS ENCOUNTERS (Distributed Counter Pattern) ---

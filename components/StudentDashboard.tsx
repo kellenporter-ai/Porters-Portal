@@ -23,7 +23,7 @@ function snapCenterToCursor(args: any) {
   return transform;
 }
 import { dataService } from '../services/dataService';
-import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem } from '../lib/gamification';
+import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost } from '../lib/gamification';
 import { RUNEWORD_DEFINITIONS } from '../lib/runewords';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
@@ -489,6 +489,25 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           }
       } catch (e: any) {
           toast.error(e?.message || 'Failed to socket gem.');
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
+  const handleUnsocketGem = async (gemIndex: number) => {
+      if (!inspectItem || isProcessing) return;
+      const gem = inspectItem.gems?.[gemIndex];
+      if (!gem) return;
+      const cost = getUnsocketCost(inspectItem.rarity, gem.tier, inspectItem.unsocketCount || 0);
+      if (currency < cost) return toast.error(`Insufficient Cyber-Flux. Need ${cost}.`);
+      setIsProcessing(true);
+      try {
+          const result = await dataService.unsocketGem(inspectItem.id, gemIndex, activeClass);
+          setInspectItem(result.item);
+          sfx.craft();
+          toast.success(`Gem removed! -${result.cost} Flux`);
+      } catch (e: any) {
+          toast.error(e?.message || 'Failed to unsocket gem.');
       } finally {
           setIsProcessing(false);
       }
@@ -1388,17 +1407,28 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                   <Hexagon className="w-3 h-3" /> Gem Sockets ({gems.length}/{sockets})
                               </div>
                               <div className="flex gap-2">
-                                  {gems.map((gem, i) => (
-                                      <div key={i} className="flex flex-col items-center gap-1">
+                                  {gems.map((gem, i) => {
+                                      const unsocketFlux = getUnsocketCost(inspectItem.rarity, gem.tier, inspectItem.unsocketCount || 0);
+                                      return (
+                                      <div key={i} className="flex flex-col items-center gap-1 group/gem">
                                           <div
-                                              className="w-8 h-8 rounded-lg border-2 flex items-center justify-center"
+                                              className="w-8 h-8 rounded-lg border-2 flex items-center justify-center relative"
                                               style={{ borderColor: gem.color, backgroundColor: `${gem.color}20`, boxShadow: `0 0 8px ${gem.color}40` }}
                                           >
                                               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
                                           </div>
                                           <span className="text-[9px] text-gray-400">{gem.name}</span>
+                                          <button
+                                              onClick={() => handleUnsocketGem(i)}
+                                              disabled={isProcessing || currency < unsocketFlux}
+                                              className="text-[8px] text-red-400/60 hover:text-red-400 font-bold transition disabled:opacity-30"
+                                              title={`Unsocket for ${unsocketFlux} Flux`}
+                                          >
+                                              Remove ({unsocketFlux} F)
+                                          </button>
                                       </div>
-                                  ))}
+                                      );
+                                  })}
                                   {Array.from({ length: emptySlots }).map((_, i) => (
                                       <div key={`empty-${i}`} className="w-8 h-8 rounded-lg border-2 border-dashed border-white/20 bg-black/30 flex items-center justify-center">
                                           <div className="w-2 h-2 rounded-full bg-white/10" />

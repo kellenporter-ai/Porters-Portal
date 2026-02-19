@@ -59,6 +59,7 @@ export const callSpinFortuneWheel = httpsCallable(functions, 'spinFortuneWheel')
 export const callUnlockSkill = httpsCallable(functions, 'unlockSkill');
 export const callAddSocket = httpsCallable(functions, 'addSocket');
 export const callSocketGem = httpsCallable(functions, 'socketGem');
+export const callUnsocketGem = httpsCallable(functions, 'unsocketGem');
 export const callDealBossDamage = httpsCallable(functions, 'dealBossDamage');
 export const callAnswerBossQuiz = httpsCallable(functions, 'answerBossQuiz');
 export const callCreateParty = httpsCallable(functions, 'createParty');
