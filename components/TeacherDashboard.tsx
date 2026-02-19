@@ -6,6 +6,7 @@ import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
+import GroupManager from './GroupManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
 
 interface TeacherDashboardProps {
@@ -443,6 +444,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       {/* ANNOUNCEMENTS */}
       <div className="mt-8">
           <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
+      </div>
+
+      {/* STUDENT GROUPS */}
+      <div className="mt-8">
+          <GroupManager students={students} availableSections={availableSections} />
       </div>
 
       {/* ENGAGEMENT RANKING TABLE */}

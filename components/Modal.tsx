@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -21,7 +22,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidt
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className={`bg-[#0f0720]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full ${maxWidth} overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-200`}>
         <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5">
@@ -34,7 +35,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidt
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
