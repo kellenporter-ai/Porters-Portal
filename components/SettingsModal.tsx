@@ -70,11 +70,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
           <p className="text-xs text-gray-500 leading-tight mt-0.5">{description}</p>
         </div>
       </div>
-      <button 
+      <button
         onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${value ? 'bg-purple-600' : 'bg-white/20'}`}
+        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${value ? 'bg-purple-600' : 'bg-white/20'}`}
       >
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+        <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
     </div>
   );
@@ -170,10 +170,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                 <button
                   onClick={async () => {
                     if (localSettings.pushNotifications) {
-                      // Turning OFF — just flip the setting
                       setLocalSettings(prev => ({ ...prev, pushNotifications: false }));
                     } else {
-                      // Turning ON — request permission first
                       const perm = await requestPushPermission();
                       if (perm === 'granted') {
                         setLocalSettings(prev => ({ ...prev, pushNotifications: true }));
@@ -184,12 +182,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                     }
                   }}
                   disabled={getPushPermission() === 'denied'}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
                     getPushPermission() === 'denied' ? 'bg-white/10 opacity-50 cursor-not-allowed' :
                     localSettings.pushNotifications ? 'bg-purple-600' : 'bg-white/20'
                   }`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localSettings.pushNotifications ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${localSettings.pushNotifications ? 'translate-x-5' : 'translate-x-0'}`} />
                 </button>
               </div>
             ) : (

@@ -3,8 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
-import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
+import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { dataService } from '../services/dataService';
 import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -471,7 +470,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // --- DnD state & sensors ---
   const [draggedItem, setDraggedItem] = useState<RPGItem | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
   );
 
   /** Map an EquipmentSlot key to the ItemSlot values that can be dropped on it */
@@ -500,14 +500,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       const targetSlot = dropId.replace('slot-', '') as EquipmentSlot;
       const item = inventory.find(i => i.id === dragId);
       if (!item) return;
-      // Check slot compatibility
       const accepted = slotAccepts(targetSlot);
       if (!accepted.includes(item.slot)) return;
       handleEquip(item);
     }
 
-    // Case 2: Dragging from equipment slot to inventory zone
-    if (dropId === 'inventory-zone' && dragId.startsWith('equipped-')) {
+    // Case 2: Dragging from equipment slot to storage (zone OR any cell)
+    if (dragId.startsWith('equipped-') && (dropId === 'inventory-zone' || dropId.startsWith('storage-cell-'))) {
       const slot = dragId.replace('equipped-', '');
       handleUnequip(slot);
     }
@@ -533,16 +532,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `slot-${slot}` });
 
       // If there's an item equipped, make it draggable OUT of the slot
-      const { attributes, listeners, setNodeRef: setDragRef, transform } = useDraggable({
+      const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
         id: item ? `equipped-${slot}` : `empty-slot-${slot}`,
         disabled: !item,
       });
-      const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
 
       // Highlight when a compatible item is being dragged over
       const isCompatible = draggedItem && slotAccepts(slot).includes(draggedItem.slot);
       const highlightClass = isOver && isCompatible ? 'ring-2 ring-purple-500 scale-110' :
-                             draggedItem && isCompatible ? 'ring-1 ring-purple-500/40' : '';
+                             draggedItem && isCompatible ? 'ring-1 ring-purple-500/40 animate-pulse' : '';
 
       return (
           <div ref={setDropRef} className="relative">
@@ -550,21 +548,24 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               ref={setDragRef}
               {...attributes}
               {...listeners}
-              style={dragStyle}
-              className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all hover:scale-110 cursor-grab active:cursor-grabbing ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass}`}
-              onClick={() => item && setInspectItem(item)}
+              className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
+                isDragging ? 'opacity-30 scale-90 border-dashed' : 'hover:scale-110 cursor-grab active:cursor-grabbing'
+              } ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass}`}
+              onClick={() => !isDragging && item && setInspectItem(item)}
             >
                 {item ? (
                     <>
                       {getSlotIcon(slot.replace(/\d/, ''), colors.text)}
                       <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
                       {/* Slot Hover Tooltip */}
-                      <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-                          <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-                          <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
-                          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
-                      </div>
+                      {!isDragging && (
+                        <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
+                            <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
+                            <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
+                            <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
+                        </div>
+                      )}
                     </>
                 ) : (
                     <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{slot.slice(0, 4)}</span>
@@ -963,7 +964,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
              
              {activeTab === 'LOADOUT' && (
-               <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                  <div key="loadout" className="flex flex-col h-full" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
 
@@ -1048,11 +1049,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  </div>
 
                  {/* Drag Overlay — floating ghost of the item being dragged */}
-                 <DragOverlay dropAnimation={null}>
+                 <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }} zIndex={9999}>
                    {draggedItem && (() => {
                      const colors = getAssetColors(draggedItem.rarity);
                      return (
-                       <div className={`w-14 h-14 rounded-xl border-2 flex flex-col items-center justify-center opacity-90 shadow-2xl ${colors.bg} ${colors.border} ${colors.glow}`}>
+                       <div
+                         className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center shadow-2xl pointer-events-none ${colors.bg} ${colors.border} ${colors.glow}`}
+                         style={{ filter: 'brightness(1.3)', boxShadow: '0 0 20px rgba(168,85,247,0.4), 0 8px 32px rgba(0,0,0,0.5)' }}
+                       >
                          {getSlotIcon(draggedItem.slot, colors.text, 'w-6 h-6')}
                          <span className={`text-[7px] font-bold mt-0.5 ${colors.text}`}>{draggedItem.baseName || draggedItem.name.split(' ').slice(-1)[0]}</span>
                        </div>
@@ -1480,14 +1484,15 @@ interface InventoryGridProps {
   getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
 }
 
-const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem: _draggedItem, onInspect, getSlotIcon }) => {
+const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect, getSlotIcon }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
+  const isDroppingEquipped = draggedItem && Object.values(equipped).some(e => (e as RPGItem | null)?.id === draggedItem.id);
 
   return (
     <div
       ref={setNodeRef}
-      className={`mt-6 flex-1 min-h-[250px] bg-black/40 border rounded-2xl p-4 overflow-hidden flex flex-col transition-colors ${
-        isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-white/10'
+      className={`mt-6 flex-1 min-h-[250px] bg-black/40 border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
+        isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-white/10'
       }`}
     >
       <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
@@ -1506,12 +1511,30 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             getSlotIcon={getSlotIcon}
           />
         ))}
-        {/* Empty Slots Filler */}
+        {/* Empty Slots — each is a droppable cell for precision placement */}
         {Array.from({ length: Math.max(0, 16 - inventory.length) }).map((_, i) => (
-          <div key={`empty-${i}`} className="aspect-square rounded-xl border border-white/5 bg-white/5"></div>
+          <DroppableEmptyCell key={`empty-${i}`} index={i} isDroppingEquipped={!!isDroppingEquipped} />
         ))}
       </div>
     </div>
+  );
+};
+
+// Empty storage cell that can receive equipped items
+const DroppableEmptyCell: React.FC<{ index: number; isDroppingEquipped: boolean }> = ({ index, isDroppingEquipped }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: `storage-cell-${index}` });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`aspect-square rounded-xl border transition-all duration-200 ${
+        isOver
+          ? 'border-purple-500/60 bg-purple-500/15 scale-105 shadow-lg shadow-purple-500/20'
+          : isDroppingEquipped
+            ? 'border-purple-500/20 bg-purple-500/5'
+            : 'border-white/5 bg-white/5'
+      }`}
+    />
   );
 };
 
@@ -1523,10 +1546,9 @@ interface DraggableInventoryItemProps {
 }
 
 const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect, getSlotIcon }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
   });
-  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
   const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
   const colors = getAssetColors(item.rarity);
 
@@ -1535,10 +1557,9 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      style={style}
-      onClick={() => onInspect(item)}
-      className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-30 scale-95' : 'opacity-80 hover:opacity-100 hover:scale-105'
+      onClick={() => !isDragging && onInspect(item)}
+      className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
+        isDragging ? 'opacity-30 scale-90 border-dashed' : 'cursor-grab active:cursor-grabbing opacity-80 hover:opacity-100 hover:scale-105'
       } ${isEquipped ? 'ring-2 ring-white/50 opacity-100' : ''} ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
     >
       {getSlotIcon(item.slot, colors.text, 'w-6 h-6')}
