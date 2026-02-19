@@ -23,7 +23,8 @@ function snapCenterToCursor(args: any) {
   return transform;
 }
 import { dataService } from '../services/dataService';
-import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
+import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem } from '../lib/gamification';
+import { RUNEWORD_DEFINITIONS } from '../lib/runewords';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
@@ -443,6 +444,47 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       } catch(e: any) {
           const msg = e?.message || e?.code || 'Unknown error';
           toast.error(`Fabrication failed: ${msg}`);
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
+  // --- GEM SOCKETING ---
+  const gemsInventory = user.gamification?.gemsInventory || [];
+
+  const handleAddSocket = async () => {
+      if (!inspectItem || isProcessing) return;
+      if (currency < FLUX_COSTS.SOCKET) return toast.error('Insufficient Cyber-Flux.');
+      if ((inspectItem.sockets || 0) >= 3) return toast.error('Maximum sockets reached.');
+      setIsProcessing(true);
+      try {
+          const result = await dataService.addSocket(inspectItem.id, activeClass);
+          setInspectItem(result.item);
+          sfx.craft();
+          toast.success('Socket added!');
+      } catch (e: any) {
+          toast.error(e?.message || 'Failed to add socket.');
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
+  const handleSocketGem = async (gemId: string) => {
+      if (!inspectItem || isProcessing) return;
+      if (currency < FLUX_COSTS.ENCHANT) return toast.error('Insufficient Cyber-Flux.');
+      setIsProcessing(true);
+      try {
+          const result = await dataService.socketGem(inspectItem.id, gemId, activeClass);
+          setInspectItem(result.item);
+          sfx.craft();
+          if (result.runewordActivated) {
+              sfx.levelUp();
+              toast.success(`RUNEWORD ACTIVATED: ${result.runewordActivated.name}!`);
+          } else {
+              toast.success('Gem socketed!');
+          }
+      } catch (e: any) {
+          toast.error(e?.message || 'Failed to socket gem.');
       } finally {
           setIsProcessing(false);
       }
@@ -1272,15 +1314,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           {inspectItem && (
               <div className="space-y-6 text-gray-100">
                   {/* Item Header */}
-                  <div className={`p-5 rounded-xl border ${getAssetColors(inspectItem.rarity).bg} ${getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).shimmer} relative overflow-hidden`}>
+                  <div className={`p-5 rounded-xl border ${inspectItem.runewordActive ? 'border-amber-500/40 runeword-active' : getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).bg} ${getAssetColors(inspectItem.rarity).shimmer} relative overflow-hidden`}>
                       <div className="flex items-start gap-4 relative z-10">
                           {/* Slot Icon */}
-                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border ${getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).bg}`} style={{ boxShadow: inspectItem.rarity === 'UNIQUE' ? '0 0 20px rgba(249,115,22,0.3)' : inspectItem.rarity === 'RARE' ? '0 0 15px rgba(234,179,8,0.2)' : 'none' }}>
-                              {getSlotIcon(inspectItem.slot, getAssetColors(inspectItem.rarity).text, 'w-7 h-7')}
+                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border ${inspectItem.runewordActive ? 'border-amber-500/50' : getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).bg}`} style={{ boxShadow: inspectItem.runewordActive ? '0 0 20px rgba(245,158,11,0.3)' : inspectItem.rarity === 'UNIQUE' ? '0 0 20px rgba(249,115,22,0.3)' : inspectItem.rarity === 'RARE' ? '0 0 15px rgba(234,179,8,0.2)' : 'none' }}>
+                              {getSlotIcon(inspectItem.slot, inspectItem.runewordActive ? 'text-amber-400' : getAssetColors(inspectItem.rarity).text, 'w-7 h-7')}
                           </div>
                           <div className="flex-1">
-                              <div className={`text-lg font-bold ${getAssetColors(inspectItem.rarity).text}`}>{inspectItem.name}</div>
+                              <div className={`text-lg font-bold ${inspectItem.runewordActive ? 'text-amber-300' : getAssetColors(inspectItem.rarity).text}`}>{inspectItem.name}</div>
                               <div className="text-xs text-gray-300 font-mono uppercase">{inspectItem.rarity} {inspectItem.slot}</div>
+                              {inspectItem.runewordActive && (
+                                  <div className="text-[10px] font-bold text-amber-400 mt-0.5">{getRunewordForItem(inspectItem)?.name}</div>
+                              )}
                           </div>
                       </div>
                       
@@ -1301,6 +1346,114 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                           ))}
                       </div>
                   </div>
+
+                  {/* Gem Sockets & Runeword */}
+                  {(inspectItem.sockets || 0) > 0 && (() => {
+                      const sockets = inspectItem.sockets || 0;
+                      const gems = inspectItem.gems || [];
+                      const emptySlots = sockets - gems.length;
+                      const runeword = getRunewordForItem(inspectItem);
+
+                      return (
+                          <div className={`p-4 rounded-xl border ${runeword ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/30 to-black/50' : 'border-white/10 bg-black/20'}`}>
+                              {/* Runeword banner */}
+                              {runeword && (
+                                  <div className="mb-3 text-center">
+                                      <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">Runeword Active</div>
+                                      <div className="text-lg font-black text-amber-300 mt-1">{runeword.name}</div>
+                                      <p className="text-[10px] text-amber-500/70 italic mt-1">{runeword.lore}</p>
+                                      <div className="flex justify-center gap-3 mt-2">
+                                          {Object.entries(runeword.bonusStats).map(([stat, val]) => (
+                                              <span key={stat} className="text-[10px] font-mono font-bold text-amber-400">
+                                                  +{val} {stat.slice(0,3).toUpperCase()}
+                                              </span>
+                                          ))}
+                                      </div>
+                                      {runeword.bonusEffects && runeword.bonusEffects.length > 0 && (
+                                          <div className="mt-1">
+                                              {runeword.bonusEffects.map(eff => (
+                                                  <span key={eff.id} className="text-[10px] text-purple-400 font-bold">{eff.description}</span>
+                                              ))}
+                                          </div>
+                                      )}
+                                  </div>
+                              )}
+
+                              {/* Socket visualization */}
+                              <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2">
+                                  <Hexagon className="w-3 h-3" /> Gem Sockets ({gems.length}/{sockets})
+                              </div>
+                              <div className="flex gap-2">
+                                  {gems.map((gem, i) => (
+                                      <div key={i} className="flex flex-col items-center gap-1">
+                                          <div
+                                              className="w-8 h-8 rounded-lg border-2 flex items-center justify-center"
+                                              style={{ borderColor: gem.color, backgroundColor: `${gem.color}20`, boxShadow: `0 0 8px ${gem.color}40` }}
+                                          >
+                                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
+                                          </div>
+                                          <span className="text-[9px] text-gray-400">{gem.name}</span>
+                                      </div>
+                                  ))}
+                                  {Array.from({ length: emptySlots }).map((_, i) => (
+                                      <div key={`empty-${i}`} className="w-8 h-8 rounded-lg border-2 border-dashed border-white/20 bg-black/30 flex items-center justify-center">
+                                          <div className="w-2 h-2 rounded-full bg-white/10" />
+                                      </div>
+                                  ))}
+                              </div>
+
+                              {/* Gem socketing UI (only if empty sockets remain and no runeword yet) */}
+                              {emptySlots > 0 && gemsInventory.length > 0 && (
+                                  <div className="mt-3 border-t border-white/10 pt-3">
+                                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Socket a Gem ({FLUX_COSTS.ENCHANT} Flux)</div>
+                                      <div className="flex flex-wrap gap-2">
+                                          {gemsInventory.map((gem: any) => (
+                                              <button
+                                                  key={gem.id}
+                                                  onClick={() => handleSocketGem(gem.id)}
+                                                  disabled={isProcessing || currency < FLUX_COSTS.ENCHANT}
+                                                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-white/10 bg-black/30 hover:bg-white/10 transition text-xs disabled:opacity-50"
+                                              >
+                                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
+                                                  <span className="text-gray-300">{gem.name}</span>
+                                                  <span className="text-gray-600 font-mono">+{gem.value}</span>
+                                              </button>
+                                          ))}
+                                      </div>
+
+                                      {/* Runeword hints */}
+                                      {gems.length > 0 && !runeword && (() => {
+                                          const currentPattern = gems.map((g: any) => g.name);
+                                          const possibleRws = RUNEWORD_DEFINITIONS.filter(rw =>
+                                              rw.requiredSockets === sockets &&
+                                              rw.pattern.slice(0, currentPattern.length).every((p, i) => p === currentPattern[i])
+                                          );
+                                          if (possibleRws.length === 0) return null;
+                                          return (
+                                              <div className="mt-2 text-[9px] text-amber-500/60">
+                                                  {possibleRws.map(rw => (
+                                                      <div key={rw.id}>Possible: <span className="font-bold text-amber-400/80">{rw.name}</span> — needs [{rw.pattern.join(' → ')}]</div>
+                                                  ))}
+                                              </div>
+                                          );
+                                      })()}
+                                  </div>
+                              )}
+                          </div>
+                      );
+                  })()}
+
+                  {/* Add Socket button (if item has <3 sockets) */}
+                  {(inspectItem.sockets || 0) < 3 && (
+                      <button
+                          onClick={handleAddSocket}
+                          disabled={isProcessing || currency < FLUX_COSTS.SOCKET}
+                          className="w-full py-2 bg-black/20 hover:bg-purple-900/20 border border-white/10 hover:border-purple-500/50 rounded-xl text-sm text-gray-300 hover:text-purple-300 font-bold transition disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                          <Hexagon className="w-4 h-4" />
+                          Add Socket ({FLUX_COSTS.SOCKET} Flux) — {inspectItem.sockets || 0}/3
+                      </button>
+                  )}
 
                   {/* Actions Grid */}
                   <div className="grid grid-cols-2 gap-3">

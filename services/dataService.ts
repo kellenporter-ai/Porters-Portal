@@ -911,7 +911,7 @@ export const dataService = {
 
   socketGem: async (itemId: string, gemId: string, classType?: string) => {
     const result = await callSocketGem({ itemId, gemId, classType });
-    return result.data as { item: RPGItem; newCurrency: number };
+    return result.data as { item: RPGItem; newCurrency: number; runewordActivated?: { id: string; name: string } | null };
   },
 
   // --- BOSS ENCOUNTERS (Distributed Counter Pattern) ---

@@ -1,5 +1,6 @@
 
 import { ItemRarity, RPGItem, EquipmentSlot, User } from '../types';
+import { RUNEWORD_DEFINITIONS } from './runewords';
 
 // --- VISUALIZATION HELPERS ---
 const ELEMENT_NAMES = [
@@ -39,10 +40,12 @@ export const getRankDetails = (level: number) => {
 
 // --- CRAFTING & ECONOMY ---
 
-export const FLUX_COSTS = {
-    RECALIBRATE: 5, 
-    REFORGE: 25,    
-    OPTIMIZE: 50    
+export const FLUX_COSTS: Record<string, number> = {
+    RECALIBRATE: 5,
+    REFORGE: 25,
+    OPTIMIZE: 50,
+    SOCKET: 30,
+    ENCHANT: 15,
 };
 
 export const getDisenchantValue = (item: RPGItem): number => {
@@ -135,6 +138,27 @@ export const calculateGemStats = (equipped: Partial<Record<EquipmentSlot, RPGIte
         });
     });
     return gemStats;
+};
+
+// --- RUNEWORD STAT HELPERS ---
+export const calculateRunewordStats = (equipped: Partial<Record<EquipmentSlot, RPGItem>> | undefined): Record<string, number> => {
+    if (!equipped) return {};
+    const rwStats: Record<string, number> = {};
+    const items = Object.values(equipped).filter(Boolean) as RPGItem[];
+    items.forEach(item => {
+        if (!item.runewordActive) return;
+        const rw = RUNEWORD_DEFINITIONS.find(r => r.id === item.runewordActive);
+        if (!rw) return;
+        for (const [stat, val] of Object.entries(rw.bonusStats)) {
+            rwStats[stat] = (rwStats[stat] || 0) + val;
+        }
+    });
+    return rwStats;
+};
+
+export const getRunewordForItem = (item: RPGItem) => {
+    if (!item.runewordActive) return null;
+    return RUNEWORD_DEFINITIONS.find(r => r.id === item.runewordActive) || null;
 };
 
 export const getAssetColors = (rarity: ItemRarity): { border: string; text: string; bg: string; glow: string; shimmer: string } => {

@@ -128,6 +128,27 @@ export interface RPGItem {
   setId?: string; // If part of an item set
   sockets?: number; // Number of gem sockets (0-3)
   gems?: ItemGem[]; // Socketed gems
+  runewordActive?: string; // ID of activated runeword (set by server when gem pattern matches)
+}
+
+// ========================================
+// RUNEWORD SYSTEM
+// ========================================
+
+export interface RunewordDefinition {
+  id: string;
+  name: string;
+  description: string;
+  pattern: string[]; // Ordered gem names, e.g. ["Ruby", "Sapphire", "Ruby"]
+  requiredSockets: number; // Must match pattern.length
+  bonusStats: {
+    tech?: number;
+    focus?: number;
+    analysis?: number;
+    charisma?: number;
+  };
+  bonusEffects?: ItemEffect[];
+  lore: string; // Flavor text shown when activated
 }
 
 export interface PlayerStats {
@@ -195,6 +216,9 @@ export interface User {
         deploymentRoll?: number; // The result of their skill check
     }[];
     completedQuests?: string[]; // Permanent record of completed mission IDs
+
+    // === GEM INVENTORY ===
+    gemsInventory?: ItemGem[]; // Unslotted gems available for socketing
 
     // === ACHIEVEMENTS ===
     unlockedAchievements?: string[]; // Achievement IDs

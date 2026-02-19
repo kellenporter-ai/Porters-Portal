@@ -2040,6 +2040,39 @@ export const addSocket = onCall(async (request) => {
   });
 });
 
+// --- Runeword definitions (server-side copy for pattern matching) ---
+interface RunewordDef {
+  id: string;
+  name: string;
+  pattern: string[]; // Ordered gem names
+  requiredSockets: number;
+  bonusStats: Record<string, number>;
+}
+
+const RUNEWORD_DEFS: RunewordDef[] = [
+  // 2-socket
+  { id: "rw_binary", name: "Binary", pattern: ["Ruby", "Ruby"], requiredSockets: 2, bonusStats: { tech: 15 } },
+  { id: "rw_harmony", name: "Harmony", pattern: ["Emerald", "Sapphire"], requiredSockets: 2, bonusStats: { focus: 8, analysis: 8 } },
+  { id: "rw_catalyst", name: "Catalyst", pattern: ["Ruby", "Emerald"], requiredSockets: 2, bonusStats: { tech: 8, focus: 8 } },
+  { id: "rw_resonance", name: "Resonance", pattern: ["Amethyst", "Amethyst"], requiredSockets: 2, bonusStats: { charisma: 15 } },
+  { id: "rw_enigma", name: "Enigma", pattern: ["Sapphire", "Amethyst"], requiredSockets: 2, bonusStats: { analysis: 10, charisma: 6 } },
+  // 3-socket
+  { id: "rw_quantum", name: "Quantum Entanglement", pattern: ["Sapphire", "Ruby", "Sapphire"], requiredSockets: 3, bonusStats: { analysis: 18, tech: 10 } },
+  { id: "rw_fusion", name: "Nuclear Fusion", pattern: ["Ruby", "Emerald", "Ruby"], requiredSockets: 3, bonusStats: { tech: 20, focus: 10 } },
+  { id: "rw_photosynthesis", name: "Photosynthesis", pattern: ["Emerald", "Emerald", "Ruby"], requiredSockets: 3, bonusStats: { focus: 20, tech: 8 } },
+  { id: "rw_supernova", name: "Supernova", pattern: ["Ruby", "Sapphire", "Amethyst"], requiredSockets: 3, bonusStats: { tech: 12, analysis: 12, charisma: 12 } },
+  { id: "rw_helix", name: "Double Helix", pattern: ["Emerald", "Amethyst", "Emerald"], requiredSockets: 3, bonusStats: { focus: 15, charisma: 15 } },
+  { id: "rw_singularity", name: "Singularity", pattern: ["Amethyst", "Sapphire", "Ruby"], requiredSockets: 3, bonusStats: { tech: 10, focus: 10, analysis: 10, charisma: 10 } },
+];
+
+function checkRunewordMatch(gemNames: string[]): RunewordDef | null {
+  for (const rw of RUNEWORD_DEFS) {
+    if (rw.pattern.length !== gemNames.length) continue;
+    if (rw.pattern.every((gem, idx) => gem === gemNames[idx])) return rw;
+  }
+  return null;
+}
+
 export const socketGem = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const { itemId, gemId, classType } = request.data;
@@ -2079,6 +2112,20 @@ export const socketGem = onCall(async (request) => {
     // Update item stats with gem bonus
     item.stats[gem.stat] = (item.stats[gem.stat] || 0) + gem.value;
 
+    // --- Runeword detection: check if all sockets are filled and pattern matches ---
+    let runewordActivated: RunewordDef | null = null;
+    if (item.gems.length === sockets) {
+      const gemNames = item.gems.map((g: { name: string }) => g.name);
+      runewordActivated = checkRunewordMatch(gemNames);
+      if (runewordActivated) {
+        item.runewordActive = runewordActivated.id;
+        // Apply runeword bonus stats on top of existing stats
+        for (const [stat, val] of Object.entries(runewordActivated.bonusStats)) {
+          item.stats[stat] = (item.stats[stat] || 0) + val;
+        }
+      }
+    }
+
     inventory[itemIdx] = item;
     const newGemsInv = gemsInventory.filter((_: unknown, i: number) => i !== gemIdx);
 
@@ -2088,7 +2135,11 @@ export const socketGem = onCall(async (request) => {
       "gamification.gemsInventory": newGemsInv,
     });
 
-    return { item, newCurrency: currency - ENCHANT_COST_VAL };
+    return {
+      item,
+      newCurrency: currency - ENCHANT_COST_VAL,
+      runewordActivated: runewordActivated ? { id: runewordActivated.id, name: runewordActivated.name } : null,
+    };
   });
 });
 
