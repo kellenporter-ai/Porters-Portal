@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { User, ChatMessage, DefaultClassTypes, Assignment, ClassConfig } from '../types';
-import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check, MicOff } from 'lucide-react';
+import { User, ChatMessage, DefaultClassTypes, Assignment, ClassConfig, StudentGroup } from '../types';
+import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check, MicOff, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 
@@ -21,12 +21,14 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   const { confirm } = useConfirm();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [activeTab, setActiveTab] = useState<'Main' | 'Resources' | 'Bookmarks' | 'Moderation'>('Main');
+  const [activeTab, setActiveTab] = useState<'Main' | 'Resources' | 'Groups' | 'Bookmarks' | 'Moderation'>('Main');
   const [isLoading, setIsLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMessageEmojiPickerId, setShowMessageEmojiPickerId] = useState<string | null>(null);
-  
+
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
+  const [myGroups, setMyGroups] = useState<StudentGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [flaggedMessages, setFlaggedMessages] = useState<ChatMessage[]>([]);
   const [muteMenuTarget, setMuteMenuTarget] = useState<{ id: string; senderId: string; senderName: string } | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -58,9 +60,11 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   const activeChannelId = useMemo(() => {
       if (activeTab === 'Resources' && selectedResourceId) return `res_${selectedResourceId}`;
       if (activeTab === 'Resources' && !selectedResourceId) return '';
+      if (activeTab === 'Groups' && selectedGroupId) return `group_${selectedGroupId}`;
+      if (activeTab === 'Groups' && !selectedGroupId) return '';
       if (!selectedClass) return '';
       return `class_${selectedClass.replace(/\s+/g, '_').toLowerCase()}`;
-  }, [selectedClass, activeTab, selectedResourceId]);
+  }, [selectedClass, activeTab, selectedResourceId, selectedGroupId]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -79,9 +83,17 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
   useEffect(() => {
     if (!isOpen) return;
+    const unsub = dataService.subscribeToMyGroups(user.id, setMyGroups);
+    return () => unsub();
+  }, [isOpen, user.id]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     let channelToSubscribe = '';
     if (activeTab === 'Resources' && selectedResourceId) {
         channelToSubscribe = `res_${selectedResourceId}`;
+    } else if (activeTab === 'Groups' && selectedGroupId) {
+        channelToSubscribe = `group_${selectedGroupId}`;
     } else if (activeTab === 'Main' || activeTab === 'Bookmarks') {
         channelToSubscribe = `class_${selectedClass.replace(/\s+/g, '_').toLowerCase()}`;
     }
@@ -96,7 +108,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
     return () => {
         unsubMessages();
     };
-  }, [isOpen, selectedClass, activeTab, selectedResourceId]);
+  }, [isOpen, selectedClass, activeTab, selectedResourceId, selectedGroupId]);
 
   useEffect(() => {
     if (!isOpen || user.role !== 'ADMIN') return;
@@ -219,8 +231,8 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       {/* HEADER */}
       <div className="flex items-center justify-between p-4 bg-white/5 border-b border-white/5 backdrop-blur-md z-10">
         <div className="flex items-center gap-3 overflow-hidden">
-            {activeTab === 'Resources' && selectedResourceId ? (
-                <button onClick={() => setSelectedResourceId(null)} className="p-2 hover:bg-white/10 rounded-full transition text-gray-300">
+            {(activeTab === 'Resources' && selectedResourceId) || (activeTab === 'Groups' && selectedGroupId) ? (
+                <button onClick={() => { setSelectedResourceId(null); setSelectedGroupId(null); }} className="p-2 hover:bg-white/10 rounded-full transition text-gray-300">
                     <ChevronLeft className="w-5 h-5" />
                 </button>
             ) : (
@@ -230,9 +242,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
             )}
             <div className="min-w-0">
                 <h3 className="font-bold text-white text-sm truncate leading-tight">
-                    {activeTab === 'Moderation' ? 'Moderation Queue' : activeTab === 'Resources' ? (selectedResourceId ? resourceRooms.find(r => r.id === selectedResourceId)?.title : "Class Resources") : selectedClass}
+                    {activeTab === 'Moderation' ? 'Moderation Queue' : activeTab === 'Groups' ? (selectedGroupId ? myGroups.find(g => g.id === selectedGroupId)?.name : 'My Groups') : activeTab === 'Resources' ? (selectedResourceId ? resourceRooms.find(r => r.id === selectedResourceId)?.title : "Class Resources") : selectedClass}
                 </h3>
-                {activeTab !== 'Resources' && activeTab !== 'Moderation' && chatEnabledClasses.length > 1 && (
+                {activeTab !== 'Resources' && activeTab !== 'Moderation' && activeTab !== 'Groups' && chatEnabledClasses.length > 1 && (
                     <div className="relative group flex items-center cursor-pointer">
                         <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider truncate">{selectedClass}</span>
                         <ChevronDown className="w-3 h-3 text-gray-500 ml-1" />
@@ -251,6 +263,12 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
         <div className="w-16 bg-black/20 border-r border-white/5 flex flex-col items-center py-4 gap-4">
             <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><MessageSquare className="w-5 h-5" /></button>
             <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><BookOpen className="w-5 h-5" /></button>
+            {myGroups.length > 0 && (
+                <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                    <Users className="w-5 h-5" />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{myGroups.length}</span>
+                </button>
+            )}
             <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><Bookmark className="w-5 h-5" /></button>
             {user.role === 'ADMIN' && (
                 <button onClick={() => setActiveTab('Moderation')} aria-label="Moderation queue" className={`mt-auto p-3 rounded-2xl transition-all relative ${activeTab === 'Moderation' ? 'bg-red-600 text-white shadow-lg shadow-red-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
@@ -276,6 +294,30 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                     </div>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); onOpenResource?.(room.id); onClose(); }} className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition"><ExternalLink className="w-4 h-4" /></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'Groups' && !selectedGroupId && (
+                <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
+                    <div className="space-y-2">
+                        {myGroups.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                                <Users className="w-10 h-10 mb-3 opacity-30" />
+                                <p className="text-sm">No groups yet</p>
+                                <p className="text-[10px] text-gray-600 mt-1">Your teacher will assign you to a group.</p>
+                            </div>
+                        ) : myGroups.map(group => (
+                            <div key={group.id} onClick={() => setSelectedGroupId(group.id)} className="group p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all cursor-pointer">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition shadow-inner"><Users className="w-5 h-5" /></div>
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-gray-200 text-sm truncate group-hover:text-white transition">{group.name}</h4>
+                                        <span className="text-[10px] text-gray-500">{group.members.length} member{group.members.length !== 1 ? 's' : ''} · {group.classType}</span>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -333,7 +375,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 </div>
             )}
 
-            {(activeTab === 'Main' || activeTab === 'Bookmarks' || (activeTab === 'Resources' && selectedResourceId)) && (
+            {(activeTab === 'Main' || activeTab === 'Bookmarks' || (activeTab === 'Resources' && selectedResourceId) || (activeTab === 'Groups' && selectedGroupId)) && (
                 <>
                     {/* Bug Fix #1: Added top padding to container and adjusted toolbar positioning logic */}
                     <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pt-12 space-y-6 custom-scrollbar scroll-smooth">
