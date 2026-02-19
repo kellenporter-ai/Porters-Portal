@@ -2149,16 +2149,76 @@ export const socketGem = onCall(async (request) => {
 
 const BOSS_SHARD_COUNT = 10; // Supports ~10 concurrent writes/sec
 
+// --- Server-side stat calculation from equipped gear ---
+function calculateServerStats(equipped: Record<string, unknown> | undefined): { tech: number; focus: number; analysis: number; charisma: number } {
+  const base = { tech: 10, focus: 10, analysis: 10, charisma: 10 };
+  if (!equipped) return base;
+  for (const item of Object.values(equipped)) {
+    if (!item || typeof item !== 'object') continue;
+    const it = item as { stats?: Record<string, number>; gems?: { stat: string; value: number }[]; runewordActive?: string };
+    // Item base stats
+    if (it.stats) {
+      for (const [key, val] of Object.entries(it.stats)) {
+        if (key in base) base[key as keyof typeof base] += Number(val) || 0;
+      }
+    }
+    // Gem stats
+    if (Array.isArray(it.gems)) {
+      for (const gem of it.gems) {
+        if (gem.stat in base) base[gem.stat as keyof typeof base] += Number(gem.value) || 0;
+      }
+    }
+  }
+  return base;
+}
+
+// --- Calculate boss damage from player stats ---
+function calculateBossDamage(stats: { tech: number; focus: number; analysis: number; charisma: number }, gearScore: number): { damage: number; isCrit: boolean } {
+  // Base damage: 8
+  let damage = 8;
+  // Tech: primary damage stat (+1 per 5 tech)
+  damage += Math.floor(stats.tech / 5);
+  // Analysis: secondary damage (+1 per 10 analysis)
+  damage += Math.floor(stats.analysis / 10);
+  // Gear score bonus (+1 per 50 gear score)
+  damage += Math.floor(gearScore / 50);
+  // Random variance: ±20%
+  const variance = 0.8 + Math.random() * 0.4;
+  damage = Math.round(damage * variance);
+  // Focus: crit chance (1% per focus point, capped at 30%)
+  const critChance = Math.min(stats.focus * 0.01, 0.30);
+  const isCrit = Math.random() < critChance;
+  if (isCrit) damage = Math.round(damage * 2);
+  // Clamp: min 1, max 200
+  return { damage: Math.max(1, Math.min(damage, 200)), isCrit };
+}
+
+function calculateServerGearScore(equipped: Record<string, unknown> | undefined): number {
+  if (!equipped) return 0;
+  let totalScore = 0;
+  for (const item of Object.values(equipped)) {
+    if (!item || typeof item !== 'object') continue;
+    const it = item as { affixes?: { tier: number }[]; rarity?: string };
+    let tiers = (it.affixes || []).map((a: { tier: number }) => a.tier);
+    if (it.rarity === 'UNIQUE' && tiers.length === 0) tiers = [10];
+    const avgTier = tiers.length > 0 ? tiers.reduce((a: number, b: number) => a + b, 0) / tiers.length : 1;
+    let rarityBonus = 0;
+    switch (it.rarity) { case 'UNCOMMON': rarityBonus = 10; break; case 'RARE': rarityBonus = 30; break; case 'UNIQUE': rarityBonus = 60; break; }
+    totalScore += (avgTier * 10) + rarityBonus;
+  }
+  return Math.floor(totalScore);
+}
+
 export const dealBossDamage = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
-  const { bossId, damage, userName } = request.data;
-  if (!bossId || !damage) throw new HttpsError("invalid-argument", "Boss ID and damage required.");
+  const { bossId, userName, classType } = request.data;
+  if (!bossId) throw new HttpsError("invalid-argument", "Boss ID required.");
 
   const db = admin.firestore();
   const bossRef = db.doc(`boss_encounters/${bossId}`);
   const userRef = db.doc(`users/${uid}`);
 
-  // Step 1: Validate boss state (read-only, outside shard write)
+  // Step 1: Validate boss state + read user gear
   const [bossSnap, userSnap] = await Promise.all([bossRef.get(), userRef.get()]);
 
   if (!bossSnap.exists) throw new HttpsError("not-found", "Boss not found.");
@@ -2168,37 +2228,46 @@ export const dealBossDamage = onCall(async (request) => {
   if (!boss.isActive) throw new HttpsError("failed-precondition", "Boss is not active.");
   if (new Date(boss.deadline) < new Date()) throw new HttpsError("failed-precondition", "Boss encounter has expired.");
 
-  const validDamage = Math.max(1, Math.min(Number(damage), 100)); // Clamp to 1-100
+  // Step 2: Calculate damage from player's equipped gear stats (server-authoritative)
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+  const activeClass = classType || userData.classType || '';
+  const profile = gam.classProfiles?.[activeClass];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const stats = calculateServerStats(equipped);
+  const gearScore = calculateServerGearScore(equipped);
+  const { damage: calculatedDamage, isCrit } = calculateBossDamage(stats, gearScore);
 
-  // Step 2: Write damage to a random shard (distributed counter)
+  // Step 3: Write damage to a random shard (distributed counter)
   const shardId = Math.floor(Math.random() * BOSS_SHARD_COUNT).toString();
   const shardRef = db.doc(`boss_encounters/${bossId}/shards/${shardId}`);
 
-  // Step 3: Update shard + user in a batch (not transaction — avoids contention)
+  // Step 4: Update shard + user in a batch (not transaction — avoids contention)
   const batch = db.batch();
 
-  // Shard: atomic increment of damage counter + append to per-shard damage log
   batch.set(shardRef, {
-    damageDealt: admin.firestore.FieldValue.increment(validDamage),
+    damageDealt: admin.firestore.FieldValue.increment(calculatedDamage),
   }, { merge: true });
 
-  // Damage log: stored as a separate subcollection doc to avoid document size limits
+  // Damage log: stored in subcollection to avoid document size limits
   const logRef = db.collection(`boss_encounters/${bossId}/damage_log`).doc();
   batch.set(logRef, {
     userId: uid,
     userName: userName || "Student",
-    damage: validDamage,
+    damage: calculatedDamage,
+    isCrit,
     timestamp: new Date().toISOString(),
   });
 
   // User: award XP + track total boss damage
-  const userData = userSnap.data()!;
-  const xpReward = boss.xpRewardPerHit || 10;
+  // Charisma bonus: extra XP per hit (+1% per charisma point above 10)
+  const baseXpReward = boss.xpRewardPerHit || 10;
+  const charismaBonus = Math.max(0, stats.charisma - 10);
+  const xpReward = Math.round(baseXpReward * (1 + charismaBonus * 0.01));
   const xpResult = buildXPUpdates(userData, xpReward);
 
-  const gam = userData.gamification || {};
   const bossDamageDealt = gam.bossDamageDealt || {};
-  bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + validDamage;
+  bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + calculatedDamage;
 
   batch.update(userRef, {
     ...xpResult.updates,
@@ -2207,7 +2276,7 @@ export const dealBossDamage = onCall(async (request) => {
 
   await batch.commit();
 
-  // Step 4: Check if boss is defeated by reading all shards
+  // Step 5: Read all shards to calculate current HP + sync boss document
   const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).get();
   let totalDamage = 0;
   shardsSnap.forEach(doc => { totalDamage += doc.data().damageDealt || 0; });
@@ -2215,17 +2284,22 @@ export const dealBossDamage = onCall(async (request) => {
 
   let bossDefeated = false;
   if (newHp <= 0 && boss.isActive) {
-    // Mark boss as defeated — single write, only happens once
     await bossRef.update({ isActive: false, currentHp: 0 });
     bossDefeated = true;
+  } else {
+    // Always sync currentHp on the boss document for admin panel visibility
+    await bossRef.update({ currentHp: newHp });
   }
 
   return {
     newHp,
-    damageDealt: validDamage,
+    damageDealt: calculatedDamage,
+    isCrit,
     xpEarned: xpReward,
     bossDefeated,
     leveledUp: xpResult.leveledUp,
+    stats: { tech: stats.tech, focus: stats.focus, analysis: stats.analysis, charisma: stats.charisma },
+    gearScore,
   };
 });
 

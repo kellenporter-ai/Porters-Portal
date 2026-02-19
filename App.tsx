@@ -431,7 +431,7 @@ const App: React.FC = () => {
                   {activeTab in STUDENT_TAB_MAP && <StudentDashboard user={user} assignments={assignments} submissions={submissions} enabledFeatures={enabledFeatures} onNavigate={setActiveTab} onStartAssignment={openAssignment} studentTab={STUDENT_TAB_MAP[activeTab]} />}
                   {activeTab === 'Forensics' && enabledFeatures.evidenceLocker && <EvidenceLocker user={user} />}
                   {activeTab === 'Physics Lab' && enabledFeatures.physicsLab && <PhysicsLab user={user} />}
-                  {activeTab === 'Leaderboard' && enabledFeatures.leaderboard && <Leaderboard />}
+                  {activeTab === 'Leaderboard' && enabledFeatures.leaderboard && <Leaderboard user={user} />}
                </>
             )}
             </div>

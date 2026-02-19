@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossEncounter } from '../types';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Skull, Lock, Unlock } from 'lucide-react';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossEncounter, BossQuizEvent } from '../types';
+import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Skull, Lock, Unlock, Brain } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -68,11 +68,23 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       rewardItemRarity: '' as string, deadline: '', imageUrl: '',
   });
 
+  // Quiz Boss management state
+  const [quizBosses, setQuizBosses] = useState<BossQuizEvent[]>([]);
+  const [isQuizBossModalOpen, setIsQuizBossModalOpen] = useState(false);
+  const [editingQuizBoss, setEditingQuizBoss] = useState<BossQuizEvent | null>(null);
+  const [quizBossForm, setQuizBossForm] = useState({
+      bossName: '', description: '', maxHp: 1000, classType: 'GLOBAL',
+      damagePerCorrect: 50, rewardXp: 500, rewardFlux: 100,
+      rewardItemRarity: '' as string, deadline: '',
+      questions: [] as { id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; damageBonus: number }[],
+  });
+
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
     const unsubQuests = dataService.subscribeToQuests(setQuests);
     const unsubBosses = dataService.subscribeToAllBossEncounters(setBosses);
-    return () => { unsubEvents(); unsubQuests(); unsubBosses(); };
+    const unsubQuizBosses = dataService.subscribeToAllBossQuizzes(setQuizBosses);
+    return () => { unsubEvents(); unsubQuests(); unsubBosses(); unsubQuizBosses(); };
   }, []);
 
   useEffect(() => {
@@ -271,19 +283,20 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const handleSaveBoss = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
-          const bossData: BossEncounter = {
+          const bossData: Record<string, unknown> = {
               id: editingBoss?.id || Math.random().toString(36).substring(2, 12),
               name: bossForm.name, description: bossForm.description,
               maxHp: bossForm.maxHp, currentHp: editingBoss?.currentHp ?? bossForm.maxHp,
-              classType: bossForm.classType === 'GLOBAL' ? undefined : bossForm.classType,
               xpRewardPerHit: bossForm.xpRewardPerHit,
-              completionRewards: { xp: bossForm.rewardXp, flux: bossForm.rewardFlux, itemRarity: (bossForm.rewardItemRarity as ItemRarity) || undefined },
+              completionRewards: { xp: bossForm.rewardXp, flux: bossForm.rewardFlux, ...(bossForm.rewardItemRarity ? { itemRarity: bossForm.rewardItemRarity } : {}) },
               deadline: new Date(bossForm.deadline).toISOString(),
               isActive: editingBoss?.isActive ?? true,
-              imageUrl: bossForm.imageUrl || undefined,
               damageLog: editingBoss?.damageLog || [],
           };
-          await dataService.saveBossEncounter(bossData);
+          // Only include optional fields if they have values (Firestore rejects undefined)
+          if (bossForm.classType !== 'GLOBAL') bossData.classType = bossForm.classType;
+          if (bossForm.imageUrl) bossData.imageUrl = bossForm.imageUrl;
+          await dataService.saveBossEncounter(bossData as unknown as BossEncounter);
           toast.success(editingBoss ? 'Boss updated.' : 'Boss deployed!');
           setIsBossModalOpen(false);
       } catch (err) { toast.error('Failed to save boss.'); }
@@ -297,6 +310,114 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       if (!await confirm({ message: `Delete boss "${boss.name}"? This cannot be undone.`, confirmLabel: "Delete" })) return;
       await dataService.deleteBossEncounter(boss.id);
       toast.success('Boss deleted.');
+  };
+
+  // --- Quiz Boss handlers ---
+  const openQuizBossForm = (quiz?: BossQuizEvent) => {
+      if (quiz) {
+          setEditingQuizBoss(quiz);
+          setQuizBossForm({
+              bossName: quiz.bossName, description: quiz.description, maxHp: quiz.maxHp,
+              classType: quiz.classType || 'GLOBAL', damagePerCorrect: quiz.damagePerCorrect || 50,
+              rewardXp: quiz.rewards?.xp || 500, rewardFlux: quiz.rewards?.flux || 100,
+              rewardItemRarity: quiz.rewards?.itemRarity || '',
+              deadline: quiz.deadline ? quiz.deadline.slice(0, 16) : '',
+              questions: quiz.questions.map(q => ({ ...q, damageBonus: q.damageBonus || 0 })),
+          });
+      } else {
+          setEditingQuizBoss(null);
+          const defaultDeadline = new Date();
+          defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+          setQuizBossForm({
+              bossName: '', description: '', maxHp: 1000, classType: 'GLOBAL',
+              damagePerCorrect: 50, rewardXp: 500, rewardFlux: 100, rewardItemRarity: '',
+              deadline: defaultDeadline.toISOString().slice(0, 16), questions: [],
+          });
+      }
+      setIsQuizBossModalOpen(true);
+  };
+
+  const addQuizQuestion = () => {
+      setQuizBossForm(prev => ({
+          ...prev,
+          questions: [...prev.questions, {
+              id: Math.random().toString(36).substring(2, 10),
+              stem: '', options: ['', '', '', ''], correctAnswer: 0,
+              difficulty: 'MEDIUM' as const, damageBonus: 0,
+          }],
+      }));
+  };
+
+  const updateQuizQuestion = (idx: number, field: string, value: unknown) => {
+      setQuizBossForm(prev => {
+          const questions = [...prev.questions];
+          questions[idx] = { ...questions[idx], [field]: value };
+          return { ...prev, questions };
+      });
+  };
+
+  const updateQuizOption = (qIdx: number, optIdx: number, value: string) => {
+      setQuizBossForm(prev => {
+          const questions = [...prev.questions];
+          const options = [...questions[qIdx].options];
+          options[optIdx] = value;
+          questions[qIdx] = { ...questions[qIdx], options };
+          return { ...prev, questions };
+      });
+  };
+
+  const removeQuizQuestion = (idx: number) => {
+      setQuizBossForm(prev => ({
+          ...prev,
+          questions: prev.questions.filter((_, i) => i !== idx),
+      }));
+  };
+
+  const handleSaveQuizBoss = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (quizBossForm.questions.length === 0) {
+          toast.error('Add at least one question.');
+          return;
+      }
+      try {
+          const quizData: Record<string, unknown> = {
+              id: editingQuizBoss?.id || Math.random().toString(36).substring(2, 12),
+              bossName: quizBossForm.bossName,
+              description: quizBossForm.description,
+              maxHp: quizBossForm.maxHp,
+              currentHp: editingQuizBoss?.currentHp ?? quizBossForm.maxHp,
+              classType: quizBossForm.classType,
+              isActive: editingQuizBoss?.isActive ?? true,
+              deadline: new Date(quizBossForm.deadline).toISOString(),
+              damagePerCorrect: quizBossForm.damagePerCorrect,
+              questions: quizBossForm.questions.map(q => ({
+                  id: q.id,
+                  stem: q.stem,
+                  options: q.options.filter(o => o.trim()),
+                  correctAnswer: q.correctAnswer,
+                  difficulty: q.difficulty,
+                  ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}),
+              })),
+              rewards: {
+                  xp: quizBossForm.rewardXp,
+                  flux: quizBossForm.rewardFlux,
+                  ...(quizBossForm.rewardItemRarity ? { itemRarity: quizBossForm.rewardItemRarity } : {}),
+              },
+          };
+          await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
+          toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
+          setIsQuizBossModalOpen(false);
+      } catch (err) { toast.error('Failed to save quiz boss.'); }
+  };
+
+  const handleToggleQuizBoss = async (quiz: BossQuizEvent) => {
+      await dataService.toggleBossQuizActive(quiz.id, !quiz.isActive);
+  };
+
+  const handleDeleteQuizBoss = async (quiz: BossQuizEvent) => {
+      if (!await confirm({ message: `Delete quiz boss "${quiz.bossName}"? This cannot be undone.`, confirmLabel: "Delete" })) return;
+      await dataService.deleteBossQuiz(quiz.id);
+      toast.success('Quiz boss deleted.');
   };
 
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => (
@@ -315,7 +436,10 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         <div className="flex gap-2">
           {activeTab === 'PROTOCOLS' && <button onClick={() => setIsEventModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-blue-900/20"><Rocket className="w-4 h-4" /> Deploy Protocol</button>}
           {activeTab === 'MISSIONS' && <button onClick={() => setIsQuestModalOpen(true)} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-purple-900/20"><Award className="w-4 h-4" /> Issue Mission</button>}
-          {activeTab === 'BOSS_OPS' && <button onClick={() => openBossForm()} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-red-900/20"><Skull className="w-4 h-4" /> Deploy Boss</button>}
+          {activeTab === 'BOSS_OPS' && <>
+            <button onClick={() => openBossForm()} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-red-900/20"><Skull className="w-4 h-4" /> Deploy Boss</button>
+            <button onClick={() => openQuizBossForm()} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-amber-900/20"><Brain className="w-4 h-4" /> Deploy Quiz Boss</button>
+          </>}
         </div>
       </div>
 
@@ -531,6 +655,57 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                   </div>
                 </div>
               );})}
+
+              {/* Quiz Bosses Section */}
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <h3 className="text-lg font-bold text-amber-400 flex items-center gap-2 mb-4">
+                  <Brain className="w-5 h-5" /> Quiz Bosses (Educational)
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">Students deal damage by answering questions correctly. Requires mastery of class material to defeat.</p>
+
+                {quizBosses.length === 0 && (
+                  <div className="text-center py-10 text-gray-500">
+                    <Brain className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <p className="font-bold text-sm">No quiz bosses deployed.</p>
+                    <p className="text-xs mt-1">Deploy a quiz boss to challenge students with educational content.</p>
+                  </div>
+                )}
+
+                {quizBosses.map(quiz => {
+                  const hpPercent = quiz.maxHp > 0 ? Math.max(0, (quiz.currentHp || quiz.maxHp) / quiz.maxHp * 100) : 0;
+                  const isExpired = new Date(quiz.deadline) < new Date();
+                  return (
+                  <div key={quiz.id} className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all mb-3 ${quiz.isActive && !isExpired ? 'bg-amber-600/10 border-amber-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${quiz.isActive && !isExpired ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'bg-gray-800 text-gray-400'}`}>
+                        <Brain className="w-7 h-7" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-lg text-white truncate">{quiz.bossName}</h4>
+                        <p className="text-sm text-gray-500 truncate">{quiz.description}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">{quiz.questions.length} Questions</span>
+                          <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {(quiz.currentHp || quiz.maxHp).toLocaleString()}/{quiz.maxHp.toLocaleString()}</span>
+                          <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{quiz.damagePerCorrect} dmg/correct</span>
+                          <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quiz.classType}</span>
+                          {isExpired && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">EXPIRED</span>}
+                        </div>
+                        <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                          <div className={`h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-amber-500' : hpPercent > 20 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${hpPercent}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button onClick={() => openQuizBossForm(quiz)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
+                      <button onClick={() => handleToggleQuizBoss(quiz)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${quiz.isActive ? 'bg-amber-600' : 'bg-gray-700'}`}>
+                        <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${quiz.isActive ? 'translate-x-6' : ''}`} />
+                      </button>
+                      <button onClick={() => handleDeleteQuizBoss(quiz)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -614,6 +789,144 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           </div>
           <button type="submit" className="w-full bg-red-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-red-700">
             {editingBoss ? 'Update Boss' : 'Deploy Boss'}
+          </button>
+        </form>
+      </Modal>
+
+      {/* Quiz Boss Create/Edit Modal */}
+      <Modal isOpen={isQuizBossModalOpen} onClose={() => setIsQuizBossModalOpen(false)} title={editingQuizBoss ? 'Edit Quiz Boss' : 'Deploy Quiz Boss'} maxWidth="max-w-2xl">
+        <form onSubmit={handleSaveQuizBoss} className="space-y-4 text-gray-100 p-2 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Boss Name</label>
+            <input value={quizBossForm.bossName} onChange={e => setQuizBossForm({ ...quizBossForm, bossName: e.target.value })} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. The Knowledge Sphinx" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Description</label>
+            <textarea value={quizBossForm.description} onChange={e => setQuizBossForm({ ...quizBossForm, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white resize-none h-16" placeholder="A mythical beast that can only be defeated by knowledge..." />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Max HP</label>
+              <input type="number" value={quizBossForm.maxHp} onChange={e => setQuizBossForm({ ...quizBossForm, maxHp: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white font-bold text-sm" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Dmg Per Correct</label>
+              <input type="number" value={quizBossForm.damagePerCorrect} onChange={e => setQuizBossForm({ ...quizBossForm, damagePerCorrect: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white font-bold text-sm" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Class</label>
+              <select value={quizBossForm.classType} onChange={e => setQuizBossForm({ ...quizBossForm, classType: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white font-bold text-sm">
+                <option value="GLOBAL">All Classes</option>
+                {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Deadline</label>
+              <input type="datetime-local" value={quizBossForm.deadline} onChange={e => setQuizBossForm({ ...quizBossForm, deadline: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white font-bold text-sm" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[9px] text-gray-500 mb-1 px-1">Reward XP</label>
+                <input type="number" value={quizBossForm.rewardXp} onChange={e => setQuizBossForm({ ...quizBossForm, rewardXp: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 mb-1 px-1">Flux</label>
+                <input type="number" value={quizBossForm.rewardFlux} onChange={e => setQuizBossForm({ ...quizBossForm, rewardFlux: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 mb-1 px-1">Loot</label>
+                <select value={quizBossForm.rewardItemRarity} onChange={e => setQuizBossForm({ ...quizBossForm, rewardItemRarity: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-bold">
+                  <option value="">None</option>
+                  <option value="UNCOMMON">Uncommon</option>
+                  <option value="RARE">Rare</option>
+                  <option value="UNIQUE">Unique</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Questions */}
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Questions ({quizBossForm.questions.length})</label>
+              <button type="button" onClick={addQuizQuestion} className="text-xs bg-amber-600/20 text-amber-400 px-3 py-1 rounded-lg hover:bg-amber-600/30 transition font-bold flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add Question
+              </button>
+            </div>
+
+            {quizBossForm.questions.length === 0 && (
+              <p className="text-xs text-gray-600 text-center py-4">No questions yet. Add questions that students must answer correctly to deal damage.</p>
+            )}
+
+            {quizBossForm.questions.map((q, qIdx) => (
+              <div key={q.id} className="bg-black/30 rounded-xl border border-white/5 p-4 mb-3 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <label className="block text-[9px] text-gray-500 mb-1">Question #{qIdx + 1}</label>
+                    <textarea
+                      value={q.stem}
+                      onChange={e => updateQuizQuestion(qIdx, 'stem', e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm resize-none h-14"
+                      placeholder="e.g. What is the acceleration due to gravity on Earth?"
+                      required
+                    />
+                  </div>
+                  <button type="button" onClick={() => removeQuizQuestion(qIdx)} className="text-gray-600 hover:text-red-400 mt-4"><Trash2 className="w-4 h-4" /></button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {q.options.map((opt, optIdx) => (
+                    <div key={optIdx} className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateQuizQuestion(qIdx, 'correctAnswer', optIdx)}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
+                          q.correctAnswer === optIdx ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-gray-600 text-transparent hover:border-gray-400'
+                        }`}
+                        title="Mark as correct answer"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <input
+                        value={opt}
+                        onChange={e => updateQuizOption(qIdx, optIdx, e.target.value)}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs"
+                        placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <select
+                    value={q.difficulty}
+                    onChange={e => updateQuizQuestion(qIdx, 'difficulty', e.target.value)}
+                    className="bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs font-bold"
+                  >
+                    <option value="EASY">Easy</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HARD">Hard</option>
+                  </select>
+                  <div className="flex items-center gap-1">
+                    <label className="text-[9px] text-gray-500">Bonus Dmg:</label>
+                    <input
+                      type="number"
+                      value={q.damageBonus}
+                      onChange={e => updateQuizQuestion(qIdx, 'damageBonus', parseInt(e.target.value) || 0)}
+                      className="w-16 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs font-bold"
+                      min={0}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button type="submit" className="w-full bg-amber-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-amber-700">
+            {editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
           </button>
         </form>
       </Modal>

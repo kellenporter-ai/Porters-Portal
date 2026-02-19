@@ -4,7 +4,7 @@ import { BossEncounter } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
-import { Sword, Shield, Clock, Users, Zap } from 'lucide-react';
+import { Sword, Shield, Clock, Users, Zap, Crosshair } from 'lucide-react';
 
 interface BossEncounterPanelProps {
   userId: string;
@@ -41,7 +41,7 @@ const BossCard: React.FC<{
   userName: string;
   attacking: string | null;
   onAttack: (bossId: string) => void;
-  lastHit: { bossId: string; damage: number } | null;
+  lastHit: { bossId: string; damage: number; isCrit?: boolean } | null;
 }> = ({ boss, userId, attacking, onAttack, lastHit }) => {
   const currentHp = useBossHealth(boss.id, boss.maxHp);
   const damageLog = useBossDamageLog(boss.id);
@@ -103,7 +103,9 @@ const BossCard: React.FC<{
         {/* Damage display */}
         {isHit && lastHit && (
           <div className="text-center animate-bounce">
-            <span className="text-xl font-black text-red-400">-{lastHit.damage}</span>
+            <span className={`text-xl font-black ${lastHit.isCrit ? 'text-yellow-400 text-2xl' : 'text-red-400'}`}>
+              -{lastHit.damage}{lastHit.isCrit && ' CRIT!'}
+            </span>
           </div>
         )}
 
@@ -145,14 +147,16 @@ const BossCard: React.FC<{
         <button
           onClick={() => onAttack(boss.id)}
           disabled={!!attacking}
-          className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${
+          className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
             attacking === boss.id
               ? 'bg-red-500/20 text-red-400 animate-pulse'
               : 'bg-gradient-to-r from-red-600 to-orange-600 text-white hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/30'
           }`}
         >
+          <Crosshair className="w-4 h-4" />
           {attacking === boss.id ? 'Attacking...' : 'Attack!'}
         </button>
+        <p className="text-[10px] text-gray-600 text-center">Damage scales with your equipped gear stats</p>
       </div>
     </div>
   );
@@ -161,7 +165,7 @@ const BossCard: React.FC<{
 const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userName, classType }) => {
   const [bosses, setBosses] = useState<BossEncounter[]>([]);
   const [attacking, setAttacking] = useState<string | null>(null);
-  const [lastHit, setLastHit] = useState<{ bossId: string; damage: number } | null>(null);
+  const [lastHit, setLastHit] = useState<{ bossId: string; damage: number; isCrit?: boolean } | null>(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -183,17 +187,18 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
     if (attacking) return;
     setAttacking(bossId);
     try {
-      const baseDamage = 5 + Math.floor(Math.random() * 20);
-      const result = await dataService.dealBossDamage(bossId, baseDamage, userName);
+      // Damage is calculated server-side based on equipped gear stats
+      const result = await dataService.dealBossDamage(bossId, userName, classType || '');
       sfx.bossHit();
-      setLastHit({ bossId, damage: result.damageDealt });
-      setTimeout(() => setLastHit(null), 1500);
+      setLastHit({ bossId, damage: result.damageDealt, isCrit: result.isCrit });
+      setTimeout(() => setLastHit(null), 2000);
 
       if (result.bossDefeated) {
         sfx.bossDefeated();
         toast.success('Boss defeated! Rewards incoming!');
       } else {
-        toast.info(`Dealt ${result.damageDealt} damage! (+${result.xpEarned} XP)`);
+        const critMsg = result.isCrit ? ' CRITICAL HIT!' : '';
+        toast.info(`Dealt ${result.damageDealt} damage!${critMsg} (+${result.xpEarned} XP)`);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Attack failed');

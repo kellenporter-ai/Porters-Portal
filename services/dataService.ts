@@ -974,14 +974,17 @@ export const dataService = {
     }, () => { /* permission error — ignore */ });
   },
 
-  dealBossDamage: async (bossId: string, damage: number, userName: string) => {
-    const result = await callDealBossDamage({ bossId, damage, userName });
+  dealBossDamage: async (bossId: string, userName: string, classType: string) => {
+    const result = await callDealBossDamage({ bossId, userName, classType });
     return result.data as {
       newHp: number;
       damageDealt: number;
+      isCrit: boolean;
       xpEarned: number;
       bossDefeated: boolean;
       leveledUp: boolean;
+      stats: { tech: number; focus: number; analysis: number; charisma: number };
+      gearScore: number;
     };
   },
 
@@ -1010,6 +1013,32 @@ export const dataService = {
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
     const result = await callAnswerBossQuiz({ quizId, questionId, answer });
     return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean };
+  },
+
+  // Admin: subscribe to ALL quiz bosses (including inactive)
+  subscribeToAllBossQuizzes: (callback: (quizzes: BossQuizEvent[]) => void) => {
+    const q = collection(db, 'boss_quizzes');
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as BossQuizEvent)));
+    });
+  },
+
+  // Admin: create or update a quiz boss
+  saveBossQuiz: async (quiz: BossQuizEvent) => {
+    const ref = doc(db, 'boss_quizzes', quiz.id);
+    await setDoc(ref, quiz);
+  },
+
+  // Admin: toggle quiz boss active state
+  toggleBossQuizActive: async (quizId: string, isActive: boolean) => {
+    const ref = doc(db, 'boss_quizzes', quizId);
+    await updateDoc(ref, { isActive });
+  },
+
+  // Admin: delete a quiz boss
+  deleteBossQuiz: async (quizId: string) => {
+    const ref = doc(db, 'boss_quizzes', quizId);
+    await deleteDoc(ref);
   },
 
   // --- GROUP QUESTS / PARTIES ---

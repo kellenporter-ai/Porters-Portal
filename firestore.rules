@@ -298,11 +298,36 @@ service cloud.firestore {
     match /boss_encounters/{encounterId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+
+      // Distributed damage shards — students need read access for real-time HP
+      // Cloud Functions (admin SDK) handle all writes
+      match /shards/{shardId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Admin SDK only
+      }
+
+      // Damage log — students can read (leaderboard display)
+      match /damage_log/{entryId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Admin SDK only
+      }
     }
 
     match /boss_quizzes/{quizId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+
+      // Distributed damage shards for quiz bosses
+      match /shards/{shardId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Admin SDK only
+      }
+    }
+
+    // Boss quiz progress — students can read their own progress
+    match /boss_quiz_progress/{progressId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin SDK only
     }
 
     // ==========================================

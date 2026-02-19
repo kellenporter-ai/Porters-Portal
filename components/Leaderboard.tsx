@@ -6,6 +6,10 @@ import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
 import { getRankDetails } from '../lib/gamification';
 import PlayerInspectModal from './xp/PlayerInspectModal';
 
+interface LeaderboardProps {
+  user: User;
+}
+
 const LeaderboardSkeleton = () => (
     <div className="grid grid-cols-1 divide-y divide-white/5">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -25,9 +29,10 @@ const LeaderboardSkeleton = () => (
     </div>
 );
 
-const Leaderboard: React.FC = () => {
+const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const [allStudents, setAllStudents] = useState<User[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>(DefaultClassTypes.AP_PHYSICS);
+  // Default to the student's currently active class
+  const [selectedClass, setSelectedClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || DefaultClassTypes.AP_PHYSICS);
   const [isLoading, setIsLoading] = useState(true);
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
 
@@ -39,11 +44,15 @@ const Leaderboard: React.FC = () => {
     return () => unsub();
   }, []);
 
+  // Only show classes the current student is enrolled in
   const availableClasses = useMemo(() => {
+    const enrolled = user.enrolledClasses || [];
+    if (enrolled.length > 0) return enrolled.sort();
+    // Fallback: derive from all students (shouldn't normally happen)
     const classes = new Set<string>();
     allStudents.forEach(u => u.enrolledClasses?.forEach(c => classes.add(c)));
     return Array.from(classes).sort();
-  }, [allStudents]);
+  }, [user.enrolledClasses, allStudents]);
 
   const leaders = useMemo(() => {
     return allStudents
