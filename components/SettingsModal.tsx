@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { User, UserSettings } from '../types';
-import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2 } from 'lucide-react';
+import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, BellRing } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './ToastProvider';
+import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
 
 import { dataService } from '../services/dataService';
 
@@ -138,13 +139,64 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               value={localSettings.compactView} 
               onToggle={() => handleToggle('compactView')} 
             />
-            <SettingRow 
-              icon={Volume2} 
-              title="Sound Effects" 
-              description="Play audio feedback for XP gains, level ups, and actions." 
-              value={localSettings.soundEffects !== false} 
-              onToggle={() => setLocalSettings(prev => ({ ...prev, soundEffects: prev.soundEffects === false ? true : false }))} 
+            <SettingRow
+              icon={Volume2}
+              title="Sound Effects"
+              description="Play audio feedback for XP gains, level ups, and actions."
+              value={localSettings.soundEffects !== false}
+              onToggle={() => setLocalSettings(prev => ({ ...prev, soundEffects: prev.soundEffects === false ? true : false }))}
             />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Notifications</label>
+          <div className="space-y-2">
+            {isPushSupported() ? (
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition">
+                <div className="flex items-start gap-4">
+                  <div className={`p-2 rounded-xl ${localSettings.pushNotifications ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-500'}`}>
+                    <BellRing className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">Push Notifications</h4>
+                    <p className="text-xs text-gray-500 leading-tight mt-0.5">
+                      {getPushPermission() === 'denied'
+                        ? 'Blocked by your browser. Allow notifications in browser settings to enable.'
+                        : 'Get desktop alerts for quests, loot drops, and announcements when the tab is in the background.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (localSettings.pushNotifications) {
+                      // Turning OFF — just flip the setting
+                      setLocalSettings(prev => ({ ...prev, pushNotifications: false }));
+                    } else {
+                      // Turning ON — request permission first
+                      const perm = await requestPushPermission();
+                      if (perm === 'granted') {
+                        setLocalSettings(prev => ({ ...prev, pushNotifications: true }));
+                        toast.success('Push notifications enabled!');
+                      } else if (perm === 'denied') {
+                        toast.error('Notifications blocked by browser. Check your browser settings.');
+                      }
+                    }
+                  }}
+                  disabled={getPushPermission() === 'denied'}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    getPushPermission() === 'denied' ? 'bg-white/10 opacity-50 cursor-not-allowed' :
+                    localSettings.pushNotifications ? 'bg-purple-600' : 'bg-white/20'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localSettings.pushNotifications ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-xs text-gray-500">
+                Push notifications are not supported in this browser.
+              </div>
+            )}
           </div>
         </div>
 

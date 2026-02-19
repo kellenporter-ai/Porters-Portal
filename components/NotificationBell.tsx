@@ -1,12 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Notification } from '../types';
-import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio } from 'lucide-react';
+import { Notification, UserSettings } from '../types';
+import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { sfx } from '../lib/sfx';
+import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
 
 interface NotificationBellProps {
   userId: string;
+  settings?: UserSettings;
+  onUpdateSettings?: (settings: UserSettings) => Promise<void>;
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -20,12 +23,20 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'XP_EVENT': <Zap className="w-4 h-4 text-cyan-400" />,
 };
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
+const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, onUpdateSettings }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const prevUnreadRef = useRef(0);
+
+  // Show the push prompt once when the panel opens if user hasn't decided yet
+  useEffect(() => {
+    if (isOpen && isPushSupported() && getPushPermission() === 'default' && settings?.pushNotifications === undefined) {
+      setShowPushPrompt(true);
+    }
+  }, [isOpen, settings?.pushNotifications]);
 
   useEffect(() => {
     const unsub = dataService.subscribeToNotifications(userId, (notifs) => {
@@ -96,6 +107,38 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) => {
               </button>
             )}
           </div>
+
+          {/* Push notification opt-in prompt */}
+          {showPushPrompt && (
+            <div className="p-3 bg-purple-500/10 border-b border-purple-500/20">
+              <div className="flex items-start gap-2">
+                <BellRing className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-gray-300 leading-tight">Get desktop alerts for quests, loot, and announcements?</p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={async () => {
+                        const perm = await requestPushPermission();
+                        if (perm === 'granted' && onUpdateSettings && settings) {
+                          await onUpdateSettings({ ...settings, pushNotifications: true });
+                        }
+                        setShowPushPrompt(false);
+                      }}
+                      className="px-2 py-1 bg-purple-600 text-white text-[10px] font-bold rounded-lg hover:bg-purple-500 transition"
+                    >
+                      Enable
+                    </button>
+                    <button
+                      onClick={() => setShowPushPrompt(false)}
+                      className="px-2 py-1 bg-white/5 text-gray-400 text-[10px] font-bold rounded-lg hover:bg-white/10 transition"
+                    >
+                      Not now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="overflow-y-auto max-h-[360px] custom-scrollbar">
             {notifications.length === 0 ? (

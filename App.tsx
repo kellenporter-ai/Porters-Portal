@@ -29,6 +29,7 @@ import { ConfirmProvider } from './components/ConfirmDialog';
 import ReviewQuestions from './components/ReviewQuestions';
 import StudyMaterial from './components/StudyMaterial';
 import { setSfxEnabled } from './lib/sfx';
+import { usePushNotifications } from './lib/usePushNotifications';
 
 const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
   'Resources': 'RESOURCES',
@@ -158,6 +159,12 @@ const App: React.FC = () => {
   useEffect(() => {
     setSfxEnabled(user?.settings?.soundEffects !== false);
   }, [user?.settings?.soundEffects]);
+
+  // Browser push notifications (fires native notifications when tab is backgrounded)
+  usePushNotifications(
+    user?.id || null,
+    user?.settings?.pushNotifications === true
+  );
 
   const handleSession = async (firebaseUser: FirebaseUser) => {
     try {

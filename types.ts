@@ -19,6 +19,7 @@ export interface UserSettings {
   privacyMode: boolean;
   compactView: boolean;
   soundEffects?: boolean;
+  pushNotifications?: boolean; // Browser push notification permission granted
 }
 
 export interface ClassConfig {

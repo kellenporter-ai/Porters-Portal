@@ -6,6 +6,7 @@ import { LogOut, GraduationCap, Settings, Menu, X } from 'lucide-react';
 import { storage } from '../lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
 import SettingsModal from './SettingsModal';
+import NotificationBell from './NotificationBell';
 import { dataService } from '../services/dataService';
 
 interface LayoutProps {
@@ -116,13 +117,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
               </div>
               <h1 className="font-bold text-white text-lg">Porter Portal</h1>
           </div>
-          <button 
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 text-white hover:bg-white/10 rounded-lg transition"
-            aria-label="Open navigation menu"
-          >
-              <Menu className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-1">
+              <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} />
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+                aria-label="Open navigation menu"
+              >
+                  <Menu className="w-6 h-6" />
+              </button>
+          </div>
       </header>
 
       {/* Mobile Navigation Drawer */}
@@ -204,12 +208,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                     <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
                   </div>
                </div>
-               <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
-               >
-                 <Settings className="w-4 h-4" />
-               </button>
+               <div className="flex items-center gap-1">
+                 <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} />
+                 <button
+                   onClick={() => setIsSettingsOpen(true)}
+                   className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                 >
+                   <Settings className="w-4 h-4" />
+                 </button>
+               </div>
             </div>
             
             <button

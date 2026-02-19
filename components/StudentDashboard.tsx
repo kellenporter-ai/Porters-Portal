@@ -1,8 +1,10 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, Quest } from '../types';
+import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye } from 'lucide-react';
+import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
+import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { dataService } from '../services/dataService';
 import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -466,41 +468,109 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const LEFT_SLOTS: EquipmentSlot[] = ['HEAD', 'HANDS', 'RING1', 'AMULET'];
   const RIGHT_SLOTS: EquipmentSlot[] = ['CHEST', 'BELT', 'FEET', 'RING2'];
 
+  // --- DnD state & sensors ---
+  const [draggedItem, setDraggedItem] = useState<RPGItem | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  /** Map an EquipmentSlot key to the ItemSlot values that can be dropped on it */
+  const slotAccepts = (equipSlot: EquipmentSlot): ItemSlot[] => {
+    if (equipSlot === 'RING1' || equipSlot === 'RING2') return ['RING'];
+    return [equipSlot as ItemSlot];
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const item = inventory.find(i => i.id === active.id) ||
+                 Object.values(equipped).find(i => i && i.id === active.id) as RPGItem | undefined;
+    setDraggedItem(item || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggedItem(null);
+    if (!over) return;
+
+    const dragId = active.id as string;
+    const dropId = over.id as string;
+
+    // Case 1: Dragging from inventory to an equipment slot
+    if (dropId.startsWith('slot-')) {
+      const targetSlot = dropId.replace('slot-', '') as EquipmentSlot;
+      const item = inventory.find(i => i.id === dragId);
+      if (!item) return;
+      // Check slot compatibility
+      const accepted = slotAccepts(targetSlot);
+      if (!accepted.includes(item.slot)) return;
+      handleEquip(item);
+    }
+
+    // Case 2: Dragging from equipment slot to inventory zone
+    if (dropId === 'inventory-zone' && dragId.startsWith('equipped-')) {
+      const slot = dragId.replace('equipped-', '');
+      handleUnequip(slot);
+    }
+  };
+
+  // Slot icon helper (reused in both SlotRender and DragOverlay)
+  const getSlotIcon = (slot: string, colorClass: string, size = 'w-5 h-5') => {
+    if (slot === 'HEAD') return <Zap className={`${size} ${colorClass}`} />;
+    if (slot === 'CHEST') return <Shield className={`${size} ${colorClass}`} />;
+    if (slot === 'HANDS') return <Hand className={`${size} ${colorClass}`} />;
+    if (slot === 'FEET') return <CheckCircle2 className={`${size} ${colorClass}`} />;
+    if (slot === 'BELT') return <Component className={`${size} ${colorClass}`} />;
+    if (slot === 'AMULET') return <Gem className={`${size} ${colorClass}`} />;
+    return <Briefcase className={`${size} ${colorClass}`} />;
+  };
+
+  // --- Droppable Equipment Slot ---
   const SlotRender: React.FC<{ slot: EquipmentSlot }> = ({ slot }) => {
       const item = equipped[slot];
       const colors = item ? getAssetColors(item.rarity) : { border: 'border-white/10', bg: 'bg-black/20', text: 'text-gray-600', glow: '', shimmer: '' };
-      
-      const SlotIcon = () => {
-          if (slot === 'HEAD') return <Zap className={`w-5 h-5 ${colors.text}`} />;
-          if (slot === 'CHEST') return <Shield className={`w-5 h-5 ${colors.text}`} />;
-          if (slot === 'HANDS') return <Hand className={`w-5 h-5 ${colors.text}`} />;
-          if (slot === 'FEET') return <CheckCircle2 className={`w-5 h-5 ${colors.text}`} />;
-          if (slot === 'BELT') return <Component className={`w-5 h-5 ${colors.text}`} />;
-          if (slot === 'AMULET') return <Gem className={`w-5 h-5 ${colors.text}`} />;
-          return <Briefcase className={`w-5 h-5 ${colors.text}`} />;
-      };
+
+      // Make the slot a drop target
+      const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `slot-${slot}` });
+
+      // If there's an item equipped, make it draggable OUT of the slot
+      const { attributes, listeners, setNodeRef: setDragRef, transform } = useDraggable({
+        id: item ? `equipped-${slot}` : `empty-slot-${slot}`,
+        disabled: !item,
+      });
+      const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+
+      // Highlight when a compatible item is being dragged over
+      const isCompatible = draggedItem && slotAccepts(slot).includes(draggedItem.slot);
+      const highlightClass = isOver && isCompatible ? 'ring-2 ring-purple-500 scale-110' :
+                             draggedItem && isCompatible ? 'ring-1 ring-purple-500/40' : '';
 
       return (
-          <button 
-            className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all hover:scale-110 ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow}`}
-            onClick={() => item && setInspectItem(item)}
-          >
-              {item ? (
-                  <>
-                    {SlotIcon()}
-                    <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
-                    {/* Slot Hover Tooltip */}
-                    <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-                        <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-                        <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
-                        <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
-                    </div>
-                  </>
-              ) : (
-                  <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{slot.slice(0, 4)}</span>
-              )}
-          </button>
+          <div ref={setDropRef} className="relative">
+            <div
+              ref={setDragRef}
+              {...attributes}
+              {...listeners}
+              style={dragStyle}
+              className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all hover:scale-110 cursor-grab active:cursor-grabbing ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass}`}
+              onClick={() => item && setInspectItem(item)}
+            >
+                {item ? (
+                    <>
+                      {getSlotIcon(slot.replace(/\d/, ''), colors.text)}
+                      <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
+                      {/* Slot Hover Tooltip */}
+                      <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
+                          <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
+                          <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
+                          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
+                      </div>
+                    </>
+                ) : (
+                    <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{slot.slice(0, 4)}</span>
+                )}
+            </div>
+          </div>
       );
   };
 
@@ -893,14 +963,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
              
              {activeTab === 'LOADOUT' && (
+               <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                  <div key="loadout" className="flex flex-col h-full" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
-                         
+
                          {/* LEFT: CHARACTER VISUALIZER WITH SLOTS */}
                          <div className="bg-black/30 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[400px]">
                              <div className="absolute inset-0 loadout-hex-bg pointer-events-none"></div>
                              <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
-                             
+
                              <div className="flex w-full h-full relative z-10 justify-between items-center px-4">
                                  {/* LEFT SLOTS */}
                                  <div className="flex flex-col gap-4">
@@ -918,8 +989,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                  </div>
                              </div>
 
-                             {/* CUSTOMIZE BUTTON - Moved and reinforced */}
-                             <button 
+                             {/* CUSTOMIZE BUTTON */}
+                             <button
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -953,7 +1024,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                      </ResponsiveContainer>
                                  </div>
                              </div>
-                             
+
                              {/* Stats Summary */}
                              <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
                                  <div className="grid grid-cols-2 gap-3 text-xs">
@@ -966,55 +1037,29 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                          </div>
                      </div>
 
-                     {/* BOTTOM: INVENTORY GRID */}
-                     <div className="mt-6 flex-1 min-h-[250px] bg-black/40 border border-white/10 rounded-2xl p-4 overflow-hidden flex flex-col">
-                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
-                             <span>Gear Storage ({inventory.length})</span>
-                             <span className="text-[9px] text-gray-600">Click to Inspect</span>
-                         </h4>
-                         <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 content-start">
-                             {inventory.map((item, idx) => {
-                                 // Check equality loosely by ID
-                                 const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
-                                 const colors = getAssetColors(item.rarity);
-                                 
-                                 return (
-                                     <button 
-                                        key={idx} 
-                                        onClick={() => setInspectItem(item)}
-                                        className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all hover:scale-105 ${
-                                            isEquipped ? 'ring-2 ring-white/50 opacity-100' : 'opacity-80 hover:opacity-100'
-                                        } ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
-                                     >
-                                         {item.slot === 'HEAD' && <Zap className={`w-6 h-6 ${colors.text}`} />}
-                                         {item.slot === 'CHEST' && <Shield className={`w-6 h-6 ${colors.text}`} />}
-                                         {item.slot === 'HANDS' && <Hand className={`w-6 h-6 ${colors.text}`} />}
-                                         {item.slot === 'FEET' && <CheckCircle2 className={`w-6 h-6 ${colors.text}`} />}
-                                         {item.slot === 'BELT' && <Component className={`w-6 h-6 ${colors.text}`} />}
-                                         {item.slot === 'AMULET' && <Gem className={`w-6 h-6 ${colors.text}`} />}
-                                         {item.slot === 'RING' && <Briefcase className={`w-6 h-6 ${colors.text}`} />}
-                                         
-                                         {isEquipped && (
-                                             <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg"></div>
-                                         )}
-
-                                         {/* Hover Tooltip */}
-                                         <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-                                             <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-                                             <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
-                                             <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-                                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
-                                         </div>
-                                     </button>
-                                 );
-                             })}
-                             {/* Empty Slots Filler */}
-                             {Array.from({ length: Math.max(0, 16 - inventory.length) }).map((_, i) => (
-                                 <div key={`empty-${i}`} className="aspect-square rounded-xl border border-white/5 bg-white/5"></div>
-                             ))}
-                         </div>
-                     </div>
+                     {/* BOTTOM: INVENTORY GRID (Droppable zone for unequipping) */}
+                     <InventoryGrid
+                       inventory={inventory}
+                       equipped={equipped}
+                       draggedItem={draggedItem}
+                       onInspect={setInspectItem}
+                       getSlotIcon={getSlotIcon}
+                     />
                  </div>
+
+                 {/* Drag Overlay — floating ghost of the item being dragged */}
+                 <DragOverlay dropAnimation={null}>
+                   {draggedItem && (() => {
+                     const colors = getAssetColors(draggedItem.rarity);
+                     return (
+                       <div className={`w-14 h-14 rounded-xl border-2 flex flex-col items-center justify-center opacity-90 shadow-2xl ${colors.bg} ${colors.border} ${colors.glow}`}>
+                         {getSlotIcon(draggedItem.slot, colors.text, 'w-6 h-6')}
+                         <span className={`text-[7px] font-bold mt-0.5 ${colors.text}`}>{draggedItem.baseName || draggedItem.name.split(' ').slice(-1)[0]}</span>
+                       </div>
+                     );
+                   })()}
+                 </DragOverlay>
+               </DndContext>
              )}
              {activeTab === 'ACHIEVEMENTS' && (
                  <div key="achievements" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
@@ -1419,6 +1464,98 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               </button>
           </div>
       </Modal>
+    </div>
+  );
+};
+
+// ============================================================
+// INVENTORY GRID — extracted for DnD integration
+// ============================================================
+
+interface InventoryGridProps {
+  inventory: RPGItem[];
+  equipped: Partial<Record<EquipmentSlot, RPGItem>>;
+  draggedItem: RPGItem | null;
+  onInspect: (item: RPGItem) => void;
+  getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
+}
+
+const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem: _draggedItem, onInspect, getSlotIcon }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mt-6 flex-1 min-h-[250px] bg-black/40 border rounded-2xl p-4 overflow-hidden flex flex-col transition-colors ${
+        isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-white/10'
+      }`}
+    >
+      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+        <span>Gear Storage ({inventory.length})</span>
+        <span className="text-[9px] text-gray-600 flex items-center gap-1">
+          <GripVertical className="w-3 h-3" /> Drag to equip
+        </span>
+      </h4>
+      <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 content-start">
+        {inventory.map((item) => (
+          <DraggableInventoryItem
+            key={item.id}
+            item={item}
+            equipped={equipped}
+            onInspect={onInspect}
+            getSlotIcon={getSlotIcon}
+          />
+        ))}
+        {/* Empty Slots Filler */}
+        {Array.from({ length: Math.max(0, 16 - inventory.length) }).map((_, i) => (
+          <div key={`empty-${i}`} className="aspect-square rounded-xl border border-white/5 bg-white/5"></div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+interface DraggableInventoryItemProps {
+  item: RPGItem;
+  equipped: Partial<Record<EquipmentSlot, RPGItem>>;
+  onInspect: (item: RPGItem) => void;
+  getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
+}
+
+const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect, getSlotIcon }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: item.id,
+  });
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+  const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
+  const colors = getAssetColors(item.rarity);
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={style}
+      onClick={() => onInspect(item)}
+      className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all cursor-grab active:cursor-grabbing ${
+        isDragging ? 'opacity-30 scale-95' : 'opacity-80 hover:opacity-100 hover:scale-105'
+      } ${isEquipped ? 'ring-2 ring-white/50 opacity-100' : ''} ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
+    >
+      {getSlotIcon(item.slot, colors.text, 'w-6 h-6')}
+
+      {isEquipped && (
+        <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg"></div>
+      )}
+
+      {/* Hover Tooltip */}
+      {!isDragging && (
+        <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
+          <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
+          <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
+          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
+        </div>
+      )}
     </div>
   );
 };
