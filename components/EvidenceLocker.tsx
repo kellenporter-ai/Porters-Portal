@@ -388,7 +388,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                     )}
                 </div>
 
-                <div className="flex-1 bg-black/40 rounded-xl border-2 border-dashed border-white/10 relative group overflow-hidden transition-all hover:border-emerald-500/30">
+                <div className="flex-1 min-h-[180px] bg-black/40 rounded-xl border-2 border-dashed border-white/10 relative group overflow-hidden transition-all hover:border-emerald-500/30">
                     {activeLog ? (
                         <>
                             <img src={activeLog.imageUrl} alt={activeDay} className="w-full h-full object-contain bg-black/20" />
