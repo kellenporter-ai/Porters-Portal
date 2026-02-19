@@ -5,6 +5,7 @@ import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { Brain, CheckCircle2, XCircle, Zap, Heart } from 'lucide-react';
+import { deriveCombatStats } from '../../lib/gamification';
 
 interface BossQuizPanelProps {
   classType: string;
@@ -191,7 +192,6 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, p
   // Initialize player HP from stats
   useEffect(() => {
     if (playerStats) {
-      const { deriveCombatStats } = require('../../lib/gamification');
       const combat = deriveCombatStats(playerStats);
       setPlayerMaxHp(combat.maxHp);
       if (playerHp === -1) setPlayerHp(combat.maxHp);
