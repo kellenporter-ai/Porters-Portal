@@ -50,6 +50,7 @@ export const callSubmitEngagement = httpsCallable(functions, 'submitEngagement')
 export const callSendClassMessage = httpsCallable(functions, 'sendClassMessage');
 export const callUploadQuestionBank = httpsCallable(functions, 'uploadQuestionBank');
 export const callAwardQuestionXP = httpsCallable(functions, 'awardQuestionXP');
+export const callPenalizeWrongAnswer = httpsCallable(functions, 'penalizeWrongAnswer');
 
 // New gamification Cloud Functions
 export const callUpdateStreak = httpsCallable(functions, 'updateStreak');

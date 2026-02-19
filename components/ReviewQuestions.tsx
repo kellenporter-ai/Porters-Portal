@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Assignment } from '../types';
-import { db, callAwardQuestionXP } from '../lib/firebase';
+import { db, callAwardQuestionXP, callPenalizeWrongAnswer } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { Loader2, Zap, CheckCircle2, XCircle, Brain, ChevronRight, Star, ArrowUpDown, Lightbulb, Lock, RefreshCw } from 'lucide-react';
@@ -18,7 +18,7 @@ interface ReviewQuestion {
     stem: string; context?: string | null; options: QuestionOption[];
     correctAnswer: string | string[]; explanation: string; linkedFollowUp?: LinkedFollowUp | null;
 }
-interface AnswerState { selected: string | string[] | null; linkedSelected?: string | null; submitted: boolean; correct: boolean; xpAwarded: boolean; }
+interface AnswerState { selected: string | string[] | null; linkedSelected?: string | null; submitted: boolean; correct: boolean; xpAwarded: boolean; penalty?: number; }
 
 const TIER_LABELS: Record<number, { name: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
     1: { name: 'Remember & Understand', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: <Brain className="w-4 h-4" /> },
@@ -189,12 +189,18 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                 } catch (err) { console.error('XP award error:', err); }
             }
         } else {
-            setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: false, xpAwarded: false } }));
+            const penalty = Math.ceil(question.xp / 2);
+            setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: false, xpAwarded: false, penalty } }));
+            toast.error(`-${penalty} XP penalty`);
+            try {
+                await callPenalizeWrongAnswer({ assignmentId: assignment.id, questionId: question.id, classType: assignment.classType });
+            } catch (err) { console.error('Penalty error:', err); }
         }
     };
 
     const tierQuestions = useMemo(() => selectedQuestions.filter(q => q.tier === activeTier), [selectedQuestions, activeTier]);
     const totalXPEarned = useMemo(() => Object.entries(answers).filter(([, a]) => a.correct && a.xpAwarded).reduce((sum, [qId]) => sum + (selectedQuestions.find(q => q.id === qId)?.xp || 0), 0), [answers, selectedQuestions]);
+    const totalPenalty = useMemo(() => Object.values(answers).reduce((sum, a) => sum + (a.penalty || 0), 0), [answers]);
     const totalPossibleXP = useMemo(() => selectedQuestions.reduce((sum, q) => sum + q.xp, 0), [selectedQuestions]);
     const allAnswered = useMemo(() => selectedQuestions.length > 0 && selectedQuestions.every(q => answers[q.id]?.submitted), [selectedQuestions, answers]);
 
@@ -214,7 +220,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                     <span className="text-[10px] bg-white/10 text-gray-400 px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span><span className="text-[10px] text-gray-500">/ {totalPossibleXP} XP</span></div>
+                    <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[10px] text-gray-500">/ {totalPossibleXP} XP</span></div>
                     <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
                 </div>
             </div>
@@ -247,6 +253,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                         <span className="text-[9px] text-gray-600">·</span>
                                         <span className="text-[9px] text-gray-500 font-mono">{TYPE_LABELS[question.type] || question.type}</span>
                                         <span className="text-[9px] text-yellow-500 font-bold ml-auto flex items-center gap-0.5"><Zap className="w-3 h-3" />{question.xp} XP</span>
+                                        <span className="text-[9px] text-red-400/60 font-bold flex items-center gap-0.5">-{Math.ceil(question.xp / 2)} if wrong</span>
                                     </div>
                                     <p className="text-sm text-gray-200 font-medium leading-snug">{question.stem}</p>
                                 </div>
@@ -275,7 +282,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                             className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold rounded-xl transition">Submit Answer</button>
                                     ) : (
                                         <div className={`p-4 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
-                                            <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : 'Incorrect'}</span></div>
+                                            <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : `Incorrect — ${answer?.penalty || Math.ceil(question.xp / 2)} XP penalty`}</span></div>
                                             <p className="text-xs text-gray-400 leading-relaxed">{question.explanation}</p>
                                         </div>
                                     )}

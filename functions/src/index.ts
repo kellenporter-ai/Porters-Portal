@@ -1695,6 +1695,59 @@ export const awardQuestionXP = onCall(async (request) => {
   });
 });
 
+/**
+ * penalizeWrongAnswer — Deducts XP when a student submits a wrong answer.
+ * Penalty = ceil(question.xp / 2). Applied every wrong attempt to discourage
+ * random clicking. XP floor is 0 (buildXPUpdates handles this).
+ */
+export const penalizeWrongAnswer = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { assignmentId, questionId, classType } = request.data;
+  if (!assignmentId || !questionId) {
+    throw new HttpsError("invalid-argument", "Missing required fields.");
+  }
+
+  const db = admin.firestore();
+
+  // Look up the question to get its XP value
+  const bankSnap = await db.doc(`question_banks/${assignmentId}`).get();
+  if (!bankSnap.exists) {
+    throw new HttpsError("not-found", "Question bank not found.");
+  }
+  const questions = bankSnap.data()!.questions || [];
+  const question = questions.find(
+    (q: { id: string; xp?: number }) => q.id === questionId
+  );
+  if (!question) {
+    throw new HttpsError("not-found", "Question not found in bank.");
+  }
+
+  const questionXP = question.xp || 0;
+  if (questionXP <= 0) {
+    return { penalized: false, penalty: 0 };
+  }
+  const penalty = Math.ceil(questionXP / 2);
+
+  const userRef = db.doc(`users/${uid}`);
+
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User not found.");
+    }
+
+    const data = userSnap.data()!;
+    const { updates, newXP } = buildXPUpdates(data, -penalty, classType);
+
+    transaction.update(userRef, updates);
+    return { penalized: true, penalty, newXP };
+  }).catch((err) => {
+    if (err instanceof HttpsError) throw err;
+    logger.error(`penalizeWrongAnswer failed for ${uid}:`, err);
+    throw new HttpsError("internal", "Failed to apply penalty.");
+  });
+});
+
 // ==========================================
 // ENGAGEMENT STREAK LOGIC
 // ==========================================
