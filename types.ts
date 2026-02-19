@@ -266,13 +266,14 @@ export interface Assignment {
   description: string;
   classType: ClassType;
   status: AssignmentStatus;
-  unit?: string; 
+  unit?: string;
   category?: ResourceCategory;
   htmlContent?: string;
   contentUrl?: string | null;
   resources: Resource[];
   publicComments: Comment[];
   dueDate?: string;
+  targetSections?: string[]; // e.g. ["Period 1", "Period 3"] — empty/undefined = all sections
 }
 
 export interface Submission {
@@ -323,6 +324,7 @@ export interface XPEvent {
   type: 'GLOBAL' | 'CLASS_SPECIFIC';
   targetClass?: string;
   expiresAt?: string | null;
+  targetSections?: string[];
 }
 
 export interface Quest {
@@ -356,6 +358,7 @@ export interface Quest {
   minPlayers?: number;
   maxPlayers?: number;
   targetClass?: string; // Class restriction for quest
+  targetSections?: string[];
 }
 
 export interface EvidenceLog {
@@ -400,6 +403,7 @@ export interface Announcement {
   createdAt: string;
   expiresAt?: string | null;
   createdBy: string;
+  targetSections?: string[];
 }
 
 export type NotificationType =
@@ -566,6 +570,7 @@ export interface BossQuizEvent {
     flux: number;
     itemRarity?: ItemRarity;
   };
+  targetSections?: string[];
 }
 
 export interface BossQuizQuestion {

@@ -136,6 +136,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       unsubs.push(dataService.subscribeToXPEvents((events) => {
         const active = events.find(e =>
           e.isActive && (e.type === 'GLOBAL' || e.targetClass === activeClass)
+          && (!e.targetSections?.length || e.targetSections.includes(user.section || ''))
         );
         setActiveEvent(active || null);
       }));
@@ -151,6 +152,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               if (q.expiresAt && new Date(q.expiresAt) < now) return false;
               // If quest targets a specific class, only show to students in that class
               if (q.targetClass && !myClasses.includes(q.targetClass)) return false;
+              // If quest targets specific sections, only show to students in those sections
+              if (q.targetSections?.length && !q.targetSections.includes(user.section || '')) return false;
               return true;
           }));
       }));
@@ -218,11 +221,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const visibleAnnouncements = useMemo(() => {
     const dismissed = user.gamification?.dismissedAnnouncements || [];
-    return announcements.filter(a => 
-      !dismissed.includes(a.id) && 
-      (a.classType === 'GLOBAL' || a.classType === activeClass)
+    return announcements.filter(a =>
+      !dismissed.includes(a.id) &&
+      (a.classType === 'GLOBAL' || a.classType === activeClass) &&
+      (!a.targetSections?.length || a.targetSections.includes(user.section || ''))
     );
-  }, [announcements, user.gamification?.dismissedAnnouncements, activeClass]);
+  }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.section]);
 
   const handleDismissAnnouncement = async (id: string) => {
     await dataService.dismissAnnouncement(user.id, id);
@@ -347,7 +351,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const unitGroups = useMemo(() => {
     const groups: Record<string, (Assignment & { lastEngagement: string | null; engagementTime: number })[]> = {};
     assignments
-      .filter(a => a.classType === activeClass && a.status !== 'DRAFT')
+      .filter(a => a.classType === activeClass && a.status !== 'DRAFT' && (!a.targetSections?.length || a.targetSections.includes(user.section || '')))
       .forEach(a => {
         const log = submissions.find(s => s.assignmentId === a.id);
         const unit = a.unit || 'General Resources';
@@ -1192,7 +1196,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-              <BossQuizPanel classType={activeClass} />
+              <BossQuizPanel classType={activeClass} userSection={user.section} />
           </div>
       </div>
 

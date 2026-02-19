@@ -88,6 +88,12 @@ const App: React.FC = () => {
     });
   }, [rawUsers, submissions]);
 
+  const availableSections = useMemo(() => {
+    const sections = new Set<string>();
+    rawUsers.forEach(u => { if (u.section) sections.add(u.section); });
+    return Array.from(sections).sort();
+  }, [rawUsers]);
+
   const activeAssignment = useMemo(() =>
     assignments.find(a => a.id === activeAssignmentId) || null
   , [assignments, activeAssignmentId]);
@@ -411,11 +417,12 @@ const App: React.FC = () => {
                   {activeTab === 'Dashboard' && <TeacherDashboard users={users} assignments={assignments} submissions={submissions} />}
                   {activeTab === 'User Management' && <UserManagement users={users} whitelistedEmails={whitelistedEmails} classConfigs={classConfigs} onWhitelist={async (e, c) => dataService.addToWhitelist(e, c)} />}
                   {activeTab === 'Admin Panel' && (
-                    <AdminPanel 
-                      assignments={assignments} 
-                      submissions={submissions} 
-                      onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }} 
-                      classConfigs={classConfigs} 
+                    <AdminPanel
+                      assignments={assignments}
+                      submissions={submissions}
+                      onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }}
+                      classConfigs={classConfigs}
+                      availableSections={availableSections}
                       onPreviewAssignment={(id) => {
                         setAdminViewMode('STUDENT');
                         openAssignment(id);

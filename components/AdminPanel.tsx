@@ -3,6 +3,7 @@ import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfi
 import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle } from 'lucide-react';
 import Modal from './Modal';
 import QuestionBankManager from './QuestionBankManager';
+import SectionPicker from './SectionPicker';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
@@ -14,6 +15,7 @@ interface AdminPanelProps {
   onCreateAssignment: (assignment: Partial<Assignment>) => Promise<void>;
   onDeleteAssignment?: (id: string) => void;
   onPreviewAssignment?: (id: string) => void;
+  availableSections?: string[];
 }
 
 const CATEGORIES: ResourceCategory[] = ['Textbook', 'Simulation', 'Lab Guide', 'Practice Set', 'Article', 'Video Lesson', 'Supplemental'];
@@ -28,7 +30,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-4 h-4" />
 };
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, classConfigs, onCreateAssignment, onPreviewAssignment }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, classConfigs, onCreateAssignment, onPreviewAssignment, availableSections = [] }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,6 +53,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
   });
 
   const [selectedClasses, setSelectedClasses] = useState<Set<string>>(new Set([DefaultClassTypes.AP_PHYSICS]));
+  const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [isUploadingMain, setIsUploadingMain] = useState(false);
 
   // Fix: Explicitly type availableClasses to string[] to resolve Property 'map' does not exist on type 'unknown' error
@@ -91,11 +94,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
     if (selectedClasses.size === 0) { toast.error("Select a target class."); return; }
     setIsSubmitting(true);
     try {
+        const sectionPayload = selectedSections.length > 0 ? { targetSections: selectedSections } : {};
         if (isEditing && newAssignment.id) {
-            await onCreateAssignment({ ...newAssignment, classType: Array.from(selectedClasses)[0] });
+            await onCreateAssignment({ ...newAssignment, classType: Array.from(selectedClasses)[0], ...sectionPayload });
         } else {
-            await Promise.all(Array.from(selectedClasses).map(className => 
-                onCreateAssignment({ ...newAssignment, classType: className })
+            await Promise.all(Array.from(selectedClasses).map(className =>
+                onCreateAssignment({ ...newAssignment, classType: className, ...sectionPayload })
             ));
         }
         setIsModalOpen(false);
@@ -106,6 +110,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
   const handleEdit = (assignment: Assignment) => {
       setNewAssignment(assignment);
       setSelectedClasses(new Set([assignment.classType]));
+      setSelectedSections(assignment.targetSections || []);
       setIsEditing(true);
       setIsModalOpen(true);
   };
@@ -256,6 +261,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                     ))}
                 </div>
             </div>
+            <SectionPicker availableSections={availableSections} selectedSections={selectedSections} onChange={setSelectedSections} />
             <div className="bg-purple-900/20 border border-purple-500/30 p-5 rounded-2xl">
                 <label className="block text-sm font-bold text-purple-300 mb-2">HTML Interactive Upload</label>
                 <input type="file" accept=".html,.htm" className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-purple-600 file:text-white" onChange={async (e) => { if(e.target.files?.[0]) { setIsUploadingMain(true); try { const url = await dataService.uploadHtmlResource(e.target.files[0]); setNewAssignment({...newAssignment, contentUrl: url}); toast.success('File uploaded!'); } catch (err) { toast.error('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error')); } finally { setIsUploadingMain(false); } } }} />

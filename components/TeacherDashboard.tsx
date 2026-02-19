@@ -59,6 +59,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   }, []);
 
   const students = users.filter(u => u.role === 'STUDENT');
+  const availableSections = useMemo(() => {
+    const sections = new Set<string>();
+    students.forEach(s => { if (s.section) sections.add(s.section); });
+    return Array.from(sections).sort();
+  }, [students]);
 
   // EWS: Build alert lookup by student ID (highest severity per student)
   const alertsByStudent = useMemo(() => {
@@ -437,7 +442,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {/* ANNOUNCEMENTS */}
       <div className="mt-8">
-          <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} />
+          <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
       </div>
 
       {/* ENGAGEMENT RANKING TABLE */}

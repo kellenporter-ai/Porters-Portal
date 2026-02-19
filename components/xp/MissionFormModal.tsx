@@ -1,6 +1,7 @@
 import React from 'react';
 import { ItemRarity, DefaultClassTypes } from '../../types';
 import Modal from '../Modal';
+import SectionPicker from '../SectionPicker';
 
 export interface MissionFormState {
     title: string;
@@ -19,6 +20,7 @@ export interface MissionFormState {
     consequence: string;
     isGroup: boolean;
     targetClass: string;
+    targetSections: string[];
 }
 
 export const INITIAL_MISSION_STATE: MissionFormState = {
@@ -37,7 +39,8 @@ export const INITIAL_MISSION_STATE: MissionFormState = {
     dieSides: 20,
     consequence: '',
     isGroup: false,
-    targetClass: ''
+    targetClass: '',
+    targetSections: []
 };
 
 interface MissionFormModalProps {
@@ -47,9 +50,10 @@ interface MissionFormModalProps {
     setForm: (form: MissionFormState) => void;
     onSubmit: (e: React.FormEvent) => void;
     isSubmitting: boolean;
+    availableSections?: string[];
 }
 
-const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, isSubmitting }) => {
+const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, isSubmitting, availableSections = [] }) => {
     const isSkillCheck = form.type === 'SKILL_CHECK';
 
     return (
@@ -107,6 +111,7 @@ const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, fo
                         </select>
                     </div>
                 </div>
+                <SectionPicker availableSections={availableSections} selectedSections={form.targetSections} onChange={s => setForm({...form, targetSections: s})} />
 
                 <div className="grid grid-cols-2 gap-3">
                     <div>

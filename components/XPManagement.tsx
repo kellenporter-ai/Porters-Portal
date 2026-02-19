@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent } from '../types';
 import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import SectionPicker from './SectionPicker';
 import { calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { useToast } from './ToastProvider';
@@ -55,7 +56,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const [editingCodename, setEditingCodename] = useState<string | null>(null);
   const [codenameValue, setCodenameValue] = useState('');
   const [newEventData, setNewEventData] = useState({
-      title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS
+      title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS, targetSections: [] as string[]
   });
 
   // Quiz Boss management state
@@ -67,6 +68,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       damagePerCorrect: 50, rewardXp: 500, rewardFlux: 100,
       rewardItemRarity: '' as string, deadline: '',
       questions: [] as { id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; damageBonus: number }[],
+      targetSections: [] as string[],
   });
   const [promptCopied, setPromptCopied] = useState(false);
   const quizFileRef = useRef<HTMLInputElement>(null);
@@ -152,9 +154,12 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       if (newEventData.type === 'CLASS_SPECIFIC') {
           event.targetClass = newEventData.targetClass;
       }
+      if (newEventData.targetSections.length > 0) {
+          event.targetSections = newEventData.targetSections;
+      }
       await dataService.saveXPEvent(event);
       setIsEventModalOpen(false);
-      setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: DefaultClassTypes.AP_PHYSICS });
+      setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: DefaultClassTypes.AP_PHYSICS, targetSections: [] });
   };
 
   const handleIssueMission = async (e: React.FormEvent) => {
@@ -176,7 +181,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               expiresAt: missionForm.durationHours > 0 ? expiryDate.toISOString() : null,
               itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
               rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
-              targetClass: missionForm.targetClass || undefined
+              targetClass: missionForm.targetClass || undefined,
+              targetSections: missionForm.targetSections.length > 0 ? missionForm.targetSections : undefined
           };
           await dataService.saveQuest(newQuest);
           toast.success(`Mission "${newQuest.title}" deployed.`);
@@ -269,6 +275,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               rewardItemRarity: quiz.rewards?.itemRarity || '',
               deadline: quiz.deadline ? quiz.deadline.slice(0, 16) : '',
               questions: quiz.questions.map(q => ({ ...q, damageBonus: q.damageBonus || 0 })),
+              targetSections: quiz.targetSections || [],
           });
       } else {
           setEditingQuizBoss(null);
@@ -278,6 +285,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               bossName: '', description: '', maxHp: 1000, classType: 'GLOBAL',
               damagePerCorrect: 50, rewardXp: 500, rewardFlux: 100, rewardItemRarity: '',
               deadline: defaultDeadline.toISOString().slice(0, 16), questions: [],
+              targetSections: [],
           });
       }
       setIsQuizBossModalOpen(true);
@@ -349,6 +357,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                   flux: quizBossForm.rewardFlux,
                   ...(quizBossForm.rewardItemRarity ? { itemRarity: quizBossForm.rewardItemRarity } : {}),
               },
+              ...(quizBossForm.targetSections.length > 0 ? { targetSections: quizBossForm.targetSections } : {}),
           };
           await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
           toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
@@ -697,6 +706,7 @@ RULES:
                         <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {(quiz.currentHp || quiz.maxHp).toLocaleString()}/{quiz.maxHp.toLocaleString()}</span>
                         <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{quiz.damagePerCorrect} dmg/correct</span>
                         <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quiz.classType}</span>
+                        {quiz.targetSections?.length ? <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{quiz.targetSections.join(', ')}</span> : null}
                         {isExpired && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">EXPIRED</span>}
                       </div>
                       <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
@@ -793,7 +803,7 @@ RULES:
       </div>
 
       <InspectInventoryModal user={inspectingUser} onClose={() => setInspectingUser(null)} onDeleteItem={handleDeleteItem} onUnequipItem={handleUnequipItem} onGrantFlux={handleGrantFlux} />
-      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} isSubmitting={isSubmittingQuest} />
+      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} isSubmitting={isSubmittingQuest} availableSections={availableSections} />
       <Modal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} title="New XP Protocol Deployment">
         <form onSubmit={handleCreateEvent} className="space-y-4 text-gray-100 p-2">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Protocol Title</label><input value={newEventData.title} onChange={e => setNewEventData({...newEventData, title: e.target.value})} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. Double XP Weekend" /></div>
@@ -802,6 +812,7 @@ RULES:
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Uplink Type</label><select value={newEventData.type} onChange={e => setNewEventData({...newEventData, type: e.target.value as 'GLOBAL' | 'CLASS_SPECIFIC'})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold"><option value="GLOBAL">Global Node</option><option value="CLASS_SPECIFIC">Class Sub-Node</option></select></div>
           </div>
           {newEventData.type === 'CLASS_SPECIFIC' && <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Sub-Node</label><select value={newEventData.targetClass} onChange={e => setNewEventData({...newEventData, targetClass: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">{Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}</select></div>}
+          <SectionPicker availableSections={availableSections} selectedSections={newEventData.targetSections} onChange={s => setNewEventData({...newEventData, targetSections: s})} />
           <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-blue-700">Initiate Uplink</button>
         </form>
       </Modal>
@@ -835,6 +846,7 @@ RULES:
               </select>
             </div>
           </div>
+          <SectionPicker availableSections={availableSections} selectedSections={quizBossForm.targetSections} onChange={s => setQuizBossForm({ ...quizBossForm, targetSections: s })} />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Deadline</label>

@@ -6,10 +6,12 @@ import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import { useToast } from './ToastProvider';
 import Modal from './Modal';
+import SectionPicker from './SectionPicker';
 
 interface AnnouncementManagerProps {
   announcements: Announcement[];
   studentIds: string[];
+  availableSections?: string[];
 }
 
 const PRIORITY_STYLES = {
@@ -18,7 +20,7 @@ const PRIORITY_STYLES = {
   URGENT: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', icon: <AlertOctagon className="w-4 h-4" /> },
 };
 
-const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds }) => {
+const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds, availableSections = [] }) => {
   const { confirm } = useConfirm();
   const toast = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +28,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<'INFO' | 'WARNING' | 'URGENT'>('INFO');
   const [classType, setClassType] = useState<string>('GLOBAL');
+  const [targetSections, setTargetSections] = useState<string[]>([]);
 
   const handleCreate = async () => {
     if (!title.trim() || !content.trim()) return;
@@ -37,12 +40,14 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
         priority,
         createdAt: new Date().toISOString(),
         expiresAt: null,
-        createdBy: 'ADMIN'
+        createdBy: 'ADMIN',
+        ...(targetSections.length > 0 ? { targetSections } : {}),
       });
       // Notify students
       await dataService.notifyUsers(studentIds, 'ANNOUNCEMENT', title.trim(), content.trim().slice(0, 100));
       setTitle('');
       setContent('');
+      setTargetSections([]);
       setIsModalOpen(false);
       toast.success('Announcement broadcast sent.');
     } catch (err) {
@@ -87,7 +92,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
                     <div className="text-sm font-bold text-white">{a.title}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{a.content}</div>
                     <div className="text-[10px] text-gray-500 mt-1">
-                      {a.classType === 'GLOBAL' ? 'All Classes' : a.classType} · {new Date(a.createdAt).toLocaleDateString()}
+                      {a.classType === 'GLOBAL' ? 'All Classes' : a.classType}{a.targetSections?.length ? ` · ${a.targetSections.join(', ')}` : ''} · {new Date(a.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -143,6 +148,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
               </select>
             </div>
           </div>
+          <SectionPicker availableSections={availableSections} selectedSections={targetSections} onChange={setTargetSections} />
           <button
             onClick={handleCreate}
             disabled={!title.trim() || !content.trim()}

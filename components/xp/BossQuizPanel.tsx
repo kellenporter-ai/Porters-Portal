@@ -8,6 +8,7 @@ import { Brain, CheckCircle2, XCircle, Zap } from 'lucide-react';
 
 interface BossQuizPanelProps {
   classType: string;
+  userSection?: string;
 }
 
 // Aggregates distributed shard damage for a single quiz boss
@@ -130,8 +131,8 @@ const QuizBossCard: React.FC<{
   );
 };
 
-const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType }) => {
-  const [quizzes, setQuizzes] = useState<BossQuizEvent[]>([]);
+const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection }) => {
+  const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number } | null>(null);
@@ -141,12 +142,17 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType }) => {
   useEffect(() => {
     let unsub: (() => void) | undefined;
     try {
-      unsub = dataService.subscribeToBossQuizzes(classType, setQuizzes);
+      unsub = dataService.subscribeToBossQuizzes(classType, setAllQuizzes);
     } catch {
       // Firestore permission error — feature not available for this user
     }
     return () => unsub?.();
   }, [classType]);
+
+  // Filter by section if the quiz targets specific sections
+  const quizzes = allQuizzes.filter(q =>
+    !q.targetSections?.length || q.targetSections.includes(userSection || '')
+  );
 
   const handleAnswer = async (quizId: string, questionId: string, answer: number) => {
     if (submitting) return;
