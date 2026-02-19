@@ -1,7 +1,7 @@
 
 import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert } from '../lib/firebase';
-import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { TEACHER_DISPLAY_NAME } from '../constants';
@@ -678,6 +678,46 @@ export const dataService = {
       }, { merge: true });
     } catch (error) {
       console.error(error);
+    }
+  },
+
+  // Submit review-question engagement time for bucketing — NO XP awarded.
+  // Atomically increments engagementTime on an existing submission, or creates
+  // a minimal record if none exists, so the telemetry bucket sees the time.
+  submitReviewEngagement: async (userId: string, assignmentId: string, assignmentTitle: string, classType: string, engagementTime: number) => {
+    if (engagementTime < 5) return; // Ignore trivially short visits
+    try {
+      const subId = `${userId}_${assignmentId}`;
+      const ref = doc(db, 'submissions', subId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        // Atomically add review time to the existing submission's engagementTime
+        await updateDoc(ref, {
+          'metrics.engagementTime': increment(engagementTime),
+          'metrics.lastActive': Date.now(),
+        });
+      } else {
+        // No prior submission — create a minimal record for bucket tracking
+        await setDoc(ref, {
+          userId,
+          assignmentId,
+          assignmentTitle,
+          classType,
+          metrics: {
+            engagementTime,
+            pasteCount: 0,
+            keystrokes: 0,
+            clickCount: 0,
+            startTime: Date.now() - engagementTime * 1000,
+            lastActive: Date.now(),
+          },
+          status: 'STARTED',
+          score: 0,
+          submittedAt: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.error('submitReviewEngagement:', err);
     }
   },
 

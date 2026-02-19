@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Assignment } from '../types';
 import { db, callAwardQuestionXP } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { Loader2, Zap, CheckCircle2, XCircle, Brain, ChevronRight, Star, ArrowUpDown, Lightbulb, Lock, RefreshCw } from 'lucide-react';
 import { useToast } from './ToastProvider';
+import { dataService } from '../services/dataService';
 
 interface ReviewQuestionsProps {
     assignment: Assignment;
@@ -53,6 +54,40 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
     const [activeTier, setActiveTier] = useState<number>(1);
     const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
     const [answeredBefore, setAnsweredBefore] = useState<Set<string>>(new Set());
+
+    const metricsRef = useRef<{ engagementTime: number }>({ engagementTime: 0 });
+    const lastInteractionRef = useRef<number>(Date.now());
+
+    // Increment engagement time every second while user is active
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (Date.now() - lastInteractionRef.current < 60000) {
+                metricsRef.current.engagementTime += 1;
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Track user interactions to detect active/away
+    useEffect(() => {
+        const handleInteraction = () => { lastInteractionRef.current = Date.now(); };
+        const events = ['mousemove', 'keydown', 'scroll', 'click'];
+        events.forEach(ev => window.addEventListener(ev, handleInteraction));
+        return () => events.forEach(ev => window.removeEventListener(ev, handleInteraction));
+    }, []);
+
+    // Submit engagement time on unmount — NO XP awarded
+    useEffect(() => {
+        return () => {
+            const time = metricsRef.current.engagementTime;
+            if (time >= 5) {
+                const uid = getAuth().currentUser?.uid;
+                if (uid) {
+                    dataService.submitReviewEngagement(uid, assignment.id, assignment.title, assignment.classType, time).catch(() => {});
+                }
+            }
+        };
+    }, [assignment.id, assignment.title, assignment.classType]);
 
     const selectNewBatch = useCallback((pool: ReviewQuestion[]) => {
         const t1 = pickRandom(pool.filter(q => q.tier === 1), QUESTIONS_PER_TIER);
