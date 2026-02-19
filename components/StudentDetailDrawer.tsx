@@ -1,18 +1,20 @@
 
 import React, { useMemo } from 'react';
-import { User, Submission, Assignment } from '../types';
-import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { User, Submission, Assignment, StudentBucketProfile, TelemetryBucket } from '../types';
+import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
+import { BUCKET_META } from '../lib/telemetry';
 
 interface StudentDetailDrawerProps {
   student: User;
   submissions: Submission[];
   assignments: Assignment[];
+  bucketProfiles?: StudentBucketProfile[];
   onClose: () => void;
 }
 
-const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, submissions, assignments, onClose }) => {
+const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, submissions, assignments, bucketProfiles = [], onClose }) => {
   const level = student.gamification?.level || 1;
   const xp = student.gamification?.xp || 0;
   const currency = student.gamification?.currency || 0;
@@ -190,6 +192,69 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               ))}
             </div>
           </div>
+
+          {/* Telemetry Bucket & Recommendations */}
+          {bucketProfiles.length > 0 && (() => {
+            const bp = bucketProfiles[0]; // Primary bucket profile
+            const meta = BUCKET_META[bp.bucket as TelemetryBucket];
+            if (!meta) return null;
+            return (
+              <div className={`border rounded-2xl p-4 ${meta.borderColor} ${meta.bgColor}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Engagement Bucket</h4>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${meta.color} border ${meta.borderColor}`}>
+                    {meta.label}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-300 mb-3">{meta.description}</p>
+                {/* Metrics snapshot */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-400 mb-3">
+                  <span>ES: {bp.engagementScore}</span>
+                  <span>Subs: {bp.metrics.submissionCount}</span>
+                  <span>Days Active: {bp.metrics.activityDays}/7</span>
+                  <span>Paste Ratio: {Math.round(bp.metrics.avgPasteRatio * 100)}%</span>
+                  <span>Time: {Math.round(bp.metrics.totalTime / 60)}m</span>
+                </div>
+                {/* Recommendation */}
+                <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Recommended Action</span>
+                  </div>
+                  <p className="text-xs text-gray-300 mb-2">{bp.recommendation.action}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {bp.recommendation.categories.map(cat => (
+                      <span key={cat} className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 border border-white/10 text-gray-300">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {/* Matching resources in class */}
+                {(() => {
+                  const classAssignments = assignments.filter(a =>
+                    a.classType === bp.classType &&
+                    a.status === 'ACTIVE' &&
+                    bp.recommendation.categories.includes(a.category || 'Supplemental')
+                  ).slice(0, 3);
+                  if (classAssignments.length === 0) return null;
+                  return (
+                    <div className="mt-3">
+                      <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Suggested Resources</div>
+                      <div className="space-y-1">
+                        {classAssignments.map(a => (
+                          <div key={a.id} className="flex items-center gap-2 py-1 text-xs">
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-white/5 text-gray-400">{a.category}</span>
+                            <span className="text-white truncate">{a.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
 
           {/* Engagement Trend (7-day) */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">

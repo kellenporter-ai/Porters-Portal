@@ -667,8 +667,52 @@ export interface StudentAlert {
   engagementScore: number;            // The student's ES at time of alert
   classMean: number;                  // Class mean ES for context
   classStdDev: number;                // Standard deviation for context
+  bucket?: TelemetryBucket;           // Behavioral bucket at time of alert
   createdAt: string;                  // ISO timestamp
   isDismissed: boolean;
   dismissedBy?: string;               // Admin who dismissed
   dismissedAt?: string;
+}
+
+// ========================================
+// TELEMETRY BUCKETING (EWS Enhancement)
+// ========================================
+
+/** Behavioral engagement buckets derived from telemetry signals */
+export type TelemetryBucket =
+  | 'THRIVING'       // High engagement, steady progress, strong original work
+  | 'ON_TRACK'       // Solid engagement, meeting expectations
+  | 'COASTING'       // Minimum viable effort, low but present activity
+  | 'SPRINTING'      // Inconsistent bursts — high peaks with gaps
+  | 'STRUGGLING'     // High effort but low results/XP yield
+  | 'DISENGAGING'    // Was active, now declining
+  | 'INACTIVE'       // Zero or near-zero activity
+  | 'COPYING';       // High paste rate relative to keystrokes
+
+/** Resource categories the system recommends based on bucket */
+export interface BucketRecommendation {
+  categories: ResourceCategory[];    // Priority resource types for this student
+  action: string;                    // Teacher-facing action advice
+  studentTip: string;                // Student-facing encouragement message
+}
+
+/** Per-student bucket profile computed daily alongside EWS */
+export interface StudentBucketProfile {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classType: string;
+  bucket: TelemetryBucket;
+  engagementScore: number;
+  metrics: {
+    totalTime: number;               // Total seconds of engagement in window
+    submissionCount: number;          // Number of submissions in window
+    totalClicks: number;              // Total click events
+    totalPastes: number;              // Total paste events
+    totalKeystrokes: number;          // Total keystroke events
+    avgPasteRatio: number;            // pastes / (keystrokes + pastes), 0-1
+    activityDays: number;             // Number of distinct days with activity (0-7)
+  };
+  recommendation: BucketRecommendation;
+  createdAt: string;                  // ISO timestamp
 }

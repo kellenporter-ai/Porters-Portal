@@ -943,7 +943,9 @@ export const dailyAnalysis = onSchedule(
       submissionCount: number; // number of submissions
       totalClicks: number;     // total click count
       totalPastes: number;     // total paste count
+      totalKeystrokes: number; // total keystroke count
       totalXP: number;         // XP earned in window
+      activityDays: Set<string>; // distinct YYYY-MM-DD dates with submissions
       classTypes: Set<string>;
     }> = new Map();
 
@@ -956,7 +958,9 @@ export const dailyAnalysis = onSchedule(
         submissionCount: 0,
         totalClicks: 0,
         totalPastes: 0,
+        totalKeystrokes: 0,
         totalXP: 0,
+        activityDays: new Set(),
         classTypes: new Set(classes),
       });
     });
@@ -970,7 +974,12 @@ export const dailyAnalysis = onSchedule(
       existing.submissionCount += 1;
       existing.totalClicks += Number(sub.metrics?.clickCount || 0);
       existing.totalPastes += Number(sub.metrics?.pasteCount || 0);
+      existing.totalKeystrokes += Number(sub.metrics?.keystrokes || 0);
       existing.totalXP += Number(sub.score || 0);
+      // Track distinct activity days
+      if (sub.submittedAt) {
+        existing.activityDays.add(String(sub.submittedAt).split("T")[0]);
+      }
     });
 
     // 3. Compute Engagement Scores per class
@@ -1015,6 +1024,30 @@ export const dailyAnalysis = onSchedule(
       engagementScore: number;
       classMean: number;
       classStdDev: number;
+      bucket?: string;
+    }[] = [];
+
+    // Bucket profiles for ALL students (not just at-risk)
+    const bucketProfiles: {
+      studentId: string;
+      studentName: string;
+      classType: string;
+      bucket: string;
+      engagementScore: number;
+      metrics: {
+        totalTime: number;
+        submissionCount: number;
+        totalClicks: number;
+        totalPastes: number;
+        totalKeystrokes: number;
+        avgPasteRatio: number;
+        activityDays: number;
+      };
+      recommendation: {
+        categories: string[];
+        action: string;
+        studentTip: string;
+      };
     }[] = [];
 
     classBuckets.forEach((students, classType) => {
@@ -1116,43 +1149,128 @@ export const dailyAnalysis = onSchedule(
             classStdDev: Math.round(stdDev * 10) / 10,
           });
         }
+
+        // ── TELEMETRY BUCKET CLASSIFICATION ──
+        const m = student.metrics;
+        const pasteRatio = (m.totalKeystrokes + m.totalPastes) > 0
+          ? m.totalPastes / (m.totalKeystrokes + m.totalPastes) : 0;
+        const days = m.activityDays.size;
+
+        let bucket = "ON_TRACK";
+        if (m.submissionCount === 0 && m.totalTime < 60) {
+          bucket = "INACTIVE";
+        } else if (pasteRatio > 0.4 && m.submissionCount >= 2 && m.totalPastes > 8) {
+          bucket = "COPYING";
+        } else if (m.totalTime > 1800 && m.submissionCount >= 2 && m.totalXP < 50) {
+          bucket = "STRUGGLING";
+        } else if (zScore < -0.5 && days <= 2 && m.submissionCount >= 1 && m.submissionCount <= 3) {
+          bucket = "DISENGAGING";
+        } else if (m.totalTime > 1800 && days <= 2 && m.submissionCount >= 3) {
+          bucket = "SPRINTING";
+        } else if (zScore < -0.5 && zScore >= -1.5) {
+          bucket = "COASTING";
+        } else if (zScore > 0.75 && m.submissionCount >= 4 && pasteRatio < 0.15 && days >= 3) {
+          bucket = "THRIVING";
+        }
+
+        // Recommendation engine (server-side mirror of client getBucketRecommendation)
+        const recMap: Record<string, { categories: string[]; action: string; studentTip: string }> = {
+          THRIVING: { categories: ["Simulation", "Supplemental", "Article"], action: "Challenge with advanced or supplemental material. Consider peer-tutoring role.", studentTip: "You're crushing it! Try the simulations and supplemental resources to push further." },
+          ON_TRACK: { categories: ["Practice Set", "Textbook", "Video Lesson"], action: "Continue current approach. Provide enrichment if interest is shown.", studentTip: "Solid work — keep the momentum going with practice sets and readings." },
+          COASTING: { categories: ["Practice Set", "Simulation", "Video Lesson"], action: "Increase engagement with interactive resources. Check in on motivation.", studentTip: "Try a simulation or practice set to boost your skills — small steps add up!" },
+          SPRINTING: { categories: ["Textbook", "Video Lesson", "Practice Set"], action: "Encourage consistent daily engagement instead of cramming. Set micro-goals.", studentTip: "Spreading your study across the week helps retention — try a bit each day." },
+          STRUGGLING: { categories: ["Video Lesson", "Lab Guide", "Practice Set"], action: "Offer direct support. Recommend foundational resources and check understanding.", studentTip: "Your effort shows! Try video lessons for a fresh perspective on tricky topics." },
+          DISENGAGING: { categories: ["Video Lesson", "Simulation", "Article"], action: "Reach out personally. Low-friction resources to re-establish habit.", studentTip: "We miss seeing you active — a quick video or sim is a great way to jump back in." },
+          INACTIVE: { categories: ["Video Lesson", "Article"], action: "Immediate outreach required. Check for external factors. Lowest-barrier resources.", studentTip: "Start small — even watching one video lesson counts. We're here to help!" },
+          COPYING: { categories: ["Practice Set", "Textbook", "Lab Guide"], action: "Discuss academic integrity. Redirect to original-work resources.", studentTip: "Working through problems yourself builds the strongest understanding — give it a try!" },
+        };
+
+        bucketProfiles.push({
+          studentId: student.studentId,
+          studentName: student.name,
+          classType,
+          bucket,
+          engagementScore: Math.round(student.es * 10) / 10,
+          metrics: {
+            totalTime: m.totalTime,
+            submissionCount: m.submissionCount,
+            totalClicks: m.totalClicks,
+            totalPastes: m.totalPastes,
+            totalKeystrokes: m.totalKeystrokes,
+            avgPasteRatio: Math.round(pasteRatio * 100) / 100,
+            activityDays: days,
+          },
+          recommendation: recMap[bucket] || recMap.ON_TRACK,
+        });
       }
     });
 
-    // 5. Deduplicate: keep highest severity per student+class
+    // 5. Deduplicate alerts: keep highest severity per student+class
+    //    Also enrich each alert with the student's bucket
+    const bucketLookup = new Map<string, string>();
+    for (const bp of bucketProfiles) {
+      bucketLookup.set(`${bp.studentId}_${bp.classType}`, bp.bucket);
+    }
+
     const deduped = new Map<string, typeof alerts[0]>();
     const severityOrder: Record<string, number> = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1 };
     for (const alert of alerts) {
       const key = `${alert.studentId}_${alert.classType}`;
+      alert.bucket = bucketLookup.get(key) || "ON_TRACK";
       const existing = deduped.get(key);
       if (!existing || (severityOrder[alert.riskLevel] || 0) > (severityOrder[existing.riskLevel] || 0)) {
         deduped.set(key, alert);
       }
     }
 
-    // 6. Write alerts to Firestore (batch for efficiency)
+    // 6. Write bucket profiles to Firestore (for ALL students, not just at-risk)
+    const timestamp = new Date().toISOString();
+
+    // Clear old bucket profiles and write fresh ones
+    const oldBuckets = await db.collection("student_buckets").get();
+    let batch = db.batch();
+    let count = 0;
+    for (const d of oldBuckets.docs) {
+      batch.delete(d.ref);
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    batch = db.batch();
+    count = 0;
+    for (const profile of bucketProfiles) {
+      const ref = db.collection("student_buckets").doc();
+      batch.set(ref, { ...profile, createdAt: timestamp });
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    logger.info(`dailyAnalysis: Wrote ${bucketProfiles.length} bucket profiles.`);
+
+    // 7. Write alerts to Firestore (batch for efficiency)
     const finalAlerts = Array.from(deduped.values());
     if (finalAlerts.length === 0) {
-      logger.info("dailyAnalysis: No at-risk students detected.");
+      logger.info("dailyAnalysis: No at-risk students detected. Bucket profiles written.");
       return;
     }
 
     // Clear old undismissed alerts before writing new ones
     const oldAlerts = await db.collection("student_alerts")
       .where("isDismissed", "==", false).get();
-    let batch = db.batch();
-    let count = 0;
-    for (const doc of oldAlerts.docs) {
-      batch.delete(doc.ref);
+    batch = db.batch();
+    count = 0;
+    for (const d of oldAlerts.docs) {
+      batch.delete(d.ref);
       count++;
       if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
     }
     if (count % 499 !== 0) await batch.commit();
 
-    // Write new alerts
+    // Write new alerts (now enriched with bucket field)
     batch = db.batch();
     count = 0;
-    const timestamp = new Date().toISOString();
     for (const alert of finalAlerts) {
       const ref = db.collection("student_alerts").doc();
       batch.set(ref, {
@@ -1165,7 +1283,7 @@ export const dailyAnalysis = onSchedule(
     }
     if (count % 499 !== 0) await batch.commit();
 
-    logger.info(`dailyAnalysis: Generated ${finalAlerts.length} alerts (${Array.from(deduped.values()).filter((a) => a.riskLevel === "CRITICAL").length} critical, ${Array.from(deduped.values()).filter((a) => a.riskLevel === "HIGH").length} high).`);
+    logger.info(`dailyAnalysis: Generated ${finalAlerts.length} alerts (${Array.from(deduped.values()).filter((a) => a.riskLevel === "CRITICAL").length} critical, ${Array.from(deduped.values()).filter((a) => a.riskLevel === "HIGH").length} high). ${bucketProfiles.length} bucket profiles stored.`);
   }
 );
 

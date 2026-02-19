@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert } from '../types';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
 import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import { BUCKET_META } from '../lib/telemetry';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
@@ -19,6 +20,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [alerts, setAlerts] = useState<StudentAlert[]>([]);
+  const [bucketProfiles, setBucketProfiles] = useState<StudentBucketProfile[]>([]);
   const [now, setNow] = useState(Date.now());
   const [muteMenuFlagId, setMuteMenuFlagId] = useState<string | null>(null);
   const [sortCol, setSortCol] = useState<string>('xp');
@@ -45,11 +47,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       const unsub = dataService.subscribeToChatFlags(setFlags);
       const unsubAnnouncements = dataService.subscribeToAnnouncements(setAnnouncements);
       const unsubAlerts = dataService.subscribeToStudentAlerts(setAlerts);
+      const unsubBuckets = dataService.subscribeToStudentBuckets(setBucketProfiles);
       const interval = setInterval(() => setNow(Date.now()), 60000); // Update 'expires in' every minute
       return () => {
           unsub();
           unsubAnnouncements();
           unsubAlerts();
+          unsubBuckets();
           clearInterval(interval);
       };
   }, []);
@@ -68,6 +72,31 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     }
     return map;
   }, [alerts]);
+
+  // Bucket lookup by student ID (pick first profile — typically one per student/class)
+  const bucketsByStudent = useMemo(() => {
+    const map = new Map<string, StudentBucketProfile>();
+    for (const bp of bucketProfiles) {
+      if (!map.has(bp.studentId)) map.set(bp.studentId, bp);
+    }
+    return map;
+  }, [bucketProfiles]);
+
+  // Bucket distribution for overview
+  const bucketDistribution = useMemo(() => {
+    const counts: Record<TelemetryBucket, number> = {
+      THRIVING: 0, ON_TRACK: 0, COASTING: 0, SPRINTING: 0,
+      STRUGGLING: 0, DISENGAGING: 0, INACTIVE: 0, COPYING: 0,
+    };
+    // Deduplicate: count each student once (across classes, take first)
+    const seen = new Set<string>();
+    for (const bp of bucketProfiles) {
+      if (seen.has(bp.studentId)) continue;
+      seen.add(bp.studentId);
+      if (counts[bp.bucket] !== undefined) counts[bp.bucket]++;
+    }
+    return counts;
+  }, [bucketProfiles]);
   
   // Stats
   const totalStudents = students.length;
@@ -301,18 +330,27 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 MODERATE: 'bg-yellow-500/80 text-black',
                 LOW: 'bg-blue-500/60 text-white',
               };
+              const bucketInfo = alert.bucket ? BUCKET_META[alert.bucket as TelemetryBucket] : null;
               return (
                 <div key={alert.id} className={`border p-4 rounded-xl ${riskColors[alert.riskLevel] || riskColors.LOW}`}>
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${riskBadge[alert.riskLevel] || riskBadge.LOW}`}>
                           {alert.riskLevel}
                         </span>
+                        {bucketInfo && (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${bucketInfo.bgColor} ${bucketInfo.color} ${bucketInfo.borderColor} border`}>
+                            {bucketInfo.label}
+                          </span>
+                        )}
                         <span className="text-sm font-bold text-white truncate">{alert.studentName}</span>
                         <span className="text-[10px] text-gray-500">{alert.classType}</span>
                       </div>
                       <p className="text-xs text-gray-300 leading-relaxed">{alert.message}</p>
+                      {bucketInfo && (
+                        <p className="text-[10px] text-gray-400 mt-1 italic">{bucketInfo.description}</p>
+                      )}
                       <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
                         <span>ES: {alert.engagementScore}</span>
                         <span>Class Avg: {alert.classMean}</span>
@@ -338,6 +376,62 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* TELEMETRY BUCKET DISTRIBUTION */}
+      {bucketProfiles.length > 0 && (
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Activity className="w-5 h-5 text-cyan-400" />
+              Student Engagement Buckets
+            </h3>
+            <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
+              {bucketProfiles.length} profile{bucketProfiles.length !== 1 ? 's' : ''} across classes
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(bucket => {
+              const meta = BUCKET_META[bucket];
+              const count = bucketDistribution[bucket];
+              return (
+                <div key={bucket} className={`border rounded-xl p-3 ${meta.borderColor} ${meta.bgColor} transition hover:scale-[1.02]`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
+                    <span className="text-lg font-bold text-white">{count}</span>
+                  </div>
+                  <p className="text-[9px] text-gray-400 leading-tight">{meta.description}</p>
+                </div>
+              );
+            })}
+          </div>
+          {/* At-a-glance bar */}
+          {(() => {
+            const total = Object.values(bucketDistribution).reduce((a, b) => a + b, 0);
+            if (total === 0) return null;
+            return (
+              <div className="mt-4 flex h-3 rounded-full overflow-hidden bg-white/5">
+                {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(bucket => {
+                  const pct = (bucketDistribution[bucket] / total) * 100;
+                  if (pct === 0) return null;
+                  const colorMap: Record<string, string> = {
+                    THRIVING: 'bg-emerald-500', ON_TRACK: 'bg-blue-500', COASTING: 'bg-yellow-500',
+                    SPRINTING: 'bg-orange-500', STRUGGLING: 'bg-purple-500', DISENGAGING: 'bg-red-500',
+                    INACTIVE: 'bg-gray-500', COPYING: 'bg-rose-500',
+                  };
+                  return (
+                    <div
+                      key={bucket}
+                      className={`${colorMap[bucket] || 'bg-gray-500'} transition-all`}
+                      style={{ width: `${pct}%` }}
+                      title={`${BUCKET_META[bucket].label}: ${bucketDistribution[bucket]} (${Math.round(pct)}%)`}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -397,6 +491,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     HIGH: 'bg-orange-500',
                                     MODERATE: 'bg-yellow-500',
                                   };
+                                  const studentBucket = bucketsByStudent.get(student.id);
+                                  const bucketMeta = studentBucket ? BUCKET_META[studentBucket.bucket as TelemetryBucket] : null;
 
                                   return (
                                       <tr key={student.id} className={`hover:bg-white/5 transition cursor-pointer ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''}`} onClick={() => setSelectedStudentId(student.id)}>
@@ -415,6 +511,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                   <span className="truncate max-w-[120px]">{student.name}</span>
                                                   {studentAlert && riskDot[studentAlert.riskLevel] && (
                                                     <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
+                                                  )}
+                                                  {bucketMeta && (
+                                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bucketMeta.bgColor} ${bucketMeta.color} border ${bucketMeta.borderColor}`} title={bucketMeta.description}>
+                                                      {bucketMeta.label}
+                                                    </span>
                                                   )}
                                               </div>
                                           </td>
@@ -448,6 +549,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             student={liveStudent}
             submissions={submissions.filter(s => s.userId === selectedStudentId)}
             assignments={assignments}
+            bucketProfiles={bucketProfiles.filter(bp => bp.studentId === selectedStudentId)}
             onClose={() => setSelectedStudentId(null)}
           />
         );
