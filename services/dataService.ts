@@ -600,6 +600,11 @@ export const dataService = {
     }
   },
 
+  // Direct section update by userId (for inline editing in admin panel)
+  updateUserSection: async (userId: string, section: string) => {
+    await updateDoc(doc(db, 'users', userId), { section });
+  },
+
   removeFromWhitelist: async (email: string) => {
     try {
       await deleteDoc(doc(db, 'allowed_emails', email));
@@ -1089,6 +1094,22 @@ export const dataService = {
   // Student marks session complete (awaiting admin verification)
   markTutoringComplete: async (sessionId: string) => {
     await updateDoc(doc(db, 'tutoring_sessions', sessionId), { status: 'COMPLETED' });
+  },
+
+  // Submit feedback for a tutoring session. When both participants have submitted, auto-transitions to COMPLETED.
+  submitTutoringFeedback: async (sessionId: string, role: 'requester' | 'tutor', feedback: import('../types').TutoringFeedback) => {
+    const ref = doc(db, 'tutoring_sessions', sessionId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error('Session not found');
+    const session = snap.data();
+    const feedbackField = role === 'requester' ? 'requesterFeedback' : 'tutorFeedback';
+    const otherField = role === 'requester' ? 'tutorFeedback' : 'requesterFeedback';
+    const updates: Record<string, unknown> = { [feedbackField]: feedback };
+    // Auto-transition to COMPLETED when both have submitted
+    if (session[otherField]) {
+      updates.status = 'COMPLETED';
+    }
+    await updateDoc(ref, updates);
   },
 
   // Admin: subscribe to ALL tutoring sessions across classes

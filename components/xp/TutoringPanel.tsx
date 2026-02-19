@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { TutoringSession } from '../../types';
+import { TutoringSession, TutoringFeedback } from '../../types';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
-import { GraduationCap, Hand, CheckCircle2, Clock, Plus, Users } from 'lucide-react';
+import { GraduationCap, Hand, CheckCircle2, Clock, Plus, Users, Star, Send } from 'lucide-react';
 
 interface TutoringPanelProps {
   userId: string;
@@ -20,11 +20,88 @@ const STATUS_COLORS: Record<string, string> = {
   VERIFIED: 'bg-green-500/10 text-green-400 border-green-500/20',
 };
 
+// Star rating component
+const StarRating: React.FC<{ value: number; onChange: (v: number) => void; label: string }> = ({ value, onChange, label }) => (
+  <div>
+    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide block mb-1">{label}</label>
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button key={star} type="button" onClick={() => onChange(star)}
+          className={`transition ${star <= value ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}>
+          <Star className={`w-5 h-5 ${star <= value ? 'fill-yellow-400' : ''}`} />
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// Feedback form component
+const FeedbackForm: React.FC<{
+  role: 'requester' | 'tutor';
+  onSubmit: (feedback: TutoringFeedback) => void;
+  submitting: boolean;
+}> = ({ role, onSubmit, submitting }) => {
+  const [rating, setRating] = useState(0);
+  const [communicationRating, setCommunicationRating] = useState(0);
+  const [response, setResponse] = useState('');
+
+  const isRequester = role === 'requester';
+
+  const handleSubmit = () => {
+    if (rating === 0 || communicationRating === 0 || response.trim().length < 20) return;
+    onSubmit({ rating, communicationRating, response: response.trim(), submittedAt: new Date().toISOString() });
+  };
+
+  const isValid = rating > 0 && communicationRating > 0 && response.trim().length >= 20;
+
+  return (
+    <div className="mt-3 p-3 bg-black/20 border border-white/10 rounded-xl space-y-3">
+      <p className="text-xs font-bold text-white">
+        {isRequester ? 'How was your tutoring experience?' : 'How did the tutoring session go?'}
+      </p>
+      <StarRating value={rating} onChange={setRating}
+        label={isRequester ? 'Overall helpfulness' : 'Overall session quality'} />
+      <StarRating value={communicationRating} onChange={setCommunicationRating}
+        label={isRequester ? 'Tutor communication' : 'Student engagement'} />
+      <div>
+        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide block mb-1">
+          {isRequester
+            ? 'What did you learn? How did this help you?'
+            : 'What did you teach? How well do you think it went?'}
+        </label>
+        <textarea
+          value={response}
+          onChange={e => setResponse(e.target.value)}
+          placeholder={isRequester
+            ? 'Describe what you learned and how the tutor helped you understand the material...'
+            : 'Describe what you taught, the approach you used, and how well the student understood...'}
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 resize-none h-20 focus:outline-none focus:border-purple-500/50"
+          maxLength={500}
+        />
+        <div className="flex justify-between mt-1">
+          <span className={`text-[10px] ${response.trim().length < 20 ? 'text-red-400' : 'text-gray-500'}`}>
+            {response.trim().length < 20 ? `${20 - response.trim().length} more characters needed` : `${response.trim().length}/500`}
+          </span>
+        </div>
+      </div>
+      <button
+        onClick={handleSubmit}
+        disabled={!isValid || submitting}
+        className="w-full py-2 bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg hover:bg-green-600/30 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+      >
+        <Send className="w-3 h-3" /> {submitting ? 'Submitting...' : 'Submit Feedback'}
+      </button>
+    </div>
+  );
+};
+
 const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classType, isAdmin }) => {
   const [sessions, setSessions] = useState<TutoringSession[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [topic, setTopic] = useState('');
   const [creating, setCreating] = useState(false);
+  const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -69,13 +146,21 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
     }
   };
 
-  const handleMarkComplete = async (sessionId: string) => {
+  const handleSubmitFeedback = async (sessionId: string, feedback: TutoringFeedback) => {
+    setSubmittingFeedback(true);
     try {
-      await dataService.markTutoringComplete(sessionId);
-      toast.success('Session marked complete — awaiting admin verification.');
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session) throw new Error('Session not found');
+      const role = session.requesterId === userId ? 'requester' : 'tutor';
+      await dataService.submitTutoringFeedback(sessionId, role, feedback);
+      toast.success('Feedback submitted! ' + (role === 'requester'
+        ? (session.tutorFeedback ? 'Both feedbacks received — awaiting admin verification.' : 'Waiting for tutor feedback.')
+        : (session.requesterFeedback ? 'Both feedbacks received — awaiting admin verification.' : 'Waiting for student feedback.')));
+      setFeedbackSessionId(null);
     } catch (err) {
-      toast.error('Failed to mark complete');
+      toast.error('Failed to submit feedback');
     }
+    setSubmittingFeedback(false);
   };
 
   const handleVerify = async (sessionId: string, tutorId: string) => {
@@ -175,6 +260,10 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
           </h4>
           {activeSessions.map(session => {
             const isParticipant = session.requesterId === userId || session.tutorId === userId;
+            const isRequester = session.requesterId === userId;
+            const isTutor = session.tutorId === userId;
+            const myFeedback = isRequester ? session.requesterFeedback : session.tutorFeedback;
+            const partnerFeedback = isRequester ? session.tutorFeedback : session.requesterFeedback;
             return (
             <div key={session.id} className="p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl">
               <p className="text-sm text-white font-medium">{session.topic}</p>
@@ -192,12 +281,17 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
                     Start Session
                   </button>
                 )}
-                {/* In Progress → Mark complete */}
-                {session.status === 'IN_PROGRESS' && isParticipant && (
-                  <button onClick={() => handleMarkComplete(session.id)}
+                {/* In Progress → Submit feedback (replaces "Mark Complete") */}
+                {session.status === 'IN_PROGRESS' && isParticipant && !myFeedback && (
+                  <button onClick={() => setFeedbackSessionId(session.id)}
                     className="px-3 py-1 bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg hover:bg-green-600/30 transition">
-                    <CheckCircle2 className="w-3 h-3 inline mr-1" /> Mark Complete
+                    <CheckCircle2 className="w-3 h-3 inline mr-1" /> Submit Feedback
                   </button>
+                )}
+                {session.status === 'IN_PROGRESS' && isParticipant && myFeedback && !partnerFeedback && (
+                  <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    Feedback submitted — waiting for {isRequester ? 'tutor' : 'student'}
+                  </span>
                 )}
                 {isAdmin && session.tutorId && session.status !== 'VERIFIED' && (
                   <button onClick={() => handleVerify(session.id, session.tutorId!)}
@@ -206,6 +300,15 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
                   </button>
                 )}
               </div>
+
+              {/* Inline feedback form */}
+              {feedbackSessionId === session.id && session.status === 'IN_PROGRESS' && (isTutor || isRequester) && (
+                <FeedbackForm
+                  role={isRequester ? 'requester' : 'tutor'}
+                  onSubmit={feedback => handleSubmitFeedback(session.id, feedback)}
+                  submitting={submittingFeedback}
+                />
+              )}
             </div>
             );
           })}
@@ -222,9 +325,19 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
             <div key={session.id} className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
               <p className="text-sm text-white font-medium">{session.topic}</p>
               <p className="text-[10px] text-gray-500">{session.requesterName} ↔ {session.tutorName}</p>
-              <span className="text-[10px] px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20 mt-1 inline-block">
-                Awaiting teacher verification
-              </span>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className="text-[10px] px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20">
+                  Awaiting teacher verification
+                </span>
+                {session.requesterFeedback && <span className="text-[10px] text-green-400">Student feedback ✓</span>}
+                {session.tutorFeedback && <span className="text-[10px] text-green-400">Tutor feedback ✓</span>}
+              </div>
+              {isAdmin && session.tutorId && (
+                <button onClick={() => handleVerify(session.id, session.tutorId!)}
+                  className="mt-2 px-3 py-1 bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg hover:bg-green-600/30 transition">
+                  <CheckCircle2 className="w-3 h-3 inline mr-1" /> Verify & Award
+                </button>
+              )}
             </div>
           ))}
         </div>

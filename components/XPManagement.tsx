@@ -774,9 +774,34 @@ RULES:
                         <span>{new Date(session.createdAt).toLocaleDateString()}</span>
                         {session.completedAt && <span>Completed: {new Date(session.completedAt).toLocaleDateString()}</span>}
                       </div>
+                      {/* Feedback display */}
+                      {(session.requesterFeedback || session.tutorFeedback) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                          {session.requesterFeedback && (
+                            <div className="p-2 bg-black/20 rounded-lg border border-white/5">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] font-bold text-cyan-400 uppercase">Student Feedback</span>
+                                <span className="text-[9px] text-yellow-400">{'★'.repeat(session.requesterFeedback.rating)}{'☆'.repeat(5 - session.requesterFeedback.rating)}</span>
+                                <span className="text-[9px] text-gray-500">Comm: {session.requesterFeedback.communicationRating}/5</span>
+                              </div>
+                              <p className="text-[10px] text-gray-400 leading-relaxed">{session.requesterFeedback.response}</p>
+                            </div>
+                          )}
+                          {session.tutorFeedback && (
+                            <div className="p-2 bg-black/20 rounded-lg border border-white/5">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] font-bold text-green-400 uppercase">Tutor Feedback</span>
+                                <span className="text-[9px] text-yellow-400">{'★'.repeat(session.tutorFeedback.rating)}{'☆'.repeat(5 - session.tutorFeedback.rating)}</span>
+                                <span className="text-[9px] text-gray-500">Engage: {session.tutorFeedback.communicationRating}/5</span>
+                              </div>
+                              <p className="text-[10px] text-gray-400 leading-relaxed">{session.tutorFeedback.response}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {session.tutorId && !['VERIFIED', 'COMPLETED'].includes(session.status) && (
+                      {session.tutorId && session.status === 'COMPLETED' && (
                         <button onClick={() => handleAdminVerifyTutoring(session.id, session.tutorId!)}
                           className="px-3 py-1.5 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 transition border border-green-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> Verify & Award

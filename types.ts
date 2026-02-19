@@ -607,6 +607,13 @@ export interface KnowledgeGate {
 
 export type TutoringStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'VERIFIED';
 
+export interface TutoringFeedback {
+  rating: number; // 1-5 overall experience
+  communicationRating: number; // 1-5 communication quality
+  response: string; // What they learned (student) or taught (tutor)
+  submittedAt: string;
+}
+
 export interface TutoringSession {
   id: string;
   requesterId: string;
@@ -621,6 +628,8 @@ export interface TutoringSession {
   verifiedBy?: string; // Admin who verified
   xpReward: number; // XP for the tutor
   fluxReward?: number;
+  requesterFeedback?: TutoringFeedback;
+  tutorFeedback?: TutoringFeedback;
 }
 
 // ========================================

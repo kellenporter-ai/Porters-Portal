@@ -75,8 +75,43 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const csvFileRef = useRef<HTMLInputElement>(null);
 
+  // Section management
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [sectionInput, setSectionInput] = useState('');
+  const [customSectionInput, setCustomSectionInput] = useState('');
+
   // Include ALL student users so 'ghost' accounts can be managed
   const students = users.filter(u => u.role === 'STUDENT');
+
+  // Collect all known sections across students
+  const knownSections = useMemo(() => {
+    const sections = new Set<string>();
+    students.forEach(s => { if (s.section) sections.add(s.section); });
+    return Array.from(sections).sort();
+  }, [students]);
+
+  const handleSetSection = async (studentId: string, section: string) => {
+    try {
+      await dataService.updateUserSection(studentId, section);
+      setEditingSectionId(null);
+      setSectionInput('');
+      setCustomSectionInput('');
+      toast.success(`Section updated to ${section || 'none'}`);
+    } catch {
+      toast.error('Failed to update section');
+    }
+  };
+
+  const handleBulkSetSection = async (section: string) => {
+    if (selectedUsers.size === 0) return;
+    try {
+      await Promise.all(Array.from(selectedUsers).map(id => dataService.updateUserSection(id, section)));
+      setSelectedUsers(new Set());
+      toast.success(`Set ${selectedUsers.size} students to ${section}`);
+    } catch {
+      toast.error('Failed to bulk update sections');
+    }
+  };
   
   // Identify Whitelisted emails that DON'T have a user record yet
   const pendingInvites = useMemo(() => {
@@ -306,6 +341,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         (isUncategorized && (!s.enrolledClasses || s.enrolledClasses.length === 0))
     )].sort((a, b) => {
         switch (sort.col) {
+            case 'section': { const av = a.section || ''; const bv = b.section || ''; return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
             case 'status': { const av = a.isWhitelisted ? 1 : 0; const bv = b.isWhitelisted ? 1 : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
             case 'lastSeen': { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
             case 'xp': { const av = a.gamification?.classXp?.[type] || 0; const bv = b.gamification?.classXp?.[type] || 0; return sort.dir === 'asc' ? av - bv : bv - av; }
@@ -335,14 +371,27 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </button>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
               {selectedUsers.size > 0 && Array.from(selectedUsers).some(id => classStudents.find(u => u.id === id)) && (
-                  <button 
+                <>
+                  <div className="flex items-center gap-1">
+                    <select
+                      onChange={e => { if (e.target.value) handleBulkSetSection(e.target.value); e.target.value = ''; }}
+                      className="bg-black/40 border border-purple-500/30 text-purple-400 text-[11px] font-bold px-2 py-1.5 rounded-lg appearance-none focus:outline-none cursor-pointer"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Assign Section...</option>
+                      <option value="">No Section</option>
+                      {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <button
                     onClick={() => handleRemoveFromClass(type)}
                     className="text-xs text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition flex items-center gap-2"
                   >
                       <UserX className="w-3 h-3" /> Remove Selected
                   </button>
+                </>
               )}
               {!isUncategorized && (
                 <button 
@@ -368,6 +417,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   )}
                 </th>
                 <SortableHeader label="Operative"     col="name"    type={type} />
+                <SortableHeader label="Section"       col="section" type={type} className="text-center" />
                 <SortableHeader label="System Status" col="status"  type={type} className="text-center" />
                 <SortableHeader label="Last Seen"     col="lastSeen" type={type} className="text-center" />
                 <SortableHeader label="Class XP"      col="xp"      type={type} className="text-center" />
@@ -377,7 +427,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <tbody className="divide-y divide-white/5">
               {classStudents.length === 0 ? (
                   <tr>
-                      <td colSpan={6} className="p-8 text-center text-gray-500 italic text-sm">
+                      <td colSpan={7} className="p-8 text-center text-gray-500 italic text-sm">
                           {isUncategorized ? "No restricted operatives found." : "No students registered in this roster yet."}
                       </td>
                   </tr>
@@ -400,9 +450,51 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 <img src={student.avatarUrl} alt={student.name} className="w-8 h-8 rounded-full border border-white/10" />
                                 <div>
                                 <div className="font-bold text-gray-200 text-sm">{student.name}</div>
-                                <div className="text-[10px] text-gray-500 font-mono">{student.email}{student.section ? ` · ${student.section}` : ''}</div>
+                                <div className="text-[10px] text-gray-500 font-mono">{student.email}</div>
                                 </div>
                             </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          {editingSectionId === student.id ? (
+                            <div className="flex flex-col items-center gap-1.5">
+                              <select
+                                value={sectionInput}
+                                onChange={e => {
+                                  setSectionInput(e.target.value);
+                                  if (e.target.value !== '__custom__') {
+                                    handleSetSection(student.id, e.target.value);
+                                  }
+                                }}
+                                className="bg-black/40 border border-purple-500/50 rounded-lg px-2 py-1 text-[11px] text-white font-bold focus:outline-none w-28"
+                                autoFocus
+                              >
+                                <option value="">No Section</option>
+                                {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
+                                <option value="__custom__">+ New Section</option>
+                              </select>
+                              {sectionInput === '__custom__' && (
+                                <div className="flex gap-1">
+                                  <input
+                                    value={customSectionInput}
+                                    onChange={e => setCustomSectionInput(e.target.value)}
+                                    placeholder="e.g. Period 2"
+                                    className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white w-24 focus:outline-none focus:border-purple-500/50"
+                                    onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) handleSetSection(student.id, customSectionInput.trim()); }}
+                                    autoFocus
+                                  />
+                                  <button onClick={() => { if (customSectionInput.trim()) handleSetSection(student.id, customSectionInput.trim()); }} className="text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
+                                </div>
+                              )}
+                              <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[10px] text-gray-500 hover:text-white transition">Cancel</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setEditingSectionId(student.id); setSectionInput(student.section || ''); setCustomSectionInput(''); }}
+                              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/20'}`}
+                            >
+                              {student.section || 'Assign'}
+                            </button>
+                          )}
                         </td>
                         <td className="p-4 text-center">
                             <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
