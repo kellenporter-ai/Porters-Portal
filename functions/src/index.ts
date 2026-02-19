@@ -2319,23 +2319,36 @@ function calculateServerStats(equipped: Record<string, unknown> | undefined): { 
   return base;
 }
 
+// --- Derived combat stats from player attributes ---
+function deriveCombatStats(stats: { tech: number; focus: number; analysis: number; charisma: number }): {
+  maxHp: number; armorPercent: number; critChance: number; critMultiplier: number;
+} {
+  // Charisma → Health: base 100 + 5 per charisma above 10
+  const maxHp = 100 + Math.max(0, stats.charisma - 10) * 5;
+  // Analysis → Armor: 0.5% damage reduction per point, capped at 50%
+  const armorPercent = Math.min(stats.analysis * 0.5, 50);
+  // Focus → Crit chance: 1% per point, capped at 40%
+  const critChance = Math.min(stats.focus * 0.01, 0.40);
+  // Focus → Crit damage: base 2x + 0.02x per focus above 10
+  const critMultiplier = 2 + Math.max(0, stats.focus - 10) * 0.02;
+  return { maxHp, armorPercent, critChance, critMultiplier };
+}
+
 // --- Calculate boss damage from player stats ---
 function calculateBossDamage(stats: { tech: number; focus: number; analysis: number; charisma: number }, gearScore: number): { damage: number; isCrit: boolean } {
   // Base damage: 8
   let damage = 8;
   // Tech: primary damage stat (+1 per 5 tech)
   damage += Math.floor(stats.tech / 5);
-  // Analysis: secondary damage (+1 per 10 analysis)
-  damage += Math.floor(stats.analysis / 10);
   // Gear score bonus (+1 per 50 gear score)
   damage += Math.floor(gearScore / 50);
   // Random variance: ±20%
   const variance = 0.8 + Math.random() * 0.4;
   damage = Math.round(damage * variance);
-  // Focus: crit chance (1% per focus point, capped at 30%)
-  const critChance = Math.min(stats.focus * 0.01, 0.30);
+  // Focus: crit chance + crit damage from derived stats
+  const { critChance, critMultiplier } = deriveCombatStats(stats);
   const isCrit = Math.random() < critChance;
-  if (isCrit) damage = Math.round(damage * 2);
+  if (isCrit) damage = Math.round(damage * critMultiplier);
   // Clamp: min 1, max 200
   return { damage: Math.max(1, Math.min(damage, 200)), isCrit };
 }
@@ -2407,10 +2420,7 @@ export const dealBossDamage = onCall(async (request) => {
   });
 
   // User: award XP + track total boss damage
-  // Charisma bonus: extra XP per hit (+1% per charisma point above 10)
-  const baseXpReward = boss.xpRewardPerHit || 10;
-  const charismaBonus = Math.max(0, stats.charisma - 10);
-  const xpReward = Math.round(baseXpReward * (1 + charismaBonus * 0.01));
+  const xpReward = boss.xpRewardPerHit || 10;
   const xpResult = buildXPUpdates(userData, xpReward);
 
   const bossDamageDealt = gam.bossDamageDealt || {};
@@ -2538,13 +2548,31 @@ export const answerBossQuiz = onCall(async (request) => {
   if (!question) throw new HttpsError("not-found", "Question not found.");
 
   // Check if already answered
-  const progress = progressSnap.exists ? progressSnap.data()! : { answeredQuestions: [] };
+  const progress = progressSnap.exists ? progressSnap.data()! : { answeredQuestions: [], currentHp: -1 };
   if (progress.answeredQuestions.includes(questionId)) {
-    return { alreadyAnswered: true, correct: false, damage: 0, newHp: quiz.currentHp };
+    return { alreadyAnswered: true, correct: false, damage: 0, newHp: quiz.currentHp, playerDamage: 0, playerHp: progress.currentHp, playerMaxHp: 100, knockedOut: false };
+  }
+
+  // Calculate player combat stats from equipped gear
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+  const activeClass = quiz.classType || userData.classType || '';
+  const profile = gam.classProfiles?.[activeClass];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const playerAttrStats = calculateServerStats(equipped);
+  const { maxHp, armorPercent } = deriveCombatStats(playerAttrStats);
+
+  // Initialize player HP on first question
+  let playerHp = progress.currentHp >= 0 ? progress.currentHp : maxHp;
+
+  // Check if player is knocked out
+  if (playerHp <= 0) {
+    return { alreadyAnswered: false, correct: false, damage: 0, newHp: quiz.currentHp, playerDamage: 0, playerHp: 0, playerMaxHp: maxHp, knockedOut: true };
   }
 
   const isCorrect = Number(answer) === question.correctAnswer;
   let damage = 0;
+  let playerDamage = 0;
 
   const batch = db.batch();
 
@@ -2560,16 +2588,23 @@ export const answerBossQuiz = onCall(async (request) => {
     }, { merge: true });
 
     // Award XP
-    const userData = userSnap.data()!;
     const xpResult = buildXPUpdates(userData, damage);
     batch.update(userRef, xpResult.updates);
+  } else {
+    // Boss retaliates on wrong answer — difficulty scales base damage
+    const baseBossDamage = question.difficulty === 'HARD' ? 30 : question.difficulty === 'MEDIUM' ? 20 : 15;
+    // Armor reduces incoming damage
+    playerDamage = Math.max(1, Math.round(baseBossDamage * (1 - armorPercent / 100)));
+    playerHp = Math.max(0, playerHp - playerDamage);
   }
 
-  // Track progress
+  // Track progress + player HP
   batch.set(progressRef, {
     userId: uid,
     quizId,
     answeredQuestions: [...progress.answeredQuestions, questionId],
+    currentHp: playerHp,
+    maxHp,
     lastUpdated: new Date().toISOString(),
   }, { merge: true });
 
@@ -2651,7 +2686,7 @@ export const answerBossQuiz = onCall(async (request) => {
     }
   }
 
-  return { correct: isCorrect, damage, newHp, bossDefeated };
+  return { correct: isCorrect, damage, newHp, bossDefeated, playerDamage, playerHp, playerMaxHp: maxHp, knockedOut: playerHp <= 0 };
 });
 
 // ==========================================

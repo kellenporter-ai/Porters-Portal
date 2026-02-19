@@ -80,6 +80,15 @@ export const getDisenchantValue = (item: RPGItem): number => {
 };
 
 
+// --- Derived combat stats from player attributes ---
+export const deriveCombatStats = (stats: { tech: number; focus: number; analysis: number; charisma: number }) => {
+    const maxHp = 100 + Math.max(0, stats.charisma - 10) * 5;
+    const armorPercent = Math.min(stats.analysis * 0.5, 50);
+    const critChance = Math.min(stats.focus * 0.01, 0.40);
+    const critMultiplier = 2 + Math.max(0, stats.focus - 10) * 0.02;
+    return { maxHp, armorPercent, critChance, critMultiplier };
+};
+
 // craftItem, generateLoot, generateQuestRewards — removed (server-side only)
 
 export const calculatePlayerStats = (user: Pick<User, 'gamification'>) => {

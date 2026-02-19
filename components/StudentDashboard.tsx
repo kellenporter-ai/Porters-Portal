@@ -23,7 +23,7 @@ function snapCenterToCursor(args: any) {
   return transform;
 }
 import { dataService } from '../services/dataService';
-import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost } from '../lib/gamification';
+import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost, deriveCombatStats } from '../lib/gamification';
 import { RUNEWORD_DEFINITIONS } from '../lib/runewords';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
@@ -1123,14 +1123,52 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                              </div>
 
                              {/* Stats Summary */}
-                             <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
-                                 <div className="grid grid-cols-2 gap-3 text-xs">
-                                     <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-400"></div><span className="text-gray-500">Tech</span> <span className="text-blue-400 font-bold ml-auto">{playerStats.tech}</span></div>
-                                     <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-400"></div><span className="text-gray-500">Focus</span> <span className="text-green-400 font-bold ml-auto">{playerStats.focus}</span></div>
-                                     <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-yellow-400"></div><span className="text-gray-500">Analysis</span> <span className="text-yellow-400 font-bold ml-auto">{playerStats.analysis}</span></div>
-                                     <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-400"></div><span className="text-gray-500">Charisma</span> <span className="text-purple-400 font-bold ml-auto">{playerStats.charisma}</span></div>
-                                 </div>
-                             </div>
+                             {(() => {
+                                 const combat = deriveCombatStats(playerStats);
+                                 return (
+                                     <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-3">
+                                         <div className="grid grid-cols-2 gap-3 text-xs">
+                                             <div className="group relative flex items-center gap-2 cursor-help">
+                                                 <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                                                 <span className="text-gray-500">Tech</span>
+                                                 <span className="text-blue-400 font-bold ml-auto">{playerStats.tech}</span>
+                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                                                     <span className="font-bold text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
+                                                 </div>
+                                             </div>
+                                             <div className="group relative flex items-center gap-2 cursor-help">
+                                                 <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                                                 <span className="text-gray-500">Focus</span>
+                                                 <span className="text-green-400 font-bold ml-auto">{playerStats.focus}</span>
+                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                                                     <span className="font-bold text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% &middot; Crit damage: {combat.critMultiplier.toFixed(2)}x
+                                                 </div>
+                                             </div>
+                                             <div className="group relative flex items-center gap-2 cursor-help">
+                                                 <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                                                 <span className="text-gray-500">Analysis</span>
+                                                 <span className="text-yellow-400 font-bold ml-auto">{playerStats.analysis}</span>
+                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                                                     <span className="font-bold text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
+                                                 </div>
+                                             </div>
+                                             <div className="group relative flex items-center gap-2 cursor-help">
+                                                 <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                                                 <span className="text-gray-500">Charisma</span>
+                                                 <span className="text-purple-400 font-bold ml-auto">{playerStats.charisma}</span>
+                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                                                     <span className="font-bold text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div className="grid grid-cols-3 gap-2 text-[10px] pt-2 border-t border-white/5">
+                                             <div className="text-center"><span className="text-gray-600 block">HP</span><span className="text-emerald-400 font-bold">{combat.maxHp}</span></div>
+                                             <div className="text-center"><span className="text-gray-600 block">Armor</span><span className="text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span></div>
+                                             <div className="text-center"><span className="text-gray-600 block">Crit</span><span className="text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span></div>
+                                         </div>
+                                     </div>
+                                 );
+                             })()}
                          </div>
                      </div>
 
@@ -1215,7 +1253,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-              <BossQuizPanel classType={activeClass} userSection={user.section} />
+              <BossQuizPanel classType={activeClass} userSection={user.section} playerStats={playerStats} />
           </div>
       </div>
 

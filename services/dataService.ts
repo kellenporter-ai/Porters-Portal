@@ -1099,7 +1099,7 @@ export const dataService = {
 
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
     const result = await callAnswerBossQuiz({ quizId, questionId, answer });
-    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean };
+    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean };
   },
 
   // Admin: subscribe to ALL quiz bosses (including inactive)

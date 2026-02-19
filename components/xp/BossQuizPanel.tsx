@@ -4,11 +4,12 @@ import { BossQuizEvent } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
-import { Brain, CheckCircle2, XCircle, Zap } from 'lucide-react';
+import { Brain, CheckCircle2, XCircle, Zap, Heart } from 'lucide-react';
 
 interface BossQuizPanelProps {
   classType: string;
   userSection?: string;
+  playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
 }
 
 // Aggregates distributed shard damage for a single quiz boss
@@ -30,10 +31,14 @@ const QuizBossCard: React.FC<{
   submitting: boolean;
   currentQuestion: number;
   selectedAnswer: number | null;
-  answerResult: { correct: boolean; damage: number } | null;
-}> = ({ quiz, onAnswer, submitting, currentQuestion, selectedAnswer, answerResult }) => {
+  answerResult: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean } | null;
+  playerHp: number;
+  playerMaxHp: number;
+  knockedOut: boolean;
+}> = ({ quiz, onAnswer, submitting, currentQuestion, selectedAnswer, answerResult, playerHp, playerMaxHp, knockedOut }) => {
   const currentHp = useQuizBossHealth(quiz.id, quiz.maxHp);
   const hpPercent = (currentHp / quiz.maxHp) * 100;
+  const playerHpPercent = playerMaxHp > 0 ? (playerHp / playerMaxHp) * 100 : 100;
   const question = quiz.questions[currentQuestion % quiz.questions.length];
   const allAnswered = currentQuestion >= quiz.questions.length;
 
@@ -45,7 +50,7 @@ const QuizBossCard: React.FC<{
         <p className="text-xs text-gray-500">{quiz.description}</p>
       </div>
 
-      {/* HP bar — driven by distributed shard aggregation */}
+      {/* Boss HP bar */}
       <div>
         <div className="flex justify-between text-xs mb-1">
           <span className="text-red-400 font-mono">{currentHp} HP</span>
@@ -59,8 +64,28 @@ const QuizBossCard: React.FC<{
         </div>
       </div>
 
-      {/* Question */}
-      {allAnswered ? (
+      {/* Player HP bar */}
+      <div>
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp}</span>
+          <span className="text-gray-600">{playerMaxHp}</span>
+        </div>
+        <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden">
+          <div
+            className={`h-2.5 rounded-full transition-all duration-500 ${playerHpPercent > 50 ? 'bg-gradient-to-r from-emerald-600 to-green-500' : playerHpPercent > 25 ? 'bg-gradient-to-r from-yellow-600 to-orange-500' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
+            style={{ width: `${playerHpPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Knocked out state */}
+      {knockedOut ? (
+        <div className="text-center py-8">
+          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-2" />
+          <p className="text-sm font-bold text-red-400">Knocked Out!</p>
+          <p className="text-xs text-gray-500 mt-1">The boss has defeated you. Gear up with better armor (Analysis) and health (Charisma) to survive longer.</p>
+        </div>
+      ) : allAnswered ? (
         <div className="text-center py-8">
           <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-2" />
           <p className="text-sm text-gray-300">All questions answered!</p>
@@ -92,7 +117,7 @@ const QuizBossCard: React.FC<{
                 <button
                   key={idx}
                   onClick={() => onAnswer(quiz.id, question.id, idx)}
-                  disabled={submitting || !!answerResult}
+                  disabled={submitting || !!answerResult || knockedOut}
                   className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
                     showResult && isCorrect ? 'border-green-500/50 bg-green-500/10 text-green-400' :
                     showResult && !isCorrect ? 'border-red-500/50 bg-red-500/10 text-red-400' :
@@ -114,7 +139,13 @@ const QuizBossCard: React.FC<{
           {answerResult && answerResult.correct && (
             <div className="text-center text-sm text-amber-400 font-bold animate-bounce">
               <Zap className="w-4 h-4 inline mr-1" />
-              -{answerResult.damage} HP!
+              -{answerResult.damage} HP to boss!
+            </div>
+          )}
+          {answerResult && !answerResult.correct && answerResult.playerDamage && answerResult.playerDamage > 0 && (
+            <div className="text-center text-sm text-red-400 font-bold animate-bounce">
+              <Heart className="w-4 h-4 inline mr-1" />
+              Boss hits you for {answerResult.playerDamage} damage!
             </div>
           )}
         </div>
@@ -131,12 +162,15 @@ const QuizBossCard: React.FC<{
   );
 };
 
-const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection }) => {
+const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection, playerStats }) => {
   const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number } | null>(null);
+  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [playerHp, setPlayerHp] = useState<number>(-1); // -1 = not initialized
+  const [playerMaxHp, setPlayerMaxHp] = useState<number>(100);
+  const [knockedOut, setKnockedOut] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -154,8 +188,18 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection })
     !q.targetSections?.length || q.targetSections.includes(userSection || '')
   );
 
+  // Initialize player HP from stats
+  useEffect(() => {
+    if (playerStats) {
+      const { deriveCombatStats } = require('../../lib/gamification');
+      const combat = deriveCombatStats(playerStats);
+      setPlayerMaxHp(combat.maxHp);
+      if (playerHp === -1) setPlayerHp(combat.maxHp);
+    }
+  }, [playerStats]);
+
   const handleAnswer = async (quizId: string, questionId: string, answer: number) => {
-    if (submitting) return;
+    if (submitting || knockedOut) return;
     setSubmitting(true);
     setSelectedAnswer(answer);
 
@@ -172,16 +216,38 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection })
           toast.success(`Correct! Dealt ${result.damage} damage!`);
         }
       } else {
-        toast.error('Incorrect. No damage dealt.');
+        if (result.playerDamage && result.playerDamage > 0) {
+          toast.error(`Wrong! The boss hits you for ${result.playerDamage} damage!`);
+        } else {
+          toast.error('Incorrect. No damage dealt.');
+        }
       }
-      setAnswerResult({ correct: result.correct, damage: result.damage });
 
-      // Auto-advance after delay
-      setTimeout(() => {
-        setCurrentQuestion(prev => prev + 1);
-        setSelectedAnswer(null);
-        setAnswerResult(null);
-      }, 2000);
+      // Update player HP from server response
+      if (result.playerHp !== undefined) setPlayerHp(result.playerHp);
+      if (result.playerMaxHp !== undefined) setPlayerMaxHp(result.playerMaxHp);
+      if (result.knockedOut) {
+        setKnockedOut(true);
+        sfx.bossHit();
+      }
+
+      setAnswerResult({
+        correct: result.correct,
+        damage: result.damage,
+        playerDamage: result.playerDamage,
+        playerHp: result.playerHp,
+        playerMaxHp: result.playerMaxHp,
+        knockedOut: result.knockedOut,
+      });
+
+      // Auto-advance after delay (unless knocked out)
+      if (!result.knockedOut) {
+        setTimeout(() => {
+          setCurrentQuestion(prev => prev + 1);
+          setSelectedAnswer(null);
+          setAnswerResult(null);
+        }, 2000);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to submit answer');
     }
@@ -205,6 +271,9 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType, userSection })
           currentQuestion={currentQuestion}
           selectedAnswer={selectedAnswer}
           answerResult={answerResult}
+          playerHp={playerHp === -1 ? playerMaxHp : playerHp}
+          playerMaxHp={playerMaxHp}
+          knockedOut={knockedOut}
         />
       ))}
     </div>
