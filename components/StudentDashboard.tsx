@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Shield, Component, Gem, Hand, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
+import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { dataService } from '../services/dataService';
 import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore } from '../lib/gamification';
@@ -512,15 +512,28 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     }
   };
 
-  // Slot icon helper (reused in both SlotRender and DragOverlay)
+  // Slot icon helper — proper gear silhouettes for each equipment type
   const getSlotIcon = (slot: string, colorClass: string, size = 'w-5 h-5') => {
-    if (slot === 'HEAD') return <Zap className={`${size} ${colorClass}`} />;
-    if (slot === 'CHEST') return <Shield className={`${size} ${colorClass}`} />;
-    if (slot === 'HANDS') return <Hand className={`${size} ${colorClass}`} />;
-    if (slot === 'FEET') return <CheckCircle2 className={`${size} ${colorClass}`} />;
-    if (slot === 'BELT') return <Component className={`${size} ${colorClass}`} />;
-    if (slot === 'AMULET') return <Gem className={`${size} ${colorClass}`} />;
-    return <Briefcase className={`${size} ${colorClass}`} />;
+    const cn = `${size} ${colorClass}`;
+    const svgProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+    switch (slot) {
+      case 'HEAD': // Helmet / visor
+        return <svg className={cn} {...svgProps}><path d="M12 2C8 2 5 5 5 9v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9c0-4-3-7-7-7z"/><path d="M5 11v2h14v-2"/><path d="M8 6h8" strokeWidth={1.5} opacity={0.6}/></svg>;
+      case 'CHEST': // Chestplate / body armor
+        return <svg className={cn} {...svgProps}><path d="M6 4l-2 3v5a2 2 0 0 0 2 2h2l1 3h6l1-3h2a2 2 0 0 0 2-2V7l-2-3"/><path d="M6 4h12"/><path d="M12 4v5"/><path d="M9 9h6"/></svg>;
+      case 'HANDS': // Gauntlet / glove
+        return <svg className={cn} {...svgProps}><path d="M7 14V8a2 2 0 0 1 4 0v1"/><path d="M11 9V7a2 2 0 0 1 4 0v3"/><path d="M15 10V9a2 2 0 0 1 3 1v4c0 3-2 6-5 7H9c-3-1-5-4-5-7v-2a2 2 0 0 1 3-1"/></svg>;
+      case 'FEET': // Boot
+        return <svg className={cn} {...svgProps}><path d="M7 3v10l-3 4v2h16v-2l-2-2V7a4 4 0 0 0-4-4H7z"/><path d="M4 19h16"/><path d="M11 3v4"/></svg>;
+      case 'BELT': // Belt with buckle
+        return <svg className={cn} {...svgProps}><rect x="2" y="9" width="20" height="6" rx="1"/><rect x="9" y="8" width="6" height="8" rx="1" strokeWidth={1.5}/><line x1="9" y1="12" x2="15" y2="12"/></svg>;
+      case 'AMULET': // Pendant / necklace
+        return <svg className={cn} {...svgProps}><path d="M6 3a14 14 0 0 0 12 0"/><path d="M12 7v3"/><path d="M12 10l-3 3 3 5 3-5-3-3z" fill="currentColor" fillOpacity={0.2}/></svg>;
+      case 'RING': // Ring
+        return <svg className={cn} {...svgProps}><ellipse cx="12" cy="14" rx="6" ry="5"/><path d="M12 9V6"/><path d="M10 6h4l-2-3-2 3z" fill="currentColor" fillOpacity={0.3}/></svg>;
+      default:
+        return <Briefcase className={cn} />;
+    }
   };
 
   // --- Droppable Equipment Slot ---
@@ -1048,17 +1061,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      />
                  </div>
 
-                 {/* Drag Overlay — floating ghost of the item being dragged */}
-                 <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }} zIndex={9999}>
+                 {/* Drag Overlay — floating tile that follows cursor */}
+                 <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }} zIndex={9999}>
                    {draggedItem && (() => {
                      const colors = getAssetColors(draggedItem.rarity);
                      return (
-                       <div
-                         className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center shadow-2xl pointer-events-none ${colors.bg} ${colors.border} ${colors.glow}`}
-                         style={{ filter: 'brightness(1.3)', boxShadow: '0 0 20px rgba(168,85,247,0.4), 0 8px 32px rgba(0,0,0,0.5)' }}
-                       >
-                         {getSlotIcon(draggedItem.slot, colors.text, 'w-6 h-6')}
-                         <span className={`text-[7px] font-bold mt-0.5 ${colors.text}`}>{draggedItem.baseName || draggedItem.name.split(' ').slice(-1)[0]}</span>
+                       <div className="drag-overlay-tile rounded-xl pointer-events-none" style={{ willChange: 'transform, box-shadow' }}>
+                         <div
+                           className={`w-[68px] h-[68px] rounded-xl border-2 flex flex-col items-center justify-center backdrop-blur-sm ${colors.bg} ${colors.border} ${colors.glow}`}
+                           style={{ filter: 'brightness(1.3) saturate(1.2)' }}
+                         >
+                           {getSlotIcon(draggedItem.slot, colors.text, 'w-7 h-7')}
+                           <span className={`text-[8px] font-bold mt-0.5 ${colors.text} drop-shadow-lg`}>{draggedItem.baseName || draggedItem.name.split(' ').slice(-1)[0]}</span>
+                         </div>
                        </div>
                      );
                    })()}
@@ -1243,13 +1258,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       <div className="flex items-start gap-4 relative z-10">
                           {/* Slot Icon */}
                           <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border ${getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).bg}`} style={{ boxShadow: inspectItem.rarity === 'UNIQUE' ? '0 0 20px rgba(249,115,22,0.3)' : inspectItem.rarity === 'RARE' ? '0 0 15px rgba(234,179,8,0.2)' : 'none' }}>
-                              {inspectItem.slot === 'HEAD' && <Zap className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
-                              {inspectItem.slot === 'CHEST' && <Shield className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
-                              {inspectItem.slot === 'HANDS' && <Hand className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
-                              {inspectItem.slot === 'FEET' && <CheckCircle2 className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
-                              {inspectItem.slot === 'BELT' && <Component className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
-                              {inspectItem.slot === 'AMULET' && <Gem className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
-                              {inspectItem.slot === 'RING' && <Briefcase className={`w-7 h-7 ${getAssetColors(inspectItem.rarity).text}`} />}
+                              {getSlotIcon(inspectItem.slot, getAssetColors(inspectItem.rarity).text, 'w-7 h-7')}
                           </div>
                           <div className="flex-1">
                               <div className={`text-lg font-bold ${getAssetColors(inspectItem.rarity).text}`}>{inspectItem.name}</div>

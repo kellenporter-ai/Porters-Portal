@@ -188,6 +188,24 @@ body {
   animation: hexDrift 8s linear infinite;
 }
 
+/* Drag overlay floating tile effect */
+@keyframes dragFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes dragGlowPulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(168,85,247,0.4), 0 8px 24px rgba(0,0,0,0.5); }
+  50% { box-shadow: 0 0 28px rgba(168,85,247,0.6), 0 12px 32px rgba(0,0,0,0.6); }
+}
+@keyframes dragPickUp {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.drag-overlay-tile {
+  animation: dragPickUp 0.2s ease-out forwards, dragFloat 1.6s ease-in-out 0.2s infinite, dragGlowPulse 1.6s ease-in-out 0.2s infinite;
+}
+
 /* Input Clarity Fixes */
 .bg-white input,
 .bg-white textarea,
