@@ -914,13 +914,32 @@ export const dataService = {
     return result.data as { item: RPGItem; newCurrency: number };
   },
 
-  // --- BOSS ENCOUNTERS ---
+  // --- BOSS ENCOUNTERS (Distributed Counter Pattern) ---
 
   subscribeToBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
     const q = query(collection(db, 'boss_encounters'), where('isActive', '==', true));
     return guardedSnapshot('boss_encounters', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as BossEncounter)));
     });
+  },
+
+  // Subscribe to a boss's distributed damage shards for real-time HP aggregation
+  subscribeToBossShards: (bossId: string, callback: (totalDamage: number) => void) => {
+    const shardsRef = collection(db, `boss_encounters/${bossId}/shards`);
+    return onSnapshot(shardsRef, (snapshot) => {
+      let totalDamage = 0;
+      snapshot.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
+      callback(totalDamage);
+    }, () => { /* permission error — ignore */ });
+  },
+
+  // Subscribe to a boss's damage log subcollection for the leaderboard
+  subscribeToBossDamageLog: (bossId: string, callback: (log: { userId: string; userName: string; damage: number; timestamp: string }[]) => void) => {
+    const logRef = collection(db, `boss_encounters/${bossId}/damage_log`);
+    return onSnapshot(logRef, (snapshot) => {
+      const entries = snapshot.docs.map((d) => d.data() as { userId: string; userName: string; damage: number; timestamp: string });
+      callback(entries);
+    }, () => { /* permission error — ignore */ });
   },
 
   dealBossDamage: async (bossId: string, damage: number, userName: string) => {
@@ -934,7 +953,7 @@ export const dataService = {
     };
   },
 
-  // --- BOSS QUIZ ---
+  // --- BOSS QUIZ (Distributed Counter Pattern) ---
 
   subscribeToBossQuizzes: (classType: string, callback: (quizzes: BossQuizEvent[]) => void) => {
     const q = query(collection(db, 'boss_quizzes'), where('isActive', '==', true));
@@ -944,6 +963,16 @@ export const dataService = {
         .filter((q: BossQuizEvent) => q.classType === classType || q.classType === 'GLOBAL');
       callback(quizzes);
     });
+  },
+
+  // Subscribe to a boss quiz's distributed damage shards for real-time HP aggregation
+  subscribeToBossQuizShards: (quizId: string, callback: (totalDamage: number) => void) => {
+    const shardsRef = collection(db, `boss_quizzes/${quizId}/shards`);
+    return onSnapshot(shardsRef, (snapshot) => {
+      let totalDamage = 0;
+      snapshot.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
+      callback(totalDamage);
+    }, () => { /* permission error — ignore */ });
   },
 
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {

@@ -2093,8 +2093,10 @@ export const socketGem = onCall(async (request) => {
 });
 
 // ==========================================
-// BOSS ENCOUNTERS
+// BOSS ENCOUNTERS (Distributed Counter Pattern)
 // ==========================================
+
+const BOSS_SHARD_COUNT = 10; // Supports ~10 concurrent writes/sec
 
 export const dealBossDamage = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
@@ -2102,66 +2104,78 @@ export const dealBossDamage = onCall(async (request) => {
   if (!bossId || !damage) throw new HttpsError("invalid-argument", "Boss ID and damage required.");
 
   const db = admin.firestore();
+  const bossRef = db.doc(`boss_encounters/${bossId}`);
+  const userRef = db.doc(`users/${uid}`);
 
-  return db.runTransaction(async (transaction) => {
-    const bossRef = db.doc(`boss_encounters/${bossId}`);
-    const userRef = db.doc(`users/${uid}`);
-    const [bossSnap, userSnap] = await Promise.all([
-      transaction.get(bossRef), transaction.get(userRef),
-    ]);
+  // Step 1: Validate boss state (read-only, outside shard write)
+  const [bossSnap, userSnap] = await Promise.all([bossRef.get(), userRef.get()]);
 
-    if (!bossSnap.exists) throw new HttpsError("not-found", "Boss not found.");
-    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+  if (!bossSnap.exists) throw new HttpsError("not-found", "Boss not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
-    const boss = bossSnap.data()!;
-    if (!boss.isActive) throw new HttpsError("failed-precondition", "Boss is not active.");
-    if (new Date(boss.deadline) < new Date()) throw new HttpsError("failed-precondition", "Boss encounter has expired.");
+  const boss = bossSnap.data()!;
+  if (!boss.isActive) throw new HttpsError("failed-precondition", "Boss is not active.");
+  if (new Date(boss.deadline) < new Date()) throw new HttpsError("failed-precondition", "Boss encounter has expired.");
 
-    const validDamage = Math.max(1, Math.min(Number(damage), 100)); // Clamp to 1-100
-    const newHp = Math.max(0, boss.currentHp - validDamage);
-    const damageLog = boss.damageLog || [];
-    damageLog.push({
-      userId: uid,
-      userName: userName || "Student",
-      damage: validDamage,
-      timestamp: new Date().toISOString(),
-    });
+  const validDamage = Math.max(1, Math.min(Number(damage), 100)); // Clamp to 1-100
 
-    const bossUpdates: Record<string, unknown> = { currentHp: newHp, damageLog };
+  // Step 2: Write damage to a random shard (distributed counter)
+  const shardId = Math.floor(Math.random() * BOSS_SHARD_COUNT).toString();
+  const shardRef = db.doc(`boss_encounters/${bossId}/shards/${shardId}`);
 
-    // Award XP for contributing
-    const userData = userSnap.data()!;
-    const xpReward = boss.xpRewardPerHit || 10;
-    const xpResult = buildXPUpdates(userData, xpReward);
+  // Step 3: Update shard + user in a batch (not transaction — avoids contention)
+  const batch = db.batch();
 
-    // Track total damage dealt by this user
-    const gam = userData.gamification || {};
-    const bossDamageDealt = gam.bossDamageDealt || {};
-    bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + validDamage;
+  // Shard: atomic increment of damage counter + append to per-shard damage log
+  batch.set(shardRef, {
+    damageDealt: admin.firestore.FieldValue.increment(validDamage),
+  }, { merge: true });
 
-    const userUpdates: Record<string, unknown> = {
-      ...xpResult.updates,
-      "gamification.bossDamageDealt": bossDamageDealt,
-    };
-
-    // Check if boss is defeated
-    let bossDefeated = false;
-    if (newHp <= 0) {
-      bossUpdates.isActive = false;
-      bossDefeated = true;
-    }
-
-    transaction.update(bossRef, bossUpdates);
-    transaction.update(userRef, userUpdates);
-
-    return {
-      newHp,
-      damageDealt: validDamage,
-      xpEarned: xpReward,
-      bossDefeated,
-      leveledUp: xpResult.leveledUp,
-    };
+  // Damage log: stored as a separate subcollection doc to avoid document size limits
+  const logRef = db.collection(`boss_encounters/${bossId}/damage_log`).doc();
+  batch.set(logRef, {
+    userId: uid,
+    userName: userName || "Student",
+    damage: validDamage,
+    timestamp: new Date().toISOString(),
   });
+
+  // User: award XP + track total boss damage
+  const userData = userSnap.data()!;
+  const xpReward = boss.xpRewardPerHit || 10;
+  const xpResult = buildXPUpdates(userData, xpReward);
+
+  const gam = userData.gamification || {};
+  const bossDamageDealt = gam.bossDamageDealt || {};
+  bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + validDamage;
+
+  batch.update(userRef, {
+    ...xpResult.updates,
+    "gamification.bossDamageDealt": bossDamageDealt,
+  });
+
+  await batch.commit();
+
+  // Step 4: Check if boss is defeated by reading all shards
+  const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).get();
+  let totalDamage = 0;
+  shardsSnap.forEach(doc => { totalDamage += doc.data().damageDealt || 0; });
+  const newHp = Math.max(0, boss.maxHp - totalDamage);
+
+  let bossDefeated = false;
+  if (newHp <= 0 && boss.isActive) {
+    // Mark boss as defeated — single write, only happens once
+    await bossRef.update({ isActive: false, currentHp: 0 });
+    bossDefeated = true;
+  }
+
+  return {
+    newHp,
+    damageDealt: validDamage,
+    xpEarned: xpReward,
+    bossDefeated,
+    leveledUp: xpResult.leveledUp,
+  };
 });
 
 // ==========================================
@@ -2176,59 +2190,75 @@ export const answerBossQuiz = onCall(async (request) => {
   }
 
   const db = admin.firestore();
+  const quizRef = db.doc(`boss_quizzes/${quizId}`);
+  const userRef = db.doc(`users/${uid}`);
+  const progressRef = db.doc(`boss_quiz_progress/${uid}_${quizId}`);
 
-  return db.runTransaction(async (transaction) => {
-    const quizRef = db.doc(`boss_quizzes/${quizId}`);
-    const userRef = db.doc(`users/${uid}`);
-    const progressRef = db.doc(`boss_quiz_progress/${uid}_${quizId}`);
+  // Use transaction only for progress check (per-user doc, no contention)
+  const [quizSnap, userSnap, progressSnap] = await Promise.all([
+    quizRef.get(), userRef.get(), progressRef.get(),
+  ]);
 
-    const [quizSnap, userSnap, progressSnap] = await Promise.all([
-      transaction.get(quizRef), transaction.get(userRef), transaction.get(progressRef),
-    ]);
+  if (!quizSnap.exists) throw new HttpsError("not-found", "Quiz not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
-    if (!quizSnap.exists) throw new HttpsError("not-found", "Quiz not found.");
-    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+  const quiz = quizSnap.data()!;
+  if (!quiz.isActive) throw new HttpsError("failed-precondition", "Quiz is not active.");
 
-    const quiz = quizSnap.data()!;
-    if (!quiz.isActive) throw new HttpsError("failed-precondition", "Quiz is not active.");
+  const questions = quiz.questions || [];
+  const question = questions.find((q: { id: string }) => q.id === questionId);
+  if (!question) throw new HttpsError("not-found", "Question not found.");
 
-    const questions = quiz.questions || [];
-    const question = questions.find((q: { id: string }) => q.id === questionId);
-    if (!question) throw new HttpsError("not-found", "Question not found.");
+  // Check if already answered
+  const progress = progressSnap.exists ? progressSnap.data()! : { answeredQuestions: [] };
+  if (progress.answeredQuestions.includes(questionId)) {
+    return { alreadyAnswered: true, correct: false, damage: 0, newHp: quiz.currentHp };
+  }
 
-    // Check if already answered
-    const progress = progressSnap.exists ? progressSnap.data()! : { answeredQuestions: [] };
-    if (progress.answeredQuestions.includes(questionId)) {
-      return { alreadyAnswered: true, correct: false, damage: 0 };
-    }
+  const isCorrect = Number(answer) === question.correctAnswer;
+  let damage = 0;
 
-    const isCorrect = Number(answer) === question.correctAnswer;
-    let damage = 0;
+  const batch = db.batch();
 
-    if (isCorrect) {
-      damage = quiz.damagePerCorrect || 10;
-      if (question.damageBonus) damage += question.damageBonus;
+  if (isCorrect) {
+    damage = quiz.damagePerCorrect || 10;
+    if (question.damageBonus) damage += question.damageBonus;
 
-      // Apply damage to boss quiz
-      const newHp = Math.max(0, quiz.currentHp - damage);
-      transaction.update(quizRef, { currentHp: newHp });
-
-      // Award XP
-      const userData = userSnap.data()!;
-      const xpResult = buildXPUpdates(userData, damage); // XP = damage dealt
-      transaction.update(userRef, xpResult.updates);
-    }
-
-    // Track progress
-    transaction.set(progressRef, {
-      userId: uid,
-      quizId,
-      answeredQuestions: [...progress.answeredQuestions, questionId],
-      lastUpdated: new Date().toISOString(),
+    // Distributed counter: write damage to a random shard
+    const shardId = Math.floor(Math.random() * BOSS_SHARD_COUNT).toString();
+    const shardRef = db.doc(`boss_quizzes/${quizId}/shards/${shardId}`);
+    batch.set(shardRef, {
+      damageDealt: admin.firestore.FieldValue.increment(damage),
     }, { merge: true });
 
-    return { correct: isCorrect, damage, newHp: Math.max(0, quiz.currentHp - damage) };
-  });
+    // Award XP
+    const userData = userSnap.data()!;
+    const xpResult = buildXPUpdates(userData, damage);
+    batch.update(userRef, xpResult.updates);
+  }
+
+  // Track progress
+  batch.set(progressRef, {
+    userId: uid,
+    quizId,
+    answeredQuestions: [...progress.answeredQuestions, questionId],
+    lastUpdated: new Date().toISOString(),
+  }, { merge: true });
+
+  await batch.commit();
+
+  // Read aggregated HP from shards
+  const shardsSnap = await db.collection(`boss_quizzes/${quizId}/shards`).get();
+  let totalDamage = 0;
+  shardsSnap.forEach(doc => { totalDamage += doc.data().damageDealt || 0; });
+  const newHp = Math.max(0, quiz.maxHp - totalDamage);
+
+  // Check if boss quiz is defeated
+  if (newHp <= 0 && quiz.isActive) {
+    await quizRef.update({ isActive: false, currentHp: 0 });
+  }
+
+  return { correct: isCorrect, damage, newHp };
 });
 
 // ==========================================
