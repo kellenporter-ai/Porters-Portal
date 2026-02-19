@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossEncounter, BossQuizEvent } from '../types';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Skull, Lock, Unlock, Brain } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent } from '../types';
+import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -20,7 +20,7 @@ interface XPManagementProps {
 const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
-  const [activeTab, setActiveTab] = useState<'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS'>('OPERATIVES');
+  const [activeTab, setActiveTab] = useState<'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING'>('OPERATIVES');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');
   const [filterSection, setFilterSection] = useState('All Sections');
@@ -58,16 +58,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS
   });
 
-  // Boss management state
-  const [bosses, setBosses] = useState<BossEncounter[]>([]);
-  const [isBossModalOpen, setIsBossModalOpen] = useState(false);
-  const [editingBoss, setEditingBoss] = useState<BossEncounter | null>(null);
-  const [bossForm, setBossForm] = useState({
-      name: '', description: '', maxHp: 5000, classType: 'GLOBAL',
-      xpRewardPerHit: 10, rewardXp: 500, rewardFlux: 100,
-      rewardItemRarity: '' as string, deadline: '', imageUrl: '',
-  });
-
   // Quiz Boss management state
   const [quizBosses, setQuizBosses] = useState<BossQuizEvent[]>([]);
   const [isQuizBossModalOpen, setIsQuizBossModalOpen] = useState(false);
@@ -78,13 +68,20 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       rewardItemRarity: '' as string, deadline: '',
       questions: [] as { id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; damageBonus: number }[],
   });
+  const [promptCopied, setPromptCopied] = useState(false);
+  const quizFileRef = useRef<HTMLInputElement>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  // Admin tutoring oversight
+  const [tutoringActiveTab, setTutoringActiveTab] = useState<'all' | 'pending'>('pending');
+  const [allTutoringSessions, setAllTutoringSessions] = useState<import('../types').TutoringSession[]>([]);
 
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
     const unsubQuests = dataService.subscribeToQuests(setQuests);
-    const unsubBosses = dataService.subscribeToAllBossEncounters(setBosses);
     const unsubQuizBosses = dataService.subscribeToAllBossQuizzes(setQuizBosses);
-    return () => { unsubEvents(); unsubQuests(); unsubBosses(); unsubQuizBosses(); };
+    const unsubTutoring = dataService.subscribeToAllTutoringSessions(setAllTutoringSessions);
+    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); };
   }, []);
 
   useEffect(() => {
@@ -261,57 +258,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       } catch { toast.error('Failed to update lock.'); }
   };
 
-  const openBossForm = (boss?: BossEncounter) => {
-      if (boss) {
-          setEditingBoss(boss);
-          setBossForm({
-              name: boss.name, description: boss.description, maxHp: boss.maxHp,
-              classType: boss.classType || 'GLOBAL', xpRewardPerHit: boss.xpRewardPerHit || 10,
-              rewardXp: boss.completionRewards?.xp || 500, rewardFlux: boss.completionRewards?.flux || 100,
-              rewardItemRarity: boss.completionRewards?.itemRarity || '',
-              deadline: boss.deadline ? boss.deadline.slice(0, 16) : '', imageUrl: boss.imageUrl || '',
-          });
-      } else {
-          setEditingBoss(null);
-          const defaultDeadline = new Date();
-          defaultDeadline.setDate(defaultDeadline.getDate() + 7);
-          setBossForm({ name: '', description: '', maxHp: 5000, classType: 'GLOBAL', xpRewardPerHit: 10, rewardXp: 500, rewardFlux: 100, rewardItemRarity: '', deadline: defaultDeadline.toISOString().slice(0, 16), imageUrl: '' });
-      }
-      setIsBossModalOpen(true);
-  };
-
-  const handleSaveBoss = async (e: React.FormEvent) => {
-      e.preventDefault();
-      try {
-          const bossData: Record<string, unknown> = {
-              id: editingBoss?.id || Math.random().toString(36).substring(2, 12),
-              name: bossForm.name, description: bossForm.description,
-              maxHp: bossForm.maxHp, currentHp: editingBoss?.currentHp ?? bossForm.maxHp,
-              xpRewardPerHit: bossForm.xpRewardPerHit,
-              completionRewards: { xp: bossForm.rewardXp, flux: bossForm.rewardFlux, ...(bossForm.rewardItemRarity ? { itemRarity: bossForm.rewardItemRarity } : {}) },
-              deadline: new Date(bossForm.deadline).toISOString(),
-              isActive: editingBoss?.isActive ?? true,
-              damageLog: editingBoss?.damageLog || [],
-          };
-          // Only include optional fields if they have values (Firestore rejects undefined)
-          if (bossForm.classType !== 'GLOBAL') bossData.classType = bossForm.classType;
-          if (bossForm.imageUrl) bossData.imageUrl = bossForm.imageUrl;
-          await dataService.saveBossEncounter(bossData as unknown as BossEncounter);
-          toast.success(editingBoss ? 'Boss updated.' : 'Boss deployed!');
-          setIsBossModalOpen(false);
-      } catch (err) { toast.error('Failed to save boss.'); }
-  };
-
-  const handleToggleBoss = async (boss: BossEncounter) => {
-      await dataService.toggleBossActive(boss.id, !boss.isActive);
-  };
-
-  const handleDeleteBoss = async (boss: BossEncounter) => {
-      if (!await confirm({ message: `Delete boss "${boss.name}"? This cannot be undone.`, confirmLabel: "Delete" })) return;
-      await dataService.deleteBossEncounter(boss.id);
-      toast.success('Boss deleted.');
-  };
-
   // --- Quiz Boss handlers ---
   const openQuizBossForm = (quiz?: BossQuizEvent) => {
       if (quiz) {
@@ -420,6 +366,117 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       toast.success('Quiz boss deleted.');
   };
 
+  // --- LLM Prompt for quiz boss question generation ---
+  const QUIZ_BOSS_PROMPT = (bossName: string, classType: string) =>
+`You are an expert educational assessment designer. Generate quiz boss questions for a gamified LMS.
+
+BOSS: "${bossName || 'Quiz Boss'}"
+CLASS: ${classType || 'General'}
+
+Generate 15-30 multiple choice questions across 3 difficulty tiers.
+
+TIER DISTRIBUTION:
+- EASY (5-10 questions): Recall and basic comprehension
+- MEDIUM (5-10 questions): Application and analysis
+- HARD (5-10 questions): Evaluation and synthesis
+
+OUTPUT FORMAT — Respond with ONLY a valid JSON array:
+[
+  {
+    "id": "q001",
+    "stem": "The question text",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0,
+    "difficulty": "EASY",
+    "damageBonus": 0
+  }
+]
+
+RULES:
+- "correctAnswer" is the 0-based INDEX of the correct option (0=A, 1=B, 2=C, 3=D)
+- "damageBonus" should be 0 for EASY, 25 for MEDIUM, 50 for HARD
+- Each question must have exactly 4 options
+- Distractors must be plausible and educational
+- Questions must be specific to the class material
+- Output ONLY the JSON array — no markdown fences, no commentary`;
+
+  const handleCopyQuizPrompt = () => {
+      const prompt = QUIZ_BOSS_PROMPT(quizBossForm.bossName, quizBossForm.classType);
+      navigator.clipboard.writeText(prompt);
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 2500);
+      toast.success('Prompt copied to clipboard!');
+  };
+
+  // --- JSON Import for quiz boss questions ---
+  const handleImportQuizQuestions = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setImportError(null);
+      try {
+          const text = await file.text();
+          let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+          cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, ch => ch === '\n' || ch === '\r' || ch === '\t' ? ' ' : '');
+
+          let parsed;
+          try { parsed = JSON.parse(cleaned); } catch {
+              const match = cleaned.match(/\[[\s\S]*\]/);
+              if (match) {
+                  try { parsed = JSON.parse(match[0]); } catch {
+                      let lastValid = null;
+                      for (let i = match[0].length - 1; i > 0; i--) {
+                          if (match[0][i] === '}') {
+                              try { lastValid = JSON.parse(match[0].slice(0, i + 1) + ']'); break; } catch { /* keep searching */ }
+                          }
+                      }
+                      if (lastValid) parsed = lastValid;
+                      else throw new Error('Could not parse JSON. Make sure the file contains a valid JSON array.');
+                  }
+              } else { throw new Error('No JSON array found in file.'); }
+          }
+
+          if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Must be a non-empty JSON array.');
+
+          const valid = parsed.filter((q: Record<string, unknown>) => q.stem && q.options && q.correctAnswer !== undefined);
+          if (valid.length === 0) throw new Error('No valid questions found (need stem, options, correctAnswer).');
+
+          const imported = valid.map((q: Record<string, unknown>) => ({
+              id: (q.id as string) || Math.random().toString(36).substring(2, 10),
+              stem: q.stem as string,
+              options: (q.options as string[]).slice(0, 4),
+              correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+              difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
+              damageBonus: typeof q.damageBonus === 'number' ? q.damageBonus : 0,
+          }));
+
+          const skipped = parsed.length - valid.length;
+          setQuizBossForm(prev => ({ ...prev, questions: [...prev.questions, ...imported] }));
+          toast.success(`Imported ${imported.length} questions${skipped > 0 ? ` (${skipped} skipped)` : ''}`);
+      } catch (err) {
+          setImportError(err instanceof Error ? err.message : 'Import failed.');
+          toast.error('Failed to import questions.');
+      }
+      if (quizFileRef.current) quizFileRef.current.value = '';
+  };
+
+  // --- Admin tutoring handlers ---
+  const handleAdminVerifyTutoring = async (sessionId: string, tutorId: string) => {
+      try {
+          const result = await dataService.completeTutoring(sessionId, tutorId);
+          toast.success(`Verified! Tutor earned ${result.xpAwarded} XP and ${result.fluxAwarded} Flux`);
+      } catch (err) { toast.error('Failed to verify session'); }
+  };
+
+  const handleAdminCancelTutoring = async (sessionId: string) => {
+      if (!await confirm({ message: 'Cancel this tutoring session?', confirmLabel: 'Cancel Session' })) return;
+      try {
+          await dataService.cancelTutoringSession(sessionId);
+          toast.success('Session cancelled.');
+      } catch (err) { toast.error('Failed to cancel session'); }
+  };
+
+  const pendingTutoringSessions = allTutoringSessions.filter(s => ['OPEN', 'MATCHED', 'IN_PROGRESS', 'COMPLETED'].includes(s.status));
+
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => (
     <button onClick={() => setActiveTab(id)} className={`px-6 py-4 flex items-center gap-2 border-b-2 font-bold transition-all ${activeTab === id ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
       <Icon className="w-4 h-4" />{label}
@@ -436,10 +493,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         <div className="flex gap-2">
           {activeTab === 'PROTOCOLS' && <button onClick={() => setIsEventModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-blue-900/20"><Rocket className="w-4 h-4" /> Deploy Protocol</button>}
           {activeTab === 'MISSIONS' && <button onClick={() => setIsQuestModalOpen(true)} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-purple-900/20"><Award className="w-4 h-4" /> Issue Mission</button>}
-          {activeTab === 'BOSS_OPS' && <>
-            <button onClick={() => openBossForm()} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-red-900/20"><Skull className="w-4 h-4" /> Deploy Boss</button>
-            <button onClick={() => openQuizBossForm()} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-amber-900/20"><Brain className="w-4 h-4" /> Deploy Quiz Boss</button>
-          </>}
+          {activeTab === 'BOSS_OPS' && <button onClick={() => openQuizBossForm()} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-amber-900/20"><Brain className="w-4 h-4" /> Deploy Quiz Boss</button>}
         </div>
       </div>
 
@@ -449,7 +503,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           <TabButton id="PROTOCOLS" label="XP Protocols" icon={Zap} />
           <TabButton id="MISSIONS" label="Missions" icon={Target} />
           <TabButton id="MISSION_CONTROL" label="Mission Control" icon={Briefcase} />
-          <TabButton id="BOSS_OPS" label="Boss Ops" icon={Skull} />
+          <TabButton id="BOSS_OPS" label="Boss Ops" icon={Brain} />
+          <TabButton id="TUTORING" label="Tutoring" icon={GraduationCap} />
         </div>
         <div className="p-6">
           {activeTab === 'OPERATIVES' && (
@@ -615,97 +670,123 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
 
           {activeTab === 'BOSS_OPS' && (
             <div className="space-y-4">
-              {bosses.length === 0 && (
-                <div className="text-center py-16 text-gray-500">
-                  <Skull className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="font-bold">No boss encounters deployed.</p>
-                  <p className="text-sm mt-1">Deploy a boss to challenge your operatives.</p>
+              <p className="text-xs text-gray-500">Students deal damage by answering questions correctly. Deploy quiz bosses that require mastery of class material to defeat.</p>
+
+              {quizBosses.length === 0 && (
+                <div className="text-center py-14 text-gray-500">
+                  <Brain className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold">No quiz bosses deployed.</p>
+                  <p className="text-sm mt-1">Deploy a quiz boss to challenge students with educational content.</p>
                 </div>
               )}
-              {bosses.map(boss => {
-                const hpPercent = boss.maxHp > 0 ? Math.max(0, boss.currentHp / boss.maxHp * 100) : 0;
-                const isExpired = new Date(boss.deadline) < new Date();
+
+              {quizBosses.map(quiz => {
+                const hpPercent = quiz.maxHp > 0 ? Math.max(0, (quiz.currentHp || quiz.maxHp) / quiz.maxHp * 100) : 0;
+                const isExpired = new Date(quiz.deadline) < new Date();
                 return (
-                <div key={boss.id} className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all ${boss.isActive && !isExpired ? 'bg-red-600/10 border-red-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
+                <div key={quiz.id} className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all mb-3 ${quiz.isActive && !isExpired ? 'bg-amber-600/10 border-amber-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${boss.isActive && !isExpired ? 'bg-red-600 text-white shadow-lg shadow-red-900/40' : 'bg-gray-800 text-gray-400'}`}>
-                      <Skull className="w-7 h-7" />
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${quiz.isActive && !isExpired ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'bg-gray-800 text-gray-400'}`}>
+                      <Brain className="w-7 h-7" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-lg text-white truncate">{boss.name}</h4>
-                      <p className="text-sm text-gray-500 truncate">{boss.description}</p>
+                      <h4 className="font-bold text-lg text-white truncate">{quiz.bossName}</h4>
+                      <p className="text-sm text-gray-500 truncate">{quiz.description}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {boss.currentHp.toLocaleString()}/{boss.maxHp.toLocaleString()}</span>
-                        <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">+{boss.xpRewardPerHit} XP/hit</span>
-                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{boss.classType || 'GLOBAL'}</span>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">{quiz.questions.length} Questions</span>
+                        <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {(quiz.currentHp || quiz.maxHp).toLocaleString()}/{quiz.maxHp.toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{quiz.damagePerCorrect} dmg/correct</span>
+                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quiz.classType}</span>
                         {isExpired && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">EXPIRED</span>}
                       </div>
-                      {/* HP bar */}
                       <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                        <div className={`h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-green-500' : hpPercent > 20 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${hpPercent}%` }} />
+                        <div className={`h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-amber-500' : hpPercent > 20 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${hpPercent}%` }} />
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button onClick={() => openBossForm(boss)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
-                    <button onClick={() => handleToggleBoss(boss)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${boss.isActive ? 'bg-red-600' : 'bg-gray-700'}`}>
-                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${boss.isActive ? 'translate-x-6' : ''}`} />
+                    <button onClick={() => openQuizBossForm(quiz)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
+                    <button onClick={() => handleToggleQuizBoss(quiz)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${quiz.isActive ? 'bg-amber-600' : 'bg-gray-700'}`}>
+                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${quiz.isActive ? 'translate-x-6' : ''}`} />
                     </button>
-                    <button onClick={() => handleDeleteBoss(boss)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteQuizBoss(quiz)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
-              );})}
+                );
+              })}
+            </div>
+          )}
 
-              {/* Quiz Bosses Section */}
-              <div className="mt-8 pt-6 border-t border-white/10">
-                <h3 className="text-lg font-bold text-amber-400 flex items-center gap-2 mb-4">
-                  <Brain className="w-5 h-5" /> Quiz Bosses (Educational)
-                </h3>
-                <p className="text-xs text-gray-500 mb-4">Students deal damage by answering questions correctly. Requires mastery of class material to defeat.</p>
+          {/* Admin Tutoring Oversight */}
+          {activeTab === 'TUTORING' && (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500 mb-2">Monitor peer tutoring sessions. Verify completed sessions to award XP and Flux to tutors.</p>
 
-                {quizBosses.length === 0 && (
-                  <div className="text-center py-10 text-gray-500">
-                    <Brain className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                    <p className="font-bold text-sm">No quiz bosses deployed.</p>
-                    <p className="text-xs mt-1">Deploy a quiz boss to challenge students with educational content.</p>
-                  </div>
-                )}
+              <div className="flex gap-2 mb-4">
+                <button onClick={() => setTutoringActiveTab('pending')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tutoringActiveTab === 'pending' ? 'bg-amber-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  Pending ({pendingTutoringSessions.length})
+                </button>
+                <button onClick={() => setTutoringActiveTab('all')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tutoringActiveTab === 'all' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  All Sessions ({allTutoringSessions.length})
+                </button>
+              </div>
 
-                {quizBosses.map(quiz => {
-                  const hpPercent = quiz.maxHp > 0 ? Math.max(0, (quiz.currentHp || quiz.maxHp) / quiz.maxHp * 100) : 0;
-                  const isExpired = new Date(quiz.deadline) < new Date();
-                  return (
-                  <div key={quiz.id} className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all mb-3 ${quiz.isActive && !isExpired ? 'bg-amber-600/10 border-amber-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${quiz.isActive && !isExpired ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'bg-gray-800 text-gray-400'}`}>
-                        <Brain className="w-7 h-7" />
+              {(tutoringActiveTab === 'pending' ? pendingTutoringSessions : allTutoringSessions).length === 0 && (
+                <div className="text-center py-14 text-gray-500">
+                  <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold">{tutoringActiveTab === 'pending' ? 'No pending sessions.' : 'No tutoring sessions yet.'}</p>
+                </div>
+              )}
+
+              {(tutoringActiveTab === 'pending' ? pendingTutoringSessions : allTutoringSessions).map(session => (
+                <div key={session.id} className={`p-5 rounded-2xl border transition-all ${
+                  session.status === 'VERIFIED' ? 'bg-green-600/5 border-green-500/20' :
+                  session.status === 'MATCHED' || session.status === 'IN_PROGRESS' ? 'bg-purple-600/5 border-purple-500/20' :
+                  session.status === 'OPEN' ? 'bg-blue-600/5 border-blue-500/20' : 'bg-black/20 border-white/10'
+                }`}>
+                  <div className="flex flex-col md:flex-row md:items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <MessageCircle className="w-4 h-4 text-gray-500" />
+                        <h4 className="font-bold text-white text-sm truncate">{session.topic}</h4>
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold ${
+                          session.status === 'OPEN' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                          session.status === 'MATCHED' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                          session.status === 'IN_PROGRESS' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                          session.status === 'VERIFIED' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                          'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                        }`}>{session.status}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-lg text-white truncate">{quiz.bossName}</h4>
-                        <p className="text-sm text-gray-500 truncate">{quiz.description}</p>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <span className="text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">{quiz.questions.length} Questions</span>
-                          <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {(quiz.currentHp || quiz.maxHp).toLocaleString()}/{quiz.maxHp.toLocaleString()}</span>
-                          <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{quiz.damagePerCorrect} dmg/correct</span>
-                          <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quiz.classType}</span>
-                          {isExpired && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">EXPIRED</span>}
-                        </div>
-                        <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                          <div className={`h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-amber-500' : hpPercent > 20 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${hpPercent}%` }} />
-                        </div>
+                      <div className="flex flex-wrap gap-3 text-[10px] text-gray-500">
+                        <span>Requester: <span className="text-gray-300 font-bold">{session.requesterName}</span></span>
+                        {session.tutorName && <span>Tutor: <span className="text-green-400 font-bold">{session.tutorName}</span></span>}
+                        <span>Class: <span className="text-purple-400">{session.classType}</span></span>
+                        <span>{new Date(session.createdAt).toLocaleDateString()}</span>
+                        {session.completedAt && <span>Completed: {new Date(session.completedAt).toLocaleDateString()}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <button onClick={() => openQuizBossForm(quiz)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
-                      <button onClick={() => handleToggleQuizBoss(quiz)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${quiz.isActive ? 'bg-amber-600' : 'bg-gray-700'}`}>
-                        <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${quiz.isActive ? 'translate-x-6' : ''}`} />
-                      </button>
-                      <button onClick={() => handleDeleteQuizBoss(quiz)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                      {session.tutorId && !['VERIFIED', 'COMPLETED'].includes(session.status) && (
+                        <button onClick={() => handleAdminVerifyTutoring(session.id, session.tutorId!)}
+                          className="px-3 py-1.5 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 transition border border-green-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Verify & Award
+                        </button>
+                      )}
+                      {session.status !== 'VERIFIED' && (
+                        <button onClick={() => handleAdminCancelTutoring(session.id)}
+                          className="px-3 py-1.5 bg-red-600/10 text-red-400 rounded-lg hover:bg-red-600/20 transition border border-red-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                          <X className="w-3 h-3" /> Cancel
+                        </button>
+                      )}
+                      {session.status === 'VERIFIED' && (
+                        <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> +{session.xpReward} XP, +{session.fluxReward || 25} Flux
+                        </span>
+                      )}
                     </div>
                   </div>
-                  );
-                })}
-              </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -725,73 +806,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
         </form>
       </Modal>
       <AdjustXPModal user={adjustingUser} onClose={() => setAdjustingUser(null)} onAdjust={handleAdjustXP} />
-
-      {/* Boss Create/Edit Modal */}
-      <Modal isOpen={isBossModalOpen} onClose={() => setIsBossModalOpen(false)} title={editingBoss ? 'Edit Boss Encounter' : 'Deploy Boss Encounter'} maxWidth="max-w-lg">
-        <form onSubmit={handleSaveBoss} className="space-y-4 text-gray-100 p-2">
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Boss Name</label>
-            <input value={bossForm.name} onChange={e => setBossForm({ ...bossForm, name: e.target.value })} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. The Entropy Wyrm" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Description</label>
-            <textarea value={bossForm.description} onChange={e => setBossForm({ ...bossForm, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white resize-none h-20" placeholder="A fearsome creature that feeds on disorder..." />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Max HP</label>
-              <input type="number" value={bossForm.maxHp} onChange={e => setBossForm({ ...bossForm, maxHp: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">XP Per Hit</label>
-              <input type="number" value={bossForm.xpRewardPerHit} onChange={e => setBossForm({ ...bossForm, xpRewardPerHit: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Class</label>
-              <select value={bossForm.classType} onChange={e => setBossForm({ ...bossForm, classType: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">
-                <option value="GLOBAL">All Classes</option>
-                {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Deadline</label>
-              <input type="datetime-local" value={bossForm.deadline} onChange={e => setBossForm({ ...bossForm, deadline: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" />
-            </div>
-          </div>
-          <div className="border-t border-white/10 pt-4">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2 px-1">Completion Rewards</label>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[9px] text-gray-500 mb-1 px-1">XP</label>
-                <input type="number" value={bossForm.rewardXp} onChange={e => setBossForm({ ...bossForm, rewardXp: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold" />
-              </div>
-              <div>
-                <label className="block text-[9px] text-gray-500 mb-1 px-1">Flux</label>
-                <input type="number" value={bossForm.rewardFlux} onChange={e => setBossForm({ ...bossForm, rewardFlux: parseInt(e.target.value) || 0 })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold" />
-              </div>
-              <div>
-                <label className="block text-[9px] text-gray-500 mb-1 px-1">Loot Rarity</label>
-                <select value={bossForm.rewardItemRarity} onChange={e => setBossForm({ ...bossForm, rewardItemRarity: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm font-bold">
-                  <option value="">None</option>
-                  <option value="COMMON">Common</option>
-                  <option value="UNCOMMON">Uncommon</option>
-                  <option value="RARE">Rare</option>
-                  <option value="UNIQUE">Unique</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Image URL (optional)</label>
-            <input value={bossForm.imageUrl} onChange={e => setBossForm({ ...bossForm, imageUrl: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white" placeholder="https://..." />
-          </div>
-          <button type="submit" className="w-full bg-red-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-red-700">
-            {editingBoss ? 'Update Boss' : 'Deploy Boss'}
-          </button>
-        </form>
-      </Modal>
 
       {/* Quiz Boss Create/Edit Modal */}
       <Modal isOpen={isQuizBossModalOpen} onClose={() => setIsQuizBossModalOpen(false)} title={editingQuizBoss ? 'Edit Quiz Boss' : 'Deploy Quiz Boss'} maxWidth="max-w-2xl">
@@ -849,15 +863,36 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
 
           {/* Questions */}
           <div className="border-t border-white/10 pt-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <label className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Questions ({quizBossForm.questions.length})</label>
-              <button type="button" onClick={addQuizQuestion} className="text-xs bg-amber-600/20 text-amber-400 px-3 py-1 rounded-lg hover:bg-amber-600/30 transition font-bold flex items-center gap-1">
-                <Plus className="w-3 h-3" /> Add Question
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleCopyQuizPrompt} className={`text-xs px-3 py-1 rounded-lg transition font-bold flex items-center gap-1 ${promptCopied ? 'bg-green-600/20 text-green-400' : 'bg-purple-600/20 text-purple-400 hover:bg-purple-600/30'}`}>
+                  {promptCopied ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy AI Prompt</>}
+                </button>
+                <label className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
+                  <Upload className="w-3 h-3" /> Import JSON
+                  <input ref={quizFileRef} type="file" accept=".json,.txt" onChange={handleImportQuizQuestions} className="hidden" />
+                </label>
+                <button type="button" onClick={addQuizQuestion} className="text-xs bg-amber-600/20 text-amber-400 px-3 py-1 rounded-lg hover:bg-amber-600/30 transition font-bold flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Add Manual
+                </button>
+              </div>
             </div>
 
+            {importError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400 flex items-center gap-2">
+                <X className="w-4 h-4 flex-shrink-0" />
+                {importError}
+                <button type="button" onClick={() => setImportError(null)} className="ml-auto text-red-500 hover:text-red-300"><X className="w-3 h-3" /></button>
+              </div>
+            )}
+
             {quizBossForm.questions.length === 0 && (
-              <p className="text-xs text-gray-600 text-center py-4">No questions yet. Add questions that students must answer correctly to deal damage.</p>
+              <div className="text-center py-6 space-y-2">
+                <FileJson className="w-8 h-8 mx-auto text-gray-600 opacity-30" />
+                <p className="text-xs text-gray-600">No questions yet.</p>
+                <p className="text-[10px] text-gray-700">Use <span className="text-purple-400">Copy AI Prompt</span> → paste into ChatGPT/Claude → save JSON → <span className="text-blue-400">Import JSON</span></p>
+              </div>
             )}
 
             {quizBossForm.questions.map((q, qIdx) => (

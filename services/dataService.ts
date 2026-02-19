@@ -1012,7 +1012,7 @@ export const dataService = {
 
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
     const result = await callAnswerBossQuiz({ quizId, questionId, answer });
-    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean };
+    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean };
   },
 
   // Admin: subscribe to ALL quiz bosses (including inactive)
@@ -1079,6 +1079,29 @@ export const dataService = {
     await updateDoc(doc(db, 'tutoring_sessions', sessionId), {
       tutorId, tutorName, status: 'MATCHED',
     });
+  },
+
+  // Student marks session as in-progress (work has begun)
+  startTutoringSession: async (sessionId: string) => {
+    await updateDoc(doc(db, 'tutoring_sessions', sessionId), { status: 'IN_PROGRESS' });
+  },
+
+  // Student marks session complete (awaiting admin verification)
+  markTutoringComplete: async (sessionId: string) => {
+    await updateDoc(doc(db, 'tutoring_sessions', sessionId), { status: 'COMPLETED' });
+  },
+
+  // Admin: subscribe to ALL tutoring sessions across classes
+  subscribeToAllTutoringSessions: (callback: (sessions: import('../types').TutoringSession[]) => void) => {
+    const q = query(collection(db, 'tutoring_sessions'), orderBy('createdAt', 'desc'), limit(100));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as import('../types').TutoringSession)));
+    });
+  },
+
+  // Admin: cancel a tutoring session
+  cancelTutoringSession: async (sessionId: string) => {
+    await deleteDoc(doc(db, 'tutoring_sessions', sessionId));
   },
 
   subscribeToTutoringSessions: (classType: string, callback: (sessions: TutoringSession[]) => void) => {

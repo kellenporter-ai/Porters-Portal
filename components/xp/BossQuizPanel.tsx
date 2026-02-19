@@ -159,7 +159,12 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ classType }) => {
         toast.info('Already answered this question!');
       } else if (result.correct) {
         sfx.bossHit();
-        toast.success(`Correct! Dealt ${result.damage} damage!`);
+        if (result.bossDefeated) {
+          sfx.bossDefeated();
+          toast.success('Boss defeated! Completion rewards distributed to all contributors!');
+        } else {
+          toast.success(`Correct! Dealt ${result.damage} damage!`);
+        }
       } else {
         toast.error('Incorrect. No damage dealt.');
       }

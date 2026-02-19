@@ -2286,6 +2286,62 @@ export const dealBossDamage = onCall(async (request) => {
   if (newHp <= 0 && boss.isActive) {
     await bossRef.update({ isActive: false, currentHp: 0 });
     bossDefeated = true;
+
+    // Distribute completion rewards ONLY to contributors who dealt damage
+    const rewards = boss.completionRewards || {};
+    const rewardXp = rewards.xp || 0;
+    const rewardFlux = rewards.flux || 0;
+    const rewardItemRarity = rewards.itemRarity || null;
+
+    if (rewardXp > 0 || rewardFlux > 0 || rewardItemRarity) {
+      // Read damage_log subcollection to find all unique contributors
+      const logSnap = await db.collection(`boss_encounters/${bossId}/damage_log`).get();
+      const contributorIds = new Set<string>();
+      logSnap.forEach(doc => {
+        const entry = doc.data();
+        if (entry.userId) contributorIds.add(entry.userId);
+      });
+
+      // Award each contributor
+      for (const contributorId of contributorIds) {
+        try {
+          const contribRef = db.doc(`users/${contributorId}`);
+          const contribSnap = await contribRef.get();
+          if (!contribSnap.exists) continue;
+          const contribData = contribSnap.data()!;
+          const contribGam = contribData.gamification || {};
+          const contribUpdates: Record<string, any> = {};
+
+          if (rewardXp > 0) {
+            const xpRes = buildXPUpdates(contribData, rewardXp, boss.classType);
+            Object.assign(contribUpdates, xpRes.updates);
+          }
+
+          if (rewardFlux > 0) {
+            const baseCurrency = contribUpdates["gamification.currency"] ?? (contribGam.currency || 0);
+            contribUpdates["gamification.currency"] = baseCurrency + rewardFlux;
+          }
+
+          if (rewardItemRarity) {
+            const loot = generateLoot(contribGam.level || 1, rewardItemRarity);
+            const contribClass = boss.classType && boss.classType !== 'GLOBAL' ? boss.classType : contribData.classType;
+            if (contribClass && contribClass !== "Uncategorized" && contribGam.classProfiles?.[contribClass]) {
+              const inv = contribGam.classProfiles[contribClass].inventory || [];
+              contribUpdates[`gamification.classProfiles.${contribClass}.inventory`] = [...inv, loot];
+            } else {
+              const inv = contribGam.inventory || [];
+              contribUpdates["gamification.inventory"] = [...inv, loot];
+            }
+          }
+
+          if (Object.keys(contribUpdates).length > 0) {
+            await contribRef.update(contribUpdates);
+          }
+        } catch (err) {
+          console.error(`Failed to reward boss contributor ${contributorId}:`, err);
+        }
+      }
+    }
   } else {
     // Always sync currentHp on the boss document for admin panel visibility
     await bossRef.update({ currentHp: newHp });
@@ -2379,11 +2435,76 @@ export const answerBossQuiz = onCall(async (request) => {
   const newHp = Math.max(0, quiz.maxHp - totalDamage);
 
   // Check if boss quiz is defeated
+  let bossDefeated = false;
   if (newHp <= 0 && quiz.isActive) {
     await quizRef.update({ isActive: false, currentHp: 0 });
+    bossDefeated = true;
+
+    // Distribute completion rewards ONLY to contributors who answered questions
+    const rewards = quiz.rewards || {};
+    const rewardXp = rewards.xp || 0;
+    const rewardFlux = rewards.flux || 0;
+    const rewardItemRarity = rewards.itemRarity || null;
+
+    if (rewardXp > 0 || rewardFlux > 0 || rewardItemRarity) {
+      // Find all contributors from boss_quiz_progress collection
+      const progressSnaps = await db.collection('boss_quiz_progress')
+        .where('quizId', '==', quizId)
+        .get();
+
+      const contributorIds = new Set<string>();
+      progressSnaps.forEach(doc => {
+        const data = doc.data();
+        if (data.userId && data.answeredQuestions?.length > 0) {
+          contributorIds.add(data.userId);
+        }
+      });
+
+      // Award each contributor
+      for (const contributorId of contributorIds) {
+        try {
+          const contribRef = db.doc(`users/${contributorId}`);
+          const contribSnap = await contribRef.get();
+          if (!contribSnap.exists) continue;
+          const contribData = contribSnap.data()!;
+          const contribGam = contribData.gamification || {};
+          const contribUpdates: Record<string, any> = {};
+
+          const quizClass = quiz.classType && quiz.classType !== 'GLOBAL' ? quiz.classType : undefined;
+
+          if (rewardXp > 0) {
+            const xpRes = buildXPUpdates(contribData, rewardXp, quizClass);
+            Object.assign(contribUpdates, xpRes.updates);
+          }
+
+          if (rewardFlux > 0) {
+            const baseCurrency = contribUpdates["gamification.currency"] ?? (contribGam.currency || 0);
+            contribUpdates["gamification.currency"] = baseCurrency + rewardFlux;
+          }
+
+          if (rewardItemRarity) {
+            const loot = generateLoot(contribGam.level || 1, rewardItemRarity);
+            const contribClass = quizClass || contribData.classType;
+            if (contribClass && contribClass !== "Uncategorized" && contribGam.classProfiles?.[contribClass]) {
+              const inv = contribGam.classProfiles[contribClass].inventory || [];
+              contribUpdates[`gamification.classProfiles.${contribClass}.inventory`] = [...inv, loot];
+            } else {
+              const inv = contribGam.inventory || [];
+              contribUpdates["gamification.inventory"] = [...inv, loot];
+            }
+          }
+
+          if (Object.keys(contribUpdates).length > 0) {
+            await contribRef.update(contribUpdates);
+          }
+        } catch (err) {
+          console.error(`Failed to reward quiz boss contributor ${contributorId}:`, err);
+        }
+      }
+    }
   }
 
-  return { correct: isCorrect, damage, newHp };
+  return { correct: isCorrect, damage, newHp, bossDefeated };
 });
 
 // ==========================================

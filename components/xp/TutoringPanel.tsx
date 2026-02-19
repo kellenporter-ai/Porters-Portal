@@ -60,6 +60,24 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
     }
   };
 
+  const handleStartSession = async (sessionId: string) => {
+    try {
+      await dataService.startTutoringSession(sessionId);
+      toast.success('Session started!');
+    } catch (err) {
+      toast.error('Failed to start session');
+    }
+  };
+
+  const handleMarkComplete = async (sessionId: string) => {
+    try {
+      await dataService.markTutoringComplete(sessionId);
+      toast.success('Session marked complete — awaiting admin verification.');
+    } catch (err) {
+      toast.error('Failed to mark complete');
+    }
+  };
+
   const handleVerify = async (sessionId: string, tutorId: string) => {
     try {
       const result = await dataService.completeTutoring(sessionId, tutorId);
@@ -71,7 +89,7 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
 
   const openSessions = sessions.filter(s => s.status === 'OPEN');
   const activeSessions = sessions.filter(s => ['MATCHED', 'IN_PROGRESS'].includes(s.status));
-  const completedSessions = sessions.filter(s => ['COMPLETED', 'VERIFIED'].includes(s.status));
+  const completedSessions = sessions.filter(s => s.status === 'VERIFIED');
 
   return (
     <div className="space-y-4">
@@ -155,23 +173,58 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
           <h4 className="text-[10px] font-mono uppercase tracking-widest text-gray-600 flex items-center gap-1">
             <Clock className="w-3 h-3" /> Active Sessions
           </h4>
-          {activeSessions.map(session => (
+          {activeSessions.map(session => {
+            const isParticipant = session.requesterId === userId || session.tutorId === userId;
+            return (
             <div key={session.id} className="p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl">
               <p className="text-sm text-white font-medium">{session.topic}</p>
               <p className="text-[10px] text-gray-500">
                 {session.requesterName} ↔ {session.tutorName || 'Finding tutor...'}
               </p>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_COLORS[session.status]} mt-1 inline-block`}>
-                {session.status}
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_COLORS[session.status]}`}>
+                  {session.status}
+                </span>
+                {/* Matched → Start working */}
+                {session.status === 'MATCHED' && isParticipant && (
+                  <button onClick={() => handleStartSession(session.id)}
+                    className="px-3 py-1 bg-purple-600/20 border border-purple-500/30 text-purple-400 text-xs font-bold rounded-lg hover:bg-purple-600/30 transition">
+                    Start Session
+                  </button>
+                )}
+                {/* In Progress → Mark complete */}
+                {session.status === 'IN_PROGRESS' && isParticipant && (
+                  <button onClick={() => handleMarkComplete(session.id)}
+                    className="px-3 py-1 bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg hover:bg-green-600/30 transition">
+                    <CheckCircle2 className="w-3 h-3 inline mr-1" /> Mark Complete
+                  </button>
+                )}
+                {isAdmin && session.tutorId && session.status !== 'VERIFIED' && (
+                  <button onClick={() => handleVerify(session.id, session.tutorId!)}
+                    className="px-3 py-1 bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg">
+                    <CheckCircle2 className="w-3 h-3 inline mr-1" /> Verify & Award
+                  </button>
+                )}
+              </div>
+            </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Sessions awaiting verification */}
+      {sessions.filter(s => s.status === 'COMPLETED').length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-mono uppercase tracking-widest text-amber-600 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Awaiting Verification
+          </h4>
+          {sessions.filter(s => s.status === 'COMPLETED').map(session => (
+            <div key={session.id} className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+              <p className="text-sm text-white font-medium">{session.topic}</p>
+              <p className="text-[10px] text-gray-500">{session.requesterName} ↔ {session.tutorName}</p>
+              <span className="text-[10px] px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20 mt-1 inline-block">
+                Awaiting teacher verification
               </span>
-              {isAdmin && session.tutorId && session.status !== 'VERIFIED' && (
-                <button
-                  onClick={() => handleVerify(session.id, session.tutorId!)}
-                  className="mt-2 ml-2 px-3 py-1 bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg"
-                >
-                  <CheckCircle2 className="w-3 h-3 inline mr-1" /> Verify & Award
-                </button>
-              )}
             </div>
           ))}
         </div>
