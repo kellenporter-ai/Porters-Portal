@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, WhitelistedUser, DefaultClassTypes } from './types';
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
@@ -60,31 +60,40 @@ const App: React.FC = () => {
   const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCommOpen, setIsCommOpen] = useState(false);
-  const [hasUnreadChat, setHasUnreadChat] = useState(false);
-  const chatLastSeenRef = useRef<number>(
-    parseInt(localStorage.getItem('chatLastSeenAt') || '0', 10)
+  const [unreadChannels, setUnreadChannels] = useState<Set<string>>(new Set());
+  const channelLastSeenRef = useRef<Record<string, number>>(
+    JSON.parse(localStorage.getItem('chatChannelLastSeen') || '{}')
   );
 
-  // Mark chat as read when opened; subscribe to recent messages when closed for unread badge
+  const markChannelRead = useCallback((channelId: string) => {
+    const now = Date.now();
+    channelLastSeenRef.current[channelId] = now;
+    localStorage.setItem('chatChannelLastSeen', JSON.stringify(channelLastSeenRef.current));
+    setUnreadChannels(prev => {
+      if (!prev.has(channelId)) return prev;
+      const next = new Set(prev);
+      next.delete(channelId);
+      return next;
+    });
+  }, []);
+
+  // Subscribe to recent messages for per-channel unread detection
   useEffect(() => {
-    if (isCommOpen) {
-      const now = Date.now();
-      chatLastSeenRef.current = now;
-      localStorage.setItem('chatLastSeenAt', String(now));
-      setHasUnreadChat(false);
-      return;
-    }
-    // When chat is closed, listen for new messages
     const unsub = dataService.subscribeToRecentMessages((msgs) => {
-      if (msgs.length === 0) return;
-      const latest = msgs[0]; // sorted desc by timestamp
-      const latestTime = new Date(latest.timestamp).getTime();
-      if (latestTime > chatLastSeenRef.current && latest.senderId !== user?.id) {
-        setHasUnreadChat(true);
+      const newUnread = new Set<string>();
+      const lastSeen = channelLastSeenRef.current;
+      for (const msg of msgs) {
+        if (!msg.channelId || msg.senderId === user?.id) continue;
+        const msgTime = new Date(msg.timestamp).getTime();
+        const channelSeen = lastSeen[msg.channelId] || 0;
+        if (msgTime > channelSeen) {
+          newUnread.add(msg.channelId);
+        }
       }
+      setUnreadChannels(newUnread);
     });
     return () => unsub();
-  }, [isCommOpen, user?.id]);
+  }, [user?.id]);
 
   // Computed State
   const users = useMemo(() => {
@@ -328,17 +337,19 @@ const App: React.FC = () => {
       {showTools && (
         <PhysicsTools
           onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
-          hasUnreadChat={hasUnreadChat}
+          hasUnreadChat={unreadChannels.size > 0}
         />
       )}
       
       {showComm && (
-        <Communications 
-            user={user} 
-            isOpen={isCommOpen} 
-            onClose={() => setIsCommOpen(false)} 
+        <Communications
+            user={user}
+            isOpen={isCommOpen}
+            onClose={() => setIsCommOpen(false)}
             assignments={assignments}
             classConfigs={classConfigs}
+            unreadChannels={unreadChannels}
+            onMarkChannelRead={markChannelRead}
             onOpenResource={(id) => {
                 openAssignment(id);
             }}

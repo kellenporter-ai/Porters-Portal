@@ -11,13 +11,15 @@ interface CommunicationsProps {
   onClose: () => void;
   assignments: Assignment[];
   classConfigs: ClassConfig[];
+  unreadChannels?: Set<string>;
+  onMarkChannelRead?: (channelId: string) => void;
   onOpenResource?: (id: string) => void;
 }
 
 const QUICK_REACTIONS = ['❤️', '🔥', '✅', '❌', '🧪', '🔭', '🤔', '💯'];
 const EMOJI_GRID = ['😀', '😂', '😍', '😎', '🤔', '🤨', '😐', '🙄', '😴', '🤮', '🤯', '🥳', '😭', '😱', '👍', '👎', '🔥', '✨', '⚛️', '🧪', '🔭', '🔬', '🎓', '📚', '✅', '❌'];
 
-const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, assignments, classConfigs, onOpenResource }) => {
+const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, assignments, classConfigs, unreadChannels, onMarkChannelRead, onOpenResource }) => {
   const { confirm } = useConfirm();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -81,6 +83,50 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       if (!user.mutedUntil) return false;
       return new Date(user.mutedUntil) > new Date();
   }, [user.mutedUntil]);
+
+  // Per-tab unread indicators
+  const hasUnreadMain = useMemo(() => {
+    if (!unreadChannels || unreadChannels.size === 0) return false;
+    return Array.from(unreadChannels).some(ch => ch.startsWith('class_'));
+  }, [unreadChannels]);
+
+  const hasUnreadResources = useMemo(() => {
+    if (!unreadChannels || unreadChannels.size === 0) return false;
+    return Array.from(unreadChannels).some(ch => ch.startsWith('res_'));
+  }, [unreadChannels]);
+
+  const hasUnreadGroups = useMemo(() => {
+    if (!unreadChannels || unreadChannels.size === 0) return false;
+    return Array.from(unreadChannels).some(ch => ch.startsWith('group_'));
+  }, [unreadChannels]);
+
+  // Auto-navigate to first unread channel when opening
+  const hasAutoNavigated = useRef(false);
+  useEffect(() => {
+    if (!isOpen) { hasAutoNavigated.current = false; return; }
+    if (hasAutoNavigated.current || !unreadChannels || unreadChannels.size === 0) return;
+    hasAutoNavigated.current = true;
+    const firstUnread = Array.from(unreadChannels)[0];
+    if (firstUnread.startsWith('class_')) {
+      setActiveTab('Main');
+      const match = chatEnabledClasses.find(c =>
+        `class_${c.replace(/\s+/g, '_').toLowerCase()}` === firstUnread
+      );
+      if (match) setSelectedClass(match);
+    } else if (firstUnread.startsWith('res_')) {
+      setActiveTab('Resources');
+      setSelectedResourceId(firstUnread.replace('res_', ''));
+    } else if (firstUnread.startsWith('group_')) {
+      setActiveTab('Groups');
+      setSelectedGroupId(firstUnread.replace('group_', ''));
+    }
+  }, [isOpen, unreadChannels, chatEnabledClasses]);
+
+  // Mark the current channel as read when viewing it
+  useEffect(() => {
+    if (!isOpen || !activeChannelId) return;
+    onMarkChannelRead?.(activeChannelId);
+  }, [isOpen, activeChannelId, onMarkChannelRead]);
 
   // Admin sees ALL groups for the selected class; students see only their own
   useEffect(() => {
@@ -267,12 +313,22 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       <div className="flex-1 flex overflow-hidden">
         {/* NAV */}
         <div className="w-16 bg-black/20 border-r border-white/5 flex flex-col items-center py-4 gap-4">
-            <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><MessageSquare className="w-5 h-5" /></button>
-            <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><BookOpen className="w-5 h-5" /></button>
+            <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <MessageSquare className="w-5 h-5" />
+                {hasUnreadMain && activeTab !== 'Main' && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
+            </button>
+            <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <BookOpen className="w-5 h-5" />
+                {hasUnreadResources && activeTab !== 'Resources' && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
+            </button>
             {(myGroups.length > 0 || user.role === 'ADMIN') && (
                 <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                     <Users className="w-5 h-5" />
-                    {myGroups.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{myGroups.length}</span>}
+                    {hasUnreadGroups && activeTab !== 'Groups' ? (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                    ) : myGroups.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{myGroups.length}</span>
+                    )}
                 </button>
             )}
             <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><Bookmark className="w-5 h-5" /></button>
@@ -291,9 +347,12 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
                     <div className="space-y-2">
                         {resourceRooms.map(room => (
-                            <div key={room.id} onClick={() => setSelectedResourceId(room.id)} className="group p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all cursor-pointer flex justify-between items-center">
+                            <div key={room.id} onClick={() => setSelectedResourceId(room.id)} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer flex justify-between items-center ${unreadChannels?.has(`res_${room.id}`) ? 'border-indigo-500/40' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition shadow-inner"><Hash className="w-5 h-5" /></div>
+                                    <div className="relative p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition shadow-inner">
+                                        <Hash className="w-5 h-5" />
+                                        {unreadChannels?.has(`res_${room.id}`) && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
+                                    </div>
                                     <div className="min-w-0">
                                         <h4 className="font-bold text-gray-200 text-sm truncate group-hover:text-white transition">{room.title}</h4>
                                         <span className="text-[10px] text-gray-500 uppercase tracking-widest">{room.unit}</span>
@@ -316,9 +375,12 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                 <p className="text-[10px] text-gray-600 mt-1">Your teacher will assign you to a group.</p>
                             </div>
                         ) : myGroups.map(group => (
-                            <div key={group.id} onClick={() => setSelectedGroupId(group.id)} className="group p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all cursor-pointer">
+                            <div key={group.id} onClick={() => setSelectedGroupId(group.id)} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer ${unreadChannels?.has(`group_${group.id}`) ? 'border-cyan-500/40' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition shadow-inner"><Users className="w-5 h-5" /></div>
+                                    <div className="relative p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition shadow-inner">
+                                        <Users className="w-5 h-5" />
+                                        {unreadChannels?.has(`group_${group.id}`) && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
+                                    </div>
                                     <div className="min-w-0">
                                         <h4 className="font-bold text-gray-200 text-sm truncate group-hover:text-white transition">{group.name}</h4>
                                         <span className="text-[10px] text-gray-500">{group.members.length} member{group.members.length !== 1 ? 's' : ''} · {group.classType}</span>
