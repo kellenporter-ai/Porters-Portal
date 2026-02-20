@@ -1856,7 +1856,7 @@ export const claimDailyLogin = onCall(async (request) => {
     const reward = DAILY_LOGIN_REWARDS[dayIndex];
 
     // Award XP via shared helper (must come first so we can layer currency on top)
-    const xpResult = buildXPUpdates(data, reward.xp);
+    const xpResult = buildXPUpdates(data, reward.xp, data.classType);
     const updates: Record<string, unknown> = {
       ...xpResult.updates,
       "gamification.lastLoginRewardDate": today,
@@ -1959,7 +1959,7 @@ export const spinFortuneWheel = onCall(async (request) => {
     let rewardDescription = "";
 
     if (prize.type === "XP") {
-      const xpResult = buildXPUpdates(data, prize.value);
+      const xpResult = buildXPUpdates(data, prize.value, classType || data.classType);
       Object.assign(updates, xpResult.updates);
       // If level-up occurred, buildXPUpdates already set currency to (old + 100).
       // We need to layer the wheel cost deduction on top of that.
@@ -2421,7 +2421,7 @@ export const dealBossDamage = onCall(async (request) => {
 
   // User: award XP + track total boss damage
   const xpReward = boss.xpRewardPerHit || 10;
-  const xpResult = buildXPUpdates(userData, xpReward);
+  const xpResult = buildXPUpdates(userData, xpReward, activeClass);
 
   const bossDamageDealt = gam.bossDamageDealt || {};
   bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + calculatedDamage;
@@ -2659,7 +2659,7 @@ export const answerBossQuiz = onCall(async (request) => {
     }, { merge: true });
 
     // Award XP
-    const xpResult = buildXPUpdates(userData, damage);
+    const xpResult = buildXPUpdates(userData, damage, activeClass);
     batch.update(userRef, xpResult.updates);
 
     // Modifier: healing wave
@@ -2918,7 +2918,7 @@ export const completeTutoring = onCall(async (request) => {
     const fluxReward = session.fluxReward || 25;
 
     const tutorData = tutorSnap.data()!;
-    const xpResult = buildXPUpdates(tutorData, xpReward);
+    const xpResult = buildXPUpdates(tutorData, xpReward, session.classType || tutorData.classType);
     const gam = tutorData.gamification || {};
 
     // Add flux ON TOP of any level-up currency bonus
@@ -2991,7 +2991,7 @@ export const claimKnowledgeLoot = onCall(async (request) => {
     const paths = getProfilePaths(classType);
     const { inventory } = getProfileData(userData, classType);
 
-    const xpResult = buildXPUpdates(userData, gate.rewards.xpBonus);
+    const xpResult = buildXPUpdates(userData, gate.rewards.xpBonus, classType || userData.classType);
     // Use level-up inventory if buildXPUpdates already appended loot to the same path
     const existingInv = xpResult.updates[paths.inventory] || inventory;
     const updates: Record<string, unknown> = {
