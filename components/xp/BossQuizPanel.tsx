@@ -8,6 +8,36 @@ import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target,
 import { deriveCombatStats } from '../../lib/gamification';
 import BattleScene from './BattleScene';
 
+// Seeded PRNG (mulberry32) — deterministic random from a 32-bit seed
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// Simple string → 32-bit hash
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+  }
+  return h;
+}
+
+// Fisher-Yates shuffle with a seeded PRNG — returns index mapping
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const shuffled = [...arr];
+  const rand = mulberry32(seed);
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 interface BossQuizPanelProps {
   userId: string;
   classType: string;
@@ -177,8 +207,14 @@ const QuizBossCard: React.FC<{
   const currentHp = useQuizBossHealth(quiz.id, quiz.maxHp);
   const hpPercent = (currentHp / quiz.maxHp) * 100;
   const playerHpPercent = playerMaxHp > 0 ? (playerHp / playerMaxHp) * 100 : 100;
-  const question = quiz.questions[currentQuestion % quiz.questions.length];
-  const allAnswered = currentQuestion >= quiz.questions.length;
+
+  // Shuffle questions deterministically per student so each sees a unique order
+  const shuffledQuestions = React.useMemo(
+    () => seededShuffle(quiz.questions, hashString(userId + quiz.id)),
+    [quiz.questions, userId, quiz.id]
+  );
+  const question = shuffledQuestions[currentQuestion % shuffledQuestions.length];
+  const allAnswered = currentQuestion >= shuffledQuestions.length;
   const bossDefeated = currentHp <= 0;
 
   // Subscribe to player's progress for this quiz (for endgame display)
@@ -268,7 +304,7 @@ const QuizBossCard: React.FC<{
           ) : question ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Question {currentQuestion + 1} / {quiz.questions.length}</span>
+                <span>Question {currentQuestion + 1} / {shuffledQuestions.length}</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                   question.difficulty === 'HARD' ? 'bg-red-500/20 text-red-400' :
                   question.difficulty === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
