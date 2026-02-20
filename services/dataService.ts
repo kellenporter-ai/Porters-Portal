@@ -662,6 +662,13 @@ export const dataService = {
     await updateDoc(doc(db, 'users', userId), { section });
   },
 
+  // Per-class section update (new model: classSections map)
+  updateUserClassSection: async (userId: string, classType: string, section: string) => {
+    await updateDoc(doc(db, 'users', userId), {
+      [`classSections.${classType}`]: section || null,
+    });
+  },
+
   removeFromWhitelist: async (email: string) => {
     try {
       await deleteDoc(doc(db, 'allowed_emails', email));

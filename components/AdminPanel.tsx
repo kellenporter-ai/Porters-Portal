@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory } from '../types';
-import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle } from 'lucide-react';
+import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
+import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle, CalendarClock, FileText, Rocket } from 'lucide-react';
 import Modal from './Modal';
 import QuestionBankManager from './QuestionBankManager';
 import SectionPicker from './SectionPicker';
@@ -12,6 +12,7 @@ interface AdminPanelProps {
   assignments: Assignment[];
   submissions: Submission[];
   classConfigs: ClassConfig[];
+  users: User[];
   onCreateAssignment: (assignment: Partial<Assignment>) => Promise<void>;
   onDeleteAssignment?: (id: string) => void;
   onPreviewAssignment?: (id: string) => void;
@@ -30,21 +31,21 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-4 h-4" />
 };
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, classConfigs, onCreateAssignment, onPreviewAssignment, availableSections = [] }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, classConfigs, users, onCreateAssignment, onPreviewAssignment, availableSections = [] }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [filterClass, setFilterClass] = useState<string>('All Classes');
   const [filterCategory, setFilterCategory] = useState<string>('All Categories');
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [qbAssignment, setQbAssignment] = useState<Assignment | null>(null);
 
   const [newAssignment, setNewAssignment] = useState<Partial<Assignment>>({
-    title: '', 
-    description: '', 
+    title: '',
+    description: '',
     status: AssignmentStatus.ACTIVE,
     unit: 'Unit 1: Overview',
     category: 'Textbook',
@@ -54,7 +55,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
 
   const [selectedClasses, setSelectedClasses] = useState<Set<string>>(new Set([DefaultClassTypes.AP_PHYSICS]));
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
+  const [scheduleDate, setScheduleDate] = useState('');
   const [isUploadingMain, setIsUploadingMain] = useState(false);
+
+  const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
 
   // Fix: Explicitly type availableClasses to string[] to resolve Property 'map' does not exist on type 'unknown' error
   const availableClasses = useMemo<string[]>(() => {
@@ -62,6 +66,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
     const configs = (classConfigs || []).map((c: ClassConfig) => c.className);
     return Array.from(new Set(['All Classes', ...defaults, ...configs]));
   }, [classConfigs]);
+
+  // Compute sections filtered by the first selected target class
+  const classSections = useMemo(() => {
+    const firstClass = Array.from(selectedClasses)[0];
+    if (!firstClass) return availableSections;
+    const perClass = getSectionsForClass(students, firstClass);
+    return perClass.length > 0 ? perClass : availableSections;
+  }, [selectedClasses, students, availableSections]);
 
   const filteredAssignments = useMemo<Assignment[]>(() => {
     return assignments.filter(a => {
@@ -75,42 +87,56 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
     const groups: Record<string, Assignment[]> = {};
     filteredAssignments.forEach((a: Assignment) => {
         // Group by Class First if All Classes is selected, else just Unit
-        const groupKey = filterClass === 'All Classes' 
+        const groupKey = filterClass === 'All Classes'
             ? `${a.classType.toUpperCase()} — ${a.unit || 'Unassigned'}`
             : (a.unit || 'Unassigned');
-            
+
         if (!groups[groupKey]) groups[groupKey] = [];
         groups[groupKey].push(a);
     });
-    
+
     return Object.keys(groups).sort().reduce((obj, key) => {
         obj[key] = groups[key];
         return obj;
     }, {} as Record<string, Assignment[]>);
   }, [filteredAssignments, filterClass]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDeploy = async (status: AssignmentStatus, scheduledAt?: string) => {
     if (selectedClasses.size === 0) { toast.error("Select a target class."); return; }
     setIsSubmitting(true);
     try {
         const sectionPayload = selectedSections.length > 0 ? { targetSections: selectedSections } : {};
+        const schedPayload = scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {};
+        const payload = { ...newAssignment, status, ...sectionPayload, ...schedPayload };
         if (isEditing && newAssignment.id) {
-            await onCreateAssignment({ ...newAssignment, classType: Array.from(selectedClasses)[0], ...sectionPayload });
+            await onCreateAssignment({ ...payload, classType: Array.from(selectedClasses)[0] });
         } else {
             await Promise.all(Array.from(selectedClasses).map(className =>
-                onCreateAssignment({ ...newAssignment, classType: className, ...sectionPayload })
+                onCreateAssignment({ ...payload, classType: className })
             ));
         }
         setIsModalOpen(false);
         setIsEditing(false);
+        setScheduleDate('');
+        toast.success(status === AssignmentStatus.DRAFT ? 'Draft saved.' : scheduledAt ? 'Deployment scheduled.' : 'Resource deployed.');
     } catch (err) { console.error(err); } finally { setIsSubmitting(false); }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleDeploy(AssignmentStatus.ACTIVE);
+  };
+
+  const handleQuickDeploy = async (assign: Assignment) => {
+    await dataService.updateAssignmentStatus(assign.id, AssignmentStatus.ACTIVE);
+    toast.success(`"${assign.title}" deployed.`);
   };
 
   const handleEdit = (assignment: Assignment) => {
       setNewAssignment(assignment);
       setSelectedClasses(new Set([assignment.classType]));
       setSelectedSections(assignment.targetSections || []);
+      setScheduleDate(assignment.scheduledAt ? assignment.scheduledAt.slice(0, 16) : '');
       setIsEditing(true);
       setIsModalOpen(true);
   };
@@ -130,6 +156,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
     });
   }, [submissions]);
 
+  const getStatusBadge = (assign: Assignment) => {
+    if (assign.status === AssignmentStatus.DRAFT) {
+      return <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Draft</span>;
+    }
+    if (assign.scheduledAt && new Date(assign.scheduledAt) > new Date()) {
+      return <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1"><CalendarClock className="w-3 h-3" />{new Date(assign.scheduledAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -137,7 +173,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Admin System</h1>
           <p className="text-gray-400">Resource deployment and operational oversight.</p>
         </div>
-        <button onClick={() => { setNewAssignment({ title: '', description: '', status: AssignmentStatus.ACTIVE, unit: 'Unit 1: Overview', category: 'Textbook', htmlContent: '', contentUrl: '', resources: [] }); setIsEditing(false); setIsModalOpen(true); }} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl shadow-xl transition-all font-bold flex items-center gap-2">
+        <button onClick={() => { setNewAssignment({ title: '', description: '', status: AssignmentStatus.ACTIVE, unit: 'Unit 1: Overview', category: 'Textbook', htmlContent: '', contentUrl: '', resources: [] }); setSelectedSections([]); setScheduleDate(''); setIsEditing(false); setIsModalOpen(true); }} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl shadow-xl transition-all font-bold flex items-center gap-2">
           <Plus className="w-5 h-5" /> Deploy Resource
         </button>
       </div>
@@ -172,15 +208,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                         </div>
                         {!expandedUnits.has(unit) && (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                {items.map((assign: Assignment) => (
-                                    <div key={assign.id} className={`p-4 rounded-2xl border transition group flex justify-between items-center ${assign.status === AssignmentStatus.ARCHIVED ? 'bg-white/2 border-white/5 opacity-60' : 'bg-white/5 border-white/10 hover:border-purple-500/50'}`}>
+                                {items.map((assign: Assignment) => {
+                                    const badge = getStatusBadge(assign);
+                                    return (
+                                    <div key={assign.id} className={`p-4 rounded-2xl border transition group flex justify-between items-center ${assign.status === AssignmentStatus.ARCHIVED ? 'bg-white/2 border-white/5 opacity-60' : assign.status === AssignmentStatus.DRAFT ? 'bg-blue-900/10 border-blue-500/20' : 'bg-white/5 border-white/10 hover:border-purple-500/50'}`}>
                                         <div className="flex items-center gap-4 min-w-0 pr-4 flex-1">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${assign.status === AssignmentStatus.ACTIVE ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-500/20 text-gray-500'}`}>
-                                                {CATEGORY_ICONS[assign.category || 'Supplemental']}
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${assign.status === AssignmentStatus.DRAFT ? 'bg-blue-500/20 text-blue-400' : assign.status === AssignmentStatus.ACTIVE ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-500/20 text-gray-500'}`}>
+                                                {assign.status === AssignmentStatus.DRAFT ? <FileText className="w-4 h-4" /> : CATEGORY_ICONS[assign.category || 'Supplemental']}
                                             </div>
                                             <div className="truncate flex-1">
                                                 <div className="flex items-center gap-2 overflow-hidden">
                                                     <h4 className="font-bold text-gray-200 text-sm truncate flex-1">{assign.title}</h4>
+                                                    {badge}
                                                     <span className="text-[9px] text-gray-500 uppercase font-mono px-2 py-0.5 bg-black/40 rounded border border-white/5 flex-shrink-0 whitespace-nowrap">
                                                         {assign.classType}
                                                     </span>
@@ -189,6 +228,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0">
+                                            {assign.status === AssignmentStatus.DRAFT && (
+                                                <button onClick={() => handleQuickDeploy(assign)} className="p-2 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition" title="Deploy Now"><Rocket className="w-4 h-4" /></button>
+                                            )}
                                             <button onClick={() => setQbAssignment(assign)} className="p-2 text-purple-400 hover:bg-purple-500/20 rounded-lg transition" title="Question Bank"><Brain className="w-4 h-4" /></button>
                                             <button onClick={() => onPreviewAssignment?.(assign.id)} className="p-2 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><MonitorPlay className="w-4 h-4" /></button>
                                             <button onClick={() => handleEdit(assign)} className="p-2 text-gray-300 hover:bg-white/10 rounded-lg transition"><Edit2 className="w-4 h-4" /></button>
@@ -196,7 +238,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                                             <button onClick={async () => { if(await confirm({ message: "Delete this resource permanently?", confirmLabel: "Delete" })) await dataService.deleteAssignment(assign.id); }} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition" title="Delete resource" aria-label="Delete resource"><Trash2 className="w-4 h-4" /></button>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -257,11 +300,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Target Classes</label>
                 <div className="flex flex-wrap gap-2">
                     {availableClasses.filter(c => c !== 'All Classes').map(c => (
-                        <button key={c} type="button" onClick={() => { const s = new Set(selectedClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setSelectedClasses(s); }} className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${selectedClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
+                        <button key={c} type="button" onClick={() => { const s = new Set(selectedClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setSelectedClasses(s); setSelectedSections([]); }} className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${selectedClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
                     ))}
                 </div>
             </div>
-            <SectionPicker availableSections={availableSections} selectedSections={selectedSections} onChange={setSelectedSections} />
+            <SectionPicker availableSections={classSections} selectedSections={selectedSections} onChange={setSelectedSections} />
             <div className="bg-purple-900/20 border border-purple-500/30 p-5 rounded-2xl">
                 <label className="block text-sm font-bold text-purple-300 mb-2">HTML Interactive Upload</label>
                 <input type="file" accept=".html,.htm" className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-purple-600 file:text-white" onChange={async (e) => { if(e.target.files?.[0]) { setIsUploadingMain(true); try { const url = await dataService.uploadHtmlResource(e.target.files[0]); setNewAssignment({...newAssignment, contentUrl: url}); toast.success('File uploaded!'); } catch (err) { toast.error('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error')); } finally { setIsUploadingMain(false); } } }} />
@@ -274,9 +317,47 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description <span className="text-gray-600">(optional)</span></label>
                 <textarea className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 resize-none h-20" placeholder="Brief description for AI prompts and student context..." value={newAssignment.description} onChange={e => setNewAssignment({...newAssignment, description: e.target.value})} />
             </div>
-            <button type="submit" disabled={isSubmitting} className="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2">
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Commit Deployment"}
-            </button>
+
+            {/* Schedule */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Schedule Deployment <span className="text-gray-600">(optional — leave blank for immediate)</span></label>
+                <input
+                  type="datetime-local"
+                  value={scheduleDate}
+                  onChange={e => setScheduleDate(e.target.value)}
+                  className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleDeploy(AssignmentStatus.DRAFT)}
+                  className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition"
+                >
+                  <FileText className="w-4 h-4" /> Save Draft
+                </button>
+                {scheduleDate ? (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleDeploy(AssignmentStatus.ACTIVE, scheduleDate)}
+                    className="flex-[2] bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CalendarClock className="w-4 h-4" /> Schedule Deployment</>}
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-[2] bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Commit Deployment"}
+                  </button>
+                )}
+            </div>
         </form>
       </Modal>
 

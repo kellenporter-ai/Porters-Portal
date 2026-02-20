@@ -49,11 +49,12 @@ interface MissionFormModalProps {
     form: MissionFormState;
     setForm: (form: MissionFormState) => void;
     onSubmit: (e: React.FormEvent) => void;
+    onSaveDraft?: () => void;
     isSubmitting: boolean;
     availableSections?: string[];
 }
 
-const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, isSubmitting, availableSections = [] }) => {
+const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, onSaveDraft, isSubmitting, availableSections = [] }) => {
     const isSkillCheck = form.type === 'SKILL_CHECK';
 
     return (
@@ -215,9 +216,14 @@ const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, fo
                     </div>
                 )}
 
-                <button type="submit" disabled={isSubmitting} className="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-purple-700 disabled:opacity-50">
-                    {isSubmitting ? 'Transmitting...' : 'Broadcast Mission'}
-                </button>
+                <div className="flex gap-3">
+                    {onSaveDraft && (
+                        <button type="button" disabled={isSubmitting} onClick={onSaveDraft} className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50">Save Draft</button>
+                    )}
+                    <button type="submit" disabled={isSubmitting} className="flex-[2] bg-purple-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-purple-700 disabled:opacity-50">
+                        {isSubmitting ? 'Transmitting...' : 'Broadcast Mission'}
+                    </button>
+                </div>
             </form>
         </Modal>
     );

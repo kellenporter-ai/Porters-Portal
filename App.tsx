@@ -457,6 +457,7 @@ const App: React.FC = () => {
                     <AdminPanel
                       assignments={assignments}
                       submissions={submissions}
+                      users={rawUsers}
                       onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }}
                       classConfigs={classConfigs}
                       availableSections={availableSections}

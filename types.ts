@@ -166,7 +166,8 @@ export interface User {
   role: UserRole;
   classType?: ClassType; 
   enrolledClasses?: ClassType[]; 
-  section?: string; // Class period / section (e.g. "Period 3", "Block A")
+  section?: string; // LEGACY — single section (kept for backward compat)
+  classSections?: Record<string, string>; // Per-class sections, e.g. { "AP Physics": "Period 3", "Forensic Science": "Period 5" }
   isWhitelisted: boolean;
   avatarUrl?: string;
   settings?: UserSettings;
@@ -274,6 +275,7 @@ export interface Assignment {
   resources: Resource[];
   publicComments: Comment[];
   dueDate?: string;
+  scheduledAt?: string; // ISO date — if set & future, hidden from students until this time
   targetSections?: string[]; // e.g. ["Period 1", "Period 3"] — empty/undefined = all sections
 }
 
@@ -334,6 +336,7 @@ export interface XPEvent {
   type: 'GLOBAL' | 'CLASS_SPECIFIC';
   targetClass?: string;
   expiresAt?: string | null;
+  scheduledAt?: string | null; // ISO date — deploy at this time; null/undefined = immediate
   targetSections?: string[];
 }
 
@@ -580,6 +583,7 @@ export interface BossQuizEvent {
   classType: string;
   isActive: boolean;
   deadline: string;
+  scheduledAt?: string | null; // ISO date — boss hidden until this time
   questions: BossQuizQuestion[];
   damagePerCorrect: number; // HP damage per correct answer
   rewards: {
@@ -863,4 +867,25 @@ export interface StudentBucketProfile {
   };
   recommendation: BucketRecommendation;
   createdAt: string;                  // ISO timestamp
+}
+
+// ========================================
+// SECTION HELPERS
+// ========================================
+
+/** Get a student's section for a specific class, falling back to legacy `section` field */
+export function getUserSectionForClass(user: User, classType: string): string | undefined {
+  return user.classSections?.[classType] ?? (
+    (user.classType === classType || user.enrolledClasses?.includes(classType)) ? user.section : undefined
+  );
+}
+
+/** Compute available sections for a given class from student data */
+export function getSectionsForClass(students: User[], classType: string): string[] {
+  const sections = new Set<string>();
+  students.forEach(s => {
+    const sec = getUserSectionForClass(s, classType);
+    if (sec) sections.add(sec);
+  });
+  return Array.from(sections).sort();
 }

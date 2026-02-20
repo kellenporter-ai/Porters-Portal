@@ -83,20 +83,27 @@ const UserManagement: React.FC<UserManagementProps> = ({
   // Include ALL student users so 'ghost' accounts can be managed
   const students = users.filter(u => u.role === 'STUDENT');
 
-  // Collect all known sections across students
+  // Collect all known sections across students (from both legacy and classSections)
   const knownSections = useMemo(() => {
     const sections = new Set<string>();
-    students.forEach(s => { if (s.section) sections.add(s.section); });
+    students.forEach(s => {
+      if (s.classSections) Object.values(s.classSections).forEach(v => { if (v) sections.add(v); });
+      if (s.section) sections.add(s.section);
+    });
     return Array.from(sections).sort();
   }, [students]);
 
-  const handleSetSection = async (studentId: string, section: string) => {
+  const handleSetSection = async (studentId: string, section: string, classType?: string) => {
     try {
-      await dataService.updateUserSection(studentId, section);
+      if (classType) {
+        await dataService.updateUserClassSection(studentId, classType, section);
+      } else {
+        await dataService.updateUserSection(studentId, section);
+      }
       setEditingSectionId(null);
       setSectionInput('');
       setCustomSectionInput('');
-      toast.success(`Section updated to ${section || 'none'}`);
+      toast.success(`Section updated to ${section || 'none'}${classType ? ` for ${classType}` : ''}`);
     } catch {
       toast.error('Failed to update section');
     }
@@ -456,22 +463,30 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         </td>
                         <td className="p-4 text-center">
                           {editingSectionId === student.id ? (
-                            <div className="flex flex-col items-center gap-1.5">
-                              <select
-                                value={sectionInput}
-                                onChange={e => {
-                                  setSectionInput(e.target.value);
-                                  if (e.target.value !== '__custom__') {
-                                    handleSetSection(student.id, e.target.value);
-                                  }
-                                }}
-                                className="bg-black/40 border border-purple-500/50 rounded-lg px-2 py-1 text-[11px] text-white font-bold focus:outline-none w-28"
-                                autoFocus
-                              >
-                                <option value="">No Section</option>
-                                {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
-                                <option value="__custom__">+ New Section</option>
-                              </select>
+                            <div className="flex flex-col items-center gap-2">
+                              {/* Per-class section assignment */}
+                              {(student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean)).map(cls => {
+                                if (!cls) return null;
+                                const currentSec = student.classSections?.[cls] || (student.section && (student.classType === cls) ? student.section : '');
+                                return (
+                                  <div key={cls} className="flex items-center gap-1.5 text-[10px]">
+                                    <span className="text-gray-500 font-mono truncate max-w-[60px]" title={cls}>{cls.split(' ').pop()}</span>
+                                    <select
+                                      value={currentSec}
+                                      onChange={e => {
+                                        const val = e.target.value;
+                                        if (val === '__custom__') { setSectionInput('__custom__'); setCustomSectionInput(''); }
+                                        else handleSetSection(student.id, val, cls);
+                                      }}
+                                      className="bg-black/40 border border-purple-500/50 rounded-lg px-1.5 py-1 text-[11px] text-white font-bold focus:outline-none w-24"
+                                    >
+                                      <option value="">None</option>
+                                      {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
+                                      <option value="__custom__">+ New</option>
+                                    </select>
+                                  </div>
+                                );
+                              })}
                               {sectionInput === '__custom__' && (
                                 <div className="flex gap-1">
                                   <input
@@ -479,20 +494,22 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                     onChange={e => setCustomSectionInput(e.target.value)}
                                     placeholder="e.g. Period 2"
                                     className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white w-24 focus:outline-none focus:border-purple-500/50"
-                                    onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) handleSetSection(student.id, customSectionInput.trim()); }}
+                                    onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}}
                                     autoFocus
                                   />
-                                  <button onClick={() => { if (customSectionInput.trim()) handleSetSection(student.id, customSectionInput.trim()); }} className="text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
+                                  <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
                                 </div>
                               )}
-                              <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[10px] text-gray-500 hover:text-white transition">Cancel</button>
+                              <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[10px] text-gray-500 hover:text-white transition">Done</button>
                             </div>
                           ) : (
                             <button
-                              onClick={() => { setEditingSectionId(student.id); setSectionInput(student.section || ''); setCustomSectionInput(''); }}
-                              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/20'}`}
+                              onClick={() => { setEditingSectionId(student.id); setSectionInput(''); setCustomSectionInput(''); }}
+                              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/20'}`}
                             >
-                              {student.section || 'Assign'}
+                              {student.classSections && Object.keys(student.classSections).length > 0
+                                ? Object.values(student.classSections).filter(Boolean).join(', ') || 'Assign'
+                                : student.section || 'Assign'}
                             </button>
                           )}
                         </td>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType, BossQuestionBank, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../types';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType, BossQuestionBank, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, getSectionsForClass } from '../types';
 import BossAvatar from './xp/BossAvatar';
 import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2, Database, BarChart3, Crown, Swords, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -123,9 +123,31 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
   const availableSections = useMemo(() => {
     const sections = new Set<string>();
-    students.forEach(s => { if (s.section) sections.add(s.section); });
+    students.forEach(s => {
+      if (s.classSections) Object.values(s.classSections).forEach(v => { if (v) sections.add(v); });
+      else if (s.section) sections.add(s.section);
+    });
     return Array.from(sections).sort();
   }, [students]);
+
+  // Class-filtered sections for deployment forms
+  const protocolSections = useMemo(() => {
+    if (newEventData.type !== 'CLASS_SPECIFIC' || !newEventData.targetClass) return availableSections;
+    const cs = getSectionsForClass(students, newEventData.targetClass);
+    return cs.length > 0 ? cs : availableSections;
+  }, [newEventData.type, newEventData.targetClass, students, availableSections]);
+
+  const missionSections = useMemo(() => {
+    if (!missionForm.targetClass) return availableSections;
+    const cs = getSectionsForClass(students, missionForm.targetClass);
+    return cs.length > 0 ? cs : availableSections;
+  }, [missionForm.targetClass, students, availableSections]);
+
+  const bossSections = useMemo(() => {
+    if (quizBossForm.classType === 'GLOBAL' || !quizBossForm.classType) return availableSections;
+    const cs = getSectionsForClass(students, quizBossForm.classType);
+    return cs.length > 0 ? cs : availableSections;
+  }, [quizBossForm.classType, students, availableSections]);
 
   const getAggregateGearScore = (student: User): number => {
       const profiles = student.gamification?.classProfiles;
@@ -140,7 +162,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       .filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesClass = filterClass === 'All Classes' || s.classType === filterClass || s.enrolledClasses?.includes(filterClass);
-        const matchesSection = filterSection === 'All Sections' || s.section === filterSection;
+        const studentSections = s.classSections ? Object.values(s.classSections) : [];
+        const matchesSection = filterSection === 'All Sections' || s.section === filterSection || studentSections.includes(filterSection);
         return matchesSearch && matchesClass && matchesSection;
       })
       .sort((a, b) => {
@@ -998,7 +1021,27 @@ RULES:
       </div>
 
       <InspectInventoryModal user={inspectingUser} onClose={() => setInspectingUser(null)} onDeleteItem={handleDeleteItem} onUnequipItem={handleUnequipItem} onGrantFlux={handleGrantFlux} />
-      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} isSubmitting={isSubmittingQuest} availableSections={availableSections} />
+      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} onSaveDraft={async () => {
+        const statRequirements: Record<string, number> = {};
+        if (missionForm.techReq > 0) statRequirements.tech = missionForm.techReq;
+        if (missionForm.focusReq > 0) statRequirements.focus = missionForm.focusReq;
+        if (missionForm.analysisReq > 0) statRequirements.analysis = missionForm.analysisReq;
+        if (missionForm.charismaReq > 0) statRequirements.charisma = missionForm.charismaReq;
+        const draft: Quest = {
+          id: Math.random().toString(36).substring(2, 9), title: missionForm.title,
+          description: missionForm.description, xpReward: missionForm.xpReward, fluxReward: missionForm.fluxReward,
+          isActive: false, type: missionForm.type as Quest['type'], statRequirements,
+          startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
+          expiresAt: null, itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
+          rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
+          targetClass: missionForm.targetClass || undefined,
+          targetSections: missionForm.targetSections.length > 0 ? missionForm.targetSections : undefined
+        };
+        await dataService.saveQuest(draft);
+        toast.success('Mission saved as draft (standby).');
+        setMissionForm(INITIAL_MISSION_STATE);
+        setIsQuestModalOpen(false);
+      }} isSubmitting={isSubmittingQuest} availableSections={missionSections} />
       <Modal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} title="New XP Protocol Deployment">
         <form onSubmit={handleCreateEvent} className="space-y-4 text-gray-100 p-2">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Protocol Title</label><input value={newEventData.title} onChange={e => setNewEventData({...newEventData, title: e.target.value})} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. Double XP Weekend" /></div>
@@ -1007,8 +1050,11 @@ RULES:
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Uplink Type</label><select value={newEventData.type} onChange={e => setNewEventData({...newEventData, type: e.target.value as 'GLOBAL' | 'CLASS_SPECIFIC'})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold"><option value="GLOBAL">Global Node</option><option value="CLASS_SPECIFIC">Class Sub-Node</option></select></div>
           </div>
           {newEventData.type === 'CLASS_SPECIFIC' && <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Sub-Node</label><select value={newEventData.targetClass} onChange={e => setNewEventData({...newEventData, targetClass: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">{Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}</select></div>}
-          <SectionPicker availableSections={availableSections} selectedSections={newEventData.targetSections} onChange={s => setNewEventData({...newEventData, targetSections: s})} />
-          <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-blue-700">Initiate Uplink</button>
+          <SectionPicker availableSections={protocolSections} selectedSections={newEventData.targetSections} onChange={s => setNewEventData({...newEventData, targetSections: s})} />
+          <div className="flex gap-3">
+            <button type="button" onClick={async () => { const event: XPEvent = { id: Math.random().toString(36).substring(2, 9), title: newEventData.title, multiplier: newEventData.multiplier, isActive: false, type: newEventData.type, ...(newEventData.type === 'CLASS_SPECIFIC' ? { targetClass: newEventData.targetClass } : {}), ...(newEventData.targetSections.length > 0 ? { targetSections: newEventData.targetSections } : {}) }; await dataService.saveXPEvent(event); setIsEventModalOpen(false); setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: DefaultClassTypes.AP_PHYSICS, targetSections: [] }); toast.success('Protocol saved as draft (standby).'); }} className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition">Save Draft</button>
+            <button type="submit" className="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-blue-700">Initiate Uplink</button>
+          </div>
         </form>
       </Modal>
       <AdjustXPModal user={adjustingUser} onClose={() => setAdjustingUser(null)} onAdjust={handleAdjustXP} />
@@ -1078,7 +1124,7 @@ RULES:
               </select>
             </div>
           </div>
-          <SectionPicker availableSections={availableSections} selectedSections={quizBossForm.targetSections} onChange={s => setQuizBossForm({ ...quizBossForm, targetSections: s })} />
+          <SectionPicker availableSections={bossSections} selectedSections={quizBossForm.targetSections} onChange={s => setQuizBossForm({ ...quizBossForm, targetSections: s })} />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Deadline</label>
@@ -1252,9 +1298,32 @@ RULES:
             ))}
           </div>
 
-          <button type="submit" className="w-full bg-amber-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-amber-700">
-            {editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
-          </button>
+          <div className="flex gap-3">
+            {!editingQuizBoss && (
+              <button type="button" onClick={async () => {
+                if (quizBossForm.questions.length === 0) { toast.error('Add at least one question.'); return; }
+                const usedBankIds = [...new Set(quizBossForm.questions.map(q => (q as Record<string, unknown>).bankId).filter(Boolean))] as string[];
+                const quizData: Record<string, unknown> = {
+                  id: Math.random().toString(36).substring(2, 12), bossName: quizBossForm.bossName, description: quizBossForm.description,
+                  maxHp: quizBossForm.maxHp, currentHp: quizBossForm.maxHp, classType: quizBossForm.classType,
+                  isActive: false, deadline: quizBossForm.deadline ? new Date(quizBossForm.deadline).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
+                  damagePerCorrect: quizBossForm.damagePerCorrect,
+                  questions: quizBossForm.questions.map(q => ({ id: q.id, stem: q.stem, options: q.options.filter(o => o.trim()), correctAnswer: q.correctAnswer, difficulty: q.difficulty, ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}), ...((q as Record<string, unknown>).bankId ? { bankId: (q as Record<string, unknown>).bankId } : {}) })),
+                  rewards: { xp: quizBossForm.rewardXp, flux: quizBossForm.rewardFlux, ...(quizBossForm.rewardItemRarity ? { itemRarity: quizBossForm.rewardItemRarity } : {}) },
+                  ...(quizBossForm.targetSections.length > 0 ? { targetSections: quizBossForm.targetSections } : {}),
+                  bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
+                  ...(formModifiers.length > 0 ? { modifiers: formModifiers } : {}),
+                  ...(usedBankIds.length > 0 ? { questionBankIds: usedBankIds } : {}),
+                };
+                await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
+                toast.success('Quiz boss saved as draft (inactive).');
+                setIsQuizBossModalOpen(false);
+              }} className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition">Save Draft</button>
+            )}
+            <button type="submit" className={`${editingQuizBoss ? 'w-full' : 'flex-[2]'} bg-amber-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-amber-700`}>
+              {editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
+            </button>
+          </div>
         </form>
       </Modal>
 
