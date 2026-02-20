@@ -141,7 +141,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           if (!e.isActive) return false;
           if (e.type !== 'GLOBAL' && e.targetClass !== activeClass) return false;
           if (e.scheduledAt && new Date(e.scheduledAt) > new Date()) return false;
-          if (e.targetSections?.length && !e.targetSections.includes(user.classSections?.[activeClass] || user.section || '')) return false;
+          if (e.targetSections?.length) {
+            const evtClass = e.type !== 'GLOBAL' && e.targetClass ? e.targetClass : activeClass;
+            const sec = user.classSections?.[evtClass] || user.classSections?.[activeClass] || user.section || '';
+            if (!e.targetSections.includes(sec)) return false;
+          }
           return true;
         });
         setActiveEvent(active || null);
@@ -234,11 +238,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const visibleAnnouncements = useMemo(() => {
     const dismissed = user.gamification?.dismissedAnnouncements || [];
-    return announcements.filter(a =>
-      !dismissed.includes(a.id) &&
-      (a.classType === 'GLOBAL' || a.classType === activeClass) &&
-      (!a.targetSections?.length || a.targetSections.includes(user.classSections?.[activeClass] || user.section || ''))
-    );
+    return announcements.filter(a => {
+      if (dismissed.includes(a.id)) return false;
+      if (a.classType !== 'GLOBAL' && a.classType !== activeClass) return false;
+      if (a.targetSections?.length) {
+        const annClass = a.classType !== 'GLOBAL' ? a.classType : activeClass;
+        const sec = user.classSections?.[annClass] || user.classSections?.[activeClass] || user.section || '';
+        if (!a.targetSections.includes(sec)) return false;
+      }
+      return true;
+    });
   }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.classSections, user.section]);
 
   const handleDismissAnnouncement = async (id: string) => {
@@ -1290,7 +1299,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-              <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+              <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
           </div>
       </div>
 

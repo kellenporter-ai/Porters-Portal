@@ -42,6 +42,7 @@ interface BossQuizPanelProps {
   userId: string;
   classType: string;
   userSection?: string;
+  userClassSections?: Record<string, string>;
   playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
   playerAppearance?: {
     bodyType?: 'A' | 'B' | 'C';
@@ -403,7 +404,7 @@ const QuizBossCard: React.FC<{
   );
 };
 
-const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
+const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, userClassSections, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
   const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -431,7 +432,13 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     // Hide future-scheduled bosses
     if (q.scheduledAt && new Date(q.scheduledAt) > new Date()) return false;
     // Filter by section if the quiz targets specific sections
-    if (q.targetSections?.length && !q.targetSections.includes(userSection || '')) return false;
+    if (q.targetSections?.length) {
+      // Resolve the student's section: try per-class section for the quiz's class,
+      // then fall back to per-class section for the active class, then legacy section
+      const quizClass = q.classType !== 'GLOBAL' ? q.classType : classType;
+      const studentSection = userClassSections?.[quizClass] || userClassSections?.[classType] || userSection || '';
+      if (!q.targetSections.includes(studentSection)) return false;
+    }
     return true;
   });
 

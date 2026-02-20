@@ -102,7 +102,7 @@ const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, fo
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Class</label>
                         <select
                             value={form.targetClass}
-                            onChange={e => setForm({...form, targetClass: e.target.value})}
+                            onChange={e => setForm({...form, targetClass: e.target.value, targetSections: []})}
                             className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none"
                         >
                             <option value="">All Classes</option>
