@@ -29,7 +29,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
-  const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 });
+  const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({});
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -39,10 +39,17 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   const updatePosition = useCallback(() => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
+    const panelWidth = 320; // w-80 = 20rem = 320px
     if (dropUp) {
-      setPanelPos({ bottom: window.innerHeight - rect.top + 8, right: window.innerWidth - rect.right });
+      // Desktop sidebar: open upward, align left edge so it doesn't overflow off-screen
+      const left = Math.max(8, rect.left);
+      // If it would overflow right edge, align to right instead
+      const adjustedLeft = left + panelWidth > window.innerWidth - 8 ? undefined : left;
+      const right = adjustedLeft == null ? 8 : undefined;
+      setPanelPos({ bottom: window.innerHeight - rect.top + 8, left: adjustedLeft, right });
     } else {
-      setPanelPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+      // Mobile header: open downward, align right edge to button
+      setPanelPos({ top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) });
     }
   }, [dropUp]);
 
@@ -138,7 +145,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
           style={{
             ...(panelPos.top != null ? { top: panelPos.top } : {}),
             ...(panelPos.bottom != null ? { bottom: panelPos.bottom } : {}),
-            right: panelPos.right,
+            ...(panelPos.left != null ? { left: panelPos.left } : {}),
+            ...(panelPos.right != null ? { right: panelPos.right } : {}),
           }}
         >
           <div className="flex items-center justify-between p-3 border-b border-white/5">

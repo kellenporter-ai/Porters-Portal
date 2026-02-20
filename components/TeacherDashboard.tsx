@@ -175,7 +175,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+    <div className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 transition-[padding] duration-300 ${selectedStudentId ? 'lg:pr-[520px]' : ''}`}>
       <div className="flex justify-between items-end">
         <div>
             <h1 className="text-3xl font-bold text-white mb-2">Teacher Dashboard</h1>
