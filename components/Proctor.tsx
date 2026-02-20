@@ -4,7 +4,7 @@ import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle } from 'lucide-react';
+import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
@@ -22,7 +22,7 @@ interface ProctorProps {
 // PROCTOR BRIDGE PROTOCOL
 // ============================================================
 // HTML practice sets communicate with the parent app via postMessage.
-// 
+//
 // IFRAME → PARENT messages:
 //   { type: 'portal-ready' }
 //     Sent when the HTML file has loaded and wants to receive saved state.
@@ -33,32 +33,68 @@ interface ProctorProps {
 //   { type: 'portal-answer', payload: { questionId: string, correct: boolean, attempts: number } }
 //     Sent after the student submits an answer. Triggers XP award if correct + first attempt.
 //
+//   { type: 'portal-complete', payload: { score: number, totalQuestions: number, correctAnswers: number } }
+//     Sent when the student finishes/completes the entire module. Creates a permanent completion snapshot.
+//
+//   { type: 'portal-replay' }
+//     Sent when the student wants to replay a completed module. Resets active state but preserves completion records.
+//
 // PARENT → IFRAME messages:
-//   { type: 'portal-init', payload: { userId: string, savedState: {...} | null } }
-//     Sent in response to 'portal-ready'. Provides the user ID and any saved state.
+//   { type: 'portal-init', payload: { userId: string, savedState: {...} | null, completionInfo: {...} | null } }
+//     Sent in response to 'portal-ready'. Provides saved state and any completion records.
 //
 //   { type: 'portal-xp-result', payload: { questionId: string, awarded: boolean, xp: number } }
 //     Sent after XP award attempt. Lets the HTML file show a toast or badge.
 //
+//   { type: 'portal-reset-ok' }
+//     Sent after a replay request is processed. Active state is cleared; completions preserved.
+//
 // To integrate, HTML files replace their Firebase SDK with the bridge snippet.
 // See public/portalBridge.js for the drop-in replacement.
 // ============================================================
+
+interface CompletionSnapshot {
+  completedAt: string;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  answeredQuestions: string[];
+}
+
+interface PracticeProgressDoc {
+  userId: string;
+  assignmentId: string;
+  state: Record<string, unknown> | null;
+  currentQuestion: number;
+  answeredQuestions: string[];
+  lastUpdated: string;
+  // Completion tracking
+  completed: boolean;
+  completedAt: string | null;
+  bestScore: number | null;
+  totalCompletions: number;
+  completionHistory: CompletionSnapshot[];
+}
 
 const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, userId, assignmentId, classType }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
   const [isActive, setIsActive] = useState(true);
-  const [displayTime, setDisplayTime] = useState(0); 
+  const [displayTime, setDisplayTime] = useState(0);
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [xpToast, setXpToast] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [xpEarnedSession, setXpEarnedSession] = useState(0);
-  
+  const [moduleCompleted, setModuleCompleted] = useState(false);
+  const [completionCount, setCompletionCount] = useState(0);
+  const [showReplayPrompt, setShowReplayPrompt] = useState(false);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const iframeWrapperRef = useRef<HTMLDivElement>(null);
   const awardedQuestionsRef = useRef<Set<string>>(new Set());
+  const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
@@ -93,7 +129,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
   // ONE-TIME Submission on Unmount
   useEffect(() => {
       return () => { onCompleteRef.current(metricsRef.current); };
-  }, []); 
+  }, []);
 
   // ============================================================
   // BRIDGE: Listen for postMessage from iframe
@@ -120,21 +156,45 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
           setBridgeConnected(true);
           try {
             const progressDoc = await getDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`));
-            const docData = progressDoc.exists() ? progressDoc.data() : null;
-            const savedState = docData ? { state: docData.state || null, currentQuestion: docData.currentQuestion ?? 0 } : null;
+            const docData = progressDoc.exists() ? progressDoc.data() as PracticeProgressDoc : null;
+
+            // Restore awarded questions set
             const answeredQuestions: string[] = docData?.answeredQuestions || [];
             answeredQuestions.forEach((qId: string) => awardedQuestionsRef.current.add(qId));
             setQuestionsAnswered(answeredQuestions.length);
 
+            // Track completion state
+            if (docData) {
+              progressDocRef.current = docData;
+              if (docData.completed) {
+                setModuleCompleted(true);
+                setCompletionCount(docData.totalCompletions || 1);
+              }
+            }
+
+            // Build saved state (always send the last active state)
+            const savedState = docData ? { state: docData.state || null, currentQuestion: docData.currentQuestion ?? 0 } : null;
+
+            // Build completion info for the iframe
+            const completionInfo = docData?.completed ? {
+              completed: true,
+              completedAt: docData.completedAt,
+              bestScore: docData.bestScore,
+              totalCompletions: docData.totalCompletions || 0,
+              lastCompletion: docData.completionHistory?.length > 0
+                ? docData.completionHistory[docData.completionHistory.length - 1]
+                : null,
+            } : null;
+
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
-              payload: { userId, savedState }
+              payload: { userId, savedState, completionInfo }
             }, targetOrigin);
           } catch (err) {
             console.error('Bridge: Failed to load saved state', err);
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
-              payload: { userId, savedState: null }
+              payload: { userId, savedState: null, completionInfo: null }
             }, targetOrigin);
           }
           break;
@@ -144,18 +204,118 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
           const { state, currentQuestion } = data.payload || {};
           if (!state) break;
           try {
-            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), {
+            // Preserve existing completion data when saving
+            const existingDoc = progressDocRef.current;
+            const saveData: Record<string, unknown> = {
               userId,
               assignmentId,
               state,
               currentQuestion: currentQuestion ?? 0,
               answeredQuestions: Array.from(awardedQuestionsRef.current),
-              lastUpdated: new Date().toISOString()
-            }, { merge: true });
+              lastUpdated: new Date().toISOString(),
+            };
+            // Always preserve completion fields if they exist
+            if (existingDoc?.completed) {
+              saveData.completed = existingDoc.completed;
+              saveData.completedAt = existingDoc.completedAt;
+              saveData.bestScore = existingDoc.bestScore;
+              saveData.totalCompletions = existingDoc.totalCompletions;
+              saveData.completionHistory = existingDoc.completionHistory;
+            }
+
+            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+
+            // Update local ref
+            progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
+
             iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, targetOrigin);
           } catch (err) {
             console.error('Bridge: Save failed', err);
             iframe.contentWindow?.postMessage({ type: 'portal-save-error' }, targetOrigin);
+          }
+          break;
+        }
+
+        case 'portal-complete': {
+          // Module completed — create a permanent completion snapshot
+          const { score, totalQuestions, correctAnswers } = data.payload || {};
+          try {
+            const existingDoc = progressDocRef.current;
+            const now = new Date().toISOString();
+            const snapshot: CompletionSnapshot = {
+              completedAt: now,
+              score: score ?? 0,
+              totalQuestions: totalQuestions ?? 0,
+              correctAnswers: correctAnswers ?? 0,
+              answeredQuestions: Array.from(awardedQuestionsRef.current),
+            };
+
+            const completionHistory = [...(existingDoc?.completionHistory || []), snapshot];
+            const bestScore = Math.max(existingDoc?.bestScore || 0, score || 0);
+            const totalCompletions = (existingDoc?.totalCompletions || 0) + 1;
+
+            const saveData: Record<string, unknown> = {
+              userId,
+              assignmentId,
+              completed: true,
+              completedAt: existingDoc?.completedAt || now, // Preserve first completion date
+              bestScore,
+              totalCompletions,
+              completionHistory,
+              answeredQuestions: Array.from(awardedQuestionsRef.current),
+              lastUpdated: now,
+            };
+            // Preserve current active state too
+            if (existingDoc?.state) {
+              saveData.state = existingDoc.state;
+              saveData.currentQuestion = existingDoc.currentQuestion;
+            }
+
+            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+
+            progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
+            setModuleCompleted(true);
+            setCompletionCount(totalCompletions);
+
+            sfx.xpGain();
+            setXpToast({ text: 'Module Complete!', type: 'success' });
+            setTimeout(() => setXpToast(null), 3000);
+
+            iframe.contentWindow?.postMessage({ type: 'portal-complete-ok', payload: { totalCompletions, bestScore } }, targetOrigin);
+          } catch (err) {
+            console.error('Bridge: Completion save failed', err);
+            iframe.contentWindow?.postMessage({ type: 'portal-complete-error' }, targetOrigin);
+          }
+          break;
+        }
+
+        case 'portal-replay': {
+          // Student wants to replay — reset active state but PRESERVE completion records
+          try {
+            const existingDoc = progressDocRef.current;
+            const saveData: Record<string, unknown> = {
+              userId,
+              assignmentId,
+              state: null,
+              currentQuestion: 0,
+              // Keep answered questions for XP tracking (they won't get double-awarded)
+              answeredQuestions: Array.from(awardedQuestionsRef.current),
+              lastUpdated: new Date().toISOString(),
+              // Preserve ALL completion data
+              completed: existingDoc?.completed || false,
+              completedAt: existingDoc?.completedAt || null,
+              bestScore: existingDoc?.bestScore || null,
+              totalCompletions: existingDoc?.totalCompletions || 0,
+              completionHistory: existingDoc?.completionHistory || [],
+            };
+
+            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+            progressDocRef.current = saveData as unknown as PracticeProgressDoc;
+            setShowReplayPrompt(false);
+
+            iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
+          } catch (err) {
+            console.error('Bridge: Replay reset failed', err);
           }
           break;
         }
@@ -212,6 +372,43 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [userId, assignmentId, classType, handleInteraction]);
+
+  // Handle replay button click (parent-initiated replay)
+  const handleReplayClick = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !userId || !assignmentId) return;
+
+    // Send replay message to iframe
+    const iframeSrc = iframe.src ? new URL(iframe.src).origin : '';
+    const targetOrigin = iframeSrc || window.location.origin;
+
+    // Reset active state server-side
+    (async () => {
+      try {
+        const existingDoc = progressDocRef.current;
+        const saveData: Record<string, unknown> = {
+          userId,
+          assignmentId,
+          state: null,
+          currentQuestion: 0,
+          answeredQuestions: Array.from(awardedQuestionsRef.current),
+          lastUpdated: new Date().toISOString(),
+          completed: existingDoc?.completed || false,
+          completedAt: existingDoc?.completedAt || null,
+          bestScore: existingDoc?.bestScore || null,
+          totalCompletions: existingDoc?.totalCompletions || 0,
+          completionHistory: existingDoc?.completionHistory || [],
+        };
+        await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+        progressDocRef.current = saveData as unknown as PracticeProgressDoc;
+        setShowReplayPrompt(false);
+
+        iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
+      } catch (err) {
+        console.error('Replay reset failed', err);
+      }
+    })();
+  }, [userId, assignmentId]);
 
   // Fullscreen toggle for iframe
   const toggleFullscreen = useCallback(() => {
@@ -270,8 +467,33 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                         <Zap className="w-3 h-3" /> {xpEarnedSession} XP
                     </div>
                 )}
+                {/* Completion badge */}
+                {moduleCompleted && (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-green-300 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+                        <Trophy className="w-3 h-3" />
+                        Completed{completionCount > 1 ? ` (${completionCount}x)` : ''}
+                    </div>
+                )}
             </div>
             <div className="flex items-center gap-3">
+                {/* Replay button for completed modules */}
+                {moduleCompleted && bridgeConnected && (
+                    showReplayPrompt ? (
+                        <div className="flex items-center gap-2 bg-black/60 rounded-lg px-3 py-1 border border-white/10">
+                            <span className="text-[10px] text-gray-400">Replay from start?</span>
+                            <button onClick={handleReplayClick} className="text-[10px] font-bold text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
+                            <button onClick={() => setShowReplayPrompt(false)} className="text-[10px] font-bold text-gray-500 hover:text-gray-300 px-2 py-0.5 rounded transition">Cancel</button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setShowReplayPrompt(true)}
+                            className="flex items-center gap-1.5 text-[10px] text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
+                            title="Replay this module from the start (your completion record is preserved)"
+                        >
+                            <RotateCcw className="w-3 h-3" /> Replay
+                        </button>
+                    )
+                )}
                 {contentUrl && (
                     <button
                         onClick={toggleFullscreen}
@@ -299,8 +521,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
         {xpToast && (
             <div className="absolute top-14 right-4 z-30 animate-in slide-in-from-right fade-in duration-300">
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg font-bold text-sm ${
-                    xpToast.type === 'success' 
-                        ? 'bg-green-600/90 text-white border border-green-400/30' 
+                    xpToast.type === 'success'
+                        ? 'bg-green-600/90 text-white border border-green-400/30'
                         : 'bg-blue-600/90 text-white border border-blue-400/30'
                 }`}>
                     {xpToast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}

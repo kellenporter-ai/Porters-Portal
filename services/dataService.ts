@@ -1366,4 +1366,25 @@ export const dataService = {
       callback(profiles);
     });
   },
+
+  // --- PRACTICE PROGRESS (completion tracking) ---
+
+  subscribeToStudentPracticeProgress: (userId: string, callback: (progress: Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>) => void) => {
+    const q = query(collection(db, 'practice_progress'), where('userId', '==', userId));
+    return onSnapshot(q, (snapshot) => {
+      const result: Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }> = {};
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.assignmentId && data.completed) {
+          result[data.assignmentId] = {
+            completed: data.completed || false,
+            totalCompletions: data.totalCompletions || 0,
+            bestScore: data.bestScore ?? null,
+            completedAt: data.completedAt ?? null,
+          };
+        }
+      });
+      callback(result);
+    }, () => { /* permission error */ });
+  },
 };

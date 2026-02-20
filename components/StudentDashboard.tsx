@@ -88,6 +88,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [activeEvent, setActiveEvent] = useState<XPEvent | null>(null);
   const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
   
+  // Practice progress (completion badges)
+  const [practiceCompletion, setPracticeCompletion] = useState<Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>>({});
+
   // RPG State
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
@@ -157,6 +160,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               return true;
           }));
       }));
+    } catch { /* permission error — not available */ }
+
+    try {
+      unsubs.push(dataService.subscribeToStudentPracticeProgress(user.id, setPracticeCompletion));
     } catch { /* permission error — not available */ }
 
     return () => unsubs.forEach(u => u());
@@ -1008,26 +1015,36 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                                 const dueColor = daysUntilDue <= 0 ? 'text-red-400' : daysUntilDue <= 2 ? 'text-yellow-400' : 'text-gray-500';
                                                 const engMin = Math.floor(resource.engagementTime / 60);
                                                 const isSubstantial = engMin >= 5;
-                                                
+                                                const completion = practiceCompletion[resource.id];
+                                                const isModuleCompleted = completion?.completed;
+
                                                 return (
-                                                <div 
-                                                    key={resource.id} 
-                                                    className="bg-white/5 border border-white/5 hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4"
+                                                <div
+                                                    key={resource.id}
+                                                    className={`bg-white/5 border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${isModuleCompleted ? 'border-green-500/20' : 'border-white/5'}`}
                                                     onClick={() => onStartAssignment && onStartAssignment(resource.id)}
                                                 >
                                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                                                        isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
                                                         isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
-                                                        resource.lastEngagement ? 'bg-green-500/10 text-green-400' : 
+                                                        resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
                                                         'bg-purple-500/10 text-purple-400 group-hover:scale-110 shadow-lg group-hover:shadow-purple-500/20'
                                                     }`}>
-                                                        {isSubstantial ? <CheckCircle2 className="w-6 h-6" /> : 
-                                                         resource.lastEngagement ? <CheckCircle2 className="w-5 h-5 opacity-60" /> : 
+                                                        {isModuleCompleted ? <CheckCircle2 className="w-6 h-6" /> :
+                                                         isSubstantial ? <CheckCircle2 className="w-6 h-6" /> :
+                                                         resource.lastEngagement ? <CheckCircle2 className="w-5 h-5 opacity-60" /> :
                                                          CATEGORY_ICONS[resource.category || 'Supplemental']}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-black/40 text-gray-500 border border-white/5">{resource.category}</span>
                                                             <h4 className="font-bold text-white text-sm truncate">{resource.title}</h4>
+                                                            {isModuleCompleted && (
+                                                                <span className="text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">
+                                                                    <CheckCircle2 className="w-2.5 h-2.5" />
+                                                                    COMPLETED{(completion?.totalCompletions || 0) > 1 ? ` (${completion.totalCompletions}x)` : ''}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <p className="text-xs text-gray-500 truncate">{resource.description}</p>
@@ -1035,6 +1052,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                                         <div className="flex items-center gap-3 mt-1">
                                                             {resource.lastEngagement && (
                                                                 <span className="text-[9px] text-green-500 font-bold">{engMin}m engaged</span>
+                                                            )}
+                                                            {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
+                                                                <span className="text-[9px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
                                                             )}
                                                             {hasDue && (
                                                                 <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`}>
