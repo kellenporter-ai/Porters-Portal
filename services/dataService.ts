@@ -575,7 +575,7 @@ export const dataService = {
 
   addAssignment: async (assignment: Assignment) => {
     try {
-      const data = {
+      const data: Record<string, unknown> = {
         title: assignment.title,
         description: assignment.description,
         classType: assignment.classType,
@@ -586,7 +586,9 @@ export const dataService = {
         contentUrl: assignment.contentUrl || null,
         resources: assignment.resources || [],
         publicComments: assignment.publicComments || [],
-        dueDate: assignment.dueDate || null
+        dueDate: assignment.dueDate || null,
+        targetSections: assignment.targetSections && assignment.targetSections.length > 0 ? assignment.targetSections : [],
+        scheduledAt: assignment.scheduledAt || null
       };
 
       if (assignment.id) {

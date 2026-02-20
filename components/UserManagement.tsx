@@ -470,7 +470,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 const currentSec = student.classSections?.[cls] || (student.section && (student.classType === cls) ? student.section : '');
                                 return (
                                   <div key={cls} className="flex items-center gap-1.5 text-[10px]">
-                                    <span className="text-gray-500 font-mono truncate max-w-[60px]" title={cls}>{cls.split(' ').pop()}</span>
+                                    <span className="text-gray-500 font-mono whitespace-nowrap text-[9px]" title={cls}>{cls}</span>
                                     <select
                                       value={currentSec}
                                       onChange={e => {
