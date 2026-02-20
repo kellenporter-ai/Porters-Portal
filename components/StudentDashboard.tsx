@@ -1253,7 +1253,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-              <BossQuizPanel classType={activeClass} userSection={user.section} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+              <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.section} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
           </div>
       </div>
 

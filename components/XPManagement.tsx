@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType } from '../types';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType, BossQuestionBank, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../types';
 import BossAvatar from './xp/BossAvatar';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2, Database, BarChart3, Crown, Swords, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import SectionPicker from './SectionPicker';
 import { calculateGearScore } from '../lib/gamification';
@@ -77,6 +77,23 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
   const quizFileRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
+  // Question Bank management state
+  const [questionBanks, setQuestionBanks] = useState<BossQuestionBank[]>([]);
+  const [bossOpsSubTab, setBossOpsSubTab] = useState<'bosses' | 'banks'>('bosses');
+  const [isQuestionBankModalOpen, setIsQuestionBankModalOpen] = useState(false);
+  const [editingBank, setEditingBank] = useState<BossQuestionBank | null>(null);
+  const [bankForm, setBankForm] = useState({ name: '', classType: 'GLOBAL', description: '', questions: [] as { id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; damageBonus: number }[] });
+  const bankFileRef = useRef<HTMLInputElement>(null);
+  const [bankImportError, setBankImportError] = useState<string | null>(null);
+
+  // Modifier editor state in quiz boss form
+  const [formModifiers, setFormModifiers] = useState<BossModifier[]>([]);
+
+  // Admin endgame view state
+  const [endgameQuiz, setEndgameQuiz] = useState<BossQuizEvent | null>(null);
+  const [endgameProgress, setEndgameProgress] = useState<BossQuizProgress[]>([]);
+  const [loadingEndgame, setLoadingEndgame] = useState(false);
+
   // Admin tutoring oversight
   const [tutoringActiveTab, setTutoringActiveTab] = useState<'all' | 'pending'>('pending');
   const [allTutoringSessions, setAllTutoringSessions] = useState<import('../types').TutoringSession[]>([]);
@@ -86,7 +103,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
     const unsubQuests = dataService.subscribeToQuests(setQuests);
     const unsubQuizBosses = dataService.subscribeToAllBossQuizzes(setQuizBosses);
     const unsubTutoring = dataService.subscribeToAllTutoringSessions(setAllTutoringSessions);
-    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); };
+    const unsubBanks = dataService.subscribeToBossQuestionBanks(setQuestionBanks);
+    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); unsubBanks(); };
   }, []);
 
   useEffect(() => {
@@ -282,6 +300,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               bossType: quiz.bossAppearance?.bossType || 'BRUTE',
               bossHue: quiz.bossAppearance?.hue ?? 0,
           });
+          setFormModifiers(quiz.modifiers || []);
       } else {
           setEditingQuizBoss(null);
           const defaultDeadline = new Date();
@@ -294,6 +313,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               bossType: 'BRUTE',
               bossHue: 0,
           });
+          setFormModifiers([]);
       }
       setIsQuizBossModalOpen(true);
   };
@@ -341,6 +361,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           return;
       }
       try {
+          // Collect unique bankIds from imported questions
+          const usedBankIds = [...new Set(quizBossForm.questions.map(q => (q as Record<string, unknown>).bankId).filter(Boolean))] as string[];
           const quizData: Record<string, unknown> = {
               id: editingQuizBoss?.id || Math.random().toString(36).substring(2, 12),
               bossName: quizBossForm.bossName,
@@ -358,6 +380,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
                   correctAnswer: q.correctAnswer,
                   difficulty: q.difficulty,
                   ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}),
+                  ...((q as Record<string, unknown>).bankId ? { bankId: (q as Record<string, unknown>).bankId } : {}),
               })),
               rewards: {
                   xp: quizBossForm.rewardXp,
@@ -366,6 +389,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
               },
               ...(quizBossForm.targetSections.length > 0 ? { targetSections: quizBossForm.targetSections } : {}),
               bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
+              ...(formModifiers.length > 0 ? { modifiers: formModifiers } : {}),
+              ...(usedBankIds.length > 0 ? { questionBankIds: usedBankIds } : {}),
           };
           await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
           toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
@@ -381,6 +406,132 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
       if (!await confirm({ message: `Delete quiz boss "${quiz.bossName}"? This cannot be undone.`, confirmLabel: "Delete" })) return;
       await dataService.deleteBossQuiz(quiz.id);
       toast.success('Quiz boss deleted.');
+  };
+
+  // --- Question Bank handlers ---
+  const openBankForm = (bank?: BossQuestionBank) => {
+      if (bank) {
+          setEditingBank(bank);
+          setBankForm({ name: bank.name, classType: bank.classType, description: bank.description || '', questions: bank.questions.map(q => ({ ...q, damageBonus: q.damageBonus || 0 })) });
+      } else {
+          setEditingBank(null);
+          setBankForm({ name: '', classType: 'GLOBAL', description: '', questions: [] });
+      }
+      setBankImportError(null);
+      setIsQuestionBankModalOpen(true);
+  };
+
+  const handleSaveBank = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (bankForm.questions.length === 0) { toast.error('Add at least one question.'); return; }
+      try {
+          const now = new Date().toISOString();
+          const bank: BossQuestionBank = {
+              id: editingBank?.id || Math.random().toString(36).substring(2, 12),
+              name: bankForm.name,
+              classType: bankForm.classType,
+              description: bankForm.description,
+              questions: bankForm.questions.map(q => ({
+                  id: q.id, stem: q.stem, options: q.options.filter(o => o.trim()),
+                  correctAnswer: q.correctAnswer, difficulty: q.difficulty,
+                  ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}),
+              })),
+              createdAt: editingBank?.createdAt || now,
+              updatedAt: now,
+          };
+          await dataService.saveBossQuestionBank(bank);
+          toast.success(editingBank ? 'Question bank updated.' : 'Question bank created!');
+          setIsQuestionBankModalOpen(false);
+      } catch { toast.error('Failed to save question bank.'); }
+  };
+
+  const handleDeleteBank = async (bank: BossQuestionBank) => {
+      if (!await confirm({ message: `Delete question bank "${bank.name}"? This cannot be undone.`, confirmLabel: 'Delete' })) return;
+      await dataService.deleteBossQuestionBank(bank.id);
+      toast.success('Question bank deleted.');
+  };
+
+  const handleImportBankQuestions = async (e: React.ChangeEvent<HTMLInputElement>, target: 'bank' | 'boss') => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const setError = target === 'bank' ? setBankImportError : setImportError;
+      setError(null);
+      try {
+          const text = await file.text();
+          let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+          cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, ch => ch === '\n' || ch === '\r' || ch === '\t' ? ' ' : '');
+          let parsed;
+          try { parsed = JSON.parse(cleaned); } catch {
+              const match = cleaned.match(/\[[\s\S]*\]/);
+              if (match) {
+                  try { parsed = JSON.parse(match[0]); } catch {
+                      let lastValid = null;
+                      for (let i = match[0].length - 1; i > 0; i--) {
+                          if (match[0][i] === '}') { try { lastValid = JSON.parse(match[0].slice(0, i + 1) + ']'); break; } catch { /* keep searching */ } }
+                      }
+                      if (lastValid) parsed = lastValid;
+                      else throw new Error('Could not parse JSON.');
+                  }
+              } else { throw new Error('No JSON array found.'); }
+          }
+          if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Must be a non-empty JSON array.');
+          const valid = parsed.filter((q: Record<string, unknown>) => q.stem && q.options && q.correctAnswer !== undefined);
+          if (valid.length === 0) throw new Error('No valid questions found.');
+          const imported = valid.map((q: Record<string, unknown>) => ({
+              id: (q.id as string) || Math.random().toString(36).substring(2, 10),
+              stem: q.stem as string, options: (q.options as string[]).slice(0, 4),
+              correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+              difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
+              damageBonus: typeof q.damageBonus === 'number' ? q.damageBonus : 0,
+          }));
+          const skipped = parsed.length - valid.length;
+          if (target === 'bank') {
+              setBankForm(prev => ({ ...prev, questions: [...prev.questions, ...imported] }));
+          } else {
+              setQuizBossForm(prev => ({ ...prev, questions: [...prev.questions, ...imported] }));
+          }
+          toast.success(`Imported ${imported.length} questions${skipped > 0 ? ` (${skipped} skipped)` : ''}`);
+      } catch (err) {
+          setError(err instanceof Error ? err.message : 'Import failed.');
+          toast.error('Failed to import questions.');
+      }
+      if (target === 'bank' && bankFileRef.current) bankFileRef.current.value = '';
+      if (target === 'boss' && quizFileRef.current) quizFileRef.current.value = '';
+  };
+
+  // Import questions from a question bank into the boss form
+  const importBankToBoss = (bank: BossQuestionBank) => {
+      const imported = bank.questions.map(q => ({
+          ...q, damageBonus: q.damageBonus || 0, bankId: bank.id,
+          id: Math.random().toString(36).substring(2, 10), // New IDs to avoid collisions
+      }));
+      setQuizBossForm(prev => ({ ...prev, questions: [...prev.questions, ...imported] }));
+      toast.success(`Imported ${imported.length} questions from "${bank.name}"`);
+  };
+
+  // Toggle a modifier on/off
+  const toggleModifier = (type: BossModifierType) => {
+      setFormModifiers(prev => {
+          const exists = prev.find(m => m.type === type);
+          if (exists) return prev.filter(m => m.type !== type);
+          const def = BOSS_MODIFIER_DEFS[type];
+          return [...prev, { type, ...(def.hasValue ? { value: def.defaultValue } : {}) }];
+      });
+  };
+
+  const updateModifierValue = (type: BossModifierType, value: number) => {
+      setFormModifiers(prev => prev.map(m => m.type === type ? { ...m, value } : m));
+  };
+
+  // --- Admin Endgame View ---
+  const openEndgameView = async (quiz: BossQuizEvent) => {
+      setEndgameQuiz(quiz);
+      setLoadingEndgame(true);
+      try {
+          const progress = await dataService.getBossQuizAllProgress(quiz.id);
+          setEndgameProgress(progress);
+      } catch { toast.error('Failed to load endgame data.'); }
+      setLoadingEndgame(false);
   };
 
   // --- LLM Prompt for quiz boss question generation ---
@@ -425,56 +576,8 @@ RULES:
       toast.success('Prompt copied to clipboard!');
   };
 
-  // --- JSON Import for quiz boss questions ---
-  const handleImportQuizQuestions = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setImportError(null);
-      try {
-          const text = await file.text();
-          let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
-          cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, ch => ch === '\n' || ch === '\r' || ch === '\t' ? ' ' : '');
-
-          let parsed;
-          try { parsed = JSON.parse(cleaned); } catch {
-              const match = cleaned.match(/\[[\s\S]*\]/);
-              if (match) {
-                  try { parsed = JSON.parse(match[0]); } catch {
-                      let lastValid = null;
-                      for (let i = match[0].length - 1; i > 0; i--) {
-                          if (match[0][i] === '}') {
-                              try { lastValid = JSON.parse(match[0].slice(0, i + 1) + ']'); break; } catch { /* keep searching */ }
-                          }
-                      }
-                      if (lastValid) parsed = lastValid;
-                      else throw new Error('Could not parse JSON. Make sure the file contains a valid JSON array.');
-                  }
-              } else { throw new Error('No JSON array found in file.'); }
-          }
-
-          if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Must be a non-empty JSON array.');
-
-          const valid = parsed.filter((q: Record<string, unknown>) => q.stem && q.options && q.correctAnswer !== undefined);
-          if (valid.length === 0) throw new Error('No valid questions found (need stem, options, correctAnswer).');
-
-          const imported = valid.map((q: Record<string, unknown>) => ({
-              id: (q.id as string) || Math.random().toString(36).substring(2, 10),
-              stem: q.stem as string,
-              options: (q.options as string[]).slice(0, 4),
-              correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-              difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
-              damageBonus: typeof q.damageBonus === 'number' ? q.damageBonus : 0,
-          }));
-
-          const skipped = parsed.length - valid.length;
-          setQuizBossForm(prev => ({ ...prev, questions: [...prev.questions, ...imported] }));
-          toast.success(`Imported ${imported.length} questions${skipped > 0 ? ` (${skipped} skipped)` : ''}`);
-      } catch (err) {
-          setImportError(err instanceof Error ? err.message : 'Import failed.');
-          toast.error('Failed to import questions.');
-      }
-      if (quizFileRef.current) quizFileRef.current.value = '';
-  };
+  // --- JSON Import for quiz boss questions (delegates to shared handler) ---
+  const handleImportQuizQuestions = (e: React.ChangeEvent<HTMLInputElement>) => handleImportBankQuestions(e, 'boss');
 
   // --- Admin tutoring handlers ---
   const handleAdminVerifyTutoring = async (sessionId: string, tutorId: string) => {
@@ -687,6 +790,17 @@ RULES:
 
           {activeTab === 'BOSS_OPS' && (
             <div className="space-y-4">
+              {/* Sub-tabs */}
+              <div className="flex gap-2 mb-2">
+                <button onClick={() => setBossOpsSubTab('bosses')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${bossOpsSubTab === 'bosses' ? 'bg-amber-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  <Swords className="w-3 h-3 inline mr-1" /> Active Bosses ({quizBosses.length})
+                </button>
+                <button onClick={() => setBossOpsSubTab('banks')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${bossOpsSubTab === 'banks' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  <Database className="w-3 h-3 inline mr-1" /> Question Banks ({questionBanks.length})
+                </button>
+              </div>
+
+              {bossOpsSubTab === 'bosses' && (<>
               <p className="text-xs text-gray-500">Students deal damage by answering questions correctly. Deploy quiz bosses that require mastery of class material to defeat.</p>
 
               {quizBosses.length === 0 && (
@@ -700,6 +814,7 @@ RULES:
               {quizBosses.map(quiz => {
                 const hpPercent = quiz.maxHp > 0 ? Math.max(0, (quiz.currentHp || quiz.maxHp) / quiz.maxHp * 100) : 0;
                 const isExpired = new Date(quiz.deadline) < new Date();
+                const isDefeated = (quiz.currentHp ?? quiz.maxHp) <= 0 || !quiz.isActive;
                 return (
                 <div key={quiz.id} className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all mb-3 ${quiz.isActive && !isExpired ? 'bg-amber-600/10 border-amber-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
                   <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -711,11 +826,13 @@ RULES:
                       <p className="text-sm text-gray-500 truncate">{quiz.description}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <span className="text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">{quiz.questions.length} Questions</span>
-                        <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {(quiz.currentHp || quiz.maxHp).toLocaleString()}/{quiz.maxHp.toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">HP: {(quiz.currentHp ?? quiz.maxHp).toLocaleString()}/{quiz.maxHp.toLocaleString()}</span>
                         <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{quiz.damagePerCorrect} dmg/correct</span>
                         <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quiz.classType}</span>
+                        {quiz.modifiers?.length ? <span className="text-[10px] font-bold text-pink-400 bg-pink-900/30 px-2 py-0.5 rounded border border-pink-500/20">{quiz.modifiers.length} Modifiers</span> : null}
                         {quiz.targetSections?.length ? <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{quiz.targetSections.join(', ')}</span> : null}
                         {isExpired && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">EXPIRED</span>}
+                        {isDefeated && <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">DEFEATED</span>}
                       </div>
                       <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
                         <div className={`h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-amber-500' : hpPercent > 20 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${hpPercent}%` }} />
@@ -723,6 +840,11 @@ RULES:
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {isDefeated && (
+                      <button onClick={() => openEndgameView(quiz)} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wide">
+                        <BarChart3 className="w-3 h-3 inline mr-1" />Endgame
+                      </button>
+                    )}
                     <button onClick={() => openQuizBossForm(quiz)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
                     <button onClick={() => handleToggleQuizBoss(quiz)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${quiz.isActive ? 'bg-amber-600' : 'bg-gray-700'}`}>
                       <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${quiz.isActive ? 'translate-x-6' : ''}`} />
@@ -732,6 +854,46 @@ RULES:
                 </div>
                 );
               })}
+              </>)}
+
+              {/* Question Banks Sub-tab */}
+              {bossOpsSubTab === 'banks' && (<>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Reusable question banks that can be imported into any boss fight.</p>
+                <button onClick={() => openBankForm()} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition text-xs">
+                  <Plus className="w-3 h-3" /> New Bank
+                </button>
+              </div>
+
+              {questionBanks.length === 0 && (
+                <div className="text-center py-14 text-gray-500">
+                  <Database className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold">No question banks yet.</p>
+                  <p className="text-sm mt-1">Create banks to reuse questions across multiple boss fights.</p>
+                </div>
+              )}
+
+              {questionBanks.map(bank => (
+                <div key={bank.id} className="p-4 rounded-2xl border border-purple-500/20 bg-purple-600/5 flex items-center gap-4 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+                    <Database className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-white text-sm truncate">{bank.name}</h4>
+                    {bank.description && <p className="text-xs text-gray-500 truncate">{bank.description}</p>}
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{bank.questions.length} Questions</span>
+                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{bank.classType}</span>
+                      <span className="text-[10px] text-gray-600">{new Date(bank.updatedAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => openBankForm(bank)} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase"><Pencil className="w-3 h-3 inline mr-1" />Edit</button>
+                    <button onClick={() => handleDeleteBank(bank)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+              </>)}
             </div>
           )}
 
@@ -943,6 +1105,54 @@ RULES:
             </div>
           </div>
 
+          {/* Modifiers */}
+          <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+            <label className="block text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-3">Boss Modifiers ({formModifiers.length} active)</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {(Object.entries(BOSS_MODIFIER_DEFS) as [BossModifierType, typeof BOSS_MODIFIER_DEFS[BossModifierType]][]).map(([type, def]) => {
+                const active = formModifiers.find(m => m.type === type);
+                return (
+                  <div key={type} className={`rounded-lg border p-2 cursor-pointer transition-all ${active ? 'border-pink-500/40 bg-pink-500/10' : 'border-white/10 bg-black/20 hover:border-white/20'}`}>
+                    <button type="button" onClick={() => toggleModifier(type)} className="w-full text-left">
+                      <div className="text-[10px] font-bold text-white">{def.name}</div>
+                      <div className="text-[9px] text-gray-500 leading-tight">{def.description}</div>
+                    </button>
+                    {active && def.hasValue && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <input type="number" value={active.value ?? def.defaultValue}
+                          onChange={e => updateModifierValue(type, parseInt(e.target.value) || 0)}
+                          className="w-16 bg-black/40 border border-white/10 rounded p-1 text-white text-[10px] font-bold"
+                        />
+                        <span className="text-[9px] text-gray-500">{def.unit}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Import from Question Banks */}
+          {questionBanks.length > 0 && (
+          <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+            <label className="block text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-3">Import from Question Banks</label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {questionBanks.filter(b => b.classType === quizBossForm.classType || b.classType === 'GLOBAL' || quizBossForm.classType === 'GLOBAL').map(bank => (
+                <div key={bank.id} className="flex items-center justify-between p-2 rounded-lg border border-white/5 bg-black/20">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-bold text-white">{bank.name}</span>
+                    <span className="text-[10px] text-gray-500 ml-2">{bank.questions.length} questions</span>
+                  </div>
+                  <button type="button" onClick={() => importBankToBoss(bank)}
+                    className="px-2 py-1 bg-purple-600/20 text-purple-400 rounded text-[10px] font-bold hover:bg-purple-600/30 transition flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Import All
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          )}
+
           {/* Questions */}
           <div className="border-t border-white/10 pt-4">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -1046,6 +1256,237 @@ RULES:
             {editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
           </button>
         </form>
+      </Modal>
+
+      {/* Question Bank Create/Edit Modal */}
+      <Modal isOpen={isQuestionBankModalOpen} onClose={() => setIsQuestionBankModalOpen(false)} title={editingBank ? 'Edit Question Bank' : 'New Question Bank'} maxWidth="max-w-2xl">
+        <form onSubmit={handleSaveBank} className="space-y-4 text-gray-100 p-2 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Bank Name</label>
+            <input value={bankForm.name} onChange={e => setBankForm({ ...bankForm, name: e.target.value })} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. AP Physics Unit 3 Questions" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Class</label>
+              <select value={bankForm.classType} onChange={e => setBankForm({ ...bankForm, classType: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold text-sm">
+                <option value="GLOBAL">All Classes</option>
+                {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Description</label>
+              <input value={bankForm.description} onChange={e => setBankForm({ ...bankForm, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm" placeholder="Optional description" />
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <label className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Questions ({bankForm.questions.length})</label>
+              <div className="flex items-center gap-2">
+                <label className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
+                  <Upload className="w-3 h-3" /> Import JSON
+                  <input ref={bankFileRef} type="file" accept=".json,.txt" onChange={e => handleImportBankQuestions(e, 'bank')} className="hidden" />
+                </label>
+                <button type="button" onClick={() => setBankForm(prev => ({ ...prev, questions: [...prev.questions, { id: Math.random().toString(36).substring(2, 10), stem: '', options: ['', '', '', ''], correctAnswer: 0, difficulty: 'MEDIUM' as const, damageBonus: 0 }] }))} className="text-xs bg-purple-600/20 text-purple-400 px-3 py-1 rounded-lg hover:bg-purple-600/30 transition font-bold flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Add Manual
+                </button>
+              </div>
+            </div>
+
+            {bankImportError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400 flex items-center gap-2 mb-3">
+                <X className="w-4 h-4 flex-shrink-0" /> {bankImportError}
+                <button type="button" onClick={() => setBankImportError(null)} className="ml-auto text-red-500 hover:text-red-300"><X className="w-3 h-3" /></button>
+              </div>
+            )}
+
+            {bankForm.questions.length === 0 && (
+              <div className="text-center py-6">
+                <FileJson className="w-8 h-8 mx-auto text-gray-600 opacity-30" />
+                <p className="text-xs text-gray-600 mt-2">No questions yet. Import JSON or add manually.</p>
+              </div>
+            )}
+
+            {bankForm.questions.map((q, qIdx) => (
+              <div key={q.id} className="bg-black/30 rounded-xl border border-white/5 p-3 mb-2 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <textarea value={q.stem} onChange={e => { const qs = [...bankForm.questions]; qs[qIdx] = { ...qs[qIdx], stem: e.target.value }; setBankForm({ ...bankForm, questions: qs }); }}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs resize-none h-12" placeholder={`Question #${qIdx + 1}`} required />
+                  </div>
+                  <button type="button" onClick={() => setBankForm(prev => ({ ...prev, questions: prev.questions.filter((_, i) => i !== qIdx) }))} className="text-gray-600 hover:text-red-400 mt-2"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {q.options.map((opt, optIdx) => (
+                    <div key={optIdx} className="flex items-center gap-1.5">
+                      <button type="button" onClick={() => { const qs = [...bankForm.questions]; qs[qIdx] = { ...qs[qIdx], correctAnswer: optIdx }; setBankForm({ ...bankForm, questions: qs }); }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${q.correctAnswer === optIdx ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-gray-600 text-transparent hover:border-gray-400'}`}>
+                        <Check className="w-2.5 h-2.5" />
+                      </button>
+                      <input value={opt} onChange={e => { const qs = [...bankForm.questions]; const opts = [...qs[qIdx].options]; opts[optIdx] = e.target.value; qs[qIdx] = { ...qs[qIdx], options: opts }; setBankForm({ ...bankForm, questions: qs }); }}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-lg p-1 text-white text-[11px]" placeholder={`Option ${String.fromCharCode(65 + optIdx)}`} required />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <select value={q.difficulty} onChange={e => { const qs = [...bankForm.questions]; qs[qIdx] = { ...qs[qIdx], difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' }; setBankForm({ ...bankForm, questions: qs }); }}
+                    className="bg-black/40 border border-white/10 rounded-lg p-1 text-white text-[10px] font-bold">
+                    <option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+                  </select>
+                  <div className="flex items-center gap-1">
+                    <label className="text-[9px] text-gray-500">Bonus:</label>
+                    <input type="number" value={q.damageBonus} onChange={e => { const qs = [...bankForm.questions]; qs[qIdx] = { ...qs[qIdx], damageBonus: parseInt(e.target.value) || 0 }; setBankForm({ ...bankForm, questions: qs }); }}
+                      className="w-14 bg-black/40 border border-white/10 rounded p-1 text-white text-[10px] font-bold" min={0} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button type="submit" className="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-purple-700">
+            {editingBank ? 'Update Question Bank' : 'Create Question Bank'}
+          </button>
+        </form>
+      </Modal>
+
+      {/* Admin Endgame Stats Modal */}
+      <Modal isOpen={!!endgameQuiz} onClose={() => { setEndgameQuiz(null); setEndgameProgress([]); }} title={endgameQuiz ? `Endgame: ${endgameQuiz.bossName}` : 'Endgame'} maxWidth="max-w-3xl">
+        {loadingEndgame ? (
+          <div className="text-center py-12 text-gray-500">Loading endgame data...</div>
+        ) : endgameQuiz && (
+          <div className="space-y-6 p-2 max-h-[75vh] overflow-y-auto">
+            {/* Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+                <div className="text-2xl font-black text-white">{endgameProgress.length}</div>
+                <div className="text-[10px] text-gray-500 uppercase font-bold">Participants</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+                <div className="text-2xl font-black text-amber-400">{endgameProgress.reduce((s, p) => s + (p.combatStats?.totalDamageDealt || 0), 0).toLocaleString()}</div>
+                <div className="text-[10px] text-gray-500 uppercase font-bold">Total Damage</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+                <div className="text-2xl font-black text-green-400">{endgameProgress.reduce((s, p) => s + (p.combatStats?.questionsCorrect || 0), 0)}</div>
+                <div className="text-[10px] text-gray-500 uppercase font-bold">Total Correct</div>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+                <div className="text-2xl font-black text-red-400">{endgameProgress.reduce((s, p) => s + (p.combatStats?.criticalHits || 0), 0)}</div>
+                <div className="text-[10px] text-gray-500 uppercase font-bold">Total Crits</div>
+              </div>
+            </div>
+
+            {/* Top 5 Leaderboard */}
+            <div>
+              <h4 className="text-sm font-bold text-amber-400 flex items-center gap-2 mb-3"><Crown className="w-4 h-4" /> Top Damage Dealers</h4>
+              <div className="space-y-2">
+                {[...endgameProgress]
+                  .sort((a, b) => (b.combatStats?.totalDamageDealt || 0) - (a.combatStats?.totalDamageDealt || 0))
+                  .slice(0, 5)
+                  .map((prog, idx) => {
+                    const student = users.find(u => u.id === prog.userId);
+                    const stats = prog.combatStats;
+                    const tierIdx = idx;
+                    const multiplier = tierIdx < BOSS_REWARD_TIERS.length ? BOSS_REWARD_TIERS[tierIdx] : 1;
+                    const participated = (stats?.questionsAttempted || 0) >= BOSS_PARTICIPATION_MIN_ATTEMPTS && (stats?.questionsCorrect || 0) >= BOSS_PARTICIPATION_MIN_CORRECT;
+                    const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-400', 'text-purple-400'];
+                    return (
+                      <div key={prog.userId} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-black/20 border-white/5'}`}>
+                        <div className={`text-xl font-black w-8 text-center ${medalColors[idx] || 'text-gray-500'}`}>#{idx + 1}</div>
+                        {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-white/10" alt="" />}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-white truncate">{student?.name || prog.userId}</div>
+                          <div className="flex gap-2 text-[10px] text-gray-500">
+                            <span className="text-amber-400 font-bold">{stats?.totalDamageDealt?.toLocaleString() || 0} dmg</span>
+                            <span>{stats?.questionsCorrect || 0}/{stats?.questionsAttempted || 0} correct</span>
+                            <span>{stats?.criticalHits || 0} crits</span>
+                            <span>Streak: {stats?.longestStreak || 0}</span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {participated ? (
+                            <span className={`text-xs font-bold ${idx < 5 ? medalColors[idx] : 'text-gray-400'}`}>{multiplier}x</span>
+                          ) : (
+                            <span className="text-[10px] text-red-400 font-bold">DNQ</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Full Participant Table */}
+            <div>
+              <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-3"><Eye className="w-4 h-4" /> All Participants</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead><tr className="text-[9px] text-gray-500 uppercase font-bold border-b border-white/5">
+                    <th className="pb-2 pl-2">#</th>
+                    <th className="pb-2">Student</th>
+                    <th className="pb-2 text-center">Damage</th>
+                    <th className="pb-2 text-center">Correct</th>
+                    <th className="pb-2 text-center">Attempted</th>
+                    <th className="pb-2 text-center">Accuracy</th>
+                    <th className="pb-2 text-center">Crits</th>
+                    <th className="pb-2 text-center">Streak</th>
+                    <th className="pb-2 text-center">Mitigated</th>
+                    <th className="pb-2 text-center">Status</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-white/5">
+                    {[...endgameProgress]
+                      .sort((a, b) => (b.combatStats?.totalDamageDealt || 0) - (a.combatStats?.totalDamageDealt || 0))
+                      .map((prog, idx) => {
+                        const student = users.find(u => u.id === prog.userId);
+                        const s = prog.combatStats;
+                        const attempted = s?.questionsAttempted || 0;
+                        const correct = s?.questionsCorrect || 0;
+                        const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+                        const participated = attempted >= BOSS_PARTICIPATION_MIN_ATTEMPTS && correct >= BOSS_PARTICIPATION_MIN_CORRECT;
+                        return (
+                          <tr key={prog.userId} className="hover:bg-white/5">
+                            <td className="py-2 pl-2 font-bold text-gray-500">{idx + 1}</td>
+                            <td className="py-2 font-bold text-white">{student?.name || prog.userId.slice(0, 8)}</td>
+                            <td className="py-2 text-center text-amber-400 font-bold">{(s?.totalDamageDealt || 0).toLocaleString()}</td>
+                            <td className="py-2 text-center text-green-400">{correct}</td>
+                            <td className="py-2 text-center text-gray-400">{attempted}</td>
+                            <td className="py-2 text-center text-gray-300">{accuracy}%</td>
+                            <td className="py-2 text-center text-red-400">{s?.criticalHits || 0}</td>
+                            <td className="py-2 text-center text-purple-400">{s?.longestStreak || 0}</td>
+                            <td className="py-2 text-center text-cyan-400">{s?.damageReduced || 0}</td>
+                            <td className="py-2 text-center">{participated
+                              ? <span className="text-green-400 text-[9px] font-bold">QUALIFIED</span>
+                              : <span className="text-red-400 text-[9px] font-bold">DNQ</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Difficulty Breakdown */}
+            <div>
+              <h4 className="text-sm font-bold text-white mb-3">Performance by Difficulty</h4>
+              <div className="grid grid-cols-3 gap-3">
+                {(['EASY', 'MEDIUM', 'HARD'] as const).map(diff => {
+                  const totalCorrect = endgameProgress.reduce((s, p) => s + (p.combatStats?.correctByDifficulty?.[diff] || 0), 0);
+                  const totalIncorrect = endgameProgress.reduce((s, p) => s + (p.combatStats?.incorrectByDifficulty?.[diff] || 0), 0);
+                  const total = totalCorrect + totalIncorrect;
+                  const accuracy = total > 0 ? Math.round((totalCorrect / total) * 100) : 0;
+                  const color = diff === 'EASY' ? 'green' : diff === 'MEDIUM' ? 'yellow' : 'red';
+                  return (
+                    <div key={diff} className={`bg-${color}-500/5 border border-${color}-500/20 rounded-xl p-3 text-center`}>
+                      <div className={`text-[10px] font-bold text-${color}-400 uppercase mb-1`}>{diff}</div>
+                      <div className="text-lg font-black text-white">{accuracy}%</div>
+                      <div className="text-[10px] text-gray-500">{totalCorrect}/{total} correct</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

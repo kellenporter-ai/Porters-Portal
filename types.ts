@@ -589,6 +589,8 @@ export interface BossQuizEvent {
   };
   targetSections?: string[];
   bossAppearance?: BossAppearance;
+  modifiers?: BossModifier[];
+  questionBankIds?: string[]; // IDs of banks this boss pulled from
 }
 
 export interface BossQuizQuestion {
@@ -598,7 +600,95 @@ export interface BossQuizQuestion {
   correctAnswer: number; // Index
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   damageBonus?: number; // Extra damage for hard questions
+  bankId?: string; // Source question bank (if imported)
 }
+
+// ========================================
+// BOSS QUESTION BANKS
+// ========================================
+
+export interface BossQuestionBank {
+  id: string;
+  name: string;
+  classType: string;
+  description?: string;
+  questions: BossQuizQuestion[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ========================================
+// BOSS MODIFIERS
+// ========================================
+
+export type BossModifierType =
+  | 'PLAYER_DAMAGE_BOOST'   // Students deal +X extra damage
+  | 'BOSS_DAMAGE_BOOST'     // Boss deals +Y extra damage
+  | 'HARD_ONLY'             // Only hard questions
+  | 'DOUBLE_OR_NOTHING'     // 2x damage both ways
+  | 'CRIT_SURGE'            // +X% crit chance
+  | 'ARMOR_BREAK'           // Boss ignores armor
+  | 'HEALING_WAVE'          // Heal X HP on correct answer
+  | 'SHIELD_WALL'           // First N wrong answers blocked per student
+  | 'STREAK_BONUS'          // +X damage per consecutive correct
+  | 'GLASS_CANNON'          // 2x player damage, 0 armor
+  | 'LAST_STAND'            // +50% damage when below 25% HP
+  | 'TIME_PRESSURE';        // Lose HP each question (attrition)
+
+export interface BossModifier {
+  type: BossModifierType;
+  value?: number; // Configurable amount (meaning depends on type)
+  label?: string; // Human-readable override shown to students
+}
+
+export const BOSS_MODIFIER_DEFS: Record<BossModifierType, { name: string; description: string; hasValue: boolean; defaultValue: number; unit: string }> = {
+  PLAYER_DAMAGE_BOOST:  { name: 'Damage Boost',     description: 'Students deal extra damage per correct answer',       hasValue: true,  defaultValue: 25,  unit: '+dmg' },
+  BOSS_DAMAGE_BOOST:    { name: 'Boss Rage',         description: 'Boss deals extra damage per wrong answer',            hasValue: true,  defaultValue: 15,  unit: '+dmg' },
+  HARD_ONLY:            { name: 'Hard Only!',        description: 'Only hard questions appear',                          hasValue: false, defaultValue: 0,   unit: '' },
+  DOUBLE_OR_NOTHING:    { name: 'Double or Nothing', description: '2x damage both ways — correct and wrong',            hasValue: false, defaultValue: 0,   unit: '' },
+  CRIT_SURGE:           { name: 'Critical Surge',    description: 'All students get bonus crit chance',                  hasValue: true,  defaultValue: 20,  unit: '%' },
+  ARMOR_BREAK:          { name: 'Armor Break',       description: 'Boss ignores all armor — damage reduction disabled',  hasValue: false, defaultValue: 0,   unit: '' },
+  HEALING_WAVE:         { name: 'Healing Wave',      description: 'Restore HP on each correct answer',                   hasValue: true,  defaultValue: 10,  unit: 'HP' },
+  SHIELD_WALL:          { name: 'Shield Wall',       description: 'First N wrong answers blocked per student',           hasValue: true,  defaultValue: 2,   unit: 'blocks' },
+  STREAK_BONUS:         { name: 'Streak Bonus',      description: 'Bonus damage per consecutive correct answer',         hasValue: true,  defaultValue: 10,  unit: '+dmg/streak' },
+  GLASS_CANNON:         { name: 'Glass Cannon',      description: '2x player damage but armor is disabled',              hasValue: false, defaultValue: 0,   unit: '' },
+  LAST_STAND:           { name: 'Last Stand',        description: '+50% damage when below 25% HP',                       hasValue: false, defaultValue: 0,   unit: '' },
+  TIME_PRESSURE:        { name: 'Time Pressure',     description: 'Lose HP each question regardless of answer',          hasValue: true,  defaultValue: 5,   unit: 'HP/question' },
+};
+
+// ========================================
+// BOSS QUIZ COMBAT STATS (per-student)
+// ========================================
+
+export interface BossQuizCombatStats {
+  totalDamageDealt: number;
+  criticalHits: number;
+  damageReduced: number;      // Total mitigated by armor
+  bossDamageTaken: number;    // Total raw damage taken
+  correctByDifficulty: { EASY: number; MEDIUM: number; HARD: number };
+  incorrectByDifficulty: { EASY: number; MEDIUM: number; HARD: number };
+  longestStreak: number;
+  currentStreak: number;
+  shieldBlocksUsed: number;
+  healingReceived: number;
+  questionsAttempted: number;
+  questionsCorrect: number;
+}
+
+export interface BossQuizProgress {
+  userId: string;
+  quizId: string;
+  answeredQuestions: string[];
+  currentHp: number;
+  maxHp: number;
+  lastUpdated: string;
+  combatStats: BossQuizCombatStats;
+}
+
+// Tiered reward multipliers for top 5 damage dealers
+export const BOSS_REWARD_TIERS = [1.5, 1.4, 1.3, 1.2, 1.1] as const;
+export const BOSS_PARTICIPATION_MIN_ATTEMPTS = 5;
+export const BOSS_PARTICIPATION_MIN_CORRECT = 1;
 
 // ========================================
 // KNOWLEDGE-GATED LOOT

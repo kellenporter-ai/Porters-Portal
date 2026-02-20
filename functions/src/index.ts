@@ -2520,6 +2520,19 @@ export const dealBossDamage = onCall(async (request) => {
 // BOSS QUIZ
 // ==========================================
 
+// Helper: check if a boss has a modifier of a given type
+function hasMod(mods: { type: string; value?: number }[] | undefined, type: string): boolean {
+  return !!mods?.some((m) => m.type === type);
+}
+function modVal(mods: { type: string; value?: number }[] | undefined, type: string, fallback = 0): number {
+  const m = mods?.find((m) => m.type === type);
+  return m?.value ?? fallback;
+}
+
+const BOSS_REWARD_TIERS = [1.5, 1.4, 1.3, 1.2, 1.1];
+const BOSS_PARTICIPATION_MIN_ATTEMPTS = 5;
+const BOSS_PARTICIPATION_MIN_CORRECT = 1;
+
 export const answerBossQuiz = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const { quizId, questionId, answer } = request.data;
@@ -2532,7 +2545,6 @@ export const answerBossQuiz = onCall(async (request) => {
   const userRef = db.doc(`users/${uid}`);
   const progressRef = db.doc(`boss_quiz_progress/${uid}_${quizId}`);
 
-  // Use transaction only for progress check (per-user doc, no contention)
   const [quizSnap, userSnap, progressSnap] = await Promise.all([
     quizRef.get(), userRef.get(), progressRef.get(),
   ]);
@@ -2548,57 +2560,146 @@ export const answerBossQuiz = onCall(async (request) => {
   if (!question) throw new HttpsError("not-found", "Question not found.");
 
   // Check if already answered
-  const progress = progressSnap.exists ? progressSnap.data()! : { answeredQuestions: [], currentHp: -1 };
+  const progress = progressSnap.exists
+    ? progressSnap.data()!
+    : { answeredQuestions: [], currentHp: -1, combatStats: null };
   if (progress.answeredQuestions.includes(questionId)) {
-    return { alreadyAnswered: true, correct: false, damage: 0, newHp: quiz.currentHp, playerDamage: 0, playerHp: progress.currentHp, playerMaxHp: 100, knockedOut: false };
+    return {
+      alreadyAnswered: true, correct: false, damage: 0, newHp: quiz.currentHp,
+      playerDamage: 0, playerHp: progress.currentHp, playerMaxHp: 100,
+      knockedOut: false, isCrit: false, healAmount: 0, shieldBlocked: false,
+    };
   }
 
-  // Calculate player combat stats from equipped gear
+  // Player combat stats from gear
   const userData = userSnap.data()!;
   const gam = userData.gamification || {};
-  const activeClass = quiz.classType || userData.classType || '';
+  const activeClass = quiz.classType || userData.classType || "";
   const profile = gam.classProfiles?.[activeClass];
   const equipped = profile?.equipped || gam.equipped || {};
   const playerAttrStats = calculateServerStats(equipped);
-  const { maxHp, armorPercent } = deriveCombatStats(playerAttrStats);
+  const baseCombat = deriveCombatStats(playerAttrStats);
+  let { maxHp } = baseCombat;
+  let armorPercent = baseCombat.armorPercent;
+  let critChance = baseCombat.critChance;
+  const critMultiplier = baseCombat.critMultiplier;
 
-  // Initialize player HP on first question
+  // --- Apply modifiers to combat stats ---
+  const mods: { type: string; value?: number }[] = quiz.modifiers || [];
+  if (hasMod(mods, "ARMOR_BREAK") || hasMod(mods, "GLASS_CANNON")) armorPercent = 0;
+  if (hasMod(mods, "CRIT_SURGE")) critChance = Math.min(1, critChance + modVal(mods, "CRIT_SURGE", 20) / 100);
+
+  // Initialize player HP
   let playerHp = progress.currentHp >= 0 ? progress.currentHp : maxHp;
-
-  // Check if player is knocked out
   if (playerHp <= 0) {
-    return { alreadyAnswered: false, correct: false, damage: 0, newHp: quiz.currentHp, playerDamage: 0, playerHp: 0, playerMaxHp: maxHp, knockedOut: true };
+    return {
+      alreadyAnswered: false, correct: false, damage: 0, newHp: quiz.currentHp,
+      playerDamage: 0, playerHp: 0, playerMaxHp: maxHp, knockedOut: true,
+      isCrit: false, healAmount: 0, shieldBlocked: false,
+    };
   }
+
+  // Initialize combat stats
+  const cs = progress.combatStats || {
+    totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0,
+    correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
+    incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
+    longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
+    healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
+  };
+  cs.questionsAttempted++;
 
   const isCorrect = Number(answer) === question.correctAnswer;
   let damage = 0;
   let playerDamage = 0;
+  let isCrit = false;
+  let healAmount = 0;
+  let shieldBlocked = false;
 
   const batch = db.batch();
 
   if (isCorrect) {
+    cs.questionsCorrect++;
+    cs.currentStreak++;
+    if (cs.currentStreak > cs.longestStreak) cs.longestStreak = cs.currentStreak;
+    cs.correctByDifficulty[question.difficulty as "EASY" | "MEDIUM" | "HARD"]++;
+
     damage = quiz.damagePerCorrect || 10;
     if (question.damageBonus) damage += question.damageBonus;
 
+    // Modifier: player damage boost
+    if (hasMod(mods, "PLAYER_DAMAGE_BOOST")) damage += modVal(mods, "PLAYER_DAMAGE_BOOST", 25);
+    // Modifier: double or nothing
+    if (hasMod(mods, "DOUBLE_OR_NOTHING")) damage *= 2;
+    // Modifier: glass cannon
+    if (hasMod(mods, "GLASS_CANNON")) damage *= 2;
+    // Modifier: streak bonus
+    if (hasMod(mods, "STREAK_BONUS") && cs.currentStreak > 1) {
+      damage += modVal(mods, "STREAK_BONUS", 10) * (cs.currentStreak - 1);
+    }
+    // Modifier: last stand (+50% when below 25% HP)
+    if (hasMod(mods, "LAST_STAND") && playerHp < maxHp * 0.25) {
+      damage = Math.round(damage * 1.5);
+    }
+
+    // Crit roll
+    if (Math.random() < critChance) {
+      isCrit = true;
+      damage = Math.round(damage * critMultiplier);
+      cs.criticalHits++;
+    }
+
+    damage = Math.max(1, Math.round(damage));
+    cs.totalDamageDealt += damage;
+
     // Distributed counter: write damage to a random shard
     const shardId = Math.floor(Math.random() * BOSS_SHARD_COUNT).toString();
-    const shardRef = db.doc(`boss_quizzes/${quizId}/shards/${shardId}`);
-    batch.set(shardRef, {
+    batch.set(db.doc(`boss_quizzes/${quizId}/shards/${shardId}`), {
       damageDealt: admin.firestore.FieldValue.increment(damage),
     }, { merge: true });
 
     // Award XP
     const xpResult = buildXPUpdates(userData, damage);
     batch.update(userRef, xpResult.updates);
+
+    // Modifier: healing wave
+    if (hasMod(mods, "HEALING_WAVE")) {
+      healAmount = modVal(mods, "HEALING_WAVE", 10);
+      playerHp = Math.min(maxHp, playerHp + healAmount);
+      cs.healingReceived += healAmount;
+    }
   } else {
-    // Boss retaliates on wrong answer — difficulty scales base damage
-    const baseBossDamage = question.difficulty === 'HARD' ? 30 : question.difficulty === 'MEDIUM' ? 20 : 15;
-    // Armor reduces incoming damage
-    playerDamage = Math.max(1, Math.round(baseBossDamage * (1 - armorPercent / 100)));
-    playerHp = Math.max(0, playerHp - playerDamage);
+    cs.currentStreak = 0;
+    cs.incorrectByDifficulty[question.difficulty as "EASY" | "MEDIUM" | "HARD"]++;
+
+    // Modifier: shield wall (block first N wrong answers)
+    const shieldMax = hasMod(mods, "SHIELD_WALL") ? modVal(mods, "SHIELD_WALL", 2) : 0;
+    if (shieldMax > 0 && cs.shieldBlocksUsed < shieldMax) {
+      shieldBlocked = true;
+      cs.shieldBlocksUsed++;
+    } else {
+      // Boss retaliates
+      let baseBossDamage = question.difficulty === "HARD" ? 30 : question.difficulty === "MEDIUM" ? 20 : 15;
+      if (hasMod(mods, "BOSS_DAMAGE_BOOST")) baseBossDamage += modVal(mods, "BOSS_DAMAGE_BOOST", 15);
+      if (hasMod(mods, "DOUBLE_OR_NOTHING")) baseBossDamage *= 2;
+
+      const rawDamage = baseBossDamage;
+      playerDamage = Math.max(1, Math.round(rawDamage * (1 - armorPercent / 100)));
+      const damageBlocked = rawDamage - playerDamage;
+      cs.damageReduced += Math.max(0, damageBlocked);
+      cs.bossDamageTaken += playerDamage;
+      playerHp = Math.max(0, playerHp - playerDamage);
+    }
   }
 
-  // Track progress + player HP
+  // Modifier: time pressure (lose HP each question regardless)
+  if (hasMod(mods, "TIME_PRESSURE")) {
+    const tickDmg = modVal(mods, "TIME_PRESSURE", 5);
+    playerHp = Math.max(0, playerHp - tickDmg);
+    cs.bossDamageTaken += tickDmg;
+  }
+
+  // Persist progress + combat stats
   batch.set(progressRef, {
     userId: uid,
     quizId,
@@ -2606,62 +2707,76 @@ export const answerBossQuiz = onCall(async (request) => {
     currentHp: playerHp,
     maxHp,
     lastUpdated: new Date().toISOString(),
+    combatStats: cs,
   }, { merge: true });
 
   await batch.commit();
 
-  // Read aggregated HP from shards
+  // Aggregate HP from shards
   const shardsSnap = await db.collection(`boss_quizzes/${quizId}/shards`).get();
   let totalDamage = 0;
-  shardsSnap.forEach(doc => { totalDamage += doc.data().damageDealt || 0; });
+  shardsSnap.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
   const newHp = Math.max(0, quiz.maxHp - totalDamage);
 
-  // Check if boss quiz is defeated
+  // Boss defeated — distribute tiered rewards
   let bossDefeated = false;
   if (newHp <= 0 && quiz.isActive) {
     await quizRef.update({ isActive: false, currentHp: 0 });
     bossDefeated = true;
 
-    // Distribute completion rewards ONLY to contributors who answered questions
     const rewards = quiz.rewards || {};
-    const rewardXp = rewards.xp || 0;
-    const rewardFlux = rewards.flux || 0;
+    const baseRewardXp = rewards.xp || 0;
+    const baseRewardFlux = rewards.flux || 0;
     const rewardItemRarity = rewards.itemRarity || null;
 
-    if (rewardXp > 0 || rewardFlux > 0 || rewardItemRarity) {
-      // Find all contributors from boss_quiz_progress collection
-      const progressSnaps = await db.collection('boss_quiz_progress')
-        .where('quizId', '==', quizId)
-        .get();
+    if (baseRewardXp > 0 || baseRewardFlux > 0 || rewardItemRarity) {
+      const allProgressSnaps = await db.collection("boss_quiz_progress")
+        .where("quizId", "==", quizId).get();
 
-      const contributorIds = new Set<string>();
-      progressSnaps.forEach(doc => {
-        const data = doc.data();
-        if (data.userId && data.answeredQuestions?.length > 0) {
-          contributorIds.add(data.userId);
-        }
+      // Build leaderboard sorted by totalDamageDealt
+      const contributors: { id: string; dmg: number; attempts: number; correct: number }[] = [];
+      allProgressSnaps.forEach((d) => {
+        const data = d.data();
+        if (!data.userId) return;
+        const stats = data.combatStats || {};
+        contributors.push({
+          id: data.userId,
+          dmg: stats.totalDamageDealt || 0,
+          attempts: stats.questionsAttempted || data.answeredQuestions?.length || 0,
+          correct: stats.questionsCorrect || 0,
+        });
       });
+      contributors.sort((a, b) => b.dmg - a.dmg);
 
-      // Award each contributor
-      for (const contributorId of contributorIds) {
+      const quizClass = quiz.classType && quiz.classType !== "GLOBAL" ? quiz.classType : undefined;
+
+      for (let i = 0; i < contributors.length; i++) {
+        const c = contributors[i];
+        // Participation gate: minimum 5 attempts AND at least 1 correct
+        const participated = c.attempts >= BOSS_PARTICIPATION_MIN_ATTEMPTS && c.correct >= BOSS_PARTICIPATION_MIN_CORRECT;
+        if (!participated) continue;
+
+        // Tiered multiplier: top 5 get bonuses
+        const tierMultiplier = i < BOSS_REWARD_TIERS.length ? BOSS_REWARD_TIERS[i] : 1;
+
         try {
-          const contribRef = db.doc(`users/${contributorId}`);
+          const contribRef = db.doc(`users/${c.id}`);
           const contribSnap = await contribRef.get();
           if (!contribSnap.exists) continue;
           const contribData = contribSnap.data()!;
           const contribGam = contribData.gamification || {};
           const contribUpdates: Record<string, any> = {};
 
-          const quizClass = quiz.classType && quiz.classType !== 'GLOBAL' ? quiz.classType : undefined;
-
-          if (rewardXp > 0) {
-            const xpRes = buildXPUpdates(contribData, rewardXp, quizClass);
+          if (baseRewardXp > 0) {
+            const scaledXp = Math.round(baseRewardXp * tierMultiplier);
+            const xpRes = buildXPUpdates(contribData, scaledXp, quizClass);
             Object.assign(contribUpdates, xpRes.updates);
           }
 
-          if (rewardFlux > 0) {
+          if (baseRewardFlux > 0) {
+            const scaledFlux = Math.round(baseRewardFlux * tierMultiplier);
             const baseCurrency = contribUpdates["gamification.currency"] ?? (contribGam.currency || 0);
-            contribUpdates["gamification.currency"] = baseCurrency + rewardFlux;
+            contribUpdates["gamification.currency"] = baseCurrency + scaledFlux;
           }
 
           if (rewardItemRarity) {
@@ -2676,17 +2791,42 @@ export const answerBossQuiz = onCall(async (request) => {
             }
           }
 
+          // Store the tier rank on progress for client display
+          const progressDocRef = db.doc(`boss_quiz_progress/${c.id}_${quizId}`);
+          await progressDocRef.update({
+            rewardTier: i < BOSS_REWARD_TIERS.length ? i + 1 : 0,
+            rewardMultiplier: tierMultiplier,
+            participated: true,
+          });
+
           if (Object.keys(contribUpdates).length > 0) {
             await contribRef.update(contribUpdates);
           }
         } catch (err) {
-          console.error(`Failed to reward quiz boss contributor ${contributorId}:`, err);
+          console.error(`Failed to reward quiz boss contributor ${c.id}:`, err);
+        }
+      }
+
+      // Mark non-participants
+      for (const c of contributors) {
+        const participated = c.attempts >= BOSS_PARTICIPATION_MIN_ATTEMPTS && c.correct >= BOSS_PARTICIPATION_MIN_CORRECT;
+        if (!participated) {
+          try {
+            await db.doc(`boss_quiz_progress/${c.id}_${quizId}`).update({
+              rewardTier: 0, rewardMultiplier: 0, participated: false,
+            });
+          } catch { /* ignore */ }
         }
       }
     }
   }
 
-  return { correct: isCorrect, damage, newHp, bossDefeated, playerDamage, playerHp, playerMaxHp: maxHp, knockedOut: playerHp <= 0 };
+  return {
+    correct: isCorrect, damage, newHp, bossDefeated,
+    playerDamage, playerHp, playerMaxHp: maxHp,
+    knockedOut: playerHp <= 0,
+    isCrit, healAmount, shieldBlocked,
+  };
 });
 
 // ==========================================

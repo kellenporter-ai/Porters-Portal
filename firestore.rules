@@ -406,6 +406,14 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // BOSS QUESTION BANKS
+    // ==========================================
+    match /boss_question_banks/{bankId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {

@@ -1107,7 +1107,7 @@ export const dataService = {
 
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
     const result = await callAnswerBossQuiz({ quizId, questionId, answer });
-    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean };
+    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean };
   },
 
   // Admin: subscribe to ALL quiz bosses (including inactive)
@@ -1134,6 +1134,40 @@ export const dataService = {
   deleteBossQuiz: async (quizId: string) => {
     const ref = doc(db, 'boss_quizzes', quizId);
     await deleteDoc(ref);
+  },
+
+  // --- BOSS QUESTION BANKS ---
+
+  subscribeToBossQuestionBanks: (callback: (banks: import('../types').BossQuestionBank[]) => void) => {
+    return onSnapshot(collection(db, 'boss_question_banks'), (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as import('../types').BossQuestionBank)));
+    });
+  },
+
+  saveBossQuestionBank: async (bank: import('../types').BossQuestionBank) => {
+    const ref = doc(db, 'boss_question_banks', bank.id);
+    await setDoc(ref, bank);
+  },
+
+  deleteBossQuestionBank: async (bankId: string) => {
+    await deleteDoc(doc(db, 'boss_question_banks', bankId));
+  },
+
+  // --- BOSS QUIZ ENDGAME STATS (Admin) ---
+
+  getBossQuizAllProgress: async (quizId: string) => {
+    const q = query(collection(db, 'boss_quiz_progress'), where('quizId', '==', quizId));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data() as import('../types').BossQuizProgress);
+  },
+
+  // --- BOSS QUIZ PROGRESS (Student) ---
+
+  subscribeToBossQuizProgress: (userId: string, quizId: string, callback: (progress: import('../types').BossQuizProgress | null) => void) => {
+    const ref = doc(db, 'boss_quiz_progress', `${userId}_${quizId}`);
+    return onSnapshot(ref, (snap) => {
+      callback(snap.exists() ? (snap.data() as import('../types').BossQuizProgress) : null);
+    }, () => callback(null));
   },
 
   // --- GROUP QUESTS / PARTIES ---
