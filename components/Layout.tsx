@@ -209,7 +209,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                   </div>
                </div>
                <div className="flex items-center gap-1">
-                 <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} />
+                 <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
                  <button
                    onClick={() => setIsSettingsOpen(true)}
                    className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"

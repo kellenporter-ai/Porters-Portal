@@ -10,6 +10,7 @@ interface NotificationBellProps {
   userId: string;
   settings?: UserSettings;
   onUpdateSettings?: (settings: UserSettings) => Promise<void>;
+  dropUp?: boolean;
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -23,7 +24,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'XP_EVENT': <Zap className="w-4 h-4 text-cyan-400" />,
 };
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, onUpdateSettings }) => {
+const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, onUpdateSettings, dropUp }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
@@ -95,7 +96,9 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-h-[420px] bg-[#1a1b26]/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+        <div className={`absolute w-80 max-h-[420px] bg-[#1a1b26]/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in duration-200 ${
+          dropUp ? 'bottom-full mb-2 right-0 slide-in-from-bottom-2' : 'top-full mt-2 right-0 slide-in-from-top-2'
+        }`}>
           <div className="flex items-center justify-between p-3 border-b border-white/5">
             <h4 className="text-sm font-bold text-white">Notifications</h4>
             {unreadCount > 0 && (

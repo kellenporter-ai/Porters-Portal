@@ -1,7 +1,7 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { User, Submission, Assignment, StudentBucketProfile, TelemetryBucket } from '../types';
-import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb } from 'lucide-react';
+import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { BUCKET_META } from '../lib/telemetry';
@@ -15,6 +15,7 @@ interface StudentDetailDrawerProps {
 }
 
 const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, submissions, assignments, bucketProfiles = [], onClose }) => {
+  const [resourcesExpanded, setResourcesExpanded] = useState(false);
   const level = student.gamification?.level || 1;
   const xp = student.gamification?.xp || 0;
   const currency = student.gamification?.currency || 0;
@@ -39,6 +40,42 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
       return { cls, classXp, gearScore, inventoryCount, resourcesViewed: classSubs.length, totalTime };
     });
   }, [student, submissions, assignments, enrolledClasses]);
+
+  // Per-resource performance: aggregate all submissions per assignment
+  const resourcePerformance = useMemo(() => {
+    const byAssignment = new Map<string, { title: string; classType: string; category: string; visits: number; totalTime: number; totalKeystrokes: number; totalClicks: number; totalPastes: number; lastVisit: string | null; statuses: string[] }>();
+    submissions.forEach(s => {
+      const a = assignments.find(a => a.id === s.assignmentId);
+      const key = s.assignmentId;
+      const existing = byAssignment.get(key);
+      const engTime = s.metrics?.engagementTime || 0;
+      if (existing) {
+        existing.visits++;
+        existing.totalTime += engTime;
+        existing.totalKeystrokes += s.metrics?.keystrokes || 0;
+        existing.totalClicks += s.metrics?.clickCount || 0;
+        existing.totalPastes += s.metrics?.pasteCount || 0;
+        existing.statuses.push(s.status);
+        if (s.submittedAt && (!existing.lastVisit || s.submittedAt > existing.lastVisit)) {
+          existing.lastVisit = s.submittedAt;
+        }
+      } else {
+        byAssignment.set(key, {
+          title: a?.title || s.assignmentTitle,
+          classType: a?.classType || 'Unknown',
+          category: a?.category || 'Supplemental',
+          visits: 1,
+          totalTime: engTime,
+          totalKeystrokes: s.metrics?.keystrokes || 0,
+          totalClicks: s.metrics?.clickCount || 0,
+          totalPastes: s.metrics?.pasteCount || 0,
+          lastVisit: s.submittedAt || null,
+          statuses: [s.status],
+        });
+      }
+    });
+    return Array.from(byAssignment.values()).sort((a, b) => b.totalTime - a.totalTime);
+  }, [submissions, assignments]);
 
   // Recent activity (last 10 submissions)
   const recentActivity = useMemo(() => {
@@ -107,9 +144,8 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
   }, [submissions]);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#12132a]/98 border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
+    <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-lg">
+      <div className="relative w-full bg-[#12132a]/98 border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
         
         {/* Header */}
         <div className="sticky top-0 z-10 bg-[#12132a]/95 backdrop-blur-md border-b border-white/5 p-6 flex items-center justify-between">
@@ -310,6 +346,66 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               ))}
             </div>
           </div>
+
+          {/* Per-Resource Performance */}
+          {resourcePerformance.length > 0 && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <button
+                onClick={() => setResourcesExpanded(!resourcesExpanded)}
+                className="flex items-center justify-between w-full mb-1"
+              >
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5" /> Resource Performance
+                  <span className="text-[9px] text-gray-600 normal-case tracking-normal font-normal ml-1">({resourcePerformance.length})</span>
+                </h4>
+                {resourcesExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+              </button>
+              {resourcesExpanded && (
+                <div className="space-y-2 mt-3">
+                  {resourcePerformance.map((r, i) => {
+                    const mins = Math.round(r.totalTime / 60);
+                    const quality = r.totalKeystrokes > 20 && r.totalClicks > 5 ? 'high' : r.totalClicks > 2 ? 'medium' : 'low';
+                    const qualityColor = quality === 'high' ? 'text-green-400' : quality === 'medium' ? 'text-yellow-400' : 'text-red-400';
+                    const qualityBg = quality === 'high' ? 'bg-green-500' : quality === 'medium' ? 'bg-yellow-500' : 'bg-red-500';
+                    return (
+                      <div key={i} className="bg-black/20 rounded-xl p-3 border border-white/5">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-white font-bold truncate">{r.title}</div>
+                            <div className="text-[9px] text-gray-500">{r.classType} · {r.category}</div>
+                          </div>
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${qualityBg}`} title={`${quality} engagement`} />
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 text-[10px]">
+                          <div>
+                            <div className="text-gray-500">Time</div>
+                            <div className="text-white font-bold">{mins}m</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Visits</div>
+                            <div className="text-white font-bold">{r.visits}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Keys</div>
+                            <div className="text-white font-bold">{r.totalKeystrokes}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Quality</div>
+                            <div className={`font-bold capitalize ${qualityColor}`}>{quality}</div>
+                          </div>
+                        </div>
+                        {r.lastVisit && (
+                          <div className="text-[9px] text-gray-600 mt-1.5">
+                            Last visited {new Date(r.lastVisit).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Recent Activity */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">

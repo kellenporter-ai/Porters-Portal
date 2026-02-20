@@ -1085,9 +1085,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
 
                          {/* LEFT: CHARACTER VISUALIZER WITH SLOTS */}
-                         <div className="bg-black/30 rounded-2xl border border-white/10 relative overflow-hidden flex flex-col items-center justify-center p-4 min-h-[400px]">
-                             <div className="absolute inset-0 loadout-hex-bg pointer-events-none"></div>
-                             <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
+                         <div className="bg-black/30 rounded-2xl border border-white/10 relative flex flex-col items-center justify-center p-4 min-h-[400px]">
+                             <div className="absolute inset-0 rounded-2xl overflow-hidden loadout-hex-bg pointer-events-none"></div>
+                             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
 
                              <div className="flex w-full h-full relative z-10 justify-between items-center px-4">
                                  {/* LEFT SLOTS */}
