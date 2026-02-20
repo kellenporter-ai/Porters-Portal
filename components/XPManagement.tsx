@@ -173,7 +173,11 @@ const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
           case 'level': { const av = a.gamification?.level || 1; const bv = b.gamification?.level || 1; return sortDir === 'asc' ? av - bv : bv - av; }
           case 'flux':  { const av = a.gamification?.currency || 0; const bv = b.gamification?.currency || 0; return sortDir === 'asc' ? av - bv : bv - av; }
           case 'gear':  { const av = getAggregateGearScore(a); const bv = getAggregateGearScore(b); return sortDir === 'asc' ? av - bv : bv - av; }
-          case 'xp': default: { const av = a.gamification?.xp || 0; const bv = b.gamification?.xp || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+          case 'xp': default: {
+            const av = filterClass !== 'All Classes' ? (a.gamification?.classXp?.[filterClass] || 0) : (a.gamification?.xp || 0);
+            const bv = filterClass !== 'All Classes' ? (b.gamification?.classXp?.[filterClass] || 0) : (b.gamification?.xp || 0);
+            return sortDir === 'asc' ? av - bv : bv - av;
+          }
         }
       });
   }, [students, searchTerm, filterClass, filterSection, sortCol, sortDir]);
@@ -683,7 +687,7 @@ RULES:
                     <OpSortHeader label="Operative" col="name"  className="pl-4" />
                     <OpSortHeader label="Class"     col="class" />
                     <OpSortHeader label="Level"     col="level" className="text-center" />
-                    <OpSortHeader label="XP"        col="xp"   className="text-center" />
+                    <OpSortHeader label={filterClass !== 'All Classes' ? "Class XP" : "XP"} col="xp" className="text-center" />
                     <OpSortHeader label="Flux"      col="flux"  className="text-center" />
                     <OpSortHeader label="Gear"      col="gear"  className="text-center" />
                     <th className="pb-4 text-right pr-4">Actions</th>
@@ -734,7 +738,7 @@ RULES:
                           <span className="text-lg font-black text-white">{level}</span>
                         </td>
                         <td className="py-3 text-center">
-                          <span className="text-sm font-bold text-gray-300">{student.gamification?.xp?.toLocaleString() || 0}</span>
+                          <span className="text-sm font-bold text-gray-300">{(filterClass !== 'All Classes' ? (student.gamification?.classXp?.[filterClass] || 0) : (student.gamification?.xp || 0)).toLocaleString()}</span>
                         </td>
                         <td className="py-3 text-center">
                           <span className="text-sm font-bold text-cyan-400">{flux}</span>

@@ -475,13 +475,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   case 'lastSeen':  { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sortDir === 'asc' ? av - bv : bv - av; }
                                   case 'time':      { const av = a.stats?.totalTime || 0; const bv = b.stats?.totalTime || 0; return sortDir === 'asc' ? av - bv : bv - av; }
                                   case 'resources': { const av = a.stats?.problemsCompleted || 0; const bv = b.stats?.problemsCompleted || 0; return sortDir === 'asc' ? av - bv : bv - av; }
-                                  case 'xp': default: { const av = a.gamification?.xp || 0; const bv = b.gamification?.xp || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+                                  case 'xp': default: { const av = a.gamification?.classXp?.[a.classType] || 0; const bv = b.gamification?.classXp?.[b.classType] || 0; return sortDir === 'asc' ? av - bv : bv - av; }
                               }
                           });
-                          const maxXP = Math.max(1, ...students.map(s => s.gamification?.xp || 0));
+                          const maxXP = Math.max(1, ...students.map(s => s.gamification?.classXp?.[s.classType] || 0));
                           return sorted
                               .map(student => {
-                                  const xp = student.gamification?.xp || 0;
+                                  const xp = student.gamification?.classXp?.[student.classType] || 0;
                                   const xpPct = Math.round((xp / maxXP) * 100);
                                   
                                   // Color-code last seen
