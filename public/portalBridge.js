@@ -63,11 +63,16 @@
 (function() {
     'use strict';
 
-    var ALLOWED_ORIGIN = 'https://porters-portal.web.app';
+    // Dynamically discovered from the portal-init handshake.
+    // We no longer hardcode a single origin so .web.app, .firebaseapp.com,
+    // and localhost all work automatically.
+    var _parentOrigin = null;
     var saveStatusEl = null;
     var _onLoad = null;
     var _onReset = null;
     var _saveTimeout = null;
+    var _readyInterval = null;
+    var _onLoadFired = false;
 
     function updateStatus(text, color) {
         if (!saveStatusEl) saveStatusEl = document.getElementById('save-status');
@@ -75,6 +80,19 @@
             saveStatusEl.innerText = text;
             saveStatusEl.style.color = color || '#888';
         }
+    }
+
+    // Validate that a message origin looks like a legitimate Portal parent.
+    // Accepts porters-portal on .web.app, .firebaseapp.com, and localhost dev.
+    function isAllowedOrigin(origin) {
+        if (_parentOrigin) return origin === _parentOrigin;
+        return /^https:\/\/porters-portal\.(web\.app|firebaseapp\.com)$/.test(origin)
+            || /^http:\/\/localhost(:\d+)?$/.test(origin);
+    }
+
+    // Send a message to the parent using the discovered origin (or '*' during handshake).
+    function sendToParent(msg) {
+        window.parent.postMessage(msg, _parentOrigin || '*');
     }
 
     var PortalBridge = {
@@ -95,23 +113,31 @@
             _onLoad = opts.onLoad || null;
             _onReset = opts.onReset || null;
 
-            // Listen for messages from parent (validate origin)
+            // Listen for messages from parent
             window.addEventListener('message', function(event) {
-                if (event.origin !== ALLOWED_ORIGIN) return;
                 var data = event.data;
                 if (!data || typeof data !== 'object') return;
 
-                switch(data.type) {
-                    case 'portal-init':
-                        PortalBridge.connected = true;
-                        PortalBridge.userId = data.payload.userId;
-                        PortalBridge.completionInfo = data.payload.completionInfo || null;
-                        updateStatus('Connected', '#4ade80');
-                        if (_onLoad) {
-                            _onLoad(data.payload.savedState, data.payload.completionInfo);
-                        }
-                        break;
+                // portal-init is the handshake — discover + lock the parent origin
+                if (data.type === 'portal-init') {
+                    if (!isAllowedOrigin(event.origin)) return;
+                    _parentOrigin = event.origin;
+                    clearInterval(_readyInterval);
+                    PortalBridge.connected = true;
+                    PortalBridge.userId = data.payload.userId;
+                    PortalBridge.completionInfo = data.payload.completionInfo || null;
+                    updateStatus('Connected', '#4ade80');
+                    if (_onLoad && !_onLoadFired) {
+                        _onLoadFired = true;
+                        _onLoad(data.payload.savedState, data.payload.completionInfo);
+                    }
+                    return;
+                }
 
+                // All other messages must come from the locked parent origin
+                if (!_parentOrigin || event.origin !== _parentOrigin) return;
+
+                switch(data.type) {
                     case 'portal-save-ok':
                         updateStatus('Saved', '#4ade80');
                         setTimeout(function() { updateStatus('', '#888'); }, 2000);
@@ -161,18 +187,24 @@
                 }
             });
 
-            // Tell parent we're ready
+            // Tell parent we're ready — retry every 500ms until connected (max 6s)
             updateStatus('Connecting...');
-            window.parent.postMessage({ type: 'portal-ready' }, ALLOWED_ORIGIN);
-
-            // If parent doesn't respond in 3 seconds, fall back to standalone mode
-            setTimeout(function() {
-                if (!PortalBridge.connected) {
+            var readyAttempts = 0;
+            var maxAttempts = 12;
+            function sendReady() {
+                if (PortalBridge.connected) { clearInterval(_readyInterval); return; }
+                if (readyAttempts >= maxAttempts) {
+                    clearInterval(_readyInterval);
                     updateStatus('Standalone Mode', '#f59e0b');
-                    console.warn('PortalBridge: No parent response. Running in standalone mode.');
-                    if (_onLoad) _onLoad(null, null);
+                    console.warn('PortalBridge: No parent response after ' + maxAttempts + ' attempts. Running in standalone mode.');
+                    if (_onLoad && !_onLoadFired) { _onLoadFired = true; _onLoad(null, null); }
+                    return;
                 }
-            }, 3000);
+                readyAttempts++;
+                sendToParent({ type: 'portal-ready' });
+            }
+            sendReady();
+            _readyInterval = setInterval(sendReady, 500);
         },
 
         /**
@@ -188,10 +220,10 @@
             clearTimeout(_saveTimeout);
             _saveTimeout = setTimeout(function() {
                 updateStatus('Saving...');
-                window.parent.postMessage({
+                sendToParent({
                     type: 'portal-save',
                     payload: data
-                }, ALLOWED_ORIGIN);
+                });
             }, 500);
         },
 
@@ -204,14 +236,14 @@
          */
         reportAnswer: function(questionId, correct, attempts) {
             if (!PortalBridge.connected) return;
-            window.parent.postMessage({
+            sendToParent({
                 type: 'portal-answer',
                 payload: {
                     questionId: questionId,
                     correct: correct,
                     attempts: attempts || 1
                 }
-            }, ALLOWED_ORIGIN);
+            });
         },
 
         /**
@@ -227,14 +259,14 @@
          */
         complete: function(score, totalQuestions, correctAnswers) {
             if (!PortalBridge.connected) return;
-            window.parent.postMessage({
+            sendToParent({
                 type: 'portal-complete',
                 payload: {
                     score: score || 0,
                     totalQuestions: totalQuestions || 0,
                     correctAnswers: correctAnswers || 0
                 }
-            }, ALLOWED_ORIGIN);
+            });
         },
 
         /**
@@ -246,7 +278,7 @@
          */
         replay: function() {
             if (!PortalBridge.connected) return;
-            window.parent.postMessage({ type: 'portal-replay' }, ALLOWED_ORIGIN);
+            sendToParent({ type: 'portal-replay' });
         },
 
         /**
