@@ -60,6 +60,31 @@ const App: React.FC = () => {
   const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCommOpen, setIsCommOpen] = useState(false);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const chatLastSeenRef = useRef<number>(
+    parseInt(localStorage.getItem('chatLastSeenAt') || '0', 10)
+  );
+
+  // Mark chat as read when opened; subscribe to recent messages when closed for unread badge
+  useEffect(() => {
+    if (isCommOpen) {
+      const now = Date.now();
+      chatLastSeenRef.current = now;
+      localStorage.setItem('chatLastSeenAt', String(now));
+      setHasUnreadChat(false);
+      return;
+    }
+    // When chat is closed, listen for new messages
+    const unsub = dataService.subscribeToRecentMessages((msgs) => {
+      if (msgs.length === 0) return;
+      const latest = msgs[0]; // sorted desc by timestamp
+      const latestTime = new Date(latest.timestamp).getTime();
+      if (latestTime > chatLastSeenRef.current && latest.senderId !== user?.id) {
+        setHasUnreadChat(true);
+      }
+    });
+    return () => unsub();
+  }, [isCommOpen, user?.id]);
 
   // Computed State
   const users = useMemo(() => {
@@ -301,8 +326,9 @@ const App: React.FC = () => {
     <>
       <ConnectionStatus />
       {showTools && (
-        <PhysicsTools 
-          onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined} 
+        <PhysicsTools
+          onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
+          hasUnreadChat={hasUnreadChat}
         />
       )}
       

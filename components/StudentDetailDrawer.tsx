@@ -149,7 +149,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
       {/* Backdrop overlay — click to close */}
       <div className="fixed inset-0 z-[9998] bg-black/40 animate-in fade-in duration-200" onClick={onClose} />
 
-      <div className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-lg">
+      <div className="fixed top-0 right-0 bottom-0 z-[9999] w-full lg:max-w-lg">
         <div className="relative w-full bg-[#12132a]/98 border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
 
           {/* Header */}

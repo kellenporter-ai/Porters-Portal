@@ -4,6 +4,7 @@ import { X, PenTool, Maximize2, Minimize2, BarChart2, TrendingUp, MessageSquare 
 
 interface PhysicsToolsProps {
     onToggleChat?: () => void;
+    hasUnreadChat?: boolean;
 }
 
 type ToolType = 'FORCE' | 'BAR' | 'GRAPHER';
@@ -38,7 +39,7 @@ const TOOL_CONFIG: Record<ToolType, { src: string; label: string; icon: React.Re
     },
 };
 
-const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat }) => {
+const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat }) => {
     const [activeTool, setActiveTool] = useState<ToolType | null>(null);
     const [isMinimized, setIsMinimized] = useState(false);
 
@@ -79,12 +80,15 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat }) => {
                     <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">Force Diagram</span>
                 </button>
                 {onToggleChat && (
-                    <button 
+                    <button
                         onClick={onToggleChat}
                         className="bg-white/10 hover:bg-[#5865F2] text-white p-3 rounded-full shadow-lg backdrop-blur-md border border-white/20 transition-all hover:scale-110 group relative"
                         title="Class Chat"
                     >
                         <MessageSquare className="w-6 h-6" />
+                        {hasUnreadChat && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#0f0720] animate-pulse" />
+                        )}
                         <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">Class Comms</span>
                     </button>
                 )}

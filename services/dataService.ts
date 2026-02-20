@@ -308,6 +308,18 @@ export const dataService = {
     });
   },
 
+  // Lightweight subscription for unread badge: only the 5 most recent messages across all channels
+  subscribeToRecentMessages: (callback: (msgs: ChatMessage[]) => void) => {
+    const q = query(
+      collection(db, 'class_messages'),
+      orderBy('timestamp', 'desc'),
+      limit(5)
+    );
+    return guardedSnapshot('recent_messages', q, (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ChatMessage)));
+    });
+  },
+
   subscribeToAllConversations: (callback: (convos: Conversation[]) => void) => {
     const q = query(collection(db, 'conversations'), orderBy('lastMessageAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
