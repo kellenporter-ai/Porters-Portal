@@ -100,7 +100,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                         const isPrivate = u.settings?.privacyMode;
                         const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
                         const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                        const lvl = u.gamification?.level || 1;
+                        const lvl = Math.floor(classXP / 1000) + 1;
                         const rd = getRankDetails(lvl);
                         const isFirst = rank === 0;
                         const heights = ['h-28', 'h-20', 'h-16'];
@@ -144,7 +144,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                     const isPrivate = u.settings?.privacyMode;
                     const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
                     const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                    const level = u.gamification?.level || 1;
+                    const level = Math.floor(classXP / 1000) + 1;
                     const rankDetails = getRankDetails(level);
 
                     return (
