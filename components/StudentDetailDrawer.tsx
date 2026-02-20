@@ -1,5 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Submission, Assignment, StudentBucketProfile, TelemetryBucket } from '../types';
 import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
@@ -143,37 +144,41 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
     return { days, trend, maxTime };
   }, [submissions]);
 
-  return (
-    <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-lg">
-      <div className="relative w-full bg-[#12132a]/98 border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
-        
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-[#12132a]/95 backdrop-blur-md border-b border-white/5 p-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl p-0.5 bg-gradient-to-tr from-white/10 to-white/5 ${rankDetails.tierGlow} shadow-xl`}>
-              {student.avatarUrl ? (
-                <img src={student.avatarUrl} alt={student.name} className={`w-full h-full rounded-2xl border-2 object-cover ${rankDetails.tierColor.split(' ')[0]}`} />
-              ) : (
-                <div className={`w-full h-full rounded-2xl border-2 ${rankDetails.tierColor.split(' ')[0]} bg-purple-500/20 flex items-center justify-center text-xl font-bold text-white`}>
-                  {student.name.charAt(0)}
-                </div>
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">{student.name}</h2>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>{rankDetails.rankName}</span>
-                <span className="text-[10px] text-gray-500">· Lv.{level}</span>
+  return createPortal(
+    <>
+      {/* Backdrop overlay — click to close */}
+      <div className="fixed inset-0 z-[9998] bg-black/40 animate-in fade-in duration-200" onClick={onClose} />
+
+      <div className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-lg">
+        <div className="relative w-full bg-[#12132a]/98 border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
+
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-[#12132a]/95 backdrop-blur-md border-b border-white/5 p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-2xl p-0.5 bg-gradient-to-tr from-white/10 to-white/5 ${rankDetails.tierGlow} shadow-xl`}>
+                {student.avatarUrl ? (
+                  <img src={student.avatarUrl} alt={student.name} className={`w-full h-full rounded-2xl border-2 object-cover ${rankDetails.tierColor.split(' ')[0]}`} />
+                ) : (
+                  <div className={`w-full h-full rounded-2xl border-2 ${rankDetails.tierColor.split(' ')[0]} bg-purple-500/20 flex items-center justify-center text-xl font-bold text-white`}>
+                    {student.name.charAt(0)}
+                  </div>
+                )}
               </div>
-              {student.gamification?.codename && (
-                <div className="text-[10px] text-purple-400 italic">"{student.gamification.codename}"</div>
-              )}
+              <div>
+                <h2 className="text-lg font-bold text-white">{student.name}</h2>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>{rankDetails.rankName}</span>
+                  <span className="text-[10px] text-gray-500">· Lv.{level}</span>
+                </div>
+                {student.gamification?.codename && (
+                  <div className="text-[10px] text-purple-400 italic">"{student.gamification.codename}"</div>
+                )}
+              </div>
             </div>
+            <button onClick={onClose} className="p-2.5 text-gray-400 hover:text-white bg-white/5 hover:bg-red-500/20 hover:text-red-300 border border-white/10 rounded-xl transition group" title="Close">
+              <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
         <div className="p-6 space-y-6">
           {/* Quick Stats */}
@@ -467,6 +472,8 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
         </div>
       </div>
     </div>
+    </>,
+    document.body
   );
 };
 

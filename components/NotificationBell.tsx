@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Notification, UserSettings } from '../types';
 import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -28,9 +29,22 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const prevUnreadRef = useRef(0);
+
+  // Calculate panel position from button rect
+  const updatePosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    if (dropUp) {
+      setPanelPos({ bottom: window.innerHeight - rect.top + 8, right: window.innerWidth - rect.right });
+    } else {
+      setPanelPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+  }, [dropUp]);
 
   // Show the push prompt once when the panel opens if user hasn't decided yet
   useEffect(() => {
@@ -51,15 +65,29 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
     return () => unsub();
   }, [userId]);
 
+  // Click outside to close — check both button and portal panel
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setIsOpen(false);
     };
     if (isOpen) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isOpen]);
+
+  // Recalculate position on scroll/resize while open
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, updatePosition]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -81,10 +109,16 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
     return `${Math.floor(diff / 86400000)}d ago`;
   };
 
+  const handleToggle = () => {
+    if (!isOpen) updatePosition();
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={handleToggle}
         className="relative p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
       >
         <Bell className="w-5 h-5" />
@@ -95,10 +129,18 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
         )}
       </button>
 
-      {isOpen && (
-        <div className={`absolute w-80 max-h-[420px] bg-[#1a1b26]/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in duration-200 ${
-          dropUp ? 'bottom-full mb-2 right-0 slide-in-from-bottom-2' : 'top-full mt-2 right-0 slide-in-from-top-2'
-        }`}>
+      {isOpen && createPortal(
+        <div
+          ref={panelRef}
+          className={`fixed w-80 max-h-[420px] bg-[#1a1b26]/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in duration-200 ${
+            dropUp ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'
+          }`}
+          style={{
+            ...(panelPos.top != null ? { top: panelPos.top } : {}),
+            ...(panelPos.bottom != null ? { bottom: panelPos.bottom } : {}),
+            right: panelPos.right,
+          }}
+        >
           <div className="flex items-center justify-between p-3 border-b border-white/5">
             <h4 className="text-sm font-bold text-white">Notifications</h4>
             {unreadCount > 0 && (
@@ -173,7 +215,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
