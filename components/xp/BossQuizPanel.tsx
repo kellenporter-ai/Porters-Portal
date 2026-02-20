@@ -190,40 +190,125 @@ const StudentEndgame: React.FC<{
 const QuizBossCard: React.FC<{
   quiz: BossQuizEvent;
   userId: string;
-  onAnswer: (quizId: string, questionId: string, answer: number) => void;
-  submitting: boolean;
-  currentQuestion: number;
-  selectedAnswer: number | null;
-  answerResult: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean } | null;
-  playerHp: number;
-  playerMaxHp: number;
-  knockedOut: boolean;
+  onAnswer: (quizId: string, questionId: string, answer: number, callbacks: {
+    onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean }) => void;
+  }) => void;
+  playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
   playerAppearance?: BossQuizPanelProps['playerAppearance'];
   playerEquipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
   playerEvolutionLevel: number;
-  attackState: 'idle' | 'player-attack' | 'boss-attack';
-  attackDamage?: number;
-}> = ({ quiz, userId, onAnswer, submitting, currentQuestion, selectedAnswer, answerResult, playerHp, playerMaxHp, knockedOut,
-        playerAppearance, playerEquipped, playerEvolutionLevel, attackState, attackDamage }) => {
+}> = ({ quiz, userId, onAnswer, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
   const currentHp = useQuizBossHealth(quiz.id, quiz.maxHp);
   const hpPercent = (currentHp / quiz.maxHp) * 100;
-  const playerHpPercent = playerMaxHp > 0 ? (playerHp / playerMaxHp) * 100 : 100;
 
   // Shuffle questions deterministically per student so each sees a unique order
   const shuffledQuestions = React.useMemo(
     () => seededShuffle(quiz.questions, hashString(userId + quiz.id)),
     [quiz.questions, userId, quiz.id]
   );
-  const question = shuffledQuestions[currentQuestion % shuffledQuestions.length];
+
+  // Subscribe to player's progress for this quiz
+  const [progress, setProgress] = useState<BossQuizProgress | null>(null);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  useEffect(() => {
+    const unsub = dataService.subscribeToBossQuizProgress(userId, quiz.id, (p) => {
+      setProgress(p);
+      setProgressLoaded(true);
+    });
+    return () => unsub();
+  }, [userId, quiz.id]);
+
+  // Derive maxHp from playerStats
+  const derivedMaxHp = React.useMemo(() => {
+    if (playerStats) return deriveCombatStats(playerStats).maxHp;
+    return 100;
+  }, [playerStats]);
+
+  // Per-card state — initialized from persisted progress once it loads
+  const [currentQuestion, setCurrentQuestion] = useState<number>(-1); // -1 = waiting for progress
+  const [playerHp, setPlayerHp] = useState<number>(-1);
+  const [playerMaxHp, setPlayerMaxHp] = useState<number>(derivedMaxHp);
+  const [knockedOut, setKnockedOut] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [attackState, setAttackState] = useState<'idle' | 'player-attack' | 'boss-attack'>('idle');
+  const [attackDamage, setAttackDamage] = useState<number | undefined>(undefined);
+
+  // Once progress loads, initialize question index and HP from server state (runs only once)
+  useEffect(() => {
+    if (!progressLoaded) return;
+    if (currentQuestion !== -1) return; // already initialized
+
+    if (progress) {
+      // Skip questions the student already answered (by matching against shuffled order)
+      const answeredSet = new Set(progress.answeredQuestions || []);
+      const firstUnanswered = shuffledQuestions.findIndex(q => !answeredSet.has(q.id));
+      setCurrentQuestion(firstUnanswered === -1 ? shuffledQuestions.length : firstUnanswered);
+
+      // Restore HP — use server value if valid, otherwise derive from stats
+      const serverHp = progress.currentHp;
+      const maxHp = progress.maxHp > 0 ? progress.maxHp : derivedMaxHp;
+      setPlayerMaxHp(maxHp);
+      if (serverHp >= 0) {
+        setPlayerHp(serverHp);
+        if (serverHp === 0) setKnockedOut(true);
+      } else {
+        setPlayerHp(maxHp);
+      }
+    } else {
+      // No progress yet — fresh start
+      setCurrentQuestion(0);
+      setPlayerHp(derivedMaxHp);
+      setPlayerMaxHp(derivedMaxHp);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressLoaded]);
+
+  // Keep maxHp in sync if playerStats change (e.g. gear swap) but don't stomp current HP
+  useEffect(() => {
+    setPlayerMaxHp(derivedMaxHp);
+  }, [derivedMaxHp]);
+
+  const playerHpPercent = playerMaxHp > 0 ? ((playerHp === -1 ? playerMaxHp : playerHp) / playerMaxHp) * 100 : 100;
+
+  const question = currentQuestion >= 0 ? shuffledQuestions[currentQuestion % shuffledQuestions.length] : undefined;
   const allAnswered = currentQuestion >= shuffledQuestions.length;
   const bossDefeated = currentHp <= 0;
 
-  // Subscribe to player's progress for this quiz (for endgame display)
-  const [progress, setProgress] = useState<BossQuizProgress | null>(null);
-  useEffect(() => {
-    const unsub = dataService.subscribeToBossQuizProgress(userId, quiz.id, setProgress);
-    return () => unsub();
-  }, [userId, quiz.id]);
+  const handleLocalAnswer = async (quizId: string, questionId: string, answer: number) => {
+    if (submitting || knockedOut) return;
+    setSubmitting(true);
+    setSelectedAnswer(answer);
+    onAnswer(quizId, questionId, answer, {
+      onResult: (result) => {
+        if (result.playerHp !== undefined) setPlayerHp(result.playerHp);
+        if (result.playerMaxHp !== undefined) setPlayerMaxHp(result.playerMaxHp);
+        if (result.knockedOut) setKnockedOut(true);
+
+        if (result.correct) {
+          setAttackDamage(result.damage);
+          setAttackState('player-attack');
+          setTimeout(() => setAttackState('idle'), 800);
+        } else if (!result.shieldBlocked && result.playerDamage && result.playerDamage > 0) {
+          setAttackDamage(result.playerDamage);
+          setAttackState('boss-attack');
+          setTimeout(() => setAttackState('idle'), 800);
+        }
+
+        setAnswerResult(result);
+
+        if (!result.knockedOut) {
+          setTimeout(() => {
+            setCurrentQuestion(prev => prev + 1);
+            setSelectedAnswer(null);
+            setAnswerResult(null);
+          }, 2000);
+        }
+        setSubmitting(false);
+      },
+    });
+  };
 
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/30 to-black/50 p-5 space-y-4">
@@ -278,7 +363,7 @@ const QuizBossCard: React.FC<{
           {/* Player HP bar */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp}</span>
+              <span className="text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp === -1 ? playerMaxHp : playerHp}</span>
               <span className="text-gray-600">{playerMaxHp}</span>
             </div>
             <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden">
@@ -327,7 +412,7 @@ const QuizBossCard: React.FC<{
                   return (
                     <button
                       key={idx}
-                      onClick={() => onAnswer(quiz.id, question.id, idx)}
+                      onClick={() => handleLocalAnswer(quiz.id, question.id, idx)}
                       disabled={submitting || !!answerResult || knockedOut}
                       className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
                         showResult && isCorrect ? 'border-green-500/50 bg-green-500/10 text-green-400' :
@@ -406,15 +491,6 @@ const QuizBossCard: React.FC<{
 
 const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, userClassSections, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
   const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean } | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [playerHp, setPlayerHp] = useState<number>(-1); // -1 = not initialized
-  const [playerMaxHp, setPlayerMaxHp] = useState<number>(100);
-  const [knockedOut, setKnockedOut] = useState(false);
-  const [attackState, setAttackState] = useState<'idle' | 'player-attack' | 'boss-attack'>('idle');
-  const [attackDamage, setAttackDamage] = useState<number | undefined>(undefined);
   const toast = useToast();
 
   useEffect(() => {
@@ -429,12 +505,8 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
 
   // Filter by section and scheduled time
   const quizzes = allQuizzes.filter(q => {
-    // Hide future-scheduled bosses
     if (q.scheduledAt && new Date(q.scheduledAt) > new Date()) return false;
-    // Filter by section if the quiz targets specific sections
     if (q.targetSections?.length) {
-      // Resolve the student's section: try per-class section for the quiz's class,
-      // then fall back to per-class section for the active class, then legacy section
       const quizClass = q.classType !== 'GLOBAL' ? q.classType : classType;
       const studentSection = userClassSections?.[quizClass] || userClassSections?.[classType] || userSection || '';
       if (!q.targetSections.includes(studentSection)) return false;
@@ -442,30 +514,17 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     return true;
   });
 
-  // Initialize player HP from stats
-  useEffect(() => {
-    if (playerStats) {
-      const combat = deriveCombatStats(playerStats);
-      setPlayerMaxHp(combat.maxHp);
-      if (playerHp === -1) setPlayerHp(combat.maxHp);
-    }
-  }, [playerStats]);
-
-  const handleAnswer = async (quizId: string, questionId: string, answer: number) => {
-    if (submitting || knockedOut) return;
-    setSubmitting(true);
-    setSelectedAnswer(answer);
-
+  const handleAnswer = async (
+    quizId: string,
+    questionId: string,
+    answer: number,
+    callbacks: { onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean }) => void }
+  ) => {
     try {
       const result = await dataService.answerBossQuiz(quizId, questionId, answer);
       if (result.alreadyAnswered) {
         toast.info('Already answered this question!');
       } else if (result.correct) {
-        // Trigger player-attack animation
-        setAttackDamage(result.damage);
-        setAttackState('player-attack');
-        setTimeout(() => setAttackState('idle'), 800);
-
         sfx.bossHit();
         if (result.bossDefeated) {
           sfx.bossDefeated();
@@ -479,53 +538,18 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
         if (result.shieldBlocked) {
           toast.info('Shield blocked the attack!');
         } else if (result.playerDamage && result.playerDamage > 0) {
-          // Trigger boss-attack animation
-          setAttackDamage(result.playerDamage);
-          setAttackState('boss-attack');
-          setTimeout(() => setAttackState('idle'), 800);
           toast.error(`Wrong! The boss hits you for ${result.playerDamage} damage!`);
         } else {
           toast.error('Incorrect. No damage dealt.');
         }
       }
-
-      // Handle healing feedback
-      if (result.healAmount && result.healAmount > 0 && result.correct) {
-        // Healing is already applied server-side, just visual feedback
-      }
-
-      // Update player HP from server response
-      if (result.playerHp !== undefined) setPlayerHp(result.playerHp);
-      if (result.playerMaxHp !== undefined) setPlayerMaxHp(result.playerMaxHp);
-      if (result.knockedOut) {
-        setKnockedOut(true);
-        sfx.bossHit();
-      }
-
-      setAnswerResult({
-        correct: result.correct,
-        damage: result.damage,
-        playerDamage: result.playerDamage,
-        playerHp: result.playerHp,
-        playerMaxHp: result.playerMaxHp,
-        knockedOut: result.knockedOut,
-        isCrit: result.isCrit,
-        healAmount: result.healAmount,
-        shieldBlocked: result.shieldBlocked,
-      });
-
-      // Auto-advance after delay (unless knocked out)
-      if (!result.knockedOut) {
-        setTimeout(() => {
-          setCurrentQuestion(prev => prev + 1);
-          setSelectedAnswer(null);
-          setAnswerResult(null);
-        }, 2000);
-      }
+      if (result.knockedOut) sfx.bossHit();
+      callbacks.onResult(result);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to submit answer');
+      // Signal card to re-enable its submit button
+      callbacks.onResult({ correct: false, damage: 0 });
     }
-    setSubmitting(false);
   };
 
   if (quizzes.length === 0) return null;
@@ -542,18 +566,10 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
           quiz={quiz}
           userId={userId}
           onAnswer={handleAnswer}
-          submitting={submitting}
-          currentQuestion={currentQuestion}
-          selectedAnswer={selectedAnswer}
-          answerResult={answerResult}
-          playerHp={playerHp === -1 ? playerMaxHp : playerHp}
-          playerMaxHp={playerMaxHp}
-          knockedOut={knockedOut}
+          playerStats={playerStats}
           playerAppearance={playerAppearance}
           playerEquipped={playerEquipped || {}}
           playerEvolutionLevel={playerEvolutionLevel || 1}
-          attackState={attackState}
-          attackDamage={attackDamage}
         />
       ))}
     </div>
