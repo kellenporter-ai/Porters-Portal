@@ -426,10 +426,14 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     return () => unsub?.();
   }, [classType]);
 
-  // Filter by section if the quiz targets specific sections
-  const quizzes = allQuizzes.filter(q =>
-    !q.targetSections?.length || q.targetSections.includes(userSection || '')
-  );
+  // Filter by section and scheduled time
+  const quizzes = allQuizzes.filter(q => {
+    // Hide future-scheduled bosses
+    if (q.scheduledAt && new Date(q.scheduledAt) > new Date()) return false;
+    // Filter by section if the quiz targets specific sections
+    if (q.targetSections?.length && !q.targetSections.includes(userSection || '')) return false;
+    return true;
+  });
 
   // Initialize player HP from stats
   useEffect(() => {

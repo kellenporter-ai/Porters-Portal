@@ -137,10 +137,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     const unsubs: (() => void)[] = [];
     try {
       unsubs.push(dataService.subscribeToXPEvents((events) => {
-        const active = events.find(e =>
-          e.isActive && (e.type === 'GLOBAL' || e.targetClass === activeClass)
-          && (!e.targetSections?.length || e.targetSections.includes(user.section || ''))
-        );
+        const active = events.find(e => {
+          if (!e.isActive) return false;
+          if (e.type !== 'GLOBAL' && e.targetClass !== activeClass) return false;
+          if (e.scheduledAt && new Date(e.scheduledAt) > new Date()) return false;
+          if (e.targetSections?.length && !e.targetSections.includes(user.classSections?.[activeClass] || user.section || '')) return false;
+          return true;
+        });
         setActiveEvent(active || null);
       }));
     } catch { /* permission error — not available */ }
@@ -156,7 +159,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               // If quest targets a specific class, only show to students in that class
               if (q.targetClass && !myClasses.includes(q.targetClass)) return false;
               // If quest targets specific sections, only show to students in those sections
-              if (q.targetSections?.length && !q.targetSections.includes(user.section || '')) return false;
+              if (q.targetSections?.length) {
+                const questSection = user.classSections?.[q.targetClass || activeClass] || user.section || '';
+                if (!q.targetSections.includes(questSection)) return false;
+              }
               return true;
           }));
       }));
@@ -231,9 +237,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     return announcements.filter(a =>
       !dismissed.includes(a.id) &&
       (a.classType === 'GLOBAL' || a.classType === activeClass) &&
-      (!a.targetSections?.length || a.targetSections.includes(user.section || ''))
+      (!a.targetSections?.length || a.targetSections.includes(user.classSections?.[activeClass] || user.section || ''))
     );
-  }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.section]);
+  }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.classSections, user.section]);
 
   const handleDismissAnnouncement = async (id: string) => {
     await dataService.dismissAnnouncement(user.id, id);
@@ -1284,7 +1290,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-              <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.section} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+              <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
           </div>
       </div>
 
