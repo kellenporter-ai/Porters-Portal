@@ -150,10 +150,10 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
       <div className="fixed inset-0 z-[9998] bg-black/40 animate-in fade-in duration-200" onClick={onClose} />
 
       <div className="fixed top-0 right-0 bottom-0 z-[9999] w-full xl:max-w-lg">
-        <div className="relative w-full bg-[#12132a]/98 border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
+        <div className="relative w-full bg-[#12132a] border-l border-white/10 h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
 
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-[#12132a]/95 backdrop-blur-md border-b border-white/5 p-6 flex items-center justify-between">
+          <div className="sticky top-0 z-10 bg-[#12132a] border-b border-white/5 p-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-2xl p-0.5 bg-gradient-to-tr from-white/10 to-white/5 ${rankDetails.tierGlow} shadow-xl`}>
                 {student.avatarUrl ? (
