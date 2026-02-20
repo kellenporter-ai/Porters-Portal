@@ -72,7 +72,11 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const resourceRooms = useMemo(() => {
-    return assignments.filter(a => a.classType === selectedClass && a.status !== 'DRAFT');
+    return assignments.filter(a => {
+      if (a.classType !== selectedClass || a.status === 'DRAFT' || a.status === 'ARCHIVED') return false;
+      if (a.scheduledAt && new Date(a.scheduledAt) > new Date()) return false;
+      return true;
+    });
   }, [assignments, selectedClass]);
 
   const pinnedMessages = useMemo(() => {

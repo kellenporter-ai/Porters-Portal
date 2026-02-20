@@ -486,7 +486,9 @@ export const dataService = {
           publicComments: (data.publicComments || []).sort((a: Comment, b: Comment) => 
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           ),
-          dueDate: data.dueDate
+          dueDate: data.dueDate,
+          targetSections: data.targetSections || [],
+          scheduledAt: data.scheduledAt || undefined
         };
       });
       callback(assignments);

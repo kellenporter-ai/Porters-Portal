@@ -358,7 +358,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const unitGroups = useMemo(() => {
     const groups: Record<string, (Assignment & { lastEngagement: string | null; engagementTime: number })[]> = {};
     assignments
-      .filter(a => a.classType === activeClass && a.status !== 'DRAFT' && (!a.targetSections?.length || a.targetSections.includes(user.section || '')))
+      .filter(a => {
+        if (a.classType !== activeClass) return false;
+        if (a.status === 'DRAFT' || a.status === 'ARCHIVED') return false;
+        // Hide future-scheduled resources
+        if (a.scheduledAt && new Date(a.scheduledAt) > new Date()) return false;
+        // Section filtering: check classSections first, fall back to legacy section
+        if (a.targetSections?.length) {
+          const studentSection = user.classSections?.[activeClass] || user.section || '';
+          if (!a.targetSections.includes(studentSection)) return false;
+        }
+        return true;
+      })
       .forEach(a => {
         const log = submissions.find(s => s.assignmentId === a.id);
         const unit = a.unit || 'General Resources';
