@@ -3103,3 +3103,81 @@ export const claimDailyChallenge = onCall(async (request) => {
     return { xpReward, fluxReward, leveledUp: xpResult.leveledUp };
   });
 });
+
+// ==========================================
+// ONE-TIME MIGRATION — sync classXp for single-class students
+// REMOVE THIS FUNCTION AFTER RUNNING
+// ==========================================
+export const migrateClassXp = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const dryRun = request.data?.dryRun !== false; // default true for safety
+
+  const db = admin.firestore();
+  const snapshot = await db.collection("users").where("role", "==", "student").get();
+
+  const BATCH_SIZE = 400;
+  const toUpdate: { id: string; name: string; classType: string; currentClassXp: number; totalXp: number }[] = [];
+
+  let skippedMultiClass = 0;
+  let skippedAlreadyCorrect = 0;
+  let skippedNoClass = 0;
+  let skippedNoXp = 0;
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const gam = data.gamification || {};
+    const totalXp: number = gam.xp || 0;
+    const classXpMap: Record<string, number> = gam.classXp || {};
+
+    const classes: string[] = data.enrolledClasses?.length
+      ? data.enrolledClasses
+      : data.classType ? [data.classType] : [];
+
+    if (classes.length === 0) { skippedNoClass++; return; }
+    if (classes.length > 1)   { skippedMultiClass++; return; }
+    if (totalXp === 0)        { skippedNoXp++; return; }
+
+    const singleClass = classes[0];
+    const currentClassXp = classXpMap[singleClass] || 0;
+
+    if (currentClassXp >= totalXp) { skippedAlreadyCorrect++; return; }
+
+    toUpdate.push({
+      id: doc.id,
+      name: data.name || doc.id,
+      classType: singleClass,
+      currentClassXp,
+      totalXp,
+    });
+  });
+
+  if (!dryRun && toUpdate.length > 0) {
+    for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
+      const chunk = toUpdate.slice(i, i + BATCH_SIZE);
+      const batch = db.batch();
+      chunk.forEach(({ id, classType, totalXp }) => {
+        batch.update(db.doc(`users/${id}`), {
+          [`gamification.classXp.${classType}`]: totalXp,
+        });
+      });
+      await batch.commit();
+    }
+  }
+
+  return {
+    dryRun,
+    totalScanned: snapshot.size,
+    updated: toUpdate.length,
+    skippedMultiClass,
+    skippedAlreadyCorrect,
+    skippedNoClass,
+    skippedNoXp,
+    preview: toUpdate.slice(0, 20).map(u => ({
+      name: u.name,
+      classType: u.classType,
+      from: u.currentClassXp,
+      to: u.totalXp,
+      gain: u.totalXp - u.currentClassXp,
+    })),
+  };
+});
