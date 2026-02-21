@@ -1,7 +1,11 @@
 
 import React from 'react';
 import { LessonBlock } from '../types';
-import { CheckCircle2, HelpCircle, MessageSquare, ListChecks, BookOpen, FileText, Info } from 'lucide-react';
+import {
+  CheckCircle2, HelpCircle, MessageSquare, ListChecks, BookOpen, FileText, Info,
+  Heading, Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
+  ArrowUpDown, Table, BarChart3, GripVertical, Link
+} from 'lucide-react';
 
 interface LessonProgressSidebarProps {
   blocks: LessonBlock[];
@@ -19,6 +23,20 @@ const BLOCK_TYPE_ICON: Record<string, React.ReactNode> = {
   CHECKLIST: <ListChecks className="w-3.5 h-3.5" />,
   VOCABULARY: <BookOpen className="w-3.5 h-3.5" />,
   INFO_BOX: <Info className="w-3.5 h-3.5" />,
+  SECTION_HEADER: <Heading className="w-3.5 h-3.5" />,
+  IMAGE: <Image className="w-3.5 h-3.5" />,
+  VIDEO: <Play className="w-3.5 h-3.5" />,
+  OBJECTIVES: <Target className="w-3.5 h-3.5" />,
+  DIVIDER: <Minus className="w-3.5 h-3.5" />,
+  EXTERNAL_LINK: <ExternalLink className="w-3.5 h-3.5" />,
+  EMBED: <Code className="w-3.5 h-3.5" />,
+  VOCAB_LIST: <List className="w-3.5 h-3.5" />,
+  ACTIVITY: <Zap className="w-3.5 h-3.5" />,
+  SORTING: <ArrowUpDown className="w-3.5 h-3.5" />,
+  DATA_TABLE: <Table className="w-3.5 h-3.5" />,
+  BAR_CHART: <BarChart3 className="w-3.5 h-3.5" />,
+  RANKING: <GripVertical className="w-3.5 h-3.5" />,
+  LINKED: <Link className="w-3.5 h-3.5" />,
 };
 
 const BLOCK_TYPE_LABEL: Record<string, string> = {
@@ -28,6 +46,20 @@ const BLOCK_TYPE_LABEL: Record<string, string> = {
   CHECKLIST: 'Checklist',
   VOCABULARY: 'Vocabulary',
   INFO_BOX: 'Info',
+  SECTION_HEADER: 'Section',
+  IMAGE: 'Image',
+  VIDEO: 'Video',
+  OBJECTIVES: 'Objectives',
+  DIVIDER: 'Divider',
+  EXTERNAL_LINK: 'Link',
+  EMBED: 'Embed',
+  VOCAB_LIST: 'Vocab List',
+  ACTIVITY: 'Activity',
+  SORTING: 'Sorting',
+  DATA_TABLE: 'Data Table',
+  BAR_CHART: 'Bar Chart',
+  RANKING: 'Ranking',
+  LINKED: 'Follow-up',
 };
 
 const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
@@ -38,7 +70,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
   engagementTime = 0,
   xpEarned = 0,
 }) => {
-  const interactiveBlocks = blocks.filter(b => ['MC', 'SHORT_ANSWER', 'CHECKLIST'].includes(b.type));
+  const interactiveBlocks = blocks.filter(b => ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'].includes(b.type));
   const completedInteractive = interactiveBlocks.filter(b => completedBlocks.has(b.id)).length;
   const totalInteractive = interactiveBlocks.length;
   const completionPercent = totalInteractive > 0
@@ -107,7 +139,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
         {blocks.map((block, index) => {
           const isCurrent = index === currentBlockIndex;
           const isComplete = completedBlocks.has(block.id);
-          const isInteractive = ['MC', 'SHORT_ANSWER', 'CHECKLIST'].includes(block.type);
+          const isInteractive = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'].includes(block.type);
 
           return (
             <button

@@ -55,7 +55,11 @@ export enum AssignmentStatus {
 // LESSON BLOCKS
 // ========================================
 
-export type BlockType = 'TEXT' | 'MC' | 'SHORT_ANSWER' | 'VOCABULARY' | 'CHECKLIST' | 'INFO_BOX';
+export type BlockType =
+  | 'TEXT' | 'MC' | 'SHORT_ANSWER' | 'VOCABULARY' | 'CHECKLIST' | 'INFO_BOX'
+  | 'SECTION_HEADER' | 'IMAGE' | 'VIDEO' | 'OBJECTIVES' | 'DIVIDER'
+  | 'EXTERNAL_LINK' | 'EMBED' | 'VOCAB_LIST' | 'ACTIVITY'
+  | 'SORTING' | 'DATA_TABLE' | 'BAR_CHART' | 'RANKING' | 'LINKED';
 
 export interface LessonBlock {
   id: string;
@@ -69,10 +73,41 @@ export interface LessonBlock {
   // Vocabulary
   term?: string;
   definition?: string;
-  // Checklist
+  // Checklist / Objectives / Ranking
   items?: string[];
   // Info box
   variant?: 'tip' | 'warning' | 'note';
+  // Section Header / Activity / External Link
+  icon?: string;
+  title?: string;
+  subtitle?: string;
+  // Image / Video / External Link / Embed
+  url?: string;
+  caption?: string;
+  alt?: string;
+  // External Link
+  buttonLabel?: string;
+  openInNewTab?: boolean;
+  // Embed / Bar Chart
+  height?: number;
+  // Vocab List
+  terms?: { term: string; definition: string }[];
+  // Activity / Sorting
+  instructions?: string;
+  // Sorting
+  leftLabel?: string;
+  rightLabel?: string;
+  sortItems?: { text: string; correct: 'left' | 'right' }[];
+  // Data Table
+  columns?: { key: string; label: string; unit?: string; editable?: boolean }[];
+  trials?: number;
+  // Bar Chart
+  barCount?: number;
+  initialLabel?: string;
+  finalLabel?: string;
+  deltaLabel?: string;
+  // Linked
+  linkedBlockId?: string;
 }
 
 export interface Resource {
