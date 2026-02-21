@@ -51,6 +51,30 @@ export enum AssignmentStatus {
   DRAFT = 'DRAFT'
 }
 
+// ========================================
+// LESSON BLOCKS
+// ========================================
+
+export type BlockType = 'TEXT' | 'MC' | 'SHORT_ANSWER' | 'VOCABULARY' | 'CHECKLIST' | 'INFO_BOX';
+
+export interface LessonBlock {
+  id: string;
+  type: BlockType;
+  content: string;
+  // MC-specific
+  options?: string[];
+  correctAnswer?: number;
+  // Short answer
+  acceptedAnswers?: string[];
+  // Vocabulary
+  term?: string;
+  definition?: string;
+  // Checklist
+  items?: string[];
+  // Info box
+  variant?: 'tip' | 'warning' | 'note';
+}
+
 export interface Resource {
   id: string;
   title: string;
@@ -277,6 +301,7 @@ export interface Assignment {
   dueDate?: string;
   scheduledAt?: string; // ISO date — if set & future, hidden from students until this time
   targetSections?: string[]; // e.g. ["Period 1", "Period 3"] — empty/undefined = all sections
+  lessonBlocks?: LessonBlock[];
 }
 
 export interface Submission {

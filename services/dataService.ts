@@ -488,7 +488,8 @@ export const dataService = {
           ),
           dueDate: data.dueDate,
           targetSections: data.targetSections || [],
-          scheduledAt: data.scheduledAt || undefined
+          scheduledAt: data.scheduledAt || undefined,
+          lessonBlocks: data.lessonBlocks || []
         };
       });
       callback(assignments);
@@ -590,7 +591,8 @@ export const dataService = {
         publicComments: assignment.publicComments || [],
         dueDate: assignment.dueDate || null,
         targetSections: assignment.targetSections && assignment.targetSections.length > 0 ? assignment.targetSections : [],
-        scheduledAt: assignment.scheduledAt || null
+        scheduledAt: assignment.scheduledAt || null,
+        lessonBlocks: assignment.lessonBlocks && assignment.lessonBlocks.length > 0 ? assignment.lessonBlocks : []
       };
 
       if (assignment.id) {

@@ -1,7 +1,6 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Volume2, VolumeX, SkipForward, SkipBack, Play, Pause, Gauge } from 'lucide-react';
-import { useTranslation } from '../contexts/TranslationContext';
 
 interface ProctorTTSProps {
   /** The plain text to read aloud — extracted from htmlContent or iframe */
@@ -13,7 +12,6 @@ interface ProctorTTSProps {
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
 const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
-  const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [currentSentence, setCurrentSentence] = useState(0);
@@ -134,10 +132,10 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
             ? 'text-amber-300 bg-amber-500/20 border-amber-500/30 hover:bg-amber-500/30'
             : 'text-purple-300 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
         }`}
-        title={isPlaying ? t('proctor.tts.stop') : t('proctor.tts.play')}
+        title={isPlaying ? 'Stop Reading' : 'Read Aloud'}
       >
         {isPlaying ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-        {isPlaying ? t('proctor.tts.stop') : t('proctor.tts.play')}
+        {isPlaying ? 'Stop Reading' : 'Read Aloud'}
       </button>
     );
   }

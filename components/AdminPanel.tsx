@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
+import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass, LessonBlock } from '../types';
 import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle, CalendarClock, FileText, Rocket } from 'lucide-react';
 import Modal from './Modal';
 import QuestionBankManager from './QuestionBankManager';
 import SectionPicker from './SectionPicker';
+import LessonBlockEditor from './LessonBlockEditor';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
@@ -50,7 +51,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
     unit: 'Unit 1: Overview',
     category: 'Textbook',
     htmlContent: '',
-    resources: []
+    resources: [],
+    lessonBlocks: []
   });
 
   const [selectedClasses, setSelectedClasses] = useState<Set<string>>(new Set([DefaultClassTypes.AP_PHYSICS]));
@@ -173,7 +175,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Admin System</h1>
           <p className="text-gray-400">Resource deployment and operational oversight.</p>
         </div>
-        <button onClick={() => { setNewAssignment({ title: '', description: '', status: AssignmentStatus.ACTIVE, unit: 'Unit 1: Overview', category: 'Textbook', htmlContent: '', contentUrl: '', resources: [] }); setSelectedSections([]); setScheduleDate(''); setIsEditing(false); setIsModalOpen(true); }} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl shadow-xl transition-all font-bold flex items-center gap-2">
+        <button onClick={() => { setNewAssignment({ title: '', description: '', status: AssignmentStatus.ACTIVE, unit: 'Unit 1: Overview', category: 'Textbook', htmlContent: '', contentUrl: '', resources: [], lessonBlocks: [] }); setSelectedSections([]); setScheduleDate(''); setIsEditing(false); setIsModalOpen(true); }} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl shadow-xl transition-all font-bold flex items-center gap-2">
           <Plus className="w-5 h-5" /> Deploy Resource
         </button>
       </div>
@@ -313,6 +315,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                     <div className="flex items-center gap-2 mt-2 text-emerald-400 text-xs"><CheckCircle className="w-4 h-4" /> Resource uploaded</div>
                 )}
             </div>
+            {/* Lesson Block Editor */}
+            <div className="bg-indigo-900/20 border border-indigo-500/30 p-5 rounded-2xl">
+                <LessonBlockEditor
+                  blocks={(newAssignment.lessonBlocks || []) as LessonBlock[]}
+                  onChange={(blocks) => setNewAssignment({ ...newAssignment, lessonBlocks: blocks })}
+                />
+            </div>
+
             <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description <span className="text-gray-600">(optional)</span></label>
                 <textarea className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 resize-none h-20" placeholder="Brief description for AI prompts and student context..." value={newAssignment.description} onChange={e => setNewAssignment({...newAssignment, description: e.target.value})} />

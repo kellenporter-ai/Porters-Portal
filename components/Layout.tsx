@@ -2,13 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem } from '../constants';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, Globe } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import { storage } from '../lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
 import { dataService } from '../services/dataService';
-import { useTranslation, LANGUAGE_OPTIONS } from '../contexts/TranslationContext';
 
 interface LayoutProps {
   user: User;
@@ -22,8 +21,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
   const [bgUrl, setBgUrl] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const { language, setLanguage } = useTranslation();
 
   // Derived settings with defaults
   const settings: UserSettings = user.settings || {
@@ -262,32 +259,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                </div>
                <div className="flex items-center gap-1">
                  <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
-                 {/* Language selector */}
-                 <div className="relative">
-                   <button
-                     onClick={() => setShowLangMenu(!showLangMenu)}
-                     className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
-                     title="Language"
-                   >
-                     <Globe className="w-4 h-4" />
-                   </button>
-                   {showLangMenu && (
-                     <div className="absolute bottom-full right-0 mb-2 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl max-h-56 overflow-y-auto w-48 z-50 custom-scrollbar">
-                       {LANGUAGE_OPTIONS.map(lang => (
-                         <button
-                           key={lang.code}
-                           onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
-                           className={`w-full text-left px-3 py-2 text-xs transition flex items-center justify-between ${
-                             language === lang.code ? 'bg-purple-600/30 text-purple-300' : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                           }`}
-                         >
-                           <span>{lang.label}</span>
-                           <span className="text-gray-600">{lang.nativeLabel}</span>
-                         </button>
-                       ))}
-                     </div>
-                   )}
-                 </div>
                  <button
                    onClick={() => setIsSettingsOpen(true)}
                    className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"

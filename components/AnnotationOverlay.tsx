@@ -1,7 +1,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Pen, Eraser, Undo2, Trash2, Palette, Minus } from 'lucide-react';
-import { useTranslation } from '../contexts/TranslationContext';
 
 interface AnnotationOverlayProps {
   /** Attach overlay to this container ref */
@@ -23,7 +22,6 @@ const PEN_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#fff
 const PEN_WIDTHS = [2, 4, 6, 8];
 
 const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onAnnotationsChange }) => {
-  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isActive, setIsActive] = useState(false);
   const [tool, setTool] = useState<Tool>('pen');
@@ -186,10 +184,10 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
             ? 'text-red-300 bg-red-500/20 border-red-500/30 hover:bg-red-500/30'
             : 'text-purple-300 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
         }`}
-        title={t('proctor.annotate')}
+        title="Annotate"
       >
         <Pen className="w-3 h-3" />
-        {isActive ? t('proctor.annotate.clear') : t('proctor.annotate')}
+        {isActive ? 'Clear Annotations' : 'Annotate'}
       </button>
 
       {/* Canvas overlay */}

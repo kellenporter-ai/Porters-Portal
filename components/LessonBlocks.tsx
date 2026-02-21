@@ -1,32 +1,9 @@
 
 import React, { useState, useCallback } from 'react';
 import { CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks } from 'lucide-react';
+import { LessonBlock } from '../types';
 
-// ============================================================
-// LESSON BLOCKS — Interactive content blocks for Proctor
-// ============================================================
-// Renders inline within the Proctor htmlContent panel area.
-// Each block type provides a different learning interaction.
-
-export type BlockType = 'TEXT' | 'MC' | 'SHORT_ANSWER' | 'VOCABULARY' | 'CHECKLIST' | 'INFO_BOX';
-
-export interface LessonBlock {
-  id: string;
-  type: BlockType;
-  content: string; // Main text/question
-  // MC-specific
-  options?: string[];
-  correctAnswer?: number; // Index for MC
-  // Short answer
-  acceptedAnswers?: string[]; // Array of accepted strings (case-insensitive)
-  // Vocabulary
-  term?: string;
-  definition?: string;
-  // Checklist
-  items?: string[];
-  // Info box
-  variant?: 'tip' | 'warning' | 'note';
-}
+export type { LessonBlock } from '../types';
 
 interface LessonBlocksProps {
   blocks: LessonBlock[];

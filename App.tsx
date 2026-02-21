@@ -34,7 +34,7 @@ import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
 import EnrollmentCodes from './components/EnrollmentCodes';
-import { TranslationProvider } from './contexts/TranslationContext';
+
 
 const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
   'Resources': 'RESOURCES',
@@ -362,7 +362,6 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-    <TranslationProvider>
     <ConfirmProvider>
     <ToastProvider>
     <>
@@ -428,13 +427,14 @@ const App: React.FC = () => {
                 {assignViewMode === 'WORK' && (
                     <div className="h-full flex flex-col md:flex-row gap-4">
                         <div className="flex-1">
-                            <Proctor 
-                                onComplete={handleEngagementComplete} 
+                            <Proctor
+                                onComplete={handleEngagementComplete}
                                 contentUrl={activeAssignment.contentUrl}
                                 htmlContent={activeAssignment.htmlContent}
                                 userId={user.id}
                                 assignmentId={activeAssignment.id}
                                 classType={activeAssignment.classType}
+                                lessonBlocks={activeAssignment.lessonBlocks}
                             />
                         </div>
                         {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (
@@ -531,7 +531,6 @@ const App: React.FC = () => {
     </>
     </ToastProvider>
     </ConfirmProvider>
-    </TranslationProvider>
     </ErrorBoundary>
   );
 };
