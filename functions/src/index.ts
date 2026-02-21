@@ -3113,7 +3113,7 @@ export const migrateClassXp = onCall(async (request) => {
   const dryRun = request.data?.dryRun !== false; // default true for safety
 
   const db = admin.firestore();
-  const snapshot = await db.collection("users").where("role", "==", "student").get();
+  const snapshot = await db.collection("users").where("role", "==", "STUDENT").get();
 
   const BATCH_SIZE = 400;
   const toUpdate: { id: string; name: string; classType: string; currentClassXp: number; totalXp: number }[] = [];

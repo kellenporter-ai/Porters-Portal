@@ -56,7 +56,7 @@ async function main() {
   console.log(`\n=== classXp migration (${DRY_RUN ? 'DRY RUN — no writes' : 'LIVE — writing to Firestore'}) ===\n`);
 
   const snapshot = await db.collection('users')
-    .where('role', '==', 'student')
+    .where('role', '==', 'STUDENT')
     .get();
 
   console.log(`Found ${snapshot.size} student documents.\n`);
