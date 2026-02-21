@@ -65,6 +65,16 @@ const App: React.FC = () => {
     JSON.parse(localStorage.getItem('chatChannelLastSeen') || '{}')
   );
 
+  // Track the user's group memberships so unread badges only count accessible channels
+  const myGroupIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user?.id || user.role === UserRole.ADMIN) return;
+    const unsub = dataService.subscribeToMyGroups(user.id, (groups) => {
+      myGroupIdsRef.current = new Set(groups.map(g => g.id));
+    });
+    return () => unsub();
+  }, [user?.id, user?.role]);
+
   const markChannelRead = useCallback((channelId: string) => {
     const now = Date.now();
     channelLastSeenRef.current[channelId] = now;
@@ -82,8 +92,25 @@ const App: React.FC = () => {
     const unsub = dataService.subscribeToRecentMessages((msgs) => {
       const newUnread = new Set<string>();
       const lastSeen = channelLastSeenRef.current;
+
+      // Build set of class channels this student is enrolled in
+      const enrolledChannels = new Set(
+        (user?.enrolledClasses || []).map(c => `class_${c.replace(/\s+/g, '_').toLowerCase()}`)
+      );
+
       for (const msg of msgs) {
         if (!msg.channelId || msg.senderId === user?.id) continue;
+
+        // Students: only count channels they can actually access
+        if (user?.role !== UserRole.ADMIN) {
+          if (msg.channelId.startsWith('group_')) {
+            const groupId = msg.channelId.slice('group_'.length);
+            if (!myGroupIdsRef.current.has(groupId)) continue;
+          } else if (msg.channelId.startsWith('class_')) {
+            if (!enrolledChannels.has(msg.channelId)) continue;
+          }
+        }
+
         const msgTime = new Date(msg.timestamp).getTime();
         const channelSeen = lastSeen[msg.channelId] || 0;
         if (msgTime > channelSeen) {
@@ -93,7 +120,7 @@ const App: React.FC = () => {
       setUnreadChannels(newUnread);
     });
     return () => unsub();
-  }, [user?.id]);
+  }, [user?.id, user?.role, user?.enrolledClasses]);
 
   // Computed State
   const users = useMemo(() => {
