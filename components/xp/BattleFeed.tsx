@@ -12,6 +12,7 @@ interface FeedEntry {
   userId: string;
   userName: string;
   damage: number;
+  isCrit?: boolean;
   timestamp: string;
 }
 
@@ -20,15 +21,13 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsub = dataService.subscribeToBossDamageLog(bossId, (log) => {
-      // Sort by timestamp descending, take recent entries
+    const unsub = dataService.subscribeToBossQuizDamageLog(bossId, (log) => {
       const sorted = [...log].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       setEntries(sorted.slice(0, maxEntries));
     });
     return () => unsub();
   }, [bossId, maxEntries]);
 
-  // Auto-scroll to top on new entry
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
@@ -54,7 +53,9 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
               {entry.userName.charAt(0)}
             </span>
             <span className="text-gray-400 truncate flex-1">{entry.userName}</span>
-            <span className="text-amber-400 font-bold">-{entry.damage}</span>
+            <span className={`font-bold ${entry.isCrit ? 'text-yellow-300' : 'text-amber-400'}`}>
+              -{entry.damage}{entry.isCrit ? '!' : ''}
+            </span>
           </div>
         ))}
       </div>

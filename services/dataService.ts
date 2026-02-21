@@ -1128,6 +1128,14 @@ export const dataService = {
     }, () => { /* permission error — ignore */ });
   },
 
+  subscribeToBossQuizDamageLog: (quizId: string, callback: (log: { userId: string; userName: string; damage: number; isCrit?: boolean; timestamp: string }[]) => void) => {
+    const logRef = collection(db, `boss_quizzes/${quizId}/damage_log`);
+    return onSnapshot(logRef, (snapshot) => {
+      const entries = snapshot.docs.map((d) => d.data() as { userId: string; userName: string; damage: number; isCrit?: boolean; timestamp: string });
+      callback(entries);
+    }, () => { /* permission error — ignore */ });
+  },
+
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
     const result = await callAnswerBossQuiz({ quizId, questionId, answer });
     return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean };

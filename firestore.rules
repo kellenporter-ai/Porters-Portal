@@ -322,6 +322,12 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if false; // Admin SDK only
       }
+
+      // Live damage log for battle feed (written by Cloud Function)
+      match /damage_log/{logId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Admin SDK only
+      }
     }
 
     // Boss quiz progress — students can read their own progress

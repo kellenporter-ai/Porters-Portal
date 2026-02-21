@@ -2658,6 +2658,16 @@ export const answerBossQuiz = onCall(async (request) => {
       damageDealt: admin.firestore.FieldValue.increment(damage),
     }, { merge: true });
 
+    // Write to damage_log subcollection for real-time battle feed
+    const quizLogRef = db.collection(`boss_quizzes/${quizId}/damage_log`).doc();
+    batch.set(quizLogRef, {
+      userId: uid,
+      userName: userData.name || "Student",
+      damage,
+      isCrit,
+      timestamp: new Date().toISOString(),
+    });
+
     // Award XP
     const xpResult = buildXPUpdates(userData, damage, activeClass);
     batch.update(userRef, xpResult.updates);

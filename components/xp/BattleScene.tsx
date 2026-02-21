@@ -43,20 +43,23 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     const [showCritFlash, setShowCritFlash] = useState(false);
     const [showHeal, setShowHeal] = useState<number | null>(null);
     const [showShield, setShowShield] = useState(false);
-    const [particles, setParticles] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
+    const [particles, setParticles] = useState<{ id: number; x: number; y: number; color: string; px: number; py: number }[]>([]);
     const [screenShake, setScreenShake] = useState(false);
 
     const bossType = bossAppearance?.bossType || 'BRUTE';
     const bossHue = bossAppearance?.hue ?? 0;
 
-    // Spawn particles at a position
+    // Spawn particles at a position with random scatter directions
     const spawnParticles = (side: 'left' | 'right', color: string, count: number) => {
         const baseX = side === 'right' ? 75 : 25;
         const newParticles = Array.from({ length: count }, (_, i) => ({
             id: Date.now() + i,
-            x: baseX + (Math.random() - 0.5) * 30,
-            y: 30 + (Math.random() - 0.5) * 20,
+            x: baseX + (Math.random() - 0.5) * 20,
+            y: 30 + (Math.random() - 0.5) * 15,
             color,
+            // Random scatter direction for each particle
+            px: (Math.random() - 0.5) * 60,
+            py: -(Math.random() * 40 + 10),
         }));
         setParticles(prev => [...prev, ...newParticles]);
         setTimeout(() => setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id))), 1000);
@@ -87,20 +90,25 @@ const BattleScene: React.FC<BattleSceneProps> = ({
             }
 
             return () => { clearTimeout(t1); clearTimeout(t2); };
-        } else if (attackState === 'boss-attack' && damage) {
+        } else if (attackState === 'boss-attack') {
             if (shieldBlocked) {
+                // Shield absorbed the hit — show shield effect, no damage
                 setShowShield(true);
+                spawnParticles('left', '#22d3ee', 6); // Cyan shield particles
                 setTimeout(() => setShowShield(false), 800);
-            } else {
+                return;
+            }
+            if (damage && damage > 0) {
+                // Boss actually hit the player
                 setShowImpact(true);
                 setScreenShake(true);
                 spawnParticles('left', '#ef4444', 8);
+                setFloatingDmg({ value: damage, side: 'left' });
                 setTimeout(() => setScreenShake(false), 300);
+                const t1 = setTimeout(() => setShowImpact(false), 500);
+                const t2 = setTimeout(() => setFloatingDmg(null), 1200);
+                return () => { clearTimeout(t1); clearTimeout(t2); };
             }
-            setFloatingDmg({ value: damage, side: 'left' });
-            const t1 = setTimeout(() => setShowImpact(false), 500);
-            const t2 = setTimeout(() => setFloatingDmg(null), 1200);
-            return () => { clearTimeout(t1); clearTimeout(t2); };
         }
     }, [attackState, damage, isCrit, healAmount, shieldBlocked]);
 
@@ -125,7 +133,13 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 <div
                     key={p.id}
                     className="absolute w-1.5 h-1.5 rounded-full pointer-events-none animate-[particleBurst_1s_ease-out_forwards]"
-                    style={{ left: `${p.x}%`, top: `${p.y}%`, backgroundColor: p.color }}
+                    style={{
+                        left: `${p.x}%`,
+                        top: `${p.y}%`,
+                        backgroundColor: p.color,
+                        '--px': `${p.px}px`,
+                        '--py': `${p.py}px`,
+                    } as React.CSSProperties}
                 />
             ))}
 
