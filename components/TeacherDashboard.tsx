@@ -1,12 +1,11 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
-import GroupManager from './GroupManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
 
 interface TeacherDashboardProps {
@@ -26,6 +25,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [muteMenuFlagId, setMuteMenuFlagId] = useState<string | null>(null);
   const [sortCol, setSortCol] = useState<string>('xp');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [engagementSearch, setEngagementSearch] = useState('');
+  const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
 
   const handleSort = (col: string) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -446,14 +447,31 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
       </div>
 
-      {/* STUDENT GROUPS */}
-      <div className="mt-8">
-          <GroupManager students={students} availableSections={availableSections} />
-      </div>
-
       {/* ENGAGEMENT RANKING TABLE */}
       <div className="mt-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8">
-          <h3 className="text-xl font-bold text-white mb-6">Student Engagement Ranking</h3>
+          <h3 className="text-xl font-bold text-white mb-4">Student Engagement Ranking</h3>
+          <div className="flex flex-col md:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={engagementSearch}
+                onChange={e => setEngagementSearch(e.target.value)}
+                className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+              />
+            </div>
+            <select
+              value={bucketFilter}
+              onChange={e => setBucketFilter(e.target.value as TelemetryBucket | '')}
+              className="bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50"
+            >
+              <option value="">All Buckets</option>
+              {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(b => (
+                <option key={b} value={b}>{BUCKET_META[b].label}</option>
+              ))}
+            </select>
+          </div>
           <div className="overflow-x-auto">
               <table className="w-full text-left">
                   <thead>
@@ -468,7 +486,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   </thead>
                   <tbody className="divide-y divide-white/5">
                       {(() => {
-                          const sorted = [...students].sort((a, b) => {
+                          const filtered = students.filter(s => {
+                            const matchesSearch = !engagementSearch || s.name.toLowerCase().includes(engagementSearch.toLowerCase()) || s.email.toLowerCase().includes(engagementSearch.toLowerCase());
+                            const matchesBucket = !bucketFilter || bucketsByStudent.get(s.id)?.bucket === bucketFilter;
+                            return matchesSearch && matchesBucket;
+                          });
+                          const sorted = [...filtered].sort((a, b) => {
                               switch (sortCol) {
                                   case 'name':      return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
                                   case 'class':     return sortDir === 'asc' ? (a.classType||'').localeCompare(b.classType||'') : (b.classType||'').localeCompare(a.classType||'');

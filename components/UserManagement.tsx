@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser } from '../types';
-import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Clock, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
@@ -328,17 +328,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
       }
   }
 
-  const formatLastLogin = (dateStr?: string) => {
-      if(!dateStr) return 'Never';
-      const date = new Date(dateStr);
-      const diff = Date.now() - date.getTime();
-      const mins = Math.floor(diff / 60000);
-      if(mins < 60) return `${mins}m ago`;
-      const hrs = Math.floor(mins / 60);
-      if(hrs < 24) return `${hrs}h ago`;
-      return date.toLocaleDateString();
-  };
-
   const renderClassSection = (type: ClassType) => {
     const isUncategorized = type === DefaultClassTypes.UNCATEGORIZED;
     // Filter by enrolledClasses array, or catch "ghosts" in Uncategorized
@@ -426,21 +415,18 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 <SortableHeader label="Operative"     col="name"    type={type} />
                 <SortableHeader label="Section"       col="section" type={type} className="text-center" />
                 <SortableHeader label="System Status" col="status"  type={type} className="text-center" />
-                <SortableHeader label="Last Seen"     col="lastSeen" type={type} className="text-center" />
-                <SortableHeader label="Class XP"      col="xp"      type={type} className="text-center" />
                 <th className="text-center p-4 w-12">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {classStudents.length === 0 ? (
                   <tr>
-                      <td colSpan={7} className="p-8 text-center text-gray-500 italic text-sm">
+                      <td colSpan={5} className="p-8 text-center text-gray-500 italic text-sm">
                           {isUncategorized ? "No restricted operatives found." : "No students registered in this roster yet."}
                       </td>
                   </tr>
               ) : (
                 classStudents.map(student => {
-                    const classXP = student.gamification?.classXp?.[type] || 0;
                     return (
                         <tr key={student.id} className={`hover:bg-white/5 transition group ${selectedUsers.has(student.id) ? 'bg-purple-500/10' : ''}`}>
                         <td className="p-4 text-center">
@@ -518,32 +504,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
                                 {student.isWhitelisted ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
                                 {student.isWhitelisted ? 'Authorized' : 'Restricted'}
                             </span>
-                        </td>
-                        <td className="p-4 text-center">
-                            <span className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
-                                <Clock className="w-3 h-3" />
-                                {formatLastLogin(student.lastLoginAt)}
-                            </span>
-                        </td>
-                        <td className="p-4 text-center">
-                            <div>
-                                <span className="font-bold text-lg text-purple-300">
-                                    {classXP.toLocaleString()}
-                                </span>
-                                {(student.enrolledClasses?.length || 0) > 1 && (
-                                    <details className="mt-1">
-                                        <summary className="text-[9px] text-gray-500 cursor-pointer hover:text-purple-400 transition">All classes</summary>
-                                        <div className="mt-1 space-y-0.5 text-left">
-                                            {student.enrolledClasses?.map((cls: string) => (
-                                                <div key={cls} className="flex items-center justify-between gap-2 text-[10px]">
-                                                    <span className={`truncate ${cls === type ? 'text-purple-400 font-bold' : 'text-gray-500'}`}>{cls}</span>
-                                                    <span className="text-gray-400 font-mono">{(student.gamification?.classXp?.[cls] || 0).toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </details>
-                                )}
-                            </div>
                         </td>
                         <td className="p-4 text-center">
                             <div className="flex items-center justify-center gap-2">

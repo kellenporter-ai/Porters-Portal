@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap } from 'lucide-react';
+import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap, Shield, Brain, Award } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -23,12 +23,27 @@ export const CLASS_CONFIGS = {
   }
 };
 
-export const NAVIGATION = [
+export interface NavItem {
+  name: string;
+  icon: React.ReactNode;
+  role: 'ADMIN' | 'STUDENT';
+  children?: { name: string; icon: React.ReactNode }[];
+}
+
+export const NAVIGATION: NavItem[] = [
   // Admin navigation
   { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Admin Panel', icon: <ShieldAlert className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'User Management', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'XP Command', icon: <Target className="w-5 h-5" />, role: 'ADMIN' },
+  { name: 'Student Groups', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },
+  { name: 'XP Command', icon: <Target className="w-5 h-5" />, role: 'ADMIN', children: [
+    { name: 'Operatives', icon: <Shield className="w-4 h-4" /> },
+    { name: 'XP Protocols', icon: <Zap className="w-4 h-4" /> },
+    { name: 'Missions', icon: <Award className="w-4 h-4" /> },
+    { name: 'Mission Control', icon: <Briefcase className="w-4 h-4" /> },
+    { name: 'Boss Ops', icon: <Brain className="w-4 h-4" /> },
+    { name: 'Tutoring', icon: <GraduationCap className="w-4 h-4" /> },
+  ]},
   // Student navigation
   { name: 'Resources', icon: <Layers className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT' },

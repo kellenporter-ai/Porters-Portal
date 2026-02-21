@@ -14,6 +14,7 @@ import TeacherDashboard from './components/TeacherDashboard';
 import UserManagement from './components/UserManagement';
 import AdminPanel from './components/AdminPanel';
 import XPManagement from './components/XPManagement';
+import GroupManager from './components/GroupManager';
 import PhysicsTools from './components/PhysicsTools';
 import Communications from './components/Communications';
 import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon } from 'lucide-react';
@@ -494,7 +495,8 @@ const App: React.FC = () => {
                       }}
                     />
                   )}
-                  {activeTab === 'XP Command' && <XPManagement users={rawUsers} />}
+                  {activeTab === 'Student Groups' && <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />}
+                  {activeTab.startsWith('XP Command:') && <XPManagement users={rawUsers} initialTab={activeTab.split(':')[1]} />}
               </>
             )}
 

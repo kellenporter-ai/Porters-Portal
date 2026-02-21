@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, UserRole, UserSettings } from '../types';
-import { NAVIGATION } from '../constants';
-import { LogOut, GraduationCap, Settings, Menu, X } from 'lucide-react';
+import { NAVIGATION, NavItem } from '../constants';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import { storage } from '../lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
 import SettingsModal from './SettingsModal';
@@ -53,6 +53,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
     await dataService.updateUserSettings(user.id, newSettings);
   };
 
+  const [expandedParent, setExpandedParent] = useState<string | null>(null);
+
+  // Auto-expand parent when a child tab is active
+  useEffect(() => {
+    const parent = NAVIGATION.find(item => item.children?.some(c => activeTab === `${item.name}:${c.name}`));
+    if (parent) setExpandedParent(parent.name);
+  }, [activeTab]);
+
   const NavItems = () => {
     const filteredItems = NAVIGATION.filter(item => {
       if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return false;
@@ -60,26 +68,67 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       return true;
     });
 
+    const isChildActive = (item: NavItem) => item.children?.some(c => activeTab === `${item.name}:${c.name}`);
+
     return (
       <>
         {filteredItems.map((item) => (
-          <button
-            key={item.name}
-            onClick={() => {
-                setActiveTab(item.name);
-                setIsMobileMenuOpen(false);
-            }}
-            className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
-              activeTab === item.name
-                ? 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
-            }`}
-          >
-            <span className={`${activeTab === item.name ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
-              {item.icon}
-            </span>
-            <span className="font-medium text-sm">{item.name}</span>
-          </button>
+          <div key={item.name}>
+            <button
+              onClick={() => {
+                if (item.children) {
+                  // Toggle expand; select first child if collapsing to expanded
+                  if (expandedParent === item.name) {
+                    setExpandedParent(null);
+                  } else {
+                    setExpandedParent(item.name);
+                    // Select first child if no child is active
+                    if (!isChildActive(item)) {
+                      setActiveTab(`${item.name}:${item.children[0].name}`);
+                      setIsMobileMenuOpen(false);
+                    }
+                  }
+                } else {
+                  setActiveTab(item.name);
+                  setIsMobileMenuOpen(false);
+                }
+              }}
+              className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
+                (activeTab === item.name || isChildActive(item))
+                  ? item.children ? 'bg-purple-500/10 text-white border border-purple-500/20' : 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
+              }`}
+            >
+              <span className={`${(activeTab === item.name || isChildActive(item)) ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
+                {item.icon}
+              </span>
+              <span className="font-medium text-sm flex-1 text-left">{item.name}</span>
+              {item.children && (
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-purple-400' : 'text-gray-600'}`} />
+              )}
+            </button>
+            {item.children && expandedParent === item.name && (
+              <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                {item.children.map(child => {
+                  const childTab = `${item.name}:${child.name}`;
+                  return (
+                    <button
+                      key={child.name}
+                      onClick={() => { setActiveTab(childTab); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                        activeTab === childTab
+                          ? 'bg-purple-600/60 text-white'
+                          : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                      }`}
+                    >
+                      <span className={activeTab === childTab ? 'text-white' : 'text-gray-600'}>{child.icon}</span>
+                      {child.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         ))}
       </>
     );

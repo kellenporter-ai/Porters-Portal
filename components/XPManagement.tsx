@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType, BossQuestionBank, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, getSectionsForClass } from '../types';
 import BossAvatar from './xp/BossAvatar';
-import { Search, Trophy, Target, Zap, Shield, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2, Database, BarChart3, Crown, Swords, Eye } from 'lucide-react';
+import { Search, Trophy, Zap, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2, Database, BarChart3, Crown, Swords, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import SectionPicker from './SectionPicker';
 import { calculateGearScore } from '../lib/gamification';
@@ -15,14 +15,26 @@ import AdjustXPModal from './xp/AdjustXPModal';
 import MissionControlTab from './xp/MissionControlTab';
 import MissionFormModal, { INITIAL_MISSION_STATE } from './xp/MissionFormModal';
 
+type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING';
+
+const TAB_NAME_MAP: Record<string, XPTab> = {
+  'Operatives': 'OPERATIVES',
+  'XP Protocols': 'PROTOCOLS',
+  'Missions': 'MISSIONS',
+  'Mission Control': 'MISSION_CONTROL',
+  'Boss Ops': 'BOSS_OPS',
+  'Tutoring': 'TUTORING',
+};
+
 interface XPManagementProps {
   users: User[];
+  initialTab?: string;
 }
 
-const XPManagement: React.FC<XPManagementProps> = ({ users }) => {
+const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
-  const [activeTab, setActiveTab] = useState<'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING'>('OPERATIVES');
+  const activeTab: XPTab = (initialTab && TAB_NAME_MAP[initialTab]) || 'OPERATIVES';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');
   const [filterSection, setFilterSection] = useState('All Sections');
@@ -624,17 +636,21 @@ RULES:
 
   const pendingTutoringSessions = allTutoringSessions.filter(s => ['OPEN', 'MATCHED', 'IN_PROGRESS', 'COMPLETED'].includes(s.status));
 
-  const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: React.ElementType }) => (
-    <button onClick={() => setActiveTab(id)} className={`px-6 py-4 flex items-center gap-2 border-b-2 font-bold transition-all ${activeTab === id ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
-      <Icon className="w-4 h-4" />{label}
-    </button>
-  );
+  // Tab display names for headers
+  const TAB_TITLES: Record<XPTab, string> = {
+    OPERATIVES: 'Operatives',
+    PROTOCOLS: 'XP Protocols',
+    MISSIONS: 'Missions',
+    MISSION_CONTROL: 'Mission Control',
+    BOSS_OPS: 'Boss Ops',
+    TUTORING: 'Tutoring',
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Gamification Command</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">{TAB_TITLES[activeTab]}</h1>
           <p className="text-gray-400">Manage operative progression, rewards, and active engagement boosters.</p>
         </div>
         <div className="flex gap-2">
@@ -645,14 +661,6 @@ RULES:
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md">
-        <div className="flex bg-black/20 border-b border-white/5 overflow-x-auto custom-scrollbar">
-          <TabButton id="OPERATIVES" label="Operatives" icon={Shield} />
-          <TabButton id="PROTOCOLS" label="XP Protocols" icon={Zap} />
-          <TabButton id="MISSIONS" label="Missions" icon={Target} />
-          <TabButton id="MISSION_CONTROL" label="Mission Control" icon={Briefcase} />
-          <TabButton id="BOSS_OPS" label="Boss Ops" icon={Brain} />
-          <TabButton id="TUTORING" label="Tutoring" icon={GraduationCap} />
-        </div>
         <div className="p-6">
           {activeTab === 'OPERATIVES' && (
             <div className="space-y-6">
