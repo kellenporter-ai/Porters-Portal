@@ -34,6 +34,7 @@ import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
 import EnrollmentCodes from './components/EnrollmentCodes';
+import LessonEditorPage from './components/LessonEditorPage';
 
 
 // ─── Access Pending screen with enrollment code redemption ───
@@ -580,6 +581,7 @@ const App: React.FC = () => {
                   )}
                   {activeTab === 'Student Groups' && <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />}
                   {activeTab === 'Enrollment Codes' && <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />}
+                  {activeTab === 'Lesson Editor' && <LessonEditorPage assignments={assignments} onClose={() => setActiveTab('Admin Panel')} />}
                   {activeTab.startsWith('XP Command:') && <XPManagement users={rawUsers} initialTab={activeTab.split(':')[1]} />}
               </>
             )}

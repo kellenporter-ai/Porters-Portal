@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
+import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical, GraduationCap } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 
@@ -1043,27 +1043,31 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                                 const isSubstantial = engMin >= 5;
                                                 const completion = practiceCompletion[resource.id];
                                                 const isModuleCompleted = completion?.completed;
+                                                const hasLessonBlocks = resource.lessonBlocks && resource.lessonBlocks.length > 0;
+                                                const isLessonOnly = hasLessonBlocks && !resource.contentUrl;
 
                                                 return (
                                                 <div
                                                     key={resource.id}
-                                                    className={`bg-white/5 border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${isModuleCompleted ? 'border-green-500/20' : 'border-white/5'}`}
+                                                    className={`bg-white/5 border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-white/5'}`}
                                                     onClick={() => onStartAssignment && onStartAssignment(resource.id)}
                                                 >
                                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                         isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
                                                         isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
                                                         resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
+                                                        isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110 shadow-lg group-hover:shadow-indigo-500/20' :
                                                         'bg-purple-500/10 text-purple-400 group-hover:scale-110 shadow-lg group-hover:shadow-purple-500/20'
                                                     }`}>
                                                         {isModuleCompleted ? <CheckCircle2 className="w-6 h-6" /> :
                                                          isSubstantial ? <CheckCircle2 className="w-6 h-6" /> :
                                                          resource.lastEngagement ? <CheckCircle2 className="w-5 h-5 opacity-60" /> :
+                                                         isLessonOnly ? <GraduationCap className="w-6 h-6" /> :
                                                          CATEGORY_ICONS[resource.category || 'Supplemental']}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-black/40 text-gray-500 border border-white/5">{resource.category}</span>
+                                                            <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-black/40 text-gray-500 border-white/5'}`}>{isLessonOnly ? 'Lesson' : resource.category}</span>
                                                             <h4 className="font-bold text-white text-sm truncate">{resource.title}</h4>
                                                             {isModuleCompleted && (
                                                                 <span className="text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">
@@ -1081,6 +1085,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                                             )}
                                                             {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
                                                                 <span className="text-[9px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
+                                                            )}
+                                                            {hasLessonBlocks && (
+                                                                <span className="text-[9px] text-indigo-400 font-bold flex items-center gap-0.5">
+                                                                    <GraduationCap className="w-3 h-3" /> {resource.lessonBlocks!.length} blocks
+                                                                </span>
                                                             )}
                                                             {hasDue && (
                                                                 <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`}>

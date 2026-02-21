@@ -101,6 +101,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [ttsText, setTtsText] = useState('');
+  const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
+  const awardedBlocksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
@@ -108,6 +110,33 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
       lastInteractionRef.current = Date.now();
       if (!isActive) setIsActive(true);
   }, [isActive]);
+
+  // Award XP when a lesson block is completed
+  const handleBlockComplete = useCallback(async (blockId: string, correct: boolean) => {
+    if (!correct || !userId || !assignmentId || awardedBlocksRef.current.has(blockId)) return;
+    awardedBlocksRef.current.add(blockId);
+    setLessonBlocksAnswered(prev => prev + 1);
+    handleInteraction();
+    const xpAmount = 15;
+    try {
+      const result = await callAwardQuestionXP({
+        assignmentId,
+        questionId: `block_${blockId}`,
+        xpAmount,
+        classType: classType || 'Uncategorized'
+      });
+      const resultData = result.data as { awarded: boolean; serverXP?: number };
+      if (resultData.awarded) {
+        const earnedXP = resultData.serverXP || xpAmount;
+        setXpEarnedSession(prev => prev + earnedXP);
+        setXpToast({ text: `+${earnedXP} XP`, type: 'success' });
+        sfx.xpGain();
+        setTimeout(() => setXpToast(null), 2000);
+      }
+    } catch (err) {
+      console.error('Lesson block XP award failed', err);
+    }
+  }, [userId, assignmentId, classType, handleInteraction]);
 
   // Session Timer
   useEffect(() => {
@@ -469,6 +498,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                         <CheckCircle2 className="w-3 h-3" /> {questionsAnswered} answered
                     </div>
                 )}
+                {!bridgeConnected && lessonBlocksAnswered > 0 && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-300 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                        <CheckCircle2 className="w-3 h-3" /> {lessonBlocksAnswered} blocks completed
+                    </div>
+                )}
                 {bridgeConnected && xpEarnedSession > 0 && (
                     <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
                         <Zap className="w-3 h-3" /> {xpEarnedSession} XP
@@ -548,17 +582,30 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
             {contentUrl ? (
-                <div ref={iframeWrapperRef} className="flex-1 flex flex-col bg-white relative">
-                    <iframe
-                        ref={iframeRef}
-                        src={contentUrl}
-                        className="w-full flex-1 border-none bg-white"
-                        title="Resource Viewer"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-                        onLoad={handleInteraction}
-                    />
-                    {/* Annotation drawing overlay on top of iframe */}
-                    <AnnotationOverlay containerRef={iframeWrapperRef} />
+                <>
+                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative ${lessonBlocks && lessonBlocks.length > 0 ? 'flex-[3]' : 'flex-1'}`}>
+                        <iframe
+                            ref={iframeRef}
+                            src={contentUrl}
+                            className="w-full flex-1 border-none bg-white"
+                            title="Resource Viewer"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                            onLoad={handleInteraction}
+                        />
+                        {/* Annotation drawing overlay on top of iframe */}
+                        <AnnotationOverlay containerRef={iframeWrapperRef} />
+                    </div>
+                    {/* Lesson Blocks as bottom panel alongside iframe */}
+                    {lessonBlocks && lessonBlocks.length > 0 && (
+                        <div className="flex-[2] bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
+                            <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
+                        </div>
+                    )}
+                </>
+            ) : lessonBlocks && lessonBlocks.length > 0 ? (
+                /* Lesson-only mode: blocks fill the entire content area */
+                <div className="flex-1 bg-[#0f0720]/95 overflow-y-auto p-6 text-gray-300 custom-scrollbar">
+                    <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
                 </div>
             ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-600 italic">
@@ -578,16 +625,6 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                         {ttsText && <ProctorTTS textContent={ttsText} />}
                     </div>
                     <div ref={contentRef} className="proctor-content text-sm leading-relaxed" />
-                </div>
-            )}
-
-            {/* Lesson Blocks — interactive block-based content */}
-            {lessonBlocks && lessonBlocks.length > 0 && (
-                <div className="h-2/5 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
-                    <h3 className="text-white font-bold mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
-                        <Maximize2 className="w-4 h-4 text-purple-400" /> Interactive Lesson
-                    </h3>
-                    <LessonBlocks blocks={lessonBlocks} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
                 </div>
             )}
         </div>

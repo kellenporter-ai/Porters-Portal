@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass, LessonBlock } from '../types';
-import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle, CalendarClock, FileText, Rocket } from 'lucide-react';
+import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle, CalendarClock, FileText, Rocket, Clipboard } from 'lucide-react';
 import Modal from './Modal';
 import QuestionBankManager from './QuestionBankManager';
 import SectionPicker from './SectionPicker';
@@ -8,6 +8,106 @@ import LessonBlockEditor from './LessonBlockEditor';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
+
+// ──────────────────────────────────────────────
+// Smart Unit Selector (combobox)
+// ──────────────────────────────────────────────
+const UnitSelector: React.FC<{ value: string; onChange: (val: string) => void; existingUnits: string[] }> = ({ value, onChange, existingUnits }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false); };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = existingUnits.filter(u => u.toLowerCase().includes(filter.toLowerCase()));
+  const showCreate = filter && !existingUnits.some(u => u.toLowerCase() === filter.toLowerCase());
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => { onChange(e.target.value); setFilter(e.target.value); }}
+        onFocus={() => { setIsOpen(true); setFilter(''); }}
+        placeholder="Select or type a unit..."
+        className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+        required
+      />
+      {isOpen && existingUnits.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+          {filtered.map(unit => (
+            <button key={unit} type="button" onClick={() => { onChange(unit); setIsOpen(false); }} className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-500/10 transition ${value === unit ? 'text-purple-300 bg-purple-500/5' : 'text-gray-300'}`}>
+              {unit}
+            </button>
+          ))}
+          {filtered.length === 0 && !showCreate && (
+            <div className="px-4 py-2 text-xs text-gray-500 italic">No matching units</div>
+          )}
+          {showCreate && (
+            <button type="button" onClick={() => { onChange(filter); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 transition flex items-center gap-2">
+              <Plus className="w-3 h-3" /> Create "{filter}"
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────
+// AI Prompt templates (for copy-to-clipboard)
+// ──────────────────────────────────────────────
+const AI_HTML_PROMPT = `I need you to create a standalone HTML file for an interactive educational activity that integrates with a Learning Management System called "Porters Portal". The HTML file must communicate with the parent application through the Proctor Bridge Protocol using postMessage.
+
+REQUIRED BRIDGE INTEGRATION:
+The HTML must include this bridge snippet at the top of its <script>:
+
+\`\`\`javascript
+const PortalBridge = {
+  _ready: false, _userId: null, _savedState: null,
+  init() {
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'portal-init') { this._userId = e.data.payload.userId; this._savedState = e.data.payload.savedState; this._ready = true; this.onReady(e.data.payload); }
+      if (e.data?.type === 'portal-xp-result') this.onXPResult(e.data.payload);
+      if (e.data?.type === 'portal-reset-ok') this.onReset();
+    });
+    window.parent.postMessage({ type: 'portal-ready' }, '*');
+  },
+  save(state, currentQuestion) { window.parent.postMessage({ type: 'portal-save', payload: { state, currentQuestion } }, '*'); },
+  answer(questionId, correct, attempts) { window.parent.postMessage({ type: 'portal-answer', payload: { questionId, correct, attempts } }, '*'); },
+  complete(score, totalQuestions, correctAnswers) { window.parent.postMessage({ type: 'portal-complete', payload: { score, totalQuestions, correctAnswers } }, '*'); },
+  onReady(payload) {}, onXPResult(payload) {}, onReset() {}
+};
+PortalBridge.init();
+\`\`\`
+
+REQUIREMENTS:
+1. Self-contained single HTML file (inline CSS + JS, no external dependencies)
+2. Call PortalBridge.save() to auto-save student progress
+3. Call PortalBridge.answer(questionId, correct, attempts) when students answer questions (awards XP)
+4. Call PortalBridge.complete(score, totalQuestions, correctAnswers) when the activity is finished
+5. Implement PortalBridge.onReady() to restore saved state
+6. Dark theme styling (background: #0f0720, text: white/gray, accents: purple/green)
+7. Mobile-responsive layout
+
+The activity I need is: [DESCRIBE YOUR ACTIVITY HERE]`;
+
+const AI_JSON_PROMPT = `Convert the following content into a JSON array of lesson blocks for the Porters Portal LMS. Output ONLY valid JSON.
+
+BLOCK TYPES:
+Content: SECTION_HEADER (icon, title, subtitle), TEXT (content), IMAGE (url, caption, alt), VIDEO (url, caption), OBJECTIVES (title, items[]), DIVIDER, EXTERNAL_LINK (title, url, content, buttonLabel, openInNewTab), EMBED (url, caption, height), INFO_BOX (variant: tip|warning|note, content)
+Interactive: VOCABULARY (term, definition), VOCAB_LIST (terms[{term,definition}]), ACTIVITY (icon, title, instructions), CHECKLIST (content, items[]), SORTING (title, instructions, leftLabel, rightLabel, sortItems[{text,correct:"left"|"right"}]), DATA_TABLE (title, columns[{key,label,unit?,editable?}], trials), BAR_CHART (title, barCount, initialLabel, finalLabel, deltaLabel, height)
+Questions: MC (content, options[], correctAnswer), SHORT_ANSWER (content, acceptedAnswers[]), RANKING (content, items[])
+
+RULES: Output a JSON array [{...},...]. Start with SECTION_HEADER. Use OBJECTIVES near top. Add TEXT between interactive elements. Every block needs "type" and "content" (even if "").
+
+The content to convert:
+[PASTE YOUR CONTENT HERE — Google Slides, PDF, Google Docs, spreadsheets, Word, PowerPoint, CSV, etc.]`;
 
 interface AdminPanelProps {
   assignments: Assignment[];
@@ -61,6 +161,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
   const [isUploadingMain, setIsUploadingMain] = useState(false);
 
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
+
+  // Compute existing units from assignments filtered by selected classes
+  const existingUnits = useMemo(() => {
+    const units = new Set<string>();
+    assignments.forEach(a => {
+      if (selectedClasses.has(a.classType) && a.unit) units.add(a.unit);
+    });
+    return Array.from(units).sort();
+  }, [assignments, selectedClasses]);
 
   // Fix: Explicitly type availableClasses to string[] to resolve Property 'map' does not exist on type 'unknown' error
   const availableClasses = useMemo<string[]>(() => {
@@ -287,10 +396,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
                     <input required className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500" value={newAssignment.title} onChange={e => setNewAssignment({...newAssignment, title: e.target.value})} />
                 </div>
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
-                    <input required className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500" value={newAssignment.unit} onChange={e => setNewAssignment({...newAssignment, unit: e.target.value})} />
-                </div>
+                <UnitSelector value={newAssignment.unit || ''} onChange={(val) => setNewAssignment({...newAssignment, unit: val})} existingUnits={existingUnits} />
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
                     <select value={newAssignment.category} onChange={(e) => setNewAssignment({...newAssignment, category: e.target.value as ResourceCategory})} className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500">
@@ -321,6 +427,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                   blocks={(newAssignment.lessonBlocks || []) as LessonBlock[]}
                   onChange={(blocks) => setNewAssignment({ ...newAssignment, lessonBlocks: blocks })}
                 />
+            </div>
+
+            {/* AI Prompt Copy Buttons */}
+            <div className="flex gap-3">
+                <button type="button" onClick={() => { navigator.clipboard.writeText(AI_HTML_PROMPT); toast.success('HTML Proctor prompt copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 text-xs font-bold transition">
+                  <Clipboard className="w-3.5 h-3.5" /> Copy AI HTML Prompt
+                </button>
+                <button type="button" onClick={() => { navigator.clipboard.writeText(AI_JSON_PROMPT); toast.success('JSON block prompt copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/10 text-xs font-bold transition">
+                  <Clipboard className="w-3.5 h-3.5" /> Copy AI JSON Prompt
+                </button>
             </div>
 
             <div>
