@@ -1,12 +1,85 @@
 
 import React from 'react';
 import { User, UserSettings } from '../types';
-import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, BellRing } from 'lucide-react';
+import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, BellRing, KeyRound, CheckCircle } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './ToastProvider';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
 
 import { dataService } from '../services/dataService';
+
+// ─── Inline component for joining another class via enrollment code ───
+const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
+  const [code, setCode] = React.useState('');
+  const [isRedeeming, setIsRedeeming] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState<string | null>(null);
+  const toast = useToast();
+
+  const handleCodeChange = (raw: string) => {
+    const cleaned = raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
+    setCode(cleaned.length > 4 ? cleaned.slice(0, 4) + '-' + cleaned.slice(4) : cleaned);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleRedeem = async () => {
+    if (code.replace('-', '').length < 4) { setError('Enter a valid code.'); return; }
+    setIsRedeeming(true);
+    setError(null);
+    try {
+      const result = await dataService.redeemEnrollmentCode(code, userId);
+      if (result.success) {
+        setSuccess(`Enrolled in ${result.classType}!`);
+        toast.success(`Joined ${result.classType}!`);
+        setCode('');
+      } else {
+        setError(result.error || 'Failed to redeem code.');
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
+  return (
+    <div className="mb-6">
+      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Enrollment</label>
+      <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+        <label className="flex items-center gap-2 text-xs font-bold text-white mb-2">
+          <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+          Join Another Class
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={code}
+            onChange={e => handleCodeChange(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
+            placeholder="XXXX-XXXX"
+            className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-400 tracking-widest placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 transition"
+            maxLength={9}
+            disabled={isRedeeming}
+          />
+          <button
+            onClick={handleRedeem}
+            disabled={isRedeeming || code.replace('-', '').length < 4}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+          >
+            {isRedeeming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Join'}
+          </button>
+        </div>
+        {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+        {success && (
+          <p className="mt-2 text-xs text-emerald-400 flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5" /> {success}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -198,7 +271,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
           </div>
         </div>
 
-        <button 
+        {/* Join Another Class */}
+        {user.role === 'STUDENT' && (
+          <JoinClassSection userId={user.id} />
+        )}
+
+        <button
           onClick={handleSave}
           disabled={isSaving}
           className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-2xl font-bold transition shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2"

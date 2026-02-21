@@ -17,7 +17,7 @@ import XPManagement from './components/XPManagement';
 import GroupManager from './components/GroupManager';
 import PhysicsTools from './components/PhysicsTools';
 import Communications from './components/Communications';
-import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { ADMIN_EMAIL, TEACHER_DISPLAY_NAME } from './constants';
 
 // New Modules
@@ -35,6 +35,92 @@ import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
 import EnrollmentCodes from './components/EnrollmentCodes';
 
+
+// ─── Access Pending screen with enrollment code redemption ───
+const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout: () => void }> = ({ userName, userId, onLogout }) => {
+  const [code, setCode] = useState('');
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Auto-format input as XXXX-XXXX
+  const handleCodeChange = (raw: string) => {
+    const cleaned = raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
+    setCode(cleaned.length > 4 ? cleaned.slice(0, 4) + '-' + cleaned.slice(4) : cleaned);
+    setError(null);
+  };
+
+  const handleRedeem = async () => {
+    if (code.replace('-', '').length < 4) { setError('Please enter a valid enrollment code.'); return; }
+    setIsRedeeming(true);
+    setError(null);
+    try {
+      const result = await dataService.redeemEnrollmentCode(code, userId);
+      if (result.success) {
+        setSuccess(`Enrolled in ${result.classType}! Refreshing...`);
+        // The Firestore onSnapshot listener on the user doc will automatically
+        // update the user state, which will dismiss this screen.
+      } else {
+        setError(result.error || 'Failed to redeem code.');
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#0f0720] p-6">
+      <div className="max-w-md w-full bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl text-center shadow-2xl relative z-10">
+        <ShieldAlert className="w-16 h-16 text-amber-500 mx-auto mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Access Pending</h1>
+        <p className="text-gray-300 mb-6">Hi {userName}! Your account is not yet enrolled in a class.</p>
+
+        {/* Enrollment Code Entry */}
+        <div className="bg-black/20 border border-white/10 rounded-2xl p-6 mb-6 text-left">
+          <label className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+            <KeyRound className="w-4 h-4 text-emerald-400" />
+            Have an enrollment code?
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={code}
+              onChange={e => handleCodeChange(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
+              placeholder="XXXX-XXXX"
+              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold text-emerald-400 tracking-[0.2em] placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 transition"
+              maxLength={9}
+              disabled={isRedeeming || !!success}
+            />
+            <button
+              onClick={handleRedeem}
+              disabled={isRedeeming || !!success || code.replace('-', '').length < 4}
+              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold transition flex items-center gap-2"
+            >
+              {isRedeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Join'}
+            </button>
+          </div>
+
+          {error && (
+            <p className="mt-3 text-sm text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">{error}</p>
+          )}
+          {success && (
+            <p className="mt-3 text-sm text-emerald-400 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <CheckCircle className="w-4 h-4" /> {success}
+            </p>
+          )}
+        </div>
+
+        <p className="text-xs text-gray-500 mb-6">
+          No code? Ask {TEACHER_DISPLAY_NAME} for one, or wait for manual authorization.
+        </p>
+        <button onClick={onLogout} className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-red-500/20 transition-all font-bold">Sign Out</button>
+      </div>
+    </div>
+  );
+};
 
 const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
   'Resources': 'RESOURCES',
@@ -345,16 +431,7 @@ const App: React.FC = () => {
   if (!user) return <GoogleLogin />;
 
   if (!user.isWhitelisted && user.role !== UserRole.ADMIN) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0720] p-6">
-        <div className="max-w-md w-full bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl text-center shadow-2xl relative z-10">
-            <ShieldAlert className="w-16 h-16 text-amber-500 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-white mb-4">Access Pending</h1>
-            <p className="text-gray-300 mb-8">Hi {user.name}! Your account is currently restricted. Please contact {TEACHER_DISPLAY_NAME} for authorization.</p>
-            <button onClick={handleLogout} className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-red-500/20 transition-all font-bold">Sign Out</button>
-        </div>
-      </div>
-    );
+    return <AccessPendingScreen userName={user.name} userId={user.id} onLogout={handleLogout} />;
   }
 
   const showTools = user.role === UserRole.ADMIN || enabledFeatures.physicsTools;
