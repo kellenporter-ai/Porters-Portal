@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { EnrollmentCode, DefaultClassTypes } from '../types';
+import { EnrollmentCode, DefaultClassTypes, ClassConfig } from '../types';
 import { KeyRound, Plus, Copy, X, Check, Ban } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 
 interface EnrollmentCodesProps {
+  classConfigs?: ClassConfig[];
   availableSections: string[];
 }
 
-const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ availableSections }) => {
+const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availableSections }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
   const [codes, setCodes] = useState<EnrollmentCode[]>([]);
@@ -44,7 +45,9 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ availableSections }) 
     await dataService.deactivateEnrollmentCode(codeId);
   };
 
-  const classOptions = Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized');
+  const classOptions = classConfigs && classConfigs.length > 0
+    ? classConfigs.map(c => c.className)
+    : Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized');
   const activeCodes = codes.filter(c => c.isActive);
   const inactiveCodes = codes.filter(c => !c.isActive);
 

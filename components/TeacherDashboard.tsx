@@ -1,12 +1,13 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
+import BehaviorQuickAward from './BehaviorQuickAward';
 
 interface TeacherDashboardProps {
   users: User[];
@@ -27,6 +28,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [engagementSearch, setEngagementSearch] = useState('');
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
+  const [showBehaviorAward, setShowBehaviorAward] = useState(false);
 
   const handleSort = (col: string) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -449,7 +451,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {/* ENGAGEMENT RANKING TABLE */}
       <div className="mt-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8">
-          <h3 className="text-xl font-bold text-white mb-4">Student Engagement Ranking</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Student Engagement Ranking</h3>
+            <button
+              onClick={() => setShowBehaviorAward(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition"
+            >
+              <Award className="w-3.5 h-3.5" /> Quick Award
+            </button>
+          </div>
           <div className="flex flex-col md:flex-row gap-3 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -588,6 +598,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           />
         );
       })()}
+
+      {/* Behavior Quick-Award Modal */}
+      <BehaviorQuickAward
+        students={students}
+        isOpen={showBehaviorAward}
+        onClose={() => setShowBehaviorAward(false)}
+      />
     </div>
   );
 };

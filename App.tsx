@@ -33,6 +33,7 @@ import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
+import EnrollmentCodes from './components/EnrollmentCodes';
 import { TranslationProvider } from './contexts/TranslationContext';
 
 const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
@@ -500,6 +501,7 @@ const App: React.FC = () => {
                     />
                   )}
                   {activeTab === 'Student Groups' && <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />}
+                  {activeTab === 'Enrollment Codes' && <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />}
                   {activeTab.startsWith('XP Command:') && <XPManagement users={rawUsers} initialTab={activeTab.split(':')[1]} />}
               </>
             )}
