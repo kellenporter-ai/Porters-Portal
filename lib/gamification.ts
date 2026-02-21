@@ -1,6 +1,7 @@
 
 import { ItemRarity, RPGItem, EquipmentSlot, User } from '../types';
 import { RUNEWORD_DEFINITIONS } from './runewords';
+import { getActiveSetBonuses } from './achievements';
 
 // --- VISUALIZATION HELPERS ---
 const ELEMENT_NAMES = [
@@ -140,7 +141,6 @@ export const calculateGearScore = (equipped: Partial<Record<EquipmentSlot, RPGIt
 // --- SET BONUS HELPERS ---
 export const calculateSetBonusStats = (equipped: Partial<Record<EquipmentSlot, RPGItem>> | undefined): Record<string, number> => {
     if (!equipped) return {};
-    const { getActiveSetBonuses } = require('./achievements');
     const items = Object.values(equipped).filter(Boolean) as RPGItem[];
     const activeSets = getActiveSetBonuses(items);
     const bonusStats: Record<string, number> = {};
