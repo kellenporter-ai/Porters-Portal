@@ -38,7 +38,6 @@ import SkillTreePanel from './xp/SkillTreePanel';
 import FortuneWheel from './xp/FortuneWheel';
 import BossEncounterPanel from './xp/BossEncounterPanel';
 import BossQuizPanel from './xp/BossQuizPanel';
-import DailyChallengesPanel from './xp/DailyChallengesPanel';
 import TutoringPanel from './xp/TutoringPanel';
 import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
@@ -1288,15 +1287,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
       </div>
 
-      {/* SIDEBAR PANELS - Boss Encounters & Daily Challenges */}
-      <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-              <DailyChallengesPanel
-                  userId={user.id}
-                  activeChallenges={user.gamification?.activeDailyChallenges || []}
-                  classType={activeClass}
-              />
-          </div>
+      {/* BOSS ENCOUNTERS — Full-width panel */}
+      <div className="lg:col-span-12">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
               <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />

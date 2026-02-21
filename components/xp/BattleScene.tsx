@@ -113,7 +113,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     }, [attackState, damage, isCrit, healAmount, shieldBlocked]);
 
     return (
-        <div className={`relative w-full h-32 flex items-end justify-between px-2 overflow-hidden select-none ${screenShake ? 'animate-[battleShake_0.3s_ease-in-out]' : ''}`}>
+        <div className={`relative w-full h-48 flex items-end justify-between px-4 overflow-hidden select-none ${screenShake ? 'animate-[battleShake_0.3s_ease-in-out]' : ''}`}>
             {/* Crit flash overlay */}
             {showCritFlash && (
                 <div className="absolute inset-0 bg-amber-400/20 animate-[critFlash_0.4s_ease-out_forwards] z-10 pointer-events-none" />
@@ -121,9 +121,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
             {/* Shield block effect */}
             {showShield && (
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                    <div className="w-12 h-12 rounded-full border-4 border-cyan-400/60 bg-cyan-400/10 animate-[shieldPulse_0.8s_ease-out_forwards] flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" className="w-6 h-6 text-cyan-400 fill-current"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                <div className="absolute left-10 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                    <div className="w-16 h-16 rounded-full border-4 border-cyan-400/60 bg-cyan-400/10 animate-[shieldPulse_0.8s_ease-out_forwards] flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-8 h-8 text-cyan-400 fill-current"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                     </div>
                 </div>
             )}
@@ -132,7 +132,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
             {particles.map(p => (
                 <div
                     key={p.id}
-                    className="absolute w-1.5 h-1.5 rounded-full pointer-events-none animate-[particleBurst_1s_ease-out_forwards]"
+                    className="absolute w-2 h-2 rounded-full pointer-events-none animate-[particleBurst_1s_ease-out_forwards]"
                     style={{
                         left: `${p.x}%`,
                         top: `${p.y}%`,
@@ -145,7 +145,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
             {/* Heal effect */}
             {showHeal !== null && (
-                <div className="absolute left-6 bottom-8 text-sm font-black text-emerald-400 animate-[floatUp_1.2s_ease-out_forwards] z-10 pointer-events-none">
+                <div className="absolute left-8 bottom-12 text-base font-black text-emerald-400 animate-[floatUp_1.2s_ease-out_forwards] z-10 pointer-events-none">
                     +{showHeal} HP
                 </div>
             )}
@@ -155,10 +155,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
             {/* Player avatar */}
             <div
-                className={`relative w-16 h-24 flex-shrink-0 transition-transform duration-300 ${
-                    attackState === 'player-attack' ? 'translate-x-8 scale-110' : ''
+                className={`relative w-24 h-36 flex-shrink-0 transition-transform duration-300 ${
+                    attackState === 'player-attack' ? 'translate-x-10 scale-110' : ''
                 } ${showImpact ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}
-                style={{ transform: attackState === 'player-attack' ? 'translateX(2rem) scale(1.1)' : undefined }}
+                style={{ transform: attackState === 'player-attack' ? 'translateX(2.5rem) scale(1.1)' : undefined }}
             >
                 <OperativeAvatar
                     equipped={playerEquipped}
@@ -214,7 +214,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 {floatingDmg && (
                     <div
                         className={`absolute font-black animate-[floatUp_1.2s_ease-out_forwards] ${
-                            floatingDmg.isCrit ? 'text-xl' : 'text-lg'
+                            floatingDmg.isCrit ? 'text-2xl' : 'text-xl'
                         } ${
                             floatingDmg.side === 'right'
                                 ? `right-4 ${floatingDmg.isCrit ? 'text-yellow-300' : 'text-amber-400'}`
@@ -230,11 +230,11 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
             {/* Boss avatar */}
             <div
-                className={`relative w-20 h-28 flex-shrink-0 transition-transform duration-300 ${
-                    attackState === 'boss-attack' ? '-translate-x-8 scale-110' : ''
+                className={`relative w-28 h-40 flex-shrink-0 transition-transform duration-300 ${
+                    attackState === 'boss-attack' ? '-translate-x-10 scale-110' : ''
                 } ${showSlash ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}
                 style={{
-                    transform: attackState === 'boss-attack' ? 'translateX(-2rem) scale(1.1)' :
+                    transform: attackState === 'boss-attack' ? 'translateX(-2.5rem) scale(1.1)' :
                                showSlash ? undefined : 'scaleX(-1)',
                     ...(showSlash ? {} : { filter: undefined }),
                 }}

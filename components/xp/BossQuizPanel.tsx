@@ -329,8 +329,8 @@ const QuizBossCard: React.FC<{
     <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/30 to-black/50 p-5 space-y-4">
       {/* Boss info */}
       <div>
-        <h4 className="text-base font-black text-amber-400">{quiz.bossName}</h4>
-        <p className="text-xs text-gray-500">{quiz.description}</p>
+        <h4 className="text-lg font-black text-amber-400">{quiz.bossName}</h4>
+        <p className="text-sm text-gray-500">{quiz.description}</p>
       </div>
 
       {/* Active Modifiers */}
@@ -419,9 +419,9 @@ const QuizBossCard: React.FC<{
                 </span>
               </div>
 
-              <p className="text-sm text-white font-medium">{question.stem}</p>
+              <p className="text-base text-white font-semibold leading-relaxed">{question.stem}</p>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {question.options.map((option, idx) => {
                   const isSelected = selectedAnswer === idx;
                   const showResult = answerResult && isSelected;
@@ -432,18 +432,18 @@ const QuizBossCard: React.FC<{
                       key={idx}
                       onClick={() => handleLocalAnswer(quiz.id, question.id, idx)}
                       disabled={submitting || !!answerResult || knockedOut}
-                      className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                      className={`w-full text-left p-4 rounded-xl border text-base transition-all ${
                         showResult && isCorrect ? 'border-green-500/50 bg-green-500/10 text-green-400' :
                         showResult && !isCorrect ? 'border-red-500/50 bg-red-500/10 text-red-400' :
                         isSelected ? 'border-amber-500/30 bg-amber-500/10' :
                         'border-white/10 bg-white/5 hover:bg-white/10 text-gray-300'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-600 w-5">{String.fromCharCode(65 + idx)}.</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-mono text-gray-600 w-6">{String.fromCharCode(65 + idx)}.</span>
                         <span>{option}</span>
-                        {showResult && isCorrect && <CheckCircle2 className="w-4 h-4 text-green-400 ml-auto" />}
-                        {showResult && !isCorrect && <XCircle className="w-4 h-4 text-red-400 ml-auto" />}
+                        {showResult && isCorrect && <CheckCircle2 className="w-5 h-5 text-green-400 ml-auto shrink-0" />}
+                        {showResult && !isCorrect && <XCircle className="w-5 h-5 text-red-400 ml-auto shrink-0" />}
                       </div>
                     </button>
                   );
@@ -453,13 +453,13 @@ const QuizBossCard: React.FC<{
               {/* Answer result feedback */}
               {answerResult && answerResult.correct && (
                 <div className="text-center space-y-1">
-                  <div className="text-sm text-amber-400 font-bold animate-bounce">
-                    <Zap className="w-4 h-4 inline mr-1" />
+                  <div className="text-base text-amber-400 font-bold animate-bounce">
+                    <Zap className="w-5 h-5 inline mr-1" />
                     {answerResult.isCrit ? 'CRITICAL HIT! ' : ''}-{answerResult.damage} HP to boss!
                   </div>
                   {answerResult.healAmount && answerResult.healAmount > 0 && (
-                    <div className="text-xs text-emerald-400 font-bold">
-                      <Heart className="w-3 h-3 inline mr-1" /> +{answerResult.healAmount} HP healed
+                    <div className="text-sm text-emerald-400 font-bold">
+                      <Heart className="w-4 h-4 inline mr-1" /> +{answerResult.healAmount} HP healed
                     </div>
                   )}
                 </div>
