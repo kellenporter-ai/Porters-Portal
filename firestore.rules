@@ -414,6 +414,45 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // BUG REPORTS
+    // ==========================================
+    match /bug_reports/{reportId} {
+      // Admin can read all reports
+      allow read: if isAdmin();
+      // Any authenticated user can submit a bug report
+      allow create: if isAuthenticated();
+      // Only admin can update (resolve) or delete
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // ENROLLMENT CODES
+    // ==========================================
+    match /enrollment_codes/{codeId} {
+      // Admin can read all codes; students can read to validate a code
+      allow read: if isAuthenticated();
+      // Only admin can create codes
+      allow create: if isAdmin();
+      // Students can increment usedCount on redeem; admin can deactivate
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // BEHAVIOR QUICK-AWARDS
+    // ==========================================
+    match /behavior_awards/{awardId} {
+      // Admin can read all; students can read their own awards
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      // Only admin can create awards
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {

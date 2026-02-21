@@ -889,3 +889,85 @@ export function getSectionsForClass(students: User[], classType: string): string
   });
   return Array.from(sections).sort();
 }
+
+// ========================================
+// BUG REPORTS
+// ========================================
+
+export interface BugReport {
+  id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: 'bug' | 'feature' | 'other';
+  description: string;
+  page: string;
+  userAgent: string;
+  timestamp: string;
+  resolved?: boolean;
+}
+
+// ========================================
+// ENROLLMENT CODES
+// ========================================
+
+export interface EnrollmentCode {
+  id: string;
+  code: string;
+  classType: string;
+  section?: string;
+  createdAt: string;
+  createdBy: string;
+  usedCount: number;
+  maxUses?: number;
+  isActive: boolean;
+}
+
+// ========================================
+// BEHAVIOR QUICK-AWARDS
+// ========================================
+
+export interface BehaviorCategory {
+  id: string;
+  name: string;
+  icon: string;
+  xpAmount: number;
+  fluxAmount: number;
+  color: string;
+}
+
+export interface BehaviorAward {
+  id?: string;
+  studentId: string;
+  studentName: string;
+  categoryId: string;
+  categoryName: string;
+  xpAmount: number;
+  fluxAmount: number;
+  classType: string;
+  awardedBy: string;
+  timestamp: string;
+}
+
+export const DEFAULT_BEHAVIOR_CATEGORIES: BehaviorCategory[] = [
+  { id: 'participation', name: 'Participation', icon: '🙋', xpAmount: 25, fluxAmount: 5, color: 'blue' },
+  { id: 'helping', name: 'Helping Others', icon: '🤝', xpAmount: 30, fluxAmount: 10, color: 'green' },
+  { id: 'leadership', name: 'Leadership', icon: '⭐', xpAmount: 35, fluxAmount: 10, color: 'amber' },
+  { id: 'focus', name: 'Great Focus', icon: '🎯', xpAmount: 20, fluxAmount: 5, color: 'purple' },
+  { id: 'creativity', name: 'Creativity', icon: '💡', xpAmount: 30, fluxAmount: 8, color: 'pink' },
+  { id: 'perseverance', name: 'Perseverance', icon: '💪', xpAmount: 25, fluxAmount: 5, color: 'orange' },
+];
+
+// ========================================
+// STREAK SYSTEM
+// ========================================
+
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string;
+  freezeTokens: number;
+  maxFreezeTokens: number;
+  streakHistory: string[];   // Last 30 active dates
+  milestones: number[];       // Days reached (3, 7, 14, 21, 30)
+}

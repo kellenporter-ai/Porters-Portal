@@ -5,6 +5,9 @@ import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
+import ProctorTTS from './ProctorTTS';
+import AnnotationOverlay from './AnnotationOverlay';
+import LessonBlocks, { LessonBlock } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
@@ -16,6 +19,7 @@ interface ProctorProps {
   userId?: string;
   assignmentId?: string;
   classType?: string;
+  lessonBlocks?: LessonBlock[];
 }
 
 // ============================================================
@@ -76,7 +80,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, userId, assignmentId, classType }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -96,6 +100,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
   const awardedQuestionsRef = useRef<Set<string>>(new Set());
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [ttsText, setTtsText] = useState('');
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
@@ -431,7 +436,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
-  // LaTeX Rendering
+  // LaTeX Rendering + TTS text extraction
   useEffect(() => {
     if (contentRef.current && htmlContent) {
         const renderedHtml = htmlContent.replace(/\$(.*?)\$/g, (_, tex) => {
@@ -442,6 +447,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
             ADD_TAGS: ['annotation', 'semantics', 'mrow', 'mi', 'mn', 'mo', 'msup', 'msub', 'mfrac', 'mtext', 'math'],
             ADD_ATTR: ['xmlns', 'encoding']
         });
+        // Extract plain text for TTS
+        setTtsText(contentRef.current.textContent || '');
     }
   }, [htmlContent]);
 
@@ -476,6 +483,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                 )}
             </div>
             <div className="flex items-center gap-3">
+                {/* TTS — Screen Reader */}
+                {(htmlContent || ttsText) && (
+                    <ProctorTTS textContent={ttsText} compact />
+                )}
+
+                {/* Annotation toggle — rendered from AnnotationOverlay in content area */}
+
                 {/* Replay button for completed modules */}
                 {moduleCompleted && bridgeConnected && (
                     showReplayPrompt ? (
@@ -534,7 +548,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
             {contentUrl ? (
-                <div ref={iframeWrapperRef} className="flex-1 flex flex-col bg-white">
+                <div ref={iframeWrapperRef} className="flex-1 flex flex-col bg-white relative">
                     <iframe
                         ref={iframeRef}
                         src={contentUrl}
@@ -543,6 +557,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
                         onLoad={handleInteraction}
                     />
+                    {/* Annotation drawing overlay on top of iframe */}
+                    <AnnotationOverlay containerRef={iframeWrapperRef} />
                 </div>
             ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-600 italic">
@@ -555,10 +571,23 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
 
             {htmlContent && (
                 <div className="h-1/3 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
-                    <h3 className="text-white font-bold mb-3 text-xs uppercase tracking-widest flex items-center gap-2">
-                        <Maximize2 className="w-4 h-4 text-purple-400" /> Operational Context
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-white font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                            <Maximize2 className="w-4 h-4 text-purple-400" /> Operational Context
+                        </h3>
+                        {ttsText && <ProctorTTS textContent={ttsText} />}
+                    </div>
                     <div ref={contentRef} className="proctor-content text-sm leading-relaxed" />
+                </div>
+            )}
+
+            {/* Lesson Blocks — interactive block-based content */}
+            {lessonBlocks && lessonBlocks.length > 0 && (
+                <div className="h-2/5 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
+                    <h3 className="text-white font-bold mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
+                        <Maximize2 className="w-4 h-4 text-purple-400" /> Interactive Lesson
+                    </h3>
+                    <LessonBlocks blocks={lessonBlocks} />
                 </div>
             )}
         </div>

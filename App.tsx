@@ -31,6 +31,9 @@ import ReviewQuestions from './components/ReviewQuestions';
 import StudyMaterial from './components/StudyMaterial';
 import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
+import BugReporter from './components/BugReporter';
+import StreakDisplay from './components/StreakDisplay';
+import { TranslationProvider } from './contexts/TranslationContext';
 
 const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
   'Resources': 'RESOURCES',
@@ -358,6 +361,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
+    <TranslationProvider>
     <ConfirmProvider>
     <ToastProvider>
     <>
@@ -512,9 +516,20 @@ const App: React.FC = () => {
           </div>
         )}
       </Layout>
+
+      {/* Bug Reporter — floating button for all authenticated users */}
+      <BugReporter user={user} />
+
+      {/* Streak Display — compact inline for students (positioned in top bar area) */}
+      {user.role === UserRole.STUDENT && (
+        <div className="fixed top-3 right-48 z-30">
+          <StreakDisplay userId={user.id} compact />
+        </div>
+      )}
     </>
     </ToastProvider>
     </ConfirmProvider>
+    </TranslationProvider>
     </ErrorBoundary>
   );
 };

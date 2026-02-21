@@ -1,5 +1,5 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -1409,5 +1409,172 @@ export const dataService = {
       });
       callback(result);
     }, () => { /* permission error */ });
+  },
+
+  // ========================================
+  // BUG REPORTS
+  // ========================================
+
+  submitBugReport: async (report: Omit<BugReport, 'id'>) => {
+    await addDoc(collection(db, 'bug_reports'), { ...report, resolved: false });
+  },
+
+  subscribeToBugReports: (callback: (reports: BugReport[]) => void) => {
+    const q = query(collection(db, 'bug_reports'), orderBy('timestamp', 'desc'), limit(100));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BugReport)));
+    }, () => {});
+  },
+
+  resolveBugReport: async (reportId: string) => {
+    await updateDoc(doc(db, 'bug_reports', reportId), { resolved: true });
+  },
+
+  // ========================================
+  // ENROLLMENT CODES
+  // ========================================
+
+  createEnrollmentCode: async (classType: string, section?: string, maxUses?: number): Promise<string> => {
+    const code = [
+      Math.random().toString(36).substring(2, 6),
+      Math.random().toString(36).substring(2, 6),
+    ].join('-').toUpperCase();
+    const docRef = doc(collection(db, 'enrollment_codes'));
+    await setDoc(docRef, {
+      code,
+      classType,
+      section: section || null,
+      createdAt: new Date().toISOString(),
+      createdBy: 'admin',
+      usedCount: 0,
+      maxUses: maxUses || null,
+      isActive: true,
+    });
+    return code;
+  },
+
+  subscribeToEnrollmentCodes: (callback: (codes: EnrollmentCode[]) => void) => {
+    const q = query(collection(db, 'enrollment_codes'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EnrollmentCode)));
+    }, () => {});
+  },
+
+  deactivateEnrollmentCode: async (codeId: string) => {
+    await updateDoc(doc(db, 'enrollment_codes', codeId), { isActive: false });
+  },
+
+  redeemEnrollmentCode: async (code: string, userId: string): Promise<{ success: boolean; classType?: string; error?: string }> => {
+    const q = query(collection(db, 'enrollment_codes'), where('code', '==', code.toUpperCase()), where('isActive', '==', true));
+    const snap = await getDocs(q);
+    if (snap.empty) return { success: false, error: 'Invalid or expired code.' };
+    const codeDoc = snap.docs[0];
+    const data = codeDoc.data() as EnrollmentCode;
+    if (data.maxUses && data.usedCount >= data.maxUses) return { success: false, error: 'This code has reached its usage limit.' };
+
+    // Add student to class
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return { success: false, error: 'User not found.' };
+    const user = userSnap.data();
+    const enrolled = user.enrolledClasses || [];
+    if (enrolled.includes(data.classType)) return { success: false, error: 'Already enrolled in this class.' };
+
+    await updateDoc(userRef, {
+      enrolledClasses: arrayUnion(data.classType),
+      isWhitelisted: true,
+    });
+    if (data.section) {
+      await updateDoc(userRef, { [`classSections.${data.classType}`]: data.section });
+    }
+    await updateDoc(codeDoc.ref, { usedCount: increment(1) });
+    return { success: true, classType: data.classType };
+  },
+
+  // ========================================
+  // BEHAVIOR QUICK-AWARDS
+  // ========================================
+
+  awardBehavior: async (award: Omit<BehaviorAward, 'id'>) => {
+    await addDoc(collection(db, 'behavior_awards'), award);
+    // Also award the XP via existing system
+    const userRef = doc(db, 'users', award.studentId);
+    await updateDoc(userRef, {
+      'gamification.xp': increment(award.xpAmount),
+      [`gamification.classXp.${award.classType}`]: increment(award.xpAmount),
+      'gamification.currency': increment(award.fluxAmount),
+    });
+  },
+
+  subscribeToBehaviorAwards: (classType: string, callback: (awards: BehaviorAward[]) => void) => {
+    const q = query(collection(db, 'behavior_awards'), where('classType', '==', classType), orderBy('timestamp', 'desc'), limit(50));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BehaviorAward)));
+    }, () => {});
+  },
+
+  // ========================================
+  // STREAK SYSTEM
+  // ========================================
+
+  updateDailyStreak: async (userId: string): Promise<{ currentStreak: number; freezeUsed: boolean; newMilestone?: number }> => {
+    const userRef = doc(db, 'users', userId);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return { currentStreak: 0, freezeUsed: false };
+    const data = snap.data();
+    const streak = data.streakData || { currentStreak: 0, longestStreak: 0, lastActiveDate: '', freezeTokens: 0, maxFreezeTokens: 3, streakHistory: [], milestones: [] };
+
+    const today = new Date().toISOString().split('T')[0];
+    if (streak.lastActiveDate === today) return { currentStreak: streak.currentStreak, freezeUsed: false };
+
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    let newStreak = streak.currentStreak;
+    let freezeUsed = false;
+
+    if (streak.lastActiveDate === yesterday) {
+      // Consecutive day
+      newStreak += 1;
+    } else if (streak.lastActiveDate) {
+      // Missed day(s) — check if freeze available
+      const daysBetween = Math.floor((new Date(today).getTime() - new Date(streak.lastActiveDate).getTime()) / 86400000);
+      if (daysBetween === 2 && streak.freezeTokens > 0) {
+        // Missed exactly one day, use freeze
+        newStreak += 1;
+        freezeUsed = true;
+      } else {
+        // Streak broken
+        newStreak = 1;
+      }
+    } else {
+      newStreak = 1;
+    }
+
+    const newLongest = Math.max(streak.longestStreak, newStreak);
+    const MILESTONES = [3, 7, 14, 21, 30, 50, 100];
+    const existingMilestones = streak.milestones || [];
+    const newMilestone = MILESTONES.find(m => newStreak >= m && !existingMilestones.includes(m));
+    const newMilestones = newMilestone ? [...existingMilestones, newMilestone] : existingMilestones;
+
+    // Earn a freeze token every 7 days of streak
+    let newFreezeTokens = freezeUsed ? streak.freezeTokens - 1 : streak.freezeTokens;
+    if (newStreak > 0 && newStreak % 7 === 0) {
+      newFreezeTokens = Math.min(newFreezeTokens + 1, streak.maxFreezeTokens);
+    }
+
+    const history = [...(streak.streakHistory || []), today].slice(-30);
+
+    await updateDoc(userRef, {
+      streakData: {
+        currentStreak: newStreak,
+        longestStreak: newLongest,
+        lastActiveDate: today,
+        freezeTokens: newFreezeTokens,
+        maxFreezeTokens: 3,
+        streakHistory: history,
+        milestones: newMilestones,
+      },
+    });
+
+    return { currentStreak: newStreak, freezeUsed, newMilestone };
   },
 };

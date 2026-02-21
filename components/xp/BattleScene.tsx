@@ -19,6 +19,9 @@ interface BattleSceneProps {
     damage?: number;
     playerHpPercent: number;
     bossHpPercent: number;
+    isCrit?: boolean;
+    healAmount?: number;
+    shieldBlocked?: boolean;
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -30,32 +33,109 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     damage,
     playerHpPercent,
     bossHpPercent,
+    isCrit,
+    healAmount,
+    shieldBlocked,
 }) => {
     const [showSlash, setShowSlash] = useState(false);
     const [showImpact, setShowImpact] = useState(false);
-    const [floatingDmg, setFloatingDmg] = useState<{ value: number; side: 'left' | 'right' } | null>(null);
+    const [floatingDmg, setFloatingDmg] = useState<{ value: number; side: 'left' | 'right'; isCrit?: boolean } | null>(null);
+    const [showCritFlash, setShowCritFlash] = useState(false);
+    const [showHeal, setShowHeal] = useState<number | null>(null);
+    const [showShield, setShowShield] = useState(false);
+    const [particles, setParticles] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
+    const [screenShake, setScreenShake] = useState(false);
 
     const bossType = bossAppearance?.bossType || 'BRUTE';
     const bossHue = bossAppearance?.hue ?? 0;
 
+    // Spawn particles at a position
+    const spawnParticles = (side: 'left' | 'right', color: string, count: number) => {
+        const baseX = side === 'right' ? 75 : 25;
+        const newParticles = Array.from({ length: count }, (_, i) => ({
+            id: Date.now() + i,
+            x: baseX + (Math.random() - 0.5) * 30,
+            y: 30 + (Math.random() - 0.5) * 20,
+            color,
+        }));
+        setParticles(prev => [...prev, ...newParticles]);
+        setTimeout(() => setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id))), 1000);
+    };
+
     useEffect(() => {
         if (attackState === 'player-attack' && damage) {
             setShowSlash(true);
-            setFloatingDmg({ value: damage, side: 'right' });
+            setFloatingDmg({ value: damage, side: 'right', isCrit });
+            spawnParticles('right', isCrit ? '#fbbf24' : '#f59e0b', isCrit ? 12 : 6);
+
+            if (isCrit) {
+                setShowCritFlash(true);
+                setScreenShake(true);
+                setTimeout(() => setShowCritFlash(false), 400);
+                setTimeout(() => setScreenShake(false), 400);
+            }
+
             const t1 = setTimeout(() => setShowSlash(false), 500);
             const t2 = setTimeout(() => setFloatingDmg(null), 1200);
+
+            // Show heal if applicable
+            if (healAmount && healAmount > 0) {
+                setTimeout(() => {
+                    setShowHeal(healAmount);
+                    setTimeout(() => setShowHeal(null), 1200);
+                }, 400);
+            }
+
             return () => { clearTimeout(t1); clearTimeout(t2); };
         } else if (attackState === 'boss-attack' && damage) {
-            setShowImpact(true);
+            if (shieldBlocked) {
+                setShowShield(true);
+                setTimeout(() => setShowShield(false), 800);
+            } else {
+                setShowImpact(true);
+                setScreenShake(true);
+                spawnParticles('left', '#ef4444', 8);
+                setTimeout(() => setScreenShake(false), 300);
+            }
             setFloatingDmg({ value: damage, side: 'left' });
             const t1 = setTimeout(() => setShowImpact(false), 500);
             const t2 = setTimeout(() => setFloatingDmg(null), 1200);
             return () => { clearTimeout(t1); clearTimeout(t2); };
         }
-    }, [attackState, damage]);
+    }, [attackState, damage, isCrit, healAmount, shieldBlocked]);
 
     return (
-        <div className="relative w-full h-32 flex items-end justify-between px-2 overflow-hidden select-none">
+        <div className={`relative w-full h-32 flex items-end justify-between px-2 overflow-hidden select-none ${screenShake ? 'animate-[battleShake_0.3s_ease-in-out]' : ''}`}>
+            {/* Crit flash overlay */}
+            {showCritFlash && (
+                <div className="absolute inset-0 bg-amber-400/20 animate-[critFlash_0.4s_ease-out_forwards] z-10 pointer-events-none" />
+            )}
+
+            {/* Shield block effect */}
+            {showShield && (
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                    <div className="w-12 h-12 rounded-full border-4 border-cyan-400/60 bg-cyan-400/10 animate-[shieldPulse_0.8s_ease-out_forwards] flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6 text-cyan-400 fill-current"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                    </div>
+                </div>
+            )}
+
+            {/* Particles */}
+            {particles.map(p => (
+                <div
+                    key={p.id}
+                    className="absolute w-1.5 h-1.5 rounded-full pointer-events-none animate-[particleBurst_1s_ease-out_forwards]"
+                    style={{ left: `${p.x}%`, top: `${p.y}%`, backgroundColor: p.color }}
+                />
+            ))}
+
+            {/* Heal effect */}
+            {showHeal !== null && (
+                <div className="absolute left-6 bottom-8 text-sm font-black text-emerald-400 animate-[floatUp_1.2s_ease-out_forwards] z-10 pointer-events-none">
+                    +{showHeal} HP
+                </div>
+            )}
+
             {/* Ground line */}
             <div className="absolute bottom-2 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -119,11 +199,16 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 {/* Floating damage number */}
                 {floatingDmg && (
                     <div
-                        className={`absolute text-lg font-black animate-[floatUp_1.2s_ease-out_forwards] ${
-                            floatingDmg.side === 'right' ? 'right-4 text-amber-400' : 'left-4 text-red-400'
+                        className={`absolute font-black animate-[floatUp_1.2s_ease-out_forwards] ${
+                            floatingDmg.isCrit ? 'text-xl' : 'text-lg'
+                        } ${
+                            floatingDmg.side === 'right'
+                                ? `right-4 ${floatingDmg.isCrit ? 'text-yellow-300' : 'text-amber-400'}`
+                                : 'left-4 text-red-400'
                         }`}
                         style={{ top: '10%' }}
                     >
+                        {floatingDmg.isCrit && <span className="text-[10px] block text-center text-yellow-300 font-black tracking-widest animate-pulse">CRIT!</span>}
                         -{floatingDmg.value}
                     </div>
                 )}
@@ -168,6 +253,18 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                     60% { transform: translateX(-3px); }
                     80% { transform: translateX(2px); }
                 }
+                @keyframes battleShake {
+                    0%, 100% { transform: translate(0, 0); }
+                    10% { transform: translate(-3px, -2px); }
+                    20% { transform: translate(4px, 1px); }
+                    30% { transform: translate(-2px, 3px); }
+                    40% { transform: translate(3px, -1px); }
+                    50% { transform: translate(-4px, 2px); }
+                    60% { transform: translate(2px, -3px); }
+                    70% { transform: translate(-1px, 2px); }
+                    80% { transform: translate(3px, -2px); }
+                    90% { transform: translate(-2px, 1px); }
+                }
                 @keyframes expandRing {
                     0% { r: 4; opacity: 0.8; }
                     100% { r: 20; opacity: 0; }
@@ -176,6 +273,20 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                     0% { stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0; }
                     50% { opacity: 1; }
                     100% { stroke-dashoffset: 0; opacity: 0; }
+                }
+                @keyframes critFlash {
+                    0% { opacity: 0.3; }
+                    50% { opacity: 0.15; }
+                    100% { opacity: 0; }
+                }
+                @keyframes shieldPulse {
+                    0% { transform: scale(0.5); opacity: 0.9; }
+                    50% { transform: scale(1.2); opacity: 0.6; }
+                    100% { transform: scale(1.5); opacity: 0; }
+                }
+                @keyframes particleBurst {
+                    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+                    100% { opacity: 0; transform: translate(var(--px, 20px), var(--py, -30px)) scale(0); }
                 }
             `}</style>
         </div>

@@ -7,6 +7,7 @@ import { useToast } from '../ToastProvider';
 import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
 import BattleScene from './BattleScene';
+import BattleFeed from './BattleFeed';
 
 // Seeded PRNG (mulberry32) — deterministic random from a 32-bit seed
 function mulberry32(seed: number) {
@@ -234,6 +235,9 @@ const QuizBossCard: React.FC<{
   const [submitting, setSubmitting] = useState(false);
   const [attackState, setAttackState] = useState<'idle' | 'player-attack' | 'boss-attack'>('idle');
   const [attackDamage, setAttackDamage] = useState<number | undefined>(undefined);
+  const [attackIsCrit, setAttackIsCrit] = useState(false);
+  const [attackHealAmount, setAttackHealAmount] = useState<number | undefined>(undefined);
+  const [attackShieldBlocked, setAttackShieldBlocked] = useState(false);
 
   // Once progress loads, initialize question index and HP from server state (runs only once)
   useEffect(() => {
@@ -288,10 +292,21 @@ const QuizBossCard: React.FC<{
 
         if (result.correct) {
           setAttackDamage(result.damage);
+          setAttackIsCrit(!!result.isCrit);
+          setAttackHealAmount(result.healAmount);
+          setAttackShieldBlocked(false);
           setAttackState('player-attack');
           setTimeout(() => setAttackState('idle'), 800);
-        } else if (!result.shieldBlocked && result.playerDamage && result.playerDamage > 0) {
+        } else if (result.shieldBlocked) {
+          setAttackDamage(0);
+          setAttackShieldBlocked(true);
+          setAttackIsCrit(false);
+          setAttackState('boss-attack');
+          setTimeout(() => setAttackState('idle'), 800);
+        } else if (result.playerDamage && result.playerDamage > 0) {
           setAttackDamage(result.playerDamage);
+          setAttackShieldBlocked(false);
+          setAttackIsCrit(false);
           setAttackState('boss-attack');
           setTimeout(() => setAttackState('idle'), 800);
         }
@@ -343,6 +358,9 @@ const QuizBossCard: React.FC<{
               damage={attackDamage}
               playerHpPercent={playerHpPercent}
               bossHpPercent={hpPercent}
+              isCrit={attackIsCrit}
+              healAmount={attackHealAmount}
+              shieldBlocked={attackShieldBlocked}
             />
           </div>
 
@@ -475,6 +493,9 @@ const QuizBossCard: React.FC<{
               )}
             </div>
           )}
+
+          {/* Live Battle Feed */}
+          <BattleFeed bossId={quiz.id} maxEntries={5} />
 
           {/* Rewards */}
           <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-white/5 pt-3">
