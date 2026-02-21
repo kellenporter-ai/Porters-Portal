@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap, Shield, Brain, Award, KeyRound } from 'lucide-react';
+import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap, Shield, Brain, Award, KeyRound, BarChart3 } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -52,6 +52,7 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Skills', icon: <GitBranch className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Intel Dossier', icon: <BarChart3 className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
   { name: 'Tutoring', icon: <GraduationCap className="w-5 h-5" />, role: 'STUDENT' },
 ];

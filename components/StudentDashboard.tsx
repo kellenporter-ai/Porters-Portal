@@ -42,8 +42,9 @@ import TutoringPanel from './xp/TutoringPanel';
 import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
+import IntelDossier from './IntelDossier';
 
-type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING';
+type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL';
 
 interface StudentDashboardProps {
   user: User;
@@ -1281,6 +1282,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                          userId={user.id}
                          userName={user.name}
                          classType={activeClass}
+                     />
+                 </div>
+             )}
+
+             {activeTab === 'INTEL' && (
+                 <div key="intel" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <IntelDossier
+                         user={user}
+                         submissions={submissions}
+                         assignments={assignments}
+                         activeClass={activeClass}
                      />
                  </div>
              )}

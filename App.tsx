@@ -122,7 +122,7 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
   );
 };
 
-const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING'> = {
+const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL'> = {
   'Resources': 'RESOURCES',
   'Agent Loadout': 'LOADOUT',
   'Missions': 'MISSIONS',
@@ -130,6 +130,7 @@ const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'AC
   'Skills': 'SKILLS',
   'Fortune': 'FORTUNE',
   'Tutoring': 'TUTORING',
+  'Intel Dossier': 'INTEL',
 };
 
 const App: React.FC = () => {

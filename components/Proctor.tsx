@@ -587,7 +587,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                     <h3 className="text-white font-bold mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
                         <Maximize2 className="w-4 h-4 text-purple-400" /> Interactive Lesson
                     </h3>
-                    <LessonBlocks blocks={lessonBlocks} />
+                    <LessonBlocks blocks={lessonBlocks} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
                 </div>
             )}
         </div>

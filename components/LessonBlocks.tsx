@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import { CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks } from 'lucide-react';
 import { LessonBlock } from '../types';
+import LessonProgressSidebar from './LessonProgressSidebar';
 
 export type { LessonBlock } from '../types';
 
@@ -9,6 +10,9 @@ interface LessonBlocksProps {
   blocks: LessonBlock[];
   onBlockComplete?: (blockId: string, correct: boolean) => void;
   onAllComplete?: () => void;
+  showSidebar?: boolean;
+  engagementTime?: number;
+  xpEarned?: number;
 }
 
 // Individual block renderers
@@ -216,7 +220,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
   );
 };
 
-const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete }) => {
+const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned }) => {
   const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(new Set());
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
 
@@ -252,8 +256,8 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const isInteractive = ['MC', 'SHORT_ANSWER', 'CHECKLIST'].includes(currentBlock.type);
   const isBlockDone = completedBlocks.has(currentBlock.id);
 
-  return (
-    <div className="space-y-4">
+  const contentArea = (
+    <div className="space-y-4 flex-1 min-w-0">
       {/* Progress bar */}
       <div className="flex items-center gap-2">
         <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
@@ -309,6 +313,24 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       </div>
     </div>
   );
+
+  if (showSidebar && blocks.length >= 3) {
+    return (
+      <div className="flex gap-4">
+        {contentArea}
+        <LessonProgressSidebar
+          blocks={blocks}
+          currentBlockIndex={currentBlockIndex}
+          completedBlocks={completedBlocks}
+          onNavigateToBlock={setCurrentBlockIndex}
+          engagementTime={engagementTime}
+          xpEarned={xpEarned}
+        />
+      </div>
+    );
+  }
+
+  return contentArea;
 };
 
 export default LessonBlocks;
