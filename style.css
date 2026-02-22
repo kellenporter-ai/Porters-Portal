@@ -104,6 +104,78 @@ body {
   animation: slide-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+/* === Lesson Block Scroll Reveal === */
+@keyframes block-scroll-in {
+  0% {
+    opacity: 0;
+    transform: perspective(800px) rotateX(-8deg) translateY(40px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(800px) rotateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes block-scroll-out {
+  0% {
+    opacity: 1;
+    transform: perspective(800px) rotateX(0) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(800px) rotateX(8deg) translateY(-30px) scale(0.96);
+  }
+}
+
+.block-reveal {
+  opacity: 0;
+  transform: perspective(800px) rotateX(-8deg) translateY(40px) scale(0.96);
+}
+
+.block-reveal.block-visible {
+  animation: block-scroll-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.block-reveal.block-hidden {
+  animation: block-scroll-out 0.4s ease-in forwards;
+}
+
+.perf-mode .block-reveal {
+  opacity: 1;
+  transform: none;
+  animation: none !important;
+}
+
+/* Stagger delays for blocks entering viewport together */
+.block-reveal[data-stagger="1"] { animation-delay: 0.05s; }
+.block-reveal[data-stagger="2"] { animation-delay: 0.1s; }
+.block-reveal[data-stagger="3"] { animation-delay: 0.15s; }
+
+/* Lesson divider section break */
+.lesson-divider {
+  position: relative;
+  padding: 20px 0;
+}
+.lesson-divider::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(147,51,234,0.4) 20%, rgba(34,211,238,0.25) 50%, rgba(147,51,234,0.4) 80%, transparent);
+  border-radius: 2px;
+}
+.lesson-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: rgba(147,51,234,0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(147,51,234,0.4);
+}
+
 /* === Gamification Animations === */
 @keyframes shimmerSweep {
   0% { background-position: -200% 0; }

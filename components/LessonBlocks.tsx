@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks,
   ExternalLink, GripVertical, Target, Link, Play
@@ -289,9 +289,7 @@ const ObjectivesBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
 );
 
 const DividerBlock: React.FC = () => (
-  <div className="py-2">
-    <hr className="border-white/10" />
-  </div>
+  <div className="lesson-divider" />
 );
 
 const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
@@ -712,7 +710,9 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
 
 const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned }) => {
   const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(new Set());
-  const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
+  const [visibleBlockIndex, setVisibleBlockIndex] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const handleBlockComplete = useCallback((blockId: string, correct: boolean) => {
     onBlockComplete?.(blockId, correct);
@@ -727,23 +727,57 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     });
   }, [blocks, onBlockComplete, onAllComplete]);
 
-  const handleNext = () => {
-    if (currentBlockIndex < blocks.length - 1) {
-      setCurrentBlockIndex(prev => prev + 1);
-    }
-  };
+  // IntersectionObserver for scroll-reveal animations + tracking visible block
+  useEffect(() => {
+    const elements = blockRefs.current;
+    if (elements.size === 0) return;
 
-  const handlePrev = () => {
-    if (currentBlockIndex > 0) {
-      setCurrentBlockIndex(prev => prev - 1);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const el = entry.target as HTMLElement;
+          if (entry.isIntersecting) {
+            el.classList.add('block-visible');
+            el.classList.remove('block-hidden');
+          } else if (el.classList.contains('block-visible')) {
+            el.classList.remove('block-visible');
+            el.classList.add('block-hidden');
+          }
+        });
+
+        // Track the topmost visible block for the sidebar
+        let topVisibleIdx = blocks.length - 1;
+        for (let i = 0; i < blocks.length; i++) {
+          const el = elements.get(blocks[i].id);
+          if (el && el.classList.contains('block-visible')) {
+            topVisibleIdx = i;
+            break;
+          }
+        }
+        setVisibleBlockIndex(topVisibleIdx);
+      },
+      {
+        root: scrollContainerRef.current,
+        rootMargin: '0px 0px -10% 0px',
+        threshold: 0.15,
+      }
+    );
+
+    elements.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, [blocks]);
+
+  // Navigate to a block by scrolling
+  const navigateToBlock = useCallback((index: number) => {
+    const block = blocks[index];
+    if (!block) return;
+    const el = blockRefs.current.get(block.id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  };
+  }, [blocks]);
 
   if (blocks.length === 0) return null;
-
-  const currentBlock = blocks[currentBlockIndex];
-  const isInteractive = INTERACTIVE_TYPES.includes(currentBlock.type);
-  const isBlockDone = completedBlocks.has(currentBlock.id);
 
   const renderBlock = (block: LessonBlock) => {
     const onComplete = (correct: boolean) => handleBlockComplete(block.id, correct);
@@ -773,68 +807,56 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     }
   };
 
+  // Scroll progress based on visible block position
+  const scrollProgress = blocks.length > 1
+    ? Math.round(((visibleBlockIndex + 1) / blocks.length) * 100)
+    : 100;
+
   const contentArea = (
-    <div className="space-y-4 flex-1 min-w-0">
+    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
       {/* Progress bar */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
         <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div
             className="h-1.5 rounded-full bg-purple-500 transition-all duration-500"
-            style={{ width: `${((currentBlockIndex + 1) / blocks.length) * 100}%` }}
+            style={{ width: `${scrollProgress}%` }}
           />
         </div>
-        <span className="text-[10px] text-gray-500 font-mono">{currentBlockIndex + 1}/{blocks.length}</span>
+        <span className="text-[10px] text-gray-500 font-mono">{visibleBlockIndex + 1}/{blocks.length}</span>
       </div>
 
-      {/* Current block */}
-      <div key={currentBlock.id} className="animate-in fade-in slide-in-from-right-2 duration-200">
-        {renderBlock(currentBlock)}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex justify-between items-center pt-2 border-t border-white/5">
-        <button
-          onClick={handlePrev}
-          disabled={currentBlockIndex === 0}
-          className="text-xs text-gray-500 hover:text-white disabled:opacity-30 transition px-3 py-1.5 rounded-lg hover:bg-white/5"
-        >
-          Previous
-        </button>
-
-        <div className="flex gap-1">
-          {blocks.map((b, i) => (
-            <button
-              key={b.id}
-              onClick={() => setCurrentBlockIndex(i)}
-              className={`w-2 h-2 rounded-full transition ${
-                i === currentBlockIndex ? 'bg-purple-500 scale-125' :
-                completedBlocks.has(b.id) ? 'bg-green-500' :
-                'bg-white/10 hover:bg-white/20'
-              }`}
-            />
+      {/* Scrollable block container */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto custom-scrollbar"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        <div className="flex flex-col gap-6 pb-24 px-1">
+          {blocks.map((block, index) => (
+            <div
+              key={block.id}
+              ref={(el) => { if (el) blockRefs.current.set(block.id, el); }}
+              className={`block-reveal ${block.type === 'DIVIDER' ? '' : 'bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5'}`}
+              data-stagger={index % 4}
+              style={{ scrollMarginTop: 20 }}
+            >
+              {renderBlock(block)}
+            </div>
           ))}
         </div>
-
-        <button
-          onClick={handleNext}
-          disabled={currentBlockIndex >= blocks.length - 1 || (isInteractive && !isBlockDone)}
-          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 disabled:opacity-30 transition px-3 py-1.5 rounded-lg hover:bg-purple-500/10"
-        >
-          Next <ChevronRight className="w-3 h-3" />
-        </button>
       </div>
     </div>
   );
 
   if (showSidebar && blocks.length >= 3) {
     return (
-      <div className="flex gap-4">
+      <div className="flex gap-4 h-full">
         {contentArea}
         <LessonProgressSidebar
           blocks={blocks}
-          currentBlockIndex={currentBlockIndex}
+          currentBlockIndex={visibleBlockIndex}
           completedBlocks={completedBlocks}
-          onNavigateToBlock={setCurrentBlockIndex}
+          onNavigateToBlock={navigateToBlock}
           engagementTime={engagementTime}
           xpEarned={xpEarned}
         />
