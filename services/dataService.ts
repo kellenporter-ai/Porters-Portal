@@ -249,19 +249,21 @@ export const dataService = {
 
   // --- STUDENT GROUPS ---
 
-  createStudentGroup: async (name: string, classType: string, members: { userId: string; userName: string }[]) => {
-    const ref = await addDoc(collection(db, 'student_groups'), {
+  createStudentGroup: async (name: string, classType: string, members: { userId: string; userName: string }[], section?: string) => {
+    const data: Record<string, unknown> = {
       name,
       classType,
       members,
       memberIds: members.map(m => m.userId), // flat array for Firestore rules + array-contains queries
       createdAt: new Date().toISOString(),
       createdBy: 'ADMIN',
-    });
+    };
+    if (section) data.section = section;
+    const ref = await addDoc(collection(db, 'student_groups'), data);
     return ref.id;
   },
 
-  updateStudentGroup: async (groupId: string, data: Partial<Pick<StudentGroup, 'name' | 'members'>>) => {
+  updateStudentGroup: async (groupId: string, data: Partial<Pick<StudentGroup, 'name' | 'members' | 'section'>>) => {
     const update: Record<string, unknown> = { ...data };
     if (data.members) update.memberIds = data.members.map(m => m.userId);
     await updateDoc(doc(db, 'student_groups', groupId), update);

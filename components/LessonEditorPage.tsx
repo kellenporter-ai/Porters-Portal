@@ -392,16 +392,30 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       const payload = buildPayload(status, scheduledAt);
       if (onCreateAssignment) {
         if (selectedAssignment?.id && !isNewResource) {
-          await onCreateAssignment({ ...payload, classType: Array.from(resClasses)[0] });
+          // Update existing resource in its current class
+          await onCreateAssignment({ ...payload, classType: selectedAssignment.classType });
+          // Deploy to any additional classes as new resources
+          const additionalClasses = Array.from(resClasses).filter(c => c !== selectedAssignment.classType);
+          if (additionalClasses.length > 0) {
+            const { id: _id, ...payloadWithoutId } = payload;
+            await Promise.all(additionalClasses.map(className =>
+              onCreateAssignment!({ ...payloadWithoutId, classType: className })
+            ));
+            toast.success(`Also deployed to ${additionalClasses.length} additional class${additionalClasses.length > 1 ? 'es' : ''}.`);
+          }
         } else {
           await Promise.all(Array.from(resClasses).map(className =>
             onCreateAssignment!({ ...payload, classType: className })
           ));
         }
       } else {
-        // Fallback: direct save via dataService
         for (const className of Array.from(resClasses)) {
-          await dataService.addAssignment({ ...payload, classType: className } as Assignment);
+          if (selectedAssignment?.id && !isNewResource && className === selectedAssignment.classType) {
+            await dataService.addAssignment({ ...selectedAssignment, ...payload, classType: className } as Assignment);
+          } else {
+            const { id: _id, ...payloadWithoutId } = payload;
+            await dataService.addAssignment({ ...payloadWithoutId, classType: className } as Assignment);
+          }
         }
       }
       toast.success(status === AssignmentStatus.DRAFT ? 'Draft saved.' : scheduledAt ? 'Deployment scheduled.' : 'Resource deployed!');
@@ -537,13 +551,10 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setShowJsonImport(!showJsonImport)} className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/20 uppercase font-bold tracking-wider transition">
-            <Upload className="w-3 h-3" /> Paste JSON
-          </button>
           {isEditing && (
             <>
-              <button type="button" onClick={() => setShowSettings(!showSettings)} className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${showSettings ? 'text-amber-300 bg-amber-500/20 border-amber-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
-                <Settings className="w-3 h-3" /> Settings
+              <button type="button" onClick={() => setShowJsonImport(!showJsonImport)} className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/20 uppercase font-bold tracking-wider transition">
+                <Upload className="w-3 h-3" /> Paste JSON
               </button>
               <button type="button" onClick={() => setPreviewMode(!previewMode)} className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${previewMode ? 'text-purple-300 bg-purple-500/20 border-purple-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
                 <Eye className="w-3 h-3" /> {previewMode ? 'Edit' : 'Preview'}
@@ -772,13 +783,23 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
             </div>
           ) : (
             <div className="max-w-3xl mx-auto p-6 pb-32">
-              {/* Resource Settings Panel */}
+              {/* Resource Settings — collapsible header */}
+              <button
+                type="button"
+                onClick={() => setShowSettings(!showSettings)}
+                className="w-full flex items-center justify-between px-4 py-2.5 mb-4 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.05] transition cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Settings className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest shrink-0">Settings</span>
+                  {!showSettings && resTitle && (
+                    <span className="text-xs text-gray-500 truncate ml-2">{resTitle} — {resUnit} — {Array.from(resClasses).join(', ')}</span>
+                  )}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showSettings ? 'rotate-180' : ''}`} />
+              </button>
               {showSettings && (
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Settings className="w-3.5 h-3.5" /> Resource Settings</h3>
-                    <button type="button" onClick={() => setShowSettings(false)} className="text-gray-600 hover:text-gray-300 transition"><X className="w-4 h-4" /></button>
-                  </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2"><label className={labelClass}>Title</label><input type="text" value={resTitle} onChange={e => { setResTitle(e.target.value); setHasUnsavedChanges(true); }} placeholder="Resource title..." className={inputClass} /></div>

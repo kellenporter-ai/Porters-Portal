@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, StudentGroup, DefaultClassTypes } from '../types';
-import { Users, Plus, Trash2, X, UserPlus, UserMinus, Search } from 'lucide-react';
+import { User, StudentGroup, DefaultClassTypes, getSectionsForClass, getUserSectionForClass } from '../types';
+import { Users, Plus, Trash2, X, UserPlus, UserMinus, Search, Filter } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import { useToast } from './ToastProvider';
@@ -12,18 +12,25 @@ interface GroupManagerProps {
   fullPage?: boolean;
 }
 
-const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections, fullPage }) => {
+const GroupManager: React.FC<GroupManagerProps> = ({ students, fullPage }) => {
   const { confirm } = useConfirm();
   const toast = useToast();
   const [groupsByClass, setGroupsByClass] = useState<Record<string, StudentGroup[]>>({});
   const [selectedClass, setSelectedClass] = useState<string>(DefaultClassTypes.AP_PHYSICS);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newSection, setNewSection] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
-  const [sectionFilter, setSectionFilter] = useState('');
+  const [groupSectionFilter, setGroupSectionFilter] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberSectionFilter, setMemberSectionFilter] = useState('');
 
   const classOptions = useMemo(() => Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized'), []);
+
+  // Compute sections for the currently selected class from student data
+  const classSections = useMemo(() => {
+    return getSectionsForClass(students, selectedClass);
+  }, [students, selectedClass]);
 
   // Subscribe to groups for selected class
   useEffect(() => {
@@ -35,17 +42,29 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
 
   const groups = groupsByClass[selectedClass] || [];
 
+  // Filter groups by section
+  const filteredGroups = useMemo(() => {
+    if (!groupSectionFilter) return groups;
+    return groups.filter(g => g.section === groupSectionFilter);
+  }, [groups, groupSectionFilter]);
+
+  // Students for the selected class, filtered by member section filter
   const classStudents = useMemo(() => {
     return students
       .filter(s => s.role === 'STUDENT' && s.enrolledClasses?.includes(selectedClass))
-      .filter(s => !sectionFilter || s.section === sectionFilter);
-  }, [students, selectedClass, sectionFilter]);
+      .filter(s => {
+        if (!memberSectionFilter) return true;
+        const sec = getUserSectionForClass(s, selectedClass);
+        return sec === memberSectionFilter;
+      });
+  }, [students, selectedClass, memberSectionFilter]);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
-      await dataService.createStudentGroup(newName.trim(), selectedClass, []);
+      await dataService.createStudentGroup(newName.trim(), selectedClass, [], newSection || undefined);
       setNewName('');
+      setNewSection('');
       setShowCreate(false);
       toast.success('Group created.');
     } catch { toast.error('Failed to create group.'); }
@@ -75,6 +94,16 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
     }
     return counts;
   }, [classOptions, groupsByClass]);
+
+  // Section counts for the badge in section filter
+  const sectionGroupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const g of groups) {
+      const sec = g.section || '(No Section)';
+      counts[sec] = (counts[sec] || 0) + 1;
+    }
+    return counts;
+  }, [groups]);
 
   if (!fullPage) {
     // Compact embedded version (kept for backward compat but currently unused)
@@ -109,7 +138,7 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
         {classOptions.map(cls => (
           <button
             key={cls}
-            onClick={() => setSelectedClass(cls)}
+            onClick={() => { setSelectedClass(cls); setGroupSectionFilter(''); }}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${
               selectedClass === cls
                 ? 'bg-purple-600/80 text-white border-purple-500/50 shadow-lg'
@@ -126,6 +155,51 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
         ))}
       </div>
 
+      {/* Section Filter (only show if class has sections) */}
+      {classSections.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-gray-500" />
+          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Section:</span>
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => setGroupSectionFilter('')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+                !groupSectionFilter
+                  ? 'bg-purple-600/60 text-white border-purple-500/50'
+                  : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+              }`}
+            >
+              All ({groups.length})
+            </button>
+            {classSections.map(sec => (
+              <button
+                key={sec}
+                onClick={() => setGroupSectionFilter(groupSectionFilter === sec ? '' : sec)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+                  groupSectionFilter === sec
+                    ? 'bg-cyan-600/60 text-white border-cyan-500/50'
+                    : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                {sec} {sectionGroupCounts[sec] ? `(${sectionGroupCounts[sec]})` : ''}
+              </button>
+            ))}
+            {sectionGroupCounts['(No Section)'] > 0 && (
+              <button
+                onClick={() => setGroupSectionFilter(groupSectionFilter === '(No Section)' ? '' : '(No Section)')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border italic ${
+                  groupSectionFilter === '(No Section)'
+                    ? 'bg-gray-600/60 text-white border-gray-500/50'
+                    : 'bg-white/5 text-gray-500 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                No Section ({sectionGroupCounts['(No Section)']})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Create Group Form */}
       {showCreate && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
@@ -141,6 +215,16 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
               autoFocus
             />
+            {classSections.length > 0 && (
+              <select
+                value={newSection}
+                onChange={e => setNewSection(e.target.value)}
+                className="bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition"
+              >
+                <option value="">All Sections</option>
+                {classSections.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
             <button
               onClick={handleCreate}
               disabled={!newName.trim()}
@@ -148,7 +232,7 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
             >
               Create
             </button>
-            <button onClick={() => { setShowCreate(false); setNewName(''); }} className="p-3 text-gray-400 hover:text-white transition">
+            <button onClick={() => { setShowCreate(false); setNewName(''); setNewSection(''); }} className="p-3 text-gray-400 hover:text-white transition">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -156,15 +240,17 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
       )}
 
       {/* Groups Grid */}
-      {groups.length === 0 ? (
+      {filteredGroups.length === 0 ? (
         <div className="bg-white/5 border border-white/10 rounded-3xl p-12 backdrop-blur-md text-center">
           <Users className="w-14 h-14 mx-auto mb-4 text-gray-600" />
-          <h3 className="text-lg font-bold text-gray-400 mb-2">No groups for {selectedClass}</h3>
+          <h3 className="text-lg font-bold text-gray-400 mb-2">
+            {groupSectionFilter ? `No groups for ${groupSectionFilter}` : `No groups for ${selectedClass}`}
+          </h3>
           <p className="text-sm text-gray-500">Create a group to get started with collaborative assignments and group chat.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {groups.map(group => (
+          {filteredGroups.map(group => (
             <div key={group.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md hover:border-white/20 transition-all">
               {/* Group Header */}
               <div className="p-5 border-b border-white/5">
@@ -175,6 +261,12 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
                       {group.members.length} member{group.members.length !== 1 ? 's' : ''}
                       <span className="mx-2 text-gray-700">|</span>
                       {selectedClass}
+                      {group.section && (
+                        <>
+                          <span className="mx-2 text-gray-700">|</span>
+                          <span className="text-cyan-400 font-semibold">{group.section}</span>
+                        </>
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -231,10 +323,10 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, availableSections
                           className="w-full bg-black/30 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50"
                         />
                       </div>
-                      {availableSections.length > 0 && (
-                        <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white">
+                      {classSections.length > 0 && (
+                        <select value={memberSectionFilter} onChange={e => setMemberSectionFilter(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white">
                           <option value="">All Sections</option>
-                          {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
+                          {classSections.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       )}
                     </div>

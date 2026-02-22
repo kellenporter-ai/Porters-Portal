@@ -374,6 +374,7 @@ export interface StudentGroup {
   id: string;
   name: string;
   classType: string;
+  section?: string; // Optional section within a class (e.g. "Period 3")
   members: { userId: string; userName: string }[];
   createdAt: string;
   createdBy: string;
