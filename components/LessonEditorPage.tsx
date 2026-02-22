@@ -4,7 +4,7 @@ import {
   Plus, Trash2, ChevronUp, ChevronDown, Type, HelpCircle, MessageSquare,
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
-  ArrowUpDown, Table, BarChart3, Link, Upload, Save, X, Clipboard,
+  ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
   ChevronRight, Layers, Search, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket
 } from 'lucide-react';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
@@ -12,6 +12,7 @@ import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
+import { sortUnitKeys } from './AdminPanel';
 
 interface LessonEditorPageProps {
   assignments: Assignment[];
@@ -78,100 +79,8 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
 // AI Prompt generators
 // ──────────────────────────────────────────────
 
-const HTML_PROMPT = `I need you to create a standalone HTML file for an interactive educational activity that integrates with a Learning Management System called "Porters Portal". The HTML file must communicate with the parent application through the Proctor Bridge Protocol using postMessage.
+// AI prompts are now consolidated in the Admin Panel's AI Lab
 
-REQUIRED BRIDGE INTEGRATION:
-The HTML must include this bridge snippet at the top of its <script>:
-
-\`\`\`javascript
-// Portal Bridge - communicates with parent LMS
-const PortalBridge = {
-  _ready: false,
-  _userId: null,
-  _savedState: null,
-  init() {
-    window.addEventListener('message', (e) => {
-      if (e.data?.type === 'portal-init') {
-        this._userId = e.data.payload.userId;
-        this._savedState = e.data.payload.savedState;
-        this._ready = true;
-        this.onReady(e.data.payload);
-      }
-      if (e.data?.type === 'portal-xp-result') this.onXPResult(e.data.payload);
-      if (e.data?.type === 'portal-reset-ok') this.onReset();
-    });
-    window.parent.postMessage({ type: 'portal-ready' }, '*');
-  },
-  save(state, currentQuestion) {
-    window.parent.postMessage({ type: 'portal-save', payload: { state, currentQuestion } }, '*');
-  },
-  answer(questionId, correct, attempts) {
-    window.parent.postMessage({ type: 'portal-answer', payload: { questionId, correct, attempts } }, '*');
-  },
-  complete(score, totalQuestions, correctAnswers) {
-    window.parent.postMessage({ type: 'portal-complete', payload: { score, totalQuestions, correctAnswers } }, '*');
-  },
-  // Override these in your code:
-  onReady(payload) { /* { userId, savedState, completionInfo } */ },
-  onXPResult(payload) { /* { questionId, awarded, xp } */ },
-  onReset() { /* replay requested */ }
-};
-PortalBridge.init();
-\`\`\`
-
-REQUIREMENTS:
-1. Self-contained single HTML file (inline CSS + JS, no external dependencies)
-2. Call PortalBridge.save() to auto-save student progress
-3. Call PortalBridge.answer(questionId, correct, attempts) when students answer questions (awards XP)
-4. Call PortalBridge.complete(score, totalQuestions, correctAnswers) when the activity is finished
-5. Implement PortalBridge.onReady() to restore saved state
-6. Dark theme styling (background: #0f0720, text: white/gray, accents: purple/green)
-7. Mobile-responsive layout
-8. Smooth animations and transitions
-
-The activity I need is: [DESCRIBE YOUR ACTIVITY HERE]`;
-
-const JSON_PROMPT = `I need you to convert the following content into a JSON array of lesson blocks for the Porters Portal LMS. Output ONLY valid JSON (no markdown, no explanation).
-
-AVAILABLE BLOCK TYPES AND THEIR REQUIRED FIELDS:
-
-Content blocks:
-- {"type":"SECTION_HEADER", "icon":"📚", "title":"Section Name", "subtitle":"Optional subtitle"}
-- {"type":"TEXT", "content":"Plain text content with line breaks"}
-- {"type":"IMAGE", "url":"https://...", "caption":"Caption", "alt":"Description"}
-- {"type":"VIDEO", "url":"https://youtube.com/watch?v=...", "caption":"Caption"}
-- {"type":"OBJECTIVES", "title":"Learning Objectives", "items":["Obj 1","Obj 2"]}
-- {"type":"DIVIDER"}
-- {"type":"EXTERNAL_LINK", "title":"Link Title", "url":"https://...", "content":"Description", "buttonLabel":"Open", "openInNewTab":true}
-- {"type":"EMBED", "url":"https://docs.google.com/...", "caption":"Caption", "height":500}
-- {"type":"INFO_BOX", "variant":"tip|warning|note", "content":"Box content"}
-
-Interactive blocks:
-- {"type":"VOCABULARY", "term":"Word", "definition":"Definition"}
-- {"type":"VOCAB_LIST", "terms":[{"term":"Word1","definition":"Def1"},{"term":"Word2","definition":"Def2"}]}
-- {"type":"ACTIVITY", "icon":"⚡", "title":"Activity Name", "instructions":"Do this..."}
-- {"type":"CHECKLIST", "content":"Checklist title", "items":["Step 1","Step 2"]}
-- {"type":"SORTING", "title":"Sort Title", "instructions":"Sort these", "leftLabel":"Category A", "rightLabel":"Category B", "sortItems":[{"text":"Item","correct":"left|right"}]}
-- {"type":"DATA_TABLE", "title":"Table Title", "columns":[{"key":"col1","label":"Name","editable":true}], "trials":3}
-- {"type":"BAR_CHART", "title":"Chart Title", "barCount":3, "initialLabel":"Initial", "finalLabel":"Final", "deltaLabel":"Change", "height":300}
-
-Question blocks:
-- {"type":"MC", "content":"Question?", "options":["A","B","C","D"], "correctAnswer":0}
-- {"type":"SHORT_ANSWER", "content":"Question?", "acceptedAnswers":["answer1","answer2"]}
-- {"type":"RANKING", "content":"Put in order:", "items":["First","Second","Third"]}
-
-RULES:
-1. Output a JSON array: [{...}, {...}, ...]
-2. Start with a SECTION_HEADER block
-3. Use OBJECTIVES near the top
-4. Add TEXT blocks between interactive elements for context
-5. Use INFO_BOX for important callouts
-6. Add DIVIDER between major sections
-7. Include at least 2-3 question blocks (MC, SHORT_ANSWER, or RANKING)
-8. Every block MUST have a "type" field and a "content" field (even if empty string "")
-
-The content to convert is:
-[PASTE YOUR CONTENT HERE — supports: Google Slides text, PDF text, Google Docs, spreadsheets, Word docs, PowerPoint content, etc.]`;
 
 // ──────────────────────────────────────────────
 // Inline block type palette (for "+" buttons)
@@ -528,10 +437,6 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     }
   }, [jsonText, blocks, updateBlocks, toast]);
 
-  const copyToClipboard = useCallback((text: string, label: string) => {
-    navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied to clipboard!`));
-  }, [toast]);
-
   const filteredUnits = useMemo(() => {
     if (!searchFilter) return assignmentsByUnit;
     const lower = searchFilter.toLowerCase();
@@ -561,13 +466,6 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => copyToClipboard(HTML_PROMPT, 'HTML Proctor prompt')} className="flex items-center gap-1.5 text-[10px] text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-1.5 rounded-lg border border-cyan-500/20 uppercase font-bold tracking-wider transition" title="Copy AI prompt for generating a Proctor-integrated HTML activity">
-            <Clipboard className="w-3 h-3" /> HTML Prompt
-          </button>
-          <button type="button" onClick={() => copyToClipboard(JSON_PROMPT, 'JSON lesson prompt')} className="flex items-center gap-1.5 text-[10px] text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg border border-amber-500/20 uppercase font-bold tracking-wider transition" title="Copy AI prompt for converting documents to lesson block JSON">
-            <Clipboard className="w-3 h-3" /> JSON Prompt
-          </button>
-          <div className="w-px h-6 bg-white/10" />
           <button type="button" onClick={() => setShowJsonImport(!showJsonImport)} className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/20 uppercase font-bold tracking-wider transition">
             <Upload className="w-3 h-3" /> Paste JSON
           </button>
@@ -618,7 +516,12 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
             </div>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-            {Object.entries(filteredUnits).sort().map(([unit, items]) => (
+            {(() => {
+              const firstClass = Array.from(resClasses)[0];
+              const unitOrder = classConfigs?.find(c => c.className === firstClass)?.unitOrder;
+              const sortedKeys = sortUnitKeys(Object.keys(filteredUnits), unitOrder);
+              return sortedKeys.map(k => [k, filteredUnits[k]] as [string, Assignment[]]);
+            })().map(([unit, items]) => (
               <div key={unit}>
                 <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition">
                   {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}

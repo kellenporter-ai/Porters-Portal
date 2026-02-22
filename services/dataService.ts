@@ -1440,6 +1440,15 @@ export const dataService = {
     await updateDoc(doc(db, 'bug_reports', reportId), { resolved: true });
   },
 
+  updateBugReport: async (reportId: string, data: Partial<BugReport>) => {
+    const { id: _id, ...updateData } = data as BugReport;
+    await updateDoc(doc(db, 'bug_reports', reportId), updateData);
+  },
+
+  deleteBugReport: async (reportId: string) => {
+    await deleteDoc(doc(db, 'bug_reports', reportId));
+  },
+
   // ========================================
   // ENROLLMENT CODES
   // ========================================

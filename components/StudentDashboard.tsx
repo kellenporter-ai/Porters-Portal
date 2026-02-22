@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest } from '../types';
+import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest, ClassConfig } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical, GraduationCap } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
@@ -23,6 +23,7 @@ function snapCenterToCursor(args: any) {
   return transform;
 }
 import { dataService } from '../services/dataService';
+import { sortUnitKeys } from './AdminPanel';
 import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost, deriveCombatStats } from '../lib/gamification';
 import { RUNEWORD_DEFINITIONS } from '../lib/runewords';
 import { getClassProfile } from '../lib/classProfile';
@@ -50,6 +51,7 @@ interface StudentDashboardProps {
   user: User;
   assignments: Assignment[];
   submissions: Submission[];
+  classConfigs?: ClassConfig[];
   enabledFeatures: {
     physicsLab: boolean;
     evidenceLocker: boolean;
@@ -78,7 +80,7 @@ let _dailyLoginAttempted = false;
 let _streakAttempted = false;
 let _lastSessionUserId = '';
 
-const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
+const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
@@ -705,7 +707,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full pb-12">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full pb-6 lg:pb-12">
       
       {/* ANNOUNCEMENTS BANNER */}
       {visibleAnnouncements.length > 0 && (
@@ -1021,7 +1023,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <div className="text-center py-20 text-gray-500 italic">No resources released for this class node.</div>
                     ) : (
                         <div className="space-y-4">
-                            {(Object.entries(unitGroups) as [string, (Assignment & { lastEngagement: string | null; engagementTime: number })[]][]).sort().map(([unit, items]) => (
+                            {(() => {
+                              const unitOrder = classConfigs?.find(c => c.className === activeClass)?.unitOrder;
+                              const sortedKeys = sortUnitKeys(Object.keys(unitGroups), unitOrder);
+                              return sortedKeys.map(unit => [unit, unitGroups[unit]] as [string, typeof unitGroups[string]]);
+                            })().map(([unit, items]) => (
                                 <div key={unit} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
                                     <button onClick={() => toggleUnit(unit)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition">
                                         <div className="flex items-center gap-3">

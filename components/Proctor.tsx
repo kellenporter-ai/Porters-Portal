@@ -593,7 +593,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
                             onLoad={handleInteraction}
                         />
                         {/* Annotation drawing overlay on top of iframe */}
-                        <AnnotationOverlay containerRef={iframeWrapperRef} />
+                        <AnnotationOverlay containerRef={iframeWrapperRef} assignmentId={assignmentId} />
                     </div>
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (

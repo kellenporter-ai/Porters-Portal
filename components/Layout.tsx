@@ -135,7 +135,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
   };
 
   return (
-    <div className={`flex flex-col md:flex-row h-screen overflow-hidden text-gray-100 relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
+    <div className={`flex flex-col lg:flex-row h-screen overflow-hidden text-gray-100 relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
       {/* 1. Static Purple Background (Base Layer) */}
       <div className="fixed inset-0 z-[-3] bg-[#0f0720] static-purple-bg"></div>
 
@@ -158,8 +158,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       {/* 3. Dark Glass Overlay */}
       <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[#0f0720]/70' : 'bg-[#0f0720]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
 
-      {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-30">
+      {/* Mobile/Tablet Header — visible below lg breakpoint */}
+      <header className="lg:hidden flex items-center justify-between p-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-30">
           <div className="flex items-center gap-3">
               <div className="bg-purple-600 p-2 rounded-lg">
                   <GraduationCap className="w-5 h-5 text-white" />
@@ -180,7 +180,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
 
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex">
+          <div className="fixed inset-0 z-50 lg:hidden flex">
               {/* Backdrop */}
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setIsMobileMenuOpen(false)}></div>
               
@@ -225,8 +225,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
           </div>
       )}
 
-      {/* Desktop Sidebar */}
-      <aside className={`p-4 hidden md:flex flex-col z-10 transition-all ${settings.compactView ? 'w-60' : 'w-72'}`}>
+      {/* Desktop Sidebar — visible at lg breakpoint and above */}
+      <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all ${settings.compactView ? 'w-60' : 'w-72'}`}>
         <div className={`h-full bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl animate-glass-turn ${settings.performanceMode ? '' : 'backdrop-blur-2xl'}`}>
           <div className="p-8 flex items-center gap-4 border-b border-white/5">
             <div className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] p-3 rounded-xl">
@@ -280,7 +280,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto p-4 md:p-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
+      <main className={`flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
         <div className="max-w-7xl mx-auto h-full">
           {children}
         </div>

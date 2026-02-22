@@ -1,12 +1,14 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Pen, Eraser, Undo2, Trash2, Palette, Minus } from 'lucide-react';
+import { Pen, Eraser, Undo2, Trash2, Palette, Minus, Save, X, Info } from 'lucide-react';
 
 interface AnnotationOverlayProps {
   /** Attach overlay to this container ref */
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** Called when annotations change (e.g., for potential save) */
   onAnnotationsChange?: (hasAnnotations: boolean) => void;
+  /** Used to persist annotations in localStorage across sessions */
+  assignmentId?: string;
 }
 
 type Tool = 'pen' | 'eraser';
@@ -18,10 +20,13 @@ interface Stroke {
   tool: Tool;
 }
 
+const STORAGE_KEY_PREFIX = 'portal-annotations-';
+const WARNING_DISMISSED_KEY = 'portal-annotation-warning-dismissed';
+
 const PEN_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ffffff'];
 const PEN_WIDTHS = [2, 4, 6, 8];
 
-const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onAnnotationsChange }) => {
+const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onAnnotationsChange, assignmentId }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isActive, setIsActive] = useState(false);
   const [tool, setTool] = useState<Tool>('pen');
@@ -29,10 +34,57 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
   const [penWidth, setPenWidth] = useState(4);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showWidthPicker, setShowWidthPicker] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [hasSavedAnnotations, setHasSavedAnnotations] = useState(false);
 
   const strokesRef = useRef<Stroke[]>([]);
   const isDrawingRef = useRef(false);
   const currentStrokeRef = useRef<StrokePoint[]>([]);
+
+  // Check if saved annotations exist on mount
+  useEffect(() => {
+    if (!assignmentId) return;
+    const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}${assignmentId}`);
+    setHasSavedAnnotations(!!saved);
+  }, [assignmentId]);
+
+  // Storage helpers
+  const getStorageKey = useCallback(() => {
+    return assignmentId ? `${STORAGE_KEY_PREFIX}${assignmentId}` : null;
+  }, [assignmentId]);
+
+  const saveToStorage = useCallback(() => {
+    const key = getStorageKey();
+    if (!key) return;
+    if (strokesRef.current.length === 0) {
+      localStorage.removeItem(key);
+      setHasSavedAnnotations(false);
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify(strokesRef.current));
+    setHasSavedAnnotations(true);
+  }, [getStorageKey]);
+
+  const loadFromStorage = useCallback(() => {
+    const key = getStorageKey();
+    if (!key) return;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        strokesRef.current = JSON.parse(saved);
+        onAnnotationsChange?.(strokesRef.current.length > 0);
+      } catch {
+        strokesRef.current = [];
+      }
+    }
+  }, [getStorageKey, onAnnotationsChange]);
+
+  const clearStorage = useCallback(() => {
+    const key = getStorageKey();
+    if (key) localStorage.removeItem(key);
+    setHasSavedAnnotations(false);
+  }, [getStorageKey]);
 
   // Resize canvas to match container
   const resizeCanvas = useCallback(() => {
@@ -112,7 +164,6 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
     if (!point) return;
     currentStrokeRef.current.push(point);
 
-    // Draw current stroke in real-time
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -168,34 +219,134 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
     onAnnotationsChange?.(false);
   }, [redrawAll, onAnnotationsChange]);
 
-  const toggleAnnotation = useCallback(() => {
-    setIsActive(prev => !prev);
+  // Activation flow — show first-time warning or activate directly
+  const handleActivate = useCallback(() => {
+    const warningDismissed = localStorage.getItem(WARNING_DISMISSED_KEY) === 'true';
+    if (!warningDismissed) {
+      setShowWarning(true);
+      return;
+    }
+    loadFromStorage();
+    setIsActive(true);
+  }, [loadFromStorage]);
+
+  const confirmActivate = useCallback(() => {
+    if (dontShowAgain) {
+      localStorage.setItem(WARNING_DISMISSED_KEY, 'true');
+    }
+    setShowWarning(false);
+    setDontShowAgain(false);
+    loadFromStorage();
+    setIsActive(true);
+  }, [dontShowAgain, loadFromStorage]);
+
+  // Exit handlers
+  const handleSaveAndExit = useCallback(() => {
+    saveToStorage();
+    setIsActive(false);
     setShowColorPicker(false);
     setShowWidthPicker(false);
-  }, []);
+  }, [saveToStorage]);
+
+  const handleDiscardAndExit = useCallback(() => {
+    strokesRef.current = [];
+    redrawAll();
+    clearStorage();
+    onAnnotationsChange?.(false);
+    setIsActive(false);
+    setShowColorPicker(false);
+    setShowWidthPicker(false);
+  }, [redrawAll, clearStorage, onAnnotationsChange]);
 
   return (
     <>
-      {/* Toggle button — always visible in HUD */}
-      <button
-        onClick={toggleAnnotation}
-        className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors cursor-pointer ${
-          isActive
-            ? 'text-red-300 bg-red-500/20 border-red-500/30 hover:bg-red-500/30'
-            : 'text-purple-300 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
-        }`}
-        title="Annotate"
-      >
-        <Pen className="w-3 h-3" />
-        {isActive ? 'Clear Annotations' : 'Annotate'}
-      </button>
+      {/* HUD toggle button */}
+      {!isActive ? (
+        <button
+          onClick={handleActivate}
+          className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors cursor-pointer ${
+            hasSavedAnnotations
+              ? 'text-amber-300 bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
+              : 'text-purple-300 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
+          }`}
+          title={hasSavedAnnotations ? 'Resume saved annotations' : 'Start annotating'}
+        >
+          <Pen className="w-3 h-3" />
+          {hasSavedAnnotations ? 'Resume Notes' : 'Annotate'}
+        </button>
+      ) : (
+        <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest text-green-300 bg-green-500/15 border-green-500/25">
+          <Pen className="w-3 h-3 animate-pulse" />
+          Drawing
+        </span>
+      )}
+
+      {/* First-time annotation warning dialog */}
+      {showWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <Info className="w-5 h-5 text-purple-400" />
+              </div>
+              <h3 className="text-white font-semibold text-lg">Annotation Mode</h3>
+            </div>
+            <div className="text-gray-400 text-sm space-y-3 mb-6">
+              <p>
+                You&apos;re about to enter annotation mode. While active, you can draw
+                directly on the content using the pen and eraser tools.
+              </p>
+              <p>When you&apos;re done, you have two options:</p>
+              <ul className="list-none space-y-2 pl-1">
+                <li className="flex items-start gap-2">
+                  <Save className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                  <span>
+                    <strong className="text-green-300">Save &amp; Exit</strong> — Your
+                    annotations are preserved. You can return to them later.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <X className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                  <span>
+                    <strong className="text-red-300">Discard &amp; Exit</strong> — All
+                    annotations are permanently deleted.
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-500 mb-5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 accent-purple-500"
+              />
+              Don&apos;t show this again
+            </label>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setShowWarning(false); setDontShowAgain(false); }}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmActivate}
+                className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition cursor-pointer"
+              >
+                Start Annotating
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Canvas overlay */}
       {isActive && (
         <canvas
           ref={canvasRef}
           className="absolute inset-0 z-30"
-          style={{ cursor: tool === 'eraser' ? 'crosshair' : 'crosshair', touchAction: 'none' }}
+          style={{ cursor: 'crosshair', touchAction: 'none' }}
           onMouseDown={handlePointerDown}
           onMouseMove={handlePointerMove}
           onMouseUp={handlePointerUp}
@@ -212,7 +363,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           {/* Pen */}
           <button
             onClick={() => setTool('pen')}
-            className={`p-2 rounded-lg transition ${tool === 'pen' ? 'bg-purple-600/40 text-purple-300' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition cursor-pointer ${tool === 'pen' ? 'bg-purple-600/40 text-purple-300' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}
             title="Pen"
           >
             <Pen className="w-4 h-4" />
@@ -221,7 +372,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           {/* Eraser */}
           <button
             onClick={() => setTool('eraser')}
-            className={`p-2 rounded-lg transition ${tool === 'eraser' ? 'bg-purple-600/40 text-purple-300' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition cursor-pointer ${tool === 'eraser' ? 'bg-purple-600/40 text-purple-300' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}
             title="Eraser"
           >
             <Eraser className="w-4 h-4" />
@@ -233,7 +384,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           <div className="relative">
             <button
               onClick={() => { setShowColorPicker(!showColorPicker); setShowWidthPicker(false); }}
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition"
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition cursor-pointer"
               title="Color"
             >
               <Palette className="w-4 h-4" />
@@ -245,7 +396,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
                   <button
                     key={c}
                     onClick={() => { setColor(c); setShowColorPicker(false); }}
-                    className={`w-6 h-6 rounded-full border-2 transition ${color === c ? 'border-white scale-110' : 'border-transparent hover:scale-110'}`}
+                    className={`w-6 h-6 rounded-full border-2 transition cursor-pointer ${color === c ? 'border-white scale-110' : 'border-transparent hover:scale-110'}`}
                     style={{ backgroundColor: c }}
                   />
                 ))}
@@ -257,7 +408,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           <div className="relative">
             <button
               onClick={() => { setShowWidthPicker(!showWidthPicker); setShowColorPicker(false); }}
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition"
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition cursor-pointer"
               title="Line width"
             >
               <Minus className="w-4 h-4" />
@@ -268,7 +419,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
                   <button
                     key={w}
                     onClick={() => { setPenWidth(w); setShowWidthPicker(false); }}
-                    className={`flex items-center justify-center w-8 h-8 rounded-lg transition ${penWidth === w ? 'bg-purple-600/30 border border-purple-500/30' : 'hover:bg-white/5'}`}
+                    className={`flex items-center justify-center w-8 h-8 rounded-lg transition cursor-pointer ${penWidth === w ? 'bg-purple-600/30 border border-purple-500/30' : 'hover:bg-white/5'}`}
                   >
                     <div className="rounded-full bg-white" style={{ width: w * 2, height: w * 2 }} />
                   </button>
@@ -283,8 +434,8 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           <button
             onClick={handleUndo}
             disabled={strokesRef.current.length === 0}
-            className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 disabled:opacity-30 transition"
-            title="Undo"
+            className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 disabled:opacity-30 transition cursor-pointer"
+            title="Undo last stroke"
           >
             <Undo2 className="w-4 h-4" />
           </button>
@@ -293,10 +444,32 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           <button
             onClick={handleClearAll}
             disabled={strokesRef.current.length === 0}
-            className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-30 transition"
-            title="Clear all"
+            className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-30 transition cursor-pointer"
+            title="Clear all strokes"
           >
             <Trash2 className="w-4 h-4" />
+          </button>
+
+          <div className="w-px h-5 bg-white/10" />
+
+          {/* Save & Exit */}
+          <button
+            onClick={handleSaveAndExit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-green-300 bg-green-500/15 hover:bg-green-500/25 border border-green-500/20 transition cursor-pointer"
+            title="Save annotations and exit drawing mode"
+          >
+            <Save className="w-3.5 h-3.5" />
+            Save &amp; Exit
+          </button>
+
+          {/* Discard & Exit */}
+          <button
+            onClick={handleDiscardAndExit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-300 bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 transition cursor-pointer"
+            title="Discard all annotations and exit"
+          >
+            <X className="w-3.5 h-3.5" />
+            Discard &amp; Exit
           </button>
         </div>
       )}
