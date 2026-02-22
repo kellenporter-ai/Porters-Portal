@@ -577,11 +577,12 @@ const App: React.FC = () => {
                         setAdminViewMode('STUDENT');
                         openAssignment(id);
                       }}
+                      onNavigate={setActiveTab}
                     />
                   )}
                   {activeTab === 'Student Groups' && <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />}
                   {activeTab === 'Enrollment Codes' && <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />}
-                  {activeTab === 'Lesson Editor' && <LessonEditorPage assignments={assignments} onClose={() => setActiveTab('Admin Panel')} />}
+                  {activeTab === 'Resource Editor' && <LessonEditorPage assignments={assignments} onClose={() => setActiveTab('Admin Panel')} classConfigs={classConfigs} users={rawUsers} availableSections={availableSections} onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }} />}
                   {activeTab.startsWith('XP Command:') && <XPManagement users={rawUsers} initialTab={activeTab.split(':')[1]} />}
               </>
             )}

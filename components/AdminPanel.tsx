@@ -1,113 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass, LessonBlock } from '../types';
-import { Plus, Archive, Eye, Trash2, Edit2, Loader2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CheckCircle, CalendarClock, FileText, Rocket, Clipboard } from 'lucide-react';
-import Modal from './Modal';
+import React, { useState, useMemo } from 'react';
+import { Assignment, Submission, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User } from '../types';
+import { Plus, Archive, Eye, Trash2, Edit2, PlayCircle, Clock, ChevronDown, ChevronRight, BookOpen, Layers, Target, FlaskConical, Newspaper, Video, MonitorPlay, Brain, CalendarClock, FileText, Rocket } from 'lucide-react';
 import QuestionBankManager from './QuestionBankManager';
-import SectionPicker from './SectionPicker';
-import LessonBlockEditor from './LessonBlockEditor';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
-
-// ──────────────────────────────────────────────
-// Smart Unit Selector (combobox)
-// ──────────────────────────────────────────────
-const UnitSelector: React.FC<{ value: string; onChange: (val: string) => void; existingUnits: string[] }> = ({ value, onChange, existingUnits }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [filter, setFilter] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false); };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  const filtered = existingUnits.filter(u => u.toLowerCase().includes(filter.toLowerCase()));
-  const showCreate = filter && !existingUnits.some(u => u.toLowerCase() === filter.toLowerCase());
-
-  return (
-    <div ref={ref} className="relative">
-      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
-      <input
-        type="text"
-        value={value}
-        onChange={e => { onChange(e.target.value); setFilter(e.target.value); }}
-        onFocus={() => { setIsOpen(true); setFilter(''); }}
-        placeholder="Select or type a unit..."
-        className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
-        required
-      />
-      {isOpen && existingUnits.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
-          {filtered.map(unit => (
-            <button key={unit} type="button" onClick={() => { onChange(unit); setIsOpen(false); }} className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-500/10 transition ${value === unit ? 'text-purple-300 bg-purple-500/5' : 'text-gray-300'}`}>
-              {unit}
-            </button>
-          ))}
-          {filtered.length === 0 && !showCreate && (
-            <div className="px-4 py-2 text-xs text-gray-500 italic">No matching units</div>
-          )}
-          {showCreate && (
-            <button type="button" onClick={() => { onChange(filter); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 transition flex items-center gap-2">
-              <Plus className="w-3 h-3" /> Create "{filter}"
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ──────────────────────────────────────────────
-// AI Prompt templates (for copy-to-clipboard)
-// ──────────────────────────────────────────────
-const AI_HTML_PROMPT = `I need you to create a standalone HTML file for an interactive educational activity that integrates with a Learning Management System called "Porters Portal". The HTML file must communicate with the parent application through the Proctor Bridge Protocol using postMessage.
-
-REQUIRED BRIDGE INTEGRATION:
-The HTML must include this bridge snippet at the top of its <script>:
-
-\`\`\`javascript
-const PortalBridge = {
-  _ready: false, _userId: null, _savedState: null,
-  init() {
-    window.addEventListener('message', (e) => {
-      if (e.data?.type === 'portal-init') { this._userId = e.data.payload.userId; this._savedState = e.data.payload.savedState; this._ready = true; this.onReady(e.data.payload); }
-      if (e.data?.type === 'portal-xp-result') this.onXPResult(e.data.payload);
-      if (e.data?.type === 'portal-reset-ok') this.onReset();
-    });
-    window.parent.postMessage({ type: 'portal-ready' }, '*');
-  },
-  save(state, currentQuestion) { window.parent.postMessage({ type: 'portal-save', payload: { state, currentQuestion } }, '*'); },
-  answer(questionId, correct, attempts) { window.parent.postMessage({ type: 'portal-answer', payload: { questionId, correct, attempts } }, '*'); },
-  complete(score, totalQuestions, correctAnswers) { window.parent.postMessage({ type: 'portal-complete', payload: { score, totalQuestions, correctAnswers } }, '*'); },
-  onReady(payload) {}, onXPResult(payload) {}, onReset() {}
-};
-PortalBridge.init();
-\`\`\`
-
-REQUIREMENTS:
-1. Self-contained single HTML file (inline CSS + JS, no external dependencies)
-2. Call PortalBridge.save() to auto-save student progress
-3. Call PortalBridge.answer(questionId, correct, attempts) when students answer questions (awards XP)
-4. Call PortalBridge.complete(score, totalQuestions, correctAnswers) when the activity is finished
-5. Implement PortalBridge.onReady() to restore saved state
-6. Dark theme styling (background: #0f0720, text: white/gray, accents: purple/green)
-7. Mobile-responsive layout
-
-The activity I need is: [DESCRIBE YOUR ACTIVITY HERE]`;
-
-const AI_JSON_PROMPT = `Convert the following content into a JSON array of lesson blocks for the Porters Portal LMS. Output ONLY valid JSON.
-
-BLOCK TYPES:
-Content: SECTION_HEADER (icon, title, subtitle), TEXT (content), IMAGE (url, caption, alt), VIDEO (url, caption), OBJECTIVES (title, items[]), DIVIDER, EXTERNAL_LINK (title, url, content, buttonLabel, openInNewTab), EMBED (url, caption, height), INFO_BOX (variant: tip|warning|note, content)
-Interactive: VOCABULARY (term, definition), VOCAB_LIST (terms[{term,definition}]), ACTIVITY (icon, title, instructions), CHECKLIST (content, items[]), SORTING (title, instructions, leftLabel, rightLabel, sortItems[{text,correct:"left"|"right"}]), DATA_TABLE (title, columns[{key,label,unit?,editable?}], trials), BAR_CHART (title, barCount, initialLabel, finalLabel, deltaLabel, height)
-Questions: MC (content, options[], correctAnswer), SHORT_ANSWER (content, acceptedAnswers[]), RANKING (content, items[])
-
-RULES: Output a JSON array [{...},...]. Start with SECTION_HEADER. Use OBJECTIVES near top. Add TEXT between interactive elements. Every block needs "type" and "content" (even if "").
-
-The content to convert:
-[PASTE YOUR CONTENT HERE — Google Slides, PDF, Google Docs, spreadsheets, Word, PowerPoint, CSV, etc.]`;
 
 interface AdminPanelProps {
   assignments: Assignment[];
@@ -118,6 +15,7 @@ interface AdminPanelProps {
   onDeleteAssignment?: (id: string) => void;
   onPreviewAssignment?: (id: string) => void;
   availableSections?: string[];
+  onNavigate?: (tab: string) => void;
 }
 
 const CATEGORIES: ResourceCategory[] = ['Textbook', 'Simulation', 'Lab Guide', 'Practice Set', 'Article', 'Video Lesson', 'Supplemental'];
@@ -132,59 +30,20 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-4 h-4" />
 };
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, classConfigs, users, onCreateAssignment, onPreviewAssignment, availableSections = [] }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, classConfigs, onPreviewAssignment, onNavigate }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [filterClass, setFilterClass] = useState<string>('All Classes');
   const [filterCategory, setFilterCategory] = useState<string>('All Categories');
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [qbAssignment, setQbAssignment] = useState<Assignment | null>(null);
 
-  const [newAssignment, setNewAssignment] = useState<Partial<Assignment>>({
-    title: '',
-    description: '',
-    status: AssignmentStatus.ACTIVE,
-    unit: 'Unit 1: Overview',
-    category: 'Textbook',
-    htmlContent: '',
-    resources: [],
-    lessonBlocks: []
-  });
-
-  const [selectedClasses, setSelectedClasses] = useState<Set<string>>(new Set([DefaultClassTypes.AP_PHYSICS]));
-  const [selectedSections, setSelectedSections] = useState<string[]>([]);
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [isUploadingMain, setIsUploadingMain] = useState(false);
-
-  const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
-
-  // Compute existing units from assignments filtered by selected classes
-  const existingUnits = useMemo(() => {
-    const units = new Set<string>();
-    assignments.forEach(a => {
-      if (selectedClasses.has(a.classType) && a.unit) units.add(a.unit);
-    });
-    return Array.from(units).sort();
-  }, [assignments, selectedClasses]);
-
-  // Fix: Explicitly type availableClasses to string[] to resolve Property 'map' does not exist on type 'unknown' error
   const availableClasses = useMemo<string[]>(() => {
     const defaults = Object.values(DefaultClassTypes).filter((c): c is string => c !== DefaultClassTypes.UNCATEGORIZED);
     const configs = (classConfigs || []).map((c: ClassConfig) => c.className);
     return Array.from(new Set(['All Classes', ...defaults, ...configs]));
   }, [classConfigs]);
-
-  // Compute sections filtered by the first selected target class
-  const classSections = useMemo(() => {
-    const firstClass = Array.from(selectedClasses)[0];
-    if (!firstClass) return availableSections;
-    const perClass = getSectionsForClass(students, firstClass);
-    return perClass.length > 0 ? perClass : availableSections;
-  }, [selectedClasses, students, availableSections]);
 
   const filteredAssignments = useMemo<Assignment[]>(() => {
     return assignments.filter(a => {
@@ -212,44 +71,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
     }, {} as Record<string, Assignment[]>);
   }, [filteredAssignments, filterClass]);
 
-  const handleDeploy = async (status: AssignmentStatus, scheduledAt?: string) => {
-    if (selectedClasses.size === 0) { toast.error("Select a target class."); return; }
-    setIsSubmitting(true);
-    try {
-        const sectionPayload = selectedSections.length > 0 ? { targetSections: selectedSections } : {};
-        const schedPayload = scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {};
-        const payload = { ...newAssignment, status, ...sectionPayload, ...schedPayload };
-        if (isEditing && newAssignment.id) {
-            await onCreateAssignment({ ...payload, classType: Array.from(selectedClasses)[0] });
-        } else {
-            await Promise.all(Array.from(selectedClasses).map(className =>
-                onCreateAssignment({ ...payload, classType: className })
-            ));
-        }
-        setIsModalOpen(false);
-        setIsEditing(false);
-        setScheduleDate('');
-        toast.success(status === AssignmentStatus.DRAFT ? 'Draft saved.' : scheduledAt ? 'Deployment scheduled.' : 'Resource deployed.');
-    } catch (err) { console.error(err); } finally { setIsSubmitting(false); }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await handleDeploy(AssignmentStatus.ACTIVE);
-  };
-
   const handleQuickDeploy = async (assign: Assignment) => {
     await dataService.updateAssignmentStatus(assign.id, AssignmentStatus.ACTIVE);
     toast.success(`"${assign.title}" deployed.`);
-  };
-
-  const handleEdit = (assignment: Assignment) => {
-      setNewAssignment(assignment);
-      setSelectedClasses(new Set([assignment.classType]));
-      setSelectedSections(assignment.targetSections || []);
-      setScheduleDate(assignment.scheduledAt ? assignment.scheduledAt.slice(0, 16) : '');
-      setIsEditing(true);
-      setIsModalOpen(true);
   };
 
   const toggleStatus = async (assign: Assignment) => {
@@ -284,8 +108,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Admin System</h1>
           <p className="text-gray-400">Resource deployment and operational oversight.</p>
         </div>
-        <button onClick={() => { setNewAssignment({ title: '', description: '', status: AssignmentStatus.ACTIVE, unit: 'Unit 1: Overview', category: 'Textbook', htmlContent: '', contentUrl: '', resources: [], lessonBlocks: [] }); setSelectedSections([]); setScheduleDate(''); setIsEditing(false); setIsModalOpen(true); }} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl shadow-xl transition-all font-bold flex items-center gap-2">
-          <Plus className="w-5 h-5" /> Deploy Resource
+        <button onClick={() => onNavigate?.('Resource Editor')} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl shadow-xl transition-all font-bold flex items-center gap-2">
+          <Plus className="w-5 h-5" /> Resource Editor
         </button>
       </div>
 
@@ -344,7 +168,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
                                             )}
                                             <button onClick={() => setQbAssignment(assign)} className="p-2 text-purple-400 hover:bg-purple-500/20 rounded-lg transition" title="Question Bank"><Brain className="w-4 h-4" /></button>
                                             <button onClick={() => onPreviewAssignment?.(assign.id)} className="p-2 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><MonitorPlay className="w-4 h-4" /></button>
-                                            <button onClick={() => handleEdit(assign)} className="p-2 text-gray-300 hover:bg-white/10 rounded-lg transition"><Edit2 className="w-4 h-4" /></button>
+                                            <button onClick={() => onNavigate?.('Resource Editor')} className="p-2 text-gray-300 hover:bg-white/10 rounded-lg transition" title="Edit in Resource Editor"><Edit2 className="w-4 h-4" /></button>
                                             <button onClick={() => toggleStatus(assign)} className="p-2 text-yellow-400 hover:bg-yellow-500/20 rounded-lg transition">{assign.status === AssignmentStatus.ACTIVE ? <Archive className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                                             <button onClick={async () => { if(await confirm({ message: "Delete this resource permanently?", confirmLabel: "Delete" })) await dataService.deleteAssignment(assign.id); }} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition" title="Delete resource" aria-label="Delete resource"><Trash2 className="w-4 h-4" /></button>
                                         </div>
@@ -388,104 +212,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ assignments, submissions, class
             </div>
         </div>
       </div>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "Modify Resource" : "Configure Deployment"} maxWidth="max-w-3xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
-                    <input required className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500" value={newAssignment.title} onChange={e => setNewAssignment({...newAssignment, title: e.target.value})} />
-                </div>
-                <UnitSelector value={newAssignment.unit || ''} onChange={(val) => setNewAssignment({...newAssignment, unit: val})} existingUnits={existingUnits} />
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
-                    <select value={newAssignment.category} onChange={(e) => setNewAssignment({...newAssignment, category: e.target.value as ResourceCategory})} className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500">
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Target Classes</label>
-                <div className="flex flex-wrap gap-2">
-                    {availableClasses.filter(c => c !== 'All Classes').map(c => (
-                        <button key={c} type="button" onClick={() => { const s = new Set(selectedClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setSelectedClasses(s); setSelectedSections([]); }} className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${selectedClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
-                    ))}
-                </div>
-            </div>
-            <SectionPicker availableSections={classSections} selectedSections={selectedSections} onChange={setSelectedSections} />
-            <div className="bg-purple-900/20 border border-purple-500/30 p-5 rounded-2xl">
-                <label className="block text-sm font-bold text-purple-300 mb-2">HTML Interactive Upload</label>
-                <input type="file" accept=".html,.htm" className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-purple-600 file:text-white" onChange={async (e) => { if(e.target.files?.[0]) { setIsUploadingMain(true); try { const url = await dataService.uploadHtmlResource(e.target.files[0]); setNewAssignment({...newAssignment, contentUrl: url}); toast.success('File uploaded!'); } catch (err) { toast.error('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error')); } finally { setIsUploadingMain(false); } } }} />
-                {isUploadingMain && <div className="flex items-center gap-2 mt-2 text-purple-300 text-xs"><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</div>}
-                {!isUploadingMain && newAssignment.contentUrl && (
-                    <div className="flex items-center gap-2 mt-2 text-emerald-400 text-xs"><CheckCircle className="w-4 h-4" /> Resource uploaded</div>
-                )}
-            </div>
-            {/* Lesson Block Editor */}
-            <div className="bg-indigo-900/20 border border-indigo-500/30 p-5 rounded-2xl">
-                <LessonBlockEditor
-                  blocks={(newAssignment.lessonBlocks || []) as LessonBlock[]}
-                  onChange={(blocks) => setNewAssignment({ ...newAssignment, lessonBlocks: blocks })}
-                />
-            </div>
-
-            {/* AI Prompt Copy Buttons */}
-            <div className="flex gap-3">
-                <button type="button" onClick={() => { navigator.clipboard.writeText(AI_HTML_PROMPT); toast.success('HTML Proctor prompt copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 text-xs font-bold transition">
-                  <Clipboard className="w-3.5 h-3.5" /> Copy AI HTML Prompt
-                </button>
-                <button type="button" onClick={() => { navigator.clipboard.writeText(AI_JSON_PROMPT); toast.success('JSON block prompt copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/10 text-xs font-bold transition">
-                  <Clipboard className="w-3.5 h-3.5" /> Copy AI JSON Prompt
-                </button>
-            </div>
-
-            <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description <span className="text-gray-600">(optional)</span></label>
-                <textarea className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 resize-none h-20" placeholder="Brief description for AI prompts and student context..." value={newAssignment.description} onChange={e => setNewAssignment({...newAssignment, description: e.target.value})} />
-            </div>
-
-            {/* Schedule */}
-            <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Schedule Deployment <span className="text-gray-600">(optional — leave blank for immediate)</span></label>
-                <input
-                  type="datetime-local"
-                  value={scheduleDate}
-                  onChange={e => setScheduleDate(e.target.value)}
-                  className="w-full p-3 border border-white/10 rounded-xl bg-black/30 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-                />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleDeploy(AssignmentStatus.DRAFT)}
-                  className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition"
-                >
-                  <FileText className="w-4 h-4" /> Save Draft
-                </button>
-                {scheduleDate ? (
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => handleDeploy(AssignmentStatus.ACTIVE, scheduleDate)}
-                    className="flex-[2] bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition"
-                  >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CalendarClock className="w-4 h-4" /> Schedule Deployment</>}
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-[2] bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition"
-                  >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Commit Deployment"}
-                  </button>
-                )}
-            </div>
-        </form>
-      </Modal>
 
       {qbAssignment && (
         <QuestionBankManager

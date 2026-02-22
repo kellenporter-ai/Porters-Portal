@@ -34,7 +34,7 @@ export const NAVIGATION: NavItem[] = [
   // Admin navigation
   { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Admin Panel', icon: <ShieldAlert className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'Lesson Editor', icon: <BookOpen className="w-5 h-5" />, role: 'ADMIN' },
+  { name: 'Resource Editor', icon: <BookOpen className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'User Management', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Student Groups', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Enrollment Codes', icon: <KeyRound className="w-5 h-5" />, role: 'ADMIN' },

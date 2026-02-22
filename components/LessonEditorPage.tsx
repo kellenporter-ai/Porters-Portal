@@ -1,14 +1,15 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Type, HelpCircle, MessageSquare,
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X, Clipboard,
-  ChevronRight, Layers, Search
+  ChevronRight, Layers, Search, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket
 } from 'lucide-react';
-import { LessonBlock, BlockType, Assignment } from '../types';
+import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
 import LessonBlocks from './LessonBlocks';
+import SectionPicker from './SectionPicker';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 
@@ -16,6 +17,10 @@ interface LessonEditorPageProps {
   assignments: Assignment[];
   onClose: () => void;
   initialAssignmentId?: string;
+  classConfigs?: ClassConfig[];
+  users?: User[];
+  availableSections?: string[];
+  onCreateAssignment?: (assignment: Partial<Assignment>) => Promise<void>;
 }
 
 const BLOCK_TYPES: { type: BlockType; label: string; icon: React.ReactNode; description: string; category: string }[] = [
@@ -242,29 +247,76 @@ const getBlockSummary = (block: LessonBlock): string => {
 
 const getBlockTypeInfo = (type: BlockType) => BLOCK_TYPES.find(bt => bt.type === type);
 
+const CATEGORIES: ResourceCategory[] = ['Textbook', 'Simulation', 'Lab Guide', 'Practice Set', 'Article', 'Video Lesson', 'Supplemental'];
+
+// ──────────────────────────────────────────────
+// Smart Unit Selector (combobox)
+// ──────────────────────────────────────────────
+const UnitSelector: React.FC<{ value: string; onChange: (val: string) => void; existingUnits: string[] }> = ({ value, onChange, existingUnits }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false); };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = existingUnits.filter(u => u.toLowerCase().includes(filter.toLowerCase()));
+  const showCreate = filter && !existingUnits.some(u => u.toLowerCase() === filter.toLowerCase());
+
+  return (
+    <div ref={ref} className="relative">
+      <label className={labelClass}>Unit</label>
+      <input type="text" value={value} onChange={e => { onChange(e.target.value); setFilter(e.target.value); }} onFocus={() => { setIsOpen(true); setFilter(''); }} placeholder="Select or type a unit..." className={inputClass} />
+      {isOpen && existingUnits.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+          {filtered.map(unit => (
+            <button key={unit} type="button" onClick={() => { onChange(unit); setIsOpen(false); }} className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-500/10 transition ${value === unit ? 'text-purple-300 bg-purple-500/5' : 'text-gray-300'}`}>
+              {unit}
+            </button>
+          ))}
+          {filtered.length === 0 && !showCreate && <div className="px-4 py-2 text-xs text-gray-500 italic">No matching units</div>}
+          {showCreate && (
+            <button type="button" onClick={() => { onChange(filter); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 transition flex items-center gap-2">
+              <Plus className="w-3 h-3" /> Create &quot;{filter}&quot;
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ──────────────────────────────────────────────
 // Main Lesson Editor Page
 // ──────────────────────────────────────────────
 
-const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClose, initialAssignmentId }) => {
+const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClose, initialAssignmentId, classConfigs = [], users = [], availableSections = [], onCreateAssignment }) => {
   const toast = useToast();
 
-  // Lessons = assignments that have lesson blocks
-  const lessons = useMemo(() =>
-    assignments.filter(a => a.lessonBlocks && a.lessonBlocks.length > 0).sort((a, b) => a.title.localeCompare(b.title)),
-  [assignments]);
-
-  const lessonsByUnit = useMemo(() => {
+  // All assignments grouped by unit (sidebar shows everything now)
+  const assignmentsByUnit = useMemo(() => {
     const groups: Record<string, Assignment[]> = {};
-    lessons.forEach(l => {
-      const unit = l.unit || 'Unassigned';
+    assignments.sort((a, b) => a.title.localeCompare(b.title)).forEach(a => {
+      const unit = a.unit || 'Unassigned';
       if (!groups[unit]) groups[unit] = [];
-      groups[unit].push(l);
+      groups[unit].push(a);
     });
     return groups;
-  }, [lessons]);
+  }, [assignments]);
+
+  const availableClasses = useMemo<string[]>(() => {
+    const defaults = Object.values(DefaultClassTypes).filter((c): c is string => c !== DefaultClassTypes.UNCATEGORIZED);
+    const configs = (classConfigs || []).map((c: ClassConfig) => c.className);
+    return Array.from(new Set([...defaults, ...configs]));
+  }, [classConfigs]);
+
+  const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialAssignmentId || null);
+  const [isNewResource, setIsNewResource] = useState(false);
   const [blocks, setBlocks] = useState<LessonBlock[]>([]);
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
@@ -273,29 +325,87 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [jsonError, setJsonError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
-  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set(Object.keys(lessonsByUnit)));
+  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set(Object.keys(assignmentsByUnit)));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Resource settings state
+  const [resTitle, setResTitle] = useState('');
+  const [resUnit, setResUnit] = useState('Unit 1: Overview');
+  const [resCategory, setResCategory] = useState<ResourceCategory>('Textbook');
+  const [resDescription, setResDescription] = useState('');
+  const [resContentUrl, setResContentUrl] = useState<string | null>(null);
+  const [resClasses, setResClasses] = useState<Set<string>>(new Set([availableClasses[0] || DefaultClassTypes.AP_PHYSICS]));
+  const [resSections, setResSections] = useState<string[]>([]);
+  const [resScheduleDate, setResScheduleDate] = useState('');
+  const [resDueDate, setResDueDate] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const classSections = useMemo(() => {
+    const firstClass = Array.from(resClasses)[0];
+    if (!firstClass) return availableSections;
+    const perClass = getSectionsForClass(students, firstClass);
+    return perClass.length > 0 ? perClass : availableSections;
+  }, [resClasses, students, availableSections]);
+
+  const existingUnits = useMemo(() => {
+    const units = new Set<string>();
+    assignments.forEach(a => {
+      if (resClasses.has(a.classType) && a.unit) units.add(a.unit);
+    });
+    return Array.from(units).sort();
+  }, [assignments, resClasses]);
 
   const selectedAssignment = useMemo(() =>
     assignments.find(a => a.id === selectedId) || null,
   [assignments, selectedId]);
 
-  // Load blocks when selecting an assignment
-  const selectLesson = useCallback((id: string) => {
+  // Load assignment data when selecting
+  const selectResource = useCallback((id: string) => {
     const assignment = assignments.find(a => a.id === id);
     if (assignment) {
       setSelectedId(id);
+      setIsNewResource(false);
       setBlocks(assignment.lessonBlocks || []);
+      setResTitle(assignment.title);
+      setResUnit(assignment.unit || 'Unit 1: Overview');
+      setResCategory((assignment.category || 'Textbook') as ResourceCategory);
+      setResDescription(assignment.description || '');
+      setResContentUrl(assignment.contentUrl || null);
+      setResClasses(new Set([assignment.classType]));
+      setResSections(assignment.targetSections || []);
+      setResScheduleDate(assignment.scheduledAt ? assignment.scheduledAt.slice(0, 16) : '');
+      setResDueDate(assignment.dueDate ? assignment.dueDate.slice(0, 16) : '');
       setExpandedBlock(null);
       setPreviewMode(false);
       setHasUnsavedChanges(false);
+      setShowSettings(false);
     }
   }, [assignments]);
 
+  const startNewResource = useCallback(() => {
+    setSelectedId(null);
+    setIsNewResource(true);
+    setBlocks([]);
+    setResTitle('');
+    setResUnit('Unit 1: Overview');
+    setResCategory('Textbook');
+    setResDescription('');
+    setResContentUrl(null);
+    setResClasses(new Set([availableClasses[0] || DefaultClassTypes.AP_PHYSICS]));
+    setResSections([]);
+    setResScheduleDate('');
+    setResDueDate('');
+    setExpandedBlock(null);
+    setPreviewMode(false);
+    setHasUnsavedChanges(false);
+    setShowSettings(true);
+  }, [availableClasses]);
+
   // Initialize with initialAssignmentId
   React.useEffect(() => {
-    if (initialAssignmentId) selectLesson(initialAssignmentId);
-  }, [initialAssignmentId, selectLesson]);
+    if (initialAssignmentId) selectResource(initialAssignmentId);
+  }, [initialAssignmentId, selectResource]);
 
   const updateBlocks = useCallback((newBlocks: LessonBlock[]) => {
     setBlocks(newBlocks);
@@ -329,20 +439,73 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     updateBlocks(next);
   }, [blocks, updateBlocks]);
 
-  const handleSave = useCallback(async () => {
-    if (!selectedAssignment) return;
+  const buildPayload = useCallback((status: AssignmentStatus, scheduledAt?: string): Partial<Assignment> => {
+    const base: Partial<Assignment> = {
+      title: resTitle,
+      description: resDescription,
+      unit: resUnit,
+      category: resCategory,
+      status,
+      lessonBlocks: blocks,
+      contentUrl: resContentUrl,
+    };
+    if (resSections.length > 0) base.targetSections = resSections;
+    if (scheduledAt) base.scheduledAt = new Date(scheduledAt).toISOString();
+    if (resDueDate) base.dueDate = new Date(resDueDate).toISOString();
+    if (selectedAssignment?.id && !isNewResource) base.id = selectedAssignment.id;
+    return base;
+  }, [resTitle, resDescription, resUnit, resCategory, blocks, resContentUrl, resSections, resDueDate, selectedAssignment, isNewResource]);
+
+  const handleDeploy = useCallback(async (status: AssignmentStatus, scheduledAt?: string) => {
+    if (!resTitle.trim()) { toast.error('Title is required.'); return; }
+    if (resClasses.size === 0) { toast.error('Select a target class.'); return; }
     setIsSaving(true);
     try {
-      await dataService.addAssignment({ ...selectedAssignment, lessonBlocks: blocks } as Assignment);
-      toast.success('Lesson saved!');
+      const payload = buildPayload(status, scheduledAt);
+      if (onCreateAssignment) {
+        if (selectedAssignment?.id && !isNewResource) {
+          await onCreateAssignment({ ...payload, classType: Array.from(resClasses)[0] });
+        } else {
+          await Promise.all(Array.from(resClasses).map(className =>
+            onCreateAssignment!({ ...payload, classType: className })
+          ));
+        }
+      } else {
+        // Fallback: direct save via dataService
+        for (const className of Array.from(resClasses)) {
+          await dataService.addAssignment({ ...payload, classType: className } as Assignment);
+        }
+      }
+      toast.success(status === AssignmentStatus.DRAFT ? 'Draft saved.' : scheduledAt ? 'Deployment scheduled.' : 'Resource deployed!');
       setHasUnsavedChanges(false);
+      setIsNewResource(false);
     } catch (err) {
-      toast.error('Failed to save lesson.');
+      toast.error('Save failed.');
       console.error(err);
     } finally {
       setIsSaving(false);
     }
-  }, [selectedAssignment, blocks, toast]);
+  }, [resTitle, resClasses, buildPayload, onCreateAssignment, selectedAssignment, isNewResource, toast]);
+
+  const handleSave = useCallback(async () => {
+    if (!selectedAssignment && !isNewResource) return;
+    if (isNewResource) {
+      await handleDeploy(AssignmentStatus.ACTIVE);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const payload = buildPayload(selectedAssignment!.status);
+      await dataService.addAssignment({ ...selectedAssignment, ...payload } as Assignment);
+      toast.success('Saved!');
+      setHasUnsavedChanges(false);
+    } catch (err) {
+      toast.error('Failed to save.');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [selectedAssignment, isNewResource, handleDeploy, buildPayload, toast]);
 
   const handleJsonImport = useCallback(() => {
     setJsonError('');
@@ -370,15 +533,17 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   }, [toast]);
 
   const filteredUnits = useMemo(() => {
-    if (!searchFilter) return lessonsByUnit;
+    if (!searchFilter) return assignmentsByUnit;
     const lower = searchFilter.toLowerCase();
     const result: Record<string, Assignment[]> = {};
-    Object.entries(lessonsByUnit).forEach(([unit, items]) => {
+    Object.entries(assignmentsByUnit).forEach(([unit, items]) => {
       const filtered = items.filter(a => a.title.toLowerCase().includes(lower) || unit.toLowerCase().includes(lower));
       if (filtered.length > 0) result[unit] = filtered;
     });
     return result;
-  }, [lessonsByUnit, searchFilter]);
+  }, [assignmentsByUnit, searchFilter]);
+
+  const isEditing = selectedAssignment !== null || isNewResource;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-[#0f0720] flex flex-col">
@@ -386,17 +551,16 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       <div className="bg-black/40 backdrop-blur-md border-b border-white/10 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-purple-400" /> Lesson Editor
+            <BookOpen className="w-5 h-5 text-purple-400" /> Resource Editor
           </h1>
-          {selectedAssignment && (
+          {isEditing && (
             <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
-              {selectedAssignment.title}
+              {isNewResource ? 'New Resource' : resTitle}
               {hasUnsavedChanges && <span className="ml-2 text-amber-400">*unsaved</span>}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* AI Prompt Copy Buttons */}
           <button type="button" onClick={() => copyToClipboard(HTML_PROMPT, 'HTML Proctor prompt')} className="flex items-center gap-1.5 text-[10px] text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-1.5 rounded-lg border border-cyan-500/20 uppercase font-bold tracking-wider transition" title="Copy AI prompt for generating a Proctor-integrated HTML activity">
             <Clipboard className="w-3 h-3" /> HTML Prompt
           </button>
@@ -407,8 +571,11 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           <button type="button" onClick={() => setShowJsonImport(!showJsonImport)} className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/20 uppercase font-bold tracking-wider transition">
             <Upload className="w-3 h-3" /> Paste JSON
           </button>
-          {selectedAssignment && (
+          {isEditing && (
             <>
+              <button type="button" onClick={() => setShowSettings(!showSettings)} className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${showSettings ? 'text-amber-300 bg-amber-500/20 border-amber-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
+                <Settings className="w-3 h-3" /> Settings
+              </button>
               <button type="button" onClick={() => setPreviewMode(!previewMode)} className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${previewMode ? 'text-purple-300 bg-purple-500/20 border-purple-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
                 <Eye className="w-3 h-3" /> {previewMode ? 'Edit' : 'Preview'}
               </button>
@@ -441,10 +608,13 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
         <div className="w-72 border-r border-white/10 bg-black/20 flex flex-col shrink-0">
-          <div className="p-3 border-b border-white/5">
+          <div className="p-3 border-b border-white/5 space-y-2">
+            <button onClick={startNewResource} className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-lg">
+              <Plus className="w-4 h-4" /> New Resource
+            </button>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-              <input type="text" value={searchFilter} onChange={e => setSearchFilter(e.target.value)} placeholder="Search lessons..." className="w-full pl-9 pr-3 py-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition" />
+              <input type="text" value={searchFilter} onChange={e => setSearchFilter(e.target.value)} placeholder="Search resources..." className="w-full pl-9 pr-3 py-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition" />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
@@ -455,79 +625,146 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
                   <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
                 </button>
-                {expandedUnits.has(unit) && items.map(a => (
-                  <button key={a.id} onClick={() => selectLesson(a.id)} className={`w-full flex items-center gap-2 px-3 py-2 ml-2 rounded-lg text-left transition text-[11px] ${selectedId === a.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
-                    <Layers className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate flex-1">{a.title}</span>
-                    <span className="text-[9px] text-gray-600 font-mono shrink-0">{(a.lessonBlocks || []).length}b</span>
-                  </button>
-                ))}
+                {expandedUnits.has(unit) && items.map(a => {
+                  const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
+                  const hasHtml = !!a.contentUrl;
+                  return (
+                    <button key={a.id} onClick={() => selectResource(a.id)} className={`w-full flex items-center gap-2 px-3 py-2 ml-2 rounded-lg text-left transition text-[11px] ${selectedId === a.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
+                      <Layers className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate flex-1">{a.title}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
+                        {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
+                        {a.status === AssignmentStatus.DRAFT && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             ))}
             {Object.keys(filteredUnits).length === 0 && (
-              <div className="text-center py-8 text-gray-600 text-xs">No lessons found</div>
+              <div className="text-center py-8 text-gray-600 text-xs">No resources found</div>
             )}
           </div>
         </div>
 
         {/* Main editor area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {!selectedAssignment ? (
+          {!isEditing ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
               <BookOpen className="w-16 h-16 text-gray-700 mb-4" />
-              <h2 className="text-xl font-bold text-gray-400 mb-2">Select a Lesson</h2>
-              <p className="text-sm text-gray-600 max-w-md">Choose a lesson from the sidebar to edit its blocks, or deploy a new resource with lesson blocks from the Admin Panel.</p>
+              <h2 className="text-xl font-bold text-gray-400 mb-2">Select or Create a Resource</h2>
+              <p className="text-sm text-gray-600 max-w-md mb-6">Choose a resource from the sidebar to edit, or create a new one.</p>
+              <button onClick={startNewResource} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-2xl font-bold flex items-center gap-2 transition shadow-xl">
+                <Plus className="w-5 h-5" /> New Resource
+              </button>
             </div>
           ) : previewMode ? (
             <div className="max-w-3xl mx-auto p-8">
               <LessonBlocks blocks={blocks} showSidebar />
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto p-6 pb-32 space-y-0">
-              {/* Insert at top */}
-              <InsertButton onInsert={(type) => insertBlock(0, type)} />
+            <div className="max-w-3xl mx-auto p-6 pb-32">
+              {/* Resource Settings Panel */}
+              {showSettings && (
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Settings className="w-3.5 h-3.5" /> Resource Settings</h3>
+                    <button type="button" onClick={() => setShowSettings(false)} className="text-gray-600 hover:text-gray-300 transition"><X className="w-4 h-4" /></button>
+                  </div>
 
-              {blocks.map((block, index) => {
-                const typeInfo = getBlockTypeInfo(block.type);
-                const isExpanded = expandedBlock === block.id;
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2"><label className={labelClass}>Title</label><input type="text" value={resTitle} onChange={e => { setResTitle(e.target.value); setHasUnsavedChanges(true); }} placeholder="Resource title..." className={inputClass} /></div>
+                    <UnitSelector value={resUnit} onChange={(val) => { setResUnit(val); setHasUnsavedChanges(true); }} existingUnits={existingUnits} />
+                    <div><label className={labelClass}>Category</label><select value={resCategory} onChange={e => { setResCategory(e.target.value as ResourceCategory); setHasUnsavedChanges(true); }} className={inputClass}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                  </div>
 
-                return (
-                  <React.Fragment key={block.id}>
-                    <div className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
-                      {/* Block header — always visible */}
-                      <button type="button" onClick={() => setExpandedBlock(isExpanded ? null : block.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                        <span className="text-gray-500">{typeInfo?.icon}</span>
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
-                        <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(block)}</span>
-                        <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
-                          <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronUp className="w-3.5 h-3.5" /></button>
-                          <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronDown className="w-3.5 h-3.5" /></button>
-                          <button type="button" onClick={() => duplicateBlock(index)} className="p-1 text-gray-600 hover:text-blue-400 transition"><Copy className="w-3.5 h-3.5" /></button>
-                          <button type="button" onClick={() => removeBlock(index)} className="p-1 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </div>
-                        <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                      </button>
-
-                      {/* Expanded inline editor */}
-                      {isExpanded && (
-                        <div className="px-4 pb-4 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                          <InlineBlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => { const next = [...blocks]; next[index] = updated; updateBlocks(next); }} />
-                        </div>
-                      )}
+                  <div>
+                    <label className={labelClass}>Target Classes</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {availableClasses.map(c => (
+                        <button key={c} type="button" onClick={() => { const s = new Set(resClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setResClasses(s); setResSections([]); setHasUnsavedChanges(true); }} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${resClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
+                      ))}
                     </div>
+                  </div>
 
-                    {/* Insert between blocks */}
-                    <InsertButton onInsert={(type) => insertBlock(index + 1, type)} />
-                  </React.Fragment>
-                );
-              })}
+                  <SectionPicker availableSections={classSections} selectedSections={resSections} onChange={(s) => { setResSections(s); setHasUnsavedChanges(true); }} />
 
-              {blocks.length === 0 && (
-                <div className="text-center py-12 text-gray-600">
-                  <p className="text-sm mb-2">No blocks yet. Click the <Plus className="w-4 h-4 inline" /> button above to add your first block.</p>
-                  <p className="text-xs">Or paste JSON to import blocks in bulk.</p>
+                  <div className="bg-purple-900/20 border border-purple-500/30 p-4 rounded-xl">
+                    <label className="block text-[11px] font-bold text-purple-300 mb-2">HTML Interactive Upload</label>
+                    <input type="file" accept=".html,.htm" className="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-purple-600 file:text-white file:text-xs" onChange={async (e) => { if(e.target.files?.[0]) { setIsUploading(true); try { const url = await dataService.uploadHtmlResource(e.target.files[0]); setResContentUrl(url); setHasUnsavedChanges(true); toast.success('File uploaded!'); } catch (err) { toast.error('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error')); } finally { setIsUploading(false); } } }} />
+                    {isUploading && <div className="flex items-center gap-2 mt-2 text-purple-300 text-xs"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</div>}
+                    {!isUploading && resContentUrl && <div className="flex items-center gap-2 mt-2 text-emerald-400 text-xs"><CheckCircle className="w-3.5 h-3.5" /> Resource uploaded</div>}
+                  </div>
+
+                  <div><label className={labelClass}>Description <span className="text-gray-600">(optional)</span></label><textarea value={resDescription} onChange={e => { setResDescription(e.target.value); setHasUnsavedChanges(true); }} placeholder="Brief description..." className={`${textareaClass} h-16`} /></div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className={labelClass}>Schedule <span className="text-gray-600">(optional)</span></label><input type="datetime-local" value={resScheduleDate} onChange={e => { setResScheduleDate(e.target.value); setHasUnsavedChanges(true); }} className={inputClass} /></div>
+                    <div><label className={labelClass}>Due Date <span className="text-gray-600">(optional)</span></label><input type="datetime-local" value={resDueDate} onChange={e => { setResDueDate(e.target.value); setHasUnsavedChanges(true); }} className={inputClass} /></div>
+                  </div>
+
+                  {/* Deploy Actions */}
+                  <div className="flex gap-2 pt-1">
+                    <button type="button" disabled={isSaving} onClick={() => handleDeploy(AssignmentStatus.DRAFT)} className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-3 rounded-xl font-bold text-xs transition">
+                      <FileText className="w-3.5 h-3.5" /> Save Draft
+                    </button>
+                    {resScheduleDate ? (
+                      <button type="button" disabled={isSaving} onClick={() => handleDeploy(AssignmentStatus.ACTIVE, resScheduleDate)} className="flex-[2] flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-xl font-bold text-xs transition">
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CalendarClock className="w-3.5 h-3.5" /> Schedule</>}
+                      </button>
+                    ) : (
+                      <button type="button" disabled={isSaving} onClick={() => handleDeploy(AssignmentStatus.ACTIVE)} className="flex-[2] flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-bold text-xs transition">
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Rocket className="w-3.5 h-3.5" /> Deploy</>}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
+
+              {/* Block editor */}
+              <div className="space-y-0">
+                <InsertButton onInsert={(type) => insertBlock(0, type)} />
+
+                {blocks.map((block, index) => {
+                  const typeInfo = getBlockTypeInfo(block.type);
+                  const isExpanded = expandedBlock === block.id;
+
+                  return (
+                    <React.Fragment key={block.id}>
+                      <div className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
+                        <button type="button" onClick={() => setExpandedBlock(isExpanded ? null : block.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                          <span className="text-gray-500">{typeInfo?.icon}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
+                          <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(block)}</span>
+                          <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+                            <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronUp className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronDown className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => duplicateBlock(index)} className="p-1 text-gray-600 hover:text-blue-400 transition"><Copy className="w-3.5 h-3.5" /></button>
+                            <button type="button" onClick={() => removeBlock(index)} className="p-1 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </div>
+                          <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        </button>
+
+                        {isExpanded && (
+                          <div className="px-4 pb-4 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <InlineBlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => { const next = [...blocks]; next[index] = updated; updateBlocks(next); }} />
+                          </div>
+                        )}
+                      </div>
+
+                      <InsertButton onInsert={(type) => insertBlock(index + 1, type)} />
+                    </React.Fragment>
+                  );
+                })}
+
+                {blocks.length === 0 && (
+                  <div className="text-center py-12 text-gray-600">
+                    <p className="text-sm mb-2">No blocks yet. Click the <Plus className="w-4 h-4 inline" /> button above to add your first block.</p>
+                    <p className="text-xs">Or paste JSON to import blocks in bulk.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
