@@ -745,8 +745,32 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
               </button>
             </div>
           ) : previewMode ? (
-            <div className="max-w-3xl mx-auto p-8">
-              <LessonBlocks blocks={blocks} showSidebar />
+            <div className="flex flex-col h-full">
+              {/* HTML preview iframe (if resource has HTML content) */}
+              {resContentUrl && (
+                <div className={`relative bg-white ${blocks.length > 0 ? 'flex-[3]' : 'flex-1'}`}>
+                  <iframe
+                    src={resContentUrl}
+                    className="w-full h-full border-none bg-white"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                    title="Resource Preview"
+                  />
+                </div>
+              )}
+              {/* Lesson blocks preview */}
+              {blocks.length > 0 && (
+                <div className={`${resContentUrl ? 'flex-[2] border-t border-white/10 overflow-y-auto p-6' : 'flex-1 overflow-y-auto'}`}>
+                  <div className="max-w-3xl mx-auto p-8">
+                    <LessonBlocks blocks={blocks} showSidebar />
+                  </div>
+                </div>
+              )}
+              {/* Empty state */}
+              {!resContentUrl && blocks.length === 0 && (
+                <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">
+                  No content to preview. Add blocks or upload HTML.
+                </div>
+              )}
             </div>
           ) : (
             <div className="max-w-3xl mx-auto p-6 pb-32">
