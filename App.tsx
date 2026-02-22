@@ -567,16 +567,11 @@ const App: React.FC = () => {
                   {activeTab === 'User Management' && <UserManagement users={users} whitelistedEmails={whitelistedEmails} classConfigs={classConfigs} onWhitelist={async (e, c) => dataService.addToWhitelist(e, c)} />}
                   {activeTab === 'Admin Panel' && (
                     <AdminPanel
-                      assignments={assignments}
+                      assignments={[]}
                       submissions={submissions}
                       users={rawUsers}
-                      onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }}
-                      classConfigs={classConfigs}
-                      availableSections={availableSections}
-                      onPreviewAssignment={(id) => {
-                        setAdminViewMode('STUDENT');
-                        openAssignment(id);
-                      }}
+                      onCreateAssignment={undefined as never}
+                      classConfigs={[]}
                       onNavigate={setActiveTab}
                     />
                   )}
