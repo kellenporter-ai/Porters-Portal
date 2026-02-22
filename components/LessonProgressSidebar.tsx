@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { LessonBlock } from '../types';
 import {
-  CheckCircle2, HelpCircle, MessageSquare, ListChecks, BookOpen, FileText, Info,
-  Heading, Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
-  ArrowUpDown, Table, BarChart3, GripVertical, Link, ChevronLeft, ChevronRight, Clock
+  CheckCircle2, HelpCircle, MessageSquare, ListChecks, BookOpen, FileText,
+  Heading, Play, Target, Zap,
+  ArrowUpDown, Table, BarChart3, GripVertical, Link, ChevronLeft, ChevronRight, Clock, Star
 } from 'lucide-react';
 
 interface LessonProgressSidebarProps {
@@ -16,21 +16,29 @@ interface LessonProgressSidebarProps {
   xpEarned?: number;
 }
 
+// Block types that are meaningful to show in the HUD navigation
+// Excluded: DIVIDER, IMAGE, EMBED, INFO_BOX, EXTERNAL_LINK (noise for students)
+const VISIBLE_TYPES = new Set([
+  'TEXT', 'MC', 'SHORT_ANSWER', 'CHECKLIST', 'VOCABULARY', 'SECTION_HEADER',
+  'VIDEO', 'OBJECTIVES', 'VOCAB_LIST', 'ACTIVITY', 'SORTING', 'DATA_TABLE',
+  'BAR_CHART', 'RANKING', 'LINKED',
+]);
+
+// Block types that award XP when completed
+const XP_TYPES = new Set([
+  'MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED',
+]);
+
 const BLOCK_TYPE_ICON: Record<string, React.ReactNode> = {
   TEXT: <FileText className="w-3 h-3" />,
   MC: <HelpCircle className="w-3 h-3" />,
   SHORT_ANSWER: <MessageSquare className="w-3 h-3" />,
   CHECKLIST: <ListChecks className="w-3 h-3" />,
   VOCABULARY: <BookOpen className="w-3 h-3" />,
-  INFO_BOX: <Info className="w-3 h-3" />,
   SECTION_HEADER: <Heading className="w-3 h-3" />,
-  IMAGE: <Image className="w-3 h-3" />,
   VIDEO: <Play className="w-3 h-3" />,
   OBJECTIVES: <Target className="w-3 h-3" />,
-  DIVIDER: <Minus className="w-3 h-3" />,
-  EXTERNAL_LINK: <ExternalLink className="w-3 h-3" />,
-  EMBED: <Code className="w-3 h-3" />,
-  VOCAB_LIST: <List className="w-3 h-3" />,
+  VOCAB_LIST: <BookOpen className="w-3 h-3" />,
   ACTIVITY: <Zap className="w-3 h-3" />,
   SORTING: <ArrowUpDown className="w-3 h-3" />,
   DATA_TABLE: <Table className="w-3 h-3" />,
@@ -45,14 +53,9 @@ const BLOCK_TYPE_LABEL: Record<string, string> = {
   SHORT_ANSWER: 'Response',
   CHECKLIST: 'Checklist',
   VOCABULARY: 'Vocabulary',
-  INFO_BOX: 'Info',
   SECTION_HEADER: 'Section',
-  IMAGE: 'Image',
   VIDEO: 'Video',
   OBJECTIVES: 'Objectives',
-  DIVIDER: 'Divider',
-  EXTERNAL_LINK: 'Link',
-  EMBED: 'Embed',
   VOCAB_LIST: 'Vocab List',
   ACTIVITY: 'Activity',
   SORTING: 'Sorting',
@@ -118,20 +121,25 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
           </div>
         </div>
         <span className="text-[8px] text-gray-600 font-mono">{minutes}:{String(seconds).padStart(2, '0')}</span>
-        {/* Mini block dots */}
+        {/* Mini block dots — only visible types */}
         <div className="flex flex-col gap-0.5 items-center mt-1">
           {blocks.map((block, index) => {
+            if (!VISIBLE_TYPES.has(block.type)) return null;
             const isCurrent = index === currentBlockIndex;
             const isComplete = completedBlocks.has(block.id);
+            const isXP = XP_TYPES.has(block.type);
             return (
               <button
                 key={block.id}
                 onClick={() => onNavigateToBlock(index)}
-                className={`w-2 h-2 rounded-full transition cursor-pointer ${
+                className={`rounded-full transition cursor-pointer ${
+                  isXP ? 'w-2.5 h-2.5' : 'w-2 h-2'
+                } ${
                   isCurrent ? 'bg-purple-400 ring-1 ring-purple-400/50' :
-                  isComplete ? 'bg-emerald-400/80' : 'bg-white/10 hover:bg-white/20'
+                  isComplete ? 'bg-emerald-400/80' :
+                  isXP ? 'bg-amber-500/30 hover:bg-amber-500/50' : 'bg-white/10 hover:bg-white/20'
                 }`}
-                title={`${BLOCK_TYPE_LABEL[block.type] || block.type} ${index + 1}`}
+                title={`${BLOCK_TYPE_LABEL[block.type] || block.type}${isXP ? ' (XP)' : ''}`}
               />
             );
           })}
@@ -182,13 +190,30 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
         </div>
       </div>
 
-      {/* Block navigation */}
+      {/* Block navigation — filtered to useful types */}
       <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex flex-col gap-0.5">
         <div className="text-[8px] text-gray-600 uppercase font-bold tracking-widest px-1.5 mb-0.5">Contents</div>
         {blocks.map((block, index) => {
+          if (!VISIBLE_TYPES.has(block.type)) return null;
           const isCurrent = index === currentBlockIndex;
           const isComplete = completedBlocks.has(block.id);
-          const isInteractive = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'].includes(block.type);
+          const isXP = XP_TYPES.has(block.type);
+          const isSection = block.type === 'SECTION_HEADER';
+
+          // Section headers render as group labels
+          if (isSection) {
+            return (
+              <button
+                key={block.id}
+                onClick={() => onNavigateToBlock(index)}
+                className={`flex items-center gap-1.5 px-1.5 py-1 mt-1 first:mt-0 text-left text-[9px] font-bold uppercase tracking-wider cursor-pointer transition ${
+                  isCurrent ? 'text-purple-300' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <span className="truncate">{block.icon || ''} {block.title || 'Section'}</span>
+              </button>
+            );
+          }
 
           return (
             <button
@@ -213,10 +238,10 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
               </span>
               <span className="truncate flex-1 font-medium">
                 {BLOCK_TYPE_LABEL[block.type] || block.type}
-                {isInteractive && !isComplete && (
-                  <span className="ml-0.5 text-[8px] text-amber-400/60">*</span>
-                )}
               </span>
+              {isXP && !isComplete && (
+                <Star className="w-2.5 h-2.5 text-amber-400/60 shrink-0" />
+              )}
             </button>
           );
         })}

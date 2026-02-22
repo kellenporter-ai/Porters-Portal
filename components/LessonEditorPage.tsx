@@ -759,10 +759,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
               )}
               {/* Lesson blocks preview */}
               {blocks.length > 0 && (
-                <div className={`${resContentUrl ? 'flex-[2] border-t border-white/10 overflow-y-auto p-6' : 'flex-1 overflow-y-auto'}`}>
-                  <div className="max-w-3xl mx-auto p-8">
-                    <LessonBlocks blocks={blocks} showSidebar />
-                  </div>
+                <div className={`${resContentUrl ? 'flex-[2] border-t border-white/10 overflow-y-auto p-6' : 'flex-1 overflow-y-auto p-6'}`}>
+                  <LessonBlocks blocks={blocks} showSidebar />
                 </div>
               )}
               {/* Empty state */}

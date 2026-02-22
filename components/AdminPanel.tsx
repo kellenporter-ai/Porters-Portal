@@ -287,12 +287,12 @@ GUIDELINES:
     if (aiMode === 'create_boss') {
       return `You are an expert educational assessment designer. Generate quiz boss questions for a gamified LMS.
 ${ctx ? `\nBOSS / CLASS / TOPIC:\n${ctx}\n` : ''}
-Generate 15-30 multiple choice questions across 3 difficulty tiers.
+Generate 200 multiple choice questions across 3 difficulty tiers to maximize variance in boss encounters.
 
 TIER DISTRIBUTION:
-- EASY (5-10 questions): Recall and basic comprehension
-- MEDIUM (5-10 questions): Application and analysis
-- HARD (5-10 questions): Evaluation and synthesis
+- EASY (70 questions): Recall and basic comprehension
+- MEDIUM (70 questions): Application and analysis
+- HARD (60 questions): Evaluation and synthesis
 
 OUTPUT FORMAT — Respond with ONLY a valid JSON array:
 [
@@ -312,6 +312,7 @@ RULES:
 - Each question must have exactly 4 options
 - Distractors must be plausible and educational
 - Questions must be specific to the class material
+- Generate exactly 200 questions — if you hit your output limit, end the JSON array cleanly with ] so it can be parsed
 - Output ONLY the JSON array — no markdown fences, no commentary`;
     }
 
@@ -614,7 +615,7 @@ For each suggestion, briefly describe the feature/improvement, the expected bene
                 { key: 'create_html' as AIMode, icon: <Code className="w-4 h-4" />, label: 'HTML Interactive', desc: 'Standalone HTML activity' },
                 { key: 'create_qbank' as AIMode, icon: <FlaskConical className="w-4 h-4" />, label: 'Question Bank', desc: '150 tiered questions (9 formats)' },
                 { key: 'create_study' as AIMode, icon: <GraduationCap className="w-4 h-4" />, label: 'Study Material', desc: 'Reading guide with LaTeX math' },
-                { key: 'create_boss' as AIMode, icon: <Swords className="w-4 h-4" />, label: 'Quiz Boss', desc: '15-30 tiered boss questions' },
+                { key: 'create_boss' as AIMode, icon: <Swords className="w-4 h-4" />, label: 'Quiz Boss', desc: '200 tiered boss questions' },
                 { key: 'create_rubric' as AIMode, icon: <BookOpen className="w-4 h-4" />, label: 'Grading Rubric', desc: 'Structured rubric with criteria' },
               ]).map(m => {
                 const isActive = aiMode === m.key;

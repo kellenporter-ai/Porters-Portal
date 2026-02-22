@@ -469,35 +469,35 @@ const App: React.FC = () => {
 
       <Layout user={user} onLogout={handleLogout} activeTab={activeTab} setActiveTab={setActiveTab}>
         {activeAssignment ? (
-          <div className="space-y-4 h-full flex flex-col">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center text-white bg-white/5 p-4 rounded-xl border border-white/10 backdrop-blur-md gap-4">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
+          <div className="space-y-2 h-full flex flex-col">
+            <div className="flex items-center justify-between text-white bg-white/5 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-md">
+              <div className="flex items-center gap-4 min-w-0">
+                <h2 className="text-sm font-bold truncate flex items-center gap-2">
                     {activeAssignment.title}
                     {user.role === UserRole.ADMIN && (
-                        <span className="text-[10px] bg-purple-600 px-2 py-1 rounded-full uppercase tracking-widest">Admin Control</span>
+                        <span className="text-[9px] bg-purple-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Admin</span>
                     )}
                 </h2>
-                <div className="flex gap-4 mt-2">
-                    <button onClick={() => setAssignViewMode('WORK')} className={`text-sm font-bold pb-1 border-b-2 transition ${assignViewMode === 'WORK' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}>Resource</button>
+                <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => setAssignViewMode('WORK')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${assignViewMode === 'WORK' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}>Resource</button>
                     {hasQuestionBank && (
-                        <button onClick={() => setAssignViewMode('REVIEW')} className={`text-sm font-bold pb-1 border-b-2 transition flex items-center gap-1.5 ${assignViewMode === 'REVIEW' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}><Brain className="w-3.5 h-3.5" /> Review</button>
+                        <button onClick={() => setAssignViewMode('REVIEW')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'REVIEW' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}><Brain className="w-3 h-3" /> Review</button>
                     )}
                     {hasStudyMaterial && (
-                        <button onClick={() => setAssignViewMode('STUDY')} className={`text-sm font-bold pb-1 border-b-2 transition flex items-center gap-1.5 ${assignViewMode === 'STUDY' ? 'border-purple-500 text-white' : 'border-transparent text-gray-400'}`}><BookOpenIcon className="w-3.5 h-3.5" /> Study Material</button>
+                        <button onClick={() => setAssignViewMode('STUDY')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'STUDY' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}><BookOpenIcon className="w-3 h-3" /> Study</button>
                     )}
                 </div>
               </div>
-              
-              <div className="flex items-center gap-3 w-full md:w-auto">
+
+              <div className="flex items-center gap-2 shrink-0">
                 {user.role === 'ADMIN' && (
-                    <div className="flex bg-black/40 rounded-lg p-1 border border-white/10 text-[10px] font-bold">
-                        <button onClick={() => setAdminViewMode('STUDENT')} className={`px-3 py-1.5 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Student View</button>
-                        <button onClick={() => setAdminViewMode('ADMIN')} className={`px-3 py-1.5 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Admin View</button>
+                    <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/10 text-[9px] font-bold">
+                        <button onClick={() => setAdminViewMode('STUDENT')} className={`px-2 py-1 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Student</button>
+                        <button onClick={() => setAdminViewMode('ADMIN')} className={`px-2 py-1 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Admin</button>
                     </div>
                 )}
-                <button onClick={() => { setActiveAssignmentId(null); setAssignViewMode('WORK'); }} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-sm bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                    <ArrowLeft className="w-4 h-4" /> Exit
+                <button onClick={() => { setActiveAssignmentId(null); setAssignViewMode('WORK'); }} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                    <ArrowLeft className="w-3.5 h-3.5" /> Exit
                 </button>
               </div>
             </div>
