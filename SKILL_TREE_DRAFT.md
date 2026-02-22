@@ -1,5 +1,5 @@
 # Unified Skill Tree — "The Nexus"
-## Draft v1 — For Review & Balancing
+## Draft v2 — Scaled for Level 500 Cap
 
 ---
 
@@ -17,45 +17,76 @@ Modeled after Path of Exile's passive tree. One large, shared tree replaces the 
 
 ## Skill Point Economy
 
-| Level Range | Points Earned | Typical Student |
-|-------------|---------------|-----------------|
-| 1-10        | 5             | Early semester  |
-| 11-20       | 5             | Mid semester    |
-| 21-30       | 5             | End of year     |
-| 31-50       | 10            | Dedicated/multi-year |
+**Level cap: 500. Earning rate: 1 skill point per 2 levels = 250 max skill points.**
 
-**Earning rate:** 1 skill point per 2 levels (unchanged).
-A typical semester student (level ~15-20) will have **8-10 points**.
-A full-year dedicated student (level ~30) will have **15 points**.
+| Level Range | Points Earned | Cumulative | Typical Student |
+|-------------|---------------|------------|-----------------|
+| 1-20        | 10            | 10         | First semester  |
+| 21-50       | 15            | 25         | First year      |
+| 51-100      | 25            | 50         | Dedicated first year / second year |
+| 101-200     | 50            | 100        | Multi-year veteran |
+| 201-300     | 50            | 150        | Highly committed |
+| 301-400     | 50            | 200        | Elite |
+| 401-500     | 50            | 250        | Max level — completionist |
+
+### Design Targets (tree size: ~400 nodes)
+
+| Player Stage | Level | Points | % of Tree Fillable | Experience |
+|-------------|-------|--------|---------------------|------------|
+| New student | ~20   | 10     | ~2.5%              | Home cluster inner ring only |
+| First year  | ~50   | 25     | ~6%                | Home cluster complete OR bridge to neighbor |
+| Veteran     | ~100  | 50     | ~12%               | Home cluster + 1 bridge + starting neighbor cluster |
+| Elite       | ~200  | 100    | ~25%               | Deep in 2 regions, or moderate in 3 |
+| Near-max    | ~350  | 175    | ~44%               | Strong coverage of half the tree |
+| Max (500)   | 500   | 250    | ~62%               | Meaningful choices still required — cannot fill everything |
+
+**Key insight:** Even a level 500 student must leave ~38% of the tree unallocated. This ensures that *every* student — from first-semester to max level — faces strategic decisions about where to invest.
 
 ---
 
 ## Tree Layout
 
 ```
-                          ╔═══════════════╗
-                          ║   THEORIST    ║
-                          ║  (Analysis)   ║
-                          ╚══════╤════════╝
-                           ╱     │     ╲
-                     NW Bridge   │   NE Bridge
-                   (Tech+Ana)    │   (Ana+Foc)
-                       ╱         │         ╲
-          ╔════════════╗    ╔════╧════╗    ╔════════════╗
-          ║ EXPERIMENT ║────║  NEXUS  ║────║  ANALYST   ║
-          ║   (Tech)   ║    ║ (Center)║    ║  (Focus)   ║
-          ╚════════════╝    ╚════╤════╝    ╚════════════╝
-                       ╲         │         ╱
-                     SW Bridge   │   SE Bridge
-                   (Tech+Cha)    │   (Foc+Cha)
-                           ╲     │     ╱
-                          ╔══════╧════════╗
-                          ║   DIPLOMAT    ║
-                          ║  (Charisma)   ║
-                          ╚═══════════════╝
+                               ╔═══════════════╗
+                               ║   THEORIST    ║
+                               ║  (Analysis)   ║
+                               ║ Inner → Outer ║
+                               ╚══════╤════════╝
+                              ╱       │       ╲
+                   ┌──NW Bridge──┐    │    ┌──NE Bridge──┐
+                   │ (Tech+Ana)  │    │    │ (Ana+Foc)   │
+                   │ Main+Alt    │    │    │ Main+Alt    │
+                   └──────┬──────┘    │    └──────┬──────┘
+                          │        ╔══╧══╗        │
+           ╔══════════════╗   ╔════╡     ╞════╗   ╔══════════════╗
+           ║ EXPERIMENTIST║───║    ║NEXUS║    ║───║   ANALYST    ║
+           ║   (Tech)     ║   ║    ║Inner║    ║   ║   (Focus)    ║
+           ║ Inner → Outer║   ║    ║+Outr║    ║   ║ Inner → Outer║
+           ╚══════╤═══════╝   ╚════╡     ╞════╝   ╚═══════╤═════╝
+                  │        ╔══╧══╗        │
+                   └──────┬──────┘    │    └──────┬──────┘
+                   │ (Tech+Cha)  │    │    │ (Foc+Cha)   │
+                   │ Main+Alt    │    │    │ Main+Alt    │
+                   ┌──SW Bridge──┘    │    └──SE Bridge──┐
+                              ╲       │       ╱
+                               ╔══════╧════════╗
+                               ║   DIPLOMAT    ║
+                               ║  (Charisma)   ║
+                               ║ Inner → Outer ║
+                               ╚═══════════════╝
+
+    Cross-Bridges (long diagonal paths):
+    Theorist ←─── N/S Cross ───→ Diplomat
+    Experimentalist ←── E/W Cross ──→ Analyst
 ```
 
-The tree is a diamond with 4 starting clusters at the cardinal points, 4 bridge zones connecting adjacent specializations, and a central Nexus accessible from all directions.
+The tree is a diamond with:
+- **4 starting clusters** at cardinal points, each with an **Inner Ring** (early progression) and **Outer Ring** (late-game depth)
+- **4 adjacent bridges** connecting neighboring specializations, each with a **main path** and an **alternate path**
+- **2 cross-bridges** connecting opposite specializations (long, expensive travel)
+- **Central Nexus** with **Inner** and **Outer** rings, reachable from all bridges
+
+**Total target: ~400 allocatable nodes.**
 
 ---
 
