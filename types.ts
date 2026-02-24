@@ -192,6 +192,18 @@ export interface RPGItem {
 }
 
 // ========================================
+// CUSTOM ITEM LIBRARY (Admin-created items)
+// ========================================
+
+export interface CustomItem extends RPGItem {
+  createdBy: string;      // admin UID
+  createdAt: string;      // ISO date
+  tags?: string[];         // for filtering / categorization
+  canDropInLoot: boolean;  // whether this can appear as a random loot drop
+  dropWeight?: number;     // relative weight in the loot pool (default 1)
+}
+
+// ========================================
 // RUNEWORD SYSTEM
 // ========================================
 
@@ -414,6 +426,7 @@ export interface Quest {
   // Advanced Rewards
   fluxReward?: number;
   itemRewardRarity?: ItemRarity | null; // Guarantees 1 item of this rarity + 1 random
+  customItemRewardId?: string | null;   // ID of a CustomItem from the library to grant on completion
 
   // Skill Check Mechanics
   statRequirements?: {

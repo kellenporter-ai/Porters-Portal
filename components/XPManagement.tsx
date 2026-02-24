@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType, BossQuestionBank, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, getSectionsForClass } from '../types';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossType, BossQuestionBank, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, getSectionsForClass, CustomItem } from '../types';
 import BossAvatar from './xp/BossAvatar';
 import { Search, Trophy, Zap, Plus, Trash2, ChevronDown, ChevronUp, Award, Rocket, Filter, Briefcase, Pencil, Check, X, Lock, Unlock, Brain, Copy, Upload, FileJson, GraduationCap, MessageCircle, CheckCircle2, Database, BarChart3, Crown, Swords, Eye } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -109,6 +109,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   // Admin tutoring oversight
   const [tutoringActiveTab, setTutoringActiveTab] = useState<'all' | 'pending'>('pending');
   const [allTutoringSessions, setAllTutoringSessions] = useState<import('../types').TutoringSession[]>([]);
+  // Custom item library
+  const [customItems, setCustomItems] = useState<CustomItem[]>([]);
 
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
@@ -116,7 +118,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
     const unsubQuizBosses = dataService.subscribeToAllBossQuizzes(setQuizBosses);
     const unsubTutoring = dataService.subscribeToAllTutoringSessions(setAllTutoringSessions);
     const unsubBanks = dataService.subscribeToBossQuestionBanks(setQuestionBanks);
-    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); unsubBanks(); };
+    const unsubCustomItems = dataService.subscribeToCustomItems(setCustomItems);
+    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); unsubBanks(); unsubCustomItems(); };
   }, []);
 
   useEffect(() => {
@@ -240,6 +243,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
               startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
               expiresAt: missionForm.durationHours > 0 ? expiryDate.toISOString() : null,
               itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
+              customItemRewardId: missionForm.customItemRewardId || null,
               rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
               targetClass: missionForm.targetClass || undefined,
               targetSections: missionForm.targetSections.length > 0 ? missionForm.targetSections : undefined
@@ -295,6 +299,41 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       const newAmount = Math.max(0, (user.gamification?.currency || 0) + amount);
       await dataService.adminUpdateInventory(user.id, user.gamification?.inventory || [], newAmount);
       setInspectingUser(prev => prev ? ({...prev, gamification: {...prev.gamification, currency: newAmount}} as User) : null);
+  };
+
+  const handleGrantItem = async (user: User, item: RPGItem, classType?: string) => {
+      try {
+          await dataService.adminGrantItem(user.id, item, classType);
+          // Optimistically update local state
+          setInspectingUser(prev => {
+              if (!prev) return null;
+              if (classType && prev.gamification?.classProfiles?.[classType]) {
+                  const oldInv = prev.gamification.classProfiles[classType].inventory || [];
+                  return {...prev, gamification: {...prev.gamification, classProfiles: {...prev.gamification.classProfiles, [classType]: {...prev.gamification.classProfiles[classType], inventory: [...oldInv, item]}}}} as User;
+              }
+              const oldInv = prev.gamification?.inventory || [];
+              return {...prev, gamification: {...prev.gamification, inventory: [...oldInv, item]}} as User;
+          });
+          toast.success(`Granted "${item.name}" to ${user.name}.`);
+      } catch { toast.error('Failed to grant item.'); }
+  };
+
+  const handleEditItem = async (user: User, itemId: string, updates: Partial<RPGItem>, classType?: string) => {
+      try {
+          await dataService.adminEditItem(user.id, itemId, updates, classType);
+          // Optimistically update local state
+          setInspectingUser(prev => {
+              if (!prev) return null;
+              const patchItem = (inv: RPGItem[]) => inv.map(i => i.id === itemId ? { ...i, ...updates, id: itemId } : i);
+              if (classType && prev.gamification?.classProfiles?.[classType]) {
+                  const oldInv = prev.gamification.classProfiles[classType].inventory || [];
+                  return {...prev, gamification: {...prev.gamification, classProfiles: {...prev.gamification.classProfiles, [classType]: {...prev.gamification.classProfiles[classType], inventory: patchItem(oldInv)}}}} as User;
+              }
+              const oldInv = prev.gamification?.inventory || [];
+              return {...prev, gamification: {...prev.gamification, inventory: patchItem(oldInv)}} as User;
+          });
+          toast.success('Item updated.');
+      } catch { toast.error('Failed to edit item.'); }
   };
 
   const handleResolveQuest = async (userId: string, quest: Quest, success: boolean, classType?: string) => {
@@ -1032,8 +1071,8 @@ RULES:
         </div>
       </div>
 
-      <InspectInventoryModal user={inspectingUser} onClose={() => setInspectingUser(null)} onDeleteItem={handleDeleteItem} onUnequipItem={handleUnequipItem} onGrantFlux={handleGrantFlux} />
-      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} onSaveDraft={async () => {
+      <InspectInventoryModal user={inspectingUser} onClose={() => setInspectingUser(null)} onDeleteItem={handleDeleteItem} onUnequipItem={handleUnequipItem} onGrantFlux={handleGrantFlux} onGrantItem={handleGrantItem} onEditItem={handleEditItem} customItems={customItems} />
+      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} customItems={customItems} onSaveDraft={async () => {
         const statRequirements: Record<string, number> = {};
         if (missionForm.techReq > 0) statRequirements.tech = missionForm.techReq;
         if (missionForm.focusReq > 0) statRequirements.focus = missionForm.focusReq;
@@ -1045,6 +1084,7 @@ RULES:
           isActive: false, type: missionForm.type as Quest['type'], statRequirements,
           startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
           expiresAt: null, itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
+          customItemRewardId: missionForm.customItemRewardId || null,
           rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
           targetClass: missionForm.targetClass || undefined,
           targetSections: missionForm.targetSections.length > 0 ? missionForm.targetSections : undefined

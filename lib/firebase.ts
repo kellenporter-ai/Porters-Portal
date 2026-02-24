@@ -69,3 +69,7 @@ export const callClaimKnowledgeLoot = httpsCallable(functions, 'claimKnowledgeLo
 export const callPurchaseCosmetic = httpsCallable(functions, 'purchaseCosmetic');
 export const callClaimDailyChallenge = httpsCallable(functions, 'claimDailyChallenge');
 export const callDismissAlert = httpsCallable(functions, 'dismissAlert');
+
+// Admin item management
+export const callAdminGrantItem = httpsCallable(functions, 'adminGrantItem');
+export const callAdminEditItem = httpsCallable(functions, 'adminEditItem');

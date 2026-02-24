@@ -221,7 +221,36 @@ const rollTier = (level: number, rarity: string): number => {
 
 const rollValue = (tier: number): number => Math.max(1, tier * 5 + Math.floor(Math.random() * 5) - 2);
 
-function generateLoot(level: number, forcedRarity?: string): LootItem {
+/**
+ * Fetch custom items marked as droppable from the customItems collection.
+ * Called before loot generation to provide the custom drop pool.
+ */
+async function fetchCustomDropPool(): Promise<LootItem[]> {
+  try {
+    const db = admin.firestore();
+    const snap = await db.collection("customItems").where("canDropInLoot", "==", true).get();
+    return snap.docs.map((d) => {
+      const data = d.data();
+      // Strip library metadata, return as LootItem
+      const { createdBy, createdAt, tags, canDropInLoot, dropWeight, ...item } = data;
+      return { ...item, id: d.id } as LootItem;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function generateLoot(level: number, forcedRarity?: string, customDropPool?: LootItem[]): LootItem {
+  // 8% chance to drop a custom item from the pool (if pool is available and non-empty)
+  if (!forcedRarity && customDropPool && customDropPool.length > 0 && Math.random() < 0.08) {
+    const template = pick(customDropPool);
+    return {
+      ...template,
+      id: Math.random().toString(36).substring(2, 9),
+      obtainedAt: new Date().toISOString(),
+    };
+  }
+
   let rarity = "COMMON";
   if (forcedRarity) {
     rarity = forcedRarity;
@@ -343,6 +372,7 @@ function buildXPUpdates(
   data: FirebaseFirestore.DocumentData,
   xpAmount: number,
   classType?: string,
+  customDropPool?: LootItem[],
 ): { updates: Record<string, any>; newXP: number; newLevel: number; leveledUp: boolean } {
   const gam = data.gamification || {};
   const currentXP = gam.xp || 0;
@@ -375,7 +405,7 @@ function buildXPUpdates(
       updates["gamification.skillPoints"] = (gam.skillPoints || 0) + spEarned;
     }
 
-    const newItem = generateLoot(newLevel);
+    const newItem = generateLoot(newLevel, undefined, customDropPool);
     if (classType && classType !== "Uncategorized") {
       const cp = data.gamification?.classProfiles?.[classType] || {};
       const inv = cp.inventory || [];
@@ -557,6 +587,9 @@ export const resolveQuest = onCall(async (request) => {
 
   const db = admin.firestore();
 
+  // Pre-fetch custom drop pool before transaction (can't do collection reads inside a transaction)
+  const customPool = await fetchCustomDropPool();
+
   return db.runTransaction(async (transaction) => {
     const userRef = db.doc(`users/${userId}`);
     const questRef = db.doc(`quests/${questId}`);
@@ -585,7 +618,7 @@ export const resolveQuest = onCall(async (request) => {
       const fluxReward = Number(quest.fluxReward) || 0;
 
       // Use shared XP helper for level-up + loot + class XP
-      const xpResult = buildXPUpdates(data, xpReward, effectiveClass || undefined);
+      const xpResult = buildXPUpdates(data, xpReward, effectiveClass || undefined, customPool);
       Object.assign(updates, xpResult.updates);
 
       // Add quest-specific flux reward (on top of the level-up currency bonus)
@@ -600,6 +633,24 @@ export const resolveQuest = onCall(async (request) => {
         // Use whatever inventory buildXPUpdates already wrote (includes level-up loot), or the profile inventory
         const currentInv = updates[paths.inventory] || getProfileData(data, effectiveClass || undefined).inventory;
         updates[paths.inventory] = [...currentInv, generateLoot(currentLevel, quest.itemRewardRarity), generateLoot(currentLevel)];
+      }
+
+      // Custom item reward from library
+      if (quest.customItemRewardId && typeof quest.customItemRewardId === "string") {
+        const customItemSnap = await transaction.get(db.doc(`customItems/${quest.customItemRewardId}`));
+        if (customItemSnap.exists) {
+          const raw = customItemSnap.data()! as Record<string, any>;
+          const paths = getProfilePaths(effectiveClass);
+          const currentInv = updates[paths.inventory] || getProfileData(data, effectiveClass || undefined).inventory;
+          // Strip library metadata, grant a fresh copy with new ID and timestamp
+          const { createdBy: _a, createdAt: _b, tags: _c, canDropInLoot: _d, dropWeight: _e, ...itemFields } = raw;
+          const grantedItem = {
+            ...itemFields,
+            id: Math.random().toString(36).substring(2, 9),
+            obtainedAt: new Date().toISOString(),
+          };
+          updates[paths.inventory] = [...currentInv, grantedItem];
+        }
       }
     }
 
@@ -883,6 +934,88 @@ export const adminUpdateEquipped = onCall(async (request) => {
     updates["gamification.equipped"] = equipped;
   }
   await db.doc(`users/${userId}`).update(updates);
+  return { success: true };
+});
+
+/**
+ * adminGrantItem — Admin adds a specific RPGItem to a student's inventory.
+ */
+export const adminGrantItem = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { userId, item, classType } = request.data;
+  if (!userId || typeof userId !== "string") throw new HttpsError("invalid-argument", "User ID required.");
+  if (!item || typeof item !== "object" || !item.id) throw new HttpsError("invalid-argument", "Valid item required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${userId}`);
+  const snap = await userRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "User not found.");
+  const data = snap.data()!;
+
+  const invPath = classType && typeof classType === "string"
+    ? `gamification.classProfiles.${classType}.inventory`
+    : "gamification.inventory";
+
+  const currentInv: unknown[] = classType
+    ? (data.gamification?.classProfiles?.[classType]?.inventory || [])
+    : (data.gamification?.inventory || []);
+
+  await userRef.update({ [invPath]: [...currentInv, item] });
+  return { success: true };
+});
+
+/**
+ * adminEditItem — Admin modifies an existing item in a student's inventory by ID.
+ */
+export const adminEditItem = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { userId, itemId, updates, classType } = request.data;
+  if (!userId || typeof userId !== "string") throw new HttpsError("invalid-argument", "User ID required.");
+  if (!itemId || typeof itemId !== "string") throw new HttpsError("invalid-argument", "Item ID required.");
+  if (!updates || typeof updates !== "object") throw new HttpsError("invalid-argument", "Updates object required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${userId}`);
+  const snap = await userRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "User not found.");
+  const data = snap.data()!;
+
+  const isClassProfile = classType && typeof classType === "string";
+  const currentInv: Record<string, unknown>[] = isClassProfile
+    ? (data.gamification?.classProfiles?.[classType]?.inventory || [])
+    : (data.gamification?.inventory || []);
+
+  const idx = currentInv.findIndex((i: Record<string, unknown>) => i.id === itemId);
+  if (idx === -1) throw new HttpsError("not-found", "Item not found in inventory.");
+
+  currentInv[idx] = { ...currentInv[idx], ...updates, id: itemId };
+
+  const invPath = isClassProfile
+    ? `gamification.classProfiles.${classType}.inventory`
+    : "gamification.inventory";
+
+  await userRef.update({ [invPath]: currentInv });
+
+  // Also update the item if it's currently equipped
+  const equippedPath = isClassProfile
+    ? data.gamification?.classProfiles?.[classType]?.equipped
+    : data.gamification?.equipped;
+
+  if (equippedPath && typeof equippedPath === "object") {
+    const eqUpdates: Record<string, unknown> = {};
+    for (const [slot, eqItem] of Object.entries(equippedPath as Record<string, Record<string, unknown>>)) {
+      if (eqItem && eqItem.id === itemId) {
+        const prefix = isClassProfile
+          ? `gamification.classProfiles.${classType}.equipped.${slot}`
+          : `gamification.equipped.${slot}`;
+        eqUpdates[prefix] = { ...eqItem, ...updates, id: itemId };
+      }
+    }
+    if (Object.keys(eqUpdates).length > 0) {
+      await userRef.update(eqUpdates);
+    }
+  }
+
   return { success: true };
 });
 
