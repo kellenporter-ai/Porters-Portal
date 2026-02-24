@@ -3,19 +3,106 @@ import { ItemRarity, RPGItem, EquipmentSlot, User } from '../types';
 import { RUNEWORD_DEFINITIONS } from './runewords';
 import { getActiveSetBonuses } from './achievements';
 
+// ==========================================
+// XP BRACKET SYSTEM (must mirror server-side)
+// ==========================================
+export const MAX_LEVEL = 500;
+
+// Tiered XP brackets: [maxLevel, xpPerLevel]
+export const XP_BRACKETS: [number, number][] = [
+  [50, 1000],
+  [200, 2000],
+  [350, 3000],
+  [450, 4000],
+  [500, 5000],
+];
+
+/** Total XP required to reach a given level */
+export function xpForLevel(level: number): number {
+  if (level <= 1) return 0;
+  let totalXp = 0;
+  let prevCap = 0;
+  for (const [cap, xpPer] of XP_BRACKETS) {
+    if (level - 1 <= prevCap) break;
+    const levelsInBracket = Math.min(level - 1, cap) - prevCap;
+    totalXp += levelsInBracket * xpPer;
+    prevCap = cap;
+  }
+  return totalXp;
+}
+
+/** Determine the level for a given total XP amount */
+export function levelForXp(xp: number): number {
+  if (xp <= 0) return 1;
+  let remaining = xp;
+  let currentLevel = 1;
+  let prevCap = 0;
+  for (const [cap, xpPer] of XP_BRACKETS) {
+    const levelsInBracket = cap - prevCap;
+    const xpForBracket = levelsInBracket * xpPer;
+    if (remaining < xpForBracket) {
+      currentLevel += Math.floor(remaining / xpPer);
+      return Math.min(currentLevel, MAX_LEVEL);
+    }
+    remaining -= xpForBracket;
+    currentLevel += levelsInBracket;
+    prevCap = cap;
+  }
+  return MAX_LEVEL;
+}
+
+/** XP needed for the current level bracket (cost to go from current level to next) */
+export function xpForCurrentBracket(level: number): number {
+  for (const [cap, xpPer] of XP_BRACKETS) {
+    if (level - 1 < cap) return xpPer;
+  }
+  return XP_BRACKETS[XP_BRACKETS.length - 1][1];
+}
+
+/** Get progress within current level as a percentage (0-100) */
+export function getLevelProgress(totalXp: number, level: number): number {
+  if (level >= MAX_LEVEL) return 100;
+  const xpAtCurrentLevel = xpForLevel(level);
+  const xpAtNextLevel = xpForLevel(level + 1);
+  const xpIntoLevel = totalXp - xpAtCurrentLevel;
+  const xpNeeded = xpAtNextLevel - xpAtCurrentLevel;
+  if (xpNeeded <= 0) return 100;
+  return Math.min(100, Math.max(0, (xpIntoLevel / xpNeeded) * 100));
+}
+
 // --- VISUALIZATION HELPERS ---
+// Extended element list to cover 100 rank groups (500 levels / 5 tiers = 100 elements)
 const ELEMENT_NAMES = [
+  // 1-40 (original)
   "Hydrogen", "Helium", "Lithium", "Beryllium", "Boron", "Carbon", "Nitrogen", "Oxygen", "Fluorine", "Neon",
   "Sodium", "Magnesium", "Aluminum", "Silicon", "Phosphorus", "Sulfur", "Chlorine", "Argon", "Potassium", "Calcium",
   "Scandium", "Titanium", "Vanadium", "Chromium", "Manganese", "Iron", "Cobalt", "Nickel", "Copper", "Zinc",
-  "Gallium", "Germanium", "Arsenic", "Selenium", "Bromine", "Krypton", "Rubidium", "Strontium", "Yttrium", "Zirconium"
+  "Gallium", "Germanium", "Arsenic", "Selenium", "Bromine", "Krypton", "Rubidium", "Strontium", "Yttrium", "Zirconium",
+  // 41-80
+  "Niobium", "Molybdenum", "Technetium", "Ruthenium", "Rhodium", "Palladium", "Silver", "Cadmium", "Indium", "Tin",
+  "Antimony", "Tellurium", "Iodine", "Xenon", "Cesium", "Barium", "Lanthanum", "Cerium", "Praseodymium", "Neodymium",
+  "Promethium", "Samarium", "Europium", "Gadolinium", "Terbium", "Dysprosium", "Holmium", "Erbium", "Thulium", "Ytterbium",
+  "Lutetium", "Hafnium", "Tantalum", "Tungsten", "Rhenium", "Osmium", "Iridium", "Platinum", "Gold", "Mercury",
+  // 81-100
+  "Thallium", "Lead", "Bismuth", "Polonium", "Astatine", "Radon", "Francium", "Radium", "Actinium", "Thorium",
+  "Protactinium", "Uranium", "Neptunium", "Plutonium", "Americium", "Curium", "Berkelium", "Californium", "Einsteinium", "Fermium"
 ];
 const ROMANS = ['I', 'II', 'III', 'IV', 'V'];
 
 const getElementStyle = (atomicNumber: number) => {
+  // Noble gases
   if ([2, 10, 18, 36, 54, 86].includes(atomicNumber)) return { color: 'border-fuchsia-500 text-fuchsia-400', glow: 'shadow-fuchsia-500/50' };
+  // Halogens
   if ([9, 17, 35, 53, 85].includes(atomicNumber)) return { color: 'border-yellow-400 text-yellow-400', glow: 'shadow-yellow-400/40' };
+  // Alkali metals
   if ([3, 11, 19, 37, 55, 87].includes(atomicNumber)) return { color: 'border-red-500 text-red-500', glow: 'shadow-red-500/40' };
+  // Precious metals (special styling for late-game prestige)
+  if ([44, 45, 46, 47, 76, 77, 78, 79].includes(atomicNumber)) return { color: 'border-amber-400 text-amber-300', glow: 'shadow-amber-400/50' };
+  // Actinides (endgame prestige)
+  if (atomicNumber >= 89) return { color: 'border-rose-500 text-rose-400', glow: 'shadow-rose-500/50' };
+  // Lanthanides
+  if (atomicNumber >= 57 && atomicNumber <= 71) return { color: 'border-indigo-400 text-indigo-300', glow: 'shadow-indigo-400/40' };
+  // Default transition metals
   return { color: 'border-cyan-400 text-cyan-400', glow: 'shadow-cyan-400/30' };
 };
 
@@ -23,7 +110,7 @@ export const getRankDetails = (level: number) => {
   const elementIndex = Math.floor((level - 1) / 5);
   const romanIndex = (level - 1) % 5;
   const safeIndex = Math.min(elementIndex, ELEMENT_NAMES.length - 1);
-  const name = ELEMENT_NAMES[safeIndex] || "Unknownium";
+  const name = ELEMENT_NAMES[safeIndex] || "Fermium";
   const roman = ROMANS[romanIndex];
   const atomicNumber = safeIndex + 1;
   const style = getElementStyle(atomicNumber);

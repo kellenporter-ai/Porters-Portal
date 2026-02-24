@@ -146,21 +146,21 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
             <g>
                 <animateTransform attributeName="transform" type="translate" values="0,0;0,-1.5;0,0" dur="3.5s" repeatCount="indefinite" />
 
-                {/* === WINGS (Level 30+) === */}
-                {evolutionLevel >= 30 && (
+                {/* === WINGS (Level 150+) === */}
+                {evolutionLevel >= 150 && (
                     <g filter="url(#av-bloom)">
-                        <path d={evolutionLevel >= 50
+                        <path d={evolutionLevel >= 300
                             ? "M58 105 Q18 60 28 25 Q38 50 52 72 Q32 58 22 38 Q36 56 52 82 Z"
                             : "M60 115 Q32 82 40 55 Q47 72 56 88 Z"}
-                              fill={evolutionLevel >= 50 ? 'rgba(251,191,36,0.12)' : 'rgba(139,92,246,0.1)'}
-                              stroke={evolutionLevel >= 50 ? '#fbbf24' : '#a78bfa'} strokeWidth="0.5" strokeOpacity="0.4">
+                              fill={evolutionLevel >= 300 ? 'rgba(251,191,36,0.12)' : 'rgba(139,92,246,0.1)'}
+                              stroke={evolutionLevel >= 300 ? '#fbbf24' : '#a78bfa'} strokeWidth="0.5" strokeOpacity="0.4">
                             <animate attributeName="opacity" values="0.8;0.4;0.8" dur="3s" repeatCount="indefinite" />
                         </path>
-                        <path d={evolutionLevel >= 50
+                        <path d={evolutionLevel >= 300
                             ? "M142 105 Q182 60 172 25 Q162 50 148 72 Q168 58 178 38 Q164 56 148 82 Z"
                             : "M140 115 Q168 82 160 55 Q153 72 144 88 Z"}
-                              fill={evolutionLevel >= 50 ? 'rgba(251,191,36,0.12)' : 'rgba(139,92,246,0.1)'}
-                              stroke={evolutionLevel >= 50 ? '#fbbf24' : '#a78bfa'} strokeWidth="0.5" strokeOpacity="0.4">
+                              fill={evolutionLevel >= 300 ? 'rgba(251,191,36,0.12)' : 'rgba(139,92,246,0.1)'}
+                              stroke={evolutionLevel >= 300 ? '#fbbf24' : '#a78bfa'} strokeWidth="0.5" strokeOpacity="0.4">
                             <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinite" />
                         </path>
                     </g>
@@ -424,22 +424,22 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                     })()}
                 </g>
 
-                {/* === CIRCLET / HALO (Level 15+) === */}
-                {evolutionLevel >= 15 && (
+                {/* === CIRCLET / HALO (Level 50+) === */}
+                {evolutionLevel >= 50 && (
                     <g filter="url(#av-glow)">
                         <ellipse cx="100" cy="22" rx="18" ry="4" fill="none"
-                                 stroke={evolutionLevel >= 50 ? '#fbbf24' : evolutionLevel >= 30 ? '#a78bfa' : '#60a5fa'}
+                                 stroke={evolutionLevel >= 300 ? '#fbbf24' : evolutionLevel >= 100 ? '#a78bfa' : '#60a5fa'}
                                  strokeWidth="1.5" strokeOpacity="0.7">
                             <animate attributeName="strokeOpacity" values="0.7;0.35;0.7" dur="2s" repeatCount="indefinite" />
                         </ellipse>
-                        {evolutionLevel >= 30 && (
+                        {evolutionLevel >= 100 && (
                             <ellipse cx="100" cy="18" rx="22" ry="5" fill="none"
-                                     stroke={evolutionLevel >= 50 ? '#fbbf24' : '#a78bfa'}
+                                     stroke={evolutionLevel >= 300 ? '#fbbf24' : '#a78bfa'}
                                      strokeWidth="0.8" strokeOpacity="0.35" strokeDasharray="3 3">
                                 <animate attributeName="strokeDashoffset" values="0;-12" dur="3s" repeatCount="indefinite" />
                             </ellipse>
                         )}
-                        {evolutionLevel >= 50 && [-12, 0, 12].map((x, i) => (
+                        {evolutionLevel >= 300 && [-12, 0, 12].map((x, i) => (
                             <polygon key={i} points={`${100 + x},16 ${97 + x},22 ${103 + x},22`} fill="#fbbf24" fillOpacity="0.6">
                                 <animate attributeName="fillOpacity" values="0.6;0.25;0.6" dur={`${1.5 + i * 0.2}s`} repeatCount="indefinite" />
                             </polygon>
@@ -464,20 +464,21 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                     </g>
                 )}
 
-                {/* Evolution shoulder accents (5+) */}
-                {evolutionLevel >= 5 && <>
-                    <line x1="56" y1="90" x2="48" y2="97" stroke={`hsl(${hue + 180},70%,50%)`} strokeWidth="1" strokeOpacity={0.12 + evolutionLevel * 0.004} />
-                    <line x1="144" y1="90" x2="152" y2="97" stroke={`hsl(${hue + 180},70%,50%)`} strokeWidth="1" strokeOpacity={0.12 + evolutionLevel * 0.004} />
+                {/* Evolution shoulder accents (10+) */}
+                {evolutionLevel >= 10 && <>
+                    <line x1="56" y1="90" x2="48" y2="97" stroke={`hsl(${hue + 180},70%,50%)`} strokeWidth="1" strokeOpacity={Math.min(0.5, 0.12 + evolutionLevel * 0.0008)} />
+                    <line x1="144" y1="90" x2="152" y2="97" stroke={`hsl(${hue + 180},70%,50%)`} strokeWidth="1" strokeOpacity={Math.min(0.5, 0.12 + evolutionLevel * 0.0008)} />
                 </>}
 
-                {/* Evolution particles (5+) */}
-                {evolutionLevel >= 5 && (
+                {/* Evolution particles (10+) */}
+                {evolutionLevel >= 10 && (
                     <g filter="url(#av-soft)">
-                        {Array.from({ length: Math.min(8, Math.floor(evolutionLevel / 6)) }).map((_, i) => {
-                            const a = (i * 360 / Math.min(8, Math.floor(evolutionLevel / 6))) * (Math.PI / 180);
+                        {Array.from({ length: Math.min(8, Math.floor(evolutionLevel / 50) + 1) }).map((_, i) => {
+                            const count = Math.min(8, Math.floor(evolutionLevel / 50) + 1);
+                            const a = (i * 360 / count) * (Math.PI / 180);
                             const px = 100 + Math.cos(a) * (38 + i * 3);
                             const py = 140 + Math.sin(a) * (55 + i * 2);
-                            const c = evolutionLevel >= 50 ? '#fbbf24' : evolutionLevel >= 30 ? '#a78bfa' : evolutionLevel >= 15 ? '#60a5fa' : `hsl(${hue + 180},70%,60%)`;
+                            const c = evolutionLevel >= 300 ? '#fbbf24' : evolutionLevel >= 100 ? '#a78bfa' : evolutionLevel >= 50 ? '#60a5fa' : `hsl(${hue + 180},70%,60%)`;
                             return (
                                 <circle key={i} cx={px} cy={py} r="1" fill={c} fillOpacity="0.35">
                                     <animate attributeName="cy" values={`${py};${py - 12};${py}`} dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />

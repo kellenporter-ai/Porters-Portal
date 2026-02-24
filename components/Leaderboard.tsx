@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { User, DefaultClassTypes } from '../types';
 import { dataService } from '../services/dataService';
 import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
-import { getRankDetails } from '../lib/gamification';
+import { getRankDetails, levelForXp } from '../lib/gamification';
 import PlayerInspectModal from './xp/PlayerInspectModal';
 
 interface LeaderboardProps {
@@ -100,7 +100,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                         const isPrivate = u.settings?.privacyMode;
                         const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
                         const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                        const lvl = Math.floor(classXP / 1000) + 1;
+                        const lvl = levelForXp(classXP);
                         const rd = getRankDetails(lvl);
                         const isFirst = rank === 0;
                         const heights = ['h-28', 'h-20', 'h-16'];
@@ -144,7 +144,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                     const isPrivate = u.settings?.privacyMode;
                     const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
                     const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                    const level = Math.floor(classXP / 1000) + 1;
+                    const level = levelForXp(classXP);
                     const rankDetails = getRankDetails(level);
 
                     return (

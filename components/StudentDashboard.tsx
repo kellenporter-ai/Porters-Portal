@@ -24,7 +24,7 @@ function snapCenterToCursor(args: any) {
 }
 import { dataService } from '../services/dataService';
 import { sortUnitKeys } from './AdminPanel';
-import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost, deriveCombatStats } from '../lib/gamification';
+import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost, deriveCombatStats, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
 import { RUNEWORD_DEFINITIONS } from '../lib/runewords';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
@@ -406,7 +406,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const level = user.gamification?.level || 1;
   const currency = user.gamification?.currency || 0;
   const xp = classXp;
-  const progress = (xp % 1000) / 1000 * 100;
+  const progress = getLevelProgress(user.gamification?.xp || 0, level);
   const displayXp = useAnimatedCounter(xp);
   const displayCurrency = useAnimatedCounter(currency);
   const rankDetails = getRankDetails(level);
@@ -794,7 +794,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 </div>
                 <div className="flex justify-between w-full text-[9px] text-gray-500 mt-2 font-mono font-bold relative">
                     <span>{displayXp.toLocaleString()} XP ({activeClass})</span>
-                    <span>Next Rank</span>
+                    <span>{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
                     {xpFloatAmount && (
                         <span className="xp-float-anim absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap">
                             +{xpFloatAmount} XP

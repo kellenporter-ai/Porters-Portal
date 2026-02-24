@@ -10,12 +10,42 @@ admin.initializeApp();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "kellporter2@paps.net";
 
 // ==========================================
-// SHARED CONSTANTS (Bug 1 fix: single source of truth)
+// SHARED CONSTANTS
 // ==========================================
-const XP_PER_LEVEL = 1000;
+const MAX_LEVEL = 500;
 const MAX_XP_PER_SUBMISSION = 500;
 const DEFAULT_XP_PER_MINUTE = 10;
 const ENGAGEMENT_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+// Tiered XP brackets: each entry is [maxLevel, xpPerLevel]
+// Levels 1-50: 1000 XP/lvl, 51-200: 2000, 201-350: 3000, 351-450: 4000, 451-500: 5000
+const XP_BRACKETS: [number, number][] = [
+  [50, 1000],
+  [200, 2000],
+  [350, 3000],
+  [450, 4000],
+  [500, 5000],
+];
+
+/** Determine the level for a given total XP amount */
+function levelForXp(xp: number): number {
+  if (xp <= 0) return 1;
+  let remaining = xp;
+  let currentLevel = 1;
+  let prevCap = 0;
+  for (const [cap, xpPer] of XP_BRACKETS) {
+    const levelsInBracket = cap - prevCap;
+    const xpForBracket = levelsInBracket * xpPer;
+    if (remaining < xpForBracket) {
+      currentLevel += Math.floor(remaining / xpPer);
+      return Math.min(currentLevel, MAX_LEVEL);
+    }
+    remaining -= xpForBracket;
+    currentLevel += levelsInBracket;
+    prevCap = cap;
+  }
+  return MAX_LEVEL;
+}
 
 // ==========================================
 // HELPER FUNCTIONS
@@ -172,7 +202,8 @@ const FLUX_COSTS: Record<string, number> = { RECALIBRATE: 5, REFORGE: 25, OPTIMI
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 const rollTier = (level: number, rarity: string): number => {
-  const maxTierAvailable = Math.min(10, Math.max(1, Math.floor(level / 10) + 1));
+  // Scale tiers across 500 levels: tier 1 at level 1, tier 10 at level ~450+
+  const maxTierAvailable = Math.min(10, Math.max(1, Math.floor(level / 50) + 1));
   let minT = 1;
   let maxT = maxTierAvailable;
   if (rarity === "COMMON") {
@@ -317,7 +348,7 @@ function buildXPUpdates(
   const currentXP = gam.xp || 0;
   const currentLevel = gam.level || 1;
   const newXP = Math.max(0, currentXP + xpAmount);
-  const newLevel = Math.floor(newXP / XP_PER_LEVEL) + 1;
+  const newLevel = Math.min(levelForXp(newXP), MAX_LEVEL);
   const leveledUp = newLevel > currentLevel;
 
   const updates: Record<string, any> = {
@@ -1907,7 +1938,8 @@ const GEM_TYPES = [
 
 function generateGem(level: number) {
   const gemType = pick(GEM_TYPES);
-  const tier = Math.min(5, Math.max(1, Math.floor(level / 10) + 1));
+  // Scale gem tiers across 500 levels: tier 1 at level 1, tier 5 at level ~400+
+  const tier = Math.min(5, Math.max(1, Math.floor(level / 100) + 1));
   return {
     id: Math.random().toString(36).substring(2, 9),
     name: `${gemType.name} (T${tier})`,

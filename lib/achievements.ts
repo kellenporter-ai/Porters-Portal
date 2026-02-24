@@ -6,45 +6,69 @@ import { Achievement, AchievementCategory, SkillNode, SpecializationType, ItemSe
 // ========================================
 
 export const ACHIEVEMENTS: Achievement[] = [
-  // PROGRESSION
+  // PROGRESSION — Level Milestones
   { id: 'first_steps', title: 'First Steps', description: 'Earn your first 100 XP', icon: '🚀', category: 'PROGRESSION', condition: { type: 'XP_TOTAL', target: 100 }, xpReward: 25 },
-  { id: 'rising_star', title: 'Rising Star', description: 'Reach Level 5', icon: '⭐', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 5 }, xpReward: 100, fluxReward: 50 },
-  { id: 'veteran', title: 'Veteran Operative', description: 'Reach Level 10', icon: '🎖️', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 10 }, xpReward: 250, fluxReward: 100 },
-  { id: 'elite', title: 'Elite Agent', description: 'Reach Level 25', icon: '💎', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 25 }, xpReward: 500, fluxReward: 250 },
-  { id: 'legend', title: 'Living Legend', description: 'Reach Level 50', icon: '👑', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 50 }, xpReward: 1000, fluxReward: 500, isSecret: true },
+  { id: 'rising_star', title: 'Rising Star', description: 'Reach Level 10', icon: '⭐', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 10 }, xpReward: 100, fluxReward: 50 },
+  { id: 'veteran', title: 'Veteran Operative', description: 'Reach Level 25', icon: '🎖️', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 25 }, xpReward: 250, fluxReward: 100 },
+  { id: 'elite', title: 'Elite Agent', description: 'Reach Level 50', icon: '💎', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 50 }, xpReward: 500, fluxReward: 250 },
+  { id: 'legend', title: 'Living Legend', description: 'Reach Level 100', icon: '👑', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 100 }, xpReward: 1000, fluxReward: 500 },
+  { id: 'vanguard', title: 'Vanguard', description: 'Reach Level 200', icon: '🛡️', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 200 }, xpReward: 2000, fluxReward: 750 },
+  { id: 'mythic_rank', title: 'Mythic Rank', description: 'Reach Level 300', icon: '🔮', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 300 }, xpReward: 3000, fluxReward: 1000, isSecret: true },
+  { id: 'paragon', title: 'Paragon', description: 'Reach Level 400', icon: '⚡', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 400 }, xpReward: 5000, fluxReward: 2000, isSecret: true },
+  { id: 'eternal', title: 'Eternal', description: 'Reach the maximum Level 500', icon: '🌟', category: 'PROGRESSION', condition: { type: 'LEVEL_REACHED', target: 500 }, xpReward: 10000, fluxReward: 5000, isSecret: true },
+
+  // PROGRESSION — XP Milestones
   { id: 'xp_5k', title: 'Knowledge Seeker', description: 'Accumulate 5,000 total XP', icon: '📚', category: 'PROGRESSION', condition: { type: 'XP_TOTAL', target: 5000 }, xpReward: 150 },
   { id: 'xp_25k', title: 'Scholar Supreme', description: 'Accumulate 25,000 total XP', icon: '🏛️', category: 'PROGRESSION', condition: { type: 'XP_TOTAL', target: 25000 }, xpReward: 500, fluxReward: 200 },
+  { id: 'xp_100k', title: 'Centurion', description: 'Accumulate 100,000 total XP', icon: '💫', category: 'PROGRESSION', condition: { type: 'XP_TOTAL', target: 100000 }, xpReward: 1000, fluxReward: 500 },
+  { id: 'xp_500k', title: 'Transcendent Mind', description: 'Accumulate 500,000 total XP', icon: '🧬', category: 'PROGRESSION', condition: { type: 'XP_TOTAL', target: 500000 }, xpReward: 3000, fluxReward: 1500, isSecret: true },
+  { id: 'xp_1m', title: 'Ascended Scholar', description: 'Accumulate 1,000,000 total XP', icon: '🏆', category: 'PROGRESSION', condition: { type: 'XP_TOTAL', target: 1000000 }, xpReward: 5000, fluxReward: 3000, isSecret: true },
 
   // COLLECTION
   { id: 'collector_10', title: 'Gear Collector', description: 'Collect 10 items', icon: '📦', category: 'COLLECTION', condition: { type: 'ITEMS_COLLECTED', target: 10 }, xpReward: 50 },
   { id: 'collector_50', title: 'Hoarder', description: 'Collect 50 items', icon: '🗃️', category: 'COLLECTION', condition: { type: 'ITEMS_COLLECTED', target: 50 }, xpReward: 150, fluxReward: 75 },
+  { id: 'collector_150', title: 'Armory Master', description: 'Collect 150 items', icon: '🏰', category: 'COLLECTION', condition: { type: 'ITEMS_COLLECTED', target: 150 }, xpReward: 500, fluxReward: 200, isSecret: true },
   { id: 'gear_score_100', title: 'Well Equipped', description: 'Achieve a Gear Score of 100', icon: '🛡️', category: 'COLLECTION', condition: { type: 'GEAR_SCORE', target: 100 }, xpReward: 100 },
-  { id: 'gear_score_500', title: 'Walking Arsenal', description: 'Achieve a Gear Score of 500', icon: '⚔️', category: 'COLLECTION', condition: { type: 'GEAR_SCORE', target: 500 }, xpReward: 300, fluxReward: 150, isSecret: true },
+  { id: 'gear_score_500', title: 'Walking Arsenal', description: 'Achieve a Gear Score of 500', icon: '⚔️', category: 'COLLECTION', condition: { type: 'GEAR_SCORE', target: 500 }, xpReward: 300, fluxReward: 150 },
+  { id: 'gear_score_1000', title: 'Juggernaut', description: 'Achieve a Gear Score of 1000', icon: '🔥', category: 'COLLECTION', condition: { type: 'GEAR_SCORE', target: 1000 }, xpReward: 750, fluxReward: 400, isSecret: true },
 
   // COMBAT / QUESTS
   { id: 'first_mission', title: 'Field Agent', description: 'Complete your first mission', icon: '🎯', category: 'COMBAT', condition: { type: 'QUESTS_COMPLETED', target: 1 }, xpReward: 50 },
   { id: 'mission_5', title: 'Seasoned Operative', description: 'Complete 5 missions', icon: '🎖️', category: 'COMBAT', condition: { type: 'QUESTS_COMPLETED', target: 5 }, xpReward: 150 },
   { id: 'mission_20', title: 'Mission Master', description: 'Complete 20 missions', icon: '🏆', category: 'COMBAT', condition: { type: 'QUESTS_COMPLETED', target: 20 }, xpReward: 400, fluxReward: 200 },
+  { id: 'mission_50', title: 'Shadow Commander', description: 'Complete 50 missions', icon: '🎭', category: 'COMBAT', condition: { type: 'QUESTS_COMPLETED', target: 50 }, xpReward: 1000, fluxReward: 500, isSecret: true },
   { id: 'boss_slayer', title: 'Boss Slayer', description: 'Help defeat 3 bosses', icon: '🐉', category: 'COMBAT', condition: { type: 'BOSS_KILLS', target: 3 }, xpReward: 300, fluxReward: 150 },
+  { id: 'boss_hunter', title: 'Boss Hunter', description: 'Help defeat 10 bosses', icon: '💀', category: 'COMBAT', condition: { type: 'BOSS_KILLS', target: 10 }, xpReward: 750, fluxReward: 400, isSecret: true },
 
   // DEDICATION
   { id: 'streak_3', title: 'Consistent', description: 'Maintain a 3-week engagement streak', icon: '🔥', category: 'DEDICATION', condition: { type: 'STREAK_WEEKS', target: 3 }, xpReward: 75 },
   { id: 'streak_8', title: 'Unstoppable', description: 'Maintain an 8-week engagement streak', icon: '💪', category: 'DEDICATION', condition: { type: 'STREAK_WEEKS', target: 8 }, xpReward: 200, fluxReward: 100 },
-  { id: 'streak_16', title: 'Iron Will', description: 'Maintain a 16-week engagement streak', icon: '🏔️', category: 'DEDICATION', condition: { type: 'STREAK_WEEKS', target: 16 }, xpReward: 500, fluxReward: 250, isSecret: true },
+  { id: 'streak_16', title: 'Iron Will', description: 'Maintain a 16-week engagement streak', icon: '🏔️', category: 'DEDICATION', condition: { type: 'STREAK_WEEKS', target: 16 }, xpReward: 500, fluxReward: 250 },
+  { id: 'streak_30', title: 'Unbreakable', description: 'Maintain a 30-week engagement streak', icon: '🌋', category: 'DEDICATION', condition: { type: 'STREAK_WEEKS', target: 30 }, xpReward: 1500, fluxReward: 750, isSecret: true },
   { id: 'login_7', title: 'Daily Devotion', description: 'Log in 7 days in a row', icon: '📅', category: 'DEDICATION', condition: { type: 'LOGIN_STREAK', target: 7 }, xpReward: 100 },
-  { id: 'login_30', title: 'Month of Mastery', description: 'Log in 30 days in a row', icon: '🗓️', category: 'DEDICATION', condition: { type: 'LOGIN_STREAK', target: 30 }, xpReward: 300, fluxReward: 150, isSecret: true },
+  { id: 'login_30', title: 'Month of Mastery', description: 'Log in 30 days in a row', icon: '🗓️', category: 'DEDICATION', condition: { type: 'LOGIN_STREAK', target: 30 }, xpReward: 300, fluxReward: 150 },
+  { id: 'login_90', title: 'Semester Sentinel', description: 'Log in 90 days in a row', icon: '🏛️', category: 'DEDICATION', condition: { type: 'LOGIN_STREAK', target: 90 }, xpReward: 1000, fluxReward: 500, isSecret: true },
   { id: 'challenges_10', title: 'Challenge Accepted', description: 'Complete 10 daily challenges', icon: '✅', category: 'DEDICATION', condition: { type: 'CHALLENGES_COMPLETED', target: 10 }, xpReward: 100 },
+  { id: 'challenges_50', title: 'Challenge Seeker', description: 'Complete 50 daily challenges', icon: '🏅', category: 'DEDICATION', condition: { type: 'CHALLENGES_COMPLETED', target: 50 }, xpReward: 400, fluxReward: 200 },
+  { id: 'challenges_200', title: 'Challenge Conqueror', description: 'Complete 200 daily challenges', icon: '👊', category: 'DEDICATION', condition: { type: 'CHALLENGES_COMPLETED', target: 200 }, xpReward: 1500, fluxReward: 750, isSecret: true },
 
   // SOCIAL
   { id: 'tutor_1', title: 'Helpful Hand', description: 'Complete 1 peer tutoring session', icon: '🤝', category: 'SOCIAL', condition: { type: 'TUTORING_SESSIONS', target: 1 }, xpReward: 75 },
   { id: 'tutor_10', title: 'Mentor', description: 'Complete 10 peer tutoring sessions', icon: '🎓', category: 'SOCIAL', condition: { type: 'TUTORING_SESSIONS', target: 10 }, xpReward: 300, fluxReward: 200 },
+  { id: 'tutor_25', title: 'Grand Mentor', description: 'Complete 25 peer tutoring sessions', icon: '🦉', category: 'SOCIAL', condition: { type: 'TUTORING_SESSIONS', target: 25 }, xpReward: 750, fluxReward: 500, isSecret: true },
 
   // MASTERY
   { id: 'tech_50', title: 'Tech Wizard', description: 'Reach 50 Tech stat', icon: '💻', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 50, stat: 'tech' }, xpReward: 100 },
   { id: 'focus_50', title: 'Zen Master', description: 'Reach 50 Focus stat', icon: '🧘', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 50, stat: 'focus' }, xpReward: 100 },
   { id: 'analysis_50', title: 'Sharp Mind', description: 'Reach 50 Analysis stat', icon: '🔬', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 50, stat: 'analysis' }, xpReward: 100 },
   { id: 'charisma_50', title: 'Silver Tongue', description: 'Reach 50 Charisma stat', icon: '🎤', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 50, stat: 'charisma' }, xpReward: 100 },
+  { id: 'tech_100', title: 'Tech Overlord', description: 'Reach 100 Tech stat', icon: '🤖', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 100, stat: 'tech' }, xpReward: 500, fluxReward: 200, isSecret: true },
+  { id: 'focus_100', title: 'Enlightened', description: 'Reach 100 Focus stat', icon: '🕊️', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 100, stat: 'focus' }, xpReward: 500, fluxReward: 200, isSecret: true },
+  { id: 'analysis_100', title: 'Omniscient', description: 'Reach 100 Analysis stat', icon: '🧠', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 100, stat: 'analysis' }, xpReward: 500, fluxReward: 200, isSecret: true },
+  { id: 'charisma_100', title: 'Legendary Speaker', description: 'Reach 100 Charisma stat', icon: '👑', category: 'MASTERY', condition: { type: 'STAT_THRESHOLD', target: 100, stat: 'charisma' }, xpReward: 500, fluxReward: 200, isSecret: true },
   { id: 'craft_10', title: 'Artisan', description: 'Craft items 10 times', icon: '🔨', category: 'MASTERY', condition: { type: 'ITEMS_CRAFTED', target: 10 }, xpReward: 100, fluxReward: 50 },
+  { id: 'craft_50', title: 'Master Craftsman', description: 'Craft items 50 times', icon: '⚒️', category: 'MASTERY', condition: { type: 'ITEMS_CRAFTED', target: 50 }, xpReward: 400, fluxReward: 200, isSecret: true },
+  { id: 'wheel_25', title: 'Fortune Seeker', description: 'Spin the Fortune Wheel 25 times', icon: '🎰', category: 'MASTERY', condition: { type: 'WHEEL_SPINS', target: 25 }, xpReward: 200, fluxReward: 100 },
 ];
 
 export const getAchievementsByCategory = (category: AchievementCategory): Achievement[] =>
@@ -244,11 +268,24 @@ export const generateDailyChallenges = (date: string): DailyChallenge[] => {
 // ========================================
 
 export const EVOLUTION_TIERS: EvolutionTier[] = [
-  { level: 1, name: 'Recruit', description: 'Standard-issue operative suit', visualEffects: { glowIntensity: 0.1, particleCount: 0, armorDetail: 'BASIC', wingType: 'NONE', crownType: 'NONE' } },
-  { level: 5, name: 'Agent', description: 'Enhanced suit with energy conduits', visualEffects: { glowIntensity: 0.25, particleCount: 2, armorDetail: 'ENHANCED', wingType: 'NONE', crownType: 'NONE' } },
-  { level: 15, name: 'Specialist', description: 'Advanced armor plating with integrated systems', visualEffects: { glowIntensity: 0.5, particleCount: 4, armorDetail: 'ADVANCED', wingType: 'NONE', crownType: 'CIRCLET' } },
-  { level: 30, name: 'Commander', description: 'Legendary suit with energy wings', visualEffects: { glowIntensity: 0.75, particleCount: 6, armorDetail: 'LEGENDARY', wingType: 'ENERGY', crownType: 'HALO' } },
-  { level: 50, name: 'Mythic', description: 'Transcendent form with crystalline wings and crown', visualEffects: { glowIntensity: 1.0, particleCount: 10, armorDetail: 'MYTHIC', wingType: 'PHOENIX', crownType: 'CROWN' } },
+  // Early Game (Levels 1-50)
+  { level: 1, name: 'Recruit', description: 'Standard-issue operative suit', visualEffects: { glowIntensity: 0.05, particleCount: 0, armorDetail: 'BASIC', wingType: 'NONE', crownType: 'NONE' } },
+  { level: 10, name: 'Agent', description: 'Enhanced suit with energy conduits', visualEffects: { glowIntensity: 0.15, particleCount: 1, armorDetail: 'ENHANCED', wingType: 'NONE', crownType: 'NONE' } },
+  { level: 25, name: 'Specialist', description: 'Advanced armor plating with integrated systems', visualEffects: { glowIntensity: 0.25, particleCount: 2, armorDetail: 'ADVANCED', wingType: 'NONE', crownType: 'NONE' } },
+  { level: 50, name: 'Operative', description: 'Field-hardened suit with tactical enhancements', visualEffects: { glowIntensity: 0.3, particleCount: 3, armorDetail: 'ADVANCED', wingType: 'NONE', crownType: 'CIRCLET' } },
+  // Mid Game (Levels 51-200)
+  { level: 75, name: 'Lieutenant', description: 'Officer-grade armor with command uplinks', visualEffects: { glowIntensity: 0.35, particleCount: 3, armorDetail: 'ADVANCED', wingType: 'NONE', crownType: 'CIRCLET' } },
+  { level: 100, name: 'Commander', description: 'Command suit with energy shield projectors', visualEffects: { glowIntensity: 0.45, particleCount: 4, armorDetail: 'LEGENDARY', wingType: 'NONE', crownType: 'CIRCLET' } },
+  { level: 150, name: 'Elite', description: 'Elite exosuit with integrated weapon systems', visualEffects: { glowIntensity: 0.55, particleCount: 5, armorDetail: 'LEGENDARY', wingType: 'ENERGY', crownType: 'CIRCLET' } },
+  { level: 200, name: 'Vanguard', description: 'Vanguard-class armor with energy wings', visualEffects: { glowIntensity: 0.65, particleCount: 6, armorDetail: 'LEGENDARY', wingType: 'ENERGY', crownType: 'HALO' } },
+  // Late Game (Levels 201-350)
+  { level: 250, name: 'Warden', description: 'Warden armor radiating protective energy', visualEffects: { glowIntensity: 0.7, particleCount: 7, armorDetail: 'LEGENDARY', wingType: 'ENERGY', crownType: 'HALO' } },
+  { level: 300, name: 'Mythic', description: 'Mythic suit transcending standard engineering', visualEffects: { glowIntensity: 0.8, particleCount: 8, armorDetail: 'MYTHIC', wingType: 'CRYSTAL', crownType: 'HALO' } },
+  { level: 350, name: 'Ascendant', description: 'Ascendant form wreathed in crystalline energy', visualEffects: { glowIntensity: 0.85, particleCount: 9, armorDetail: 'MYTHIC', wingType: 'CRYSTAL', crownType: 'CROWN' } },
+  // Endgame (Levels 351-500)
+  { level: 400, name: 'Paragon', description: 'Paragon exoframe radiating raw power', visualEffects: { glowIntensity: 0.9, particleCount: 10, armorDetail: 'MYTHIC', wingType: 'PHOENIX', crownType: 'CROWN' } },
+  { level: 450, name: 'Archon', description: 'Archon suit of living energy and will', visualEffects: { glowIntensity: 0.95, particleCount: 12, armorDetail: 'MYTHIC', wingType: 'PHOENIX', crownType: 'CROWN' } },
+  { level: 500, name: 'Eternal', description: 'The ultimate form — beyond mortal limits', visualEffects: { glowIntensity: 1.0, particleCount: 15, armorDetail: 'MYTHIC', wingType: 'PHOENIX', crownType: 'CROWN' } },
 ];
 
 export const getEvolutionTier = (level: number): EvolutionTier => {
