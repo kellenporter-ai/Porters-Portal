@@ -256,6 +256,10 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [hoverResourceId, setHoverResourceId] = useState<string | null>(null);
+  // All-classes view state: collapsed class names (empty = all expanded)
+  const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set());
+  // All-classes view state: expanded composite unit keys "ClassName::UnitName"
+  const [expandedAllClassUnits, setExpandedAllClassUnits] = useState<Set<string>>(new Set());
 
   // Resource settings state
   const [resTitle, setResTitle] = useState('');
@@ -485,6 +489,28 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     return result;
   }, [assignmentsByUnit, searchFilter, filterClass, filterCategory]);
 
+  // All-classes grouped view: class → unit → assignments
+  const filteredByClass = useMemo(() => {
+    if (filterClass !== 'All Classes') return null;
+    const lower = searchFilter.toLowerCase();
+    const result: Record<string, Record<string, Assignment[]>> = {};
+    assignments.forEach(a => {
+      if (filterCategory !== 'All Categories' && a.category !== filterCategory) return;
+      const unit = a.unit || 'Unassigned';
+      if (searchFilter && !a.title.toLowerCase().includes(lower) && !unit.toLowerCase().includes(lower)) return;
+      const cls = a.classType || 'Uncategorized';
+      if (!result[cls]) result[cls] = {};
+      if (!result[cls][unit]) result[cls][unit] = [];
+      result[cls][unit].push(a);
+    });
+    Object.values(result).forEach(units =>
+      Object.values(units).forEach(items =>
+        items.sort((a, b) => a.title.localeCompare(b.title))
+      )
+    );
+    return result;
+  }, [assignments, searchFilter, filterClass, filterCategory]);
+
   // Resource management actions (moved from Admin Panel)
   const handleQuickDeploy = useCallback(async (id: string) => {
     try {
@@ -668,79 +694,186 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
 
           {/* Resource list */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-            {(() => {
-              const sortOrder = filterClass !== 'All Classes' ? sidebarUnitOrder : undefined;
-              const sortedKeys = sortUnitKeys(Object.keys(filteredUnits), sortOrder);
-              return sortedKeys.map(k => [k, filteredUnits[k]] as [string, Assignment[]]);
-            })().map(([unit, items]) => (
-              <div key={unit}>
-                <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer">
-                  {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
-                  <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
-                </button>
-                {expandedUnits.has(unit) && items.map(a => {
-                  const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
-                  const hasHtml = !!a.contentUrl;
-                  const isHovered = hoverResourceId === a.id;
-                  const isDraft = a.status === AssignmentStatus.DRAFT;
-                  const isArchived = a.status === AssignmentStatus.ARCHIVED;
-                  const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
-                  const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
-
+            {filterClass === 'All Classes' && filteredByClass ? (
+              // ── All Classes view: class → unit → resources ─────────────────
+              Object.keys(filteredByClass).sort().length === 0 ? (
+                <div className="text-center py-8 text-gray-600 text-xs">
+                  <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  No resources match filters
+                </div>
+              ) : (
+                Object.keys(filteredByClass).sort().map(cls => {
+                  const clsUnits = filteredByClass[cls];
+                  const isClassCollapsed = collapsedClasses.has(cls);
+                  const total = Object.values(clsUnits).reduce((s, items) => s + items.length, 0);
                   return (
-                    <div
-                      key={a.id}
-                      onMouseEnter={() => setHoverResourceId(a.id)}
-                      onMouseLeave={() => setHoverResourceId(null)}
-                      className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
-                    >
+                    <div key={cls} className="mb-1">
+                      {/* Class header */}
                       <button
-                        onClick={() => selectResource(a.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
+                        onClick={() => setCollapsedClasses(prev => { const n = new Set(prev); n.has(cls) ? n.delete(cls) : n.add(cls); return n; })}
+                        className="w-full flex items-center gap-2 px-2 py-2 text-left hover:bg-purple-500/10 rounded-lg transition cursor-pointer"
                       >
-                        {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
-                        <span className="truncate flex-1">{a.title}</span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
-                          {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
-                          {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
-                          {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
-                          {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
-                        </div>
+                        {isClassCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-purple-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
+                        <span className="text-[11px] font-bold text-purple-300 truncate flex-1">{cls}</span>
+                        <span className="text-[9px] text-purple-500/70 font-mono shrink-0">{total}</span>
                       </button>
-                      {/* Hover action bar */}
-                      {isHovered && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
-                          {isDraft && (
-                            <button onClick={(e) => { e.stopPropagation(); handleQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
-                              <Rocket className="w-3 h-3" />
-                            </button>
-                          )}
-                          <button onClick={(e) => { e.stopPropagation(); handleArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
-                            {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteResource(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                      {/* Units within this class */}
+                      {!isClassCollapsed && (
+                        <div className="ml-2 space-y-0.5 border-l border-purple-500/10 pl-1">
+                          {sortUnitKeys(Object.keys(clsUnits), classConfigs?.find(c => c.className === cls)?.unitOrder).map(unit => {
+                            const items = clsUnits[unit];
+                            const compositeKey = `${cls}::${unit}`;
+                            const isUnitExpanded = expandedAllClassUnits.has(compositeKey);
+                            return (
+                              <div key={unit}>
+                                <button
+                                  onClick={() => setExpandedAllClassUnits(prev => { const n = new Set(prev); n.has(compositeKey) ? n.delete(compositeKey) : n.add(compositeKey); return n; })}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer"
+                                >
+                                  {isUnitExpanded ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
+                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
+                                  <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
+                                </button>
+                                {isUnitExpanded && items.map(a => {
+                                  const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
+                                  const hasHtml = !!a.contentUrl;
+                                  const isHovered = hoverResourceId === a.id;
+                                  const isDraft = a.status === AssignmentStatus.DRAFT;
+                                  const isArchived = a.status === AssignmentStatus.ARCHIVED;
+                                  const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
+                                  const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
+                                  return (
+                                    <div
+                                      key={a.id}
+                                      onMouseEnter={() => setHoverResourceId(a.id)}
+                                      onMouseLeave={() => setHoverResourceId(null)}
+                                      className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
+                                    >
+                                      <button
+                                        onClick={() => selectResource(a.id)}
+                                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
+                                      >
+                                        {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                                        <span className="truncate flex-1">{a.title}</span>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
+                                          {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
+                                          {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
+                                          {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
+                                          {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
+                                        </div>
+                                      </button>
+                                      {isHovered && (
+                                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
+                                          {isDraft && (
+                                            <button onClick={(e) => { e.stopPropagation(); handleQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
+                                              <Rocket className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                          <button onClick={(e) => { e.stopPropagation(); handleArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
+                                            {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                                          </button>
+                                          <button onClick={(e) => { e.stopPropagation(); handleDeleteResource(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
                   );
-                })}
-              </div>
-            ))}
-            {Object.keys(filteredUnits).length === 0 && (
-              <div className="text-center py-8 text-gray-600 text-xs">
-                <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                No resources match filters
-              </div>
+                })
+              )
+            ) : (
+              // ── Single-class view (existing behaviour) ─────────────────────
+              <>
+                {(() => {
+                  const sortedKeys = sortUnitKeys(Object.keys(filteredUnits), sidebarUnitOrder);
+                  return sortedKeys.map(k => [k, filteredUnits[k]] as [string, Assignment[]]);
+                })().map(([unit, items]) => (
+                  <div key={unit}>
+                    <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer">
+                      {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
+                      <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
+                    </button>
+                    {expandedUnits.has(unit) && items.map(a => {
+                      const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
+                      const hasHtml = !!a.contentUrl;
+                      const isHovered = hoverResourceId === a.id;
+                      const isDraft = a.status === AssignmentStatus.DRAFT;
+                      const isArchived = a.status === AssignmentStatus.ARCHIVED;
+                      const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
+                      const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
+                      return (
+                        <div
+                          key={a.id}
+                          onMouseEnter={() => setHoverResourceId(a.id)}
+                          onMouseLeave={() => setHoverResourceId(null)}
+                          className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
+                        >
+                          <button
+                            onClick={() => selectResource(a.id)}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
+                          >
+                            {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                            <span className="truncate flex-1">{a.title}</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
+                              {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
+                              {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
+                              {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
+                              {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
+                            </div>
+                          </button>
+                          {isHovered && (
+                            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
+                              {isDraft && (
+                                <button onClick={(e) => { e.stopPropagation(); handleQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
+                                  <Rocket className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button onClick={(e) => { e.stopPropagation(); handleArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
+                                {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeleteResource(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                {Object.keys(filteredUnits).length === 0 && (
+                  <div className="text-center py-8 text-gray-600 text-xs">
+                    <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    No resources match filters
+                  </div>
+                )}
+              </>
             )}
           </div>
           {/* Sidebar footer stats */}
           <div className="border-t border-white/5 px-3 py-2 text-[9px] text-gray-600 flex items-center justify-between">
-            <span>{Object.values(filteredUnits).reduce((sum, items) => sum + items.length, 0)} resources</span>
-            <span>{Object.keys(filteredUnits).length} units</span>
+            {filterClass === 'All Classes' && filteredByClass ? (
+              <>
+                <span>{Object.values(filteredByClass).reduce((sum, units) => sum + Object.values(units).reduce((s, items) => s + items.length, 0), 0)} resources</span>
+                <span>{Object.keys(filteredByClass).length} classes</span>
+              </>
+            ) : (
+              <>
+                <span>{Object.values(filteredUnits).reduce((sum, items) => sum + items.length, 0)} resources</span>
+                <span>{Object.keys(filteredUnits).length} units</span>
+              </>
+            )}
           </div>
         </div>
 
