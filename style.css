@@ -8,6 +8,36 @@ body {
   color: #e9d5ff;
 }
 
+/* Skip-to-content link (a11y) */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 99999;
+  padding: 0.75rem 1.5rem;
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 0 0 0.75rem 0;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  left: 0;
+}
+
+/* Global focus-visible ring for keyboard navigation (a11y) */
+*:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Original Purple Static Background */
 .static-purple-bg {
   background: radial-gradient(circle at 50% 50%, #1e0b3b 0%, #0f0720 100%);

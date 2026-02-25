@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { User, DefaultClassTypes } from '../../types';
 import { Search, Plus, ChevronDown, ChevronUp, Filter, Briefcase, Pencil, Check, X, Lock, Unlock } from 'lucide-react';
 import { calculateGearScore } from '../../lib/gamification';
@@ -26,10 +26,13 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
   const [editingCodename, setEditingCodename] = useState<string | null>(null);
   const [codenameValue, setCodenameValue] = useState('');
 
-  const handleOperativesSort = (col: string) => {
-    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortCol(col); setSortDir('asc'); }
-  };
+  const handleOperativesSort = useCallback((col: string) => {
+    setSortCol(prev => {
+      if (prev === col) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return prev; }
+      setSortDir('asc');
+      return col;
+    });
+  }, []);
 
   const OpSortHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => (
     <th className={`cursor-pointer select-none group pb-4 ${className ?? ''}`} onClick={() => handleOperativesSort(col)}>
@@ -160,7 +163,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                 <tr key={student.id} className="group hover:bg-white/5 transition-colors">
                   <td className="py-3 pl-4">
                     <div className="flex items-center gap-3">
-                      <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-white/10" alt={student.name} />
+                      <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-white/10" alt={student.name} loading="lazy" />
                       <div>
                         <div className="font-bold text-sm text-gray-200">{student.name}</div>
                         {editingCodename === student.id ? (

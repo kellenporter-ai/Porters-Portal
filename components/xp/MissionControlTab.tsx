@@ -32,7 +32,7 @@ const MissionControlTab: React.FC<MissionControlTabProps> = ({ deployments, onRe
                     <div key={i} className="bg-black/30 border border-white/10 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-center gap-6 group hover:border-purple-500/30 transition-all">
                         <div className="flex items-center gap-4 w-full md:w-auto">
                             <div className="relative">
-                                <img src={deployment.user.avatarUrl} className="w-12 h-12 rounded-xl border border-white/10 shadow-lg" alt={deployment.user.name} />
+                                <img src={deployment.user.avatarUrl} className="w-12 h-12 rounded-xl border border-white/10 shadow-lg" alt={deployment.user.name} loading="lazy" />
                                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-black rounded-full shadow-lg"></div>
                             </div>
                             <div className="min-w-0">

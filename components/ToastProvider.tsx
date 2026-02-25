@@ -60,7 +60,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         <ToastContext.Provider value={value}>
             {children}
             {/* Toast container — fixed bottom-right, above most UI */}
-            <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm">
+            <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm" role="status" aria-live="polite">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
@@ -70,7 +70,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                         <span className="text-sm text-white font-medium leading-snug flex-1">{toast.message}</span>
                         <button
                             onClick={() => removeToast(toast.id)}
-                            className="text-gray-500 hover:text-white transition shrink-0"
+                            className="text-gray-500 hover:text-white transition shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded"
+                            aria-label="Dismiss notification"
                         >
                             <X className="w-4 h-4" />
                         </button>

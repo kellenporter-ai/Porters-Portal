@@ -24,6 +24,8 @@ export const STUDENT_ROUTES = {
   FORTUNE: '/fortune',
   TUTORING: '/tutoring',
   INTEL: '/intel',
+  PROGRESS: '/progress',
+  CALENDAR: '/calendar',
   FORENSICS: '/forensics',
   PHYSICS_LAB: '/physics-lab',
   LEADERBOARD: '/leaderboard',
@@ -67,6 +69,8 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Fortune': STUDENT_ROUTES.FORTUNE,
   'Tutoring': STUDENT_ROUTES.TUTORING,
   'Intel Dossier': STUDENT_ROUTES.INTEL,
+  'Progress': STUDENT_ROUTES.PROGRESS,
+  'Calendar': STUDENT_ROUTES.CALENDAR,
   'Forensics': STUDENT_ROUTES.FORENSICS,
   'Physics Lab': STUDENT_ROUTES.PHYSICS_LAB,
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
@@ -78,7 +82,7 @@ export const PATH_TO_TAB: Record<string, string> = Object.fromEntries(
 );
 
 /** Map student tab name → StudentDashboard tab prop */
-export const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL'> = {
+export const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR'> = {
   'Resources': 'RESOURCES',
   'Agent Loadout': 'LOADOUT',
   'Missions': 'MISSIONS',
@@ -87,6 +91,8 @@ export const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS
   'Fortune': 'FORTUNE',
   'Tutoring': 'TUTORING',
   'Intel Dossier': 'INTEL',
+  'Progress': 'PROGRESS',
+  'Calendar': 'CALENDAR',
 };
 
 /** Student paths that render via StudentDashboard */
@@ -99,4 +105,6 @@ export const STUDENT_DASHBOARD_PATHS = new Set([
   STUDENT_ROUTES.FORTUNE,
   STUDENT_ROUTES.TUTORING,
   STUDENT_ROUTES.INTEL,
+  STUDENT_ROUTES.PROGRESS,
+  STUDENT_ROUTES.CALENDAR,
 ]);

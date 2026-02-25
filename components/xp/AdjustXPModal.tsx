@@ -24,7 +24,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust }
         <Modal isOpen={!!user} onClose={onClose} title="Manual XP Adjustment">
             <div className="space-y-6">
                 <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
-                    <img src={user.avatarUrl} className="w-14 h-14 rounded-2xl border border-white/10" alt={user.name} />
+                    <img src={user.avatarUrl} className="w-14 h-14 rounded-2xl border border-white/10" alt={user.name} loading="lazy" />
                     <div>
                         <h3 className="font-bold text-white text-lg">{user.name}</h3>
                         <p className="text-xs text-gray-500">{user.email}</p>

@@ -1,5 +1,6 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -3356,3 +3357,231 @@ export const migrateClassXp = onCall(async (request) => {
     })),
   };
 });
+
+// ==========================================
+// EMAIL NOTIFICATIONS
+// ==========================================
+// Uses the Firestore "mail" collection pattern, compatible with the
+// Firebase Trigger Email extension (firebase/extensions-email).
+// Each document in the "mail" collection is picked up by the extension
+// and sent via the configured SMTP transport.
+// If the extension is not installed, the documents simply sit in Firestore
+// and can be processed by any external mail service.
+
+/**
+ * Helper: queue an email by writing to the "mail" collection.
+ * The Firebase Trigger Email extension picks these up automatically.
+ */
+async function queueEmail(to: string, subject: string, html: string): Promise<void> {
+  const db = admin.firestore();
+  await db.collection("mail").add({
+    to,
+    message: { subject, html },
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+/**
+ * Notification: New Assignment Published
+ * Triggers when a new assignment document is created in the "assignments" collection.
+ * Emails all enrolled students in the matching class.
+ */
+export const onNewAssignment = onDocumentCreated(
+  "assignments/{assignmentId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    // Only notify for ACTIVE assignments (not DRAFTs or ARCHIVED)
+    if (data.status !== "ACTIVE") return;
+
+    // If scheduled for the future, skip — the scheduler will handle it
+    if (data.scheduledAt && new Date(data.scheduledAt) > new Date()) return;
+
+    const classType = data.classType as string;
+    const title = data.title as string;
+    const dueDate = data.dueDate ? new Date(data.dueDate as string).toLocaleDateString() : null;
+
+    logger.info(`New assignment published: "${title}" for ${classType}`);
+
+    // Find all students enrolled in this class
+    const db = admin.firestore();
+    const studentsSnap = await db.collection("users")
+      .where("role", "==", "STUDENT")
+      .where("isWhitelisted", "==", true)
+      .get();
+
+    let emailsSent = 0;
+    const emailPromises: Promise<void>[] = [];
+
+    studentsSnap.docs.forEach((doc) => {
+      const student = doc.data();
+      const enrolled: string[] = student.enrolledClasses || [];
+      if (!enrolled.includes(classType)) return;
+
+      // Section filtering
+      if (data.targetSections?.length) {
+        const studentSection = student.classSections?.[classType] || student.section || "";
+        if (!data.targetSections.includes(studentSection)) return;
+      }
+
+      const email = student.email as string;
+      if (!email) return;
+
+      emailsSent++;
+      emailPromises.push(
+        queueEmail(
+          email,
+          `New Assignment: ${title}`,
+          `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+              <h2 style="color: #a78bfa; margin: 0 0 8px;">📋 New Assignment Posted</h2>
+              <h3 style="color: #ffffff; margin: 0 0 16px;">${title}</h3>
+              <p style="color: #9ca3af; margin: 0 0 8px;">Class: <strong style="color: #e5e7eb;">${classType}</strong></p>
+              ${dueDate ? `<p style="color: #9ca3af; margin: 0 0 8px;">Due: <strong style="color: #fbbf24;">${dueDate}</strong></p>` : ""}
+              ${data.description ? `<p style="color: #9ca3af; margin: 16px 0 0;">${data.description}</p>` : ""}
+              <hr style="border: 1px solid #374151; margin: 16px 0;" />
+              <p style="color: #6b7280; font-size: 12px;">Porter's Portal — ${classType}</p>
+            </div>
+          </div>
+          `,
+        ),
+      );
+    });
+
+    await Promise.all(emailPromises);
+    logger.info(`Queued ${emailsSent} emails for new assignment "${title}"`);
+  },
+);
+
+/**
+ * Notification: Grade Posted
+ * Triggers when a submission document is updated and the score changes.
+ * Emails the student that their work has been graded.
+ */
+export const onGradePosted = onDocumentUpdated(
+  "submissions/{submissionId}",
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
+
+    // Only fire when score changes from 0 to a positive value (initial grading)
+    const oldScore = before.score as number || 0;
+    const newScore = after.score as number || 0;
+    if (oldScore > 0 || newScore <= 0) return;
+
+    const userId = after.userId as string;
+    const assignmentTitle = after.assignmentTitle as string;
+
+    logger.info(`Grade posted for ${userId}: ${assignmentTitle} = ${newScore}`);
+
+    // Look up student email
+    const db = admin.firestore();
+    const userDoc = await db.doc(`users/${userId}`).get();
+    if (!userDoc.exists) return;
+
+    const userData = userDoc.data()!;
+    const email = userData.email as string;
+    if (!email) return;
+
+    const studentName = userData.name as string || "Student";
+
+    await queueEmail(
+      email,
+      `Grade Posted: ${assignmentTitle}`,
+      `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+          <h2 style="color: #a78bfa; margin: 0 0 8px;">📊 Grade Posted</h2>
+          <p style="color: #e5e7eb; margin: 0 0 16px;">Hi ${studentName},</p>
+          <h3 style="color: #ffffff; margin: 0 0 8px;">${assignmentTitle}</h3>
+          <div style="background: #0f0720; border: 1px solid #374151; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
+            <span style="font-size: 36px; font-weight: bold; color: ${newScore >= 80 ? "#22c55e" : newScore >= 60 ? "#eab308" : "#ef4444"};">${newScore}%</span>
+          </div>
+          <p style="color: #9ca3af; margin: 0;">Log in to Porter's Portal to view detailed feedback.</p>
+          <hr style="border: 1px solid #374151; margin: 16px 0;" />
+          <p style="color: #6b7280; font-size: 12px;">Porter's Portal</p>
+        </div>
+      </div>
+      `,
+    );
+
+    logger.info(`Queued grade notification email for ${email}`);
+  },
+);
+
+/**
+ * Notification: Streak at Risk
+ * Runs daily at 6 PM ET. Emails students whose engagement streak
+ * hasn't been updated this week and is at risk of breaking.
+ */
+export const checkStreaksAtRisk = onSchedule(
+  {
+    schedule: "0 18 * * 5", // Every Friday at 6 PM UTC (roughly end of school week)
+    timeZone: "America/New_York",
+  },
+  async () => {
+    const db = admin.firestore();
+    logger.info("Running streak-at-risk check...");
+
+    // Get current ISO week ID
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000);
+    const weekNum = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+    const currentWeekId = `${now.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+
+    // Get all students with active streaks
+    const studentsSnap = await db.collection("users")
+      .where("role", "==", "STUDENT")
+      .where("isWhitelisted", "==", true)
+      .get();
+
+    let emailsSent = 0;
+    const emailPromises: Promise<void>[] = [];
+
+    studentsSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      const gam = data.gamification || {};
+      const streak = gam.engagementStreak as number || 0;
+      const lastWeek = gam.lastStreakWeek as string || "";
+
+      // Only warn if they have a streak >= 2 weeks and haven't engaged this week
+      if (streak < 2 || lastWeek === currentWeekId) return;
+
+      const email = data.email as string;
+      if (!email) return;
+
+      const studentName = data.name as string || "Agent";
+
+      emailsSent++;
+      emailPromises.push(
+        queueEmail(
+          email,
+          `⚠️ Your ${streak}-week streak is at risk!`,
+          `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+              <h2 style="color: #f97316; margin: 0 0 8px;">🔥 Streak Alert</h2>
+              <p style="color: #e5e7eb; margin: 0 0 16px;">Hi ${studentName},</p>
+              <div style="background: #0f0720; border: 1px solid #f97316; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
+                <span style="font-size: 48px; font-weight: bold; color: #f97316;">${streak}</span>
+                <p style="color: #9ca3af; margin: 4px 0 0;">week streak at risk</p>
+              </div>
+              <p style="color: #9ca3af; margin: 0 0 8px;">You haven't logged any engagement this week. Complete an assignment before the week ends to keep your streak alive!</p>
+              <p style="color: #fbbf24; font-weight: bold; margin: 16px 0 0;">Don't lose your XP bonus — log in now!</p>
+              <hr style="border: 1px solid #374151; margin: 16px 0;" />
+              <p style="color: #6b7280; font-size: 12px;">Porter's Portal</p>
+            </div>
+          </div>
+          `,
+        ),
+      );
+    });
+
+    await Promise.all(emailPromises);
+    logger.info(`Streak-at-risk: queued ${emailsSent} warning emails (week: ${currentWeekId})`);
+  },
+);

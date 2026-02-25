@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
 import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -30,10 +30,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
 
-  const handleSort = (col: string) => {
-    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortCol(col); setSortDir('asc'); }
-  };
+  const handleSort = useCallback((col: string) => {
+    setSortCol(prev => {
+      if (prev === col) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return prev; }
+      setSortDir('asc');
+      return col;
+    });
+  }, []);
 
   const SortableHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => (
     <th className={`cursor-pointer select-none group p-3 ${className ?? ''}`} onClick={() => handleSort(col)}>
@@ -143,7 +146,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       await dataService.muteUser(userId, minutesFromNow);
   };
   
-  const StatCard = ({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
+  const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
     <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-white/20 transition-all duration-300">
       <div className={`absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity ${color}`}>
         {icon}
@@ -154,7 +157,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       </div>
       <div className={`absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r ${color}`}></div>
     </div>
-  );
+  ));
 
   const getTimeRemaining = (isoString: string) => {
       const end = new Date(isoString).getTime();
@@ -233,7 +236,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       <Trash2 className="w-3 h-3" /> Delete
                                   </button>
                                   <div className="relative">
-                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" title="Mute">
+                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" aria-label="Mute user">
                                           <MicOff className="w-3 h-3" />
                                       </button>
                                       {muteMenuFlagId === flag.id && (
@@ -291,14 +294,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               <button 
                                                   onClick={() => handleExtendMute(s.id, s.mutedUntil!)}
                                                   className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition"
-                                                  title="Extend +1hr"
+                                                  aria-label="Extend mute 1 hour"
                                               >
                                                   <RefreshCw className="w-3.5 h-3.5" />
                                               </button>
-                                              <button 
+                                              <button
                                                   onClick={() => handleUnmute(s.id)}
                                                   className="p-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition"
-                                                  title="Unmute"
+                                                  aria-label="Unmute user"
                                               >
                                                   <CheckCircle className="w-3.5 h-3.5" />
                                               </button>
@@ -544,7 +547,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               <div className="flex items-center gap-2">
                                                   <div className="relative">
                                                       {student.avatarUrl ? (
-                                                          <img src={student.avatarUrl} alt={student.name} className="w-8 h-8 rounded-full border border-white/10 object-cover" />
+                                                          <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
                                                       ) : (
                                                           <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">
                                                               {student.name.charAt(0)}

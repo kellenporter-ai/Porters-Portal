@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem } from '../constants';
@@ -57,10 +57,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     await dataService.updateUserSettings(user.id, newSettings);
   };
 
-  const handleNavigate = (tabName: string) => {
+  const handleNavigate = useCallback((tabName: string) => {
     const path = TAB_TO_PATH[tabName];
     if (path) navigate(path);
-  };
+  }, [navigate]);
 
   const [expandedParent, setExpandedParent] = useState<string | null>(null);
 
