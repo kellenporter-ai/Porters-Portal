@@ -103,7 +103,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     return map;
   }, [bucketProfiles]);
 
-  // Bucket distribution for overview
+  // Bucket distribution for overview (includes ALL students)
   const bucketDistribution = useMemo(() => {
     const counts: Record<TelemetryBucket, number> = {
       THRIVING: 0, ON_TRACK: 0, COASTING: 0, SPRINTING: 0,
@@ -116,8 +116,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       seen.add(bp.studentId);
       if (counts[bp.bucket] !== undefined) counts[bp.bucket]++;
     }
+    // Students without a bucket profile default to INACTIVE
+    for (const s of students) {
+      if (!seen.has(s.id)) counts.INACTIVE++;
+    }
     return counts;
-  }, [bucketProfiles]);
+  }, [bucketProfiles, students]);
   
   // Stats
   const { totalStudents, avgTime, totalResourcesAccessed, totalXP } = useMemo(() => {
@@ -262,10 +266,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         </div>
       </div>
 
-      {adminTab === 'analytics' ? (
+      {adminTab === 'analytics' && (
         <AnalyticsTab users={users} assignments={assignments} submissions={submissions} bucketProfiles={bucketProfiles} />
-      ) : (
-      <>
+      )}
+
+      <div className={adminTab === 'dashboard' ? '' : 'hidden'}>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard label="Total Students" value={totalStudents} icon={<Users className="w-12 h-12" />} color="from-blue-500 to-cyan-400" />
@@ -470,7 +475,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       )}
 
       {/* TELEMETRY BUCKET DISTRIBUTION */}
-      {bucketProfiles.length > 0 && (
+      {students.length > 0 && (
         <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -478,7 +483,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               Student Engagement Buckets
             </h3>
             <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-              {bucketProfiles.length} profile{bucketProfiles.length !== 1 ? 's' : ''} across classes
+              {students.length} student{students.length !== 1 ? 's' : ''} ({bucketProfiles.length} profiled)
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -669,8 +674,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
       </div>
 
-      </>
-      )}
+      </div>
 
       {/* STUDENT DETAIL DRAWER */}
       {selectedStudentId && (() => {
