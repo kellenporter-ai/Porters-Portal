@@ -1,38 +1,18 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest, ClassConfig } from '../types';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Briefcase, User as UserIcon, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
-import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
-import { getEventCoordinates } from '@dnd-kit/utilities';
+import { User, Assignment, Submission, XPEvent, RPGItem, Quest, ClassConfig } from '../types';
+import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
 
-// Inline modifier: snaps the drag overlay center to the cursor position.
-// Replicates @dnd-kit/modifiers snapCenterToCursor without the extra package.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function snapCenterToCursor(args: any) {
-  const { activatorEvent, draggingNodeRect, transform } = args;
-  if (draggingNodeRect && activatorEvent) {
-    const coords = getEventCoordinates(activatorEvent);
-    if (!coords) return transform;
-    return {
-      ...transform,
-      x: transform.x + coords.x - (draggingNodeRect.left + draggingNodeRect.width / 2),
-      y: transform.y + coords.y - (draggingNodeRect.top + draggingNodeRect.height / 2),
-    };
-  }
-  return transform;
-}
 import { dataService } from '../services/dataService';
-import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getUnsocketCost, deriveCombatStats, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
+import { getRankDetails, getAssetColors, calculateGearScore, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
+import { getSessionState } from '../lib/useStudentSession';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
-import OperativeAvatar from './dashboard/OperativeAvatar';
 import { Announcement } from '../types';
-import AchievementPanel from './xp/AchievementPanel';
 import SkillTreePanel from './xp/SkillTreePanel';
 import FortuneWheel from './xp/FortuneWheel';
 import BossEncounterPanel from './xp/BossEncounterPanel';
@@ -44,8 +24,8 @@ import { getStreakMultiplier } from '../lib/achievements';
 import IntelDossier from './IntelDossier';
 import MissionsTab from './dashboard/MissionsTab';
 import ResourcesTab from './dashboard/ResourcesTab';
-import CustomizeModal from './dashboard/CustomizeModal';
-import InspectItemModal from './dashboard/InspectItemModal';
+import AgentLoadoutTab from './dashboard/AgentLoadoutTab';
+import BadgesTab from './dashboard/BadgesTab';
 
 type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL';
 
@@ -66,12 +46,6 @@ interface StudentDashboardProps {
   studentTab?: StudentTab;
 }
 
-// Module-level state: survives ErrorBoundary remounts that reset useRef/useState
-let _acknowledgedLevel = 0;
-let _dailyLoginAttempted = false;
-let _streakAttempted = false;
-let _lastSessionUserId = '';
-
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -81,28 +55,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
   const [activeEvent, setActiveEvent] = useState<XPEvent | null>(null);
   const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
-  
+
   // Practice progress (completion badges)
   const [practiceCompletion, setPracticeCompletion] = useState<Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>>({});
 
-  // RPG State
+  // RPG State — session state survives ErrorBoundary remounts via per-user store (#19)
+  const session = getSessionState(user.id, user.gamification?.lastLevelSeen || 1);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
-  // Reset module-level flags when user identity changes (logout/login)
-  if (_lastSessionUserId !== user.id) {
-    _lastSessionUserId = user.id;
-    _acknowledgedLevel = user.gamification?.lastLevelSeen || 1;
-    _dailyLoginAttempted = false;
-    _streakAttempted = false;
-  }
-  // Initialize on first render (but don't reset on remount for same user)
-  if (_acknowledgedLevel === 0) {
-    _acknowledgedLevel = user.gamification?.lastLevelSeen || 1;
-  }
   const activeTab = studentTab;
-  const [showCustomize, setShowCustomize] = useState(false);
-  const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [xpFloatAmount, setXpFloatAmount] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
@@ -110,10 +71,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   useEffect(() => {
       const currentLevel = user.gamification?.level || 1;
-      const lastSeen = Math.max(user.gamification?.lastLevelSeen || 1, _acknowledgedLevel);
+      const lastSeen = Math.max(user.gamification?.lastLevelSeen || 1, session.acknowledgedLevel);
 
       if (currentLevel > lastSeen) {
-          _acknowledgedLevel = currentLevel;
+          session.acknowledgedLevel = currentLevel;
           const inventory = user.gamification?.inventory || [];
           const latestItem = inventory.length > 0 ? inventory[inventory.length - 1] : null;
           setNewlyAcquiredItem(latestItem);
@@ -193,8 +154,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   // Daily login reward — single attempt on mount, no retry
   useEffect(() => {
-    if (_dailyLoginAttempted) return;
-    _dailyLoginAttempted = true;
+    if (session.dailyLoginAttempted) return;
+    session.dailyLoginAttempted = true;
     const today = new Date().toISOString().split('T')[0];
     const lastClaim = user.gamification?.lastLoginRewardDate;
     if (lastClaim !== today && !dailyLoginClaimed) {
@@ -210,8 +171,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   // Update engagement streak — single attempt, no retry
   useEffect(() => {
-    if (_streakAttempted) return;
-    _streakAttempted = true;
+    if (session.streakAttempted) return;
+    session.streakAttempted = true;
     dataService.updateEngagementStreak().catch(() => { /* silent */ });
   }, []);
 
@@ -245,26 +206,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const handleLevelUpAck = () => {
       const currentLevel = user.gamification?.level || 1;
-      _acknowledgedLevel = currentLevel;
+      session.acknowledgedLevel = currentLevel;
       setShowLevelUp(false);
       setNewlyAcquiredItem(null);
       dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(err => console.error('Failed to update last level seen:', err));
   };
 
-  const handleCustomizeSave = async (appearance: { hue: number; bodyType: 'A' | 'B' | 'C'; skinTone: number; hairStyle: number; hairColor: number }) => {
-      try {
-          await dataService.updateUserAppearance(user.id, appearance, activeClass);
-          toast.success('Profile updated!');
-          setShowCustomize(false);
-      } catch {
-          toast.error('Failed to save — try again');
-      }
-  };
-
   const enrolledClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
   const classProfile = useMemo(() => getClassProfile(user, activeClass), [user, activeClass]);
   const equipped = classProfile.equipped;
-  const inventory = classProfile.inventory;
   const playerStats = useMemo(() => {
       const base = { tech: 10, focus: 10, analysis: 10, charisma: 10 };
       const items: RPGItem[] = Object.values(equipped).filter(Boolean) as RPGItem[];
@@ -274,89 +224,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       return base;
   }, [equipped]);
   const gearScore = useMemo(() => calculateGearScore(equipped), [equipped]);
-
-  // Compute achievement progress client-side from available user data
-  const computedProgress = useMemo(() => {
-    const gam = user.gamification || {} as any;
-    const serverProgress: Record<string, number> = gam.achievementProgress || {};
-    const progress: Record<string, number> = { ...serverProgress };
-    const totalXp = gam.xp || 0;
-    const level = gam.level || 1;
-    const inventory = gam.inventory || [];
-    const completedQuests = gam.completedQuests || [];
-    const streak = gam.engagementStreak || 0;
-    const loginStreak = gam.loginStreak || 0;
-    const tutoringDone = gam.tutoringSessionsCompleted || 0;
-    const bossKills = gam.bossesDefeated || 0;
-    const challengesDone = gam.challengesCompleted || 0;
-    const craftCount = gam.itemsCrafted || 0;
-
-    const setProgress = (id: string, val: number) => {
-      // Only override if server doesn't have it or client value is higher
-      if (!progress[id] || val > progress[id]) progress[id] = val;
-    };
-
-    // XP_TOTAL
-    setProgress('first_steps', totalXp);
-    setProgress('xp_5k', totalXp);
-    setProgress('xp_25k', totalXp);
-
-    // LEVEL_REACHED
-    setProgress('rising_star', level);
-    setProgress('veteran', level);
-    setProgress('elite', level);
-    setProgress('legend', level);
-
-    // ITEMS_COLLECTED
-    setProgress('collector_10', inventory.length);
-    setProgress('collector_50', inventory.length);
-
-    // GEAR_SCORE
-    setProgress('gear_score_100', gearScore);
-    setProgress('gear_score_500', gearScore);
-
-    // QUESTS_COMPLETED
-    setProgress('first_mission', completedQuests.length);
-    setProgress('mission_5', completedQuests.length);
-    setProgress('mission_20', completedQuests.length);
-
-    // BOSS_KILLS
-    setProgress('boss_slayer', bossKills);
-
-    // STREAK_WEEKS
-    setProgress('streak_3', streak);
-    setProgress('streak_8', streak);
-    setProgress('streak_16', streak);
-
-    // LOGIN_STREAK
-    setProgress('login_7', loginStreak);
-    setProgress('login_30', loginStreak);
-
-    // CHALLENGES_COMPLETED
-    setProgress('challenges_10', challengesDone);
-
-    // TUTORING_SESSIONS
-    setProgress('tutor_1', tutoringDone);
-    setProgress('tutor_10', tutoringDone);
-
-    // STAT_THRESHOLD
-    setProgress('tech_50', playerStats.tech);
-    setProgress('focus_50', playerStats.focus);
-    setProgress('analysis_50', playerStats.analysis);
-    setProgress('charisma_50', playerStats.charisma);
-
-    // ITEMS_CRAFTED
-    setProgress('craft_10', craftCount);
-
-    return progress;
-  }, [user, gearScore, playerStats]);
-
-  const radarData = [
-      { subject: 'Tech', A: playerStats.tech, fullMark: 100 },
-      { subject: 'Focus', A: playerStats.focus, fullMark: 100 },
-      { subject: 'Analysis', A: playerStats.analysis, fullMark: 100 },
-      { subject: 'Charisma', A: playerStats.charisma, fullMark: 100 },
-  ];
 
   const unitGroups = useMemo(() => {
     const groups: Record<string, (Assignment & { lastEngagement: string | null; engagementTime: number })[]> = {};
@@ -403,145 +270,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       await dataService.switchUserView(user.id, newClass);
   };
 
-  const handleEquip = async (item: RPGItem) => {
-      if (isProcessing) return;
-      setIsProcessing(true);
-      try {
-          await dataService.equipItem(user.id, item, activeClass);
-          setInspectItem(null);
-          sfx.equip();
-          toast.success(`${item.name} equipped.`);
-      } catch (e) {
-          toast.error('Failed to equip item.');
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
-  const handleUnequip = async (slot: string) => {
-      setIsProcessing(true);
-      try {
-          await dataService.unequipItem(user.id, slot, activeClass);
-          setInspectItem(null);
-          toast.success('Item unequipped.');
-      } catch (e) {
-          toast.error('Failed to unequip item.');
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
-  const handleDisenchant = async () => {
-      if(!inspectItem) return;
-      // Prevent salvaging currently equipped items
-      const isEquipped = Object.values(equipped).some(e => e && (e as RPGItem).id === inspectItem.id);
-      if (isEquipped) {
-          toast.error('Unequip this item before salvaging.');
-          return;
-      }
-      const val = getDisenchantValue(inspectItem);
-      if(await confirm({ message: `Salvage ${inspectItem.name} for ${val} Cyber-Flux? This item will be destroyed.`, confirmLabel: "Salvage" })) {
-          setIsProcessing(true);
-          try {
-              await dataService.disenchantItem(user.id, inspectItem, activeClass);
-              setInspectItem(null);
-              sfx.salvage();
-              toast.success(`Salvaged for ${val} Cyber-Flux.`);
-          } catch(e) {
-              toast.error('Failed to salvage item.');
-          } finally {
-              setIsProcessing(false);
-          }
-      }
-  };
-
-  const handleCraft = async (action: 'RECALIBRATE' | 'REFORGE' | 'OPTIMIZE') => {
-      if(!inspectItem) return;
-      const cost = FLUX_COSTS[action];
-      if(currency < cost) return toast.error('Insufficient Cyber-Flux.');
-      
-      setIsProcessing(true);
-      try {
-          await dataService.craftItem(user.id, inspectItem, action, activeClass);
-          setInspectItem(null);
-          sfx.craft();
-          toast.success(`${action.charAt(0) + action.slice(1).toLowerCase()} complete.`);
-      } catch(e: any) {
-          const msg = e?.message || e?.code || 'Unknown error';
-          toast.error(`Fabrication failed: ${msg}`);
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
-  // --- GEM SOCKETING ---
-  const gemsInventory = user.gamification?.gemsInventory || [];
-
-  const handleAddSocket = async () => {
-      if (!inspectItem || isProcessing) return;
-      if (currency < FLUX_COSTS.SOCKET) return toast.error('Insufficient Cyber-Flux.');
-      if ((inspectItem.sockets || 0) >= 3) return toast.error('Maximum sockets reached.');
-      setIsProcessing(true);
-      try {
-          const result = await dataService.addSocket(inspectItem.id, activeClass);
-          setInspectItem(result.item);
-          sfx.craft();
-          toast.success('Socket added!');
-      } catch (e: any) {
-          toast.error(e?.message || 'Failed to add socket.');
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
-  const handleSocketGem = async (gemId: string) => {
-      if (!inspectItem || isProcessing) return;
-      if (currency < FLUX_COSTS.ENCHANT) return toast.error('Insufficient Cyber-Flux.');
-      setIsProcessing(true);
-      try {
-          const result = await dataService.socketGem(inspectItem.id, gemId, activeClass);
-          setInspectItem(result.item);
-          sfx.craft();
-          if (result.runewordActivated) {
-              sfx.levelUp();
-              toast.success(`RUNEWORD ACTIVATED: ${result.runewordActivated.name}!`);
-          } else {
-              toast.success('Gem socketed!');
-          }
-      } catch (e: any) {
-          toast.error(e?.message || 'Failed to socket gem.');
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
-  const handleUnsocketGem = async (gemIndex: number) => {
-      if (!inspectItem || isProcessing) return;
-      const gem = inspectItem.gems?.[gemIndex];
-      if (!gem) return;
-      const cost = getUnsocketCost(inspectItem.rarity, gem.tier, inspectItem.unsocketCount || 0);
-      if (currency < cost) return toast.error(`Insufficient Cyber-Flux. Need ${cost}.`);
-      setIsProcessing(true);
-      try {
-          const result = await dataService.unsocketGem(inspectItem.id, gemIndex, activeClass);
-          setInspectItem(result.item);
-          sfx.craft();
-          toast.success(`Gem removed! -${result.cost} Flux`);
-      } catch (e: any) {
-          toast.error(e?.message || 'Failed to unsocket gem.');
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
   // --- QUEST LOGIC ---
   const activeQuests = user.gamification?.activeQuests || [];
   const completedQuests = user.gamification?.completedQuests || [];
-  
+
   // Only show quests that aren't currently active AND haven't been completed permanently
   const myAcceptedQuests = availableQuests.filter(q => activeQuests.some(aq => aq.questId === q.id));
-  const newQuests = availableQuests.filter(q => 
-      !activeQuests.some(aq => aq.questId === q.id) && 
+  const newQuests = availableQuests.filter(q =>
+      !activeQuests.some(aq => aq.questId === q.id) &&
       !completedQuests.includes(q.id)
   );
 
@@ -550,7 +286,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           await dataService.acceptQuest(user.id, quest.id);
           sfx.questAccept();
           toast.success(`Contract accepted: ${quest.title}`);
-      } catch (e) {
+      } catch {
           toast.error('Failed to accept contract.');
       }
   };
@@ -562,139 +298,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           await dataService.deployMission(user.id, quest);
           sfx.questDeploy();
           toast.info('Mission deployed. Awaiting verification.');
-      } catch (e) {
+      } catch {
           toast.error('Deployment failed.');
       }
   };
 
-  // UI layout for slots
-  const LEFT_SLOTS: EquipmentSlot[] = ['HEAD', 'HANDS', 'RING1', 'AMULET'];
-  const RIGHT_SLOTS: EquipmentSlot[] = ['CHEST', 'BELT', 'FEET', 'RING2'];
-
-  // --- DnD state & sensors ---
-  const [draggedItem, setDraggedItem] = useState<RPGItem | null>(null);
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
-  );
-
-  /** Map an EquipmentSlot key to the ItemSlot values that can be dropped on it */
-  const slotAccepts = (equipSlot: EquipmentSlot): ItemSlot[] => {
-    if (equipSlot === 'RING1' || equipSlot === 'RING2') return ['RING'];
-    return [equipSlot as ItemSlot];
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const item = inventory.find(i => i.id === active.id) ||
-                 Object.values(equipped).find(i => i && i.id === active.id) as RPGItem | undefined;
-    setDraggedItem(item || null);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setDraggedItem(null);
-    if (!over) return;
-
-    const dragId = active.id as string;
-    const dropId = over.id as string;
-
-    // Case 1: Dragging from inventory to an equipment slot
-    if (dropId.startsWith('slot-')) {
-      const targetSlot = dropId.replace('slot-', '') as EquipmentSlot;
-      const item = inventory.find(i => i.id === dragId);
-      if (!item) return;
-      const accepted = slotAccepts(targetSlot);
-      if (!accepted.includes(item.slot)) return;
-      handleEquip(item);
-    }
-
-    // Case 2: Dragging from equipment slot to storage (zone OR any cell)
-    if (dragId.startsWith('equipped-') && (dropId === 'inventory-zone' || dropId.startsWith('storage-cell-'))) {
-      const slot = dragId.replace('equipped-', '');
-      handleUnequip(slot);
-    }
-  };
-
-  // Slot icon helper — proper gear silhouettes for each equipment type
-  const getSlotIcon = (slot: string, colorClass: string, size = 'w-5 h-5') => {
-    const cn = `${size} ${colorClass}`;
-    const svgProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-    switch (slot) {
-      case 'HEAD': // Helmet / visor
-        return <svg className={cn} {...svgProps}><path d="M12 2C8 2 5 5 5 9v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9c0-4-3-7-7-7z"/><path d="M5 11v2h14v-2"/><path d="M8 6h8" strokeWidth={1.5} opacity={0.6}/></svg>;
-      case 'CHEST': // Chestplate / body armor
-        return <svg className={cn} {...svgProps}><path d="M6 4l-2 3v5a2 2 0 0 0 2 2h2l1 3h6l1-3h2a2 2 0 0 0 2-2V7l-2-3"/><path d="M6 4h12"/><path d="M12 4v5"/><path d="M9 9h6"/></svg>;
-      case 'HANDS': // Gauntlet / glove
-        return <svg className={cn} {...svgProps}><path d="M7 14V8a2 2 0 0 1 4 0v1"/><path d="M11 9V7a2 2 0 0 1 4 0v3"/><path d="M15 10V9a2 2 0 0 1 3 1v4c0 3-2 6-5 7H9c-3-1-5-4-5-7v-2a2 2 0 0 1 3-1"/></svg>;
-      case 'FEET': // Boot
-        return <svg className={cn} {...svgProps}><path d="M7 3v10l-3 4v2h16v-2l-2-2V7a4 4 0 0 0-4-4H7z"/><path d="M4 19h16"/><path d="M11 3v4"/></svg>;
-      case 'BELT': // Belt with buckle
-        return <svg className={cn} {...svgProps}><rect x="2" y="9" width="20" height="6" rx="1"/><rect x="9" y="8" width="6" height="8" rx="1" strokeWidth={1.5}/><line x1="9" y1="12" x2="15" y2="12"/></svg>;
-      case 'AMULET': // Pendant / necklace
-        return <svg className={cn} {...svgProps}><path d="M6 3a14 14 0 0 0 12 0"/><path d="M12 7v3"/><path d="M12 10l-3 3 3 5 3-5-3-3z" fill="currentColor" fillOpacity={0.2}/></svg>;
-      case 'RING': // Ring
-        return <svg className={cn} {...svgProps}><ellipse cx="12" cy="14" rx="6" ry="5"/><path d="M12 9V6"/><path d="M10 6h4l-2-3-2 3z" fill="currentColor" fillOpacity={0.3}/></svg>;
-      default:
-        return <Briefcase className={cn} />;
-    }
-  };
-
-  // --- Droppable Equipment Slot ---
-  const SlotRender: React.FC<{ slot: EquipmentSlot }> = ({ slot }) => {
-      const item = equipped[slot];
-      const colors = item ? getAssetColors(item.rarity) : { border: 'border-white/10', bg: 'bg-black/20', text: 'text-gray-600', glow: '', shimmer: '' };
-
-      // Make the slot a drop target
-      const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `slot-${slot}` });
-
-      // If there's an item equipped, make it draggable OUT of the slot
-      const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
-        id: item ? `equipped-${slot}` : `empty-slot-${slot}`,
-        disabled: !item,
-      });
-
-      // Highlight when a compatible item is being dragged over
-      const isCompatible = draggedItem && slotAccepts(slot).includes(draggedItem.slot);
-      const highlightClass = isOver && isCompatible ? 'ring-2 ring-purple-500 scale-110' :
-                             draggedItem && isCompatible ? 'ring-1 ring-purple-500/40 animate-pulse' : '';
-
-      return (
-          <div ref={setDropRef} className="relative">
-            <div
-              ref={setDragRef}
-              {...attributes}
-              {...listeners}
-              className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
-                isDragging ? 'opacity-30 scale-90 border-dashed' : 'hover:scale-110 cursor-grab active:cursor-grabbing'
-              } ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass}`}
-              onClick={() => !isDragging && item && setInspectItem(item)}
-            >
-                {item ? (
-                    <>
-                      {getSlotIcon(slot.replace(/\d/, ''), colors.text)}
-                      <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
-                      {/* Slot Hover Tooltip */}
-                      {!isDragging && (
-                        <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-                            <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-                            <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
-                            <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
-                        </div>
-                      )}
-                    </>
-                ) : (
-                    <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{slot.slice(0, 4)}</span>
-                )}
-            </div>
-          </div>
-      );
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full pb-6 lg:pb-12">
-      
+
       {/* ANNOUNCEMENTS BANNER */}
       {visibleAnnouncements.length > 0 && (
         <div className="lg:col-span-12 space-y-2">
@@ -746,10 +357,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>
             <div className="relative z-10 flex flex-col items-center">
                 <div className={`w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-white/10 to-white/5 mb-4 ${rankDetails.tierGlow} shadow-xl`}>
-                    <img 
-                      src={user.avatarUrl} 
-                      alt="Avatar" 
-                      className={`w-full h-full rounded-full border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`} 
+                    <img
+                      src={user.avatarUrl}
+                      alt="Avatar"
+                      className={`w-full h-full rounded-full border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
                     />
                 </div>
                 <h2 className="text-xl font-bold text-white tracking-tight">{user.gamification?.codename || user.name}</h2>
@@ -761,10 +372,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         Gear Score: {gearScore}
                     </span>
                 </div>
-                
+
                 {enrolledClasses.length > 1 && (
                     <div className="mt-4 relative w-full">
-                        <select 
+                        <select
                             value={activeClass}
                             onChange={handleClassChange}
                             className="w-full bg-black/40 border border-white/20 text-white text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 transition"
@@ -774,7 +385,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                     </div>
                 )}
-                
+
                 <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-white/5 relative">
                     <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                 </div>
@@ -879,7 +490,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* --- MIDDLE: CONTENT --- */}
       <div className="lg:col-span-9 space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col">
-             
+
 
              {activeTab === 'MISSIONS' && (
                  <MissionsTab
@@ -902,156 +513,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      activeClass={activeClass}
                  />
              )}
-             
+
              {activeTab === 'LOADOUT' && (
-               <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[snapCenterToCursor]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                 <div key="loadout" className="flex flex-col h-full" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
-
-                         {/* LEFT: CHARACTER VISUALIZER WITH SLOTS */}
-                         <div className="bg-black/30 rounded-2xl border border-white/10 relative flex flex-col items-center justify-center p-4 min-h-[400px]">
-                             <div className="absolute inset-0 rounded-2xl overflow-hidden loadout-hex-bg pointer-events-none"></div>
-                             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
-
-                             <div className="flex w-full h-full relative z-10 justify-between items-center px-4">
-                                 {/* LEFT SLOTS */}
-                                 <div className="flex flex-col gap-4">
-                                     {LEFT_SLOTS.map(slot => <SlotRender key={slot} slot={slot} />)}
-                                 </div>
-
-                                 {/* AVATAR CENTER */}
-                                 <div className="w-40 h-full relative">
-                                     <OperativeAvatar equipped={equipped} appearance={classProfile.appearance} evolutionLevel={level} />
-                                 </div>
-
-                                 {/* RIGHT SLOTS */}
-                                 <div className="flex flex-col gap-4">
-                                     {RIGHT_SLOTS.map(slot => <SlotRender key={slot} slot={slot} />)}
-                                 </div>
-                             </div>
-
-                             {/* CUSTOMIZE BUTTON */}
-                             <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setShowCustomize(true);
-                                }}
-                                className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
-                             >
-                                 <UserIcon className="w-3.5 h-3.5" />
-                                 Edit DNA Profile
-                             </button>
-                         </div>
-
-                         {/* RIGHT: STATS */}
-                         <div className="flex flex-col gap-4">
-                             <div className="bg-black/20 rounded-2xl p-4 border border-white/5 flex-1 min-h-[200px]">
-                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Performance Radar</h4>
-                                 <div className="h-[200px]">
-                                     <ResponsiveContainer width="100%" height="100%">
-                                         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                                             <defs>
-                                                 <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
-                                                     <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.6} />
-                                                     <stop offset="100%" stopColor="#a855f7" stopOpacity={0.3} />
-                                                 </linearGradient>
-                                             </defs>
-                                             <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                                             <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 700 }} />
-                                             <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
-                                             <Radar name="Stats" dataKey="A" stroke="#a855f7" strokeWidth={2} fill="url(#radarGradient)" fillOpacity={0.5} animationDuration={800} />
-                                         </RadarChart>
-                                     </ResponsiveContainer>
-                                 </div>
-                             </div>
-
-                             {/* Stats Summary */}
-                             {(() => {
-                                 const combat = deriveCombatStats(playerStats);
-                                 return (
-                                     <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-3">
-                                         <div className="grid grid-cols-2 gap-3 text-xs">
-                                             <div className="group relative flex items-center gap-2 cursor-help">
-                                                 <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                                                 <span className="text-gray-500">Tech</span>
-                                                 <span className="text-blue-400 font-bold ml-auto">{playerStats.tech}</span>
-                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                                                     <span className="font-bold text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
-                                                 </div>
-                                             </div>
-                                             <div className="group relative flex items-center gap-2 cursor-help">
-                                                 <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                                                 <span className="text-gray-500">Focus</span>
-                                                 <span className="text-green-400 font-bold ml-auto">{playerStats.focus}</span>
-                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                                                     <span className="font-bold text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% &middot; Crit damage: {combat.critMultiplier.toFixed(2)}x
-                                                 </div>
-                                             </div>
-                                             <div className="group relative flex items-center gap-2 cursor-help">
-                                                 <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                                                 <span className="text-gray-500">Analysis</span>
-                                                 <span className="text-yellow-400 font-bold ml-auto">{playerStats.analysis}</span>
-                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                                                     <span className="font-bold text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
-                                                 </div>
-                                             </div>
-                                             <div className="group relative flex items-center gap-2 cursor-help">
-                                                 <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                                                 <span className="text-gray-500">Charisma</span>
-                                                 <span className="text-purple-400 font-bold ml-auto">{playerStats.charisma}</span>
-                                                 <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                                                     <span className="font-bold text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
-                                                 </div>
-                                             </div>
-                                         </div>
-                                         <div className="grid grid-cols-3 gap-2 text-[10px] pt-2 border-t border-white/5">
-                                             <div className="text-center"><span className="text-gray-600 block">HP</span><span className="text-emerald-400 font-bold">{combat.maxHp}</span></div>
-                                             <div className="text-center"><span className="text-gray-600 block">Armor</span><span className="text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span></div>
-                                             <div className="text-center"><span className="text-gray-600 block">Crit</span><span className="text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span></div>
-                                         </div>
-                                     </div>
-                                 );
-                             })()}
-                         </div>
-                     </div>
-
-                     {/* BOTTOM: INVENTORY GRID (Droppable zone for unequipping) */}
-                     <InventoryGrid
-                       inventory={inventory}
-                       equipped={equipped}
-                       draggedItem={draggedItem}
-                       onInspect={setInspectItem}
-                       getSlotIcon={getSlotIcon}
-                     />
-                 </div>
-
-                 {/* Drag Overlay — floating tile that follows cursor */}
-                 <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }} zIndex={9999}>
-                   {draggedItem && (() => {
-                     const colors = getAssetColors(draggedItem.rarity);
-                     return (
-                       <div className="drag-overlay-tile rounded-xl pointer-events-none" style={{ willChange: 'transform, box-shadow' }}>
-                         <div
-                           className={`w-[68px] h-[68px] rounded-xl border-2 flex flex-col items-center justify-center backdrop-blur-sm ${colors.bg} ${colors.border} ${colors.glow}`}
-                           style={{ filter: 'brightness(1.3) saturate(1.2)' }}
-                         >
-                           {getSlotIcon(draggedItem.slot, colors.text, 'w-7 h-7')}
-                           <span className={`text-[8px] font-bold mt-0.5 ${colors.text} drop-shadow-lg`}>{draggedItem.baseName || draggedItem.name.split(' ').slice(-1)[0]}</span>
-                         </div>
-                       </div>
-                     );
-                   })()}
-                 </DragOverlay>
-               </DndContext>
+               <AgentLoadoutTab user={user} activeClass={activeClass} level={level} />
              )}
+
              {activeTab === 'ACHIEVEMENTS' && (
-                 <div key="achievements" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <AchievementPanel
-                         unlockedAchievements={user.gamification?.unlockedAchievements || []}
-                         achievementProgress={computedProgress}
-                     />
-                 </div>
+               <BadgesTab user={user} activeClass={activeClass} />
              )}
 
              {activeTab === 'SKILLS' && (
@@ -1105,31 +573,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           </div>
       </div>
 
-      {/* MODALS RENDERED AT ROOT OF DASHBOARD FOR Z-INDEX CLARITY */}
-      <CustomizeModal
-          isOpen={showCustomize}
-          onClose={() => setShowCustomize(false)}
-          equipped={equipped}
-          appearance={classProfile.appearance}
-          onSave={handleCustomizeSave}
-      />
-
-      <InspectItemModal
-          inspectItem={inspectItem}
-          onClose={() => setInspectItem(null)}
-          isProcessing={isProcessing}
-          currency={currency}
-          equipped={equipped}
-          gemsInventory={gemsInventory}
-          onEquip={handleEquip}
-          onUnequip={handleUnequip}
-          onDisenchant={handleDisenchant}
-          onCraft={handleCraft}
-          onAddSocket={handleAddSocket}
-          onSocketGem={handleSocketGem}
-          onUnsocketGem={handleUnsocketGem}
-      />
-
       {/* Profile Showcase */}
       {showProfile && (
           <ProfileShowcase user={user} classType={activeClass} onClose={() => setShowProfile(false)} />
@@ -1170,7 +613,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       <span className="text-5xl font-black text-white drop-shadow-lg">{level}</span>
                   </div>
               </div>
-              
+
               {/* Rank reveal */}
               <div className="mb-2 overflow-hidden inline-block">
                   <h2 className="text-2xl font-black text-white uppercase tracking-tight" style={{ animation: 'typeReveal 0.8s steps(20) 0.4s both', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block' }}>
@@ -1180,7 +623,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               <p className="text-gray-400 mb-8 animate-in fade-in duration-500" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
                   Clearance Level Increased. New capabilities unlocked.
               </p>
-              
+
               {newlyAcquiredItem && (
                   <div className={`${getAssetColors(newlyAcquiredItem.rarity).shimmer} bg-white/5 border rounded-xl p-5 mb-6 relative overflow-hidden ${getAssetColors(newlyAcquiredItem.rarity).border}`}
                        style={{ animation: 'levelUpBurst 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both' }}>
@@ -1201,8 +644,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               )}
 
               {/* Delayed button */}
-              <button 
-                  onClick={handleLevelUpAck} 
+              <button
+                  onClick={handleLevelUpAck}
                   className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-black rounded-xl uppercase tracking-widest transition shadow-[0_0_30px_rgba(234,179,8,0.3)]"
                   style={{ animation: 'buttonFadeIn 0.4s ease-out 1.2s both' }}
               >
@@ -1210,115 +653,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               </button>
           </div>
       </Modal>
-    </div>
-  );
-};
-
-// ============================================================
-// INVENTORY GRID — extracted for DnD integration
-// ============================================================
-
-interface InventoryGridProps {
-  inventory: RPGItem[];
-  equipped: Partial<Record<EquipmentSlot, RPGItem>>;
-  draggedItem: RPGItem | null;
-  onInspect: (item: RPGItem) => void;
-  getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
-}
-
-const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect, getSlotIcon }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
-  const isDroppingEquipped = draggedItem && Object.values(equipped).some(e => (e as RPGItem | null)?.id === draggedItem.id);
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`mt-6 flex-1 min-h-[250px] bg-black/40 border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
-        isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-white/10'
-      }`}
-    >
-      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
-        <span>Gear Storage ({inventory.length})</span>
-        <span className="text-[9px] text-gray-600 flex items-center gap-1">
-          <GripVertical className="w-3 h-3" /> Drag to equip
-        </span>
-      </h4>
-      <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 content-start">
-        {inventory.map((item) => (
-          <DraggableInventoryItem
-            key={item.id}
-            item={item}
-            equipped={equipped}
-            onInspect={onInspect}
-            getSlotIcon={getSlotIcon}
-          />
-        ))}
-        {/* Empty Slots — each is a droppable cell for precision placement */}
-        {Array.from({ length: Math.max(0, 16 - inventory.length) }).map((_, i) => (
-          <DroppableEmptyCell key={`empty-${i}`} index={i} isDroppingEquipped={!!isDroppingEquipped} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Empty storage cell that can receive equipped items
-const DroppableEmptyCell: React.FC<{ index: number; isDroppingEquipped: boolean }> = ({ index, isDroppingEquipped }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: `storage-cell-${index}` });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`aspect-square rounded-xl border transition-all duration-200 ${
-        isOver
-          ? 'border-purple-500/60 bg-purple-500/15 scale-105 shadow-lg shadow-purple-500/20'
-          : isDroppingEquipped
-            ? 'border-purple-500/20 bg-purple-500/5'
-            : 'border-white/5 bg-white/5'
-      }`}
-    />
-  );
-};
-
-interface DraggableInventoryItemProps {
-  item: RPGItem;
-  equipped: Partial<Record<EquipmentSlot, RPGItem>>;
-  onInspect: (item: RPGItem) => void;
-  getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
-}
-
-const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect, getSlotIcon }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: item.id,
-  });
-  const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
-  const colors = getAssetColors(item.rarity);
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      onClick={() => !isDragging && onInspect(item)}
-      className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
-        isDragging ? 'opacity-30 scale-90 border-dashed' : 'cursor-grab active:cursor-grabbing opacity-80 hover:opacity-100 hover:scale-105'
-      } ${isEquipped ? 'ring-2 ring-white/50 opacity-100' : ''} ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
-    >
-      {getSlotIcon(item.slot, colors.text, 'w-6 h-6')}
-
-      {isEquipped && (
-        <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg"></div>
-      )}
-
-      {/* Hover Tooltip */}
-      {!isDragging && (
-        <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-          <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-          <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
-          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
-        </div>
-      )}
     </div>
   );
 };

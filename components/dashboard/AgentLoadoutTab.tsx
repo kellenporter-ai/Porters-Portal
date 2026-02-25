@@ -5,7 +5,7 @@ import { Briefcase, User as UserIcon, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
-import { getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getUnsocketCost, deriveCombatStats } from '../../lib/gamification';
+import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats } from '../../lib/gamification';
 import { getClassProfile } from '../../lib/classProfile';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
@@ -61,8 +61,6 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     });
     return base;
   }, [equipped]);
-
-  const gearScore = useMemo(() => calculateGearScore(equipped), [equipped]);
 
   const radarData = [
     { subject: 'Tech', A: playerStats.tech, fullMark: 100 },
