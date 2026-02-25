@@ -261,7 +261,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       _acknowledgedLevel = currentLevel;
       setShowLevelUp(false);
       setNewlyAcquiredItem(null);
-      dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(() => {});
+      dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(err => console.error('Failed to update last level seen:', err));
   };
 
   const handleCustomizeSave = async (appearance: { hue: number; bodyType: 'A' | 'B' | 'C'; skinTone: number; hairStyle: number; hairColor: number }) => {

@@ -4,7 +4,7 @@ import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, 
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, updateDoc, runTransaction } from 'firebase/firestore';
 import { ToastProvider } from './components/ToastProvider';
 import ConnectionStatus from './components/ConnectionStatus';
 import Layout from './components/Layout';
@@ -18,7 +18,7 @@ import GroupManager from './components/GroupManager';
 import PhysicsTools from './components/PhysicsTools';
 import Communications from './components/Communications';
 import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon, KeyRound, Loader2, CheckCircle } from 'lucide-react';
-import { ADMIN_EMAIL, TEACHER_DISPLAY_NAME } from './constants';
+import { TEACHER_DISPLAY_NAME } from './constants';
 
 // New Modules
 import StudentDashboard from './components/StudentDashboard';
@@ -259,10 +259,10 @@ const App: React.FC = () => {
     if (!activeAssignmentId) return;
     const checkQuestions = getDoc(doc(db, 'question_banks', activeAssignmentId)).then(snap => {
       if (snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
-    }).catch(() => {});
+    }).catch(err => console.error('Failed to probe question bank:', err));
     const checkStudy = getDoc(doc(db, 'reading_materials', activeAssignmentId)).then(snap => {
       if (snap.exists()) setHasStudyMaterial(true);
-    }).catch(() => {});
+    }).catch(err => console.error('Failed to probe reading materials:', err));
     // If the view was on a tab that no longer exists, reset to WORK
     Promise.all([checkQuestions, checkStudy]).then(() => {});
   }, [activeAssignmentId]);
@@ -329,61 +329,61 @@ const App: React.FC = () => {
   const handleSession = async (firebaseUser: FirebaseUser) => {
     try {
         const userRef = doc(db, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        
+
+        // Read whitelist & claims outside the transaction (they aren't written here)
         const whitelistDoc = await getDoc(doc(db, 'allowed_emails', firebaseUser.email || ''));
-        
-        // Check admin via Custom Claims (set by Cloud Function), with email fallback for bootstrap
         const tokenResult = await firebaseUser.getIdTokenResult();
-        const isAdmin = tokenResult.claims.admin === true || firebaseUser.email === ADMIN_EMAIL;
-        
+        const isAdmin = tokenResult.claims.admin === true;
+
         const isWhitelisted = whitelistDoc.exists() || isAdmin;
         const whitelistData = whitelistDoc.exists() ? whitelistDoc.data() : null;
         const assignedClass = whitelistData?.classType || DefaultClassTypes.UNCATEGORIZED;
         const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== DefaultClassTypes.UNCATEGORIZED ? [assignedClass] : []);
 
-        if (!userSnap.exists()) {
-            const newUserProfile = {
-                email: firebaseUser.email,
-                name: firebaseUser.displayName || 'Student',
-                avatarUrl: firebaseUser.photoURL || '',
-                role: isAdmin ? 'ADMIN' : 'STUDENT',
-                classType: assignedClass,
-                enrolledClasses: isWhitelisted ? assignedClasses : [],
-                isWhitelisted: isWhitelisted,
-                createdAt: new Date().toISOString(),
-                lastLoginAt: new Date().toISOString(),
-                gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
-                settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
-            };
-            await setDoc(userRef, newUserProfile);
-        } else {
-            const existingData = userSnap.data();
-            const updates: Record<string, unknown> = {
-                lastLoginAt: new Date().toISOString(),
-                isWhitelisted: isWhitelisted
-            };
-            // If they have admin claim, ensure role is synced
-            if (isAdmin) {
-                updates.role = 'ADMIN';
-            }
-            if (!isWhitelisted && !isAdmin) {
-                updates.enrolledClasses = [];
-            }
-            // Merge all whitelisted classes into enrolledClasses
-            if (isWhitelisted && assignedClasses.length > 0) {
-                const existing: string[] = existingData.enrolledClasses || [];
-                const merged = Array.from(new Set([...existing, ...assignedClasses]));
-                if (merged.length !== existing.length) {
-                    updates.enrolledClasses = merged;
-                    // Only update classType if user doesn't have one yet
-                    if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
-                        updates.classType = assignedClasses[0];
+        // Use a transaction for the user profile read-then-write to prevent
+        // race conditions when multiple tabs open simultaneously on first login.
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+
+            if (!userSnap.exists()) {
+                transaction.set(userRef, {
+                    email: firebaseUser.email,
+                    name: firebaseUser.displayName || 'Student',
+                    avatarUrl: firebaseUser.photoURL || '',
+                    role: isAdmin ? 'ADMIN' : 'STUDENT',
+                    classType: assignedClass,
+                    enrolledClasses: isWhitelisted ? assignedClasses : [],
+                    isWhitelisted: isWhitelisted,
+                    createdAt: new Date().toISOString(),
+                    lastLoginAt: new Date().toISOString(),
+                    gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
+                    settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
+                });
+            } else {
+                const existingData = userSnap.data();
+                const updates: Record<string, unknown> = {
+                    lastLoginAt: new Date().toISOString(),
+                    isWhitelisted: isWhitelisted
+                };
+                if (isAdmin) {
+                    updates.role = 'ADMIN';
+                }
+                if (!isWhitelisted && !isAdmin) {
+                    updates.enrolledClasses = [];
+                }
+                if (isWhitelisted && assignedClasses.length > 0) {
+                    const existing: string[] = existingData.enrolledClasses || [];
+                    const merged = Array.from(new Set([...existing, ...assignedClasses]));
+                    if (merged.length !== existing.length) {
+                        updates.enrolledClasses = merged;
+                        if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
+                            updates.classType = assignedClasses[0];
+                        }
                     }
                 }
+                transaction.update(userRef, updates);
             }
-            await updateDoc(userRef, updates);
-        }
+        });
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
   };
 

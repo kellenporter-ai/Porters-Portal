@@ -6,12 +6,9 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // ==========================================
     
-    // Check if the requesting user has admin custom claim OR is the admin email
+    // Check if the requesting user has admin custom claim
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.admin == true || 
-        request.auth.token.email == 'kellporter2@paps.net'
-      );
+      return request.auth != null && request.auth.token.admin == true;
     }
 
     // Check if the user is authenticated

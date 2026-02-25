@@ -83,7 +83,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
             if (time >= 5) {
                 const uid = getAuth().currentUser?.uid;
                 if (uid) {
-                    dataService.submitReviewEngagement(uid, assignment.id, assignment.title, assignment.classType, time).catch(() => {});
+                    dataService.submitReviewEngagement(uid, assignment.id, assignment.title, assignment.classType, time).catch(err => console.error('Failed to submit review engagement:', err));
                 }
             }
         };
