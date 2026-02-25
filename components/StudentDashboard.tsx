@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { User, Assignment, Submission, RPGItem, Quest, ClassConfig } from '../types';
 import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
 
+import { FeatureErrorBoundary } from './ErrorBoundary';
 import { dataService } from '../services/dataService';
 import { getRankDetails, getAssetColors, calculateGearScore, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
@@ -72,19 +73,25 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
 
+  // Guard against duplicate level-up triggers from rapid re-renders
+  const levelUpTriggeredRef = React.useRef(false);
   useEffect(() => {
       const currentLevel = user.gamification?.level || 1;
       const lastSeen = Math.max(user.gamification?.lastLevelSeen || 1, session.acknowledgedLevel);
 
-      if (currentLevel > lastSeen) {
+      if (currentLevel > lastSeen && !levelUpTriggeredRef.current) {
+          levelUpTriggeredRef.current = true;
           session.acknowledgedLevel = currentLevel;
           const inventory = user.gamification?.inventory || [];
           const latestItem = inventory.length > 0 ? inventory[inventory.length - 1] : null;
           setNewlyAcquiredItem(latestItem);
           setShowLevelUp(true);
           sfx.levelUp();
+      } else if (currentLevel <= lastSeen) {
+          // Reset guard when level is acknowledged
+          levelUpTriggeredRef.current = false;
       }
-  }, [user.gamification?.level, user.gamification?.lastLevelSeen, user.gamification?.inventory]);
+  }, [user.gamification?.level, user.gamification?.lastLevelSeen]);
 
   // Derived from AppDataContext — no per-component subscription needed
   const activeEvent = useMemo(() => {
@@ -201,6 +208,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const handleLevelUpAck = useCallback(() => {
       const currentLevel = user.gamification?.level || 1;
       session.acknowledgedLevel = currentLevel;
+      levelUpTriggeredRef.current = false;
       setShowLevelUp(false);
       setNewlyAcquiredItem(null);
       dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(err => reportError(err, { method: 'updateUserLastLevelSeen' }));
@@ -243,26 +251,28 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     return groups;
   }, [assignments, submissions, activeClass]);
 
-  const toggleUnit = (unit: string) => {
-    const newSet = new Set(expandedUnits);
-    if (newSet.has(unit)) newSet.delete(unit);
-    else newSet.add(unit);
-    setExpandedUnits(newSet);
-  };
+  const toggleUnit = useCallback((unit: string) => {
+    setExpandedUnits(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(unit)) newSet.delete(unit);
+      else newSet.add(unit);
+      return newSet;
+    });
+  }, []);
 
   const level = user.gamification?.level || 1;
   const currency = user.gamification?.currency || 0;
   const xp = classXp;
-  const progress = getLevelProgress(user.gamification?.xp || 0, level);
+  const progress = useMemo(() => getLevelProgress(user.gamification?.xp || 0, level), [user.gamification?.xp, level]);
   const displayXp = useAnimatedCounter(xp);
   const displayCurrency = useAnimatedCounter(currency);
-  const rankDetails = getRankDetails(level);
+  const rankDetails = useMemo(() => getRankDetails(level), [level]);
 
-  const handleClassChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleClassChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newClass = e.target.value;
       setActiveClass(newClass);
       await dataService.switchUserView(user.id, newClass);
-  };
+  }, [user.id]);
 
   // --- QUEST LOGIC ---
   const activeQuests = user.gamification?.activeQuests || [];
@@ -280,7 +290,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     [availableQuests, activeQuests, completedQuests]
   );
 
-  const handleAcceptQuest = async (quest: Quest) => {
+  const handleAcceptQuest = useCallback(async (quest: Quest) => {
       try {
           await dataService.acceptQuest(user.id, quest.id);
           sfx.questAccept();
@@ -288,9 +298,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       } catch {
           toast.error('Failed to accept contract.');
       }
-  };
+  }, [user.id, toast]);
 
-  const handleDeployQuest = async (quest: Quest) => {
+  const handleDeployQuest = useCallback(async (quest: Quest) => {
       const isManual = quest.type === 'CUSTOM';
       if(!await confirm({ message: isManual ? "Submit quest for manual HQ verification?" : "Deploy agent for skill check? This will calculate your success probability based on current gear.", confirmLabel: isManual ? "Submit" : "Deploy", variant: "info" })) return;
       try {
@@ -300,7 +310,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       } catch {
           toast.error('Deployment failed.');
       }
-  };
+  }, [user.id, confirm, toast]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full pb-6 lg:pb-12">
@@ -385,14 +395,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     </div>
                 )}
 
-                <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-white/5 relative">
+                <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-white/5 relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
                     <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                 </div>
                 <div className="flex justify-between w-full text-[9px] text-gray-500 mt-2 font-mono font-bold relative">
                     <span>{displayXp.toLocaleString()} XP ({activeClass})</span>
                     <span>{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
                     {xpFloatAmount && (
-                        <span className="xp-float-anim absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap">
+                        <span className="xp-float-anim absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap" aria-live="polite" role="status">
                             +{xpFloatAmount} XP
                         </span>
                     )}
@@ -488,7 +498,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* --- MIDDLE: CONTENT --- */}
       <div className="lg:col-span-9 space-y-6">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} content`}>
 
 
              {activeTab === 'MISSIONS' && (
@@ -523,31 +533,37 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
              {activeTab === 'SKILLS' && (
                  <div key="skills" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <SkillTreePanel
-                         specialization={user.gamification?.specialization}
-                         skillPoints={user.gamification?.skillPoints || 0}
-                         unlockedSkills={user.gamification?.unlockedSkills || []}
-                     />
+                     <FeatureErrorBoundary feature="Skill Tree">
+                       <SkillTreePanel
+                           specialization={user.gamification?.specialization}
+                           skillPoints={user.gamification?.skillPoints || 0}
+                           unlockedSkills={user.gamification?.unlockedSkills || []}
+                       />
+                     </FeatureErrorBoundary>
                  </div>
              )}
 
              {activeTab === 'FORTUNE' && (
                  <div key="fortune" className="space-y-8" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <FortuneWheel
-                         currency={currency}
-                         lastSpin={user.gamification?.lastWheelSpin}
-                         classType={activeClass}
-                     />
+                     <FeatureErrorBoundary feature="Fortune Wheel">
+                       <FortuneWheel
+                           currency={currency}
+                           lastSpin={user.gamification?.lastWheelSpin}
+                           classType={activeClass}
+                       />
+                     </FeatureErrorBoundary>
                  </div>
              )}
 
              {activeTab === 'TUTORING' && (
                  <div key="tutoring" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <TutoringPanel
-                         userId={user.id}
-                         userName={user.name}
-                         classType={activeClass}
-                     />
+                     <FeatureErrorBoundary feature="Tutoring">
+                       <TutoringPanel
+                           userId={user.id}
+                           userName={user.name}
+                           classType={activeClass}
+                       />
+                     </FeatureErrorBoundary>
                  </div>
              )}
 
@@ -584,8 +600,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* BOSS ENCOUNTERS — Full-width panel */}
       <div className="lg:col-span-12">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
-              <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-              <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+              <FeatureErrorBoundary feature="Boss Encounters">
+                <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
+              </FeatureErrorBoundary>
+              <FeatureErrorBoundary feature="Boss Quiz">
+                <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+              </FeatureErrorBoundary>
           </div>
       </div>
 

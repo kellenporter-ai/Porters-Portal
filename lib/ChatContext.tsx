@@ -21,7 +21,7 @@ export const ChatProvider: React.FC<{ user: User; children: React.ReactNode }> =
   const [unreadChannels, setUnreadChannels] = useState<Set<string>>(new Set());
   const [isCommOpen, setIsCommOpen] = useState(false);
   const channelLastSeenRef = useRef<Record<string, number>>(
-    JSON.parse(localStorage.getItem('chatChannelLastSeen') || '{}')
+    (() => { try { return JSON.parse(localStorage.getItem('chatChannelLastSeen') || '{}'); } catch { return {}; } })()
   );
   const myGroupIdsRef = useRef<Set<string>>(new Set());
 

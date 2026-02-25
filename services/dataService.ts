@@ -54,8 +54,11 @@ export const dataService = {
 
   // --- XP & GAMIFICATION ---
 
-  subscribeToXPEvents: (callback: (events: XPEvent[]) => void) => {
-    return guardedSnapshot('xp_events', collection(db, 'xp_events'), (snapshot: any) => {
+  subscribeToXPEvents: (callback: (events: XPEvent[]) => void, activeOnly = false) => {
+    const q = activeOnly
+      ? query(collection(db, 'xp_events'), where('isActive', '==', true))
+      : collection(db, 'xp_events');
+    return guardedSnapshot('xp_events', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as XPEvent)));
     });
   },
@@ -68,8 +71,11 @@ export const dataService = {
     await deleteDoc(doc(db, 'xp_events', id));
   },
 
-  subscribeToQuests: (callback: (quests: Quest[]) => void) => {
-    return guardedSnapshot('quests', collection(db, 'quests'), (snapshot: any) => {
+  subscribeToQuests: (callback: (quests: Quest[]) => void, activeOnly = false) => {
+    const q = activeOnly
+      ? query(collection(db, 'quests'), where('isActive', '==', true))
+      : collection(db, 'quests');
+    return guardedSnapshot('quests', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Quest)));
     });
   },
@@ -1095,9 +1101,9 @@ export const dataService = {
     });
   },
 
-  // Admin: subscribe to ALL boss encounters (including inactive)
+  // Admin: subscribe to ALL boss encounters (including inactive), capped at 50
   subscribeToAllBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
-    const q = collection(db, 'boss_encounters');
+    const q = query(collection(db, 'boss_encounters'), limit(50));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as BossEncounter)));
     });

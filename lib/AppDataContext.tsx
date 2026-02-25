@@ -32,11 +32,13 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
       dataService.subscribeToClassConfigs(setClassConfigs),
     ];
 
-    // XP events & quests may fail for permission reasons — don't block other subscriptions
-    try { unsubs.push(dataService.subscribeToXPEvents(setXpEvents)); }
+    // XP events & quests may fail for permission reasons — don't block other subscriptions.
+    // Students only need active events/quests; admins get the full list for management.
+    const isStudent = user.role === UserRole.STUDENT;
+    try { unsubs.push(dataService.subscribeToXPEvents(setXpEvents, isStudent)); }
     catch (e) { reportError(e, { subscription: 'xpEvents' }); }
 
-    try { unsubs.push(dataService.subscribeToQuests(setQuests)); }
+    try { unsubs.push(dataService.subscribeToQuests(setQuests, isStudent)); }
     catch (e) { reportError(e, { subscription: 'quests' }); }
 
     return () => unsubs.forEach(u => u());

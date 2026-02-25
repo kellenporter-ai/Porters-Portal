@@ -337,7 +337,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md">
-        <div className="p-6">
+        <div className="p-6" role="tabpanel" aria-label={`${TAB_TITLES[activeTab]} panel`}>
           {activeTab === 'OPERATIVES' && (
             <OperativesTab
               students={students}
