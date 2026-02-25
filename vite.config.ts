@@ -9,8 +9,6 @@ export default defineConfig({
     open: true
   },
   build: {
-    rollupOptions: {
-      external: ['jspdf']
-    }
+    rollupOptions: {}
   }
 });
