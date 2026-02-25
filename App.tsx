@@ -1,40 +1,46 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
 import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, WhitelistedUser, DefaultClassTypes } from './types';
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { ToastProvider } from './components/ToastProvider';
 import ConnectionStatus from './components/ConnectionStatus';
 import Layout from './components/Layout';
 import Proctor from './components/Proctor';
 import GoogleLogin from './components/GoogleLogin';
-import TeacherDashboard from './components/TeacherDashboard';
-import UserManagement from './components/UserManagement';
-import AdminPanel from './components/AdminPanel';
-import XPManagement from './components/XPManagement';
-import GroupManager from './components/GroupManager';
-import PhysicsTools from './components/PhysicsTools';
-import Communications from './components/Communications';
 import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon, KeyRound, Loader2, CheckCircle } from 'lucide-react';
-import { ADMIN_EMAIL, TEACHER_DISPLAY_NAME } from './constants';
-
-// New Modules
-import StudentDashboard from './components/StudentDashboard';
-import EvidenceLocker from './components/EvidenceLocker';
-import PhysicsLab from './components/PhysicsLab';
-import Leaderboard from './components/Leaderboard';
+import { TEACHER_DISPLAY_NAME } from './constants';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ConfirmProvider } from './components/ConfirmDialog';
-import ReviewQuestions from './components/ReviewQuestions';
-import StudyMaterial from './components/StudyMaterial';
 import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
-import EnrollmentCodes from './components/EnrollmentCodes';
-import LessonEditorPage from './components/LessonEditorPage';
+
+// Lazy-loaded route-level components — split admin, teacher, and student bundles
+const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const XPManagement = lazy(() => import('./components/XPManagement'));
+const GroupManager = lazy(() => import('./components/GroupManager'));
+const PhysicsTools = lazy(() => import('./components/PhysicsTools'));
+const Communications = lazy(() => import('./components/Communications'));
+const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
+const EvidenceLocker = lazy(() => import('./components/EvidenceLocker'));
+const PhysicsLab = lazy(() => import('./components/PhysicsLab'));
+const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const ReviewQuestions = lazy(() => import('./components/ReviewQuestions'));
+const StudyMaterial = lazy(() => import('./components/StudyMaterial'));
+const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
+const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
+
+const LazyFallback = () => (
+  <div className="flex items-center justify-center h-64 text-gray-500">
+    <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
+  </div>
+);
 
 
 // ─── Access Pending screen with enrollment code redemption ───
@@ -259,10 +265,10 @@ const App: React.FC = () => {
     if (!activeAssignmentId) return;
     const checkQuestions = getDoc(doc(db, 'question_banks', activeAssignmentId)).then(snap => {
       if (snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
-    }).catch(() => {});
+    }).catch(err => console.error('Failed to probe question bank:', err));
     const checkStudy = getDoc(doc(db, 'reading_materials', activeAssignmentId)).then(snap => {
       if (snap.exists()) setHasStudyMaterial(true);
-    }).catch(() => {});
+    }).catch(err => console.error('Failed to probe reading materials:', err));
     // If the view was on a tab that no longer exists, reset to WORK
     Promise.all([checkQuestions, checkStudy]).then(() => {});
   }, [activeAssignmentId]);
@@ -329,61 +335,61 @@ const App: React.FC = () => {
   const handleSession = async (firebaseUser: FirebaseUser) => {
     try {
         const userRef = doc(db, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        
+
+        // Read whitelist & claims outside the transaction (they aren't written here)
         const whitelistDoc = await getDoc(doc(db, 'allowed_emails', firebaseUser.email || ''));
-        
-        // Check admin via Custom Claims (set by Cloud Function), with email fallback for bootstrap
         const tokenResult = await firebaseUser.getIdTokenResult();
-        const isAdmin = tokenResult.claims.admin === true || firebaseUser.email === ADMIN_EMAIL;
-        
+        const isAdmin = tokenResult.claims.admin === true;
+
         const isWhitelisted = whitelistDoc.exists() || isAdmin;
         const whitelistData = whitelistDoc.exists() ? whitelistDoc.data() : null;
         const assignedClass = whitelistData?.classType || DefaultClassTypes.UNCATEGORIZED;
         const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== DefaultClassTypes.UNCATEGORIZED ? [assignedClass] : []);
 
-        if (!userSnap.exists()) {
-            const newUserProfile = {
-                email: firebaseUser.email,
-                name: firebaseUser.displayName || 'Student',
-                avatarUrl: firebaseUser.photoURL || '',
-                role: isAdmin ? 'ADMIN' : 'STUDENT',
-                classType: assignedClass,
-                enrolledClasses: isWhitelisted ? assignedClasses : [],
-                isWhitelisted: isWhitelisted,
-                createdAt: new Date().toISOString(),
-                lastLoginAt: new Date().toISOString(),
-                gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
-                settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
-            };
-            await setDoc(userRef, newUserProfile);
-        } else {
-            const existingData = userSnap.data();
-            const updates: Record<string, unknown> = {
-                lastLoginAt: new Date().toISOString(),
-                isWhitelisted: isWhitelisted
-            };
-            // If they have admin claim, ensure role is synced
-            if (isAdmin) {
-                updates.role = 'ADMIN';
-            }
-            if (!isWhitelisted && !isAdmin) {
-                updates.enrolledClasses = [];
-            }
-            // Merge all whitelisted classes into enrolledClasses
-            if (isWhitelisted && assignedClasses.length > 0) {
-                const existing: string[] = existingData.enrolledClasses || [];
-                const merged = Array.from(new Set([...existing, ...assignedClasses]));
-                if (merged.length !== existing.length) {
-                    updates.enrolledClasses = merged;
-                    // Only update classType if user doesn't have one yet
-                    if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
-                        updates.classType = assignedClasses[0];
+        // Use a transaction for the user profile read-then-write to prevent
+        // race conditions when multiple tabs open simultaneously on first login.
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+
+            if (!userSnap.exists()) {
+                transaction.set(userRef, {
+                    email: firebaseUser.email,
+                    name: firebaseUser.displayName || 'Student',
+                    avatarUrl: firebaseUser.photoURL || '',
+                    role: isAdmin ? 'ADMIN' : 'STUDENT',
+                    classType: assignedClass,
+                    enrolledClasses: isWhitelisted ? assignedClasses : [],
+                    isWhitelisted: isWhitelisted,
+                    createdAt: new Date().toISOString(),
+                    lastLoginAt: new Date().toISOString(),
+                    gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
+                    settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
+                });
+            } else {
+                const existingData = userSnap.data();
+                const updates: Record<string, unknown> = {
+                    lastLoginAt: new Date().toISOString(),
+                    isWhitelisted: isWhitelisted
+                };
+                if (isAdmin) {
+                    updates.role = 'ADMIN';
+                }
+                if (!isWhitelisted && !isAdmin) {
+                    updates.enrolledClasses = [];
+                }
+                if (isWhitelisted && assignedClasses.length > 0) {
+                    const existing: string[] = existingData.enrolledClasses || [];
+                    const merged = Array.from(new Set([...existing, ...assignedClasses]));
+                    if (merged.length !== existing.length) {
+                        updates.enrolledClasses = merged;
+                        if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
+                            updates.classType = assignedClasses[0];
+                        }
                     }
                 }
+                transaction.update(userRef, updates);
             }
-            await updateDoc(userRef, updates);
-        }
+        });
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
   };
 
@@ -445,27 +451,29 @@ const App: React.FC = () => {
     <ToastProvider>
     <>
       <ConnectionStatus />
-      {showTools && (
-        <PhysicsTools
-          onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
-          hasUnreadChat={unreadChannels.size > 0}
-        />
-      )}
-      
-      {showComm && (
-        <Communications
-            user={user}
-            isOpen={isCommOpen}
-            onClose={() => setIsCommOpen(false)}
-            assignments={assignments}
-            classConfigs={classConfigs}
-            unreadChannels={unreadChannels}
-            onMarkChannelRead={markChannelRead}
-            onOpenResource={(id) => {
-                openAssignment(id);
-            }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showTools && (
+          <PhysicsTools
+            onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
+            hasUnreadChat={unreadChannels.size > 0}
+          />
+        )}
+
+        {showComm && (
+          <Communications
+              user={user}
+              isOpen={isCommOpen}
+              onClose={() => setIsCommOpen(false)}
+              assignments={assignments}
+              classConfigs={classConfigs}
+              unreadChannels={unreadChannels}
+              onMarkChannelRead={markChannelRead}
+              onOpenResource={(id) => {
+                  openAssignment(id);
+              }}
+          />
+        )}
+      </Suspense>
 
       <Layout user={user} onLogout={handleLogout} activeTab={activeTab} setActiveTab={setActiveTab}>
         {activeAssignment ? (
@@ -503,6 +511,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-hidden relative">
+              <Suspense fallback={<LazyFallback />}>
                 {assignViewMode === 'WORK' && (
                     <div className="h-full flex flex-col md:flex-row gap-4">
                         <div className="flex-1">
@@ -556,10 +565,12 @@ const App: React.FC = () => {
                         <StudyMaterial assignment={activeAssignment} onComplete={handleEngagementComplete} />
                     </div>
                 )}
+              </Suspense>
             </div>
           </div>
         ) : (
           <div className="h-full">
+            <Suspense fallback={<LazyFallback />}>
             <div key={activeTab} className="h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             {user.role === UserRole.ADMIN && (
               <>
@@ -591,6 +602,7 @@ const App: React.FC = () => {
                </>
             )}
             </div>
+            </Suspense>
           </div>
         )}
       </Layout>
