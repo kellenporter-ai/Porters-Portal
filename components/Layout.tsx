@@ -81,9 +81,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
     return (
       <>
-        {filteredItems.map((item) => (
+        {filteredItems.map((item) => {
+          const isActive = activeTab === item.name || isChildActive(item);
+          return (
           <div key={item.name}>
             <button
+              data-nav-item
               onClick={() => {
                 if (item.children) {
                   // Toggle expand; select first child if collapsing to expanded
@@ -102,13 +105,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   setIsMobileMenuOpen(false);
                 }
               }}
+              aria-current={isActive && !item.children ? 'page' : undefined}
+              aria-expanded={item.children ? expandedParent === item.name : undefined}
               className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
-                (activeTab === item.name || isChildActive(item))
+                isActive
                   ? item.children ? 'bg-purple-500/10 text-white border border-purple-500/20' : 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
                   : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
               }`}
             >
-              <span className={`${(activeTab === item.name || isChildActive(item)) ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
+              <span className={`${isActive ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
                 {item.icon}
               </span>
               <span className="font-medium text-sm flex-1 text-left">{item.name}</span>
@@ -117,20 +122,23 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               )}
             </button>
             {item.children && expandedParent === item.name && (
-              <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+              <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3" role="group" aria-label={`${item.name} sub-navigation`}>
                 {item.children.map(child => {
                   const childTab = `${item.name}:${child.name}`;
+                  const childActive = activeTab === childTab;
                   return (
                     <button
                       key={child.name}
+                      data-nav-item
                       onClick={() => { handleNavigate(childTab); setIsMobileMenuOpen(false); }}
+                      aria-current={childActive ? 'page' : undefined}
                       className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                        activeTab === childTab
+                        childActive
                           ? 'bg-purple-600/60 text-white'
                           : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
                       }`}
                     >
-                      <span className={activeTab === childTab ? 'text-white' : 'text-gray-600'}>{child.icon}</span>
+                      <span className={childActive ? 'text-white' : 'text-gray-600'}>{child.icon}</span>
                       {child.name}
                     </button>
                   );
@@ -138,13 +146,31 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </>
     );
   };
 
+  // Arrow key navigation within sidebar nav items
+  const handleNavKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const nav = e.currentTarget;
+    const buttons = Array.from(nav.querySelectorAll<HTMLElement>('button[data-nav-item]'));
+    const idx = buttons.indexOf(document.activeElement as HTMLElement);
+    if (idx === -1) return;
+    const next = e.key === 'ArrowDown' ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
+    buttons[next]?.focus();
+  }, []);
+
   return (
     <div className={`flex flex-col lg:flex-row h-screen overflow-hidden text-gray-100 relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
+      {/* Skip to main content link */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:bg-purple-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">
+        Skip to main content
+      </a>
+
       {/* 1. Static Purple Background (Base Layer) */}
       <div className="fixed inset-0 z-[-3] bg-[#0f0720] static-purple-bg"></div>
 
@@ -210,7 +236,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                       </button>
                   </div>
 
-                  <nav className="flex-1 space-y-2 overflow-y-auto">
+                  <nav className="flex-1 space-y-2 overflow-y-auto" aria-label="Mobile navigation" onKeyDown={handleNavKeyDown}>
                       <NavItems />
                   </nav>
 
@@ -249,7 +275,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
+          <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar" aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
             <NavItems />
           </nav>
 

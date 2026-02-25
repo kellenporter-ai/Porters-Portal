@@ -14,6 +14,7 @@ import { sfx } from '../lib/sfx';
 
 interface ProctorProps {
   onComplete: (metrics: TelemetryMetrics) => void;
+  onBlockProgress?: (completed: number) => void;
   contentUrl?: string | null;
   htmlContent?: string;
   userId?: string;
@@ -80,7 +81,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -115,7 +116,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, contentUrl, htmlContent, 
   const handleBlockComplete = useCallback(async (blockId: string, correct: boolean) => {
     if (!correct || !userId || !assignmentId || awardedBlocksRef.current.has(blockId)) return;
     awardedBlocksRef.current.add(blockId);
-    setLessonBlocksAnswered(prev => prev + 1);
+    setLessonBlocksAnswered(prev => {
+      const next = prev + 1;
+      onBlockProgress?.(next);
+      return next;
+    });
     handleInteraction();
     const xpAmount = 15;
     try {

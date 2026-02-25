@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAppData } from '../lib/AppDataContext';
@@ -6,7 +6,9 @@ import { useChat } from '../lib/ChatContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2 } from 'lucide-react';
+import { useToast } from './ToastProvider';
+import { reportError } from '../lib/errorReporting';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, CheckCircle2 } from 'lucide-react';
 
 const Proctor = lazy(() => import('./Proctor'));
 const ReviewQuestions = lazy(() => import('./ReviewQuestions'));
@@ -22,32 +24,52 @@ interface ResourceViewerProps {
   user: User;
 }
 
+const INTERACTIVE_BLOCK_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'VOCAB_LIST', 'ACTIVITY', 'BAR_CHART', 'DATA_TABLE'];
+
 const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { assignments } = useAppData();
   const { setIsCommOpen } = useChat();
+  const toast = useToast();
 
   const [assignViewMode, setAssignViewMode] = useState<'WORK' | 'REVIEW' | 'STUDY'>('WORK');
   const [adminViewMode, setAdminViewMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
   const [hasQuestionBank, setHasQuestionBank] = useState(false);
   const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
+  const [blocksCompleted, setBlocksCompleted] = useState(0);
 
   const activeAssignment = assignments.find(a => a.id === id) || null;
+
+  const totalInteractiveBlocks = useMemo(() => {
+    if (!activeAssignment?.lessonBlocks) return 0;
+    return activeAssignment.lessonBlocks.filter(b => INTERACTIVE_BLOCK_TYPES.includes(b.type)).length;
+  }, [activeAssignment?.lessonBlocks]);
+
+  const handleBlockProgress = useCallback((completed: number) => {
+    setBlocksCompleted(completed);
+  }, []);
 
   // Probe supplemental tabs
   useEffect(() => {
     setHasQuestionBank(false);
     setHasStudyMaterial(false);
+    setBlocksCompleted(0);
     if (!id) return;
     getDoc(doc(db, 'question_banks', id)).then(snap => {
       if (snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
-    }).catch(err => console.error('Failed to probe question bank:', err));
+    }).catch(err => {
+      reportError(err, { context: 'probe question bank', assignmentId: id });
+      toast.error('Failed to load question bank');
+    });
     getDoc(doc(db, 'reading_materials', id)).then(snap => {
       if (snap.exists()) setHasStudyMaterial(true);
-    }).catch(err => console.error('Failed to probe reading materials:', err));
-  }, [id]);
+    }).catch(err => {
+      reportError(err, { context: 'probe reading materials', assignmentId: id });
+      toast.error('Failed to load study materials');
+    });
+  }, [id, toast]);
 
   // Admin: subscribe to submissions for engagement count (scoped to this assignment)
   useEffect(() => {
@@ -72,7 +94,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     try {
       await dataService.submitEngagement(u.id, u.name, a.id, a.title, metrics, a.classType);
     } catch (err) {
-      console.error("Engagement submission failed:", err);
+      reportError(err, { method: 'submitEngagement', assignmentId: a.id });
     }
   }, []);
 
@@ -125,12 +147,27 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       </div>
 
       <div className="flex-1 overflow-hidden relative">
+        {/* Floating progress bar for lesson blocks */}
+        {totalInteractiveBlocks > 0 && assignViewMode === 'WORK' && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
+            <CheckCircle2 className={`w-4 h-4 ${blocksCompleted === totalInteractiveBlocks ? 'text-green-400' : 'text-purple-400'}`} />
+            <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${blocksCompleted === totalInteractiveBlocks ? 'bg-green-500' : 'bg-purple-500'}`}
+                style={{ width: `${(blocksCompleted / totalInteractiveBlocks) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-gray-300">{blocksCompleted}/{totalInteractiveBlocks}</span>
+          </div>
+        )}
+
         <Suspense fallback={<LazyFallback />}>
           {assignViewMode === 'WORK' && (
             <div className="h-full flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <Proctor
                   onComplete={handleEngagementComplete}
+                  onBlockProgress={handleBlockProgress}
                   contentUrl={activeAssignment.contentUrl}
                   htmlContent={activeAssignment.htmlContent}
                   userId={user.id}
