@@ -44,21 +44,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     });
   }, []);
 
-  const SortableHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => {
-    const ariaSortValue = sortCol === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined;
-    return (
-      <th role="columnheader" aria-sort={ariaSortValue} className={`cursor-pointer select-none group p-3 ${className ?? ''}`} onClick={() => handleSort(col)}>
-        <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
-          <span>{label}</span>
-          <span className="flex flex-col gap-px">
-            <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-            <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-          </span>
-        </div>
-      </th>
-    );
-  };
-
   useEffect(() => {
       const unsub = dataService.subscribeToChatFlags(setFlags);
       const unsubAnnouncements = dataService.subscribeToAnnouncements(setAnnouncements);
@@ -584,92 +569,133 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             </div>
           )}
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-white/10 text-gray-400 text-sm">
-                  <th className="p-3 w-10">
-                    <input type="checkbox" checked={selectedIds.size === sortedStudents.length && sortedStudents.length > 0} onChange={toggleSelectAll} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label="Select all students" />
-                  </th>
-                  <SortableHeader label="Student"    col="name"      />
-                  <SortableHeader label="Class"      col="class"     />
-                  <SortableHeader label="Last Seen"  col="lastSeen"  className="text-center" />
-                  <SortableHeader label="Total Time" col="time"      className="text-center" />
-                  <SortableHeader label="Resources"  col="resources" className="text-center" />
-                  <SortableHeader label="XP"         col="xp"        className="text-right"  />
-                </tr>
-              </thead>
-            </table>
-            <div ref={tableScrollRef} className="max-h-[520px] overflow-y-auto custom-scrollbar">
-              <table className="w-full text-left">
-                <tbody>
-                  <tr><td colSpan={7} style={{ height: `${tableVirtualizer.getTotalSize()}px`, padding: 0, position: 'relative' }}>
-                    {tableVirtualizer.getVirtualItems().map(virtualRow => {
-                      const student = sortedStudents[virtualRow.index];
-                      const xp = student.gamification?.classXp?.[student.classType || ''] || 0;
-                      const xpPct = Math.round((xp / maxXP) * 100);
-                      const lastLogin = student.lastLoginAt;
-                      const msSinceLogin = lastLogin ? Date.now() - new Date(lastLogin).getTime() : Infinity;
-                      const lastSeenColor = msSinceLogin < 3600000 ? 'text-green-400'
-                        : msSinceLogin < 86400000 ? 'text-yellow-400'
-                        : msSinceLogin < Infinity ? 'text-red-400'
-                        : 'text-gray-500';
-                      const activityDot = msSinceLogin < 3600000 ? 'bg-green-500'
-                        : msSinceLogin < 86400000 ? 'bg-yellow-500'
-                        : msSinceLogin < Infinity ? 'bg-red-500'
-                        : 'bg-gray-600';
-                      const studentAlert = alertsByStudent.get(student.id);
-                      const riskDot: Record<string, string> = { CRITICAL: 'bg-red-500 animate-pulse', HIGH: 'bg-orange-500', MODERATE: 'bg-yellow-500' };
-                      const studentBucket = bucketsByStudent.get(student.id);
-                      const bucketMeta = studentBucket ? BUCKET_META[studentBucket.bucket as TelemetryBucket] : null;
-                      const isSelected = selectedIds.has(student.id);
+          {/* Header row */}
+          <div className="flex items-center border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
+            <div className="p-3 w-10 shrink-0">
+              <input type="checkbox" checked={selectedIds.size === sortedStudents.length && sortedStudents.length > 0} onChange={toggleSelectAll} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label="Select all students" />
+            </div>
+            <div className="p-3 flex-[2] min-w-0 cursor-pointer select-none" onClick={() => handleSort('name')}>
+              <div className="flex items-center gap-1">
+                <span>Student</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'name' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'name' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="p-3 flex-1 cursor-pointer select-none" onClick={() => handleSort('class')}>
+              <div className="flex items-center gap-1">
+                <span>Class</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'class' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'class' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="p-3 flex-1 cursor-pointer select-none text-center" onClick={() => handleSort('lastSeen')}>
+              <div className="flex items-center gap-1 justify-center">
+                <span>Last Seen</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'lastSeen' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'lastSeen' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="p-3 flex-1 cursor-pointer select-none text-center" onClick={() => handleSort('time')}>
+              <div className="flex items-center gap-1 justify-center">
+                <span>Total Time</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'time' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'time' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="p-3 flex-1 cursor-pointer select-none text-center" onClick={() => handleSort('resources')}>
+              <div className="flex items-center gap-1 justify-center">
+                <span>Resources</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'resources' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'resources' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="p-3 flex-1 cursor-pointer select-none text-right" onClick={() => handleSort('xp')}>
+              <div className="flex items-center gap-1 justify-end">
+                <span>XP</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'xp' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'xp' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                </span>
+              </div>
+            </div>
+          </div>
 
-                      return (
-                        <div
-                          key={student.id}
-                          className={`absolute left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
-                          style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
-                        >
-                          <div className="p-3 w-10 shrink-0">
-                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(student.id)} onClick={e => e.stopPropagation()} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label={`Select ${student.name}`} />
-                          </div>
-                          <div className="p-3 font-bold text-white flex-[2] min-w-0" onClick={() => setSelectedStudentId(student.id)}>
-                            <div className="flex items-center gap-2">
-                              <div className="relative shrink-0">
-                                {student.avatarUrl ? (
-                                  <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">{student.name.charAt(0)}</div>
-                                )}
-                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`} />
-                              </div>
-                              <span className="truncate max-w-[120px]">{student.name}</span>
-                              {studentAlert && riskDot[studentAlert.riskLevel] && (
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
-                              )}
-                              {bucketMeta && (
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bucketMeta.bgColor} ${bucketMeta.color} border ${bucketMeta.borderColor}`} title={bucketMeta.description}>{bucketMeta.label}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="p-3 text-sm text-gray-400 flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.classType}</div>
-                          <div className={`p-3 text-center text-xs font-mono flex-1 ${lastSeenColor}`} onClick={() => setSelectedStudentId(student.id)}>{formatLastSeen(student.lastLoginAt)}</div>
-                          <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.totalTime || 0}m</div>
-                          <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.problemsCompleted || 0}</div>
-                          <div className="p-3 text-right flex-1" onClick={() => setSelectedStudentId(student.id)}>
-                            <div className="flex items-center justify-end gap-2">
-                              <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${xpPct}%` }} />
-                              </div>
-                              <span className="text-purple-400 font-bold text-sm min-w-[3rem] text-right">{xp}</span>
-                            </div>
-                          </div>
+          {/* Virtualized student rows */}
+          <div ref={tableScrollRef} className="max-h-[520px] overflow-y-auto custom-scrollbar">
+            <div style={{ height: `${tableVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+              {tableVirtualizer.getVirtualItems().map(virtualRow => {
+                const student = sortedStudents[virtualRow.index];
+                const xp = student.gamification?.classXp?.[student.classType || ''] || 0;
+                const xpPct = Math.round((xp / maxXP) * 100);
+                const lastLogin = student.lastLoginAt;
+                const msSinceLogin = lastLogin ? Date.now() - new Date(lastLogin).getTime() : Infinity;
+                const lastSeenColor = msSinceLogin < 3600000 ? 'text-green-400'
+                  : msSinceLogin < 86400000 ? 'text-yellow-400'
+                  : msSinceLogin < Infinity ? 'text-red-400'
+                  : 'text-gray-500';
+                const activityDot = msSinceLogin < 3600000 ? 'bg-green-500'
+                  : msSinceLogin < 86400000 ? 'bg-yellow-500'
+                  : msSinceLogin < Infinity ? 'bg-red-500'
+                  : 'bg-gray-600';
+                const studentAlert = alertsByStudent.get(student.id);
+                const riskDot: Record<string, string> = { CRITICAL: 'bg-red-500 animate-pulse', HIGH: 'bg-orange-500', MODERATE: 'bg-yellow-500' };
+                const studentBucket = bucketsByStudent.get(student.id);
+                const bucketMeta = studentBucket ? BUCKET_META[studentBucket.bucket as TelemetryBucket] : null;
+                const isSelected = selectedIds.has(student.id);
+
+                return (
+                  <div
+                    key={student.id}
+                    className={`absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
+                    style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                  >
+                    <div className="p-3 w-10 shrink-0">
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(student.id)} onClick={e => e.stopPropagation()} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label={`Select ${student.name}`} />
+                    </div>
+                    <div className="p-3 font-bold text-white flex-[2] min-w-0" onClick={() => setSelectedStudentId(student.id)}>
+                      <div className="flex items-center gap-2">
+                        <div className="relative shrink-0">
+                          {student.avatarUrl ? (
+                            <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">{student.name.charAt(0)}</div>
+                          )}
+                          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`} />
                         </div>
-                      );
-                    })}
-                  </td></tr>
-                </tbody>
-              </table>
+                        <span className="truncate max-w-[120px]">{student.name}</span>
+                        {studentAlert && riskDot[studentAlert.riskLevel] && (
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
+                        )}
+                        {bucketMeta && (
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bucketMeta.bgColor} ${bucketMeta.color} border ${bucketMeta.borderColor}`} title={bucketMeta.description}>{bucketMeta.label}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-3 text-sm text-gray-400 flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.classType}</div>
+                    <div className={`p-3 text-center text-xs font-mono flex-1 ${lastSeenColor}`} onClick={() => setSelectedStudentId(student.id)}>{formatLastSeen(student.lastLoginAt)}</div>
+                    <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.totalTime || 0}m</div>
+                    <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.problemsCompleted || 0}</div>
+                    <div className="p-3 text-right flex-1" onClick={() => setSelectedStudentId(student.id)}>
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${xpPct}%` }} />
+                        </div>
+                        <span className="text-purple-400 font-bold text-sm min-w-[3rem] text-right">{xp}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
       </div>
