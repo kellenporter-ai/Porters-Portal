@@ -5,25 +5,15 @@ import {
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
-  ChevronRight, Layers, Search, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket,
-  Archive, Filter, PlayCircle, FlaskConical, Newspaper, Video
+  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket
 } from 'lucide-react';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
 import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
-import { sortUnitKeys } from './AdminPanel';
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  'Textbook': <BookOpen className="w-3 h-3" />,
-  'Simulation': <PlayCircle className="w-3 h-3" />,
-  'Lab Guide': <FlaskConical className="w-3 h-3" />,
-  'Practice Set': <Target className="w-3 h-3" />,
-  'Article': <Newspaper className="w-3 h-3" />,
-  'Video Lesson': <Video className="w-3 h-3" />,
-  'Supplemental': <Layers className="w-3 h-3" />,
-};
+import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
+import ResourceSidebar from './lesson-editor/ResourceSidebar';
 
 interface LessonEditorPageProps {
   assignments: Assignment[];
@@ -85,13 +75,6 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
     default: return base;
   }
 };
-
-// ──────────────────────────────────────────────
-// AI Prompt generators
-// ──────────────────────────────────────────────
-
-// AI prompts are now consolidated in the Admin Panel's AI Lab
-
 
 // ──────────────────────────────────────────────
 // Inline block type palette (for "+" buttons)
@@ -244,22 +227,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [jsonText, setJsonText] = useState('');
   const [jsonError, setJsonError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [searchFilter, setSearchFilter] = useState('');
-  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set(Object.keys(assignmentsByUnit)));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-
-  // Sidebar filter & management state
-  const [filterClass, setFilterClass] = useState<string>('All Classes');
-  const [filterCategory, setFilterCategory] = useState<string>('All Categories');
-  const [showUnitOrder, setShowUnitOrder] = useState(false);
-  const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
-  const [hoverResourceId, setHoverResourceId] = useState<string | null>(null);
-  // All-classes view state: collapsed class names (empty = all expanded)
-  const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set());
-  // All-classes view state: expanded composite unit keys "ClassName::UnitName"
-  const [expandedAllClassUnits, setExpandedAllClassUnits] = useState<Set<string>>(new Set());
 
   // Resource settings state
   const [resTitle, setResTitle] = useState('');
@@ -474,43 +443,6 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     }
   }, [jsonText, blocks, updateBlocks, toast]);
 
-  const filteredUnits = useMemo(() => {
-    const result: Record<string, Assignment[]> = {};
-    const lower = searchFilter.toLowerCase();
-    Object.entries(assignmentsByUnit).forEach(([unit, items]) => {
-      const filtered = items.filter(a => {
-        if (searchFilter && !a.title.toLowerCase().includes(lower) && !unit.toLowerCase().includes(lower)) return false;
-        if (filterClass !== 'All Classes' && a.classType !== filterClass) return false;
-        if (filterCategory !== 'All Categories' && a.category !== filterCategory) return false;
-        return true;
-      });
-      if (filtered.length > 0) result[unit] = filtered;
-    });
-    return result;
-  }, [assignmentsByUnit, searchFilter, filterClass, filterCategory]);
-
-  // All-classes grouped view: class → unit → assignments
-  const filteredByClass = useMemo(() => {
-    if (filterClass !== 'All Classes') return null;
-    const lower = searchFilter.toLowerCase();
-    const result: Record<string, Record<string, Assignment[]>> = {};
-    assignments.forEach(a => {
-      if (filterCategory !== 'All Categories' && a.category !== filterCategory) return;
-      const unit = a.unit || 'Unassigned';
-      if (searchFilter && !a.title.toLowerCase().includes(lower) && !unit.toLowerCase().includes(lower)) return;
-      const cls = a.classType || 'Uncategorized';
-      if (!result[cls]) result[cls] = {};
-      if (!result[cls][unit]) result[cls][unit] = [];
-      result[cls][unit].push(a);
-    });
-    Object.values(result).forEach(units =>
-      Object.values(units).forEach(items =>
-        items.sort((a, b) => a.title.localeCompare(b.title))
-      )
-    );
-    return result;
-  }, [assignments, searchFilter, filterClass, filterCategory]);
-
   // Resource management actions (moved from Admin Panel)
   const handleQuickDeploy = useCallback(async (id: string) => {
     try {
@@ -535,29 +467,6 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       toast.success('Resource deleted.');
     } catch { toast.error('Delete failed.'); }
   }, [selectedId, toast]);
-
-  // Unit ordering
-  const sidebarUnitOrder = useMemo(() => {
-    if (filterClass === 'All Classes') return undefined;
-    return classConfigs?.find(c => c.className === filterClass)?.unitOrder;
-  }, [filterClass, classConfigs]);
-
-  const handleSaveUnitOrder = useCallback(async () => {
-    if (!pendingOrder || filterClass === 'All Classes') return;
-    setIsSavingOrder(true);
-    try {
-      const existing = classConfigs?.find(c => c.className === filterClass);
-      if (existing) {
-        await dataService.saveClassConfig({ ...existing, unitOrder: pendingOrder });
-      } else {
-        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: pendingOrder, features: { physicsLab: false, evidenceLocker: false, leaderboard: false, physicsTools: false, communications: false } } as ClassConfig);
-      }
-      toast.success('Unit order saved!');
-      setPendingOrder(null);
-      setShowUnitOrder(false);
-    } catch { toast.error('Failed to save unit order.'); }
-    finally { setIsSavingOrder(false); }
-  }, [pendingOrder, filterClass, classConfigs, toast]);
 
   const isEditing = selectedAssignment !== null || isNewResource;
 
@@ -613,270 +522,18 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       {/* Main content */}
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
-        <div className="w-80 border-r border-white/10 bg-black/20 flex flex-col shrink-0">
-          {/* Top controls */}
-          <div className="p-3 border-b border-white/5 space-y-2">
-            <button onClick={startNewResource} className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer">
-              <Plus className="w-4 h-4" /> New Resource
-            </button>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-              <input type="text" value={searchFilter} onChange={e => setSearchFilter(e.target.value)} placeholder="Search resources..." className="w-full pl-9 pr-3 py-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition" />
-            </div>
-            {/* Class & Category Filters */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <select
-                value={filterClass}
-                onChange={e => setFilterClass(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-gray-300 font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
-              >
-                <option value="All Classes">All Classes</option>
-                {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <select
-                value={filterCategory}
-                onChange={e => setFilterCategory(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-gray-300 font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
-              >
-                <option value="All Categories">All Categories</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            {/* Unit Order button */}
-            {filterClass !== 'All Classes' && Object.keys(filteredUnits).length > 1 && (
-              <button
-                onClick={() => {
-                  if (!showUnitOrder) {
-                    const keys = sortUnitKeys(Object.keys(filteredUnits), sidebarUnitOrder);
-                    setPendingOrder(keys);
-                  }
-                  setShowUnitOrder(!showUnitOrder);
-                }}
-                className={`w-full flex items-center justify-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  showUnitOrder ? 'text-amber-300 bg-amber-500/20 border-amber-500/30' : 'text-gray-400 bg-white/5 border-white/10 hover:text-white'
-                }`}
-              >
-                <ArrowUpDown className="w-3 h-3" /> Reorder Units
-              </button>
-            )}
-          </div>
-
-          {/* Unit Order Panel */}
-          {showUnitOrder && pendingOrder && (
-            <div className="border-b border-white/5 p-3 bg-amber-500/5 space-y-2">
-              <div className="text-[9px] font-bold text-amber-300 uppercase tracking-widest">Unit Order — {filterClass}</div>
-              <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
-                {pendingOrder.map((unit, idx) => (
-                  <div key={unit} className="flex items-center gap-1.5 bg-black/30 border border-white/5 rounded-lg px-2 py-1.5">
-                    <span className="text-[9px] text-gray-600 font-mono w-4 text-right">{idx + 1}</span>
-                    <span className="text-[10px] text-gray-300 truncate flex-1">{unit}</span>
-                    <button
-                      disabled={idx === 0}
-                      onClick={() => { const n = [...pendingOrder]; [n[idx], n[idx - 1]] = [n[idx - 1], n[idx]]; setPendingOrder(n); }}
-                      className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20 transition cursor-pointer"
-                    ><ChevronUp className="w-3 h-3" /></button>
-                    <button
-                      disabled={idx === pendingOrder.length - 1}
-                      onClick={() => { const n = [...pendingOrder]; [n[idx], n[idx + 1]] = [n[idx + 1], n[idx]]; setPendingOrder(n); }}
-                      className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20 transition cursor-pointer"
-                    ><ChevronDown className="w-3 h-3" /></button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={handleSaveUnitOrder} disabled={isSavingOrder} className="flex-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
-                  {isSavingOrder ? 'Saving...' : 'Save Order'}
-                </button>
-                <button onClick={() => { setShowUnitOrder(false); setPendingOrder(null); }} className="text-[10px] text-gray-500 hover:text-white px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
-              </div>
-            </div>
-          )}
-
-          {/* Resource list */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-            {filterClass === 'All Classes' && filteredByClass ? (
-              // ── All Classes view: class → unit → resources ─────────────────
-              Object.keys(filteredByClass).sort().length === 0 ? (
-                <div className="text-center py-8 text-gray-600 text-xs">
-                  <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  No resources match filters
-                </div>
-              ) : (
-                Object.keys(filteredByClass).sort().map(cls => {
-                  const clsUnits = filteredByClass[cls];
-                  const isClassCollapsed = collapsedClasses.has(cls);
-                  const total = Object.values(clsUnits).reduce((s, items) => s + items.length, 0);
-                  return (
-                    <div key={cls} className="mb-1">
-                      {/* Class header */}
-                      <button
-                        onClick={() => setCollapsedClasses(prev => { const n = new Set(prev); n.has(cls) ? n.delete(cls) : n.add(cls); return n; })}
-                        className="w-full flex items-center gap-2 px-2 py-2 text-left hover:bg-purple-500/10 rounded-lg transition cursor-pointer"
-                      >
-                        {isClassCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-purple-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
-                        <span className="text-[11px] font-bold text-purple-300 truncate flex-1">{cls}</span>
-                        <span className="text-[9px] text-purple-500/70 font-mono shrink-0">{total}</span>
-                      </button>
-                      {/* Units within this class */}
-                      {!isClassCollapsed && (
-                        <div className="ml-2 space-y-0.5 border-l border-purple-500/10 pl-1">
-                          {sortUnitKeys(Object.keys(clsUnits), classConfigs?.find(c => c.className === cls)?.unitOrder).map(unit => {
-                            const items = clsUnits[unit];
-                            const compositeKey = `${cls}::${unit}`;
-                            const isUnitExpanded = expandedAllClassUnits.has(compositeKey);
-                            return (
-                              <div key={unit}>
-                                <button
-                                  onClick={() => setExpandedAllClassUnits(prev => { const n = new Set(prev); n.has(compositeKey) ? n.delete(compositeKey) : n.add(compositeKey); return n; })}
-                                  className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer"
-                                >
-                                  {isUnitExpanded ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
-                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
-                                  <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
-                                </button>
-                                {isUnitExpanded && items.map(a => {
-                                  const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
-                                  const hasHtml = !!a.contentUrl;
-                                  const isHovered = hoverResourceId === a.id;
-                                  const isDraft = a.status === AssignmentStatus.DRAFT;
-                                  const isArchived = a.status === AssignmentStatus.ARCHIVED;
-                                  const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
-                                  const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
-                                  return (
-                                    <div
-                                      key={a.id}
-                                      onMouseEnter={() => setHoverResourceId(a.id)}
-                                      onMouseLeave={() => setHoverResourceId(null)}
-                                      className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
-                                    >
-                                      <button
-                                        onClick={() => selectResource(a.id)}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
-                                      >
-                                        {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
-                                        <span className="truncate flex-1">{a.title}</span>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                          {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
-                                          {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
-                                          {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
-                                          {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
-                                          {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
-                                        </div>
-                                      </button>
-                                      {isHovered && (
-                                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
-                                          {isDraft && (
-                                            <button onClick={(e) => { e.stopPropagation(); handleQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
-                                              <Rocket className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                          <button onClick={(e) => { e.stopPropagation(); handleArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
-                                            {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
-                                          </button>
-                                          <button onClick={(e) => { e.stopPropagation(); handleDeleteResource(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )
-            ) : (
-              // ── Single-class view (existing behaviour) ─────────────────────
-              <>
-                {(() => {
-                  const sortedKeys = sortUnitKeys(Object.keys(filteredUnits), sidebarUnitOrder);
-                  return sortedKeys.map(k => [k, filteredUnits[k]] as [string, Assignment[]]);
-                })().map(([unit, items]) => (
-                  <div key={unit}>
-                    <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer">
-                      {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
-                      <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
-                    </button>
-                    {expandedUnits.has(unit) && items.map(a => {
-                      const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
-                      const hasHtml = !!a.contentUrl;
-                      const isHovered = hoverResourceId === a.id;
-                      const isDraft = a.status === AssignmentStatus.DRAFT;
-                      const isArchived = a.status === AssignmentStatus.ARCHIVED;
-                      const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
-                      const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
-                      return (
-                        <div
-                          key={a.id}
-                          onMouseEnter={() => setHoverResourceId(a.id)}
-                          onMouseLeave={() => setHoverResourceId(null)}
-                          className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
-                        >
-                          <button
-                            onClick={() => selectResource(a.id)}
-                            className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
-                          >
-                            {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
-                            <span className="truncate flex-1">{a.title}</span>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
-                              {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
-                              {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
-                              {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
-                              {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
-                            </div>
-                          </button>
-                          {isHovered && (
-                            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
-                              {isDraft && (
-                                <button onClick={(e) => { e.stopPropagation(); handleQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
-                                  <Rocket className="w-3 h-3" />
-                                </button>
-                              )}
-                              <button onClick={(e) => { e.stopPropagation(); handleArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
-                                {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
-                              </button>
-                              <button onClick={(e) => { e.stopPropagation(); handleDeleteResource(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-                {Object.keys(filteredUnits).length === 0 && (
-                  <div className="text-center py-8 text-gray-600 text-xs">
-                    <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    No resources match filters
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          {/* Sidebar footer stats */}
-          <div className="border-t border-white/5 px-3 py-2 text-[9px] text-gray-600 flex items-center justify-between">
-            {filterClass === 'All Classes' && filteredByClass ? (
-              <>
-                <span>{Object.values(filteredByClass).reduce((sum, units) => sum + Object.values(units).reduce((s, items) => s + items.length, 0), 0)} resources</span>
-                <span>{Object.keys(filteredByClass).length} classes</span>
-              </>
-            ) : (
-              <>
-                <span>{Object.values(filteredUnits).reduce((sum, items) => sum + items.length, 0)} resources</span>
-                <span>{Object.keys(filteredUnits).length} units</span>
-              </>
-            )}
-          </div>
-        </div>
-
+        <ResourceSidebar
+          assignments={assignments}
+          assignmentsByUnit={assignmentsByUnit}
+          selectedId={selectedId}
+          onSelectResource={selectResource}
+          onStartNew={startNewResource}
+          onQuickDeploy={handleQuickDeploy}
+          onArchive={handleArchive}
+          onDelete={handleDeleteResource}
+          availableClasses={availableClasses}
+          classConfigs={classConfigs}
+        />
         {/* Main editor area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {!isEditing ? (
@@ -1034,266 +691,5 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   );
 };
 
-// ──────────────────────────────────────────────
-// Inline block editor (reuses input styling)
-// ──────────────────────────────────────────────
-const inputClass = "w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition";
-const textareaClass = "w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-purple-500/50 transition";
-const labelClass = "text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-1";
-
-const InlineBlockEditor: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onUpdate: (b: LessonBlock) => void }> = ({ block, allBlocks, onUpdate }) => {
-  switch (block.type) {
-    case 'TEXT':
-      return <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Enter text content..." className={`${textareaClass} min-h-[80px]`} rows={3} />;
-    case 'SECTION_HEADER':
-      return (
-        <div className="space-y-2">
-          <div className="grid grid-cols-[80px_1fr] gap-2">
-            <div><label className={labelClass}>Icon</label><input type="text" value={block.icon || ''} onChange={e => onUpdate({ ...block, icon: e.target.value })} placeholder="📚" className={inputClass} /></div>
-            <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="Section title..." className={inputClass} /></div>
-          </div>
-          <div><label className={labelClass}>Subtitle</label><input type="text" value={block.subtitle || ''} onChange={e => onUpdate({ ...block, subtitle: e.target.value })} placeholder="Optional subtitle..." className={inputClass} /></div>
-        </div>
-      );
-    case 'IMAGE':
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Image URL</label><input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://..." className={inputClass} /></div>
-          {block.url && <img src={block.url} alt={block.alt || ''} className="max-h-32 rounded-lg border border-white/10 object-contain" onError={e => (e.currentTarget.style.display = 'none')} />}
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Caption</label><input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} placeholder="Caption..." className={inputClass} /></div>
-            <div><label className={labelClass}>Alt Text</label><input type="text" value={block.alt || ''} onChange={e => onUpdate({ ...block, alt: e.target.value })} placeholder="Describe..." className={inputClass} /></div>
-          </div>
-        </div>
-      );
-    case 'VIDEO':
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>YouTube URL</label><input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://youtube.com/watch?v=..." className={inputClass} /></div>
-          <div><label className={labelClass}>Caption</label><input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} placeholder="Caption..." className={inputClass} /></div>
-        </div>
-      );
-    case 'OBJECTIVES': {
-      const items = block.items || [''];
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-          {items.map((item, idx) => (
-            <div key={idx} className="flex gap-2">
-              <Target className="w-4 h-4 text-emerald-400 mt-2 shrink-0" />
-              <input type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Objective ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, items: [...items, ''] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>
-        </div>
-      );
-    }
-    case 'DIVIDER':
-      return <div className="text-xs text-gray-500 italic">Horizontal divider — no configuration needed.</div>;
-    case 'EXTERNAL_LINK':
-      return (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>URL</label><input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} className={inputClass} /></div>
-          </div>
-          <div><label className={labelClass}>Description</label><input type="text" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} className={inputClass} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Button Label</label><input type="text" value={block.buttonLabel || ''} onChange={e => onUpdate({ ...block, buttonLabel: e.target.value })} className={inputClass} /></div>
-            <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={block.openInNewTab ?? true} onChange={e => onUpdate({ ...block, openInNewTab: e.target.checked })} /> New tab</label></div>
-          </div>
-        </div>
-      );
-    case 'EMBED':
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Embed URL</label><input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} className={inputClass} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Caption</label><input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Height (px)</label><input type="number" value={block.height || 500} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 500 })} className={inputClass} /></div>
-          </div>
-        </div>
-      );
-    case 'INFO_BOX':
-      return (
-        <div className="space-y-2">
-          <div className="flex gap-2">{(['tip', 'warning', 'note'] as const).map(v => <button key={v} type="button" onClick={() => onUpdate({ ...block, variant: v })} className={`px-3 py-1 rounded-lg border text-xs font-bold capitalize transition ${block.variant === v ? (v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-400' : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-blue-500/20 border-blue-500/30 text-blue-400') : 'bg-black/30 border-white/10 text-gray-400'}`}>{v}</button>)}</div>
-          <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Content..." className={textareaClass} rows={2} />
-        </div>
-      );
-    case 'MC': {
-      const options = block.options || ['', ''];
-      return (
-        <div className="space-y-2">
-          <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question..." className={textareaClass} rows={2} />
-          {options.map((opt, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <button type="button" onClick={() => onUpdate({ ...block, correctAnswer: idx })} className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${block.correctAnswer === idx ? 'border-green-500 bg-green-500' : 'border-gray-600'}`}>{block.correctAnswer === idx && <div className="w-2 h-2 bg-white rounded-full" />}</button>
-              <input type="text" value={opt} onChange={e => { const n = [...options]; n[idx] = e.target.value; onUpdate({ ...block, options: n }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} className={`flex-1 ${inputClass}`} />
-              {options.length > 2 && <button type="button" onClick={() => { const n = options.filter((_, i) => i !== idx); onUpdate({ ...block, options: n, correctAnswer: block.correctAnswer === idx ? 0 : (block.correctAnswer || 0) > idx ? (block.correctAnswer || 0) - 1 : block.correctAnswer }); }} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          {options.length < 6 && <button type="button" onClick={() => onUpdate({ ...block, options: [...options, ''] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Option</button>}
-        </div>
-      );
-    }
-    case 'SHORT_ANSWER': {
-      const answers = block.acceptedAnswers || [''];
-      return (
-        <div className="space-y-2">
-          <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question..." className={textareaClass} rows={2} />
-          <label className={labelClass}>Accepted Answers</label>
-          {answers.map((ans, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} placeholder={`Answer ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: [...answers, ''] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Answer</button>
-        </div>
-      );
-    }
-    case 'VOCABULARY':
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          <div><label className={labelClass}>Term</label><input type="text" value={block.term || ''} onChange={e => onUpdate({ ...block, term: e.target.value })} className={inputClass} /></div>
-          <div><label className={labelClass}>Definition</label><input type="text" value={block.definition || ''} onChange={e => onUpdate({ ...block, definition: e.target.value })} className={inputClass} /></div>
-        </div>
-      );
-    case 'VOCAB_LIST': {
-      const terms = block.terms || [{ term: '', definition: '' }];
-      return (
-        <div className="space-y-2">
-          {terms.map((t, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input type="text" value={t.term} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], term: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Term" className={`flex-1 ${inputClass}`} />
-              <input type="text" value={t.definition} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], definition: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Definition" className={`flex-1 ${inputClass}`} />
-              {terms.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, terms: terms.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, terms: [...terms, { term: '', definition: '' }] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Term</button>
-        </div>
-      );
-    }
-    case 'CHECKLIST': {
-      const items = block.items || [''];
-      return (
-        <div className="space-y-2">
-          <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Checklist title..." className={textareaClass} rows={1} />
-          {items.map((item, idx) => (
-            <div key={idx} className="flex gap-2"><div className="w-5 h-5 rounded border-2 border-gray-600 shrink-0 mt-1.5" />
-              <input type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, items: [...items, ''] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Item</button>
-        </div>
-      );
-    }
-    case 'ACTIVITY':
-      return (
-        <div className="space-y-2">
-          <div className="grid grid-cols-[80px_1fr] gap-2">
-            <div><label className={labelClass}>Icon</label><input type="text" value={block.icon || ''} onChange={e => onUpdate({ ...block, icon: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-          </div>
-          <div><label className={labelClass}>Instructions</label><textarea value={block.instructions || ''} onChange={e => onUpdate({ ...block, instructions: e.target.value })} className={`${textareaClass} min-h-[60px]`} rows={2} /></div>
-        </div>
-      );
-    case 'SORTING': {
-      const sortItems = block.sortItems || [{ text: '', correct: 'left' as const }];
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-          <div><label className={labelClass}>Instructions</label><textarea value={block.instructions || ''} onChange={e => onUpdate({ ...block, instructions: e.target.value })} className={textareaClass} rows={1} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Left Category</label><input type="text" value={block.leftLabel || ''} onChange={e => onUpdate({ ...block, leftLabel: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Right Category</label><input type="text" value={block.rightLabel || ''} onChange={e => onUpdate({ ...block, rightLabel: e.target.value })} className={inputClass} /></div>
-          </div>
-          {sortItems.map((item, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input type="text" value={item.text} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], text: e.target.value }; onUpdate({ ...block, sortItems: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              <select value={item.correct} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], correct: e.target.value as 'left' | 'right' }; onUpdate({ ...block, sortItems: n }); }} className={`w-28 ${inputClass}`}><option value="left">{block.leftLabel || 'Left'}</option><option value="right">{block.rightLabel || 'Right'}</option></select>
-              {sortItems.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, sortItems: sortItems.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, sortItems: [...sortItems, { text: '', correct: 'left' }] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Item</button>
-        </div>
-      );
-    }
-    case 'DATA_TABLE': {
-      const columns = block.columns || [{ key: 'col1', label: 'Column 1', editable: true }];
-      return (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Rows</label><input type="number" value={block.trials || 3} onChange={e => onUpdate({ ...block, trials: parseInt(e.target.value) || 3 })} className={inputClass} /></div>
-          </div>
-          {columns.map((col, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input type="text" value={col.label} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], label: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Label" className={`flex-1 ${inputClass}`} />
-              <input type="text" value={col.unit || ''} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], unit: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Unit" className={`w-20 ${inputClass}`} />
-              {columns.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, columns: columns.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, columns: [...columns, { key: `col${columns.length + 1}`, label: '', editable: true }] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Column</button>
-        </div>
-      );
-    }
-    case 'BAR_CHART':
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Bars</label><input type="number" value={block.barCount || 3} onChange={e => onUpdate({ ...block, barCount: parseInt(e.target.value) || 3 })} className={inputClass} /></div>
-            <div><label className={labelClass}>Height (px)</label><input type="number" value={block.height || 300} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 300 })} className={inputClass} /></div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelClass}>Initial</label><input type="text" value={block.initialLabel || ''} onChange={e => onUpdate({ ...block, initialLabel: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Delta</label><input type="text" value={block.deltaLabel || ''} onChange={e => onUpdate({ ...block, deltaLabel: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Final</label><input type="text" value={block.finalLabel || ''} onChange={e => onUpdate({ ...block, finalLabel: e.target.value })} className={inputClass} /></div>
-          </div>
-        </div>
-      );
-    case 'RANKING': {
-      const items = block.items || [''];
-      return (
-        <div className="space-y-2">
-          <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Ranking question..." className={textareaClass} rows={2} />
-          <label className={labelClass}>Items (in correct order)</label>
-          {items.map((item, idx) => (
-            <div key={idx} className="flex gap-2">
-              <span className="text-xs font-mono text-gray-600 mt-2 w-5 text-right">{idx + 1}.</span>
-              <input type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} className={`flex-1 ${inputClass}`} />
-              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, items: [...items, ''] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Item</button>
-        </div>
-      );
-    }
-    case 'LINKED': {
-      const linkable = allBlocks.filter(b => b.id !== block.id && ['MC', 'SHORT_ANSWER', 'RANKING'].includes(b.type));
-      const answers = block.acceptedAnswers || [''];
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Reference Block</label><select value={block.linkedBlockId || ''} onChange={e => onUpdate({ ...block, linkedBlockId: e.target.value })} className={inputClass}><option value="">Select...</option>{linkable.map(b => <option key={b.id} value={b.id}>{b.type}: {(b.content || '').slice(0, 40)}</option>)}</select></div>
-          <textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Follow-up question..." className={textareaClass} rows={2} />
-          <label className={labelClass}>Accepted Answers</label>
-          {answers.map((ans, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} className={`flex-1 ${inputClass}`} />
-              {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
-            </div>
-          ))}
-          <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: [...answers, ''] })} className="text-xs text-purple-400 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Answer</button>
-        </div>
-      );
-    }
-    default:
-      return <div className="text-xs text-gray-500 italic">Unknown block type: {block.type}</div>;
-  }
-};
 
 export default LessonEditorPage;

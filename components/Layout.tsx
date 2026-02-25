@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem } from '../constants';
+import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import { storage } from '../lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
@@ -12,15 +14,17 @@ import { dataService } from '../services/dataService';
 interface LayoutProps {
   user: User;
   onLogout: () => void;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab, children }) => {
+const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [bgUrl, setBgUrl] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Derive activeTab from URL for nav highlighting
+  const activeTab = PATH_TO_TAB[location.pathname] || '';
 
   // Derived settings with defaults
   const settings: UserSettings = user.settings || {
@@ -51,6 +55,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
 
   const handleUpdateSettings = async (newSettings: UserSettings) => {
     await dataService.updateUserSettings(user.id, newSettings);
+  };
+
+  const handleNavigate = (tabName: string) => {
+    const path = TAB_TO_PATH[tabName];
+    if (path) navigate(path);
   };
 
   const [expandedParent, setExpandedParent] = useState<string | null>(null);
@@ -84,12 +93,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                     setExpandedParent(item.name);
                     // Select first child if no child is active
                     if (!isChildActive(item)) {
-                      setActiveTab(`${item.name}:${item.children[0].name}`);
+                      handleNavigate(`${item.name}:${item.children[0].name}`);
                       setIsMobileMenuOpen(false);
                     }
                   }
                 } else {
-                  setActiveTab(item.name);
+                  handleNavigate(item.name);
                   setIsMobileMenuOpen(false);
                 }
               }}
@@ -114,7 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                   return (
                     <button
                       key={child.name}
-                      onClick={() => { setActiveTab(childTab); setIsMobileMenuOpen(false); }}
+                      onClick={() => { handleNavigate(childTab); setIsMobileMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                         activeTab === childTab
                           ? 'bg-purple-600/60 text-white'
@@ -143,7 +152,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       {settings.liveBackground && bgUrl && (
         <div className="fixed inset-0 pointer-events-none z-[-2] overflow-hidden">
             <video
-              key={bgUrl} 
+              key={bgUrl}
               autoPlay
               loop
               muted
@@ -183,7 +192,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
           <div className="fixed inset-0 z-50 lg:hidden flex">
               {/* Backdrop */}
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setIsMobileMenuOpen(false)}></div>
-              
+
               {/* Drawer Content */}
               <div className="relative w-4/5 max-w-xs bg-[#1a1b26] border-r border-white/10 h-full flex flex-col p-6 animate-in slide-in-from-left duration-300 shadow-2xl">
                   <div className="flex justify-between items-center mb-8">
@@ -196,7 +205,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                               <p className="text-[10px] text-gray-500">{user.role}</p>
                           </div>
                       </div>
-                      <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white">
+                      <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white" aria-label="Close navigation menu">
                           <X className="w-6 h-6" />
                       </button>
                   </div>
@@ -206,7 +215,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                   </nav>
 
                   <div className="pt-6 border-t border-white/10 space-y-3">
-                      <button 
+                      <button
                           onClick={() => { setIsSettingsOpen(true); setIsMobileMenuOpen(false); }}
                           className="w-full flex items-center gap-3 p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition"
                       >
@@ -262,12 +271,13 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
                  <button
                    onClick={() => setIsSettingsOpen(true)}
                    className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                   aria-label="Open settings"
                  >
                    <Settings className="w-4 h-4" />
                  </button>
                </div>
             </div>
-            
+
             <button
               onClick={onLogout}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all text-sm font-medium"
@@ -280,17 +290,17 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
+      <main id="main-content" className={`flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
         <div className="max-w-7xl mx-auto h-full">
-          {children}
+          <Outlet />
         </div>
       </main>
 
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        user={user} 
-        onSaveSettings={handleUpdateSettings} 
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        onSaveSettings={handleUpdateSettings}
       />
     </div>
   );
