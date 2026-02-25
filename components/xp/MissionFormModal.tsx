@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ItemRarity, DefaultClassTypes, CustomItem } from '../../types';
 import { getAssetColors } from '../../lib/gamification';
+import { dataService } from '../../services/dataService';
 import Modal from '../Modal';
 import SectionPicker from '../SectionPicker';
+import { Save, FolderOpen, Copy, Trash2 } from 'lucide-react';
 
 export interface MissionFormState {
     title: string;
@@ -46,6 +48,13 @@ export const INITIAL_MISSION_STATE: MissionFormState = {
     targetSections: []
 };
 
+interface QuestTemplate {
+    id: string;
+    name: string;
+    form: MissionFormState;
+    createdAt: string;
+}
+
 interface MissionFormModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -60,12 +69,120 @@ interface MissionFormModalProps {
 
 const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, onSaveDraft, isSubmitting, availableSections = [], customItems = [] }) => {
     const isSkillCheck = form.type === 'SKILL_CHECK';
+    const [templates, setTemplates] = useState<QuestTemplate[]>([]);
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [templateName, setTemplateName] = useState('');
+    const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const unsub = dataService.subscribeToQuestTemplates((docs: any[]) => {
+            setTemplates(docs.map(d => ({ id: d.id, name: d.name, form: d.form, createdAt: d.createdAt })));
+        });
+        return () => unsub();
+    }, [isOpen]);
+
+    const handleSaveAsTemplate = async () => {
+        if (!templateName.trim()) return;
+        await dataService.saveQuestTemplate({
+            id: Math.random().toString(36).substring(2, 9),
+            name: templateName.trim(),
+            form: { ...form, startsAt: '', targetSections: [] },
+            createdAt: new Date().toISOString(),
+        });
+        setTemplateName('');
+        setShowSaveTemplate(false);
+    };
+
+    const handleLoadTemplate = (template: QuestTemplate) => {
+        setForm({ ...template.form, startsAt: '', targetSections: [] });
+        setShowTemplates(false);
+    };
+
+    const handleDeleteTemplate = async (id: string) => {
+        await dataService.deleteQuestTemplate(id);
+    };
 
     const selectedCustomItem = useMemo(() => customItems.find(i => i.id === form.customItemRewardId), [customItems, form.customItemRewardId]);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Issue New Mission Objective">
             <form onSubmit={onSubmit} className="space-y-4 text-gray-200 p-2">
+                {/* Template Actions Bar */}
+                <div className="flex gap-2 items-center">
+                    <button
+                        type="button"
+                        onClick={() => { setShowTemplates(!showTemplates); setShowSaveTemplate(false); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/10 transition"
+                    >
+                        <FolderOpen className="w-3 h-3" /> Load Template
+                        {templates.length > 0 && <span className="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded text-[9px]">{templates.length}</span>}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setShowSaveTemplate(!showSaveTemplate); setShowTemplates(false); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/10 transition"
+                    >
+                        <Save className="w-3 h-3" /> Save as Template
+                    </button>
+                </div>
+
+                {/* Template browser */}
+                {showTemplates && (
+                    <div className="border border-purple-500/20 bg-purple-900/10 rounded-xl p-3 space-y-2 max-h-48 overflow-y-auto">
+                        <div className="text-[10px] font-bold text-purple-400 uppercase">Mission Templates</div>
+                        {templates.length === 0 && <p className="text-[10px] text-gray-500 italic">No templates saved yet. Create a mission and save it as a template.</p>}
+                        {templates.map(t => (
+                            <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg bg-black/20 border border-white/5 hover:border-purple-500/20 transition">
+                                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleLoadTemplate(t)}>
+                                    <div className="text-xs font-bold text-white truncate">{t.name}</div>
+                                    <div className="text-[9px] text-gray-500">{t.form.type} — +{t.form.xpReward} XP — {t.form.targetClass || 'All Classes'}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => handleLoadTemplate(t)}
+                                    className="p-1 text-purple-400 hover:text-purple-300 transition"
+                                    title="Load template"
+                                >
+                                    <Copy className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleDeleteTemplate(t.id)}
+                                    className="p-1 text-gray-600 hover:text-red-400 transition"
+                                    title="Delete template"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Save template form */}
+                {showSaveTemplate && (
+                    <div className="border border-green-500/20 bg-green-900/10 rounded-xl p-3 flex gap-2 items-end">
+                        <div className="flex-1">
+                            <label className="block text-[9px] text-green-400 uppercase font-bold mb-1">Template Name</label>
+                            <input
+                                type="text"
+                                value={templateName}
+                                onChange={e => setTemplateName(e.target.value)}
+                                placeholder="e.g. Weekly Engagement"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-white text-sm focus:border-green-500 focus:outline-none"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleSaveAsTemplate}
+                            disabled={!templateName.trim()}
+                            className="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-500 transition disabled:opacity-50"
+                        >
+                            Save
+                        </button>
+                    </div>
+                )}
+
                 {/* Identity */}
                 <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Mission Codename</label>

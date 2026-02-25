@@ -154,6 +154,25 @@ export const dataService = {
     await deleteDoc(doc(db, 'customItems', id));
   },
 
+  // ========================================
+  // QUEST TEMPLATES
+  // ========================================
+
+  subscribeToQuestTemplates: (callback: (templates: import('../types').Quest[]) => void) => {
+    return guardedSnapshot('quest_templates', collection(db, 'quest_templates'), (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() })));
+    });
+  },
+
+  saveQuestTemplate: async (template: Record<string, unknown>) => {
+    const id = (template.id as string) || Math.random().toString(36).substring(2, 9);
+    await setDoc(doc(db, 'quest_templates', id), { ...template, id });
+  },
+
+  deleteQuestTemplate: async (id: string) => {
+    await deleteDoc(doc(db, 'quest_templates', id));
+  },
+
   // Write only the appearance sub-field — all other gamification fields are Cloud-Function-only
   updateUserAppearance: async (userId: string, appearance: { hue?: number; bodyType?: 'A' | 'B' | 'C'; skinTone?: number; hairStyle?: number; hairColor?: number }, classType?: string) => {
       try {
