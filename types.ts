@@ -1045,3 +1045,45 @@ export interface StreakData {
   streakHistory: string[];   // Last 30 active dates
   milestones: number[];       // Days reached (3, 7, 14, 21, 30)
 }
+
+// ========================================
+// TYPE GUARDS — validate Firestore data at deserialization boundaries
+// ========================================
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Validate that an unknown Firestore doc satisfies the minimum User shape. */
+export function isValidUser(data: unknown): data is User {
+  if (!isObject(data)) return false;
+  return (
+    typeof data.email === 'string' &&
+    typeof data.name === 'string' &&
+    (data.role === UserRole.ADMIN || data.role === UserRole.STUDENT) &&
+    typeof data.isWhitelisted === 'boolean'
+  );
+}
+
+/** Validate that an unknown Firestore doc satisfies the minimum Assignment shape. */
+export function isValidAssignment(data: unknown): data is Assignment {
+  if (!isObject(data)) return false;
+  return (
+    typeof data.id === 'string' &&
+    typeof data.title === 'string' &&
+    typeof data.classType === 'string' &&
+    (data.status === AssignmentStatus.ACTIVE ||
+     data.status === AssignmentStatus.ARCHIVED ||
+     data.status === AssignmentStatus.DRAFT)
+  );
+}
+
+/** Validate that an unknown Firestore doc satisfies the minimum Submission shape. */
+export function isValidSubmission(data: unknown): data is Submission {
+  if (!isObject(data)) return false;
+  return (
+    typeof data.userId === 'string' &&
+    typeof data.assignmentId === 'string' &&
+    typeof data.status === 'string'
+  );
+}

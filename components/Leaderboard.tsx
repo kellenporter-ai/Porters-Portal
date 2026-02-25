@@ -43,7 +43,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
     const unsub = dataService.subscribeToLeaderboard((users) => {
         setAllStudents(users);
         setIsLoading(false);
-    });
+    }, 200);
     return () => unsub();
   }, []);
 
@@ -156,7 +156,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                     No operatives ranked in {selectedClass}.
                 </div>
             ) : (
-                <div ref={listParentRef} className="max-h-[480px] overflow-auto">
+                <div ref={listParentRef} className="max-h-[480px] overflow-auto" role="list" aria-label={`${selectedClass} rankings`}>
                     <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
                         {rowVirtualizer.getVirtualItems().map(virtualRow => {
                             const u = restOfList[virtualRow.index];
@@ -170,6 +170,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                             return (
                                 <div
                                     key={u.id}
+                                    role="listitem"
+                                    aria-label={`Rank ${i + 1}: ${displayName}, ${classXP.toLocaleString()} XP`}
                                     className="p-5 flex items-center gap-5 transition hover:bg-white/5 border-b border-white/5 absolute top-0 left-0 w-full"
                                     style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
                                 >
@@ -206,7 +208,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     <button
                                         onClick={() => handleInspect(u.id)}
                                         className="p-2 text-gray-600 hover:text-purple-400 transition rounded-lg hover:bg-white/5"
-                                        title="Inspect player"
+                                        aria-label={`Inspect ${displayName}`}
                                     >
                                         <Eye className="w-4 h-4" />
                                     </button>

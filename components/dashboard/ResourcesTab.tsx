@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Assignment, ClassConfig } from '../../types';
-import { ChevronRight, ChevronDown, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, Clock, GraduationCap, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, Clock, GraduationCap, Search, X } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -15,6 +15,13 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 type EnrichedAssignment = Assignment & { lastEngagement: string | null; engagementTime: number };
+
+/** Simple fuzzy match: checks if all query tokens appear somewhere in the text (in any order). */
+function fuzzyMatch(text: string, query: string): boolean {
+  const lower = text.toLowerCase();
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return tokens.every(token => lower.includes(token));
+}
 
 interface ResourcesTabProps {
   unitGroups: Record<string, EnrichedAssignment[]>;
@@ -31,15 +38,18 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
 
   const filteredUnitGroups = useMemo(() => {
     if (!searchQuery.trim()) return unitGroups;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim();
     const filtered: Record<string, EnrichedAssignment[]> = {};
     for (const [unit, items] of Object.entries(unitGroups)) {
-      const matches = items.filter(r =>
-        r.title.toLowerCase().includes(q) ||
-        r.description?.toLowerCase().includes(q) ||
-        r.category?.toLowerCase().includes(q) ||
-        unit.toLowerCase().includes(q)
-      );
+      // If the entire unit name fuzzy-matches, include all its items
+      if (fuzzyMatch(unit, q)) {
+        filtered[unit] = items;
+        continue;
+      }
+      const matches = items.filter(r => {
+        const searchable = [r.title, r.description || '', r.category || '', unit].join(' ');
+        return fuzzyMatch(searchable, q);
+      });
       if (matches.length > 0) filtered[unit] = matches;
     }
     return filtered;
@@ -54,10 +64,20 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search resources..."
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition"
+          placeholder="Search resources by title, description, or unit..."
+          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-20 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition"
           aria-label="Search resources"
         />
+        {searchQuery && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <span className="text-[10px] text-gray-500 font-mono">
+              {Object.values(filteredUnitGroups).reduce((a, b) => a + b.length, 0)} results
+            </span>
+            <button onClick={() => setSearchQuery('')} className="text-gray-500 hover:text-white transition" aria-label="Clear search">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {Object.entries(filteredUnitGroups).length === 0 ? (

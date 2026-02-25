@@ -6,6 +6,7 @@ import exifr from 'exifr';
 import { dataService } from '../services/dataService';
 import { storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { reportError } from '../lib/errorReporting';
 // @ts-ignore
 import { jsPDF } from 'jspdf';
 import { useToast } from './ToastProvider';
@@ -18,6 +19,34 @@ interface EvidenceLockerProps {
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const;
 type DayName = typeof DAYS_OF_WEEK[number];
+
+/** Compress an image file using canvas. Returns a compressed Blob. */
+function compressImage(file: File, maxDim = 1600, quality = 0.8): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : resolve(file),
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => reject(new Error('Image load failed'));
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
   const toast = useToast();
@@ -93,11 +122,14 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
             }
         }
         
+        // Compress image before upload
+        const uploadBlob = file.type.startsWith('image/') ? await compressImage(file) : file;
+
         // Generate Unique ID that includes Class to separate uploads per class per day
         const safeClass = selectedClass.replace(/[^a-zA-Z0-9]/g, '_');
         const uniqueId = Math.random().toString(36).substring(2, 9);
         const storageRef = ref(storage, `evidence/${user.id}/${currentWeekId}/${safeClass}_${activeDay}_${uniqueId}`);
-        await uploadBytes(storageRef, file);
+        await uploadBytes(storageRef, uploadBlob);
         const url = await getDownloadURL(storageRef);
 
         const existingLog = getLogForDay(activeDay);
@@ -173,51 +205,54 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
 
           let yPos = 55;
 
-          const sortedLogs = [...classLogs].sort((a, b) => 
+          const sortedLogs = [...classLogs].sort((a, b) =>
               DAYS_OF_WEEK.indexOf(a.dayOfWeek) - DAYS_OF_WEEK.indexOf(b.dayOfWeek)
           );
 
-          for (const log of sortedLogs) {
-              let imgBase64 = null;
-              let imgFormat = 'JPEG';
+          // Fetch all images in parallel
+          const imageResults = await Promise.all(
+              sortedLogs.map(async (log) => {
+                  try {
+                      const response = await fetch(log.imageUrl);
+                      if (!response.ok) throw new Error(`Image fetch failed: ${response.statusText}`);
+                      const imgBlob = await response.blob();
+                      const base64 = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve(reader.result as string);
+                          reader.onerror = reject;
+                          reader.readAsDataURL(imgBlob);
+                      });
+                      const format = imgBlob.type === 'image/png' ? 'PNG' : imgBlob.type === 'image/webp' ? 'WEBP' : 'JPEG';
+                      return { base64, format, error: false };
+                  } catch (e) {
+                      reportError(e, { context: 'PDF image fetch', day: log.dayOfWeek });
+                      return { base64: null, format: 'JPEG', error: true };
+                  }
+              })
+          );
+
+          for (let li = 0; li < sortedLogs.length; li++) {
+              const log = sortedLogs[li];
+              const imgData = imageResults[li];
               let finalImgWidth = 0;
               let finalImgHeight = 0;
-              let imageError = false;
 
-              try {
-                  const response = await fetch(log.imageUrl);
-                  if (!response.ok) throw new Error(`Image fetch failed: ${response.statusText}`);
-                  const imgBlob = await response.blob();
-                  
-                  imgBase64 = await new Promise<string>((resolve, reject) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result as string);
-                      reader.onerror = reject;
-                      reader.readAsDataURL(imgBlob);
-                  });
-
-                  if (imgBlob.type === 'image/png') imgFormat = 'PNG';
-                  if (imgBlob.type === 'image/webp') imgFormat = 'WEBP';
-
-                  const imgProps = doc.getImageProperties(imgBase64);
+              if (!imgData.error && imgData.base64) {
+                  const imgProps = doc.getImageProperties(imgData.base64);
                   const imgRatio = imgProps.width / imgProps.height;
-                  
                   const maxHeight = 100;
                   finalImgWidth = contentWidth;
                   finalImgHeight = finalImgWidth / imgRatio;
-
                   if (finalImgHeight > maxHeight) {
                       finalImgHeight = maxHeight;
                       finalImgWidth = finalImgHeight * imgRatio;
                   }
-              } catch (e) {
-                  console.warn("Image processing error for PDF", e);
-                  imageError = true;
+              } else {
                   finalImgHeight = 15;
               }
 
-              const headerHeight = 20; 
-              const imageSpacing = 12; 
+              const headerHeight = 20;
+              const imageSpacing = 12;
               const totalBlockHeight = headerHeight + finalImgHeight + imageSpacing;
 
               if (yPos + totalBlockHeight > maxY) {
@@ -229,23 +264,23 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
               doc.setLineWidth(0.5);
               doc.line(margin, yPos, pageWidth - margin, yPos);
               yPos += 6;
-              
+
               doc.setTextColor(15, 7, 32);
               doc.setFontSize(16);
               doc.setFont('helvetica', 'bold');
               doc.text(log.dayOfWeek.toUpperCase(), margin, yPos);
-              
+
               const dateDisplay = formatExifDate(log.exifDate) || formatExifDate(log.timestamp);
               doc.setFontSize(9);
               doc.setFont('helvetica', 'italic');
               doc.setTextColor(100, 100, 100);
               doc.text(`Captured: ${dateDisplay}`, pageWidth - margin, yPos, { align: 'right' });
-              
-              yPos += 10; 
 
-              if (!imageError && imgBase64) {
+              yPos += 10;
+
+              if (!imgData.error && imgData.base64) {
                   const xOffset = (pageWidth - finalImgWidth) / 2;
-                  doc.addImage(imgBase64, imgFormat, xOffset, yPos, finalImgWidth, finalImgHeight);
+                  doc.addImage(imgData.base64, imgData.format, xOffset, yPos, finalImgWidth, finalImgHeight);
                   yPos += finalImgHeight + 12;
               } else {
                   doc.setTextColor(255, 0, 0);
@@ -258,7 +293,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
               doc.setFontSize(10);
               const reflectionContent = log.reflection || "No reflection logged for this cycle.";
               const splitText = doc.splitTextToSize(reflectionContent, contentWidth);
-              const textBlockHeight = (splitText.length * 5) + 15; 
+              const textBlockHeight = (splitText.length * 5) + 15;
 
               if (yPos + textBlockHeight > maxY) {
                   doc.addPage();
@@ -270,13 +305,13 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
               doc.setFont('helvetica', 'bold');
               doc.text("DAILY REFLECTION:", margin, yPos);
               yPos += 6;
-              
+
               doc.setFont('helvetica', 'normal');
               doc.setFontSize(10);
               doc.setTextColor(60, 60, 60);
               doc.text(splitText, margin, yPos);
-              
-              yPos += (splitText.length * 5) + 25; 
+
+              yPos += (splitText.length * 5) + 25;
           }
 
           doc.save(`Report_${selectedClass.replace(/\s+/g, '')}_${user.name.replace(/\s+/g, '_')}_${currentWeekId}.pdf`);
@@ -287,8 +322,8 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
           // UI update happens via subscription
 
       } catch (err) {
-          console.error("PDF generation failed:", err);
-          toast.error("Failed to build report. Data was NOT deleted. Check console for details.");
+          reportError(err, { method: 'generatePDF', classType: selectedClass });
+          toast.error("Failed to build report. Data was NOT deleted.");
       } finally {
           setIsGeneratingPdf(false);
       }

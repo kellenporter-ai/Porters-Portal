@@ -21,7 +21,7 @@ interface LessonBlocksProps {
 // ──────────────────────────────────────────────
 // Interactive block types (require completion)
 // ──────────────────────────────────────────────
-const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'];
+const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'VOCAB_LIST', 'ACTIVITY', 'BAR_CHART', 'DATA_TABLE'];
 
 // ──────────────────────────────────────────────
 // Original block renderers
@@ -67,10 +67,12 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
         <HelpCircle className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
-      <div className="space-y-2">
+      <div className="space-y-2" role="radiogroup" aria-label={block.content}>
         {(block.options || []).map((opt, idx) => (
           <button
             key={idx}
+            role="radio"
+            aria-checked={selected === idx}
             onClick={() => !answered && setSelected(idx)}
             disabled={answered}
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
@@ -133,6 +135,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
           onChange={e => setAnswer(e.target.value)}
           disabled={answered}
           placeholder="Type your answer..."
+          aria-label={block.content || 'Short answer'}
           className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
           onKeyDown={e => e.key === 'Enter' && handleSubmit()}
         />
@@ -194,10 +197,12 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
         <ListChecks className="w-4 h-4 text-green-400 shrink-0" />
         {block.content}
       </p>
-      <div className="space-y-2">
+      <div className="space-y-2" role="group" aria-label={block.content || 'Checklist'}>
         {(block.items || []).map((item, idx) => (
           <button
             key={idx}
+            role="checkbox"
+            aria-checked={checked.has(idx)}
             onClick={() => toggle(idx)}
             className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border text-sm transition ${
               checked.has(idx)
@@ -686,6 +691,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
           onChange={e => setAnswer(e.target.value)}
           disabled={answered}
           placeholder="Type your answer..."
+          aria-label={block.content || 'Linked question answer'}
           className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
           onKeyDown={e => e.key === 'Enter' && handleSubmit()}
         />

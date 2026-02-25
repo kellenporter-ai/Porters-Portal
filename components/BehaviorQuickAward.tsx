@@ -1,9 +1,18 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { User, BehaviorCategory, DEFAULT_BEHAVIOR_CATEGORIES } from '../types';
 import { Award, Search, X, Zap } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
+
+const COLOR_MAP: Record<string, { bg: string; border: string; hoverBorder: string; hoverBg: string }> = {
+  blue:   { bg: 'bg-blue-500/5',   border: 'border-blue-500/20',   hoverBorder: 'hover:border-blue-500/40',   hoverBg: 'hover:bg-blue-500/10' },
+  green:  { bg: 'bg-green-500/5',  border: 'border-green-500/20',  hoverBorder: 'hover:border-green-500/40',  hoverBg: 'hover:bg-green-500/10' },
+  amber:  { bg: 'bg-amber-500/5',  border: 'border-amber-500/20',  hoverBorder: 'hover:border-amber-500/40',  hoverBg: 'hover:bg-amber-500/10' },
+  purple: { bg: 'bg-purple-500/5', border: 'border-purple-500/20', hoverBorder: 'hover:border-purple-500/40', hoverBg: 'hover:bg-purple-500/10' },
+  pink:   { bg: 'bg-pink-500/5',   border: 'border-pink-500/20',   hoverBorder: 'hover:border-pink-500/40',   hoverBg: 'hover:bg-pink-500/10' },
+  orange: { bg: 'bg-orange-500/5', border: 'border-orange-500/20', hoverBorder: 'hover:border-orange-500/40', hoverBg: 'hover:bg-orange-500/10' },
+};
 
 interface BehaviorQuickAwardProps {
   students: User[];
@@ -23,8 +32,14 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
     return students.filter(s => s.name.toLowerCase().includes(search.toLowerCase())).slice(0, 20);
   }, [students, search]);
 
+  const lastAwardRef = useRef(0);
   const handleAward = async (cat: BehaviorCategory) => {
     if (!selectedStudent) return;
+    // Debounce: prevent rapid-fire awards (1.5s cooldown)
+    const now = Date.now();
+    if (now - lastAwardRef.current < 1500) return;
+    lastAwardRef.current = now;
+
     setAwarding(true);
     try {
       await dataService.awardBehavior({
@@ -112,12 +127,14 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
 
               <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">Select Behavior</p>
               <div className="grid grid-cols-2 gap-2">
-                {categories.map(cat => (
+                {categories.map(cat => {
+                  const colors = COLOR_MAP[cat.color] || COLOR_MAP.blue;
+                  return (
                   <button
                     key={cat.id}
                     onClick={() => handleAward(cat)}
                     disabled={awarding}
-                    className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 bg-${cat.color}-500/5 border-${cat.color}-500/20 hover:border-${cat.color}-500/40 hover:bg-${cat.color}-500/10`}
+                    className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 ${colors.bg} ${colors.border} ${colors.hoverBorder} ${colors.hoverBg}`}
                   >
                     <div className="text-2xl mb-1">{cat.icon}</div>
                     <div className="text-sm font-bold text-white">{cat.name}</div>
@@ -126,7 +143,8 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
                       <span className="text-[10px] text-cyan-400 font-bold">+{cat.fluxAmount} Flux</span>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}

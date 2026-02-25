@@ -5,20 +5,36 @@ import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { TEACHER_DISPLAY_NAME } from '../constants';
+import { reportError } from '../lib/errorReporting';
 
 // Track collections that have failed with permission errors to prevent
-// re-subscribing after ErrorBoundary remounts (which would crash Firestore SDK)
-const _deniedCollections = new Set<string>();
+// re-subscribing after ErrorBoundary remounts (which would crash Firestore SDK).
+// Uses a Map<name, deniedAtMs> with a 5-minute TTL so transient permission errors
+// don't permanently block a collection for the rest of the session.
+const DENIED_TTL_MS = 5 * 60 * 1000;
+const _deniedCollections = new Map<string, number>();
+
+/** Clear all denial caches — call when auth state changes. */
+export function clearDeniedCollections() {
+  _deniedCollections.clear();
+}
+
 const guardedSnapshot = (
   name: string,
   q: any,
   callback: (snapshot: any) => void
 ) => {
-  if (_deniedCollections.has(name)) return () => {};
+  const deniedAt = _deniedCollections.get(name);
+  if (deniedAt !== undefined && Date.now() - deniedAt < DENIED_TTL_MS) {
+    return () => {};
+  }
+  // If TTL has expired, remove stale entry so we retry
+  if (deniedAt !== undefined) _deniedCollections.delete(name);
+
   return onSnapshot(q, callback, (error: any) => {
-    console.warn(`[guardedSnapshot] ${name} blocked:`, error?.code || error);
+    reportError(error, { subscription: name });
     if (error?.code === 'permission-denied' || error?.code === 'failed-precondition') {
-      _deniedCollections.add(name);
+      _deniedCollections.set(name, Date.now());
     }
   });
 };
@@ -148,7 +164,7 @@ export const dataService = {
               await updateDoc(userRef, { 'gamification.appearance': appearance });
           }
       } catch (error) {
-          console.error("Error updating appearance:", error);
+          reportError(error, { method: 'updateAppearance' });
           throw error;
       }
   },
@@ -167,7 +183,7 @@ export const dataService = {
 
         await callSendClassMessage({ content, channelId, classType });
     } catch (error) {
-        console.error("Error sending message:", error);
+        reportError(error, { method: 'sendMessage' });
         throw error;
     }
   },
@@ -224,7 +240,7 @@ export const dataService = {
       try {
           await deleteDoc(doc(db, 'class_messages', messageId));
       } catch (error) {
-          console.error("Error deleting message:", error);
+          reportError(error, { method: 'deleteMessage' });
           throw error;
       }
   },
@@ -240,7 +256,7 @@ export const dataService = {
         messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         callback(messages);
     }, (error) => {
-        console.error("Subscribe Flagged Messages Error:", error);
+        reportError(error, { subscription: 'flaggedMessages' });
     });
   },
 
@@ -249,7 +265,7 @@ export const dataService = {
         const msgRef = doc(db, 'class_messages', messageId);
         await updateDoc(msgRef, { isFlagged: false, systemNote: '' });
     } catch (error) {
-        console.error("Error unflagging message:", error);
+        reportError(error, { method: 'unflagMessage' });
         throw error;
     }
   },
@@ -266,7 +282,7 @@ export const dataService = {
           }
           await updateDoc(doc(db, 'users', userId), { mutedUntil: dateStr });
       } catch (error) {
-          console.error("Error muting user:", error);
+          reportError(error, { method: 'muteUser' });
           throw error;
       }
   },
@@ -301,13 +317,13 @@ export const dataService = {
     const q = query(collection(db, 'student_groups'), where('classType', '==', classType));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup)));
-    }, (error) => console.error('Student groups subscription error:', error));
+    }, (error: unknown) => reportError(error, { subscription: 'studentGroups' }));
   },
 
   subscribeToAllGroups: (callback: (groups: StudentGroup[]) => void) => {
     return onSnapshot(collection(db, 'student_groups'), (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup)));
-    }, (error) => console.error('All groups subscription error:', error));
+    }, (error: unknown) => reportError(error, { subscription: 'allGroups' }));
   },
 
   subscribeToMyGroups: (userId: string, callback: (groups: StudentGroup[]) => void) => {
@@ -315,14 +331,14 @@ export const dataService = {
     const q = query(collection(db, 'student_groups'), where('memberIds', 'array-contains', userId));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudentGroup)));
-    }, (error) => console.error('My groups subscription error:', error));
+    }, (error: unknown) => reportError(error, { subscription: 'myGroups' }));
   },
 
-  subscribeToChannelMessages: (channelId: string, callback: (msgs: ChatMessage[]) => void) => {
+  subscribeToChannelMessages: (channelId: string, callback: (msgs: ChatMessage[]) => void, maxResults = 100) => {
     const q = query(
-        collection(db, 'class_messages'), 
+        collection(db, 'class_messages'),
         where('channelId', '==', channelId),
-        limit(100)
+        limit(maxResults)
     );
     
     return onSnapshot(q, (snapshot) => {
@@ -330,7 +346,7 @@ export const dataService = {
         messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         callback(messages);
     }, (error) => {
-        console.error("Subscribe Messages Error:", error);
+        reportError(error, { subscription: 'channelMessages' });
     });
   },
 
@@ -350,7 +366,7 @@ export const dataService = {
     const q = query(collection(db, 'conversations'), orderBy('lastMessageAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Conversation)));
-    }, (error) => console.error("Conversations subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'conversations' }));
   },
 
   subscribeToChatMessages: (convoId: string, callback: (msgs: ChatMessage[]) => void) => {
@@ -360,7 +376,7 @@ export const dataService = {
     );
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage)));
-    }, (error) => console.error("Chat messages subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'chatMessages' }));
   },
 
   sendChatMessage: async (convoId: string, user: User, content: string) => {
@@ -389,7 +405,7 @@ export const dataService = {
         flags.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         callback(flags);
     }, (error) => {
-        console.error("Subscribe Flags Error:", error);
+        reportError(error, { subscription: 'chatFlags' });
     });
   },
 
@@ -404,7 +420,7 @@ export const dataService = {
         const updates = snapshot.docs.map(d => updateDoc(d.ref, { isResolved: true }));
         await Promise.all(updates);
     } catch (error) {
-        console.error("Error resolving flag by messageId:", error);
+        reportError(error, { method: 'resolveFlagByMessageId' });
     }
   },
 
@@ -419,7 +435,7 @@ export const dataService = {
     return onSnapshot(q, (snapshot) => {
       const logs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EvidenceLog));
       callback(logs);
-    }, (error) => console.error("Evidence subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'evidence' }));
   },
 
   uploadEvidence: async (log: EvidenceLog) => {
@@ -441,7 +457,7 @@ export const dataService = {
           await Promise.all(docPromises);
           
       } catch (error) {
-          console.error("Error clearing weekly evidence:", error);
+          reportError(error, { method: 'clearWeeklyEvidence' });
           throw new Error("Failed to clear evidence log.");
       }
   },
@@ -459,7 +475,7 @@ export const dataService = {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { settings });
     } catch (error) {
-      console.error("Error updating settings:", error);
+      reportError(error, { method: 'updateSettings' });
     }
   },
 
@@ -479,8 +495,10 @@ export const dataService = {
     });
   },
 
-  subscribeToUsers: (callback: (users: User[]) => void) => {
-    const q = collection(db, 'users');
+  subscribeToUsers: (callback: (users: User[]) => void, maxResults?: number) => {
+    const q = maxResults
+      ? query(collection(db, 'users'), limit(maxResults))
+      : collection(db, 'users');
     return onSnapshot(q, (snapshot) => {
       const users = snapshot.docs.map(doc => {
         const data = doc.data();
@@ -490,7 +508,7 @@ export const dataService = {
         } as User;
       });
       callback(users);
-    }, (error) => console.error("Users subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'users' }));
   },
 
   subscribeToAssignments: (callback: (assignments: Assignment[]) => void) => {
@@ -519,11 +537,11 @@ export const dataService = {
         };
       });
       callback(assignments);
-    }, (error) => console.error("Assignments subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'assignments' }));
   },
   
-  subscribeToSubmissions: (callback: (submissions: Submission[]) => void) => {
-    const q = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'), limit(200));
+  subscribeToSubmissions: (callback: (submissions: Submission[]) => void, maxResults = 200) => {
+    const q = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'), limit(maxResults));
     return onSnapshot(q, (snapshot) => {
       const submissions = snapshot.docs.map(d => {
         const data = d.data();
@@ -547,7 +565,7 @@ export const dataService = {
         } as Submission;
       });
       callback(submissions);
-    }, (error) => console.error("Submissions subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'submissions' }));
   },
 
   /** Student-scoped submissions — avoids Firestore permission error on unfiltered query */
@@ -579,7 +597,7 @@ export const dataService = {
       // Sort client-side instead
       .sort((a, b) => new Date(b.submittedAt || '').getTime() - new Date(a.submittedAt || '').getTime());
       callback(submissions);
-    }, (error) => console.error("User submissions subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'userSubmissions' }));
   },
 
   subscribeToWhitelist: (callback: (whitelist: WhitelistedUser[]) => void) => {
@@ -591,7 +609,7 @@ export const dataService = {
           classTypes: (doc.data().classTypes || [doc.data().classType].filter(Boolean)) as ClassType[]
       }));
       callback(whitelist);
-    }, (error) => console.error("Whitelist subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'whitelist' }));
   },
 
   subscribeToClassConfigs: (callback: (configs: ClassConfig[]) => void) => {
@@ -599,7 +617,7 @@ export const dataService = {
       return onSnapshot(q, (snapshot) => {
           const configs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ClassConfig));
           callback(configs);
-      }, (error) => console.error("ClassConfigs subscription error:", error));
+      }, (error: unknown) => reportError(error, { subscription: 'classConfigs' }));
   },
 
   addAssignment: async (assignment: Assignment) => {
@@ -627,7 +645,7 @@ export const dataService = {
         await addDoc(collection(db, 'assignments'), data);
       }
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'addAssignment' });
       throw error;
     }
   },
@@ -636,7 +654,7 @@ export const dataService = {
     try {
       await updateDoc(doc(db, 'assignments', id), { status });
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'updateAssignmentStatus' });
     }
   },
 
@@ -644,7 +662,7 @@ export const dataService = {
     try {
       await deleteDoc(doc(db, 'assignments', id));
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'deleteAssignment' });
     }
   },
 
@@ -671,7 +689,7 @@ export const dataService = {
         });
       }));
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'addToWhitelist' });
     }
   },
 
@@ -685,7 +703,7 @@ export const dataService = {
         await updateDoc(doc(db, 'users', d.id), { section });
       }));
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'updateWhitelistSection' });
     }
   },
 
@@ -714,7 +732,7 @@ export const dataService = {
         });
       }));
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'removeFromWhitelist' });
     }
   },
 
@@ -742,7 +760,7 @@ export const dataService = {
           }
       }
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'approveUser' });
     }
   },
 
@@ -755,10 +773,10 @@ export const dataService = {
       }
       await deleteDoc(doc(db, 'users', userId));
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'removeUser' });
     }
   },
-  
+
   submitAssignment: async (submission: Submission) => {
     try {
       const subId = `${submission.userId}_${submission.assignmentId}`;
@@ -773,7 +791,7 @@ export const dataService = {
         submittedAt: new Date().toISOString(),
       }, { merge: true });
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'submitAssignment' });
     }
   },
 
@@ -813,7 +831,7 @@ export const dataService = {
         });
       }
     } catch (err) {
-      console.error('submitReviewEngagement:', err);
+      reportError(err, { method: 'submitReviewEngagement' });
     }
   },
 
@@ -845,7 +863,7 @@ export const dataService = {
           
           await updateDoc(userRef, updates);
       } catch (error) {
-          console.error("Error updating user classes:", error);
+          reportError(error, { method: 'updateUserClasses' });
       }
   },
 
@@ -868,7 +886,7 @@ export const dataService = {
           }
       }
     } catch (error) {
-      console.error(error);
+      reportError(error, { method: 'updateUserClass' });
     }
   },
 
@@ -876,7 +894,7 @@ export const dataService = {
     try {
         await updateDoc(doc(db, 'users', userId), { classType });
     } catch (e) {
-        console.error("Error switching view:", e);
+        reportError(e, { method: 'switchUserView' });
     }
   },
 
@@ -889,18 +907,20 @@ export const dataService = {
       return result.data as { xpEarned: number; leveledUp: boolean; status: string };
   },
 
-  subscribeToLeaderboard: (callback: (users: User[]) => void) => {
-      const q = query(collection(db, 'users'), where('role', '==', 'STUDENT'));
+  subscribeToLeaderboard: (callback: (users: User[]) => void, maxResults?: number) => {
+      const q = maxResults
+        ? query(collection(db, 'users'), where('role', '==', 'STUDENT'), limit(maxResults))
+        : query(collection(db, 'users'), where('role', '==', 'STUDENT'));
       return onSnapshot(q, (snapshot) => {
           callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as User)));
-      }, (error) => console.error("Leaderboard subscription error:", error));
+      }, (error: unknown) => reportError(error, { subscription: 'leaderboard' }));
   },
 
   saveClassConfig: async (config: ClassConfig) => {
     try {
       await setDoc(doc(db, 'class_configs', config.className), config);
     } catch (error) {
-      console.error("Error saving class config:", error);
+      reportError(error, { method: 'saveClassConfig' });
       throw error;
     }
   },
@@ -909,7 +929,7 @@ export const dataService = {
     try {
       await deleteDoc(doc(db, 'class_configs', className));
     } catch (error) {
-      console.error("Error deleting class config:", error);
+      reportError(error, { method: 'deleteClassConfig' });
       throw error;
     }
   },
@@ -966,7 +986,7 @@ export const dataService = {
     );
     return onSnapshot(q, (snapshot) => {
         callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Notification)));
-    }, (error) => console.error("Notifications subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'notifications' }));
   },
 
   markNotificationRead: async (notificationId: string) => {
@@ -1248,7 +1268,7 @@ export const dataService = {
       } else {
         callback(null);
       }
-    }, (error) => console.error("Party subscription error:", error));
+    }, (error: unknown) => reportError(error, { subscription: 'party' }));
   },
 
   // --- PEER TUTORING ---

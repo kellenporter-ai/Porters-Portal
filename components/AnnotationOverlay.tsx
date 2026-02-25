@@ -117,7 +117,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
     for (const stroke of strokesRef.current) {
       if (stroke.points.length < 2) continue;
       ctx.beginPath();
-      ctx.strokeStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,0)' : stroke.color;
+      ctx.strokeStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,1)' : stroke.color;
       ctx.lineWidth = stroke.width;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';

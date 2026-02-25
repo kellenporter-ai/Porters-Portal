@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Assignment, Submission } from '../../types';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle, LayoutGrid, List } from 'lucide-react';
 
 interface CalendarViewProps {
   assignments: Assignment[];
   submissions: Submission[];
   activeClass: string;
+  enrolledClasses?: string[];
   onStartAssignment?: (id: string) => void;
 }
 
@@ -13,16 +14,32 @@ interface DayData {
   date: Date;
   isCurrentMonth: boolean;
   isToday: boolean;
-  assignments: (Assignment & { isOverdue: boolean; isCompleted: boolean })[];
+  assignments: (Assignment & { isOverdue: boolean; isCompleted: boolean; classColor: string })[];
 }
+
+type ViewMode = 'month' | 'week';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, activeClass, onStartAssignment }) => {
+// Color-code assignments by class
+const CLASS_COLORS = [
+  'bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-pink-400',
+  'bg-cyan-400', 'bg-violet-400', 'bg-orange-400', 'bg-rose-400',
+];
+
+function getClassColor(classType: string, enrolledClasses: string[]): string {
+  const idx = enrolledClasses.indexOf(classType);
+  return CLASS_COLORS[idx >= 0 ? idx % CLASS_COLORS.length : 0];
+}
+
+const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, activeClass, enrolledClasses = [], onStartAssignment }) => {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+
+  const allEnrolled = useMemo(() => enrolledClasses.length > 0 ? enrolledClasses : [activeClass], [enrolledClasses, activeClass]);
 
   // Filter assignments with due dates in active class
   const classAssignments = useMemo(
@@ -59,7 +76,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           const sub = submissions.find(s => s.assignmentId === a.id && s.status !== 'STARTED');
           const isCompleted = !!sub;
           const isOverdue = !isCompleted && new Date(a.dueDate!) < now;
-          return { ...a, isCompleted, isOverdue };
+          const classColor = getClassColor(a.classType || activeClass, allEnrolled);
+          return { ...a, isCompleted, isOverdue, classColor };
         });
 
       days.push({ date, isCurrentMonth: true, isToday, assignments: dayAssignments });
@@ -75,10 +93,37 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
     return days;
   }, [viewDate, classAssignments, submissions, today]);
 
+  // Week view: compute current week days
+  const weekDays = useMemo((): DayData[] => {
+    const startOfWeek = new Date(viewDate);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const now = new Date();
+    const days: DayData[] = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      const isToday = date.toDateString() === today.toDateString();
+      const dayAssignments = classAssignments
+        .filter(a => a.dueDate && a.dueDate.split('T')[0] === dateStr)
+        .map(a => {
+          const sub = submissions.find(s => s.assignmentId === a.id && s.status !== 'STARTED');
+          const isCompleted = !!sub;
+          const isOverdue = !isCompleted && new Date(a.dueDate!) < now;
+          const classColor = getClassColor(a.classType || activeClass, allEnrolled);
+          return { ...a, isCompleted, isOverdue, classColor };
+        });
+      days.push({ date, isCurrentMonth: true, isToday, assignments: dayAssignments });
+    }
+    return days;
+  }, [viewDate, classAssignments, submissions, today, activeClass, allEnrolled]);
+
   const prevMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
   const nextMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+  const prevWeek = () => { const d = new Date(viewDate); d.setDate(d.getDate() - 7); setViewDate(d); };
+  const nextWeek = () => { const d = new Date(viewDate); d.setDate(d.getDate() + 7); setViewDate(d); };
   const goToday = () => {
-    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setViewDate(viewMode === 'month' ? new Date(today.getFullYear(), today.getMonth(), 1) : new Date());
     setSelectedDay(null);
   };
 
@@ -97,13 +142,31 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
 
   return (
     <div style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400">
-          <CalendarIcon className="w-5 h-5" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400">
+            <CalendarIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">Calendar</h2>
+            <p className="text-xs text-gray-500">Assignment due dates for {activeClass}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-bold text-white">Calendar</h2>
-          <p className="text-xs text-gray-500">Assignment due dates for {activeClass}</p>
+        <div className="flex bg-black/30 rounded-lg p-0.5 border border-white/10">
+          <button
+            onClick={() => setViewMode('month')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition ${viewMode === 'month' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            aria-label="Month view"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" /> Month
+          </button>
+          <button
+            onClick={() => { setViewMode('week'); setViewDate(new Date()); }}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition ${viewMode === 'week' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            aria-label="Week view"
+          >
+            <List className="w-3.5 h-3.5" /> Week
+          </button>
         </div>
       </div>
 
@@ -112,12 +175,21 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
         <div className="lg:col-span-2 bg-black/20 border border-white/5 rounded-2xl p-4">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition" aria-label="Previous month">
+            <button onClick={viewMode === 'month' ? prevMonth : prevWeek} className="p-2 hover:bg-white/5 rounded-lg transition" aria-label={viewMode === 'month' ? 'Previous month' : 'Previous week'}>
               <ChevronLeft className="w-4 h-4 text-gray-400" />
             </button>
             <div className="flex items-center gap-3">
               <h3 className="text-white font-bold">
-                {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
+                {viewMode === 'month'
+                  ? `${MONTHS[viewDate.getMonth()]} ${viewDate.getFullYear()}`
+                  : (() => {
+                      const start = new Date(viewDate);
+                      start.setDate(start.getDate() - start.getDay());
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 6);
+                      return `${MONTHS[start.getMonth()]} ${start.getDate()} – ${start.getMonth() !== end.getMonth() ? MONTHS[end.getMonth()] + ' ' : ''}${end.getDate()}`;
+                    })()
+                }
               </h3>
               <button
                 onClick={goToday}
@@ -126,66 +198,108 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                 Today
               </button>
             </div>
-            <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition" aria-label="Next month">
+            <button onClick={viewMode === 'month' ? nextMonth : nextWeek} className="p-2 hover:bg-white/5 rounded-lg transition" aria-label={viewMode === 'month' ? 'Next month' : 'Next week'}>
               <ChevronRight className="w-4 h-4 text-gray-400" />
             </button>
           </div>
 
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {WEEKDAYS.map(d => (
-              <div key={d} className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-wider py-1">
-                {d}
+          {viewMode === 'month' ? (
+            <>
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {WEEKDAYS.map(d => (
+                  <div key={d} className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-wider py-1">
+                    {d}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Days grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map((day, i) => {
-              const hasAssignments = day.assignments.length > 0;
-              const isSelected = selectedDay?.date.toDateString() === day.date.toDateString();
+              {/* Days grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((day, i) => {
+                  const hasAssignments = day.assignments.length > 0;
+                  const isSelected = selectedDay?.date.toDateString() === day.date.toDateString();
 
-              return (
-                <button
-                  key={i}
-                  onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
-                  className={`
-                    relative min-h-[48px] p-1 rounded-lg text-center transition text-xs
-                    ${day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}
-                    ${day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''}
-                    ${isSelected ? 'bg-white/10 ring-1 ring-white/20' : ''}
-                    ${hasAssignments ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'}
-                  `}
-                >
-                  <span className={`text-[11px] font-bold ${day.isToday ? 'text-purple-400' : ''}`}>
-                    {day.date.getDate()}
-                  </span>
-                  {hasAssignments && (
-                    <div className="flex justify-center gap-0.5 mt-0.5">
-                      {day.assignments.slice(0, 3).map((a, j) => (
-                        <div
-                          key={j}
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            a.isCompleted ? 'bg-emerald-400' :
-                            a.isOverdue ? 'bg-red-400' : 'bg-blue-400'
-                          }`}
-                        />
-                      ))}
-                      {day.assignments.length > 3 && (
-                        <span className="text-[8px] text-gray-500">+{day.assignments.length - 3}</span>
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
+                      className={`
+                        relative min-h-[48px] p-1 rounded-lg text-center transition text-xs
+                        ${day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}
+                        ${day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''}
+                        ${isSelected ? 'bg-white/10 ring-1 ring-white/20' : ''}
+                        ${hasAssignments ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'}
+                      `}
+                    >
+                      <span className={`text-[11px] font-bold ${day.isToday ? 'text-purple-400' : ''}`}>
+                        {day.date.getDate()}
+                      </span>
+                      {hasAssignments && (
+                        <div className="flex justify-center gap-0.5 mt-0.5">
+                          {day.assignments.slice(0, 3).map((a, j) => (
+                            <div
+                              key={j}
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                a.isCompleted ? 'bg-emerald-400' :
+                                a.isOverdue ? 'bg-red-400' : a.classColor
+                              }`}
+                            />
+                          ))}
+                          {day.assignments.length > 3 && (
+                            <span className="text-[8px] text-gray-500">+{day.assignments.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            /* ─── Week View ─── */
+            <div className="space-y-1">
+              {weekDays.map((day, i) => {
+                const hasAssignments = day.assignments.length > 0;
+                const isSelected = selectedDay?.date.toDateString() === day.date.toDateString();
+                return (
+                  <button
+                    key={i}
+                    onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
+                    className={`w-full flex items-center gap-4 p-3 rounded-xl text-left transition ${
+                      day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''
+                    } ${isSelected ? 'bg-white/10 ring-1 ring-white/20' : ''} ${hasAssignments ? 'hover:bg-white/5' : ''}`}
+                  >
+                    <div className="w-14 text-center">
+                      <div className="text-[10px] text-gray-500 font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
+                      <div className={`text-lg font-bold ${day.isToday ? 'text-purple-400' : 'text-gray-300'}`}>{day.date.getDate()}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {hasAssignments ? (
+                        <div className="space-y-1">
+                          {day.assignments.map(a => (
+                            <div key={a.id} className="flex items-center gap-2 text-xs">
+                              <div className={`w-2 h-2 rounded-full shrink-0 ${a.isCompleted ? 'bg-emerald-400' : a.isOverdue ? 'bg-red-400' : a.classColor}`} />
+                              <span className={`truncate ${a.isCompleted ? 'text-gray-500 line-through' : a.isOverdue ? 'text-red-400' : 'text-gray-300'}`}>
+                                {a.title}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-700 italic">No assignments due</span>
                       )}
                     </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Legend */}
           <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5">
             <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-              <div className="w-2 h-2 rounded-full bg-blue-400" /> Upcoming
+              <div className={`w-2 h-2 rounded-full ${getClassColor(activeClass, allEnrolled)}`} /> {activeClass}
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
               <div className="w-2 h-2 rounded-full bg-emerald-400" /> Completed

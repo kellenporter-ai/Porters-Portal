@@ -3,20 +3,23 @@ import React, { useState } from 'react';
 import { Bug, X, Send, CheckCircle } from 'lucide-react';
 import { User } from '../types';
 import { dataService } from '../services/dataService';
+import { useToast } from './ToastProvider';
 
 interface BugReporterProps {
   user: User;
 }
 
 const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
+  const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'bug' | 'feature' | 'other'>('bug');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
 
   const handleSubmit = async () => {
-    if (!description.trim()) return;
+    if (!description.trim() || cooldown) return;
     setIsSubmitting(true);
     try {
       await dataService.submitBugReport({
@@ -30,9 +33,11 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
         timestamp: new Date().toISOString(),
       });
       setSubmitted(true);
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 5000);
       setTimeout(() => { setSubmitted(false); setIsOpen(false); setDescription(''); }, 2000);
     } catch {
-      // silent fail
+      toast.error('Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,11 +109,11 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
 
                   <button
                     onClick={handleSubmit}
-                    disabled={!description.trim() || isSubmitting}
+                    disabled={!description.trim() || isSubmitting || cooldown}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl font-bold transition"
                   >
                     <Send className="w-4 h-4" />
-                    {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                    {isSubmitting ? 'Submitting...' : cooldown ? 'Please wait...' : 'Submit Report'}
                   </button>
                 </div>
               </>

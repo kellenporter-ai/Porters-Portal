@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../../types';
 import { dataService } from '../../services/dataService';
 import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColors } from '../../lib/gamification';
 import { getEvolutionTier, getActiveSetBonuses } from '../../lib/achievements';
 import { getClassProfile } from '../../lib/classProfile';
+import { useFocusTrap } from '../../lib/useFocusTrap';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
 import { X, Shield, Zap, Trophy, Star, Target } from 'lucide-react';
 
@@ -26,6 +27,14 @@ const SLOT_ORDER: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', '
 const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classType, onClose }) => {
   const [player, setPlayer] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, !loading);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   useEffect(() => {
     const load = async () => {
@@ -67,14 +76,15 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
   const activeSets = getActiveSetBonuses(equippedItems);
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Player inspection: ${displayName}`}>
       <div
+        ref={dialogRef}
         className="bg-[#12131e]/95 border border-white/10 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="relative p-6 border-b border-white/5">
-          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition">
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition" aria-label="Close player inspection">
             <X className="w-5 h-5" />
           </button>
 
