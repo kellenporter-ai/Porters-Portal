@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
-import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, WhitelistedUser, DefaultClassTypes } from './types';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, useNavigate, useParams, Outlet } from 'react-router-dom';
+import { User, UserRole, Submission, DefaultClassTypes, Assignment } from './types';
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
@@ -8,9 +9,8 @@ import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { ToastProvider } from './components/ToastProvider';
 import ConnectionStatus from './components/ConnectionStatus';
 import Layout from './components/Layout';
-import Proctor from './components/Proctor';
 import GoogleLogin from './components/GoogleLogin';
-import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon, KeyRound, Loader2, CheckCircle } from 'lucide-react';
+import { ShieldAlert, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ConfirmProvider } from './components/ConfirmDialog';
@@ -18,8 +18,12 @@ import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
+import { AppDataProvider, useAppData } from './lib/AppDataContext';
+import { AdminDataProvider, useAdminData } from './lib/AdminDataContext';
+import { ChatProvider, useChat } from './lib/ChatContext';
+import { TAB_TO_PATH, XP_SUB_ROUTES } from './lib/routes';
 
-// Lazy-loaded route-level components — split admin, teacher, and student bundles
+// ─── Lazy-loaded route components — split admin, teacher, and student bundles ───
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
 const UserManagement = lazy(() => import('./components/UserManagement'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
@@ -31,17 +35,15 @@ const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
 const EvidenceLocker = lazy(() => import('./components/EvidenceLocker'));
 const PhysicsLab = lazy(() => import('./components/PhysicsLab'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
-const ReviewQuestions = lazy(() => import('./components/ReviewQuestions'));
-const StudyMaterial = lazy(() => import('./components/StudyMaterial'));
 const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
 const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
+const ResourceViewer = lazy(() => import('./components/ResourceViewer'));
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center h-64 text-gray-500">
     <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
   </div>
 );
-
 
 // ─── Access Pending screen with enrollment code redemption ───
 const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout: () => void }> = ({ userName, userId, onLogout }) => {
@@ -50,7 +52,6 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Auto-format input as XXXX-XXXX
   const handleCodeChange = (raw: string) => {
     const cleaned = raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8);
     setCode(cleaned.length > 4 ? cleaned.slice(0, 4) + '-' + cleaned.slice(4) : cleaned);
@@ -65,12 +66,10 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
       const result = await dataService.redeemEnrollmentCode(code, userId);
       if (result.success) {
         setSuccess(`Enrolled in ${result.classType}! Refreshing...`);
-        // The Firestore onSnapshot listener on the user doc will automatically
-        // update the user state, which will dismiss this screen.
       } else {
         setError(result.error || 'Failed to redeem code.');
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setIsRedeeming(false);
@@ -84,7 +83,6 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
         <h1 className="text-3xl font-bold text-white mb-4">Access Pending</h1>
         <p className="text-gray-300 mb-6">Hi {userName}! Your account is not yet enrolled in a class.</p>
 
-        {/* Enrollment Code Entry */}
         <div className="bg-black/20 border border-white/10 rounded-2xl p-6 mb-6 text-left">
           <label className="flex items-center gap-2 text-sm font-bold text-white mb-3">
             <KeyRound className="w-4 h-4 text-emerald-400" />
@@ -110,9 +108,7 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
             </button>
           </div>
 
-          {error && (
-            <p className="mt-3 text-sm text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">{error}</p>
-          )}
+          {error && <p className="mt-3 text-sm text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">{error}</p>}
           {success && (
             <p className="mt-3 text-sm text-emerald-400 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <CheckCircle className="w-4 h-4" /> {success}
@@ -129,160 +125,121 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
   );
 };
 
-const STUDENT_TAB_MAP: Record<string, 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL'> = {
-  'Resources': 'RESOURCES',
-  'Agent Loadout': 'LOADOUT',
-  'Missions': 'MISSIONS',
-  'Badges': 'ACHIEVEMENTS',
-  'Skills': 'SKILLS',
-  'Fortune': 'FORTUNE',
-  'Tutoring': 'TUTORING',
-  'Intel Dossier': 'INTEL',
+// ─── Admin layout route — subscribes to admin-only data ───
+const AdminLayout: React.FC = () => (
+  <AdminDataProvider>
+    <Outlet />
+  </AdminDataProvider>
+);
+
+// ─── Reverse lookup for XP sub-route slugs → tab names ───
+const XP_SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
+  Object.entries(XP_SUB_ROUTES).map(([name, slug]) => [slug, name])
+);
+
+// ─── Floating overlays (PhysicsTools + Communications) ───
+const FloatingOverlays: React.FC<{ user: User }> = ({ user }) => {
+  const { assignments, classConfigs, enabledFeatures } = useAppData();
+  const { unreadChannels, markChannelRead, isCommOpen, setIsCommOpen } = useChat();
+  const navigate = useNavigate();
+
+  const showTools = user.role === UserRole.ADMIN || enabledFeatures.physicsTools;
+  const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
+
+  return (
+    <Suspense fallback={null}>
+      {showTools && (
+        <PhysicsTools
+          onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
+          hasUnreadChat={unreadChannels.size > 0}
+        />
+      )}
+      {showComm && (
+        <Communications
+          user={user}
+          isOpen={isCommOpen}
+          onClose={() => setIsCommOpen(false)}
+          assignments={assignments}
+          classConfigs={classConfigs}
+          unreadChannels={unreadChannels}
+          onMarkChannelRead={markChannelRead}
+          onOpenResource={(id) => navigate(`/resources/${id}`)}
+        />
+      )}
+    </Suspense>
+  );
 };
 
+// ─── Admin route wrappers (pull from AdminDataContext) ───
+const DashboardRoute: React.FC = () => {
+  const { users, submissions } = useAdminData();
+  const { assignments } = useAppData();
+  return <TeacherDashboard users={users} assignments={assignments} submissions={submissions} />;
+};
+
+const AdminPanelRoute: React.FC = () => {
+  const { rawUsers, submissions } = useAdminData();
+  return <AdminPanel assignments={[]} submissions={submissions} users={rawUsers} onCreateAssignment={undefined as never} classConfigs={[]} />;
+};
+
+const UserManagementRoute: React.FC = () => {
+  const { users, whitelistedEmails } = useAdminData();
+  const { classConfigs } = useAppData();
+  return <UserManagement users={users} whitelistedEmails={whitelistedEmails} classConfigs={classConfigs} onWhitelist={async (e, c) => dataService.addToWhitelist(e, c)} />;
+};
+
+const GroupsRoute: React.FC = () => {
+  const { users, availableSections } = useAdminData();
+  return <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />;
+};
+
+const EnrollmentRoute: React.FC = () => {
+  const { availableSections } = useAdminData();
+  const { classConfigs } = useAppData();
+  return <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />;
+};
+
+const EditorRoute: React.FC = () => {
+  const { rawUsers, availableSections } = useAdminData();
+  const { assignments, classConfigs } = useAppData();
+  const navigate = useNavigate();
+  return (
+    <LessonEditorPage
+      assignments={assignments}
+      onClose={() => navigate('/admin')}
+      classConfigs={classConfigs}
+      users={rawUsers}
+      availableSections={availableSections}
+      onCreateAssignment={async (p) => { if (p.title) await dataService.addAssignment(p as Assignment); }}
+    />
+  );
+};
+
+const XPRoute: React.FC = () => {
+  const { tab } = useParams<{ tab: string }>();
+  const { rawUsers } = useAdminData();
+  const tabName = XP_SLUG_TO_TAB[tab || 'operatives'] || 'Operatives';
+  return <XPManagement users={rawUsers} initialTab={tabName} />;
+};
+
+// ─── Main App ───
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState('Dashboard');
-  
-  // Real-time Data States
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [rawUsers, setRawUsers] = useState<User[]>([]);
-  const [whitelistedEmails, setWhitelistedEmails] = useState<WhitelistedUser[]>([]);
-  const [classConfigs, setClassConfigs] = useState<ClassConfig[]>([]);
-  
-  // UI States
-  const [activeAssignmentId, setActiveAssignmentId] = useState<string | null>(null);
-  const [adminViewMode, setAdminViewMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
-  const [assignViewMode, setAssignViewMode] = useState<'WORK' | 'REVIEW' | 'STUDY'>('WORK');
-  const [hasQuestionBank, setHasQuestionBank] = useState(false);
-  const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCommOpen, setIsCommOpen] = useState(false);
-  const [unreadChannels, setUnreadChannels] = useState<Set<string>>(new Set());
-  const channelLastSeenRef = useRef<Record<string, number>>(
-    JSON.parse(localStorage.getItem('chatChannelLastSeen') || '{}')
-  );
 
-  // Track the user's group memberships so unread badges only count accessible channels
-  const myGroupIdsRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!user?.id || user.role === UserRole.ADMIN) return;
-    const unsub = dataService.subscribeToMyGroups(user.id, (groups) => {
-      myGroupIdsRef.current = new Set(groups.map(g => g.id));
-    });
-    return () => unsub();
-  }, [user?.id, user?.role]);
+  // Student-scoped submission subscription (cheap — single user)
+  const [studentSubmissions, setStudentSubmissions] = useState<Submission[]>([]);
 
-  const markChannelRead = useCallback((channelId: string) => {
-    const now = Date.now();
-    channelLastSeenRef.current[channelId] = now;
-    localStorage.setItem('chatChannelLastSeen', JSON.stringify(channelLastSeenRef.current));
-    setUnreadChannels(prev => {
-      if (!prev.has(channelId)) return prev;
-      const next = new Set(prev);
-      next.delete(channelId);
-      return next;
-    });
-  }, []);
-
-  // Subscribe to recent messages for per-channel unread detection
-  useEffect(() => {
-    const unsub = dataService.subscribeToRecentMessages((msgs) => {
-      const newUnread = new Set<string>();
-      const lastSeen = channelLastSeenRef.current;
-
-      // Build set of class channels this student is enrolled in
-      const enrolledChannels = new Set(
-        (user?.enrolledClasses || []).map(c => `class_${c.replace(/\s+/g, '_').toLowerCase()}`)
-      );
-
-      for (const msg of msgs) {
-        if (!msg.channelId || msg.senderId === user?.id) continue;
-
-        // Students: only count channels they can actually access
-        if (user?.role !== UserRole.ADMIN) {
-          if (msg.channelId.startsWith('group_')) {
-            const groupId = msg.channelId.slice('group_'.length);
-            if (!myGroupIdsRef.current.has(groupId)) continue;
-          } else if (msg.channelId.startsWith('class_')) {
-            if (!enrolledChannels.has(msg.channelId)) continue;
-          }
-        }
-
-        const msgTime = new Date(msg.timestamp).getTime();
-        const channelSeen = lastSeen[msg.channelId] || 0;
-        if (msgTime > channelSeen) {
-          newUnread.add(msg.channelId);
-        }
-      }
-      setUnreadChannels(newUnread);
-    });
-    return () => unsub();
-  }, [user?.id, user?.role, user?.enrolledClasses]);
-
-  // Computed State
-  const users = useMemo(() => {
-    // Pre-index submissions by userId for O(n) lookup
-    const subsByUser = new Map<string, Submission[]>();
-    submissions.forEach(s => {
-        const arr = subsByUser.get(s.userId) || [];
-        arr.push(s);
-        subsByUser.set(s.userId, arr);
-    });
-
-    return rawUsers.map(u => {
-        const userSubs = subsByUser.get(u.id) || [];
-        const resourcesAccessed = userSubs.length; 
-        const totalTimeMin = Math.round(userSubs.reduce((acc, s) => acc + (s.metrics?.engagementTime || 0), 0) / 60);
-
-        return {
-            ...u,
-            stats: {
-                problemsCompleted: resourcesAccessed,
-                avgScore: 0,
-                rawAccuracy: 0,
-                totalTime: totalTimeMin
-            }
-        };
-    });
-  }, [rawUsers, submissions]);
-
-  const availableSections = useMemo(() => {
-    const sections = new Set<string>();
-    rawUsers.forEach(u => { if (u.section) sections.add(u.section); });
-    return Array.from(sections).sort();
-  }, [rawUsers]);
-
-  const activeAssignment = useMemo(() =>
-    assignments.find(a => a.id === activeAssignmentId) || null
-  , [assignments, activeAssignmentId]);
-
-  // Probe which supplemental tabs exist for the active assignment
-  useEffect(() => {
-    setHasQuestionBank(false);
-    setHasStudyMaterial(false);
-    if (!activeAssignmentId) return;
-    const checkQuestions = getDoc(doc(db, 'question_banks', activeAssignmentId)).then(snap => {
-      if (snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
-    }).catch(err => console.error('Failed to probe question bank:', err));
-    const checkStudy = getDoc(doc(db, 'reading_materials', activeAssignmentId)).then(snap => {
-      if (snap.exists()) setHasStudyMaterial(true);
-    }).catch(err => console.error('Failed to probe reading materials:', err));
-    // If the view was on a tab that no longer exists, reset to WORK
-    Promise.all([checkQuestions, checkStudy]).then(() => {});
-  }, [activeAssignmentId]);
-
-  // Auth Init
+  // Auth init
   useEffect(() => {
     let unsubProfile: (() => void) | null = null;
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         await handleSession(firebaseUser);
         unsubProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), (snapshot) => {
-            if (snapshot.exists()) {
-                setUser(prev => ({ ...(prev || {}), ...snapshot.data(), id: firebaseUser.uid } as User));
-            }
+          if (snapshot.exists()) {
+            setUser(prev => ({ ...(prev || {}), ...snapshot.data(), id: firebaseUser.uid } as User));
+          }
         });
       } else {
         setUser(null);
@@ -293,147 +250,75 @@ const App: React.FC = () => {
     return () => { unsubscribeAuth(); if (unsubProfile) unsubProfile(); };
   }, []);
 
-  // Data Subscriptions
+  // Student submissions — scoped to one user, stays in App (cheap)
   useEffect(() => {
-    if (user && (user.isWhitelisted || user.role === UserRole.ADMIN)) {
-        const unsubAssignments = dataService.subscribeToAssignments(setAssignments);
-        const unsubConfigs = dataService.subscribeToClassConfigs(setClassConfigs);
-        const unsubs = [unsubAssignments, unsubConfigs];
-
-        if (user.role === UserRole.ADMIN) {
-            // Admin: load all submissions, all users, whitelist
-            unsubs.push(dataService.subscribeToSubmissions(setSubmissions));
-            unsubs.push(dataService.subscribeToUsers(setRawUsers));
-            unsubs.push(dataService.subscribeToWhitelist(setWhitelistedEmails));
-        } else {
-            // Student: only their own submissions (avoids Firestore permission errors)
-            unsubs.push(dataService.subscribeToUserSubmissions(user.id, setSubmissions));
-        }
-
-        return () => unsubs.forEach(u => u());
-    }
+    if (!user || user.role === UserRole.ADMIN || !user.isWhitelisted) return;
+    const unsub = dataService.subscribeToUserSubmissions(user.id, setStudentSubmissions);
+    return () => unsub();
   }, [user?.id, user?.isWhitelisted, user?.role]);
-
-  // Redirect students from Dashboard to Resources (their default view)
-  useEffect(() => {
-    if (user?.role === UserRole.STUDENT && activeTab === 'Dashboard') {
-      setActiveTab('Resources');
-    }
-  }, [user?.role, activeTab]);
 
   // Sync sound effects setting
   useEffect(() => {
     setSfxEnabled(user?.settings?.soundEffects !== false);
   }, [user?.settings?.soundEffects]);
 
-  // Browser push notifications (fires native notifications when tab is backgrounded)
-  usePushNotifications(
-    user?.id || null,
-    user?.settings?.pushNotifications === true
-  );
+  // Browser push notifications
+  usePushNotifications(user?.id || null, user?.settings?.pushNotifications === true);
 
   const handleSession = async (firebaseUser: FirebaseUser) => {
     try {
-        const userRef = doc(db, 'users', firebaseUser.uid);
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      const whitelistDoc = await getDoc(doc(db, 'allowed_emails', firebaseUser.email || ''));
+      const tokenResult = await firebaseUser.getIdTokenResult();
+      const isAdmin = tokenResult.claims.admin === true;
 
-        // Read whitelist & claims outside the transaction (they aren't written here)
-        const whitelistDoc = await getDoc(doc(db, 'allowed_emails', firebaseUser.email || ''));
-        const tokenResult = await firebaseUser.getIdTokenResult();
-        const isAdmin = tokenResult.claims.admin === true;
+      const isWhitelisted = whitelistDoc.exists() || isAdmin;
+      const whitelistData = whitelistDoc.exists() ? whitelistDoc.data() : null;
+      const assignedClass = whitelistData?.classType || DefaultClassTypes.UNCATEGORIZED;
+      const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== DefaultClassTypes.UNCATEGORIZED ? [assignedClass] : []);
 
-        const isWhitelisted = whitelistDoc.exists() || isAdmin;
-        const whitelistData = whitelistDoc.exists() ? whitelistDoc.data() : null;
-        const assignedClass = whitelistData?.classType || DefaultClassTypes.UNCATEGORIZED;
-        const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== DefaultClassTypes.UNCATEGORIZED ? [assignedClass] : []);
+      await runTransaction(db, async (transaction) => {
+        const userSnap = await transaction.get(userRef);
 
-        // Use a transaction for the user profile read-then-write to prevent
-        // race conditions when multiple tabs open simultaneously on first login.
-        await runTransaction(db, async (transaction) => {
-            const userSnap = await transaction.get(userRef);
-
-            if (!userSnap.exists()) {
-                transaction.set(userRef, {
-                    email: firebaseUser.email,
-                    name: firebaseUser.displayName || 'Student',
-                    avatarUrl: firebaseUser.photoURL || '',
-                    role: isAdmin ? 'ADMIN' : 'STUDENT',
-                    classType: assignedClass,
-                    enrolledClasses: isWhitelisted ? assignedClasses : [],
-                    isWhitelisted: isWhitelisted,
-                    createdAt: new Date().toISOString(),
-                    lastLoginAt: new Date().toISOString(),
-                    gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
-                    settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
-                });
-            } else {
-                const existingData = userSnap.data();
-                const updates: Record<string, unknown> = {
-                    lastLoginAt: new Date().toISOString(),
-                    isWhitelisted: isWhitelisted
-                };
-                if (isAdmin) {
-                    updates.role = 'ADMIN';
-                }
-                if (!isWhitelisted && !isAdmin) {
-                    updates.enrolledClasses = [];
-                }
-                if (isWhitelisted && assignedClasses.length > 0) {
-                    const existing: string[] = existingData.enrolledClasses || [];
-                    const merged = Array.from(new Set([...existing, ...assignedClasses]));
-                    if (merged.length !== existing.length) {
-                        updates.enrolledClasses = merged;
-                        if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
-                            updates.classType = assignedClasses[0];
-                        }
-                    }
-                }
-                transaction.update(userRef, updates);
+        if (!userSnap.exists()) {
+          transaction.set(userRef, {
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || 'Student',
+            avatarUrl: firebaseUser.photoURL || '',
+            role: isAdmin ? 'ADMIN' : 'STUDENT',
+            classType: assignedClass,
+            enrolledClasses: isWhitelisted ? assignedClasses : [],
+            isWhitelisted: isWhitelisted,
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+            gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
+            settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
+          });
+        } else {
+          const existingData = userSnap.data();
+          const updates: Record<string, unknown> = {
+            lastLoginAt: new Date().toISOString(),
+            isWhitelisted: isWhitelisted
+          };
+          if (isAdmin) updates.role = 'ADMIN';
+          if (!isWhitelisted && !isAdmin) updates.enrolledClasses = [];
+          if (isWhitelisted && assignedClasses.length > 0) {
+            const existing: string[] = existingData.enrolledClasses || [];
+            const merged = Array.from(new Set([...existing, ...assignedClasses]));
+            if (merged.length !== existing.length) {
+              updates.enrolledClasses = merged;
+              if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
+                updates.classType = assignedClasses[0];
+              }
             }
-        });
+          }
+          transaction.update(userRef, updates);
+        }
+      });
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
   };
 
-  const handleLogout = async () => { await signOut(auth); setUser(null); setActiveAssignmentId(null); };
-
-  const openAssignment = (id: string) => {
-    setAssignViewMode('WORK');
-    setActiveAssignmentId(id);
-  };
-
-  // Keep refs for engagement submission so unmount cleanup always has current values
-  const activeAssignmentRef = useRef(activeAssignment);
-  const userRef = useRef(user);
-  useEffect(() => { activeAssignmentRef.current = activeAssignment; }, [activeAssignment]);
-  useEffect(() => { userRef.current = user; }, [user]);
-
-  const handleEngagementComplete = async (metrics: TelemetryMetrics) => {
-    const u = userRef.current;
-    const a = activeAssignmentRef.current;
-    if (!u || !a || u.role === UserRole.ADMIN) return;
-    if (metrics.engagementTime < 10) return;
-    try {
-        await dataService.submitEngagement(
-            u.id,
-            u.name,
-            a.id,
-            a.title,
-            metrics,
-            a.classType
-        );
-    } catch (err) {
-        console.error("Engagement submission failed:", err);
-    }
-  };
-
-  // Must be before early returns to satisfy Rules of Hooks (constant hook order)
-  const enabledFeatures = useMemo(() => {
-    const defaults = { physicsLab: true, evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true };
-    if (user && user.role === 'STUDENT' && user.classType) {
-        const config = classConfigs.find(c => c.className === user.classType);
-        if (config) return config.features;
-    }
-    return defaults;
-  }, [user?.role, user?.classType, classConfigs]);
+  const handleLogout = async () => { await signOut(auth); setUser(null); };
 
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#0f0720] text-white font-mono">ESTABLISHING CONNECTION...</div>;
   if (!user) return <GoogleLogin />;
@@ -442,184 +327,129 @@ const App: React.FC = () => {
     return <AccessPendingScreen userName={user.name} userId={user.id} onLogout={handleLogout} />;
   }
 
-  const showTools = user.role === UserRole.ADMIN || enabledFeatures.physicsTools;
-  const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
+  const isAdmin = user.role === UserRole.ADMIN;
+  const defaultPath = isAdmin ? '/dashboard' : '/resources';
 
   return (
     <ErrorBoundary>
     <ConfirmProvider>
     <ToastProvider>
+    <AppDataProvider user={user}>
+    <ChatProvider user={user}>
     <>
       <ConnectionStatus />
-      <Suspense fallback={null}>
-        {showTools && (
-          <PhysicsTools
-            onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
-            hasUnreadChat={unreadChannels.size > 0}
-          />
-        )}
+      <FloatingOverlays user={user} />
 
-        {showComm && (
-          <Communications
-              user={user}
-              isOpen={isCommOpen}
-              onClose={() => setIsCommOpen(false)}
-              assignments={assignments}
-              classConfigs={classConfigs}
-              unreadChannels={unreadChannels}
-              onMarkChannelRead={markChannelRead}
-              onOpenResource={(id) => {
-                  openAssignment(id);
-              }}
-          />
-        )}
-      </Suspense>
+      <Routes>
+        <Route element={<Layout user={user} onLogout={handleLogout} />}>
+          {/* ─── Admin routes (wrapped in AdminDataProvider) ─── */}
+          <Route element={<AdminLayout />}>
+            <Route path="/dashboard" element={<Suspense fallback={<LazyFallback />}><DashboardRoute /></Suspense>} />
+            <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><AdminPanelRoute /></Suspense>} />
+            <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><EditorRoute /></Suspense>} />
+            <Route path="/users" element={<Suspense fallback={<LazyFallback />}><UserManagementRoute /></Suspense>} />
+            <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><GroupsRoute /></Suspense>} />
+            <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><EnrollmentRoute /></Suspense>} />
+            <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><XPRoute /></Suspense>} />
+          </Route>
 
-      <Layout user={user} onLogout={handleLogout} activeTab={activeTab} setActiveTab={setActiveTab}>
-        {activeAssignment ? (
-          <div className="space-y-2 h-full flex flex-col">
-            <div className="flex items-center justify-between text-white bg-white/5 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-md">
-              <div className="flex items-center gap-4 min-w-0">
-                <h2 className="text-sm font-bold truncate flex items-center gap-2">
-                    {activeAssignment.title}
-                    {user.role === UserRole.ADMIN && (
-                        <span className="text-[9px] bg-purple-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Admin</span>
-                    )}
-                </h2>
-                <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => setAssignViewMode('WORK')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${assignViewMode === 'WORK' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}>Resource</button>
-                    {hasQuestionBank && (
-                        <button onClick={() => setAssignViewMode('REVIEW')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'REVIEW' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}><Brain className="w-3 h-3" /> Review</button>
-                    )}
-                    {hasStudyMaterial && (
-                        <button onClick={() => setAssignViewMode('STUDY')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'STUDY' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}><BookOpenIcon className="w-3 h-3" /> Study</button>
-                    )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {user.role === 'ADMIN' && (
-                    <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/10 text-[9px] font-bold">
-                        <button onClick={() => setAdminViewMode('STUDENT')} className={`px-2 py-1 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Student</button>
-                        <button onClick={() => setAdminViewMode('ADMIN')} className={`px-2 py-1 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Admin</button>
-                    </div>
-                )}
-                <button onClick={() => { setActiveAssignmentId(null); setAssignViewMode('WORK'); }} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Exit
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-hidden relative">
-              <Suspense fallback={<LazyFallback />}>
-                {assignViewMode === 'WORK' && (
-                    <div className="h-full flex flex-col md:flex-row gap-4">
-                        <div className="flex-1">
-                            <Proctor
-                                onComplete={handleEngagementComplete}
-                                contentUrl={activeAssignment.contentUrl}
-                                htmlContent={activeAssignment.htmlContent}
-                                userId={user.id}
-                                assignmentId={activeAssignment.id}
-                                classType={activeAssignment.classType}
-                                lessonBlocks={activeAssignment.lessonBlocks}
-                            />
-                        </div>
-                        {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (
-                            <div className="w-full md:w-72 bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md animate-in slide-in-from-right duration-300 overflow-y-auto">
-                                <h3 className="font-bold text-white mb-4 flex items-center gap-2"><SettingsIcon className="w-4 h-4 text-purple-400" /> Admin Controls</h3>
-                                <div className="space-y-6">
-                                    <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                                        <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-2">Active Engagement</label>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center text-purple-400">
-                                                <Users className="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <div className="text-2xl font-bold text-white">{submissions.filter(s => s.assignmentId === activeAssignment.id && !s.isArchived).length}</div>
-                                                <div className="text-[10px] text-gray-500">Live Operatives</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                                        <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-2">Collaboration</label>
-                                        <button 
-                                            onClick={() => setIsCommOpen(true)}
-                                            className="w-full bg-indigo-600 border border-indigo-500 py-2 rounded-lg text-xs font-bold text-white hover:bg-indigo-500 transition"
-                                        >
-                                            Open Class Chat
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-                {assignViewMode === 'REVIEW' && (
-                    <div className="h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                        <ReviewQuestions assignment={activeAssignment} />
-                    </div>
-                )}
-                {assignViewMode === 'STUDY' && (
-                    <div className="h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                        <StudyMaterial assignment={activeAssignment} onComplete={handleEngagementComplete} />
-                    </div>
-                )}
-              </Suspense>
-            </div>
-          </div>
-        ) : (
-          <div className="h-full">
+          {/* ─── Student routes ─── */}
+          <Route path="/resources" element={
             <Suspense fallback={<LazyFallback />}>
-            <div key={activeTab} className="h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {user.role === UserRole.ADMIN && (
-              <>
-                  {activeTab === 'Dashboard' && <TeacherDashboard users={users} assignments={assignments} submissions={submissions} />}
-                  {activeTab === 'User Management' && <UserManagement users={users} whitelistedEmails={whitelistedEmails} classConfigs={classConfigs} onWhitelist={async (e, c) => dataService.addToWhitelist(e, c)} />}
-                  {activeTab === 'Admin Panel' && (
-                    <AdminPanel
-                      assignments={[]}
-                      submissions={submissions}
-                      users={rawUsers}
-                      onCreateAssignment={undefined as never}
-                      classConfigs={[]}
-                      onNavigate={setActiveTab}
-                    />
-                  )}
-                  {activeTab === 'Student Groups' && <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />}
-                  {activeTab === 'Enrollment Codes' && <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />}
-                  {activeTab === 'Resource Editor' && <LessonEditorPage assignments={assignments} onClose={() => setActiveTab('Admin Panel')} classConfigs={classConfigs} users={rawUsers} availableSections={availableSections} onCreateAssignment={async (p) => { if(p.title) await dataService.addAssignment(p as Assignment); }} />}
-                  {activeTab.startsWith('XP Command:') && <XPManagement users={rawUsers} initialTab={activeTab.split(':')[1]} />}
-              </>
-            )}
-
-            {user.role === UserRole.STUDENT && (
-               <>
-                  {activeTab in STUDENT_TAB_MAP && <StudentDashboard user={user} assignments={assignments} submissions={submissions} classConfigs={classConfigs} enabledFeatures={enabledFeatures} onNavigate={setActiveTab} onStartAssignment={openAssignment} studentTab={STUDENT_TAB_MAP[activeTab]} />}
-                  {activeTab === 'Forensics' && enabledFeatures.evidenceLocker && <EvidenceLocker user={user} />}
-                  {activeTab === 'Physics Lab' && enabledFeatures.physicsLab && <PhysicsLab user={user} />}
-                  {activeTab === 'Leaderboard' && enabledFeatures.leaderboard && <Leaderboard user={user} />}
-               </>
-            )}
-            </div>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="RESOURCES" />
             </Suspense>
-          </div>
-        )}
-      </Layout>
+          } />
+          <Route path="/loadout" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="LOADOUT" />
+            </Suspense>
+          } />
+          <Route path="/missions" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="MISSIONS" />
+            </Suspense>
+          } />
+          <Route path="/badges" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ACHIEVEMENTS" />
+            </Suspense>
+          } />
+          <Route path="/skills" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="SKILLS" />
+            </Suspense>
+          } />
+          <Route path="/fortune" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FORTUNE" />
+            </Suspense>
+          } />
+          <Route path="/tutoring" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="TUTORING" />
+            </Suspense>
+          } />
+          <Route path="/intel" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="INTEL" />
+            </Suspense>
+          } />
+          <Route path="/forensics" element={
+            <Suspense fallback={<LazyFallback />}><EvidenceLocker user={user} /></Suspense>
+          } />
+          <Route path="/physics-lab" element={
+            <Suspense fallback={<LazyFallback />}><PhysicsLab user={user} /></Suspense>
+          } />
+          <Route path="/leaderboard" element={
+            <Suspense fallback={<LazyFallback />}><Leaderboard user={user} /></Suspense>
+          } />
 
-      {/* Bug Reporter — floating button for all authenticated users */}
+          {/* ─── Resource viewer (shared — both admin and student) ─── */}
+          <Route path="/resources/:id" element={
+            <Suspense fallback={<LazyFallback />}><ResourceViewer user={user} /></Suspense>
+          } />
+
+          {/* ─── Default + catch-all ─── */}
+          <Route path="/" element={<Navigate to={defaultPath} replace />} />
+          <Route path="*" element={<Navigate to={defaultPath} replace />} />
+        </Route>
+      </Routes>
+
       <BugReporter user={user} />
-
-      {/* Streak Display — compact inline for students (positioned in top bar area) */}
       {user.role === UserRole.STUDENT && (
         <div className="fixed top-3 right-48 z-30">
           <StreakDisplay userId={user.id} compact />
         </div>
       )}
     </>
+    </ChatProvider>
+    </AppDataProvider>
     </ToastProvider>
     </ConfirmProvider>
     </ErrorBoundary>
+  );
+};
+
+// ─── Student route wrapper (passes AppData + submissions to StudentDashboard) ───
+const StudentRouteWrapper: React.FC<{
+  user: User;
+  submissions: Submission[];
+  tab: 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL';
+}> = ({ user, submissions, tab }) => {
+  const { assignments, classConfigs, enabledFeatures } = useAppData();
+  const navigate = useNavigate();
+
+  return (
+    <StudentDashboard
+      user={user}
+      assignments={assignments}
+      submissions={submissions}
+      classConfigs={classConfigs}
+      enabledFeatures={enabledFeatures}
+      onNavigate={(tabName) => navigate(TAB_TO_PATH[tabName] || '/')}
+      onStartAssignment={(id) => navigate(`/resources/${id}`)}
+      studentTab={tab}
+    />
   );
 };
 
