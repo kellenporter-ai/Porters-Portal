@@ -5,8 +5,9 @@ import {
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
-  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket
+  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock
 } from 'lucide-react';
+import { useDebounce } from '../lib/rateLimiting';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
 import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
@@ -228,6 +229,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [jsonError, setJsonError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   // Resource settings state
@@ -248,6 +250,57 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     const perClass = getSectionsForClass(students, firstClass);
     return perClass.length > 0 ? perClass : availableSections;
   }, [resClasses, students, availableSections]);
+
+  // Warn on page unload if unsaved changes exist
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
+
+  // Debounced auto-save to localStorage
+  const autoSaveKey = selectedId ? `lessonEditor_${selectedId}` : isNewResource ? 'lessonEditor_new' : null;
+
+  const performAutoSave = useDebounce(() => {
+    if (!autoSaveKey) return;
+    try {
+      const draft = { blocks, resTitle, resUnit, resCategory, resDescription, resSections, resScheduleDate, resDueDate, savedAt: new Date().toISOString() };
+      localStorage.setItem(autoSaveKey, JSON.stringify(draft));
+      setLastSavedAt(new Date());
+    } catch { /* localStorage full — silently skip */ }
+  }, 2000);
+
+  // Trigger auto-save when content changes
+  useEffect(() => {
+    if (hasUnsavedChanges && autoSaveKey) performAutoSave();
+  }, [hasUnsavedChanges, blocks, resTitle, resUnit, resCategory, resDescription, resSections, resScheduleDate, resDueDate, autoSaveKey, performAutoSave]);
+
+  // Restore draft from localStorage on initial load
+  useEffect(() => {
+    if (!autoSaveKey) return;
+    try {
+      const raw = localStorage.getItem(autoSaveKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      // Only restore if it has blocks and was saved recently (within 24h)
+      if (draft.savedAt && Date.now() - new Date(draft.savedAt).getTime() < 86400000 && draft.blocks?.length) {
+        setBlocks(draft.blocks);
+        if (draft.resTitle) setResTitle(draft.resTitle);
+        if (draft.resUnit) setResUnit(draft.resUnit);
+        if (draft.resCategory) setResCategory(draft.resCategory);
+        if (draft.resDescription) setResDescription(draft.resDescription);
+        setLastSavedAt(new Date(draft.savedAt));
+        setHasUnsavedChanges(true);
+      }
+    } catch { /* corrupt data — ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSaveKey]);
+
+  // Clean localStorage after successful server save
+  const clearAutoSave = useCallback(() => {
+    if (autoSaveKey) localStorage.removeItem(autoSaveKey);
+  }, [autoSaveKey]);
 
   const existingUnits = useMemo(() => {
     const units = new Set<string>();
@@ -394,13 +447,14 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       toast.success(status === AssignmentStatus.DRAFT ? 'Draft saved.' : scheduledAt ? 'Deployment scheduled.' : 'Resource deployed!');
       setHasUnsavedChanges(false);
       setIsNewResource(false);
+      clearAutoSave();
     } catch (err) {
       toast.error('Save failed.');
       console.error(err);
     } finally {
       setIsSaving(false);
     }
-  }, [resTitle, resClasses, buildPayload, onCreateAssignment, selectedAssignment, isNewResource, toast]);
+  }, [resTitle, resClasses, buildPayload, onCreateAssignment, selectedAssignment, isNewResource, toast, clearAutoSave]);
 
   const handleSave = useCallback(async () => {
     if (!selectedAssignment && !isNewResource) return;
@@ -414,13 +468,14 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       await dataService.addAssignment({ ...selectedAssignment, ...payload } as Assignment);
       toast.success('Saved!');
       setHasUnsavedChanges(false);
+      clearAutoSave();
     } catch (err) {
       toast.error('Failed to save.');
       console.error(err);
     } finally {
       setIsSaving(false);
     }
-  }, [selectedAssignment, isNewResource, handleDeploy, buildPayload, toast]);
+  }, [selectedAssignment, isNewResource, handleDeploy, buildPayload, toast, clearAutoSave]);
 
   const handleJsonImport = useCallback(() => {
     setJsonError('');
@@ -479,9 +534,15 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
             <BookOpen className="w-5 h-5 text-purple-400" /> Resource Editor
           </h1>
           {isEditing && (
-            <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+            <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2">
               {isNewResource ? 'New Resource' : resTitle}
-              {hasUnsavedChanges && <span className="ml-2 text-amber-400">*unsaved</span>}
+              {hasUnsavedChanges && <span className="text-amber-400">*unsaved</span>}
+              {lastSavedAt && !hasUnsavedChanges && (
+                <span className="text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {lastSavedAt && hasUnsavedChanges && (
+                <span className="text-gray-600 flex items-center gap-1"><Clock className="w-3 h-3" /> Draft {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
             </span>
           )}
         </div>

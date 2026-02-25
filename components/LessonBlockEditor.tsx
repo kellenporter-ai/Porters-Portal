@@ -1,11 +1,12 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Type, HelpCircle, MessageSquare,
   BookOpen, ListChecks, Info, Eye, Edit2, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, X
 } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { LessonBlock, BlockType } from '../types';
 import LessonBlocks from './LessonBlocks';
 
@@ -883,6 +884,25 @@ const JsonImportModal: React.FC<{
 };
 
 // ──────────────────────────────────────────────
+// DnD draggable + droppable block wrapper
+// ──────────────────────────────────────────────
+const DraggableBlock: React.FC<{ id: string; isFocused: boolean; children: React.ReactNode }> = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({ id });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id });
+
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setDragRef(node);
+    setDropRef(node);
+  }, [setDragRef, setDropRef]);
+
+  return (
+    <div ref={ref} {...attributes} {...listeners} className={`${isDragging ? 'opacity-30' : ''} ${isOver ? 'ring-2 ring-purple-500/40 rounded-2xl' : ''}`}>
+      {children}
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────
 // Main editor component
 // ──────────────────────────────────────────────
 
@@ -890,6 +910,14 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [showJsonImport, setShowJsonImport] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const addBlock = useCallback((type: BlockType) => {
     onChange([...blocks, createEmptyBlock(type)]);
@@ -904,7 +932,9 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
 
   const removeBlock = useCallback((index: number) => {
     onChange(blocks.filter((_, i) => i !== index));
-  }, [blocks, onChange]);
+    if (focusedIndex === index) setFocusedIndex(null);
+    else if (focusedIndex !== null && focusedIndex > index) setFocusedIndex(focusedIndex - 1);
+  }, [blocks, onChange, focusedIndex]);
 
   const moveBlock = useCallback((index: number, direction: -1 | 1) => {
     const target = index + direction;
@@ -912,6 +942,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
     const next = [...blocks];
     [next[index], next[target]] = [next[target], next[index]];
     onChange(next);
+    setFocusedIndex(target);
   }, [blocks, onChange]);
 
   const duplicateBlock = useCallback((index: number) => {
@@ -929,13 +960,57 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
     }
   }, [blocks, onChange]);
 
+  // DnD handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = blocks.findIndex(b => b.id === active.id);
+    const newIndex = blocks.findIndex(b => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const next = [...blocks];
+    const [moved] = next.splice(oldIndex, 1);
+    next.splice(newIndex, 0, moved);
+    onChange(next);
+  }, [blocks, onChange]);
+
+  // Keyboard shortcuts: Delete to remove, Ctrl+Up/Down to reorder
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't intercept when typing in an input/textarea/select
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (focusedIndex === null || focusedIndex >= blocks.length) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        removeBlock(focusedIndex);
+      } else if (e.ctrlKey && e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveBlock(focusedIndex, -1);
+      } else if (e.ctrlKey && e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveBlock(focusedIndex, 1);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [focusedIndex, blocks.length, removeBlock, moveBlock]);
+
   const getBlockTypeInfo = (type: BlockType) => BLOCK_TYPES.find(bt => bt.type === type);
 
   // Group block types by category for the add menu
   const categories = ['Content', 'Interactive', 'Questions'];
 
+  const draggedBlock = activeDragId ? blocks.find(b => b.id === activeDragId) : null;
+  const draggedTypeInfo = draggedBlock ? getBlockTypeInfo(draggedBlock.type) : null;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={containerRef}>
       {/* Header with preview toggle + JSON import */}
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">
@@ -974,46 +1049,62 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
         </div>
       ) : (
         <>
-          {/* Block list */}
-          <div className="space-y-3">
-            {blocks.map((block, index) => {
-              const typeInfo = getBlockTypeInfo(block.type);
-              return (
-                <div
-                  key={block.id}
-                  className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition"
-                >
-                  {/* Block header */}
-                  <div className="flex items-center gap-2 px-4 py-2 bg-black/20 border-b border-white/5">
-                    <GripVertical className="w-4 h-4 text-gray-600 shrink-0" />
-                    <span className="text-gray-500">{typeInfo?.icon}</span>
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">
-                      {typeInfo?.label || block.type} #{index + 1}
-                    </span>
-                    <div className="flex items-center gap-0.5">
-                      <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-500 hover:text-white disabled:opacity-20 transition" title="Move up">
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-500 hover:text-white disabled:opacity-20 transition" title="Move down">
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button type="button" onClick={() => duplicateBlock(index)} className="p-1 text-gray-500 hover:text-blue-400 transition" title="Duplicate">
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button type="button" onClick={() => removeBlock(index)} className="p-1 text-gray-500 hover:text-red-400 transition" title="Delete block">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+          {/* Block list with DnD */}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="space-y-3">
+              {blocks.map((block, index) => {
+                const typeInfo = getBlockTypeInfo(block.type);
+                const isFocused = focusedIndex === index;
+                return (
+                  <DraggableBlock key={block.id} id={block.id} isFocused={isFocused}>
+                    <div
+                      className={`bg-white/5 border rounded-2xl overflow-hidden transition ${isFocused ? 'border-purple-500/40 ring-1 ring-purple-500/20' : 'border-white/10 hover:border-white/20'} ${activeDragId === block.id ? 'opacity-40' : ''}`}
+                      onClick={() => setFocusedIndex(index)}
+                    >
+                      {/* Block header */}
+                      <div className="flex items-center gap-2 px-4 py-2 bg-black/20 border-b border-white/5">
+                        <GripVertical className="w-4 h-4 text-gray-600 shrink-0 cursor-grab active:cursor-grabbing" />
+                        <span className="text-gray-500">{typeInfo?.icon}</span>
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">
+                          {typeInfo?.label || block.type} #{index + 1}
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); moveBlock(index, -1); }} disabled={index === 0} className="p-1 text-gray-500 hover:text-white disabled:opacity-20 transition" title="Move up (Ctrl+↑)">
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); moveBlock(index, 1); }} disabled={index === blocks.length - 1} className="p-1 text-gray-500 hover:text-white disabled:opacity-20 transition" title="Move down (Ctrl+↓)">
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); duplicateBlock(index); }} className="p-1 text-gray-500 hover:text-blue-400 transition" title="Duplicate">
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); removeBlock(index); }} className="p-1 text-gray-500 hover:text-red-400 transition" title="Delete block (Del)">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* Block editor body */}
-                  <div className="p-4">
-                    <BlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => updateBlock(index, updated)} />
+                      {/* Block editor body */}
+                      <div className="p-4">
+                        <BlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => updateBlock(index, updated)} />
+                      </div>
+                    </div>
+                  </DraggableBlock>
+                );
+              })}
+            </div>
+            <DragOverlay>
+              {draggedBlock && draggedTypeInfo ? (
+                <div className="bg-purple-900/60 border border-purple-500/40 rounded-2xl p-3 shadow-2xl backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-purple-400" />
+                    <span className="text-gray-400">{draggedTypeInfo.icon}</span>
+                    <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">{draggedTypeInfo.label}</span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
 
           {/* Add block button */}
           <div className="relative">
