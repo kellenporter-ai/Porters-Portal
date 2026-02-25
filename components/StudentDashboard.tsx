@@ -322,7 +322,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                   <div className="font-bold text-sm text-white">{a.title}</div>
                   <div className="text-xs mt-0.5 opacity-80">{a.content}</div>
                 </div>
-                <button onClick={() => handleDismissAnnouncement(a.id)} className="p-1 text-gray-500 hover:text-white transition shrink-0">
+                <button onClick={() => handleDismissAnnouncement(a.id)} className="p-1 text-gray-500 hover:text-white transition shrink-0" aria-label="Dismiss announcement">
                   <XIcon className="w-4 h-4" />
                 </button>
               </div>

@@ -236,7 +236,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       <Trash2 className="w-3 h-3" /> Delete
                                   </button>
                                   <div className="relative">
-                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" title="Mute">
+                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" aria-label="Mute user">
                                           <MicOff className="w-3 h-3" />
                                       </button>
                                       {muteMenuFlagId === flag.id && (
@@ -294,14 +294,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               <button 
                                                   onClick={() => handleExtendMute(s.id, s.mutedUntil!)}
                                                   className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition"
-                                                  title="Extend +1hr"
+                                                  aria-label="Extend mute 1 hour"
                                               >
                                                   <RefreshCw className="w-3.5 h-3.5" />
                                               </button>
-                                              <button 
+                                              <button
                                                   onClick={() => handleUnmute(s.id)}
                                                   className="p-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition"
-                                                  title="Unmute"
+                                                  aria-label="Unmute user"
                                               >
                                                   <CheckCircle className="w-3.5 h-3.5" />
                                               </button>
