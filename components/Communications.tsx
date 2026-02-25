@@ -100,6 +100,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 72,
     overscan: 10,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
 
   // Per-tab unread indicators
@@ -481,8 +482,10 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                 return (
                                     <div
                                         key={msg.id}
+                                        ref={msgVirtualizer.measureElement}
+                                        data-index={virtualRow.index}
                                         className={`group flex flex-col px-4 ${isMe ? 'items-end' : 'items-start'} absolute top-0 left-0 w-full`}
-                                        style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                                        style={{ transform: `translateY(${virtualRow.start}px)` }}
                                     >
                                         {!isContinuation && (
                                             <div className="flex items-center gap-2 mb-1 px-1">

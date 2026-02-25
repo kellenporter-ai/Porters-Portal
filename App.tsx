@@ -129,6 +129,12 @@ const AdminLayout: React.FC = () => (
   </AdminDataProvider>
 );
 
+// ─── Route guard — blocks non-admin users from admin routes ───
+const RequireAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+  if (!isAdmin) return <Navigate to="/resources" replace />;
+  return <Outlet />;
+};
+
 // ─── Reverse lookup for XP sub-route slugs → tab names ───
 const XP_SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
   Object.entries(XP_SUB_ROUTES).map(([name, slug]) => [slug, name])
@@ -339,15 +345,17 @@ const App: React.FC = () => {
 
       <Routes>
         <Route element={<Layout user={user} onLogout={handleLogout} />}>
-          {/* ─── Admin routes (wrapped in AdminDataProvider) ─── */}
-          <Route element={<AdminLayout />}>
-            <Route path="/dashboard" element={<Suspense fallback={<LazyFallback />}><DashboardRoute /></Suspense>} />
-            <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><AdminPanelRoute /></Suspense>} />
-            <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><EditorRoute /></Suspense>} />
-            <Route path="/users" element={<Suspense fallback={<LazyFallback />}><UserManagementRoute /></Suspense>} />
-            <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><GroupsRoute /></Suspense>} />
-            <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><EnrollmentRoute /></Suspense>} />
-            <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><XPRoute /></Suspense>} />
+          {/* ─── Admin routes (role-gated, wrapped in AdminDataProvider) ─── */}
+          <Route element={<RequireAdmin isAdmin={isAdmin} />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/dashboard" element={<Suspense fallback={<LazyFallback />}><DashboardRoute /></Suspense>} />
+              <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><AdminPanelRoute /></Suspense>} />
+              <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><EditorRoute /></Suspense>} />
+              <Route path="/users" element={<Suspense fallback={<LazyFallback />}><UserManagementRoute /></Suspense>} />
+              <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><GroupsRoute /></Suspense>} />
+              <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><EnrollmentRoute /></Suspense>} />
+              <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><XPRoute /></Suspense>} />
+            </Route>
           </Route>
 
           {/* ─── Student routes ─── */}
