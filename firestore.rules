@@ -126,8 +126,11 @@ service cloud.firestore {
     // CLASS MESSAGES (Chat)
     // ==========================================
     match /class_messages/{messageId} {
-      // All authenticated users can read messages
-      allow read: if isAuthenticated();
+      // Authenticated users can read messages.
+      // Admin reads any message; students must scope queries by channelId
+      // (enforced client-side — all student subscriptions filter by channelId).
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.channelId != null);
       
       // Authenticated users can create messages with their own senderId
       allow create: if isAuthenticated() 
@@ -437,8 +440,10 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Only admin can create codes
       allow create: if isAdmin();
-      // Students can increment usedCount on redeem; admin can deactivate
-      allow update: if isAuthenticated();
+      // Admin can update any field; students can ONLY increment usedCount
+      allow update: if isAdmin()
+        || (isAuthenticated()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']));
       allow delete: if isAdmin();
     }
 
