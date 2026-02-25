@@ -1,9 +1,11 @@
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Download } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
+import { reportError } from '../lib/errorReporting';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
@@ -29,6 +31,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [engagementSearch, setEngagementSearch] = useState('');
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -38,17 +42,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     });
   }, []);
 
-  const SortableHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => (
-    <th className={`cursor-pointer select-none group p-3 ${className ?? ''}`} onClick={() => handleSort(col)}>
-      <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
-        <span>{label}</span>
-        <span className="flex flex-col gap-px">
-          <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-          <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-        </span>
-      </div>
-    </th>
-  );
+  const SortableHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => {
+    const ariaSortValue = sortCol === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined;
+    return (
+      <th role="columnheader" aria-sort={ariaSortValue} className={`cursor-pointer select-none group p-3 ${className ?? ''}`} onClick={() => handleSort(col)}>
+        <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
+          <span>{label}</span>
+          <span className="flex flex-col gap-px">
+            <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+            <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+          </span>
+        </div>
+      </th>
+    );
+  };
 
   useEffect(() => {
       const unsub = dataService.subscribeToChatFlags(setFlags);
@@ -65,7 +72,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       };
   }, []);
 
-  const students = users.filter(u => u.role === 'STUDENT');
+  const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
   const availableSections = useMemo(() => {
     const sections = new Set<string>();
     students.forEach(s => { if (s.section) sections.add(s.section); });
@@ -111,13 +118,69 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   }, [bucketProfiles]);
   
   // Stats
-  const totalStudents = students.length;
-  const avgTime = Math.round(students.reduce((acc, s) => acc + (s.stats?.totalTime || 0), 0) / (totalStudents || 1));
-  const totalResourcesAccessed = students.reduce((acc, s) => acc + (s.stats?.problemsCompleted || 0), 0);
-  const totalXP = students.reduce((acc, s) => acc + (s.gamification?.xp || 0), 0);
+  const { totalStudents, avgTime, totalResourcesAccessed, totalXP } = useMemo(() => {
+    const total = students.length;
+    return {
+      totalStudents: total,
+      avgTime: Math.round(students.reduce((acc, s) => acc + (s.stats?.totalTime || 0), 0) / (total || 1)),
+      totalResourcesAccessed: students.reduce((acc, s) => acc + (s.stats?.problemsCompleted || 0), 0),
+      totalXP: students.reduce((acc, s) => acc + (s.gamification?.xp || 0), 0),
+    };
+  }, [students]);
 
   // Derived Moderation Data
-  const mutedStudents = students.filter(s => s.mutedUntil && new Date(s.mutedUntil).getTime() > now);
+  const mutedStudents = useMemo(() => students.filter(s => s.mutedUntil && new Date(s.mutedUntil).getTime() > now), [students, now]);
+
+  // Filtered + sorted student list (used by table + virtualizer)
+  const sortedStudents = useMemo(() => {
+    const filtered = students.filter(s => {
+      const matchesSearch = !engagementSearch || s.name.toLowerCase().includes(engagementSearch.toLowerCase()) || s.email.toLowerCase().includes(engagementSearch.toLowerCase());
+      const matchesBucket = !bucketFilter || bucketsByStudent.get(s.id)?.bucket === bucketFilter;
+      return matchesSearch && matchesBucket;
+    });
+    return [...filtered].sort((a, b) => {
+      switch (sortCol) {
+        case 'name':      return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        case 'class':     return sortDir === 'asc' ? (a.classType||'').localeCompare(b.classType||'') : (b.classType||'').localeCompare(a.classType||'');
+        case 'lastSeen':  { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sortDir === 'asc' ? av - bv : bv - av; }
+        case 'time':      { const av = a.stats?.totalTime || 0; const bv = b.stats?.totalTime || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+        case 'resources': { const av = a.stats?.problemsCompleted || 0; const bv = b.stats?.problemsCompleted || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+        case 'xp': default: { const av = a.gamification?.classXp?.[a.classType || ''] || 0; const bv = b.gamification?.classXp?.[b.classType || ''] || 0; return sortDir === 'asc' ? av - bv : bv - av; }
+      }
+    });
+  }, [students, engagementSearch, bucketFilter, bucketsByStudent, sortCol, sortDir]);
+
+  const maxXP = useMemo(() => Math.max(1, ...students.map(s => s.gamification?.classXp?.[s.classType || ''] || 0)), [students]);
+
+  const tableVirtualizer = useVirtualizer({
+    count: sortedStudents.length,
+    getScrollElement: () => tableScrollRef.current,
+    estimateSize: () => 52,
+    overscan: 15,
+  });
+
+  // Batch selection helpers
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds(prev => prev.size === sortedStudents.length ? new Set() : new Set(sortedStudents.map(s => s.id)));
+  }, [sortedStudents]);
+
+  const exportCSV = useCallback(() => {
+    const selected = students.filter(s => selectedIds.has(s.id));
+    const rows = [['Name', 'Email', 'Class', 'XP', 'Total Time (min)', 'Resources', 'Last Login']];
+    for (const s of selected) {
+      rows.push([s.name, s.email, s.classType || '', String(s.gamification?.classXp?.[s.classType || ''] || 0), String(s.stats?.totalTime || 0), String(s.stats?.problemsCompleted || 0), s.lastLoginAt || 'Never']);
+    }
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `students_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }, [students, selectedIds]);
 
   const handleUnmute = async (userId: string) => {
       if(await confirm({ message: "Lift silence sanction for this operative?", confirmLabel: "Unmute", variant: "info" })) {
@@ -229,10 +292,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   </div>
                               </div>
                               <div className="flex gap-2 mt-2">
-                                  <button onClick={async () => { await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.unflagMessage(flag.messageId).catch(err => console.error('Failed to unflag message:', err)); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition">
+                                  <button onClick={async () => { await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.unflagMessage(flag.messageId).catch(err => reportError(err, { method: 'unflagMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition">
                                       <Check className="w-3 h-3" /> Dismiss
                                   </button>
-                                  <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(err => console.error('Failed to delete flagged message:', err)); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
+                                  <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(err => reportError(err, { method: 'deleteFlaggedMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
                                       <Trash2 className="w-3 h-3" /> Delete
                                   </button>
                                   <div className="relative">
@@ -282,7 +345,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   <tr key={s.id} className="group hover:bg-white/5 transition">
                                       <td className="py-3">
                                           <div className="text-sm font-bold text-white">{s.name}</div>
-                                          <div className="text-[10px] text-gray-500">{s.classType}</div>
+                                          <div className="text-xs text-gray-400">{s.classType}</div>
                                       </td>
                                       <td className="py-3">
                                           <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded text-xs font-mono">
@@ -485,105 +548,109 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               ))}
             </select>
           </div>
+
+          {/* Batch action bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-4 p-3 bg-purple-900/30 border border-purple-500/30 rounded-xl animate-in slide-in-from-top-2">
+              <span className="text-sm font-bold text-purple-300">{selectedIds.size} selected</span>
+              <div className="flex-1" />
+              <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-lg text-xs font-bold transition">
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
+              <button onClick={() => { setShowBehaviorAward(true); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 border border-amber-500/30 text-white rounded-lg text-xs font-bold transition">
+                <Zap className="w-3.5 h-3.5" /> Bulk XP
+              </button>
+              <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-gray-400 hover:text-white text-xs transition">Clear</button>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-white/10 text-gray-400 text-sm">
+                  <th className="p-3 w-10">
+                    <input type="checkbox" checked={selectedIds.size === sortedStudents.length && sortedStudents.length > 0} onChange={toggleSelectAll} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label="Select all students" />
+                  </th>
+                  <SortableHeader label="Student"    col="name"      />
+                  <SortableHeader label="Class"      col="class"     />
+                  <SortableHeader label="Last Seen"  col="lastSeen"  className="text-center" />
+                  <SortableHeader label="Total Time" col="time"      className="text-center" />
+                  <SortableHeader label="Resources"  col="resources" className="text-center" />
+                  <SortableHeader label="XP"         col="xp"        className="text-right"  />
+                </tr>
+              </thead>
+            </table>
+            <div ref={tableScrollRef} className="max-h-[520px] overflow-y-auto custom-scrollbar">
               <table className="w-full text-left">
-                  <thead>
-                      <tr className="border-b border-white/10 text-gray-400 text-sm">
-                          <SortableHeader label="Student"   col="name"      />
-                          <SortableHeader label="Class"     col="class"     />
-                          <SortableHeader label="Last Seen" col="lastSeen"  className="text-center" />
-                          <SortableHeader label="Total Time" col="time"     className="text-center" />
-                          <SortableHeader label="Resources" col="resources" className="text-center" />
-                          <SortableHeader label="XP"        col="xp"       className="text-right"  />
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                      {(() => {
-                          const filtered = students.filter(s => {
-                            const matchesSearch = !engagementSearch || s.name.toLowerCase().includes(engagementSearch.toLowerCase()) || s.email.toLowerCase().includes(engagementSearch.toLowerCase());
-                            const matchesBucket = !bucketFilter || bucketsByStudent.get(s.id)?.bucket === bucketFilter;
-                            return matchesSearch && matchesBucket;
-                          });
-                          const sorted = [...filtered].sort((a, b) => {
-                              switch (sortCol) {
-                                  case 'name':      return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-                                  case 'class':     return sortDir === 'asc' ? (a.classType||'').localeCompare(b.classType||'') : (b.classType||'').localeCompare(a.classType||'');
-                                  case 'lastSeen':  { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sortDir === 'asc' ? av - bv : bv - av; }
-                                  case 'time':      { const av = a.stats?.totalTime || 0; const bv = b.stats?.totalTime || 0; return sortDir === 'asc' ? av - bv : bv - av; }
-                                  case 'resources': { const av = a.stats?.problemsCompleted || 0; const bv = b.stats?.problemsCompleted || 0; return sortDir === 'asc' ? av - bv : bv - av; }
-                                  case 'xp': default: { const av = a.gamification?.classXp?.[a.classType || ''] || 0; const bv = b.gamification?.classXp?.[b.classType || ''] || 0; return sortDir === 'asc' ? av - bv : bv - av; }
-                              }
-                          });
-                          const maxXP = Math.max(1, ...students.map(s => s.gamification?.classXp?.[s.classType || ''] || 0));
-                          return sorted
-                              .map(student => {
-                                  const xp = student.gamification?.classXp?.[student.classType || ''] || 0;
-                                  const xpPct = Math.round((xp / maxXP) * 100);
-                                  
-                                  // Color-code last seen
-                                  const lastLogin = student.lastLoginAt;
-                                  const msSinceLogin = lastLogin ? Date.now() - new Date(lastLogin).getTime() : Infinity;
-                                  const lastSeenColor = msSinceLogin < 3600000 ? 'text-green-400' 
-                                      : msSinceLogin < 86400000 ? 'text-yellow-400' 
-                                      : msSinceLogin < Infinity ? 'text-red-400' 
-                                      : 'text-gray-600';
-                                  const activityDot = msSinceLogin < 3600000 ? 'bg-green-500' 
-                                      : msSinceLogin < 86400000 ? 'bg-yellow-500' 
-                                      : msSinceLogin < Infinity ? 'bg-red-500' 
-                                      : 'bg-gray-600';
+                <tbody>
+                  <tr><td colSpan={7} style={{ height: `${tableVirtualizer.getTotalSize()}px`, padding: 0, position: 'relative' }}>
+                    {tableVirtualizer.getVirtualItems().map(virtualRow => {
+                      const student = sortedStudents[virtualRow.index];
+                      const xp = student.gamification?.classXp?.[student.classType || ''] || 0;
+                      const xpPct = Math.round((xp / maxXP) * 100);
+                      const lastLogin = student.lastLoginAt;
+                      const msSinceLogin = lastLogin ? Date.now() - new Date(lastLogin).getTime() : Infinity;
+                      const lastSeenColor = msSinceLogin < 3600000 ? 'text-green-400'
+                        : msSinceLogin < 86400000 ? 'text-yellow-400'
+                        : msSinceLogin < Infinity ? 'text-red-400'
+                        : 'text-gray-500';
+                      const activityDot = msSinceLogin < 3600000 ? 'bg-green-500'
+                        : msSinceLogin < 86400000 ? 'bg-yellow-500'
+                        : msSinceLogin < Infinity ? 'bg-red-500'
+                        : 'bg-gray-600';
+                      const studentAlert = alertsByStudent.get(student.id);
+                      const riskDot: Record<string, string> = { CRITICAL: 'bg-red-500 animate-pulse', HIGH: 'bg-orange-500', MODERATE: 'bg-yellow-500' };
+                      const studentBucket = bucketsByStudent.get(student.id);
+                      const bucketMeta = studentBucket ? BUCKET_META[studentBucket.bucket as TelemetryBucket] : null;
+                      const isSelected = selectedIds.has(student.id);
 
-                                  const studentAlert = alertsByStudent.get(student.id);
-                                  const riskDot: Record<string, string> = {
-                                    CRITICAL: 'bg-red-500 animate-pulse',
-                                    HIGH: 'bg-orange-500',
-                                    MODERATE: 'bg-yellow-500',
-                                  };
-                                  const studentBucket = bucketsByStudent.get(student.id);
-                                  const bucketMeta = studentBucket ? BUCKET_META[studentBucket.bucket as TelemetryBucket] : null;
-
-                                  return (
-                                      <tr key={student.id} className={`hover:bg-white/5 transition cursor-pointer ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''}`} onClick={() => setSelectedStudentId(student.id)}>
-                                          <td className="p-3 font-bold text-white">
-                                              <div className="flex items-center gap-2">
-                                                  <div className="relative">
-                                                      {student.avatarUrl ? (
-                                                          <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
-                                                      ) : (
-                                                          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">
-                                                              {student.name.charAt(0)}
-                                                          </div>
-                                                      )}
-                                                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`}></div>
-                                                  </div>
-                                                  <span className="truncate max-w-[120px]">{student.name}</span>
-                                                  {studentAlert && riskDot[studentAlert.riskLevel] && (
-                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
-                                                  )}
-                                                  {bucketMeta && (
-                                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bucketMeta.bgColor} ${bucketMeta.color} border ${bucketMeta.borderColor}`} title={bucketMeta.description}>
-                                                      {bucketMeta.label}
-                                                    </span>
-                                                  )}
-                                              </div>
-                                          </td>
-                                          <td className="p-3 text-sm text-gray-400">{student.classType}</td>
-                                          <td className={`p-3 text-center text-xs font-mono ${lastSeenColor}`}>{formatLastSeen(student.lastLoginAt)}</td>
-                                          <td className="p-3 text-center text-white">{student.stats?.totalTime || 0}m</td>
-                                          <td className="p-3 text-center text-white">{student.stats?.problemsCompleted || 0}</td>
-                                          <td className="p-3 text-right">
-                                              <div className="flex items-center justify-end gap-2">
-                                                  <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                                      <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${xpPct}%` }}></div>
-                                                  </div>
-                                                  <span className="text-purple-400 font-bold text-sm min-w-[3rem] text-right">{xp}</span>
-                                              </div>
-                                          </td>
-                                      </tr>
-                                  );
-                              });
-                      })()}
-                  </tbody>
+                      return (
+                        <div
+                          key={student.id}
+                          className={`absolute left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
+                          style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                        >
+                          <div className="p-3 w-10 shrink-0">
+                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(student.id)} onClick={e => e.stopPropagation()} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label={`Select ${student.name}`} />
+                          </div>
+                          <div className="p-3 font-bold text-white flex-[2] min-w-0" onClick={() => setSelectedStudentId(student.id)}>
+                            <div className="flex items-center gap-2">
+                              <div className="relative shrink-0">
+                                {student.avatarUrl ? (
+                                  <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">{student.name.charAt(0)}</div>
+                                )}
+                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`} />
+                              </div>
+                              <span className="truncate max-w-[120px]">{student.name}</span>
+                              {studentAlert && riskDot[studentAlert.riskLevel] && (
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
+                              )}
+                              {bucketMeta && (
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bucketMeta.bgColor} ${bucketMeta.color} border ${bucketMeta.borderColor}`} title={bucketMeta.description}>{bucketMeta.label}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="p-3 text-sm text-gray-400 flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.classType}</div>
+                          <div className={`p-3 text-center text-xs font-mono flex-1 ${lastSeenColor}`} onClick={() => setSelectedStudentId(student.id)}>{formatLastSeen(student.lastLoginAt)}</div>
+                          <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.totalTime || 0}m</div>
+                          <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.problemsCompleted || 0}</div>
+                          <div className="p-3 text-right flex-1" onClick={() => setSelectedStudentId(student.id)}>
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${xpPct}%` }} />
+                              </div>
+                              <span className="text-purple-400 font-bold text-sm min-w-[3rem] text-right">{xp}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </td></tr>
+                </tbody>
               </table>
+            </div>
           </div>
       </div>
 
