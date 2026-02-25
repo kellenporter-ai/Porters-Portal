@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, Outlet } from 'react-router-dom';
-import { User, UserRole, Submission, DefaultClassTypes, Assignment } from './types';
-import { dataService } from './services/dataService';
+import { User, UserRole, Submission, DefaultClassTypes, Assignment, isValidUser } from './types';
+import { dataService, clearDeniedCollections } from './services/dataService';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
@@ -241,11 +241,15 @@ const App: React.FC = () => {
         await handleSession(firebaseUser);
         unsubProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), (snapshot) => {
           if (snapshot.exists()) {
-            setUser(prev => ({ ...(prev || {}), ...snapshot.data(), id: firebaseUser.uid } as User));
+            const raw = { ...snapshot.data(), id: firebaseUser.uid };
+            if (isValidUser(raw)) {
+              setUser(prev => ({ ...(prev || {}), ...raw } as User));
+            }
           }
         });
       } else {
         setUser(null);
+        clearDeniedCollections();
         if (unsubProfile) unsubProfile();
         setIsLoading(false);
       }
