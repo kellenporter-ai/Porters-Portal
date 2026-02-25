@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem } from '../types';
-import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain } from 'lucide-react';
+import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain, Copy } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
 import SectionPicker from './SectionPicker';
@@ -18,8 +18,9 @@ import BossOpsTab from './xp/BossOpsTab';
 import XPTutoringTab from './xp/XPTutoringTab';
 import QuizBossFormModal from './xp/QuizBossFormModal';
 import QuestionBankFormModal from './xp/QuestionBankFormModal';
+import GamificationAnalyticsTab from './xp/GamificationAnalyticsTab';
 
-type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING';
+type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING' | 'ANALYTICS';
 
 const TAB_NAME_MAP: Record<string, XPTab> = {
   'Operatives': 'OPERATIVES',
@@ -28,6 +29,7 @@ const TAB_NAME_MAP: Record<string, XPTab> = {
   'Mission Control': 'MISSION_CONTROL',
   'Boss Ops': 'BOSS_OPS',
   'Tutoring': 'TUTORING',
+  'Analytics': 'ANALYTICS',
 };
 
 interface XPManagementProps {
@@ -320,6 +322,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
     MISSION_CONTROL: 'Mission Control',
     BOSS_OPS: 'Boss Ops',
     TUTORING: 'Tutoring',
+    ANALYTICS: 'Analytics',
   };
 
   return (
@@ -337,7 +340,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md">
-        <div className="p-6">
+        <div className="p-6" role="tabpanel" aria-label={`${TAB_TITLES[activeTab]} panel`}>
           {activeTab === 'OPERATIVES' && (
             <OperativesTab
               students={students}
@@ -391,6 +394,24 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => {
+                        setMissionForm({
+                          title: quest.title, description: quest.description,
+                          xpReward: quest.xpReward, fluxReward: quest.fluxReward || 0,
+                          type: quest.type, lootRarity: quest.itemRewardRarity || '',
+                          customItemRewardId: quest.customItemRewardId || '',
+                          startsAt: '', durationHours: 0,
+                          techReq: quest.statRequirements?.tech || 0, focusReq: quest.statRequirements?.focus || 0,
+                          analysisReq: quest.statRequirements?.analysis || 0, charismaReq: quest.statRequirements?.charisma || 0,
+                          dieSides: quest.rollDieSides || 20, consequence: quest.consequenceText || '',
+                          isGroup: quest.isGroupQuest || false,
+                          targetClass: quest.targetClass || '', targetSections: [],
+                        });
+                        setIsQuestModalOpen(true);
+                      }}
+                      className="p-2 text-gray-600 hover:text-purple-400 transition" title="Clone mission"
+                    ><Copy className="w-4 h-4" /></button>
                     <div className="text-right">
                       <button onClick={() => handleToggleQuest(quest)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${quest.isActive ? 'bg-purple-600' : 'bg-gray-700'}`}>
                         <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${quest.isActive ? 'translate-x-6' : ''}`} />
@@ -425,6 +446,15 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
               allSessions={allTutoringSessions}
               onVerify={handleAdminVerifyTutoring}
               onCancel={handleAdminCancelTutoring}
+            />
+          )}
+
+          {activeTab === 'ANALYTICS' && (
+            <GamificationAnalyticsTab
+              students={students}
+              quests={quests}
+              events={events}
+              quizBosses={quizBosses}
             />
           )}
         </div>
@@ -471,7 +501,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
         </form>
       </Modal>
 
-      <AdjustXPModal user={adjustingUser} onClose={() => setAdjustingUser(null)} onAdjust={handleAdjustXP} />
+      <AdjustXPModal user={adjustingUser} onClose={() => setAdjustingUser(null)} onAdjust={handleAdjustXP} allStudents={students} />
 
       <QuizBossFormModal
         isOpen={isQuizBossModalOpen}

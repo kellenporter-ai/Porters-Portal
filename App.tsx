@@ -12,7 +12,7 @@ import Layout from './components/Layout';
 import GoogleLogin from './components/GoogleLogin';
 import { ShieldAlert, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary, { FeatureErrorBoundary } from './components/ErrorBoundary';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
@@ -150,6 +150,7 @@ const FloatingOverlays: React.FC<{ user: User }> = ({ user }) => {
   const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
 
   return (
+    <FeatureErrorBoundary feature="Floating Tools">
     <Suspense fallback={null}>
       {showTools && (
         <PhysicsTools
@@ -170,6 +171,7 @@ const FloatingOverlays: React.FC<{ user: User }> = ({ user }) => {
         />
       )}
     </Suspense>
+    </FeatureErrorBoundary>
   );
 };
 
@@ -414,13 +416,13 @@ const App: React.FC = () => {
             </Suspense>
           } />
           <Route path="/forensics" element={
-            <Suspense fallback={<LazyFallback />}><EvidenceLocker user={user} /></Suspense>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>
           } />
           <Route path="/physics-lab" element={
             <Suspense fallback={<LazyFallback />}><PhysicsLab user={user} /></Suspense>
           } />
           <Route path="/leaderboard" element={
-            <Suspense fallback={<LazyFallback />}><Leaderboard user={user} /></Suspense>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Leaderboard"><Leaderboard user={user} /></FeatureErrorBoundary></Suspense>
           } />
 
           {/* ─── Resource viewer (shared — both admin and student) ─── */}

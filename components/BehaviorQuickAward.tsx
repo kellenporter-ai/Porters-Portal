@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { User, BehaviorCategory, DEFAULT_BEHAVIOR_CATEGORIES } from '../types';
-import { Award, Search, X, Zap } from 'lucide-react';
+import { Award, Search, X, Zap, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 
@@ -23,7 +23,7 @@ interface BehaviorQuickAwardProps {
 const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpen, onClose }) => {
   const toast = useToast();
   const [search, setSearch] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<User[]>([]);
   const [awarding, setAwarding] = useState(false);
   const categories = DEFAULT_BEHAVIOR_CATEGORIES;
 
@@ -32,29 +32,43 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
     return students.filter(s => s.name.toLowerCase().includes(search.toLowerCase())).slice(0, 20);
   }, [students, search]);
 
+  const toggleStudent = (student: User) => {
+    setSelectedStudents(prev => {
+      if (prev.some(s => s.id === student.id)) return prev.filter(s => s.id !== student.id);
+      return [...prev, student];
+    });
+  };
+
+  const isSelected = (id: string) => selectedStudents.some(s => s.id === id);
+
   const lastAwardRef = useRef(0);
   const handleAward = async (cat: BehaviorCategory) => {
-    if (!selectedStudent) return;
-    // Debounce: prevent rapid-fire awards (1.5s cooldown)
+    if (selectedStudents.length === 0) return;
     const now = Date.now();
     if (now - lastAwardRef.current < 1500) return;
     lastAwardRef.current = now;
 
     setAwarding(true);
     try {
-      await dataService.awardBehavior({
-        studentId: selectedStudent.id,
-        studentName: selectedStudent.name,
-        categoryId: cat.id,
-        categoryName: cat.name,
-        xpAmount: cat.xpAmount,
-        fluxAmount: cat.fluxAmount,
-        classType: selectedStudent.classType || 'AP Physics',
-        awardedBy: 'admin',
-        timestamp: new Date().toISOString(),
-      });
-      toast.success(`${cat.icon} +${cat.xpAmount} XP awarded to ${selectedStudent.name} for ${cat.name}!`);
-      setSelectedStudent(null);
+      for (const student of selectedStudents) {
+        await dataService.awardBehavior({
+          studentId: student.id,
+          studentName: student.name,
+          categoryId: cat.id,
+          categoryName: cat.name,
+          xpAmount: cat.xpAmount,
+          fluxAmount: cat.fluxAmount,
+          classType: student.classType || 'AP Physics',
+          awardedBy: 'admin',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      if (selectedStudents.length === 1) {
+        toast.success(`${cat.icon} +${cat.xpAmount} XP awarded to ${selectedStudents[0].name} for ${cat.name}!`);
+      } else {
+        toast.success(`${cat.icon} +${cat.xpAmount} XP awarded to ${selectedStudents.length} students for ${cat.name}!`);
+      }
+      setSelectedStudents([]);
       setSearch('');
     } catch {
       toast.error('Failed to award.');
@@ -77,13 +91,13 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
         </div>
 
         <div className="p-5">
-          {!selectedStudent ? (
+          {selectedStudents.length === 0 ? (
             <>
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="text"
-                  placeholder="Search for a student..."
+                  placeholder="Search students... (select one or more)"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="w-full bg-black/30 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 transition"
@@ -94,35 +108,42 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
                 {filtered.map(s => (
                   <button
                     key={s.id}
-                    onClick={() => setSelectedStudent(s)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left hover:bg-white/5 transition group"
+                    onClick={() => toggleStudent(s)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition group ${isSelected(s.id) ? 'bg-amber-500/10 border border-amber-500/30' : 'hover:bg-white/5 border border-transparent'}`}
                   >
                     {s.avatarUrl ? (
                       <img src={s.avatarUrl} alt="" loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">{s.name.charAt(0)}</div>
                     )}
-                    <div>
+                    <div className="flex-1">
                       <div className="text-sm font-medium text-white group-hover:text-amber-300 transition">{s.name}</div>
                       <div className="text-[10px] text-gray-500">{s.classType}</div>
                     </div>
+                    {isSelected(s.id) && <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center"><X className="w-3 h-3 text-white" /></div>}
                   </button>
                 ))}
               </div>
             </>
           ) : (
             <>
-              <div className="flex items-center gap-3 mb-5 p-3 bg-white/5 border border-white/10 rounded-xl">
-                {selectedStudent.avatarUrl ? (
-                  <img src={selectedStudent.avatarUrl} alt="" className="w-10 h-10 rounded-full border border-white/10 object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-sm font-bold text-purple-400">{selectedStudent.name.charAt(0)}</div>
-                )}
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-white">{selectedStudent.name}</div>
-                  <div className="text-[10px] text-gray-500">{selectedStudent.classType}</div>
+              <div className="mb-5 p-3 bg-white/5 border border-white/10 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-white">{selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} selected</span>
+                  </div>
+                  <button onClick={() => setSelectedStudents([])} className="text-xs text-gray-500 hover:text-white transition">Change</button>
                 </div>
-                <button onClick={() => setSelectedStudent(null)} className="text-xs text-gray-500 hover:text-white transition">Change</button>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedStudents.map(s => (
+                    <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-[10px] font-bold text-purple-300">
+                      {s.avatarUrl && <img src={s.avatarUrl} alt="" className="w-4 h-4 rounded-full" />}
+                      {s.name}
+                      <button onClick={() => toggleStudent(s)} className="text-gray-500 hover:text-red-400 transition"><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
               </div>
 
               <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">Select Behavior</p>

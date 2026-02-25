@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, DefaultClassTypes } from '../../types';
 import { Search, Plus, ChevronDown, ChevronUp, Filter, Briefcase, Pencil, Check, X, Lock, Unlock } from 'lucide-react';
 import { calculateGearScore } from '../../lib/gamification';
@@ -97,6 +98,14 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
     onSaveCodenameLocked(userId, !currentLocked);
   };
 
+  const listParentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filteredStudents.length,
+    getScrollElement: () => listParentRef.current,
+    estimateSize: () => 56,
+    overscan: 10,
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -142,6 +151,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
         </div>
       </div>
       <div className="overflow-x-auto">
+        {/* Fixed header */}
         <table className="w-full text-left">
           <thead>
             <tr className="text-[10px] text-gray-500 uppercase font-black tracking-widest border-b border-white/5">
@@ -154,14 +164,22 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
               <th className="pb-4 text-right pr-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
-            {filteredStudents.map(student => {
+        </table>
+        {/* Virtualized rows */}
+        <div ref={listParentRef} className="max-h-[600px] overflow-auto">
+          <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+            {rowVirtualizer.getVirtualItems().map(virtualRow => {
+              const student = filteredStudents[virtualRow.index];
               const level = student.gamification?.level || 1;
               const flux = student.gamification?.currency || 0;
               const classes = student.enrolledClasses || (student.classType ? [student.classType] : []);
               return (
-                <tr key={student.id} className="group hover:bg-white/5 transition-colors">
-                  <td className="py-3 pl-4">
+                <div
+                  key={student.id}
+                  className="absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition-colors border-b border-white/5"
+                  style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                >
+                  <div className="flex-[2] py-3 pl-4">
                     <div className="flex items-center gap-3">
                       <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-white/10" alt={student.name} loading="lazy" />
                       <div>
@@ -198,7 +216,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                             <button
                               onClick={() => handleToggleCodenameLocked(student.id, !!student.gamification?.codenameLocked)}
                               className={`transition ${student.gamification?.codenameLocked ? 'text-red-400 hover:text-red-300' : 'text-gray-600 hover:text-gray-400'}`}
-                              title={student.gamification?.codenameLocked ? 'Codename locked \u2014 click to unlock' : 'Click to lock codename'}
+                              title={student.gamification?.codenameLocked ? 'Codename locked — click to unlock' : 'Click to lock codename'}
                             >
                               {student.gamification?.codenameLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
                             </button>
@@ -206,29 +224,29 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                         )}
                       </div>
                     </div>
-                  </td>
-                  <td className="py-3">
+                  </div>
+                  <div className="flex-1 py-3">
                     <div className="flex flex-wrap gap-1">
                       {classes.map(c => (
                         <span key={c} className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 font-bold">{c}</span>
                       ))}
                     </div>
-                  </td>
-                  <td className="py-3 text-center">
+                  </div>
+                  <div className="w-16 py-3 text-center">
                     <span className="text-lg font-black text-white">{level}</span>
-                  </td>
-                  <td className="py-3 text-center">
+                  </div>
+                  <div className="w-20 py-3 text-center">
                     <span className="text-sm font-bold text-gray-300">
                       {(filterClass !== 'All Classes' ? (student.gamification?.classXp?.[filterClass] || 0) : (student.gamification?.xp || 0)).toLocaleString()}
                     </span>
-                  </td>
-                  <td className="py-3 text-center">
+                  </div>
+                  <div className="w-16 py-3 text-center">
                     <span className="text-sm font-bold text-cyan-400">{flux}</span>
-                  </td>
-                  <td className="py-3 text-center">
+                  </div>
+                  <div className="w-16 py-3 text-center">
                     <span className="text-sm font-bold text-yellow-400">{getAggregateGearScore(student)}</span>
-                  </td>
-                  <td className="py-3 text-right pr-4">
+                  </div>
+                  <div className="w-40 py-3 text-right pr-4">
                     <div className="flex justify-end gap-1.5">
                       <button
                         onClick={() => onInspect(student)}
@@ -243,12 +261,12 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                         <Plus className="w-3 h-3" /> XP
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );

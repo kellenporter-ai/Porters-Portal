@@ -39,6 +39,7 @@ export const XP_SUB_ROUTES: Record<string, string> = {
   'Mission Control': 'mission-control',
   'Boss Ops': 'boss-ops',
   'Tutoring': 'tutoring',
+  'Analytics': 'analytics',
 };
 
 /**
@@ -60,6 +61,7 @@ export const TAB_TO_PATH: Record<string, string> = {
   'XP Command:Mission Control': '/xp/mission-control',
   'XP Command:Boss Ops': '/xp/boss-ops',
   'XP Command:Tutoring': '/xp/tutoring',
+  'XP Command:Analytics': '/xp/analytics',
   // Student
   'Resources': STUDENT_ROUTES.RESOURCES,
   'Agent Loadout': STUDENT_ROUTES.LOADOUT,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
 
 interface Props {
     children: React.ReactNode;
@@ -53,6 +53,61 @@ class ErrorBoundary extends React.Component<Props, State> {
                             Reload Portal
                         </button>
                     </div>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+// ─── Lightweight inline error boundary for individual features ───
+// Falls back to a small inline error card instead of taking down the whole page.
+
+interface FeatureProps {
+    children: React.ReactNode;
+    feature: string;
+}
+
+interface FeatureState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+export class FeatureErrorBoundary extends React.Component<FeatureProps, FeatureState> {
+    constructor(props: FeatureProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): FeatureState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error(`FeatureErrorBoundary [${this.props.feature}]:`, error, errorInfo);
+    }
+
+    handleRetry = () => {
+        this.setState({ hasError: false, error: null });
+    };
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 text-center" role="alert">
+                    <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-white mb-1">{this.props.feature} failed to load</h3>
+                    <p className="text-xs text-gray-400 mb-4">
+                        {this.state.error?.message || 'An unexpected error occurred.'}
+                    </p>
+                    <button
+                        onClick={this.handleRetry}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition inline-flex items-center gap-2"
+                    >
+                        <RefreshCw className="w-3 h-3" />
+                        Retry
+                    </button>
                 </div>
             );
         }
