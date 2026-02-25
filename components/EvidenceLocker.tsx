@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { jsPDF } from 'jspdf';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
+import { useOnlineStatus } from '../lib/useOnlineStatus';
 
 interface EvidenceLockerProps {
   user: User;
@@ -21,6 +22,7 @@ type DayName = typeof DAYS_OF_WEEK[number];
 const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
+  const isOnline = useOnlineStatus();
   const currentWeekId = useMemo(() => dataService.getWeekId(), []);
   const [logs, setLogs] = useState<EvidenceLog[]>([]);
   const [activeDay, setActiveDay] = useState<DayName>('Monday');
@@ -398,10 +400,10 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                             </div>
                         </>
                     ) : (
-                        <button 
+                        <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full h-full flex flex-col items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-white/5 transition gap-3"
-                            disabled={isUploading}
+                            className="w-full h-full flex flex-col items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-white/5 transition gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isUploading || !isOnline}
                         >
                             {isUploading ? (
                                 <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />

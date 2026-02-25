@@ -18,6 +18,7 @@ import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
+import RouteSkeleton from './components/RouteSkeleton';
 import { AppDataProvider, useAppData } from './lib/AppDataContext';
 import { AdminDataProvider, useAdminData } from './lib/AdminDataContext';
 import { ChatProvider, useChat } from './lib/ChatContext';
@@ -39,11 +40,7 @@ const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
 const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
 const ResourceViewer = lazy(() => import('./components/ResourceViewer'));
 
-const LazyFallback = () => (
-  <div className="flex items-center justify-center h-64 text-gray-500">
-    <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
-  </div>
-);
+const LazyFallback = () => <RouteSkeleton />;
 
 // ─── Access Pending screen with enrollment code redemption ───
 const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout: () => void }> = ({ userName, userId, onLogout }) => {

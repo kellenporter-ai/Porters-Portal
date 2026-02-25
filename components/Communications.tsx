@@ -5,6 +5,7 @@ import { User, ChatMessage, DefaultClassTypes, Assignment, ClassConfig, StudentG
 import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check, MicOff, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
+import { useOnlineStatus } from '../lib/useOnlineStatus';
 
 interface CommunicationsProps {
   user: User;
@@ -22,6 +23,7 @@ const EMOJI_GRID = ['😀', '😂', '😍', '😎', '🤔', '🤨', '😐', '�
 
 const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, assignments, classConfigs, unreadChannels, onMarkChannelRead, onOpenResource }) => {
   const { confirm } = useConfirm();
+  const isOnline = useOnlineStatus();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState<'Main' | 'Resources' | 'Groups' | 'Bookmarks' | 'Moderation'>('Main');
@@ -559,8 +561,8 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                 </div>
                             )}
                             <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-3 text-gray-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition" aria-label="Open emoji picker"><Smile className="w-5 h-5" /></button>
-                            <input type="text" value={inputText} onChange={e => setInputText(e.target.value)} placeholder={isMuted ? "Transmission Disabled" : "Type message..."} disabled={!activeChannelId || isMuted} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition" />
-                            <button type="submit" disabled={!activeChannelId || isMuted || !inputText.trim()} className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg transition" aria-label="Send message"><Send className="w-5 h-5" /></button>
+                            <input type="text" value={inputText} onChange={e => setInputText(e.target.value)} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? "Transmission Disabled" : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition disabled:opacity-50" />
+                            <button type="submit" disabled={!activeChannelId || isMuted || !inputText.trim() || !isOnline} className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message"><Send className="w-5 h-5" /></button>
                         </form>
                     </div>
                 </>

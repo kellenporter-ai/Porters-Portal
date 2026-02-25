@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Assignment, ClassConfig } from '../../types';
-import { ChevronRight, ChevronDown, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, Clock, GraduationCap } from 'lucide-react';
+import { ChevronRight, ChevronDown, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, Clock, GraduationCap, Search } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -27,16 +27,49 @@ interface ResourcesTabProps {
 }
 
 const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, onToggleUnit, practiceCompletion, onStartAssignment, classConfigs, activeClass }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredUnitGroups = useMemo(() => {
+    if (!searchQuery.trim()) return unitGroups;
+    const q = searchQuery.toLowerCase();
+    const filtered: Record<string, EnrichedAssignment[]> = {};
+    for (const [unit, items] of Object.entries(unitGroups)) {
+      const matches = items.filter(r =>
+        r.title.toLowerCase().includes(q) ||
+        r.description?.toLowerCase().includes(q) ||
+        r.category?.toLowerCase().includes(q) ||
+        unit.toLowerCase().includes(q)
+      );
+      if (matches.length > 0) filtered[unit] = matches;
+    }
+    return filtered;
+  }, [unitGroups, searchQuery]);
+
   return (
     <div key="resources" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-      {Object.entries(unitGroups).length === 0 ? (
-        <div className="text-center py-20 text-gray-500 italic">No resources released for this class node.</div>
+      {/* Search bar */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Search resources..."
+          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition"
+          aria-label="Search resources"
+        />
+      </div>
+
+      {Object.entries(filteredUnitGroups).length === 0 ? (
+        <div className="text-center py-20 text-gray-500 italic">
+          {searchQuery ? `No resources matching "${searchQuery}".` : 'No resources released for this class node.'}
+        </div>
       ) : (
         <div className="space-y-4">
           {(() => {
             const unitOrder = classConfigs?.find(c => c.className === activeClass)?.unitOrder;
-            const sortedKeys = sortUnitKeys(Object.keys(unitGroups), unitOrder);
-            return sortedKeys.map(unit => [unit, unitGroups[unit]] as [string, typeof unitGroups[string]]);
+            const sortedKeys = sortUnitKeys(Object.keys(filteredUnitGroups), unitOrder);
+            return sortedKeys.map(unit => [unit, filteredUnitGroups[unit]] as [string, typeof filteredUnitGroups[string]]);
           })().map(([unit, items]) => (
             <div key={unit} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
               <button onClick={() => onToggleUnit(unit)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition">
