@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Assignment, ClassConfig, User, UserRole } from '../types';
+import { Assignment, ClassConfig, User, UserRole, XPEvent, Quest } from '../types';
 import { dataService } from '../services/dataService';
+import { reportError } from './errorReporting';
 
 interface AppData {
   assignments: Assignment[];
   classConfigs: ClassConfig[];
+  xpEvents: XPEvent[];
+  quests: Quest[];
   enabledFeatures: { physicsLab: boolean; evidenceLocker: boolean; leaderboard: boolean; physicsTools: boolean; communications: boolean };
 }
 
@@ -19,6 +22,8 @@ export const useAppData = (): AppData => {
 export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }> = ({ user, children }) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classConfigs, setClassConfigs] = useState<ClassConfig[]>([]);
+  const [xpEvents, setXpEvents] = useState<XPEvent[]>([]);
+  const [quests, setQuests] = useState<Quest[]>([]);
 
   useEffect(() => {
     if (!user.isWhitelisted && user.role !== UserRole.ADMIN) return;
@@ -26,6 +31,14 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
       dataService.subscribeToAssignments(setAssignments),
       dataService.subscribeToClassConfigs(setClassConfigs),
     ];
+
+    // XP events & quests may fail for permission reasons — don't block other subscriptions
+    try { unsubs.push(dataService.subscribeToXPEvents(setXpEvents)); }
+    catch (e) { reportError(e, { subscription: 'xpEvents' }); }
+
+    try { unsubs.push(dataService.subscribeToQuests(setQuests)); }
+    catch (e) { reportError(e, { subscription: 'quests' }); }
+
     return () => unsubs.forEach(u => u());
   }, [user.id, user.isWhitelisted, user.role]);
 
@@ -38,7 +51,7 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
     return defaults;
   }, [user.role, user.classType, classConfigs]);
 
-  const value = useMemo(() => ({ assignments, classConfigs, enabledFeatures }), [assignments, classConfigs, enabledFeatures]);
+  const value = useMemo(() => ({ assignments, classConfigs, xpEvents, quests, enabledFeatures }), [assignments, classConfigs, xpEvents, quests, enabledFeatures]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 };

@@ -1,8 +1,9 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { FORTUNE_WHEEL_PRIZES } from '../../lib/achievements';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
+import { useThrottle } from '../../lib/rateLimiting';
 import { useToast } from '../ToastProvider';
 
 interface FortuneWheelProps {
@@ -25,7 +26,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
   const alreadySpun = lastSpin === today;
   const canSpin = !alreadySpun && currency >= WHEEL_COST && !spinning;
 
-  const handleSpin = async () => {
+  const doSpin = useCallback(async () => {
     if (!canSpin) return;
     setSpinning(true);
     setResult(null);
@@ -55,7 +56,9 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
       setSpinning(false);
       toast.error(err instanceof Error ? err.message : 'Spin failed');
     }
-  };
+  }, [canSpin, classType, toast]);
+
+  const handleSpin = useThrottle(doSpin, 5000);
 
   const segAngle = 360 / SEGMENTS.length;
   const radius = 140;

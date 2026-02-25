@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { User, Assignment, Submission, XPEvent, RPGItem, Quest, ClassConfig } from '../types';
+import { User, Assignment, Submission, RPGItem, Quest, ClassConfig } from '../types';
 import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
 
 import { dataService } from '../services/dataService';
@@ -9,6 +9,8 @@ import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
 import { getSessionState } from '../lib/useStudentSession';
+import { reportError } from '../lib/errorReporting';
+import { useAppData } from '../lib/AppDataContext';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
@@ -55,8 +57,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // Initialize activeClass from user, but DON'T snap back on every classType change.
   // For multi-class students, activeClass is the local view selector.
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
-  const [activeEvent, setActiveEvent] = useState<XPEvent | null>(null);
-  const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
+  const { xpEvents, quests: allQuests } = useAppData();
 
   // Practice progress (completion badges)
   const [practiceCompletion, setPracticeCompletion] = useState<Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>>({});
@@ -85,51 +86,43 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       }
   }, [user.gamification?.level, user.gamification?.lastLevelSeen, user.gamification?.inventory]);
 
+  // Derived from AppDataContext — no per-component subscription needed
+  const activeEvent = useMemo(() => {
+    return xpEvents.find(e => {
+      if (!e.isActive) return false;
+      if (e.type !== 'GLOBAL' && e.targetClass !== activeClass) return false;
+      if (e.scheduledAt && new Date(e.scheduledAt) > new Date()) return false;
+      if (e.targetSections?.length) {
+        const evtClass = e.type !== 'GLOBAL' && e.targetClass ? e.targetClass : activeClass;
+        const sec = user.classSections?.[evtClass] || user.classSections?.[activeClass] || user.section || '';
+        if (!e.targetSections.includes(sec)) return false;
+      }
+      return true;
+    }) || null;
+  }, [xpEvents, activeClass, user.classSections, user.section]);
+
+  const availableQuests = useMemo(() => {
+    const myClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
+    return allQuests.filter(q => {
+      if (!q.isActive) return false;
+      const now = new Date();
+      if (q.startsAt && new Date(q.startsAt) > now) return false;
+      if (q.expiresAt && new Date(q.expiresAt) < now) return false;
+      if (q.targetClass && !myClasses.includes(q.targetClass)) return false;
+      if (q.targetSections?.length) {
+        const questSection = user.classSections?.[q.targetClass || activeClass] || user.section || '';
+        if (!q.targetSections.includes(questSection)) return false;
+      }
+      return true;
+    });
+  }, [allQuests, user.enrolledClasses, user.classType, user.classSections, user.section, activeClass]);
+
   useEffect(() => {
-    const unsubs: (() => void)[] = [];
     try {
-      unsubs.push(dataService.subscribeToXPEvents((events) => {
-        const active = events.find(e => {
-          if (!e.isActive) return false;
-          if (e.type !== 'GLOBAL' && e.targetClass !== activeClass) return false;
-          if (e.scheduledAt && new Date(e.scheduledAt) > new Date()) return false;
-          if (e.targetSections?.length) {
-            const evtClass = e.type !== 'GLOBAL' && e.targetClass ? e.targetClass : activeClass;
-            const sec = user.classSections?.[evtClass] || user.classSections?.[activeClass] || user.section || '';
-            if (!e.targetSections.includes(sec)) return false;
-          }
-          return true;
-        });
-        setActiveEvent(active || null);
-      }));
-    } catch { /* permission error — not available */ }
-
-    try {
-      unsubs.push(dataService.subscribeToQuests((quests) => {
-          const myClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
-          setAvailableQuests(quests.filter(q => {
-              if (!q.isActive) return false;
-              const now = new Date();
-              if (q.startsAt && new Date(q.startsAt) > now) return false;
-              if (q.expiresAt && new Date(q.expiresAt) < now) return false;
-              // If quest targets a specific class, only show to students in that class
-              if (q.targetClass && !myClasses.includes(q.targetClass)) return false;
-              // If quest targets specific sections, only show to students in those sections
-              if (q.targetSections?.length) {
-                const questSection = user.classSections?.[q.targetClass || activeClass] || user.section || '';
-                if (!q.targetSections.includes(questSection)) return false;
-              }
-              return true;
-          }));
-      }));
-    } catch { /* permission error — not available */ }
-
-    try {
-      unsubs.push(dataService.subscribeToStudentPracticeProgress(user.id, setPracticeCompletion));
-    } catch { /* permission error — not available */ }
-
-    return () => unsubs.forEach(u => u());
-  }, [activeClass]);
+      const unsub = dataService.subscribeToStudentPracticeProgress(user.id, setPracticeCompletion);
+      return () => unsub();
+    } catch (e) { reportError(e, { subscription: 'practiceProgress' }); }
+  }, [user.id]);
 
   // Detect XP changes and show floating animation
   const classXp = user.gamification?.classXp?.[activeClass] || 0;
@@ -181,11 +174,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // Announcements
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   useEffect(() => {
-    let unsub: (() => void) | undefined;
     try {
-      unsub = dataService.subscribeToAnnouncements(setAnnouncements);
-    } catch { /* permission error — not available */ }
-    return () => unsub?.();
+      const unsub = dataService.subscribeToAnnouncements(setAnnouncements);
+      return () => unsub();
+    } catch (e) { reportError(e, { subscription: 'announcements' }); }
   }, []);
 
   const visibleAnnouncements = useMemo(() => {
@@ -211,7 +203,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       session.acknowledgedLevel = currentLevel;
       setShowLevelUp(false);
       setNewlyAcquiredItem(null);
-      dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(err => console.error('Failed to update last level seen:', err));
+      dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(err => reportError(err, { method: 'updateUserLastLevelSeen' }));
   }, [user.id, user.gamification?.level]);
 
   const enrolledClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
@@ -276,11 +268,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const activeQuests = user.gamification?.activeQuests || [];
   const completedQuests = user.gamification?.completedQuests || [];
 
-  // Only show quests that aren't currently active AND haven't been completed permanently
-  const myAcceptedQuests = availableQuests.filter(q => activeQuests.some(aq => aq.questId === q.id));
-  const newQuests = availableQuests.filter(q =>
+  const myAcceptedQuests = useMemo(() =>
+    availableQuests.filter(q => activeQuests.some(aq => aq.questId === q.id)),
+    [availableQuests, activeQuests]
+  );
+  const newQuests = useMemo(() =>
+    availableQuests.filter(q =>
       !activeQuests.some(aq => aq.questId === q.id) &&
       !completedQuests.includes(q.id)
+    ),
+    [availableQuests, activeQuests, completedQuests]
   );
 
   const handleAcceptQuest = async (quest: Quest) => {

@@ -3,6 +3,22 @@ import React, { useState } from 'react';
 import { auth, googleProvider } from '../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import { AlertTriangle, FileCode } from 'lucide-react';
+import { reportError } from '../lib/errorReporting';
+
+/** Strip Firebase config details (API keys, project IDs) from error messages shown to users. */
+function sanitizeFirebaseError(message: string): string {
+  // Known Firebase auth error codes → friendly messages
+  if (message.includes('auth/popup-closed-by-user')) return 'Sign-in popup was closed. Please try again.';
+  if (message.includes('auth/cancelled-popup-request')) return 'Sign-in was cancelled. Please try again.';
+  if (message.includes('auth/network-request-failed')) return 'Network error. Check your connection and try again.';
+  if (message.includes('api-key-not-valid')) return 'Firebase API key is not configured correctly.';
+  if (message.includes('auth/unauthorized-domain')) return 'This domain is not authorized for sign-in.';
+  // Strip any remaining keys/config values from the raw message
+  return message
+    .replace(/AIza[A-Za-z0-9_-]{35}/g, '[REDACTED]')
+    .replace(/\b[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com\b/g, '[REDACTED]')
+    .replace(/firebase[A-Za-z]*:\s*"[^"]+"/gi, '[config redacted]');
+}
 
 const GoogleLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -11,12 +27,13 @@ const GoogleLogin: React.FC = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setErrorMessage(null);
-    
+
     try {
         await signInWithPopup(auth, googleProvider);
     } catch (error) {
-        console.error("Login Error:", error);
-        setErrorMessage(error instanceof Error ? error.message : "Login failed");
+        reportError(error, { component: 'GoogleLogin' });
+        const raw = error instanceof Error ? error.message : "Login failed";
+        setErrorMessage(sanitizeFirebaseError(raw));
         setLoading(false);
     }
   };

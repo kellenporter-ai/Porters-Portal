@@ -86,7 +86,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
   const gemStats = useMemo(() => calculateGemStats(equipped), [equipped]);
   const runewordStats = useMemo(() => calculateRunewordStats(equipped), [equipped]);
   const setBonusStats = useMemo(() => calculateSetBonusStats(equipped), [equipped]);
-  const streakMultiplier = getStreakMultiplier(streak);
+  const streakMultiplier = useMemo(() => getStreakMultiplier(streak), [streak]);
 
   // ─── XP Breakdown by source ──────────────────────────
   const classSubmissions = useMemo(() => {
@@ -173,7 +173,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
     return days;
   }, [classSubmissions]);
 
-  const maxDayMinutes = Math.max(1, ...activityTimeline.map(d => d.minutes));
+  const maxDayMinutes = useMemo(() => Math.max(1, ...activityTimeline.map(d => d.minutes)), [activityTimeline]);
 
   // ─── Submission status breakdown ──────────────────────
   const statusBreakdown = useMemo(() => {
