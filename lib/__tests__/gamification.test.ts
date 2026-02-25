@@ -6,16 +6,12 @@ import {
   getLevelProgress,
   getRankDetails,
   MAX_LEVEL,
-  XP_BRACKETS,
-  FLUX_COSTS,
   getUnsocketCost,
   getDisenchantValue,
   deriveCombatStats,
   calculatePlayerStats,
   calculateGearScore,
   calculateGemStats,
-  calculateRunewordStats,
-  getRunewordForItem,
   getAssetColors,
 } from '../gamification';
 import { RPGItem, EquipmentSlot } from '../../types';
@@ -368,13 +364,13 @@ describe('calculateGemStats', () => {
     const equipped: Partial<Record<EquipmentSlot, RPGItem>> = {
       CHEST: makeItem({
         gems: [
-          { name: 'Ruby', stat: 'tech', value: 5, tier: 1, color: '#f00' },
-          { name: 'Sapphire', stat: 'analysis', value: 3, tier: 1, color: '#00f' },
+          { id: 'ruby-1', name: 'Ruby', stat: 'tech', value: 5, tier: 1, color: '#f00' },
+          { id: 'sapphire-1', name: 'Sapphire', stat: 'analysis', value: 3, tier: 1, color: '#00f' },
         ],
       }),
       HEAD: makeItem({
         slot: 'HEAD',
-        gems: [{ name: 'Ruby', stat: 'tech', value: 7, tier: 2, color: '#f00' }],
+        gems: [{ id: 'ruby-2', name: 'Ruby', stat: 'tech', value: 7, tier: 2, color: '#f00' }],
       }),
     };
     const stats = calculateGemStats(equipped);

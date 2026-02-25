@@ -4,7 +4,7 @@ import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, 
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, updateDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { ToastProvider } from './components/ToastProvider';
 import ConnectionStatus from './components/ConnectionStatus';
 import Layout from './components/Layout';
