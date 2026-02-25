@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, Quest, ClassConfig } from '../types';
 import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
 
@@ -200,17 +200,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     });
   }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.classSections, user.section]);
 
-  const handleDismissAnnouncement = async (id: string) => {
+  const handleDismissAnnouncement = useCallback(async (id: string) => {
     await dataService.dismissAnnouncement(user.id, id);
-  };
+  }, [user.id]);
 
-  const handleLevelUpAck = () => {
+  const handleLevelUpAck = useCallback(() => {
       const currentLevel = user.gamification?.level || 1;
       session.acknowledgedLevel = currentLevel;
       setShowLevelUp(false);
       setNewlyAcquiredItem(null);
       dataService.updateUserLastLevelSeen(user.id, currentLevel).catch(err => console.error('Failed to update last level seen:', err));
-  };
+  }, [user.id, user.gamification?.level]);
 
   const enrolledClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
   const classProfile = useMemo(() => getClassProfile(user, activeClass), [user, activeClass]);

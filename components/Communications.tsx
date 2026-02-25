@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ChatMessage, DefaultClassTypes, Assignment, ClassConfig, StudentGroup } from '../types';
 import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check, MicOff, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -88,6 +89,17 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       return new Date(user.mutedUntil) > new Date();
   }, [user.mutedUntil]);
 
+  const displayMessages = useMemo(() => {
+    return activeTab === 'Bookmarks' ? pinnedMessages : messages;
+  }, [activeTab, pinnedMessages, messages]);
+
+  const msgVirtualizer = useVirtualizer({
+    count: displayMessages.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 72,
+    overscan: 10,
+  });
+
   // Per-tab unread indicators
   const hasUnreadMain = useMemo(() => {
     if (!unreadChannels || unreadChannels.size === 0) return false;
@@ -175,8 +187,10 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   }, [isOpen, user.role]);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, isLoading, activeTab, selectedResourceId]);
+    if (displayMessages.length > 0) {
+      msgVirtualizer.scrollToIndex(displayMessages.length - 1, { align: 'end' });
+    }
+  }, [displayMessages.length, isLoading, activeTab, selectedResourceId]);
 
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -453,79 +467,87 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
             {(activeTab === 'Main' || activeTab === 'Bookmarks' || (activeTab === 'Resources' && selectedResourceId) || (activeTab === 'Groups' && selectedGroupId)) && (
                 <>
-                    {/* Bug Fix #1: Added top padding to container and adjusted toolbar positioning logic */}
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pt-12 space-y-6 custom-scrollbar scroll-smooth">
-                        {(activeTab === 'Bookmarks' ? pinnedMessages : messages).map((msg, idx, arr) => {
-                            const isMe = msg.senderId === user.id;
-                            const isContinuation = idx > 0 && arr[idx - 1].senderId === msg.senderId && (new Date(msg.timestamp).getTime() - new Date(arr[idx - 1].timestamp).getTime() < 300000);
-                            
-                            return (
-                                <div key={msg.id} className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isContinuation ? 'mt-1' : 'mt-4'}`}>
-                                    {!isContinuation && (
-                                        <div className="flex items-center gap-2 mb-1 px-1">
-                                            <span className={`text-xs font-bold ${isMe ? 'text-indigo-400' : 'text-gray-300'}`}>{msg.senderName}</span>
-                                            <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                            {msg.isGlobalPinned && <Pin className="w-3 h-3 text-yellow-500 fill-current" />}
-                                        </div>
-                                    )}
+                    {/* Virtualized message list */}
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
+                        <div style={{ height: `${msgVirtualizer.getTotalSize()}px`, position: 'relative', paddingTop: 32 }}>
+                            {msgVirtualizer.getVirtualItems().map(virtualRow => {
+                                const msg = displayMessages[virtualRow.index];
+                                const idx = virtualRow.index;
+                                const isMe = msg.senderId === user.id;
+                                const isContinuation = idx > 0 && displayMessages[idx - 1].senderId === msg.senderId && (new Date(msg.timestamp).getTime() - new Date(displayMessages[idx - 1].timestamp).getTime() < 300000);
 
-                                    <div className="relative max-w-[85%]">
-                                        {/* Action Toolbar: Repositioned to top to avoid visual clipping when at window top */}
-                                        <div className={`flex items-center bg-black/80 backdrop-blur rounded-full px-2 py-1 gap-2 border border-white/10 opacity-0 group-hover:opacity-100 transition-all absolute -top-8 ${isMe ? 'right-0' : 'left-0'} z-30`}>
-                                            <button onClick={() => setShowMessageEmojiPickerId(msg.id)} className="p-1 hover:bg-white/10 rounded-full transition" aria-label="Add reaction"><Smile className="w-3.5 h-3.5 text-yellow-400" /></button>
-                                            <button onClick={() => handleTogglePin(msg.id)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.pinnedBy?.includes(user.id) ? 'text-purple-400' : 'text-gray-400'}`} aria-label="Bookmark message"><Bookmark className="w-3.5 h-3.5" /></button>
-                                            {user.role === 'ADMIN' && (
-                                                <>
-                                                    <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-3.5 h-3.5" /></button>
-                                                    <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition" aria-label="Delete message"><Trash2 className="w-3.5 h-3.5" /></button>
-                                                    {msg.senderId !== user.id && (
-                                                        <div className="relative">
-                                                            <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-1 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition" aria-label="Mute user"><MicOff className="w-3.5 h-3.5" /></button>
-                                                            {muteMenuTarget?.id === msg.id && (
-                                                                <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
-                                                                    <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
-                                                                    {MUTE_DURATIONS.map(d => (
-                                                                        <button key={d.minutes} onClick={() => handleMuteUser(d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* Quick Emoji Picker Submenu */}
-                                        {showMessageEmojiPickerId === msg.id && (
-                                            <div ref={msgEmojiPickerRef} className={`absolute z-40 bottom-full mb-2 bg-black/95 border border-white/20 rounded-xl p-1 shadow-2xl flex gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-0'}`}>
-                                                {QUICK_REACTIONS.map(emoji => (
-                                                    <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="p-1.5 hover:bg-white/10 rounded-lg transition text-sm">{emoji}</button>
-                                                ))}
+                                return (
+                                    <div
+                                        key={msg.id}
+                                        className={`group flex flex-col px-4 ${isMe ? 'items-end' : 'items-start'} absolute top-0 left-0 w-full`}
+                                        style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                                    >
+                                        {!isContinuation && (
+                                            <div className="flex items-center gap-2 mb-1 px-1">
+                                                <span className={`text-xs font-bold ${isMe ? 'text-indigo-400' : 'text-gray-300'}`}>{msg.senderName}</span>
+                                                <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                                {msg.isGlobalPinned && <Pin className="w-3 h-3 text-yellow-500 fill-current" />}
                                             </div>
                                         )}
 
-                                        <div className={`px-4 py-2.5 text-sm leading-relaxed shadow-lg backdrop-blur-sm border ${
-                                            isMe 
-                                                ? 'bg-indigo-600/80 text-white rounded-2xl rounded-tr-sm border-indigo-500/30' 
-                                                : `bg-white/10 text-gray-100 rounded-2xl rounded-tl-sm border-white/5 ${msg.isFlagged ? 'border-red-500/50 bg-red-900/20' : ''}`
-                                        } ${msg.isGlobalPinned ? 'ring-1 ring-yellow-500/50 bg-yellow-900/10' : ''}`}>
-                                            {msg.content}
-                                        </div>
+                                        <div className="relative max-w-[85%]">
+                                            {/* Action Toolbar */}
+                                            <div className={`flex items-center bg-black/80 backdrop-blur rounded-full px-2 py-1 gap-2 border border-white/10 opacity-0 group-hover:opacity-100 transition-all absolute -top-8 ${isMe ? 'right-0' : 'left-0'} z-30`}>
+                                                <button onClick={() => setShowMessageEmojiPickerId(msg.id)} className="p-1 hover:bg-white/10 rounded-full transition" aria-label="Add reaction"><Smile className="w-3.5 h-3.5 text-yellow-400" /></button>
+                                                <button onClick={() => handleTogglePin(msg.id)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.pinnedBy?.includes(user.id) ? 'text-purple-400' : 'text-gray-400'}`} aria-label="Bookmark message"><Bookmark className="w-3.5 h-3.5" /></button>
+                                                {user.role === 'ADMIN' && (
+                                                    <>
+                                                        <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition" aria-label="Delete message"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                        {msg.senderId !== user.id && (
+                                                            <div className="relative">
+                                                                <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-1 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition" aria-label="Mute user"><MicOff className="w-3.5 h-3.5" /></button>
+                                                                {muteMenuTarget?.id === msg.id && (
+                                                                    <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
+                                                                        <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
+                                                                        {MUTE_DURATIONS.map(d => (
+                                                                            <button key={d.minutes} onClick={() => handleMuteUser(d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
 
-                                        <div className="flex flex-wrap gap-1 mt-1 justify-end">
-                                            {msg.reactions && Object.entries(msg.reactions).map(([emoji, users]) => {
-                                                const userList = users as string[];
-                                                return userList.length > 0 && (
-                                                    <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`text-[10px] px-1.5 py-0.5 rounded-full border transition ${userList.includes(user.id) ? 'bg-indigo-500/30 border-indigo-500/50 text-white' : 'bg-black/30 border-white/5 text-gray-400 hover:bg-white/10'}`}>
-                                                        {emoji} {userList.length}
-                                                    </button>
-                                                );
-                                            })}
+                                            {/* Quick Emoji Picker Submenu */}
+                                            {showMessageEmojiPickerId === msg.id && (
+                                                <div ref={msgEmojiPickerRef} className={`absolute z-40 bottom-full mb-2 bg-black/95 border border-white/20 rounded-xl p-1 shadow-2xl flex gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-0'}`}>
+                                                    {QUICK_REACTIONS.map(emoji => (
+                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="p-1.5 hover:bg-white/10 rounded-lg transition text-sm">{emoji}</button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <div className={`px-4 py-2.5 text-sm leading-relaxed shadow-lg backdrop-blur-sm border ${
+                                                isMe
+                                                    ? 'bg-indigo-600/80 text-white rounded-2xl rounded-tr-sm border-indigo-500/30'
+                                                    : `bg-white/10 text-gray-100 rounded-2xl rounded-tl-sm border-white/5 ${msg.isFlagged ? 'border-red-500/50 bg-red-900/20' : ''}`
+                                            } ${msg.isGlobalPinned ? 'ring-1 ring-yellow-500/50 bg-yellow-900/10' : ''}`}>
+                                                {msg.content}
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-1 mt-1 justify-end">
+                                                {msg.reactions && Object.entries(msg.reactions).map(([emoji, users]) => {
+                                                    const userList = users as string[];
+                                                    return userList.length > 0 && (
+                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`text-[10px] px-1.5 py-0.5 rounded-full border transition ${userList.includes(user.id) ? 'bg-indigo-500/30 border-indigo-500/50 text-white' : 'bg-black/30 border-white/5 text-gray-400 hover:bg-white/10'}`}>
+                                                            {emoji} {userList.length}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* INPUT AREA */}

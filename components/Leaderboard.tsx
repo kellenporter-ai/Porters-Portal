@@ -1,5 +1,6 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, DefaultClassTypes } from '../types';
 import { dataService } from '../services/dataService';
 import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
@@ -10,7 +11,7 @@ interface LeaderboardProps {
   user: User;
 }
 
-const LeaderboardSkeleton = () => (
+const LeaderboardSkeleton = React.memo(() => (
     <div className="grid grid-cols-1 divide-y divide-white/5">
         {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="p-6 flex items-center gap-6 animate-pulse">
@@ -27,7 +28,7 @@ const LeaderboardSkeleton = () => (
             </div>
         ))}
     </div>
-);
+));
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const [allStudents, setAllStudents] = useState<User[]>([]);
@@ -35,6 +36,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const [selectedClass, setSelectedClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || DefaultClassTypes.AP_PHYSICS);
   const [isLoading, setIsLoading] = useState(true);
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
+  const handleInspect = useCallback((id: string) => setInspectUserId(id), []);
+  const handleCloseInspect = useCallback(() => setInspectUserId(null), []);
 
   useEffect(() => {
     const unsub = dataService.subscribeToLeaderboard((users) => {
@@ -61,9 +64,18 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
             const xpA = a.gamification?.classXp?.[selectedClass] || 0;
             const xpB = b.gamification?.classXp?.[selectedClass] || 0;
             return xpB - xpA;
-        })
-        .slice(0, 10);
+        });
   }, [allStudents, selectedClass]);
+
+  const restOfList = useMemo(() => leaders.slice(leaders.length >= 3 ? 3 : 0), [leaders]);
+
+  const listParentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: restOfList.length,
+    getScrollElement: () => listParentRef.current,
+    estimateSize: () => 72,
+    overscan: 5,
+  });
 
   return (
     <div className="max-w-4xl mx-auto pt-8">
@@ -125,7 +137,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     <div className={`font-bold truncate max-w-[100px] ${isFirst ? 'text-sm text-white' : 'text-xs text-gray-300'} ${isPrivate ? 'italic' : ''}`}>{displayName}</div>
                                     <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
                                     <div className={`text-[9px] font-mono uppercase ${rd.tierColor.split(' ')[1]}`}>{rd.rankName}</div>
-                                    <button onClick={() => setInspectUserId(u.id)} className="mt-1 text-[10px] text-gray-500 hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
+                                    <button onClick={() => handleInspect(u.id)} className="mt-1 text-[10px] text-gray-500 hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
                                         <Eye className="w-3 h-3" /> Inspect
                                     </button>
                                 </div>
@@ -137,66 +149,73 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                 </div>
             )}
 
-            {/* REST OF LIST — #4 onward (or all if < 3) */}
-            <div className="grid grid-cols-1 divide-y divide-white/5">
-                {leaders.slice(leaders.length >= 3 ? 3 : 0).map((u, idx) => {
-                    const i = leaders.length >= 3 ? idx + 3 : idx;
-                    const isPrivate = u.settings?.privacyMode;
-                    const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
-                    const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                    const level = levelForXp(classXP);
-                    const rankDetails = getRankDetails(level);
+            {/* REST OF LIST — #4 onward (or all if < 3), virtualized */}
+            {leaders.length === 0 ? (
+                <div className="p-10 text-center text-gray-500 italic flex flex-col items-center gap-2">
+                    <Users className="w-8 h-8 opacity-20" />
+                    No operatives ranked in {selectedClass}.
+                </div>
+            ) : (
+                <div ref={listParentRef} className="max-h-[480px] overflow-auto">
+                    <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                        {rowVirtualizer.getVirtualItems().map(virtualRow => {
+                            const u = restOfList[virtualRow.index];
+                            const i = leaders.length >= 3 ? virtualRow.index + 3 : virtualRow.index;
+                            const isPrivate = u.settings?.privacyMode;
+                            const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
+                            const classXP = u.gamification?.classXp?.[selectedClass] || 0;
+                            const level = levelForXp(classXP);
+                            const rankDetails = getRankDetails(level);
 
-                    return (
-                        <div key={u.id} className="p-5 flex items-center gap-5 transition hover:bg-white/5"
-                             style={{ animation: `fadeSlideUp 0.4s ease-out ${0.05 * i}s both` }}>
-                            <div className="w-10 text-center font-bold text-lg text-gray-600 font-mono">
-                                {i < 3 && i === 0 && <Trophy className="w-6 h-6 text-yellow-400 mx-auto" />}
-                                {i < 3 && i === 1 && <Medal className="w-6 h-6 text-gray-300 mx-auto" />}
-                                {i < 3 && i === 2 && <Medal className="w-6 h-6 text-amber-600 mx-auto" />}
-                                {i >= 3 && `#${i+1}`}
-                            </div>
-                            
-                            <div className="w-12 h-12 rounded-full p-0.5 bg-white/5 relative">
-                                <img src={u.avatarUrl} alt={displayName} className={`w-full h-full rounded-full border-2 ${rankDetails.tierColor.split(' ')[0]}`} />
-                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center text-[9px] font-bold border border-gray-600 text-white">
-                                    {level}
+                            return (
+                                <div
+                                    key={u.id}
+                                    className="p-5 flex items-center gap-5 transition hover:bg-white/5 border-b border-white/5 absolute top-0 left-0 w-full"
+                                    style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                                >
+                                    <div className="w-10 text-center font-bold text-lg text-gray-600 font-mono">
+                                        {i < 3 && i === 0 && <Trophy className="w-6 h-6 text-yellow-400 mx-auto" />}
+                                        {i < 3 && i === 1 && <Medal className="w-6 h-6 text-gray-300 mx-auto" />}
+                                        {i < 3 && i === 2 && <Medal className="w-6 h-6 text-amber-600 mx-auto" />}
+                                        {i >= 3 && `#${i+1}`}
+                                    </div>
+
+                                    <div className="w-12 h-12 rounded-full p-0.5 bg-white/5 relative">
+                                        <img src={u.avatarUrl} alt={displayName} loading="lazy" className={`w-full h-full rounded-full border-2 ${rankDetails.tierColor.split(' ')[0]}`} />
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center text-[9px] font-bold border border-gray-600 text-white">
+                                            {level}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className={`text-base font-bold truncate ${isPrivate ? 'text-purple-300 italic' : 'text-white'}`}>
+                                            {displayName}
+                                            {isPrivate && <Lock className="w-3 h-3 text-gray-500 inline ml-1" />}
+                                        </h3>
+                                        <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>
+                                            {rankDetails.rankName}
+                                        </span>
+                                    </div>
+
+                                    <div className="text-right">
+                                        <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                            {classXP.toLocaleString()}
+                                        </div>
+                                        <div className="text-[9px] text-gray-500 font-mono tracking-widest">CLASS XP</div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleInspect(u.id)}
+                                        className="p-2 text-gray-600 hover:text-purple-400 transition rounded-lg hover:bg-white/5"
+                                        title="Inspect player"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <h3 className={`text-base font-bold truncate ${isPrivate ? 'text-purple-300 italic' : 'text-white'}`}>
-                                    {displayName}
-                                    {isPrivate && <Lock className="w-3 h-3 text-gray-500 inline ml-1" />}
-                                </h3>
-                                <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>
-                                    {rankDetails.rankName}
-                                </span>
-                            </div>
-
-                            <div className="text-right">
-                                <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                                    {classXP.toLocaleString()}
-                                </div>
-                                <div className="text-[9px] text-gray-500 font-mono tracking-widest">CLASS XP</div>
-                            </div>
-                            <button
-                                onClick={() => setInspectUserId(u.id)}
-                                className="p-2 text-gray-600 hover:text-purple-400 transition rounded-lg hover:bg-white/5"
-                                title="Inspect player"
-                            >
-                                <Eye className="w-4 h-4" />
-                            </button>
-                        </div>
-                    );
-                })}
-                {leaders.length === 0 && (
-                    <div className="p-10 text-center text-gray-500 italic flex flex-col items-center gap-2">
-                        <Users className="w-8 h-8 opacity-20" />
-                        No operatives ranked in {selectedClass}.
+                            );
+                        })}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
             </>
             )}
         </div>
@@ -206,7 +225,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
             <PlayerInspectModal
                 userId={inspectUserId}
                 classType={selectedClass}
-                onClose={() => setInspectUserId(null)}
+                onClose={handleCloseInspect}
             />
         )}
     </div>

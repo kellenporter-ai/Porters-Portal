@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser } from '../types';
 import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
@@ -14,8 +15,152 @@ interface UserManagementProps {
   onWhitelist: (email: string, classType: ClassType) => void;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ 
-  users, 
+interface VirtualizedStudentRowsProps {
+  classStudents: User[];
+  isUncategorized: boolean;
+  selectedUsers: Set<string>;
+  toggleUser: (id: string) => void;
+  editingSectionId: string | null;
+  setEditingSectionId: (id: string | null) => void;
+  sectionInput: string;
+  setSectionInput: (v: string) => void;
+  customSectionInput: string;
+  setCustomSectionInput: (v: string) => void;
+  knownSections: string[];
+  handleSetSection: (studentId: string, section: string, classType?: string) => void;
+  handleRemoveSingleUserFromClass: (user: User, classType: string) => void;
+  handleDeleteUser: (userId: string, name: string) => void;
+  classType: string;
+}
+
+const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
+  classStudents, isUncategorized, selectedUsers, toggleUser,
+  editingSectionId, setEditingSectionId, sectionInput, setSectionInput,
+  customSectionInput, setCustomSectionInput, knownSections, handleSetSection,
+  handleRemoveSingleUserFromClass, handleDeleteUser, classType,
+}) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: classStudents.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 64,
+    overscan: 10,
+  });
+
+  if (classStudents.length === 0) {
+    return (
+      <div className="p-8 text-center text-gray-500 italic text-sm">
+        {isUncategorized ? "No restricted operatives found." : "No students registered in this roster yet."}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={parentRef} className="max-h-[480px] overflow-auto">
+      <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+        {virtualizer.getVirtualItems().map(virtualRow => {
+          const student = classStudents[virtualRow.index];
+          return (
+            <div
+              key={student.id}
+              className={`flex items-center hover:bg-white/5 transition group border-b border-white/5 absolute top-0 left-0 w-full ${selectedUsers.has(student.id) ? 'bg-purple-500/10' : ''}`}
+              style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+            >
+              <div className="p-4 text-center w-12 shrink-0">
+                <button onClick={() => toggleUser(student.id)} className="text-gray-500 hover:text-purple-400 transition">
+                  {selectedUsers.has(student.id) ? (
+                    <CheckSquare className="w-4 h-4 text-purple-500" />
+                  ) : (
+                    <Square className="w-4 h-4 group-hover:text-gray-400" />
+                  )}
+                </button>
+              </div>
+              <div className="p-4 flex-1 min-w-0">
+                <div className="flex items-center gap-3">
+                  <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-gray-200 text-sm truncate">{student.name}</div>
+                    <div className="text-[10px] text-gray-500 font-mono truncate">{student.email}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 text-center w-32 shrink-0">
+                {editingSectionId === student.id ? (
+                  <div className="flex flex-col items-center gap-2">
+                    {(student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean)).map(cls => {
+                      if (!cls) return null;
+                      const currentSec = student.classSections?.[cls] || (student.section && (student.classType === cls) ? student.section : '');
+                      return (
+                        <div key={cls} className="flex items-center gap-1.5 text-[10px]">
+                          <span className="text-gray-500 font-mono whitespace-nowrap text-[9px]" title={cls}>{cls}</span>
+                          <select
+                            value={currentSec}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val === '__custom__') { setSectionInput('__custom__'); setCustomSectionInput(''); }
+                              else handleSetSection(student.id, val, cls);
+                            }}
+                            className="bg-black/40 border border-purple-500/50 rounded-lg px-1.5 py-1 text-[11px] text-white font-bold focus:outline-none w-24"
+                          >
+                            <option value="">None</option>
+                            {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
+                            <option value="__custom__">+ New</option>
+                          </select>
+                        </div>
+                      );
+                    })}
+                    {sectionInput === '__custom__' && (
+                      <div className="flex gap-1">
+                        <input
+                          value={customSectionInput}
+                          onChange={e => setCustomSectionInput(e.target.value)}
+                          placeholder="e.g. Period 2"
+                          className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white w-24 focus:outline-none focus:border-purple-500/50"
+                          onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}}
+                          autoFocus
+                        />
+                        <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
+                      </div>
+                    )}
+                    <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[10px] text-gray-500 hover:text-white transition">Done</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditingSectionId(student.id); setSectionInput(''); setCustomSectionInput(''); }}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/20'}`}
+                  >
+                    {student.classSections && Object.keys(student.classSections).length > 0
+                      ? Object.values(student.classSections).filter(Boolean).join(', ') || 'Assign'
+                      : student.section || 'Assign'}
+                  </button>
+                )}
+              </div>
+              <div className="p-4 text-center w-32 shrink-0">
+                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                  {student.isWhitelisted ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                  {student.isWhitelisted ? 'Authorized' : 'Restricted'}
+                </span>
+              </div>
+              <div className="p-4 text-center w-12 shrink-0">
+                <button
+                  onClick={() => isUncategorized ? handleDeleteUser(student.id, student.name) : handleRemoveSingleUserFromClass(student, classType)}
+                  className="text-gray-600 hover:text-red-400 transition p-2 rounded-lg hover:bg-white/5"
+                  title={isUncategorized ? "Permanently Delete" : "Remove from this Class"}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+const VirtualizedStudentRows = React.memo(VirtualizedStudentRowsInner);
+
+const UserManagement: React.FC<UserManagementProps> = ({
+  users,
   whitelistedEmails,
   classConfigs,
   onWhitelist
@@ -33,22 +178,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
       const cur = prev[type] || { col: 'name', dir: 'asc' };
       return { ...prev, [type]: { col, dir: cur.col === col ? (cur.dir === 'asc' ? 'desc' : 'asc') : 'asc' } };
     });
-  };
-
-  const SortableHeader = ({ label, col, type, className }: { label: string; col: string; type: string; className?: string }) => {
-    const sort = classSort[type] || { col: 'name', dir: 'asc' };
-    const active = sort.col === col;
-    return (
-      <th className={`cursor-pointer select-none group p-4 ${className ?? ''}`} onClick={() => handleClassSort(type, col)}>
-        <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : 'justify-start'}`}>
-          <span>{label}</span>
-          <span className="flex flex-col gap-px">
-            <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${active && sort.dir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-            <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${active && sort.dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-          </span>
-        </div>
-      </th>
-    );
   };
 
   // Whitelist Form
@@ -402,126 +531,62 @@ const UserManagement: React.FC<UserManagementProps> = ({
         </div>
         
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-b-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-black/20 border-b border-white/5 text-[10px] uppercase font-bold text-gray-400">
-                <th className="w-12 p-4 text-center">
-                  {classStudents.length > 0 && (
-                      <button onClick={() => toggleSelectAll(type)} className="hover:text-purple-400 transition">
-                        <Square className="w-4 h-4" />
-                      </button>
-                  )}
-                </th>
-                <SortableHeader label="Operative"     col="name"    type={type} />
-                <SortableHeader label="Section"       col="section" type={type} className="text-center" />
-                <SortableHeader label="System Status" col="status"  type={type} className="text-center" />
-                <th className="text-center p-4 w-12">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {classStudents.length === 0 ? (
-                  <tr>
-                      <td colSpan={5} className="p-8 text-center text-gray-500 italic text-sm">
-                          {isUncategorized ? "No restricted operatives found." : "No students registered in this roster yet."}
-                      </td>
-                  </tr>
-              ) : (
-                classStudents.map(student => {
-                    return (
-                        <tr key={student.id} className={`hover:bg-white/5 transition group ${selectedUsers.has(student.id) ? 'bg-purple-500/10' : ''}`}>
-                        <td className="p-4 text-center">
-                            <button onClick={() => toggleUser(student.id)} className="text-gray-500 hover:text-purple-400 transition">
-                            {selectedUsers.has(student.id) ? (
-                                <CheckSquare className="w-4 h-4 text-purple-500" />
-                            ) : (
-                                <Square className="w-4 h-4 group-hover:text-gray-400" />
-                            )}
-                            </button>
-                        </td>
-                        <td className="p-4">
-                            <div className="flex items-center gap-3">
-                                <img src={student.avatarUrl} alt={student.name} className="w-8 h-8 rounded-full border border-white/10" />
-                                <div>
-                                <div className="font-bold text-gray-200 text-sm">{student.name}</div>
-                                <div className="text-[10px] text-gray-500 font-mono">{student.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td className="p-4 text-center">
-                          {editingSectionId === student.id ? (
-                            <div className="flex flex-col items-center gap-2">
-                              {/* Per-class section assignment */}
-                              {(student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean)).map(cls => {
-                                if (!cls) return null;
-                                const currentSec = student.classSections?.[cls] || (student.section && (student.classType === cls) ? student.section : '');
-                                return (
-                                  <div key={cls} className="flex items-center gap-1.5 text-[10px]">
-                                    <span className="text-gray-500 font-mono whitespace-nowrap text-[9px]" title={cls}>{cls}</span>
-                                    <select
-                                      value={currentSec}
-                                      onChange={e => {
-                                        const val = e.target.value;
-                                        if (val === '__custom__') { setSectionInput('__custom__'); setCustomSectionInput(''); }
-                                        else handleSetSection(student.id, val, cls);
-                                      }}
-                                      className="bg-black/40 border border-purple-500/50 rounded-lg px-1.5 py-1 text-[11px] text-white font-bold focus:outline-none w-24"
-                                    >
-                                      <option value="">None</option>
-                                      {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
-                                      <option value="__custom__">+ New</option>
-                                    </select>
-                                  </div>
-                                );
-                              })}
-                              {sectionInput === '__custom__' && (
-                                <div className="flex gap-1">
-                                  <input
-                                    value={customSectionInput}
-                                    onChange={e => setCustomSectionInput(e.target.value)}
-                                    placeholder="e.g. Period 2"
-                                    className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white w-24 focus:outline-none focus:border-purple-500/50"
-                                    onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}}
-                                    autoFocus
-                                  />
-                                  <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
-                                </div>
-                              )}
-                              <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[10px] text-gray-500 hover:text-white transition">Done</button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => { setEditingSectionId(student.id); setSectionInput(''); setCustomSectionInput(''); }}
-                              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/20'}`}
-                            >
-                              {student.classSections && Object.keys(student.classSections).length > 0
-                                ? Object.values(student.classSections).filter(Boolean).join(', ') || 'Assign'
-                                : student.section || 'Assign'}
-                            </button>
-                          )}
-                        </td>
-                        <td className="p-4 text-center">
-                            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                {student.isWhitelisted ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                                {student.isWhitelisted ? 'Authorized' : 'Restricted'}
-                            </span>
-                        </td>
-                        <td className="p-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                                <button 
-                                    onClick={() => isUncategorized ? handleDeleteUser(student.id, student.name) : handleRemoveSingleUserFromClass(student, type)}
-                                    className="text-gray-600 hover:text-red-400 transition p-2 rounded-lg hover:bg-white/5"
-                                    title={isUncategorized ? "Permanently Delete" : "Remove from this Class"}
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </td>
-                        </tr>
-                    );
-                })
+          {/* Column headers */}
+          <div className="bg-black/20 border-b border-white/5 text-[10px] uppercase font-bold text-gray-400 flex items-center">
+            <div className="w-12 p-4 text-center shrink-0">
+              {classStudents.length > 0 && (
+                  <button onClick={() => toggleSelectAll(type)} className="hover:text-purple-400 transition">
+                    <Square className="w-4 h-4" />
+                  </button>
               )}
-            </tbody>
-          </table>
+            </div>
+            <div className="flex-1 p-4 cursor-pointer select-none group" onClick={() => handleClassSort(type, 'name')}>
+              <div className="flex items-center gap-1">
+                <span>Operative</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group" onClick={() => handleClassSort(type, 'section')}>
+              <div className="flex items-center gap-1 justify-center">
+                <span>Section</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group" onClick={() => handleClassSort(type, 'status')}>
+              <div className="flex items-center gap-1 justify-center">
+                <span>System Status</span>
+                <span className="flex flex-col gap-px">
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+                </span>
+              </div>
+            </div>
+            <div className="w-12 p-4 text-center shrink-0">Action</div>
+          </div>
+          {/* Virtualized student rows */}
+          <VirtualizedStudentRows
+            classStudents={classStudents}
+            isUncategorized={isUncategorized}
+            selectedUsers={selectedUsers}
+            toggleUser={toggleUser}
+            editingSectionId={editingSectionId}
+            setEditingSectionId={setEditingSectionId}
+            sectionInput={sectionInput}
+            setSectionInput={setSectionInput}
+            customSectionInput={customSectionInput}
+            setCustomSectionInput={setCustomSectionInput}
+            knownSections={knownSections}
+            handleSetSection={handleSetSection}
+            handleRemoveSingleUserFromClass={handleRemoveSingleUserFromClass}
+            handleDeleteUser={handleDeleteUser}
+            classType={type}
+          />
         </div>
       </div>
     );

@@ -83,7 +83,7 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left hover:bg-white/5 transition group"
                   >
                     {s.avatarUrl ? (
-                      <img src={s.avatarUrl} alt="" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
+                      <img src={s.avatarUrl} alt="" loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">{s.name.charAt(0)}</div>
                     )}

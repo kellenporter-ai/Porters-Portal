@@ -391,7 +391,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                 <div className="flex-1 min-h-[180px] bg-black/40 rounded-xl border-2 border-dashed border-white/10 relative group overflow-hidden transition-all hover:border-emerald-500/30">
                     {activeLog ? (
                         <>
-                            <img src={activeLog.imageUrl} alt={activeDay} className="w-full h-full object-contain bg-black/20" />
+                            <img src={activeLog.imageUrl} alt={activeDay} loading="lazy" className="w-full h-full object-contain bg-black/20" />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="w-8 h-8 text-emerald-400" />
                                 <span className="text-white font-bold text-sm">Replace Evidence</span>

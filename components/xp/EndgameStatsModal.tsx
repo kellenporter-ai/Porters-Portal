@@ -55,7 +55,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                   return (
                     <div key={prog.userId} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-black/20 border-white/5'}`}>
                       <div className={`text-xl font-black w-8 text-center ${medalColors[idx] || 'text-gray-500'}`}>#{idx + 1}</div>
-                      {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-white/10" alt="" />}
+                      {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-white/10" alt="" loading="lazy" />}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-white truncate">{student?.name || prog.userId}</div>
                         <div className="flex gap-2 text-[10px] text-gray-500">

@@ -157,7 +157,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-2xl p-0.5 bg-gradient-to-tr from-white/10 to-white/5 ${rankDetails.tierGlow} shadow-xl`}>
                 {student.avatarUrl ? (
-                  <img src={student.avatarUrl} alt={student.name} className={`w-full h-full rounded-2xl border-2 object-cover ${rankDetails.tierColor.split(' ')[0]}`} />
+                  <img src={student.avatarUrl} alt={student.name} loading="lazy" className={`w-full h-full rounded-2xl border-2 object-cover ${rankDetails.tierColor.split(' ')[0]}`} />
                 ) : (
                   <div className={`w-full h-full rounded-2xl border-2 ${rankDetails.tierColor.split(' ')[0]} bg-purple-500/20 flex items-center justify-center text-xl font-bold text-white`}>
                     {student.name.charAt(0)}
