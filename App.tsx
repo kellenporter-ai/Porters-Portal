@@ -391,6 +391,16 @@ const App: React.FC = () => {
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="INTEL" />
             </Suspense>
           } />
+          <Route path="/progress" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="PROGRESS" />
+            </Suspense>
+          } />
+          <Route path="/calendar" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="CALENDAR" />
+            </Suspense>
+          } />
           <Route path="/forensics" element={
             <Suspense fallback={<LazyFallback />}><EvidenceLocker user={user} /></Suspense>
           } />
@@ -431,7 +441,7 @@ const App: React.FC = () => {
 const StudentRouteWrapper: React.FC<{
   user: User;
   submissions: Submission[];
-  tab: 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL';
+  tab: 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
 }> = ({ user, submissions, tab }) => {
   const { assignments, classConfigs, enabledFeatures } = useAppData();
   const navigate = useNavigate();

@@ -26,8 +26,10 @@ import MissionsTab from './dashboard/MissionsTab';
 import ResourcesTab from './dashboard/ResourcesTab';
 import AgentLoadoutTab from './dashboard/AgentLoadoutTab';
 import BadgesTab from './dashboard/BadgesTab';
+import ProgressDashboard from './dashboard/ProgressDashboard';
+import CalendarView from './dashboard/CalendarView';
 
-type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL';
+type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
 
 interface StudentDashboardProps {
   user: User;
@@ -561,6 +563,23 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                          activeClass={activeClass}
                      />
                  </div>
+             )}
+
+             {activeTab === 'PROGRESS' && (
+                 <ProgressDashboard
+                     assignments={assignments}
+                     submissions={submissions}
+                     activeClass={activeClass}
+                 />
+             )}
+
+             {activeTab === 'CALENDAR' && (
+                 <CalendarView
+                     assignments={assignments}
+                     submissions={submissions}
+                     activeClass={activeClass}
+                     onStartAssignment={onStartAssignment}
+                 />
              )}
           </div>
       </div>
