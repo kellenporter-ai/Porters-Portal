@@ -4,8 +4,11 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ChatMessage, DefaultClassTypes, Assignment, ClassConfig, StudentGroup } from '../types';
 import { MessageSquare, X, Send, Shield, ChevronDown, BookOpen, ExternalLink, Bookmark, Smile, ChevronLeft, Hash, Pin, Trash2, AlertTriangle, Check, MicOff, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import DOMPurify from 'dompurify';
 import { useConfirm } from './ConfirmDialog';
 import { useOnlineStatus } from '../lib/useOnlineStatus';
+import { useThrottle } from '../lib/rateLimiting';
+import { reportError } from '../lib/errorReporting';
 
 interface CommunicationsProps {
   user: User;
@@ -208,61 +211,71 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Keyboard navigation: Escape closes panel
+  // Keyboard navigation: Escape cascades through open popups, then closes panel
   useEffect(() => {
       if (!isOpen) return;
       const handleKey = (e: KeyboardEvent) => {
-          if (e.key === 'Escape') onClose();
+          if (e.key === 'Escape') {
+              if (showEmojiPicker) { setShowEmojiPicker(false); }
+              else if (showMessageEmojiPickerId) { setShowMessageEmojiPickerId(null); }
+              else if (muteMenuTarget) { setMuteMenuTarget(null); }
+              else { onClose(); }
+          }
       };
       window.addEventListener('keydown', handleKey);
       return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, showEmojiPicker, showMessageEmojiPickerId, muteMenuTarget]);
 
-  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !activeChannelId) return;
-    if (isMuted) return;
-
+  const sendMessageImpl = useCallback(async () => {
     try {
         await dataService.sendMessage(user, inputText, activeChannelId, selectedClass);
         setInputText('');
         setShowEmojiPicker(false);
     } catch (err) {
-        console.error("Failed to send message:", err);
+        reportError(err, { method: 'sendMessage' });
     }
-  }, [inputText, activeChannelId, isMuted, user, selectedClass]);
+  }, [inputText, activeChannelId, user, selectedClass]);
+
+  const throttledSend = useThrottle(sendMessageImpl, 2000);
+
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim() || !activeChannelId) return;
+    if (isMuted) return;
+    throttledSend();
+  }, [inputText, activeChannelId, isMuted, throttledSend]);
 
   const handleReaction = useCallback(async (msgId: string, emoji: string) => {
       try {
           await dataService.toggleReaction(msgId, emoji, user.id);
           setShowMessageEmojiPickerId(null);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'toggleReaction' }); }
   }, [user.id]);
 
   const handleTogglePin = useCallback(async (msgId: string) => {
       try {
           await dataService.togglePersonalPin(msgId, user.id);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'togglePersonalPin' }); }
   }, [user.id]);
 
   const handleToggleGlobalPin = useCallback(async (msgId: string, currentStatus: boolean) => {
       try {
           await dataService.toggleGlobalPin(msgId, !currentStatus);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'toggleGlobalPin' }); }
   }, []);
 
   const handleDeleteMessage = async (msgId: string) => {
       if (!await confirm({ message: "Permanently delete this message?", confirmLabel: "Delete" })) return;
       try {
           await dataService.deleteMessage(msgId);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'deleteMessage' }); }
   };
 
   const handleApproveMessage = async (msgId: string) => {
       try {
           await dataService.unflagMessage(msgId);
           await dataService.resolveFlagByMessageId(msgId);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'approveMessage' }); }
   };
 
   const handleDeleteFlagged = async (msgId: string) => {
@@ -270,7 +283,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       try {
           await dataService.resolveFlagByMessageId(msgId);
           await dataService.deleteMessage(msgId);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'deleteFlagged' }); }
   };
 
   const MUTE_DURATIONS = [
@@ -284,7 +297,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       if (!muteMenuTarget) return;
       try {
           await dataService.muteUser(muteMenuTarget.senderId, minutes);
-      } catch (err) { console.error(err); }
+      } catch (err) { reportError(err, { method: 'muteUser' }); }
       setMuteMenuTarget(null);
   };
 
@@ -433,7 +446,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                         <span className="text-xs font-bold text-gray-300">{msg.senderName}</span>
                                         <span className="text-[10px] text-gray-500">{new Date(msg.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
-                                    <p className="text-sm text-gray-200 mb-1">{msg.content}</p>
+                                    <p className="text-sm text-gray-200 mb-1">{DOMPurify.sanitize(msg.content, { ALLOWED_TAGS: [] })}</p>
                                     {msg.systemNote && <p className="text-[10px] text-red-400 mb-2 italic">{msg.systemNote}</p>}
                                     <div className="text-[10px] text-gray-500 mb-3">{
                                         msg.channelId?.startsWith('group_')
@@ -471,7 +484,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
             {(activeTab === 'Main' || activeTab === 'Bookmarks' || (activeTab === 'Resources' && selectedResourceId) || (activeTab === 'Groups' && selectedGroupId)) && (
                 <>
                     {/* Virtualized message list */}
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth" role="log" aria-live="polite" aria-label="Chat messages">
                         <div style={{ height: `${msgVirtualizer.getTotalSize()}px`, position: 'relative', paddingTop: 32 }}>
                             {msgVirtualizer.getVirtualItems().map(virtualRow => {
                                 const msg = displayMessages[virtualRow.index];
@@ -535,7 +548,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                                     ? 'bg-indigo-600/80 text-white rounded-2xl rounded-tr-sm border-indigo-500/30'
                                                     : `bg-white/10 text-gray-100 rounded-2xl rounded-tl-sm border-white/5 ${msg.isFlagged ? 'border-red-500/50 bg-red-900/20' : ''}`
                                             } ${msg.isGlobalPinned ? 'ring-1 ring-yellow-500/50 bg-yellow-900/10' : ''}`}>
-                                                {msg.content}
+                                                {DOMPurify.sanitize(msg.content, { ALLOWED_TAGS: [] })}
                                             </div>
 
                                             <div className="flex flex-wrap gap-1 mt-1 justify-end">
@@ -564,7 +577,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                 </div>
                             )}
                             <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-3 text-gray-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition" aria-label="Open emoji picker"><Smile className="w-5 h-5" /></button>
-                            <input type="text" value={inputText} onChange={e => setInputText(e.target.value)} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? "Transmission Disabled" : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition disabled:opacity-50" />
+                            <input type="text" value={inputText} onChange={e => setInputText(e.target.value)} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? "Transmission Disabled" : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition disabled:opacity-70 disabled:text-gray-300" />
                             <button type="submit" disabled={!activeChannelId || isMuted || !inputText.trim() || !isOnline} className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message"><Send className="w-5 h-5" /></button>
                         </form>
                     </div>
