@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
 import { User, UserRole, ClassConfig, Assignment, Submission, TelemetryMetrics, WhitelistedUser, DefaultClassTypes } from './types';
 import { dataService } from './services/dataService';
 import { auth, db } from './lib/firebase';
@@ -10,31 +10,37 @@ import ConnectionStatus from './components/ConnectionStatus';
 import Layout from './components/Layout';
 import Proctor from './components/Proctor';
 import GoogleLogin from './components/GoogleLogin';
-import TeacherDashboard from './components/TeacherDashboard';
-import UserManagement from './components/UserManagement';
-import AdminPanel from './components/AdminPanel';
-import XPManagement from './components/XPManagement';
-import GroupManager from './components/GroupManager';
-import PhysicsTools from './components/PhysicsTools';
-import Communications from './components/Communications';
 import { ShieldAlert, ArrowLeft, Settings as SettingsIcon, Users, Brain, BookOpen as BookOpenIcon, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
-
-// New Modules
-import StudentDashboard from './components/StudentDashboard';
-import EvidenceLocker from './components/EvidenceLocker';
-import PhysicsLab from './components/PhysicsLab';
-import Leaderboard from './components/Leaderboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ConfirmProvider } from './components/ConfirmDialog';
-import ReviewQuestions from './components/ReviewQuestions';
-import StudyMaterial from './components/StudyMaterial';
 import { setSfxEnabled } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
-import EnrollmentCodes from './components/EnrollmentCodes';
-import LessonEditorPage from './components/LessonEditorPage';
+
+// Lazy-loaded route-level components — split admin, teacher, and student bundles
+const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const XPManagement = lazy(() => import('./components/XPManagement'));
+const GroupManager = lazy(() => import('./components/GroupManager'));
+const PhysicsTools = lazy(() => import('./components/PhysicsTools'));
+const Communications = lazy(() => import('./components/Communications'));
+const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
+const EvidenceLocker = lazy(() => import('./components/EvidenceLocker'));
+const PhysicsLab = lazy(() => import('./components/PhysicsLab'));
+const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const ReviewQuestions = lazy(() => import('./components/ReviewQuestions'));
+const StudyMaterial = lazy(() => import('./components/StudyMaterial'));
+const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
+const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
+
+const LazyFallback = () => (
+  <div className="flex items-center justify-center h-64 text-gray-500">
+    <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
+  </div>
+);
 
 
 // ─── Access Pending screen with enrollment code redemption ───
@@ -445,27 +451,29 @@ const App: React.FC = () => {
     <ToastProvider>
     <>
       <ConnectionStatus />
-      {showTools && (
-        <PhysicsTools
-          onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
-          hasUnreadChat={unreadChannels.size > 0}
-        />
-      )}
-      
-      {showComm && (
-        <Communications
-            user={user}
-            isOpen={isCommOpen}
-            onClose={() => setIsCommOpen(false)}
-            assignments={assignments}
-            classConfigs={classConfigs}
-            unreadChannels={unreadChannels}
-            onMarkChannelRead={markChannelRead}
-            onOpenResource={(id) => {
-                openAssignment(id);
-            }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showTools && (
+          <PhysicsTools
+            onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
+            hasUnreadChat={unreadChannels.size > 0}
+          />
+        )}
+
+        {showComm && (
+          <Communications
+              user={user}
+              isOpen={isCommOpen}
+              onClose={() => setIsCommOpen(false)}
+              assignments={assignments}
+              classConfigs={classConfigs}
+              unreadChannels={unreadChannels}
+              onMarkChannelRead={markChannelRead}
+              onOpenResource={(id) => {
+                  openAssignment(id);
+              }}
+          />
+        )}
+      </Suspense>
 
       <Layout user={user} onLogout={handleLogout} activeTab={activeTab} setActiveTab={setActiveTab}>
         {activeAssignment ? (
@@ -503,6 +511,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-hidden relative">
+              <Suspense fallback={<LazyFallback />}>
                 {assignViewMode === 'WORK' && (
                     <div className="h-full flex flex-col md:flex-row gap-4">
                         <div className="flex-1">
@@ -556,10 +565,12 @@ const App: React.FC = () => {
                         <StudyMaterial assignment={activeAssignment} onComplete={handleEngagementComplete} />
                     </div>
                 )}
+              </Suspense>
             </div>
           </div>
         ) : (
           <div className="h-full">
+            <Suspense fallback={<LazyFallback />}>
             <div key={activeTab} className="h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             {user.role === UserRole.ADMIN && (
               <>
@@ -591,6 +602,7 @@ const App: React.FC = () => {
                </>
             )}
             </div>
+            </Suspense>
           </div>
         )}
       </Layout>

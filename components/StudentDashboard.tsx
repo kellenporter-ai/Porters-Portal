@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { User, Assignment, Submission, XPEvent, RPGItem, EquipmentSlot, ItemSlot, Quest, ClassConfig } from '../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { ChevronRight, Microscope, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, ChevronDown, Zap, Briefcase, User as UserIcon, Trash2, Hexagon, Crosshair, Users, AlertTriangle, Radio, Megaphone, X as XIcon, Clock, Flame, Sparkles, Eye, GripVertical, GraduationCap } from 'lucide-react';
+import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Briefcase, User as UserIcon, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 
@@ -23,16 +23,14 @@ function snapCenterToCursor(args: any) {
   return transform;
 }
 import { dataService } from '../services/dataService';
-import { sortUnitKeys } from './AdminPanel';
-import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getRunewordForItem, getUnsocketCost, deriveCombatStats, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
-import { RUNEWORD_DEFINITIONS } from '../lib/runewords';
+import { getRankDetails, getAssetColors, getDisenchantValue, FLUX_COSTS, calculateGearScore, getUnsocketCost, deriveCombatStats, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
-import OperativeAvatar, { SKIN_TONES, HAIR_COLORS, HAIR_STYLE_NAMES } from './dashboard/OperativeAvatar';
+import OperativeAvatar from './dashboard/OperativeAvatar';
 import { Announcement } from '../types';
 import AchievementPanel from './xp/AchievementPanel';
 import SkillTreePanel from './xp/SkillTreePanel';
@@ -44,6 +42,10 @@ import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
 import IntelDossier from './IntelDossier';
+import MissionsTab from './dashboard/MissionsTab';
+import ResourcesTab from './dashboard/ResourcesTab';
+import CustomizeModal from './dashboard/CustomizeModal';
+import InspectItemModal from './dashboard/InspectItemModal';
 
 type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL';
 
@@ -63,16 +65,6 @@ interface StudentDashboardProps {
   onStartAssignment?: (id: string) => void;
   studentTab?: StudentTab;
 }
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  'Textbook': <BookOpen className="w-5 h-5" />,
-  'Simulation': <Play className="w-5 h-5 fill-current" />,
-  'Lab Guide': <FlaskConical className="w-5 h-5" />,
-  'Practice Set': <Target className="w-5 h-5" />,
-  'Article': <Newspaper className="w-5 h-5" />,
-  'Video Lesson': <Video className="w-5 h-5" />,
-  'Supplemental': <Layers className="w-5 h-5" />
-};
 
 // Module-level state: survives ErrorBoundary remounts that reset useRef/useState
 let _acknowledgedLevel = 0;
@@ -111,11 +103,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [showCustomize, setShowCustomize] = useState(false);
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [previewHue, setPreviewHue] = useState<number | null>(null);
-  const [previewBodyType, setPreviewBodyType] = useState<'A' | 'B' | 'C' | null>(null);
-  const [previewSkinTone, setPreviewSkinTone] = useState<number | null>(null);
-  const [previewHairStyle, setPreviewHairStyle] = useState<number | null>(null);
-  const [previewHairColor, setPreviewHairColor] = useState<number | null>(null);
   const [xpFloatAmount, setXpFloatAmount] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
@@ -269,7 +256,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           await dataService.updateUserAppearance(user.id, appearance, activeClass);
           toast.success('Profile updated!');
           setShowCustomize(false);
-          setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null);
       } catch {
           toast.error('Failed to save — try again');
       }
@@ -896,228 +882,25 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              
 
              {activeTab === 'MISSIONS' && (
-                 <div key="missions" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Available Contracts</h3>
-                     <div className="grid grid-cols-1 gap-4">
-                         {newQuests.length === 0 && <div className="text-gray-500 italic px-4 py-10 text-center bg-black/10 rounded-xl border border-dashed border-white/5">No new contracts available. Check back later.</div>}
-                         {newQuests.map(quest => (
-                             <div key={quest.id} className="bg-black/20 border border-indigo-500/30 p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/60 transition">
-                                 <div className="flex justify-between items-start mb-2">
-                                     <h4 className="text-lg font-bold text-white">{quest.title}</h4>
-                                     <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{quest.type.replace('_', ' ')}</span>
-                                 </div>
-                                 <p className="text-sm text-gray-400 mb-4 pr-16">{quest.description}</p>
-                                 <div className="flex items-center gap-4 text-xs font-mono text-gray-500 mb-4">
-                                     {quest.statRequirements && (
-                                         <div className="flex gap-2">
-                                             {Object.entries(quest.statRequirements).map(([stat, val]) => (
-                                                 <span key={stat} className="bg-white/5 px-2 py-1 rounded border border-white/10 uppercase">{val} {stat}</span>
-                                             ))}
-                                         </div>
-                                     )}
-                                     {quest.expiresAt && (
-                                         <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Expires: {new Date(quest.expiresAt).toLocaleDateString()}</span>
-                                     )}
-                                 </div>
-                                 <button 
-                                    onClick={() => handleAcceptQuest(quest)}
-                                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/20 transition flex items-center gap-2"
-                                 >
-                                     <Crosshair className="w-4 h-4" /> Accept Contract
-                                 </button>
-                             </div>
-                         ))}
-                     </div>
-
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 pt-4 border-t border-white/10">Active Operations</h3>
-                     <div className="grid grid-cols-1 gap-4">
-                         {myAcceptedQuests.length === 0 && <div className="text-gray-500 italic px-4 py-10 text-center bg-black/10 rounded-xl border border-dashed border-white/5">No active operations. Accept a contract above to begin.</div>}
-                         {myAcceptedQuests.map(quest => {
-                             const status = activeQuests.find(q => q.questId === quest.id)?.status || 'ACCEPTED';
-                             const myRoll = activeQuests.find(q => q.questId === quest.id)?.deploymentRoll;
-                             const isManual = quest.type === 'CUSTOM';
-                             
-                             return (
-                                 <div key={quest.id} className="bg-[#0f0720]/80 border border-purple-500/30 p-6 rounded-3xl relative group hover:border-purple-500/60 transition-all shadow-[0_0_30px_rgba(168,85,247,0.1)]">
-                                     <div className="flex justify-between items-start mb-4">
-                                         <div className="flex items-center gap-4">
-                                             <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/20 shadow-inner">
-                                                 <Target className="w-6 h-6" />
-                                             </div>
-                                             <div>
-                                                 <h4 className="text-white font-bold text-lg leading-tight">{quest.title}</h4>
-                                                 <div className="text-[10px] text-gray-500 uppercase font-black tracking-[0.1em]">{quest.type} MISSION</div>
-                                             </div>
-                                         </div>
-                                         <span className={`text-[10px] font-black tracking-widest px-3 py-1 rounded-full border ${
-                                             status === 'COMPLETED' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 
-                                             status === 'FAILED' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 
-                                             status === 'DEPLOYED' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-white/5 text-gray-400 border-white/10'
-                                         }`}>
-                                             {status}
-                                         </span>
-                                     </div>
-                                     
-                                     {status === 'ACCEPTED' ? (
-                                         <>
-                                            <p className="text-sm text-gray-400 mb-6 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">{quest.description}</p>
-                                            <div className="flex gap-3">
-                                                <button 
-                                                    onClick={() => handleDeployQuest(quest)} 
-                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-3 group/btn"
-                                                >
-                                                    <Radio className="w-5 h-5 group-hover/btn:animate-pulse" />
-                                                    {isManual ? "Broadcast Submission to HQ" : "Deploy for Skill Check"}
-                                                </button>
-                                                {quest.isGroupQuest && (
-                                                    <button className="bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-2xl text-sm font-black transition border border-white/10">
-                                                        <Users className="w-5 h-5" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                         </>
-                                     ) : status === 'DEPLOYED' ? (
-                                         <div className="bg-black/40 p-6 rounded-3xl border border-purple-500/20 flex flex-col gap-4 animate-in fade-in zoom-in-95">
-                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="relative">
-                                                        <div className="w-3 h-3 bg-green-500 rounded-full animate-ping absolute -top-1 -right-1"></div>
-                                                        <div className="w-3 h-3 bg-green-500 rounded-full absolute -top-1 -right-1 shadow-[0_0_10px_#22c55e]"></div>
-                                                        <Zap className="w-6 h-6 text-purple-400" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Uplink Status</div>
-                                                        <div className="text-sm font-black text-white font-mono uppercase tracking-tighter">
-                                                            {isManual ? "AWAITING_HQ_SIG_VERIFICATION" : (myRoll === 100 ? "SUCCESS_VERIFIED" : "FAILURE_DETECTED")}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="h-10 w-px bg-white/5"></div>
-                                                <div className="text-right">
-                                                    <div className="text-[9px] text-gray-500 uppercase font-bold">Node</div>
-                                                    <div className="text-xs font-bold text-purple-300">HQ_CENTRAL</div>
-                                                </div>
-                                             </div>
-                                             
-                                             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                                 <div className="h-full bg-indigo-500 animate-pulse w-3/4"></div>
-                                             </div>
-
-                                             <p className="text-[11px] text-gray-500 italic text-center font-mono">
-                                                 {isManual 
-                                                    ? "Encrypted transmission confirmed. HQ is currently reviewing your evidence data. Rewards will be issued upon manual signal confirmation."
-                                                    : "Autonomous verification complete. Skill check results logged below."}
-                                             </p>
-                                         </div>
-                                     ) : null}
-                                 </div>
-                             );
-                         })}
-                     </div>
-                 </div>
+                 <MissionsTab
+                     newQuests={newQuests}
+                     myAcceptedQuests={myAcceptedQuests}
+                     activeQuests={activeQuests}
+                     onAcceptQuest={handleAcceptQuest}
+                     onDeployQuest={handleDeployQuest}
+                 />
              )}
 
              {activeTab === 'RESOURCES' && (
-                 <div key="resources" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                    {Object.entries(unitGroups).length === 0 ? (
-                        <div className="text-center py-20 text-gray-500 italic">No resources released for this class node.</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {(() => {
-                              const unitOrder = classConfigs?.find(c => c.className === activeClass)?.unitOrder;
-                              const sortedKeys = sortUnitKeys(Object.keys(unitGroups), unitOrder);
-                              return sortedKeys.map(unit => [unit, unitGroups[unit]] as [string, typeof unitGroups[string]]);
-                            })().map(([unit, items]) => (
-                                <div key={unit} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-                                    <button onClick={() => toggleUnit(unit)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition">
-                                        <div className="flex items-center gap-3">
-                                            {expandedUnits.has(unit) ? <ChevronDown className="w-4 h-4 text-purple-400" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
-                                            <span className="font-bold text-sm text-gray-300 uppercase tracking-wider">{unit}</span>
-                                        </div>
-                                        <span className="text-[10px] bg-white/5 text-gray-500 px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
-                                    </button>
-                                    
-                                    {expandedUnits.has(unit) && (
-                                        <div className="grid grid-cols-1 gap-2 p-3 pt-0 animate-in slide-in-from-top-2 duration-300">
-                                            {items.map(resource => {
-                                                const hasDue = !!resource.dueDate;
-                                                const dueDate = resource.dueDate ? new Date(resource.dueDate) : null;
-                                                const now = new Date();
-                                                const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / 86400000) : Infinity;
-                                                const dueColor = daysUntilDue <= 0 ? 'text-red-400' : daysUntilDue <= 2 ? 'text-yellow-400' : 'text-gray-500';
-                                                const engMin = Math.floor(resource.engagementTime / 60);
-                                                const isSubstantial = engMin >= 5;
-                                                const completion = practiceCompletion[resource.id];
-                                                const isModuleCompleted = completion?.completed;
-                                                const hasLessonBlocks = resource.lessonBlocks && resource.lessonBlocks.length > 0;
-                                                const isLessonOnly = hasLessonBlocks && !resource.contentUrl;
-
-                                                return (
-                                                <div
-                                                    key={resource.id}
-                                                    className={`bg-white/5 border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-white/5'}`}
-                                                    onClick={() => onStartAssignment && onStartAssignment(resource.id)}
-                                                >
-                                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                                                        isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
-                                                        isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
-                                                        resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
-                                                        isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110 shadow-lg group-hover:shadow-indigo-500/20' :
-                                                        'bg-purple-500/10 text-purple-400 group-hover:scale-110 shadow-lg group-hover:shadow-purple-500/20'
-                                                    }`}>
-                                                        {isModuleCompleted ? <CheckCircle2 className="w-6 h-6" /> :
-                                                         isSubstantial ? <CheckCircle2 className="w-6 h-6" /> :
-                                                         resource.lastEngagement ? <CheckCircle2 className="w-5 h-5 opacity-60" /> :
-                                                         isLessonOnly ? <GraduationCap className="w-6 h-6" /> :
-                                                         CATEGORY_ICONS[resource.category || 'Supplemental']}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-black/40 text-gray-500 border-white/5'}`}>{isLessonOnly ? 'Lesson' : resource.category}</span>
-                                                            <h4 className="font-bold text-white text-sm truncate">{resource.title}</h4>
-                                                            {isModuleCompleted && (
-                                                                <span className="text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">
-                                                                    <CheckCircle2 className="w-2.5 h-2.5" />
-                                                                    COMPLETED{(completion?.totalCompletions || 0) > 1 ? ` (${completion.totalCompletions}x)` : ''}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <p className="text-xs text-gray-500 truncate">{resource.description}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-3 mt-1">
-                                                            {resource.lastEngagement && (
-                                                                <span className="text-[9px] text-green-500 font-bold">{engMin}m engaged</span>
-                                                            )}
-                                                            {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
-                                                                <span className="text-[9px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
-                                                            )}
-                                                            {hasLessonBlocks && (
-                                                                <span className="text-[9px] text-indigo-400 font-bold flex items-center gap-0.5">
-                                                                    <GraduationCap className="w-3 h-3" /> {resource.lessonBlocks!.length} blocks
-                                                                </span>
-                                                            )}
-                                                            {hasDue && (
-                                                                <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`}>
-                                                                    <Clock className="w-3 h-3" />
-                                                                    {daysUntilDue <= 0 ? 'Overdue' : daysUntilDue === 1 ? 'Due tomorrow' : `Due in ${daysUntilDue}d`}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="opacity-0 group-hover:opacity-100 transition">
-                                                        <Play className="w-4 h-4 text-purple-400 fill-current" />
-                                                    </div>
-                                                </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                 </div>
+                 <ResourcesTab
+                     unitGroups={unitGroups}
+                     expandedUnits={expandedUnits}
+                     onToggleUnit={toggleUnit}
+                     practiceCompletion={practiceCompletion}
+                     onStartAssignment={onStartAssignment}
+                     classConfigs={classConfigs}
+                     activeClass={activeClass}
+                 />
              )}
              
              {activeTab === 'LOADOUT' && (
@@ -1323,387 +1106,29 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       </div>
 
       {/* MODALS RENDERED AT ROOT OF DASHBOARD FOR Z-INDEX CLARITY */}
-      <Modal isOpen={showCustomize} onClose={() => { setShowCustomize(false); setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null); }} title="Customize Your Agent" maxWidth="max-w-lg">
-          <div className="p-4 space-y-6">
-              {/* Live preview */}
-              <div className="flex justify-center">
-                  <div className="w-44 h-64 bg-black/40 rounded-3xl p-3 border border-purple-500/20 shadow-inner loadout-hex-bg">
-                      <OperativeAvatar equipped={equipped} appearance={{
-                          ...classProfile.appearance,
-                          hue: previewHue ?? classProfile.appearance?.hue ?? 0,
-                          bodyType: previewBodyType ?? classProfile.appearance?.bodyType ?? 'A',
-                          skinTone: previewSkinTone ?? classProfile.appearance?.skinTone ?? 0,
-                          hairStyle: previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1,
-                          hairColor: previewHairColor ?? classProfile.appearance?.hairColor ?? 0,
-                      }} />
-                  </div>
-              </div>
+      <CustomizeModal
+          isOpen={showCustomize}
+          onClose={() => setShowCustomize(false)}
+          equipped={equipped}
+          appearance={classProfile.appearance}
+          onSave={handleCustomizeSave}
+      />
 
-              {/* Skin Tone */}
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
-                  <div className="flex justify-center gap-2">
-                      {SKIN_TONES.map((tone, i) => {
-                          const isActive = (previewSkinTone ?? classProfile.appearance?.skinTone ?? 0) === i;
-                          return (
-                              <button key={i} onClick={() => setPreviewSkinTone(i)}
-                                  className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
-                                  style={{ backgroundColor: tone }} />
-                          );
-                      })}
-                  </div>
-              </div>
-
-              {/* Hair Style */}
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Style</label>
-                  <div className="grid grid-cols-3 gap-2">
-                      {HAIR_STYLE_NAMES.map((name, i) => {
-                          const isActive = (previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1) === i;
-                          return (
-                              <button key={i} onClick={() => setPreviewHairStyle(i)}
-                                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500/30 border-purple-500 text-white border-2' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}>
-                                  {name}
-                              </button>
-                          );
-                      })}
-                  </div>
-              </div>
-
-              {/* Hair Color */}
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
-                  <div className="flex justify-center gap-2">
-                      {HAIR_COLORS.map((color, i) => {
-                          const isActive = (previewHairColor ?? classProfile.appearance?.hairColor ?? 0) === i;
-                          return (
-                              <button key={i} onClick={() => setPreviewHairColor(i)}
-                                  className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
-                                  style={{ backgroundColor: color }} />
-                          );
-                      })}
-                  </div>
-              </div>
-
-              {/* Body Type + Hue row */}
-              <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Body Frame</label>
-                      <div className="flex justify-center gap-2">
-                          {(['A', 'B', 'C'] as const).map(type => {
-                              const isActive = (previewBodyType ?? classProfile.appearance?.bodyType ?? 'A') === type;
-                              return (
-                                  <button key={type} onClick={() => setPreviewBodyType(type)}
-                                      className={`px-3 py-2 rounded-xl border-2 transition-all font-bold text-xs ${isActive ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 text-gray-500 hover:border-white/20'}`}>
-                                      {type === 'A' ? 'Alpha' : type === 'B' ? 'Beta' : 'Femme'}
-                                  </button>
-                              );
-                          })}
-                      </div>
-                  </div>
-                  <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Energy Color</label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                          {[0, 30, 60, 90, 120, 180, 240, 300].map(hue => {
-                              const isActive = (previewHue ?? classProfile.appearance?.hue ?? 0) === hue;
-                              return (
-                                  <button key={hue} onClick={() => setPreviewHue(hue)}
-                                      className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 mx-auto ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
-                                      style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }} />
-                              );
-                          })}
-                      </div>
-                  </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                  <button onClick={() => { setShowCustomize(false); setPreviewHue(null); setPreviewBodyType(null); setPreviewSkinTone(null); setPreviewHairStyle(null); setPreviewHairColor(null); }}
-                      className="flex-1 py-3 bg-white/5 border border-white/10 text-gray-400 font-bold rounded-xl hover:bg-white/10 transition">
-                      Cancel
-                  </button>
-                  <button onClick={() => handleCustomizeSave({
-                          hue: previewHue ?? classProfile.appearance?.hue ?? 0,
-                          bodyType: previewBodyType ?? classProfile.appearance?.bodyType ?? 'A',
-                          skinTone: previewSkinTone ?? classProfile.appearance?.skinTone ?? 0,
-                          hairStyle: previewHairStyle ?? classProfile.appearance?.hairStyle ?? 1,
-                          hairColor: previewHairColor ?? classProfile.appearance?.hairColor ?? 0,
-                      })}
-                      className="flex-1 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-500 transition shadow-lg shadow-purple-900/20">
-                      Save Profile
-                  </button>
-              </div>
-          </div>
-      </Modal>
-
-      <Modal isOpen={!!inspectItem} onClose={() => setInspectItem(null)} title="Nano-Fabricator Terminal" maxWidth="max-w-xl">
-          {inspectItem && (
-              <div className="space-y-6 text-gray-100">
-                  {/* Item Header */}
-                  <div className={`p-5 rounded-xl border ${inspectItem.runewordActive ? 'border-amber-500/40 runeword-active' : getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).bg} ${getAssetColors(inspectItem.rarity).shimmer} relative overflow-hidden`}>
-                      <div className="flex items-start gap-4 relative z-10">
-                          {/* Slot Icon */}
-                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border ${inspectItem.runewordActive ? 'border-amber-500/50' : getAssetColors(inspectItem.rarity).border} ${getAssetColors(inspectItem.rarity).bg}`} style={{ boxShadow: inspectItem.runewordActive ? '0 0 20px rgba(245,158,11,0.3)' : inspectItem.rarity === 'UNIQUE' ? '0 0 20px rgba(249,115,22,0.3)' : inspectItem.rarity === 'RARE' ? '0 0 15px rgba(234,179,8,0.2)' : 'none' }}>
-                              {getSlotIcon(inspectItem.slot, inspectItem.runewordActive ? 'text-amber-400' : getAssetColors(inspectItem.rarity).text, 'w-7 h-7')}
-                          </div>
-                          <div className="flex-1">
-                              <div className={`text-lg font-bold ${inspectItem.runewordActive ? 'text-amber-300' : getAssetColors(inspectItem.rarity).text}`}>{inspectItem.name}</div>
-                              <div className="text-xs text-gray-300 font-mono uppercase">{inspectItem.rarity} {inspectItem.slot}</div>
-                              {inspectItem.runewordActive && (
-                                  <div className="text-[10px] font-bold text-amber-400 mt-0.5">{getRunewordForItem(inspectItem)?.name}</div>
-                              )}
-                          </div>
-                      </div>
-                      
-                      <div className="mt-4 space-y-1">
-                          {Object.entries(inspectItem.stats).map(([stat, val]) => (
-                              <div key={stat} className="flex justify-between text-sm text-gray-200 border-b border-white/5 pb-1">
-                                  <span className="uppercase text-xs text-gray-400 font-bold">{stat}</span>
-                                  <span className="font-mono font-bold">+{val}</span>
-                              </div>
-                          ))}
-                      </div>
-
-                      <div className="mt-4 flex gap-2 flex-wrap">
-                          {inspectItem.affixes.map((aff, i) => (
-                              <span key={i} className="text-[9px] bg-black/40 px-2 py-1 rounded border border-white/10 text-gray-400">
-                                  {aff.name} (T{aff.tier})
-                              </span>
-                          ))}
-                      </div>
-                  </div>
-
-                  {/* Gem Sockets & Runeword */}
-                  {(inspectItem.sockets || 0) > 0 && (() => {
-                      const sockets = inspectItem.sockets || 0;
-                      const gems = inspectItem.gems || [];
-                      const emptySlots = sockets - gems.length;
-                      const runeword = getRunewordForItem(inspectItem);
-
-                      return (
-                          <div className={`p-4 rounded-xl border ${runeword ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/30 to-black/50' : 'border-white/10 bg-black/20'}`}>
-                              {/* Runeword banner */}
-                              {runeword && (
-                                  <div className="mb-3 text-center">
-                                      <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">Runeword Active</div>
-                                      <div className="text-lg font-black text-amber-300 mt-1">{runeword.name}</div>
-                                      <p className="text-[10px] text-amber-500/70 italic mt-1">{runeword.lore}</p>
-                                      <div className="flex justify-center gap-3 mt-2">
-                                          {Object.entries(runeword.bonusStats).map(([stat, val]) => (
-                                              <span key={stat} className="text-[10px] font-mono font-bold text-amber-400">
-                                                  +{val} {stat.slice(0,3).toUpperCase()}
-                                              </span>
-                                          ))}
-                                      </div>
-                                      {runeword.bonusEffects && runeword.bonusEffects.length > 0 && (
-                                          <div className="mt-1">
-                                              {runeword.bonusEffects.map(eff => (
-                                                  <span key={eff.id} className="text-[10px] text-purple-400 font-bold">{eff.description}</span>
-                                              ))}
-                                          </div>
-                                      )}
-                                  </div>
-                              )}
-
-                              {/* Socket visualization */}
-                              <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2">
-                                  <Hexagon className="w-3 h-3" /> Gem Sockets ({gems.length}/{sockets})
-                              </div>
-                              <div className="flex gap-2">
-                                  {gems.map((gem, i) => {
-                                      const unsocketFlux = getUnsocketCost(inspectItem.rarity, gem.tier, inspectItem.unsocketCount || 0);
-                                      return (
-                                      <div key={i} className="flex flex-col items-center gap-1 group/gem">
-                                          <div
-                                              className="w-8 h-8 rounded-lg border-2 flex items-center justify-center relative"
-                                              style={{ borderColor: gem.color, backgroundColor: `${gem.color}20`, boxShadow: `0 0 8px ${gem.color}40` }}
-                                          >
-                                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
-                                          </div>
-                                          <span className="text-[9px] text-gray-400">{gem.name}</span>
-                                          <button
-                                              onClick={() => handleUnsocketGem(i)}
-                                              disabled={isProcessing || currency < unsocketFlux}
-                                              className="text-[8px] text-red-400/60 hover:text-red-400 font-bold transition disabled:opacity-30"
-                                              title={`Unsocket for ${unsocketFlux} Flux`}
-                                          >
-                                              Remove ({unsocketFlux} F)
-                                          </button>
-                                      </div>
-                                      );
-                                  })}
-                                  {Array.from({ length: emptySlots }).map((_, i) => (
-                                      <div key={`empty-${i}`} className="w-8 h-8 rounded-lg border-2 border-dashed border-white/20 bg-black/30 flex items-center justify-center">
-                                          <div className="w-2 h-2 rounded-full bg-white/10" />
-                                      </div>
-                                  ))}
-                              </div>
-
-                              {/* Gem socketing UI (only if empty sockets remain and no runeword yet) */}
-                              {emptySlots > 0 && gemsInventory.length > 0 && (
-                                  <div className="mt-3 border-t border-white/10 pt-3">
-                                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Socket a Gem ({FLUX_COSTS.ENCHANT} Flux)</div>
-                                      <div className="flex flex-wrap gap-2">
-                                          {gemsInventory.map((gem: any) => (
-                                              <button
-                                                  key={gem.id}
-                                                  onClick={() => handleSocketGem(gem.id)}
-                                                  disabled={isProcessing || currency < FLUX_COSTS.ENCHANT}
-                                                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-white/10 bg-black/30 hover:bg-white/10 transition text-xs disabled:opacity-50"
-                                              >
-                                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
-                                                  <span className="text-gray-300">{gem.name}</span>
-                                                  <span className="text-gray-600 font-mono">+{gem.value}</span>
-                                              </button>
-                                          ))}
-                                      </div>
-
-                                      {/* Runeword hints */}
-                                      {gems.length > 0 && !runeword && (() => {
-                                          const currentPattern = gems.map((g: any) => g.name);
-                                          const possibleRws = RUNEWORD_DEFINITIONS.filter(rw =>
-                                              rw.requiredSockets === sockets &&
-                                              rw.pattern.slice(0, currentPattern.length).every((p, i) => p === currentPattern[i])
-                                          );
-                                          if (possibleRws.length === 0) return null;
-                                          return (
-                                              <div className="mt-2 text-[9px] text-amber-500/60">
-                                                  {possibleRws.map(rw => (
-                                                      <div key={rw.id}>Possible: <span className="font-bold text-amber-400/80">{rw.name}</span> — needs [{rw.pattern.join(' → ')}]</div>
-                                                  ))}
-                                              </div>
-                                          );
-                                      })()}
-                                  </div>
-                              )}
-                          </div>
-                      );
-                  })()}
-
-                  {/* Add Socket button (if item has <3 sockets) */}
-                  {(inspectItem.sockets || 0) < 3 && (
-                      <button
-                          onClick={handleAddSocket}
-                          disabled={isProcessing || currency < FLUX_COSTS.SOCKET}
-                          className="w-full py-2 bg-black/20 hover:bg-purple-900/20 border border-white/10 hover:border-purple-500/50 rounded-xl text-sm text-gray-300 hover:text-purple-300 font-bold transition disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                          <Hexagon className="w-4 h-4" />
-                          Add Socket ({FLUX_COSTS.SOCKET} Flux) — {inspectItem.sockets || 0}/3
-                      </button>
-                  )}
-
-                  {/* Actions Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                      {/* Comparison vs currently equipped */}
-                      {(() => {
-                          // Find what's in this slot — handle RING→RING1/RING2
-                          const slotKey = (inspectItem.slot === 'RING' ? 'RING1' : inspectItem.slot) as string;
-                          const currentlyEquipped = equipped[slotKey as keyof typeof equipped] || (inspectItem.slot === 'RING' ? equipped['RING2'] : null);
-                          if (!currentlyEquipped || currentlyEquipped.id === inspectItem.id) return null;
-                          
-                          const ceColors = getAssetColors(currentlyEquipped.rarity);
-                          // Collect all stat keys from both items
-                          const allStats = new Set([...Object.keys(inspectItem.stats), ...Object.keys(currentlyEquipped.stats)]);
-                          
-                          return (
-                              <div className="col-span-2 bg-black/30 border border-white/10 rounded-xl p-3 mb-1">
-                                  <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Replacing Currently Equipped</div>
-                                  <div className="flex items-center justify-between mb-2">
-                                      <span className={`text-xs font-bold ${ceColors.text}`}>{currentlyEquipped.name}</span>
-                                      <span className="text-[10px] text-gray-500 font-mono">{currentlyEquipped.rarity}</span>
-                                  </div>
-                                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                      {Array.from(allStats).map(stat => {
-                                          const newVal = (inspectItem.stats as Record<string, number>)[stat] || 0;
-                                          const oldVal = (currentlyEquipped.stats as Record<string, number>)[stat] || 0;
-                                          const diff = newVal - oldVal;
-                                          if (diff === 0) return <span key={stat} className="text-[10px] text-gray-600 font-mono">{stat.slice(0,3).toUpperCase()}: ±0</span>;
-                                          return (
-                                              <span key={stat} className={`text-[10px] font-mono font-bold ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                  {stat.slice(0,3).toUpperCase()}: {diff > 0 ? '▲' : '▼'}{Math.abs(diff)}
-                                              </span>
-                                          );
-                                      })}
-                                  </div>
-                              </div>
-                          );
-                      })()}
-
-                      {(() => {
-                          const equippedSlot = Object.entries(equipped).find(([, item]) => item && item.id === inspectItem.id)?.[0];
-                          return equippedSlot ? (
-                              <button
-                                  onClick={() => handleUnequip(equippedSlot)}
-                                  className="col-span-2 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition shadow-lg shadow-orange-900/20"
-                                  disabled={isProcessing}
-                              >
-                                  Unequip Gear
-                              </button>
-                          ) : (
-                              <button
-                                  onClick={() => handleEquip(inspectItem)}
-                                  className="col-span-2 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition shadow-lg shadow-green-900/20"
-                                  disabled={isProcessing}
-                              >
-                                  Equip Gear
-                              </button>
-                          );
-                      })()}
-
-                      <div className="col-span-2 border-t border-white/10 my-2"></div>
-                      <div className="col-span-2 text-center text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Fabrication Protocols</div>
-
-                      {/* Crafting Options */}
-                      <button 
-                          onClick={() => handleCraft('RECALIBRATE')}
-                          disabled={isProcessing || currency < FLUX_COSTS.RECALIBRATE}
-                          className="bg-black/20 hover:bg-purple-900/20 border border-white/10 hover:border-purple-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
-                      >
-                          <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs font-bold text-gray-300 group-hover:text-purple-300">Recalibrate</span>
-                              <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.RECALIBRATE} Flux</span>
-                          </div>
-                          <p className="text-[9px] text-gray-500">Reroll numeric values within current tier.</p>
-                      </button>
-
-                      <button 
-                          onClick={() => handleCraft('REFORGE')}
-                          disabled={isProcessing || currency < FLUX_COSTS.REFORGE || inspectItem.rarity === 'UNIQUE'}
-                          className="bg-black/20 hover:bg-red-900/20 border border-white/10 hover:border-red-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
-                      >
-                          <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs font-bold text-gray-300 group-hover:text-red-300">Reforge</span>
-                              <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.REFORGE} Flux</span>
-                          </div>
-                          <p className="text-[9px] text-gray-500">Reroll all affixes. Keeps Rarity.</p>
-                      </button>
-
-                      <button 
-                          onClick={() => handleCraft('OPTIMIZE')}
-                          disabled={isProcessing || currency < FLUX_COSTS.OPTIMIZE}
-                          className="col-span-2 bg-black/20 hover:bg-yellow-900/20 border border-white/10 hover:border-yellow-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
-                      >
-                          <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs font-bold text-gray-300 group-hover:text-yellow-300">Optimize Tier</span>
-                              <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.OPTIMIZE} Flux</span>
-                          </div>
-                          <p className="text-[9px] text-gray-500">Upgrade affix tiers to match current operative level.</p>
-                      </button>
-
-                      <div className="col-span-2 border-t border-white/10 my-2"></div>
-
-                      <button 
-                          onClick={handleDisenchant} 
-                          disabled={isProcessing}
-                          className="col-span-2 py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-400 font-bold rounded-xl transition flex items-center justify-center gap-2"
-                      >
-                          <Trash2 className="w-4 h-4" />
-                          Salvage for {getDisenchantValue(inspectItem)} Flux
-                      </button>
-                  </div>
-              </div>
-          )}
-      </Modal>
+      <InspectItemModal
+          inspectItem={inspectItem}
+          onClose={() => setInspectItem(null)}
+          isProcessing={isProcessing}
+          currency={currency}
+          equipped={equipped}
+          gemsInventory={gemsInventory}
+          onEquip={handleEquip}
+          onUnequip={handleUnequip}
+          onDisenchant={handleDisenchant}
+          onCraft={handleCraft}
+          onAddSocket={handleAddSocket}
+          onSocketGem={handleSocketGem}
+          onUnsocketGem={handleUnsocketGem}
+      />
 
       {/* Profile Showcase */}
       {showProfile && (
