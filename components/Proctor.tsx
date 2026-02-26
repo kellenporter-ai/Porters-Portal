@@ -488,8 +488,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   }, [htmlContent]);
 
   // Compute flex proportions based on focus mode
-  const iframeFlex = focusMode === 'simulation' ? 'flex-[5]' : focusMode === 'lessons' ? 'flex-[1]' : 'flex-[3]';
-  const lessonFlex = focusMode === 'lessons' ? 'flex-[5]' : focusMode === 'simulation' ? 'flex-[1]' : 'flex-[2]';
+  const iframeFlex = focusMode === 'simulation' ? 'flex-1' : focusMode === 'lessons' ? 'hidden' : 'flex-[3]';
+  const lessonFlex = focusMode === 'lessons' ? 'flex-1' : focusMode === 'simulation' ? 'hidden' : 'flex-[2]';
 
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
