@@ -21,7 +21,7 @@ interface LessonBlocksProps {
 // ──────────────────────────────────────────────
 // Interactive block types (require completion)
 // ──────────────────────────────────────────────
-const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'VOCAB_LIST', 'ACTIVITY', 'BAR_CHART', 'DATA_TABLE'];
+const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'];
 
 // ──────────────────────────────────────────────
 // Original block renderers
