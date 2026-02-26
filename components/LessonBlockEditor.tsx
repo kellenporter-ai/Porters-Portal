@@ -9,6 +9,7 @@ import {
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { LessonBlock, BlockType } from '../types';
 import LessonBlocks from './LessonBlocks';
+import { dataService } from '../services/dataService';
 
 interface LessonBlockEditorProps {
   blocks: LessonBlock[];
@@ -329,29 +330,116 @@ const SectionHeaderEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBl
   </div>
 );
 
-const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => (
-  <div className="space-y-3">
-    <div>
-      <label className={labelClass}>Image URL</label>
-      <input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://..." className={inputClass} />
+const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => {
+  const [mode, setMode] = useState<'url' | 'upload'>(block.url ? 'url' : 'upload');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file (PNG, JPG, GIF, WebP).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image must be under 10 MB.');
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+    try {
+      const url = await dataService.uploadLessonImage(file);
+      onUpdate({ ...block, url });
+    } catch (err) {
+      setError('Upload failed. Please try again.');
+      console.error('Image upload error:', err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Mode toggle */}
+      <div className="flex gap-1 p-0.5 bg-white/5 rounded-lg w-fit">
+        <button
+          type="button"
+          onClick={() => setMode('url')}
+          className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'url' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}
+        >
+          <Link className="w-3 h-3 inline mr-1" />URL
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('upload')}
+          className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'upload' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}
+        >
+          <Upload className="w-3 h-3 inline mr-1" />Upload
+        </button>
+      </div>
+
+      {mode === 'url' ? (
+        <div>
+          <label className={labelClass}>Image URL</label>
+          <input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://..." className={inputClass} />
+        </div>
+      ) : (
+        <div>
+          <label className={labelClass}>Upload Image</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            disabled={uploading}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className={`w-full border-2 border-dashed border-white/20 rounded-xl p-6 text-center transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'hover:border-white/40 hover:bg-white/5 cursor-pointer'}`}
+          >
+            {uploading ? (
+              <div className="flex flex-col items-center gap-2 text-gray-400">
+                <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Uploading...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-gray-400">
+                <Upload className="w-6 h-6" />
+                <span className="text-sm">Click to select an image</span>
+                <span className="text-xs text-gray-500">PNG, JPG, GIF, WebP — max 10 MB</span>
+              </div>
+            )}
+          </button>
+          {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+        </div>
+      )}
+
+      {block.url && (
+        <div className="rounded-xl overflow-hidden border border-white/10 max-h-48">
+          <img src={block.url} alt={block.alt || ''} className="w-full h-full object-contain bg-black/30" onError={e => (e.currentTarget.style.display = 'none')} />
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Caption</label>
+          <input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} placeholder="Image caption..." className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Alt Text</label>
+          <input type="text" value={block.alt || ''} onChange={e => onUpdate({ ...block, alt: e.target.value })} placeholder="Describe the image..." className={inputClass} />
+        </div>
+      </div>
     </div>
-    {block.url && (
-      <div className="rounded-xl overflow-hidden border border-white/10 max-h-48">
-        <img src={block.url} alt={block.alt || ''} className="w-full h-full object-contain bg-black/30" onError={e => (e.currentTarget.style.display = 'none')} />
-      </div>
-    )}
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className={labelClass}>Caption</label>
-        <input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} placeholder="Image caption..." className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Alt Text</label>
-        <input type="text" value={block.alt || ''} onChange={e => onUpdate({ ...block, alt: e.target.value })} placeholder="Describe the image..." className={inputClass} />
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const VideoEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => {
   const getEmbedUrl = (url: string) => {

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { LessonBlock } from '../../types';
-import { Plus, Trash2, Target } from 'lucide-react';
+import { Plus, Trash2, Target, Upload, Link } from 'lucide-react';
+import { dataService } from '../../services/dataService';
 
 // ──────────────────────────────────────────────
 // Shared CSS class constants used across lesson editor components
@@ -8,6 +9,68 @@ import { Plus, Trash2, Target } from 'lucide-react';
 export const inputClass = "w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition";
 export const textareaClass = "w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-purple-500/50 transition";
 export const labelClass = "text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-1";
+
+const InlineImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => {
+  const [mode, setMode] = useState<'url' | 'upload'>(block.url ? 'url' : 'upload');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError('Please select an image file.'); return; }
+    if (file.size > 10 * 1024 * 1024) { setError('Image must be under 10 MB.'); return; }
+    setError(null);
+    setUploading(true);
+    try {
+      const url = await dataService.uploadLessonImage(file);
+      onUpdate({ ...block, url });
+    } catch {
+      setError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-1 p-0.5 bg-white/5 rounded-lg w-fit">
+        <button type="button" onClick={() => setMode('url')} className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'url' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}><Link className="w-3 h-3 inline mr-1" />URL</button>
+        <button type="button" onClick={() => setMode('upload')} className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'upload' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}><Upload className="w-3 h-3 inline mr-1" />Upload</button>
+      </div>
+      {mode === 'url' ? (
+        <div><label className={labelClass}>Image URL</label><input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://..." className={inputClass} /></div>
+      ) : (
+        <div>
+          <label className={labelClass}>Upload Image</label>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} disabled={uploading} className="hidden" />
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className={`w-full border-2 border-dashed border-white/20 rounded-xl p-4 text-center transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'hover:border-white/40 hover:bg-white/5 cursor-pointer'}`}>
+            {uploading ? (
+              <div className="flex flex-col items-center gap-1 text-gray-400">
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs">Uploading...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1 text-gray-400">
+                <Upload className="w-5 h-5" />
+                <span className="text-xs">Click to select an image</span>
+                <span className="text-[10px] text-gray-500">PNG, JPG, GIF, WebP — max 10 MB</span>
+              </div>
+            )}
+          </button>
+          {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+        </div>
+      )}
+      {block.url && <img src={block.url} alt={block.alt || ''} className="max-h-32 rounded-lg border border-white/10 object-contain" onError={e => (e.currentTarget.style.display = 'none')} />}
+      <div className="grid grid-cols-2 gap-2">
+        <div><label className={labelClass}>Caption</label><input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} placeholder="Caption..." className={inputClass} /></div>
+        <div><label className={labelClass}>Alt Text</label><input type="text" value={block.alt || ''} onChange={e => onUpdate({ ...block, alt: e.target.value })} placeholder="Describe..." className={inputClass} /></div>
+      </div>
+    </div>
+  );
+};
 
 interface InlineBlockEditorProps {
   block: LessonBlock;
@@ -30,16 +93,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
         </div>
       );
     case 'IMAGE':
-      return (
-        <div className="space-y-2">
-          <div><label className={labelClass}>Image URL</label><input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://..." className={inputClass} /></div>
-          {block.url && <img src={block.url} alt={block.alt || ''} className="max-h-32 rounded-lg border border-white/10 object-contain" onError={e => (e.currentTarget.style.display = 'none')} />}
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Caption</label><input type="text" value={block.caption || ''} onChange={e => onUpdate({ ...block, caption: e.target.value })} placeholder="Caption..." className={inputClass} /></div>
-            <div><label className={labelClass}>Alt Text</label><input type="text" value={block.alt || ''} onChange={e => onUpdate({ ...block, alt: e.target.value })} placeholder="Describe..." className={inputClass} /></div>
-          </div>
-        </div>
-      );
+      return <InlineImageEditor block={block} onUpdate={onUpdate} />;
     case 'VIDEO':
       return (
         <div className="space-y-2">
