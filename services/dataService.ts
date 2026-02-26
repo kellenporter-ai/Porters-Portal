@@ -973,6 +973,13 @@ export const dataService = {
       return await getDownloadURL(storageRef);
   },
 
+  uploadLessonImage: async (file: File): Promise<string> => {
+      const uniqueId = Math.random().toString(36).substring(2, 9);
+      const storageRef = ref(storage, `lesson-images/${uniqueId}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      return await getDownloadURL(storageRef);
+  },
+
   // --- ANNOUNCEMENTS ---
 
   subscribeToAnnouncements: (callback: (announcements: Announcement[]) => void) => {
