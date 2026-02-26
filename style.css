@@ -146,17 +146,6 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
-@keyframes block-scroll-out {
-  0% {
-    opacity: 1;
-    transform: perspective(800px) rotateX(0) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: perspective(800px) rotateX(8deg) translateY(-30px) scale(0.96);
-  }
-}
-
 .block-reveal {
   opacity: 0;
   transform: perspective(800px) rotateX(-8deg) translateY(40px) scale(0.96);
@@ -164,10 +153,6 @@ textarea:focus:not(:focus-visible) {
 
 .block-reveal.block-visible {
   animation: block-scroll-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.block-reveal.block-hidden {
-  animation: block-scroll-out 0.4s ease-in forwards;
 }
 
 .perf-mode .block-reveal {

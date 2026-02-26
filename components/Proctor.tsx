@@ -4,7 +4,7 @@ import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
+import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import AnnotationOverlay from './AnnotationOverlay';
 import LessonBlocks, { LessonBlock } from './LessonBlocks';
@@ -101,6 +101,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const awardedQuestionsRef = useRef<Set<string>>(new Set());
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [focusMode, setFocusMode] = useState<'balanced' | 'simulation' | 'lessons'>('balanced');
   const [ttsText, setTtsText] = useState('');
   const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
   const awardedBlocksRef = useRef<Set<string>>(new Set());
@@ -486,11 +487,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     }
   }, [htmlContent]);
 
+  // Compute flex proportions based on focus mode
+  const iframeFlex = focusMode === 'simulation' ? 'flex-1' : 'flex-[3]';
+  const lessonFlex = focusMode === 'lessons' ? 'flex-1' : 'flex-[2]';
+
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
         {/* HUD */}
-        <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex justify-between items-center border-b border-white/5 z-20">
-            <div className="flex items-center gap-4">
+        <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex flex-wrap justify-between items-center gap-y-1 border-b border-white/5 z-20">
+            <div className="flex items-center gap-4 flex-wrap">
                 <div className={`flex items-center gap-2 text-sm font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
                     {isActive ? <PlayCircle className="w-4 h-4" /> : <Clock className="w-4 h-4 animate-pulse" />}
                     {isActive ? 'Active Session' : 'Away (Paused)'}
@@ -521,7 +526,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
                 {/* TTS — Screen Reader */}
                 {(htmlContent || ttsText) && (
                     <ProctorTTS textContent={ttsText} compact />
@@ -588,21 +593,47 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         <div className="flex-1 relative overflow-hidden flex flex-col">
             {contentUrl ? (
                 <>
-                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative ${lessonBlocks && lessonBlocks.length > 0 ? 'flex-[3]' : 'flex-1'}`}>
+                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative min-h-0 transition-all duration-300 ${
+                        isFullscreen && !document.fullscreenElement
+                            ? 'fixed inset-0 z-50'
+                            : lessonBlocks && lessonBlocks.length > 0 ? iframeFlex : 'flex-1'
+                    }`} style={focusMode === 'lessons' ? { display: 'none' } : undefined}>
                         <iframe
                             ref={iframeRef}
                             src={contentUrl}
                             className="w-full flex-1 border-none bg-white"
                             title="Resource Viewer"
                             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                            allow="fullscreen"
+                            allowFullScreen
                             onLoad={handleInteraction}
                         />
                         {/* Annotation drawing overlay on top of iframe */}
                         <AnnotationOverlay containerRef={iframeWrapperRef} assignmentId={assignmentId} />
                     </div>
+                    {/* Focus mode toggle bar */}
+                    {lessonBlocks && lessonBlocks.length > 0 && (
+                        <div className="flex items-center justify-center gap-2 bg-black/60 py-1.5 px-3 z-10 shrink-0 border-y border-white/5">
+                            <button
+                                onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}
+                                title="Expand simulation"
+                            >
+                                <ChevronUp className="w-3.5 h-3.5" /> Simulation
+                            </button>
+                            <div className="w-6 h-0.5 bg-white/20 rounded-full" />
+                            <button
+                                onClick={() => setFocusMode(prev => prev === 'lessons' ? 'balanced' : 'lessons')}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}
+                                title="Expand lessons"
+                            >
+                                <ChevronDown className="w-3.5 h-3.5" /> Lessons
+                            </button>
+                        </div>
+                    )}
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className="flex-[2] bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
+                        <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
                             <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
                         </div>
                     )}
