@@ -742,20 +742,19 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       (entries) => {
         entries.forEach(entry => {
           const el = entry.target as HTMLElement;
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting && !el.classList.contains('block-visible')) {
+            // One-way reveal: once visible, stays visible (no fade-out loop)
             el.classList.add('block-visible');
-            el.classList.remove('block-hidden');
-          } else if (el.classList.contains('block-visible')) {
-            el.classList.remove('block-visible');
-            el.classList.add('block-hidden');
           }
+          // Track current intersection state for sidebar navigation
+          el.dataset.intersecting = entry.isIntersecting ? 'true' : 'false';
         });
 
-        // Track the topmost visible block for the sidebar
+        // Track the topmost currently-intersecting block for the sidebar
         let topVisibleIdx = blocks.length - 1;
         for (let i = 0; i < blocks.length; i++) {
           const el = elements.get(blocks[i].id);
-          if (el && el.classList.contains('block-visible')) {
+          if (el && el.dataset.intersecting === 'true') {
             topVisibleIdx = i;
             break;
           }
