@@ -494,8 +494,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
         {/* HUD */}
-        <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex justify-between items-center border-b border-white/5 z-20">
-            <div className="flex items-center gap-4">
+        <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex flex-wrap justify-between items-center gap-y-1 border-b border-white/5 z-20">
+            <div className="flex items-center gap-4 flex-wrap">
                 <div className={`flex items-center gap-2 text-sm font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
                     {isActive ? <PlayCircle className="w-4 h-4" /> : <Clock className="w-4 h-4 animate-pulse" />}
                     {isActive ? 'Active Session' : 'Away (Paused)'}
@@ -526,7 +526,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
                 {/* TTS — Screen Reader */}
                 {(htmlContent || ttsText) && (
                     <ProctorTTS textContent={ttsText} compact />
