@@ -7,10 +7,19 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import AnnotationOverlay from './AnnotationOverlay';
-import LessonBlocks, { LessonBlock } from './LessonBlocks';
+import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
+
+/** Convert Google Drive share/view links to embeddable preview URLs. */
+const toGoogleDrivePreview = (url: string): string => {
+  const fileIdMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+  const openIdMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+  if (openIdMatch) return `https://drive.google.com/file/d/${openIdMatch[1]}/preview`;
+  return url;
+};
 
 interface ProctorProps {
   onComplete: (metrics: TelemetryMetrics) => void;
@@ -105,6 +114,65 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const [ttsText, setTtsText] = useState('');
   const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
   const awardedBlocksRef = useRef<Set<string>>(new Set());
+
+  // Lesson block response persistence
+  const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
+  const blockResponsesRef = useRef<BlockResponseMap>({});
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load saved lesson block responses on mount
+  useEffect(() => {
+    if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
+    const docId = `${userId}_${assignmentId}_blocks`;
+    getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        const responses = data.responses || {};
+        blockResponsesRef.current = responses;
+        setSavedBlockResponses(responses);
+      } else {
+        setSavedBlockResponses({});
+      }
+    }).catch(err => {
+      console.error('Failed to load lesson block responses', err);
+      setSavedBlockResponses({});
+    });
+  }, [userId, assignmentId, lessonBlocks]);
+
+  // Debounced save of lesson block responses to Firestore
+  const handleBlockResponseChange = useCallback((blockId: string, response: unknown) => {
+    blockResponsesRef.current = { ...blockResponsesRef.current, [blockId]: response };
+    if (!userId || !assignmentId) return;
+    // Debounce: save 1.5s after last change
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const docId = `${userId}_${assignmentId}_blocks`;
+      setDoc(doc(db, 'lesson_block_responses', docId), {
+        userId,
+        assignmentId,
+        responses: blockResponsesRef.current,
+        lastUpdated: new Date().toISOString(),
+      }, { merge: true }).catch(err => console.error('Failed to save lesson block responses', err));
+    }, 1500);
+  }, [userId, assignmentId]);
+
+  // Flush pending saves on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        if (userId && assignmentId && Object.keys(blockResponsesRef.current).length > 0) {
+          const docId = `${userId}_${assignmentId}_blocks`;
+          setDoc(doc(db, 'lesson_block_responses', docId), {
+            userId,
+            assignmentId,
+            responses: blockResponsesRef.current,
+            lastUpdated: new Date().toISOString(),
+          }, { merge: true }).catch(() => {});
+        }
+      }
+    };
+  }, [userId, assignmentId]);
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
@@ -491,6 +559,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const iframeFlex = focusMode === 'simulation' ? 'flex-1' : 'flex-[3]';
   const lessonFlex = focusMode === 'lessons' ? 'flex-1' : 'flex-[2]';
 
+  // Transform Google Drive URLs for the main iframe
+  const resolvedContentUrl = contentUrl ? toGoogleDrivePreview(contentUrl) : contentUrl;
+
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
         {/* HUD */}
@@ -600,10 +671,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     }`} style={focusMode === 'lessons' ? { display: 'none' } : undefined}>
                         <iframe
                             ref={iframeRef}
-                            src={contentUrl}
+                            src={resolvedContentUrl || ''}
                             className="w-full flex-1 border-none bg-white"
                             title="Resource Viewer"
-                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
                             allow="fullscreen"
                             allowFullScreen
                             onLoad={handleInteraction}
@@ -634,14 +705,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
                         <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
-                            <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
+                            <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} />
                         </div>
                     )}
                 </>
             ) : lessonBlocks && lessonBlocks.length > 0 ? (
                 /* Lesson-only mode: blocks fill the entire content area */
                 <div className="flex-1 bg-[#0f0720]/95 overflow-y-auto p-6 text-gray-300 custom-scrollbar">
-                    <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
+                    <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} />
                 </div>
             ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-600 italic">
