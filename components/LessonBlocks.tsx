@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks,
-  ExternalLink, GripVertical, Target, Link, Play
+  ExternalLink, GripVertical, Target, Link, Play, FileDown, Trash2, MoreVertical
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
@@ -21,6 +21,8 @@ interface LessonBlocksProps {
   xpEarned?: number;
   savedResponses?: BlockResponseMap;
   onResponseChange?: (blockId: string, response: unknown) => void;
+  onExportPdf?: () => void;
+  onClearResponses?: () => void;
 }
 
 // ──────────────────────────────────────────────
@@ -752,7 +754,22 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
 // Main lesson viewer
 // ──────────────────────────────────────────────
 
-const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned, savedResponses, onResponseChange }) => {
+const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned, savedResponses, onResponseChange, onExportPdf, onClearResponses }) => {
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState<'clear' | 'export-clear' | null>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!showActionsMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showActionsMenu]);
   // Restore completedBlocks from saved responses (blocks that were already answered)
   const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(() => {
     if (!savedResponses) return new Set<string>();
@@ -869,9 +886,11 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     ? Math.round((completedBlocks.size / interactiveBlockCount) * 100)
     : 100;
 
+  const hasAnyResponses = savedResponses && Object.keys(savedResponses).length > 0;
+
   const contentArea = (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-      {/* Progress bar */}
+      {/* Progress bar + actions */}
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div
@@ -880,6 +899,81 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           />
         </div>
         <span className="text-[10px] text-gray-500 font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
+
+        {/* Actions menu */}
+        {(onExportPdf || onClearResponses) && (
+          <div ref={actionsRef} className="relative">
+            <button
+              onClick={() => setShowActionsMenu(prev => !prev)}
+              className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+              title="Progress options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {showActionsMenu && !showClearConfirm && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a0a2e] border border-white/10 rounded-xl shadow-2xl min-w-[200px] py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                {onExportPdf && (
+                  <button
+                    onClick={() => { onExportPdf(); setShowActionsMenu(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-300 hover:text-white hover:bg-white/5 transition text-left cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-blue-400" /> Export to PDF
+                  </button>
+                )}
+                {onExportPdf && onClearResponses && (
+                  <button
+                    onClick={() => setShowClearConfirm('export-clear')}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-300 hover:text-white hover:bg-white/5 transition text-left cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-amber-400" /> Export & Clear
+                  </button>
+                )}
+                {onClearResponses && hasAnyResponses && (
+                  <>
+                    <div className="border-t border-white/5 my-1" />
+                    <button
+                      onClick={() => setShowClearConfirm('clear')}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/5 transition text-left cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Clear Responses
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Confirmation dialog */}
+            {showClearConfirm && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a0a2e] border border-white/10 rounded-xl shadow-2xl min-w-[240px] p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-xs text-gray-300 mb-3">
+                  {showClearConfirm === 'export-clear'
+                    ? 'Export your progress, then clear all responses? This cannot be undone.'
+                    : 'Clear all your responses? This cannot be undone.'}
+                </p>
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    onClick={() => { setShowClearConfirm(null); setShowActionsMenu(false); }}
+                    className="text-[10px] text-gray-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (showClearConfirm === 'export-clear') onExportPdf?.();
+                      onClearResponses?.();
+                      setShowClearConfirm(null);
+                      setShowActionsMenu(false);
+                    }}
+                    className="text-[10px] text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition font-bold cursor-pointer"
+                  >
+                    {showClearConfirm === 'export-clear' ? 'Export & Clear' : 'Clear'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Scrollable block container */}

@@ -3,14 +3,17 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown } from 'lucide-react';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import AnnotationOverlay from './AnnotationOverlay';
 import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
+
+const escapeHtml = (str: string): string =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Convert Google Drive share/view links to embeddable preview URLs. */
 const toGoogleDrivePreview = (url: string): string => {
@@ -119,6 +122,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
   const blockResponsesRef = useRef<BlockResponseMap>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [blockResetKey, setBlockResetKey] = useState(0);
 
   // Load saved lesson block responses on mount
   useEffect(() => {
@@ -173,6 +177,138 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       }
     };
   }, [userId, assignmentId]);
+
+  // Clear saved lesson block responses (Firestore + local state)
+  const handleClearBlockResponses = useCallback(async () => {
+    if (!userId || !assignmentId) return;
+    // Cancel any pending save
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const docId = `${userId}_${assignmentId}_blocks`;
+    try {
+      await deleteDoc(doc(db, 'lesson_block_responses', docId));
+    } catch { /* doc may not exist */ }
+    blockResponsesRef.current = {};
+    setSavedBlockResponses({});
+    setBlockResetKey(prev => prev + 1); // Force remount of LessonBlocks
+  }, [userId, assignmentId]);
+
+  // Export lesson block progress to PDF
+  const handleExportBlocksPdf = useCallback(() => {
+    if (!lessonBlocks || lessonBlocks.length === 0) return;
+    const responses = blockResponsesRef.current;
+
+    // Build HTML for each block with student responses
+    const blockHtmlSections = lessonBlocks.map(block => {
+      const resp = responses[block.id];
+      let questionHtml = '';
+      let answerHtml = '';
+
+      switch (block.type) {
+        case 'TEXT':
+          questionHtml = `<div style="white-space:pre-line">${escapeHtml(block.content)}</div>`;
+          break;
+        case 'SECTION_HEADER':
+          questionHtml = `<h2 style="margin:0;font-size:18px">${escapeHtml(block.title || block.content)}</h2>${block.subtitle ? `<p style="color:#666;margin:4px 0 0">${escapeHtml(block.subtitle)}</p>` : ''}`;
+          break;
+        case 'MC':
+          questionHtml = `<p><strong>Multiple Choice:</strong> ${escapeHtml(block.content)}</p><ul style="list-style:none;padding:0">${(block.options || []).map((opt, i) => {
+            const isSelected = resp?.selected === i;
+            const isCorrect = i === block.correctAnswer;
+            const marker = isSelected ? (isCorrect ? '&#10003;' : '&#10007;') : '&bull;';
+            const style = isSelected ? (isCorrect ? 'color:green;font-weight:bold' : 'color:red;font-weight:bold') : '';
+            return `<li style="${style}">${marker} ${escapeHtml(opt)}</li>`;
+          }).join('')}</ul>`;
+          answerHtml = resp?.answered ? `<p>Your answer: <strong>${escapeHtml((block.options || [])[resp.selected] || 'N/A')}</strong></p>` : '<p style="color:#999"><em>Not answered</em></p>';
+          break;
+        case 'SHORT_ANSWER':
+          questionHtml = `<p><strong>Short Answer:</strong> ${escapeHtml(block.content)}</p>`;
+          answerHtml = resp?.answered ? `<p>Your answer: <strong>${escapeHtml(resp.answer || '')}</strong> ${resp.isCorrect ? '<span style="color:green">&#10003;</span>' : '<span style="color:red">&#10007;</span>'}</p>` : '<p style="color:#999"><em>Not answered</em></p>';
+          break;
+        case 'CHECKLIST':
+          questionHtml = `<p><strong>Checklist:</strong> ${escapeHtml(block.content)}</p><ul style="list-style:none;padding:0">${(block.items || []).map((item, i) => {
+            const isChecked = resp?.checked?.includes(i);
+            return `<li>${isChecked ? '&#9745;' : '&#9744;'} ${escapeHtml(item)}</li>`;
+          }).join('')}</ul>`;
+          break;
+        case 'SORTING': {
+          const sortItems = block.sortItems || [];
+          questionHtml = `<p><strong>Sorting:</strong> ${escapeHtml(block.content)}</p>`;
+          if (resp?.submitted) {
+            const left = Object.entries(resp.placements || {}).filter(([, v]) => v === 'left').map(([k]) => sortItems[parseInt(k)]?.text || '');
+            const right = Object.entries(resp.placements || {}).filter(([, v]) => v === 'right').map(([k]) => sortItems[parseInt(k)]?.text || '');
+            answerHtml = `<table style="width:100%;border-collapse:collapse"><tr><th style="border:1px solid #ddd;padding:6px;text-align:left">${escapeHtml(block.leftLabel || 'Left')}</th><th style="border:1px solid #ddd;padding:6px;text-align:left">${escapeHtml(block.rightLabel || 'Right')}</th></tr><tr><td style="border:1px solid #ddd;padding:6px;vertical-align:top">${left.map(t => escapeHtml(t)).join('<br>')}</td><td style="border:1px solid #ddd;padding:6px;vertical-align:top">${right.map(t => escapeHtml(t)).join('<br>')}</td></tr></table>`;
+          } else {
+            answerHtml = '<p style="color:#999"><em>Not submitted</em></p>';
+          }
+          break;
+        }
+        case 'RANKING':
+          questionHtml = `<p><strong>Ranking:</strong> ${escapeHtml(block.content)}</p>`;
+          if (resp?.submitted && resp.order) {
+            answerHtml = `<ol>${resp.order.map((o: { item: string }) => `<li>${escapeHtml(o.item)}</li>`).join('')}</ol>`;
+          } else {
+            answerHtml = '<p style="color:#999"><em>Not submitted</em></p>';
+          }
+          break;
+        case 'LINKED':
+          questionHtml = `<p><strong>Question:</strong> ${escapeHtml(block.content)}</p>`;
+          answerHtml = resp?.answered ? `<p>Your answer: <strong>${escapeHtml(resp.answer || '')}</strong></p>` : '<p style="color:#999"><em>Not answered</em></p>';
+          break;
+        case 'DATA_TABLE':
+          questionHtml = `<p><strong>Data Table:</strong> ${escapeHtml(block.content)}</p>`;
+          if (resp?.data) {
+            const cols = block.columns || [];
+            answerHtml = `<table style="width:100%;border-collapse:collapse"><tr>${cols.map(c => `<th style="border:1px solid #ddd;padding:6px;text-align:left">${escapeHtml(c.label)}${c.unit ? ` (${escapeHtml(c.unit)})` : ''}</th>`).join('')}</tr>${(resp.data as Record<string, string>[]).map((row: Record<string, string>) => `<tr>${cols.map(c => `<td style="border:1px solid #ddd;padding:6px">${escapeHtml(row[c.key] || '')}</td>`).join('')}</tr>`).join('')}</table>`;
+          } else {
+            answerHtml = '<p style="color:#999"><em>No data entered</em></p>';
+          }
+          break;
+        case 'BAR_CHART':
+          questionHtml = `<p><strong>Bar Chart:</strong> ${escapeHtml(block.content)}</p>`;
+          if (resp?.values) {
+            answerHtml = `<p>Values: ${(resp.values as number[]).join(', ')}</p>`;
+          } else {
+            answerHtml = '<p style="color:#999"><em>No data entered</em></p>';
+          }
+          break;
+        case 'OBJECTIVES':
+          questionHtml = `<p><strong>Objectives:</strong></p><ul>${(block.items || []).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+          break;
+        case 'INFO_BOX':
+          questionHtml = `<div style="background:#f0f0f0;padding:12px;border-radius:8px;border-left:4px solid ${block.variant === 'warning' ? '#f59e0b' : block.variant === 'tip' ? '#22c55e' : '#3b82f6'}"><strong>${block.variant === 'warning' ? 'Warning' : block.variant === 'tip' ? 'Tip' : 'Note'}:</strong> ${escapeHtml(block.content)}</div>`;
+          break;
+        case 'VOCABULARY':
+          questionHtml = `<p><strong>${escapeHtml(block.term || '')}</strong>: ${escapeHtml(block.definition || '')}</p>`;
+          break;
+        case 'VOCAB_LIST':
+          questionHtml = `<p><strong>Vocabulary List:</strong></p><dl>${(block.terms || []).map(t => `<dt style="font-weight:bold">${escapeHtml(t.term)}</dt><dd style="margin:0 0 8px 16px">${escapeHtml(t.definition)}</dd>`).join('')}</dl>`;
+          break;
+        case 'DIVIDER':
+          questionHtml = '<hr style="border:none;border-top:1px solid #ddd;margin:8px 0">';
+          break;
+        default:
+          if (block.content) questionHtml = `<div>${escapeHtml(block.content)}</div>`;
+          break;
+      }
+
+      if (!questionHtml && !answerHtml) return '';
+      return `<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #eee">${questionHtml}${answerHtml}</div>`;
+    }).filter(Boolean);
+
+    const title = 'Lesson Progress Export';
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:800px;margin:0 auto;padding:32px;color:#222;font-size:14px}h1{font-size:22px;border-bottom:2px solid #7c3aed;padding-bottom:8px;color:#7c3aed}table{margin:8px 0}@media print{body{padding:16px}}</style></head><body><h1>${title}</h1><p style="color:#666;font-size:12px">Exported on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>${blockHtmlSections.join('')}</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.addEventListener('load', () => {
+        win.print();
+        // Revoke after a delay to ensure print dialog has the content
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      });
+    }
+  }, [lessonBlocks]);
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
@@ -705,14 +841,22 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
                         <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
-                            <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} />
+                            {savedBlockResponses === undefined ? (
+                                <div className="flex items-center justify-center h-32 text-gray-500"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                            ) : (
+                                <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
+                            )}
                         </div>
                     )}
                 </>
             ) : lessonBlocks && lessonBlocks.length > 0 ? (
                 /* Lesson-only mode: blocks fill the entire content area */
                 <div className="flex-1 bg-[#0f0720]/95 overflow-y-auto p-6 text-gray-300 custom-scrollbar">
-                    <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} />
+                    {savedBlockResponses === undefined ? (
+                        <div className="flex items-center justify-center h-32 text-gray-500"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                    ) : (
+                        <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
+                    )}
                 </div>
             ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-600 italic">
