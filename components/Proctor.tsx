@@ -613,21 +613,21 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                     {/* Focus mode toggle bar */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className="flex items-center justify-center gap-1 bg-black/60 py-1 z-10 shrink-0">
+                        <div className="flex items-center justify-center gap-2 bg-black/60 py-1.5 px-3 z-10 shrink-0 border-y border-white/5">
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
-                                className={`p-1 rounded transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-400 bg-purple-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}
                                 title="Expand simulation"
                             >
-                                <ChevronUp className="w-3.5 h-3.5" />
+                                <ChevronUp className="w-3.5 h-3.5" /> Simulation
                             </button>
-                            <div className="w-8 h-0.5 bg-white/20 rounded-full mx-1" />
+                            <div className="w-6 h-0.5 bg-white/20 rounded-full" />
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'lessons' ? 'balanced' : 'lessons')}
-                                className={`p-1 rounded transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-400 bg-purple-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}
                                 title="Expand lessons"
                             >
-                                <ChevronDown className="w-3.5 h-3.5" />
+                                <ChevronDown className="w-3.5 h-3.5" /> Lessons
                             </button>
                         </div>
                     )}
