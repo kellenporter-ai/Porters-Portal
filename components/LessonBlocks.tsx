@@ -2,12 +2,15 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks,
-  ExternalLink, GripVertical, Target, Link, Play
+  ExternalLink, GripVertical, Target, Link, Play, FileDown, Trash2, MoreVertical
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
 
 export type { LessonBlock } from '../types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type BlockResponseMap = Record<string, any>;
 
 interface LessonBlocksProps {
   blocks: LessonBlock[];
@@ -16,6 +19,10 @@ interface LessonBlocksProps {
   showSidebar?: boolean;
   engagementTime?: number;
   xpEarned?: number;
+  savedResponses?: BlockResponseMap;
+  onResponseChange?: (blockId: string, response: unknown) => void;
+  onExportPdf?: () => void;
+  onClearResponses?: () => void;
 }
 
 // ──────────────────────────────────────────────
@@ -50,14 +57,15 @@ const InfoBoxBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   );
 };
 
-const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void }> = ({ block, onComplete }) => {
-  const [selected, setSelected] = useState<number | null>(null);
-  const [answered, setAnswered] = useState(false);
+const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { selected: number; answered: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+  const [selected, setSelected] = useState<number | null>(savedResponse?.selected ?? null);
+  const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
   const isCorrect = selected === block.correctAnswer;
 
   const handleSubmit = () => {
     if (selected === null) return;
     setAnswered(true);
+    onResponseChange?.({ selected, answered: true });
     onComplete(selected === block.correctAnswer);
   };
 
@@ -108,10 +116,10 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
   );
 };
 
-const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void }> = ({ block, onComplete }) => {
-  const [answer, setAnswer] = useState('');
-  const [answered, setAnswered] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+  const [answer, setAnswer] = useState(savedResponse?.answer ?? '');
+  const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
+  const [isCorrect, setIsCorrect] = useState(savedResponse?.isCorrect ?? false);
 
   const handleSubmit = () => {
     if (!answer.trim()) return;
@@ -119,6 +127,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
     const correct = accepted.includes(answer.toLowerCase().trim());
     setIsCorrect(correct);
     setAnswered(true);
+    onResponseChange?.({ answer, answered: true, isCorrect: correct });
     onComplete(correct);
   };
 
@@ -177,8 +186,8 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   );
 };
 
-const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void }> = ({ block, onComplete }) => {
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { checked: number[] }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+  const [checked, setChecked] = useState<Set<number>>(new Set(savedResponse?.checked ?? []));
   const allChecked = (block.items || []).length > 0 && checked.size === (block.items || []).length;
 
   const toggle = (idx: number) => {
@@ -186,6 +195,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
     if (next.has(idx)) next.delete(idx);
     else next.add(idx);
     setChecked(next);
+    onResponseChange?.({ checked: Array.from(next) });
     if (next.size === (block.items || []).length) {
       onComplete(true);
     }
@@ -316,14 +326,34 @@ const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
   </a>
 );
 
-const EmbedBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
-  <div className="space-y-2">
-    <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20" style={{ height: block.height || 500 }}>
-      <iframe src={block.url} className="w-full h-full border-0" title={block.caption || 'Embedded content'} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
+const getGoogleDriveEmbedUrl = (url: string): string => {
+  // Convert Google Drive share/view links to embeddable preview URLs
+  // Handles: /file/d/ID/view, /file/d/ID/edit, /open?id=ID, /file/d/ID/view?usp=sharing
+  const fileIdMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+  const openIdMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+  if (openIdMatch) return `https://drive.google.com/file/d/${openIdMatch[1]}/preview`;
+  return url;
+};
+
+const EmbedBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+  const embedUrl = getGoogleDriveEmbedUrl(block.url || '');
+  const isGoogleDrive = embedUrl !== block.url;
+  return (
+    <div className="space-y-2">
+      <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20" style={{ height: block.height || 500 }}>
+        <iframe
+          src={embedUrl}
+          className="w-full h-full border-0"
+          title={block.caption || 'Embedded content'}
+          sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${isGoogleDrive ? ' allow-popups-to-escape-sandbox' : ''}`}
+          allow={isGoogleDrive ? 'autoplay' : undefined}
+        />
+      </div>
+      {block.caption && <p className="text-xs text-gray-500 text-center italic">{block.caption}</p>}
     </div>
-    {block.caption && <p className="text-xs text-gray-500 text-center italic">{block.caption}</p>}
-  </div>
-);
+  );
+};
 
 const VocabListBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
@@ -363,10 +393,10 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
   </div>
 );
 
-const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void }> = ({ block, onComplete }) => {
+const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { placements: Record<number, 'left' | 'right'>; submitted: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
   const items = block.sortItems || [];
-  const [placements, setPlacements] = useState<Record<number, 'left' | 'right'>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [placements, setPlacements] = useState<Record<number, 'left' | 'right'>>(savedResponse?.placements ?? {});
+  const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
 
   const unplaced = items.map((_, i) => i).filter(i => !(i in placements));
   const leftItems = Object.entries(placements).filter(([, v]) => v === 'left').map(([k]) => parseInt(k));
@@ -374,7 +404,11 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   const placeItem = (itemIdx: number, side: 'left' | 'right') => {
     if (submitted) return;
-    setPlacements(prev => ({ ...prev, [itemIdx]: side }));
+    setPlacements(prev => {
+      const next = { ...prev, [itemIdx]: side };
+      onResponseChange?.({ placements: next, submitted: false });
+      return next;
+    });
   };
 
   const removeItem = (itemIdx: number) => {
@@ -382,6 +416,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
     setPlacements(prev => {
       const next = { ...prev };
       delete next[itemIdx];
+      onResponseChange?.({ placements: next, submitted: false });
       return next;
     });
   };
@@ -390,6 +425,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
     if (unplaced.length > 0) return;
     setSubmitted(true);
     const allCorrect = items.every((item, idx) => placements[idx] === item.correct);
+    onResponseChange?.({ placements, submitted: true });
     onComplete(allCorrect);
   };
 
@@ -460,17 +496,18 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   );
 };
 
-const DataTableBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Record<string, string>[] }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
   const columns = block.columns || [];
   const rowCount = block.trials || 3;
   const [data, setData] = useState<Record<string, string>[]>(() =>
-    Array.from({ length: rowCount }, () => Object.fromEntries(columns.map(c => [c.key, ''])))
+    savedResponse?.data ?? Array.from({ length: rowCount }, () => Object.fromEntries(columns.map(c => [c.key, ''])))
   );
 
   const updateCell = (rowIdx: number, colKey: string, val: string) => {
     setData(prev => {
       const next = [...prev];
       next[rowIdx] = { ...next[rowIdx], [colKey]: val };
+      onResponseChange?.({ data: next });
       return next;
     });
   };
@@ -517,10 +554,10 @@ const DataTableBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   );
 };
 
-const BarChartBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { values: number[] }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
   const barCount = block.barCount || 3;
   const chartHeight = block.height || 300;
-  const [values, setValues] = useState<number[]>(() => Array(barCount).fill(0));
+  const [values, setValues] = useState<number[]>(() => savedResponse?.values ?? Array(barCount).fill(0));
   const maxVal = Math.max(...values.map(Math.abs), 1);
   const colors = ['#a855f7', '#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'];
 
@@ -528,7 +565,7 @@ const BarChartBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const clickY = e.clientY - rect.top;
     const normalizedVal = Math.round(((rect.height / 2 - clickY) / (rect.height / 2)) * 10);
-    setValues(prev => { const next = [...prev]; next[idx] = normalizedVal; return next; });
+    setValues(prev => { const next = [...prev]; next[idx] = normalizedVal; onResponseChange?.({ values: next }); return next; });
   };
 
   return (
@@ -567,7 +604,7 @@ const BarChartBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   );
 };
 
-const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void }> = ({ block, onComplete }) => {
+const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { order: { item: string; origIdx: number }[]; submitted: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
   const correctOrder = block.items || [];
   // Deterministic shuffle based on block ID
   const shuffled = useMemo(() => {
@@ -581,8 +618,8 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
     return arr;
   }, [block.id, correctOrder]);
 
-  const [order, setOrder] = useState(shuffled);
-  const [submitted, setSubmitted] = useState(false);
+  const [order, setOrder] = useState(savedResponse?.order ?? shuffled);
+  const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   const moveItem = (from: number, to: number) => {
@@ -591,6 +628,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       const next = [...prev];
       const [item] = next.splice(from, 1);
       next.splice(to, 0, item);
+      onResponseChange?.({ order: next, submitted: false });
       return next;
     });
   };
@@ -598,6 +636,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   const handleSubmit = () => {
     setSubmitted(true);
     const isCorrect = order.every((item, idx) => item.origIdx === idx);
+    onResponseChange?.({ order, submitted: true });
     onComplete(isCorrect);
   };
 
@@ -655,11 +694,11 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   );
 };
 
-const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onComplete: (correct: boolean) => void }> = ({ block, allBlocks, onComplete }) => {
+const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, allBlocks, onComplete, savedResponse, onResponseChange }) => {
   const linkedBlock = allBlocks.find(b => b.id === block.linkedBlockId);
-  const [answer, setAnswer] = useState('');
-  const [answered, setAnswered] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [answer, setAnswer] = useState(savedResponse?.answer ?? '');
+  const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
+  const [isCorrect, setIsCorrect] = useState(savedResponse?.isCorrect ?? false);
 
   const handleSubmit = () => {
     if (!answer.trim()) return;
@@ -667,6 +706,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
     const correct = accepted.length === 0 || accepted.includes(answer.toLowerCase().trim());
     setIsCorrect(correct);
     setAnswered(true);
+    onResponseChange?.({ answer, answered: true, isCorrect: correct });
     onComplete(correct);
   };
 
@@ -714,8 +754,34 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
 // Main lesson viewer
 // ──────────────────────────────────────────────
 
-const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned }) => {
-  const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(new Set());
+const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned, savedResponses, onResponseChange, onExportPdf, onClearResponses }) => {
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState<'clear' | 'export-clear' | null>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!showActionsMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showActionsMenu]);
+  // Restore completedBlocks from saved responses (blocks that were already answered)
+  const [completedBlocks, setCompletedBlocks] = useState<Set<string>>(() => {
+    if (!savedResponses) return new Set<string>();
+    const restored = new Set<string>();
+    for (const blockId of Object.keys(savedResponses)) {
+      const resp = savedResponses[blockId];
+      if (resp?.answered || resp?.submitted || resp?.checked?.length > 0) {
+        restored.add(blockId);
+      }
+    }
+    return restored;
+  });
   const [visibleBlockIndex, setVisibleBlockIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -786,14 +852,16 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
 
   const renderBlock = (block: LessonBlock) => {
     const onComplete = (correct: boolean) => handleBlockComplete(block.id, correct);
+    const saved = savedResponses?.[block.id];
+    const onRespChange = onResponseChange ? (resp: unknown) => onResponseChange(block.id, resp) : undefined;
 
     switch (block.type) {
       case 'TEXT': return <TextBlock block={block} />;
       case 'INFO_BOX': return <InfoBoxBlock block={block} />;
-      case 'MC': return <MCBlock block={block} onComplete={onComplete} />;
-      case 'SHORT_ANSWER': return <ShortAnswerBlock block={block} onComplete={onComplete} />;
+      case 'MC': return <MCBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'SHORT_ANSWER': return <ShortAnswerBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
       case 'VOCABULARY': return <VocabularyBlock block={block} />;
-      case 'CHECKLIST': return <ChecklistBlock block={block} onComplete={onComplete} />;
+      case 'CHECKLIST': return <ChecklistBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
       case 'SECTION_HEADER': return <SectionHeaderBlock block={block} />;
       case 'IMAGE': return <ImageBlock block={block} />;
       case 'VIDEO': return <VideoBlock block={block} />;
@@ -803,11 +871,11 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       case 'EMBED': return <EmbedBlock block={block} />;
       case 'VOCAB_LIST': return <VocabListBlock block={block} />;
       case 'ACTIVITY': return <ActivityBlock block={block} />;
-      case 'SORTING': return <SortingBlock block={block} onComplete={onComplete} />;
-      case 'DATA_TABLE': return <DataTableBlock block={block} />;
-      case 'BAR_CHART': return <BarChartBlock block={block} />;
-      case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} />;
-      case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} />;
+      case 'SORTING': return <SortingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'DATA_TABLE': return <DataTableBlock block={block} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
       default: return <div className="text-sm text-gray-500 italic">Unknown block type: {block.type}</div>;
     }
   };
@@ -818,9 +886,11 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     ? Math.round((completedBlocks.size / interactiveBlockCount) * 100)
     : 100;
 
+  const hasAnyResponses = savedResponses && Object.keys(savedResponses).length > 0;
+
   const contentArea = (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-      {/* Progress bar */}
+      {/* Progress bar + actions */}
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div
@@ -829,6 +899,81 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           />
         </div>
         <span className="text-[10px] text-gray-500 font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
+
+        {/* Actions menu */}
+        {(onExportPdf || onClearResponses) && (
+          <div ref={actionsRef} className="relative">
+            <button
+              onClick={() => setShowActionsMenu(prev => !prev)}
+              className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+              title="Progress options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {showActionsMenu && !showClearConfirm && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a0a2e] border border-white/10 rounded-xl shadow-2xl min-w-[200px] py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                {onExportPdf && (
+                  <button
+                    onClick={() => { onExportPdf(); setShowActionsMenu(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-300 hover:text-white hover:bg-white/5 transition text-left cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-blue-400" /> Export to PDF
+                  </button>
+                )}
+                {onExportPdf && onClearResponses && (
+                  <button
+                    onClick={() => setShowClearConfirm('export-clear')}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-300 hover:text-white hover:bg-white/5 transition text-left cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-amber-400" /> Export & Clear
+                  </button>
+                )}
+                {onClearResponses && hasAnyResponses && (
+                  <>
+                    <div className="border-t border-white/5 my-1" />
+                    <button
+                      onClick={() => setShowClearConfirm('clear')}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/5 transition text-left cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Clear Responses
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Confirmation dialog */}
+            {showClearConfirm && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a0a2e] border border-white/10 rounded-xl shadow-2xl min-w-[240px] p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-xs text-gray-300 mb-3">
+                  {showClearConfirm === 'export-clear'
+                    ? 'Export your progress, then clear all responses? This cannot be undone.'
+                    : 'Clear all your responses? This cannot be undone.'}
+                </p>
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    onClick={() => { setShowClearConfirm(null); setShowActionsMenu(false); }}
+                    className="text-[10px] text-gray-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (showClearConfirm === 'export-clear') onExportPdf?.();
+                      onClearResponses?.();
+                      setShowClearConfirm(null);
+                      setShowActionsMenu(false);
+                    }}
+                    className="text-[10px] text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition font-bold cursor-pointer"
+                  >
+                    {showClearConfirm === 'export-clear' ? 'Export & Clear' : 'Clear'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Scrollable block container */}
