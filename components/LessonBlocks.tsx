@@ -813,9 +813,10 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     }
   };
 
-  // Scroll progress based on visible block position
-  const scrollProgress = blocks.length > 1
-    ? Math.round(((visibleBlockIndex + 1) / blocks.length) * 100)
+  // Completion progress based on interactive blocks
+  const interactiveBlockCount = blocks.filter(b => INTERACTIVE_TYPES.includes(b.type)).length;
+  const completionProgress = interactiveBlockCount > 0
+    ? Math.round((completedBlocks.size / interactiveBlockCount) * 100)
     : 100;
 
   const contentArea = (
@@ -825,10 +826,10 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
         <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div
             className="h-1.5 rounded-full bg-purple-500 transition-all duration-500"
-            style={{ width: `${scrollProgress}%` }}
+            style={{ width: `${completionProgress}%` }}
           />
         </div>
-        <span className="text-[10px] text-gray-500 font-mono">{visibleBlockIndex + 1}/{blocks.length}</span>
+        <span className="text-[10px] text-gray-500 font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
       </div>
 
       {/* Scrollable block container */}

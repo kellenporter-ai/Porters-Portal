@@ -488,8 +488,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   }, [htmlContent]);
 
   // Compute flex proportions based on focus mode
-  const iframeFlex = focusMode === 'simulation' ? 'flex-1' : focusMode === 'lessons' ? 'hidden' : 'flex-[3]';
-  const lessonFlex = focusMode === 'lessons' ? 'flex-1' : focusMode === 'simulation' ? 'hidden' : 'flex-[2]';
+  const iframeFlex = focusMode === 'simulation' ? 'flex-1' : 'flex-[3]';
+  const lessonFlex = focusMode === 'lessons' ? 'flex-1' : 'flex-[2]';
 
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
@@ -597,7 +597,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         isFullscreen && !document.fullscreenElement
                             ? 'fixed inset-0 z-50'
                             : lessonBlocks && lessonBlocks.length > 0 ? iframeFlex : 'flex-1'
-                    }`}>
+                    }`} style={focusMode === 'lessons' ? { display: 'none' } : undefined}>
                         <iframe
                             ref={iframeRef}
                             src={contentUrl}
@@ -633,7 +633,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     )}
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`}>
+                        <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
                             <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
                         </div>
                     )}
