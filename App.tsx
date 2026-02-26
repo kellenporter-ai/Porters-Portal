@@ -337,7 +337,7 @@ const App: React.FC = () => {
   }
 
   const isAdmin = user.role === UserRole.ADMIN;
-  const defaultPath = isAdmin ? '/dashboard' : '/resources';
+  const defaultPath = isAdmin ? '/dashboard' : '/home';
 
   return (
     <ErrorBoundary>
@@ -365,6 +365,11 @@ const App: React.FC = () => {
           </Route>
 
           {/* ─── Student routes ─── */}
+          <Route path="/home" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="HOME" />
+            </Suspense>
+          } />
           <Route path="/resources" element={
             <Suspense fallback={<LazyFallback />}>
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="RESOURCES" />
@@ -455,7 +460,7 @@ const App: React.FC = () => {
 const StudentRouteWrapper: React.FC<{
   user: User;
   submissions: Submission[];
-  tab: 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
+  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
 }> = ({ user, submissions, tab }) => {
   const { assignments, classConfigs, enabledFeatures } = useAppData();
   const navigate = useNavigate();

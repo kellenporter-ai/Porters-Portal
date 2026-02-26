@@ -25,6 +25,7 @@ import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
 import IntelDossier from './IntelDossier';
+import HomeTab from './dashboard/HomeTab';
 import MissionsTab from './dashboard/MissionsTab';
 import ResourcesTab from './dashboard/ResourcesTab';
 import AgentLoadoutTab from './dashboard/AgentLoadoutTab';
@@ -32,7 +33,7 @@ import BadgesTab from './dashboard/BadgesTab';
 import ProgressDashboard from './dashboard/ProgressDashboard';
 import CalendarView from './dashboard/CalendarView';
 
-type StudentTab = 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
+type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
 
 interface StudentDashboardProps {
   user: User;
@@ -500,6 +501,23 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       <div className="lg:col-span-9 space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} content`}>
 
+
+             {activeTab === 'HOME' && (
+                 <HomeTab
+                     assignments={assignments}
+                     submissions={submissions}
+                     activeClass={activeClass}
+                     practiceCompletion={practiceCompletion}
+                     availableQuests={availableQuests}
+                     activeQuests={activeQuests}
+                     completedQuests={completedQuests}
+                     activeEvent={activeEvent}
+                     onNavigate={onNavigate}
+                     onStartAssignment={onStartAssignment}
+                     userSection={user.section}
+                     userClassSections={user.classSections}
+                 />
+             )}
 
              {activeTab === 'MISSIONS' && (
                  <MissionsTab
