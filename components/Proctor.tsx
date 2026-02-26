@@ -4,7 +4,7 @@ import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
+import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import AnnotationOverlay from './AnnotationOverlay';
 import LessonBlocks, { LessonBlock } from './LessonBlocks';
@@ -101,6 +101,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const awardedQuestionsRef = useRef<Set<string>>(new Set());
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [focusMode, setFocusMode] = useState<'balanced' | 'simulation' | 'lessons'>('balanced');
   const [ttsText, setTtsText] = useState('');
   const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
   const awardedBlocksRef = useRef<Set<string>>(new Set());
@@ -486,6 +487,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     }
   }, [htmlContent]);
 
+  // Compute flex proportions based on focus mode
+  const iframeFlex = focusMode === 'simulation' ? 'flex-[5]' : focusMode === 'lessons' ? 'flex-[1]' : 'flex-[3]';
+  const lessonFlex = focusMode === 'lessons' ? 'flex-[5]' : focusMode === 'simulation' ? 'flex-[1]' : 'flex-[2]';
+
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
         {/* HUD */}
@@ -588,21 +593,47 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         <div className="flex-1 relative overflow-hidden flex flex-col">
             {contentUrl ? (
                 <>
-                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative ${lessonBlocks && lessonBlocks.length > 0 ? 'flex-[3]' : 'flex-1'}`}>
+                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative min-h-0 transition-all duration-300 ${
+                        isFullscreen && !document.fullscreenElement
+                            ? 'fixed inset-0 z-50'
+                            : lessonBlocks && lessonBlocks.length > 0 ? iframeFlex : 'flex-1'
+                    }`}>
                         <iframe
                             ref={iframeRef}
                             src={contentUrl}
                             className="w-full flex-1 border-none bg-white"
                             title="Resource Viewer"
                             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                            allow="fullscreen"
+                            allowFullScreen
                             onLoad={handleInteraction}
                         />
                         {/* Annotation drawing overlay on top of iframe */}
                         <AnnotationOverlay containerRef={iframeWrapperRef} assignmentId={assignmentId} />
                     </div>
+                    {/* Focus mode toggle bar */}
+                    {lessonBlocks && lessonBlocks.length > 0 && (
+                        <div className="flex items-center justify-center gap-1 bg-black/60 py-1 z-10 shrink-0">
+                            <button
+                                onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
+                                className={`p-1 rounded transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-400 bg-purple-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                title="Expand simulation"
+                            >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="w-8 h-0.5 bg-white/20 rounded-full mx-1" />
+                            <button
+                                onClick={() => setFocusMode(prev => prev === 'lessons' ? 'balanced' : 'lessons')}
+                                className={`p-1 rounded transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-400 bg-purple-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                title="Expand lessons"
+                            >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )}
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className="flex-[2] bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
+                        <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`}>
                             <LessonBlocks blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} />
                         </div>
                     )}
