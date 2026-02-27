@@ -2,8 +2,8 @@
   "rules": {
     "games": {
       "$gameId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
+        ".read": true,
+        ".write": true,
 
         "meta": {
           ".validate": "newData.hasChildren(['createdBy', 'gameType', 'status'])",
@@ -17,8 +17,7 @@
         },
 
         "players": {
-          "$uid": {
-            ".validate": "auth.uid === $uid",
+          "$playerId": {
             "name": { ".validate": "newData.isString()" },
             "ready": { ".validate": "newData.isBoolean()" },
             "connected": { ".validate": "newData.isBoolean()" },
@@ -27,38 +26,41 @@
         },
 
         "state": {
-          "$uid": {
-            ".write": "auth.uid === $uid",
-            ".read": "auth != null"
-          }
+          ".read": true,
+          ".write": true
         },
 
         "shared": {
-          ".read": "auth != null",
-          ".write": "auth != null"
+          ".read": true,
+          ".write": true
         },
 
         "moves": {
-          ".read": "auth != null",
-          ".write": "auth != null",
+          ".read": true,
+          ".write": true,
           "$moveId": {
             ".validate": "newData.hasChildren(['playerId', 'timestamp'])",
-            "playerId": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+            "playerId": { ".validate": "newData.isString()" },
             "timestamp": { ".validate": "newData.isNumber()" }
           }
         },
 
         "chat": {
-          ".read": "auth != null",
-          ".write": "auth != null"
+          ".read": true,
+          ".write": true
+        },
+
+        "answers": {
+          ".read": true,
+          ".write": true
         }
       }
     },
 
     "join_codes": {
-      ".read": "auth != null",
+      ".read": true,
       "$code": {
-        ".write": "auth != null",
+        ".write": true,
         ".validate": "newData.isString()"
       }
     }

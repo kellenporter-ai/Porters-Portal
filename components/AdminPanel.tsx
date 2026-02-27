@@ -232,16 +232,65 @@ const firebaseConfig = {
   databaseURL: "https://porters-portal-default-rtdb.firebaseio.com",
   projectId: "porters-portal",
   storageBucket: "porters-portal.firebasestorage.app",
-  messagingSenderId: "822abortersd",
+  messagingSenderId: "822085463019",
   appId: "1:822085463019:web:d55fa7e5b4516429d4aa52"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db   = firebase.database();
 const auth = firebase.auth();
 
-AUTHENTICATION — Sign in anonymously to get a UID for the security rules:
-await firebase.auth().signInAnonymously();
-const uid = firebase.auth().currentUser.uid;
+AUTHENTICATION — Use this hardened init block that handles all failure modes:
+
+let myUid = null;
+let authMode = 'none'; // 'anonymous' | 'fallback' | 'none'
+
+async function initAuth() {
+  // Detect file:// protocol — Firebase Auth cannot work without HTTP
+  if (location.protocol === 'file:') {
+    console.warn('Running from file:// — Firebase Auth disabled. Use a local server (npx serve .) or upload to Firebase Hosting.');
+    myUid = 'local_' + Math.random().toString(36).substring(2, 10);
+    authMode = 'fallback';
+    updateAuthStatus('LOCAL MODE', '#f59e0b');
+    return myUid;
+  }
+
+  try {
+    const cred = await auth.signInAnonymously();
+    myUid = cred.user.uid;
+    authMode = 'anonymous';
+    updateAuthStatus('ONLINE', '#4ade80');
+
+    // Presence listener — only after auth succeeds
+    db.ref('.info/connected').on('value', snap => {
+      updateAuthStatus(snap.val() ? 'ONLINE' : 'OFFLINE', snap.val() ? '#4ade80' : '#ef4444');
+    });
+
+    return myUid;
+  } catch (err) {
+    // Log the specific Firebase error code for diagnosis
+    console.error('Auth failed:', err.code, err.message);
+    const msg = err.code === 'auth/operation-not-allowed'
+      ? 'AUTH DENIED — Enable Anonymous auth in Firebase Console → Authentication → Sign-in method'
+      : err.code === 'auth/network-request-failed'
+      ? 'NETWORK ERROR — Check internet connection'
+      : 'AUTH FAIL: ' + (err.code || err.message);
+
+    // Fall back to a random local UID so the game still works
+    myUid = 'anon_' + Math.random().toString(36).substring(2, 10);
+    authMode = 'fallback';
+    updateAuthStatus(msg, '#ef4444');
+    console.warn('Using fallback UID:', myUid);
+    return myUid;
+  }
+}
+
+function updateAuthStatus(text, color) {
+  const el = document.getElementById('fb-status');
+  if (el) { el.textContent = '● ' + text; el.style.color = color; }
+}
+
+// Call initAuth() before any game logic that needs myUid
+await initAuth();
 
 REALTIME DATABASE STRUCTURE — Use this schema at path /games/{gameId}/:
 {
@@ -273,12 +322,11 @@ REALTIME DATABASE STRUCTURE — Use this schema at path /games/{gameId}/:
 }
 
 SECURITY RULES IN EFFECT:
-- /games/$gameId is readable and writable by any authenticated user
-- /games/$gameId/players/$uid is only writable by the matching uid
-- /games/$gameId/state/$uid is only writable by the matching uid (private state per player)
-- /games/$gameId/shared is readable and writable by any authenticated player in the game
-- /games/$gameId/moves requires playerId to match auth.uid
-- /join_codes/$code maps to a gameId for lobby discovery
+- /games/ and /join_codes/ paths are OPEN (read/write without auth) for classroom ease-of-use
+- Auth is OPTIONAL — the game works with or without anonymous sign-in
+- Data validation still enforces structure (meta must have createdBy, gameType, status; moves must have playerId, timestamp)
+- Use myUid (from initAuth above) as the player identifier — it will be a real Firebase UID if auth succeeded, or a fallback random ID if auth failed
+- Sensitive student data is NOT in the Realtime Database — it's protected separately in Firestore
 
 CRITICAL IMPLEMENTATION PATTERNS:
 
