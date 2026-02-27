@@ -141,7 +141,11 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
         <input
           type="text"
           value={answer}
-          onChange={e => setAnswer(e.target.value)}
+          onChange={e => {
+            const val = e.target.value;
+            setAnswer(val);
+            onResponseChange?.({ answer: val, answered: false, isCorrect: false });
+          }}
           disabled={answered}
           placeholder="Type your answer..."
           aria-label={block.content || 'Short answer'}
@@ -728,7 +732,11 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
         <input
           type="text"
           value={answer}
-          onChange={e => setAnswer(e.target.value)}
+          onChange={e => {
+            const val = e.target.value;
+            setAnswer(val);
+            onResponseChange?.({ answer: val, answered: false, isCorrect: false });
+          }}
           disabled={answered}
           placeholder="Type your answer..."
           aria-label={block.content || 'Linked question answer'}
