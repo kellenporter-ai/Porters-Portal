@@ -261,37 +261,35 @@ REALTIME DATABASE STRUCTURE — Use this schema at path /games/{gameId}/:
 {
   "meta": {
     "createdBy": "uid",
-    "gameType": "battleship|quiz-duel|word-race|etc",
     "status": "waiting|setup|playing|finished",
     "createdAt": timestamp,
     "joinCode": "ABCD",
-    "maxPlayers": 2,
-    "currentTurn": "uid-of-active-player"
+    "numTeams": 2,
+    "timerSecs": 20
+    // Add any game-specific meta fields you need (e.g., maxPlayers, currentTurn, etc.)
   },
   "players": {
-    "uid1": { "name": "Player 1", "ready": false, "connected": true, "lastSeen": timestamp },
-    "uid2": { "name": "Player 2", "ready": true, "connected": true, "lastSeen": timestamp },
-    "uid3": { "name": "Player 3", "ready": true, "connected": true, "lastSeen": timestamp }
+    "uid1": { "name": "Team Alpha", "teamId": 0, "ready": false, "connected": true, "lastSeen": timestamp },
+    "uid2": { "name": "Team Bravo", "teamId": 1, "ready": true,  "connected": true, "lastSeen": timestamp }
   },
   "state": {
-    "uid1": { /* player 1 private state (only uid1 can write) */ },
-    "uid2": { /* player 2 private state (only uid2 can write) */ },
-    "uid3": { /* player 3 private state (only uid3 can write) */ }
+    // Shared game state object — ALL game logic goes here
+    // Examples: phase, teams[], currentTeamIndex, scores, round, board, etc.
+    // Any player/device can read and write this — the host typically drives updates
   },
-  "shared": {
-    /* shared game state readable/writable by all players (e.g., board, scores, round) */
-  },
-  "moves": {
-    "moveId": { "playerId": "uid", "timestamp": 123, /* move-specific data */ }
+  "answers": {
+    "uid1": { "teamId": 0, "answer": "A", "correct": true, "ts": timestamp }
+    // Per-player answer submissions — useful for quiz/review games
   }
 }
+// /join_codes/{CODE} → gameId  (maps a 4-letter code to its game)
 
 SECURITY RULES IN EFFECT:
-- /games/ and /join_codes/ paths are OPEN (read/write without auth) for classroom ease-of-use
-- Auth is OPTIONAL — the game works with or without anonymous sign-in
-- Data validation still enforces structure (meta must have createdBy, gameType, status; moves must have playerId, timestamp)
+- /games/ and /join_codes/ paths are fully OPEN — no auth, no validation
+- Any device can read and write any game path
+- No Firebase Auth SDK is needed — do NOT include firebase-auth-compat.js
 - Use myUid (from the sessionStorage block above) as the player identifier for all database writes
-- Sensitive student data is NOT in the Realtime Database — it's protected separately in Firestore
+- The schema above is a guide, not enforced — add whatever fields your game needs
 
 CRITICAL IMPLEMENTATION PATTERNS:
 
@@ -299,47 +297,62 @@ CRITICAL IMPLEMENTATION PATTERNS:
 const gameId = db.ref('games').push().key;
 const joinCode = Math.random().toString(36).substring(2, 6).toUpperCase();
 await db.ref('games/' + gameId).set({
-  meta: { createdBy: uid, gameType: 'your-game', status: 'waiting', createdAt: Date.now(), joinCode, maxPlayers: N },
-  players: { [uid]: { name: playerName, ready: false, connected: true, lastSeen: Date.now() } }
+  meta: { createdBy: myUid, status: 'waiting', createdAt: Date.now(), joinCode, numTeams: N },
+  players: { [myUid]: { name: 'HOST', teamId: -1, ready: true, connected: true } }
 });
 await db.ref('join_codes/' + joinCode).set(gameId);
+// Clean up if host disconnects:
+db.ref('games/' + gameId).onDisconnect().remove();
+db.ref('join_codes/' + joinCode).onDisconnect().remove();
 
 2. JOINING (Any player):
 const snapshot = await db.ref('join_codes/' + code).get();
+if (!snapshot.exists()) { /* room not found */ return; }
 const gameId = snapshot.val();
-// Check player count before joining
-const playersSnap = await db.ref('games/' + gameId + '/players').get();
-const metaSnap = await db.ref('games/' + gameId + '/meta').get();
-const currentCount = playersSnap.exists() ? Object.keys(playersSnap.val()).length : 0;
-const maxPlayers = metaSnap.val().maxPlayers;
-if (currentCount >= maxPlayers) { /* lobby full */ return; }
-await db.ref('games/' + gameId + '/players/' + uid).set({ name: playerName, ready: false, connected: true, lastSeen: Date.now() });
+const gameSnap = await db.ref('games/' + gameId).get();
+const gameData = gameSnap.val();
+if (gameData.meta.status !== 'waiting') { /* game already started */ return; }
+// Find lowest unoccupied team slot
+const players = gameData.players || {};
+const takenIds = Object.values(players).map(p => p.teamId).filter(id => id >= 0);
+let slot = 0;
+while (takenIds.includes(slot)) slot++;
+if (slot >= gameData.meta.numTeams) { /* room full */ return; }
+await db.ref('games/' + gameId + '/players/' + myUid).set({
+  name: teamName, teamId: slot, ready: false, connected: true,
+  lastSeen: firebase.database.ServerValue.TIMESTAMP
+});
+db.ref('games/' + gameId + '/players/' + myUid + '/connected').onDisconnect().set(false);
 
-3. REAL-TIME LISTENERS (all players):
-db.ref('games/' + gameId).on('value', (snap) => {
-  const game = snap.val();
-  const players = game.players ? Object.entries(game.players) : [];
-  // Rebuild UI for all connected players
+3. SINGLE STATE LISTENER (all devices — this is the core pattern):
+// One listener on /games/{gameId}/state drives ALL screen transitions.
+// The host pushes state updates; all devices (including host) react to them.
+db.ref('games/' + gameId + '/state').on('value', snap => {
+  const gs = snap.val();
+  if (!gs) return;
+  switch (gs.phase) {
+    case 'setup':   handleSetup(gs); break;
+    case 'turn':    handleTurn(gs); break;
+    case 'playing': handlePlaying(gs); break;
+    case 'gameover': handleGameOver(gs); break;
+  }
 });
 
-4. PRESENCE / DISCONNECT (each player registers their own):
-db.ref('games/' + gameId + '/players/' + uid + '/connected').onDisconnect().set(false);
+4. PRESENCE / DISCONNECT:
+db.ref('games/' + gameId + '/players/' + myUid + '/connected').onDisconnect().set(false);
 
-5. MAKING MOVES:
-const moveRef = db.ref('games/' + gameId + '/moves').push();
-await moveRef.set({ playerId: uid, timestamp: Date.now(), /* game-specific data */ });
+5. LOBBY PLAYER LIST (live updates):
+db.ref('games/' + gameId + '/players').on('value', snap => {
+  const players = snap.val() || {};
+  // Render connected players, show count vs numTeams
+});
 
-6. TURN MANAGEMENT — cycle through player UIDs:
-// Get ordered player list and advance to next
-const playerIds = Object.keys(game.players);
-const currentIdx = playerIds.indexOf(currentTurnUid);
-const nextIdx = (currentIdx + 1) % playerIds.length;
-await db.ref('games/' + gameId + '/meta/currentTurn').set(playerIds[nextIdx]);
+6. STATE UPDATES (host pushes, all devices react via the listener above):
+await db.ref('games/' + gameId + '/state').update({
+  phase: 'playing', currentTeamIndex: 0, scores: [0, 0], round: 1
+});
 
-7. SHARED STATE — for data all players need (scores, board, round number):
-await db.ref('games/' + gameId + '/shared').update({ round: newRound, scores: updatedScores });
-
-8. GAME CLEANUP — When game ends:
+7. GAME CLEANUP — When game ends:
 await db.ref('games/' + gameId + '/meta/status').set('finished');
 await db.ref('join_codes/' + joinCode).remove();
 
@@ -353,16 +366,20 @@ UI FLOW:
 7. End screen shows results / leaderboard for all players
 
 IMPORTANT:
+- Do NOT include firebase-auth-compat.js — auth is not used
 - Use .on('value') for real-time listeners, NOT .once() — the whole point is live sync
+- Use a SINGLE state listener on /games/{gameId}/state that drives ALL UI transitions
+- The host device pushes state changes; all devices (including host) react via the listener
 - Always use onDisconnect() to handle players closing the tab
-- Use server timestamps (firebase.database.ServerValue.TIMESTAMP) where possible
+- Use firebase.database.ServerValue.TIMESTAMP for server-side timestamps
 - Clean up listeners with .off() when leaving the game
-- The join code should be short (4-6 chars) and easy to share verbally in a classroom
+- The join code should be short (4 chars) and easy to share verbally in a classroom
 - All players must see changes immediately — never cache stale state client-side
-- For turn-based games, enforce turns client-side by checking meta.currentTurn === uid before allowing actions
-- For team games, add a "team" field to each player entry and group accordingly
-- Handle late joins gracefully: if the game is already "playing", either block join or add as spectator
+- For turn-based games, only allow the active team's device to trigger actions
+- For team games, use teamId in each player entry and group accordingly
+- Handle late joins gracefully: if the game is already "playing", block join
 - Show a player roster / scoreboard that dynamically updates as players join, disconnect, or score
+- The host device is the "source of truth" — it resolves conflicts and advances game phases
 
 Output ONLY the complete HTML file — no explanation or commentary.`;
     }
