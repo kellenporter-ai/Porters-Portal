@@ -3,66 +3,12 @@
     "games": {
       "$gameId": {
         ".read": true,
-        ".write": true,
-
-        "meta": {
-          ".validate": "newData.hasChildren(['createdBy', 'gameType', 'status'])",
-          "createdBy": { ".validate": "newData.isString()" },
-          "gameType": { ".validate": "newData.isString()" },
-          "status": { ".validate": "newData.isString() && newData.val().matches(/^(waiting|setup|playing|finished)$/)" },
-          "createdAt": { ".validate": "newData.isNumber()" },
-          "joinCode": { ".validate": "newData.isString()" },
-          "maxPlayers": { ".validate": "newData.isNumber()" },
-          "currentTurn": { ".validate": "newData.isString()" }
-        },
-
-        "players": {
-          "$playerId": {
-            "name": { ".validate": "newData.isString()" },
-            "ready": { ".validate": "newData.isBoolean()" },
-            "connected": { ".validate": "newData.isBoolean()" },
-            "lastSeen": { ".validate": "newData.isNumber()" }
-          }
-        },
-
-        "state": {
-          ".read": true,
-          ".write": true
-        },
-
-        "shared": {
-          ".read": true,
-          ".write": true
-        },
-
-        "moves": {
-          ".read": true,
-          ".write": true,
-          "$moveId": {
-            ".validate": "newData.hasChildren(['playerId', 'timestamp'])",
-            "playerId": { ".validate": "newData.isString()" },
-            "timestamp": { ".validate": "newData.isNumber()" }
-          }
-        },
-
-        "chat": {
-          ".read": true,
-          ".write": true
-        },
-
-        "answers": {
-          ".read": true,
-          ".write": true
-        }
+        ".write": true
       }
     },
-
     "join_codes": {
       ".read": true,
-      "$code": {
-        ".write": true,
-        ".validate": "newData.isString()"
-      }
+      ".write": true
     }
   }
 }
