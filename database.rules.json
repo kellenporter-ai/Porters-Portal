@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "games": {
+      "$gameId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "join_codes": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
