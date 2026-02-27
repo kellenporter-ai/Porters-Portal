@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Submission, User, BugReport } from '../types';
-import { Clock, Bug, Clipboard, CheckCircle, Sparkles, Wrench, Lightbulb, BookOpen, Pencil, X as XIcon, Check, Trash2, TrendingUp, Users, BarChart3, Activity, FileJson, Code, Swords, GraduationCap, FlaskConical } from 'lucide-react';
+import { Clock, Bug, Clipboard, CheckCircle, Sparkles, Wrench, Lightbulb, BookOpen, Pencil, X as XIcon, Check, Trash2, TrendingUp, Users, BarChart3, Activity, FileJson, Code, Swords, GraduationCap, FlaskConical, Gamepad2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
@@ -36,7 +36,7 @@ const CATEGORY_BADGES: Record<string, { label: string; color: string }> = {
 };
 
 type MainTab = 'ACTIVITY' | 'BUGS' | 'AI';
-type AIMode = 'fix' | 'create_blocks' | 'create_html' | 'create_qbank' | 'create_study' | 'create_boss' | 'create_rubric' | 'discover';
+type AIMode = 'fix' | 'create_blocks' | 'create_html' | 'create_multiplayer' | 'create_qbank' | 'create_study' | 'create_boss' | 'create_rubric' | 'discover';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ submissions }) => {
   const toast = useToast();
@@ -204,6 +204,122 @@ window.addEventListener('load', () => PortalBridge.init());
 - Call PortalBridge.answer(questionId, correct, attempts) when a student answers (awards XP)
 - Call PortalBridge.complete(score, total, correct) when the activity is finished
 - Call PortalBridge.save(stateObj, currentQuestionIndex) periodically to save progress
+
+Output ONLY the complete HTML file — no explanation or commentary.`;
+    }
+
+    if (aiMode === 'create_multiplayer') {
+      return `You are an expert educational game designer for "Porter Portal", an LMS built with React/TypeScript and Firebase.
+
+Create a standalone HTML multiplayer interactive activity that uses Firebase Realtime Database for real-time player synchronization.
+${ctx ? `\nACTIVITY DESCRIPTION:\n${ctx}\n` : ''}
+REQUIREMENTS:
+- Self-contained single HTML file (inline CSS + JS)
+- Dark theme matching the portal (#0f0720 background, white/gray text, purple/blue accents)
+- Mobile-responsive design
+- Two-player real-time multiplayer via Firebase Realtime Database
+- Game lobby with join codes so students can find each other
+
+FIREBASE REALTIME DATABASE SETUP — Include these scripts and config:
+<script src="https://www.gstatic.com/firebasejs/11.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.7.1/firebase-database-compat.js"></script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAGUwSeJVCLLz_UTIFj4H3qvJnlFnvNjSw",
+  authDomain: "porters-portal.firebaseapp.com",
+  databaseURL: "https://porters-portal-default-rtdb.firebaseio.com",
+  projectId: "porters-portal",
+  storageBucket: "porters-portal.firebasestorage.app",
+  messagingSenderId: "822abortersd",
+  appId: "1:822085463019:web:d55fa7e5b4516429d4aa52"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+AUTHENTICATION — Sign in anonymously to get a UID for the security rules:
+await firebase.auth().signInAnonymously();
+const uid = firebase.auth().currentUser.uid;
+
+REALTIME DATABASE STRUCTURE — Use this schema at path /games/{gameId}/:
+{
+  "meta": {
+    "createdBy": "uid",
+    "gameType": "battleship|quiz-duel|word-race|etc",
+    "status": "waiting|setup|playing|finished",
+    "createdAt": timestamp,
+    "joinCode": "ABCD"
+  },
+  "players": {
+    "uid1": { "name": "Player 1", "ready": false, "connected": true, "lastSeen": timestamp },
+    "uid2": { "name": "Player 2", "ready": true, "connected": true, "lastSeen": timestamp }
+  },
+  "state": {
+    "uid1": { /* player 1 private state (only uid1 can write) */ },
+    "uid2": { /* player 2 private state (only uid2 can write) */ }
+  },
+  "moves": {
+    "moveId": { "playerId": "uid", "timestamp": 123, /* move-specific data */ }
+  }
+}
+
+SECURITY RULES IN EFFECT:
+- /games/$gameId is readable and writable by any authenticated user
+- /games/$gameId/players/$uid is only writable by the matching uid
+- /games/$gameId/state/$uid is only writable by the matching uid (private state per player)
+- /games/$gameId/moves requires playerId to match auth.uid
+- /join_codes/$code maps to a gameId for lobby discovery
+
+CRITICAL IMPLEMENTATION PATTERNS:
+
+1. GAME CREATION (Host):
+const gameId = db.ref('games').push().key;
+const joinCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+await db.ref('games/' + gameId).set({
+  meta: { createdBy: uid, gameType: 'your-game', status: 'waiting', createdAt: Date.now(), joinCode },
+  players: { [uid]: { name: playerName, ready: false, connected: true, lastSeen: Date.now() } }
+});
+await db.ref('join_codes/' + joinCode).set(gameId);
+
+2. JOINING (Guest):
+const snapshot = await db.ref('join_codes/' + code).get();
+const gameId = snapshot.val();
+await db.ref('games/' + gameId + '/players/' + uid).set({ name: playerName, ready: false, connected: true, lastSeen: Date.now() });
+
+3. REAL-TIME LISTENERS (both players):
+db.ref('games/' + gameId).on('value', (snap) => { /* update UI from snap.val() */ });
+
+4. PRESENCE / DISCONNECT:
+db.ref('games/' + gameId + '/players/' + uid + '/connected').onDisconnect().set(false);
+
+5. MAKING MOVES:
+const moveRef = db.ref('games/' + gameId + '/moves').push();
+await moveRef.set({ playerId: uid, timestamp: Date.now(), x: col, y: row, /* game data */ });
+
+6. TURN MANAGEMENT — use move count or a "currentTurn" field in meta:
+await db.ref('games/' + gameId + '/meta/currentTurn').set(opponentUid);
+
+7. GAME CLEANUP — When game ends:
+await db.ref('games/' + gameId + '/meta/status').set('finished');
+await db.ref('join_codes/' + joinCode).remove();
+
+UI FLOW:
+1. Start screen — Enter name, choose "Create Game" or "Join Game"
+2. If creating: Show a 4-character join code for the other player
+3. If joining: Enter the join code
+4. Both players see a lobby showing who is connected
+5. When both ready, game begins with real-time sync
+6. Game plays with live updates via Firebase listeners
+7. End screen shows results
+
+IMPORTANT:
+- Use .on('value') for real-time listeners, NOT .once() — the whole point is live sync
+- Always use onDisconnect() to handle players closing the tab
+- Use server timestamps (firebase.database.ServerValue.TIMESTAMP) where possible
+- Clean up listeners with .off() when leaving the game
+- The join code should be short (4-6 chars) and easy to share verbally in a classroom
+- Test that BOTH players see changes immediately — if state is private to one player's /state/$uid path, the other player needs to read from the correct path
 
 Output ONLY the complete HTML file — no explanation or commentary.`;
     }
@@ -613,6 +729,7 @@ For each suggestion, briefly describe the feature/improvement, the expected bene
               {([
                 { key: 'create_blocks' as AIMode, icon: <FileJson className="w-4 h-4" />, label: 'Lesson Blocks', desc: 'JSON blocks for Resource Editor' },
                 { key: 'create_html' as AIMode, icon: <Code className="w-4 h-4" />, label: 'HTML Interactive', desc: 'Standalone HTML activity' },
+                { key: 'create_multiplayer' as AIMode, icon: <Gamepad2 className="w-4 h-4" />, label: 'Multiplayer App', desc: 'Real-time 2-player game via RTDB' },
                 { key: 'create_qbank' as AIMode, icon: <FlaskConical className="w-4 h-4" />, label: 'Question Bank', desc: '150 tiered questions (9 formats)' },
                 { key: 'create_study' as AIMode, icon: <GraduationCap className="w-4 h-4" />, label: 'Study Material', desc: 'Reading guide with LaTeX math' },
                 { key: 'create_boss' as AIMode, icon: <Swords className="w-4 h-4" />, label: 'Quiz Boss', desc: '200 tiered boss questions' },
@@ -658,6 +775,7 @@ For each suggestion, briefly describe the feature/improvement, the expected bene
                 {aiMode === 'fix' ? 'Additional Context' :
                  aiMode === 'create_blocks' ? 'Topic & Instructions' :
                  aiMode === 'create_html' ? 'Activity Description' :
+                 aiMode === 'create_multiplayer' ? 'Game / Activity Description' :
                  aiMode === 'create_qbank' ? 'Resource / Topic' :
                  aiMode === 'create_study' ? 'Topic / Practice Set' :
                  aiMode === 'create_boss' ? 'Boss / Class / Topic' :
@@ -672,6 +790,7 @@ For each suggestion, briefly describe the feature/improvement, the expected bene
                   aiMode === 'fix' ? 'Extra context about the bugs or how to reproduce them...'
                   : aiMode === 'create_blocks' ? 'Describe the lesson topic, grade level, specific blocks you want...'
                   : aiMode === 'create_html' ? 'Describe the interactive activity (simulation, game, lab)...'
+                  : aiMode === 'create_multiplayer' ? 'Describe the multiplayer game (e.g., Battleship, Quiz Duel, Word Race)...'
                   : aiMode === 'create_qbank' ? 'Paste the resource content or describe the topic for questions...'
                   : aiMode === 'create_study' ? 'Describe the topic or paste the practice set content...'
                   : aiMode === 'create_boss' ? 'Boss name, class, and topic for quiz boss encounter...'

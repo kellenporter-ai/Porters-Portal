@@ -1,0 +1,59 @@
+{
+  "rules": {
+    "games": {
+      "$gameId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+
+        "meta": {
+          ".validate": "newData.hasChildren(['createdBy', 'gameType', 'status'])",
+          "createdBy": { ".validate": "newData.isString()" },
+          "gameType": { ".validate": "newData.isString()" },
+          "status": { ".validate": "newData.isString() && newData.val().matches(/^(waiting|setup|playing|finished)$/)" },
+          "createdAt": { ".validate": "newData.isNumber()" },
+          "joinCode": { ".validate": "newData.isString()" }
+        },
+
+        "players": {
+          "$uid": {
+            ".validate": "auth.uid === $uid",
+            "name": { ".validate": "newData.isString()" },
+            "ready": { ".validate": "newData.isBoolean()" },
+            "connected": { ".validate": "newData.isBoolean()" },
+            "lastSeen": { ".validate": "newData.isNumber()" }
+          }
+        },
+
+        "state": {
+          "$uid": {
+            ".write": "auth.uid === $uid",
+            ".read": "auth != null"
+          }
+        },
+
+        "moves": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+          "$moveId": {
+            ".validate": "newData.hasChildren(['playerId', 'timestamp'])",
+            "playerId": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+            "timestamp": { ".validate": "newData.isNumber()" }
+          }
+        },
+
+        "chat": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
+
+    "join_codes": {
+      ".read": "auth != null",
+      "$code": {
+        ".write": "auth != null",
+        ".validate": "newData.isString()"
+      }
+    }
+  }
+}
