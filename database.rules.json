@@ -11,7 +11,9 @@
           "gameType": { ".validate": "newData.isString()" },
           "status": { ".validate": "newData.isString() && newData.val().matches(/^(waiting|setup|playing|finished)$/)" },
           "createdAt": { ".validate": "newData.isNumber()" },
-          "joinCode": { ".validate": "newData.isString()" }
+          "joinCode": { ".validate": "newData.isString()" },
+          "maxPlayers": { ".validate": "newData.isNumber()" },
+          "currentTurn": { ".validate": "newData.isString()" }
         },
 
         "players": {
@@ -29,6 +31,11 @@
             ".write": "auth.uid === $uid",
             ".read": "auth != null"
           }
+        },
+
+        "shared": {
+          ".read": "auth != null",
+          ".write": "auth != null"
         },
 
         "moves": {

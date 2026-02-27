@@ -217,8 +217,9 @@ REQUIREMENTS:
 - Self-contained single HTML file (inline CSS + JS)
 - Dark theme matching the portal (#0f0720 background, white/gray text, purple/blue accents)
 - Mobile-responsive design
-- Two-player real-time multiplayer via Firebase Realtime Database
-- Game lobby with join codes so students can find each other
+- Multiplayer via Firebase Realtime Database (support 2+ players as the game requires)
+- Game lobby with join codes so students can find each other in a classroom setting
+- The host sets a maxPlayers count; game starts when enough players join and all are ready
 
 FIREBASE REALTIME DATABASE SETUP — Include these scripts and config:
 <script src="https://www.gstatic.com/firebasejs/11.7.1/firebase-app-compat.js"></script>
@@ -249,15 +250,22 @@ REALTIME DATABASE STRUCTURE — Use this schema at path /games/{gameId}/:
     "gameType": "battleship|quiz-duel|word-race|etc",
     "status": "waiting|setup|playing|finished",
     "createdAt": timestamp,
-    "joinCode": "ABCD"
+    "joinCode": "ABCD",
+    "maxPlayers": 2,
+    "currentTurn": "uid-of-active-player"
   },
   "players": {
     "uid1": { "name": "Player 1", "ready": false, "connected": true, "lastSeen": timestamp },
-    "uid2": { "name": "Player 2", "ready": true, "connected": true, "lastSeen": timestamp }
+    "uid2": { "name": "Player 2", "ready": true, "connected": true, "lastSeen": timestamp },
+    "uid3": { "name": "Player 3", "ready": true, "connected": true, "lastSeen": timestamp }
   },
   "state": {
     "uid1": { /* player 1 private state (only uid1 can write) */ },
-    "uid2": { /* player 2 private state (only uid2 can write) */ }
+    "uid2": { /* player 2 private state (only uid2 can write) */ },
+    "uid3": { /* player 3 private state (only uid3 can write) */ }
+  },
+  "shared": {
+    /* shared game state readable/writable by all players (e.g., board, scores, round) */
   },
   "moves": {
     "moveId": { "playerId": "uid", "timestamp": 123, /* move-specific data */ }
@@ -268,6 +276,7 @@ SECURITY RULES IN EFFECT:
 - /games/$gameId is readable and writable by any authenticated user
 - /games/$gameId/players/$uid is only writable by the matching uid
 - /games/$gameId/state/$uid is only writable by the matching uid (private state per player)
+- /games/$gameId/shared is readable and writable by any authenticated player in the game
 - /games/$gameId/moves requires playerId to match auth.uid
 - /join_codes/$code maps to a gameId for lobby discovery
 
@@ -277,41 +286,58 @@ CRITICAL IMPLEMENTATION PATTERNS:
 const gameId = db.ref('games').push().key;
 const joinCode = Math.random().toString(36).substring(2, 6).toUpperCase();
 await db.ref('games/' + gameId).set({
-  meta: { createdBy: uid, gameType: 'your-game', status: 'waiting', createdAt: Date.now(), joinCode },
+  meta: { createdBy: uid, gameType: 'your-game', status: 'waiting', createdAt: Date.now(), joinCode, maxPlayers: N },
   players: { [uid]: { name: playerName, ready: false, connected: true, lastSeen: Date.now() } }
 });
 await db.ref('join_codes/' + joinCode).set(gameId);
 
-2. JOINING (Guest):
+2. JOINING (Any player):
 const snapshot = await db.ref('join_codes/' + code).get();
 const gameId = snapshot.val();
+// Check player count before joining
+const playersSnap = await db.ref('games/' + gameId + '/players').get();
+const metaSnap = await db.ref('games/' + gameId + '/meta').get();
+const currentCount = playersSnap.exists() ? Object.keys(playersSnap.val()).length : 0;
+const maxPlayers = metaSnap.val().maxPlayers;
+if (currentCount >= maxPlayers) { /* lobby full */ return; }
 await db.ref('games/' + gameId + '/players/' + uid).set({ name: playerName, ready: false, connected: true, lastSeen: Date.now() });
 
-3. REAL-TIME LISTENERS (both players):
-db.ref('games/' + gameId).on('value', (snap) => { /* update UI from snap.val() */ });
+3. REAL-TIME LISTENERS (all players):
+db.ref('games/' + gameId).on('value', (snap) => {
+  const game = snap.val();
+  const players = game.players ? Object.entries(game.players) : [];
+  // Rebuild UI for all connected players
+});
 
-4. PRESENCE / DISCONNECT:
+4. PRESENCE / DISCONNECT (each player registers their own):
 db.ref('games/' + gameId + '/players/' + uid + '/connected').onDisconnect().set(false);
 
 5. MAKING MOVES:
 const moveRef = db.ref('games/' + gameId + '/moves').push();
-await moveRef.set({ playerId: uid, timestamp: Date.now(), x: col, y: row, /* game data */ });
+await moveRef.set({ playerId: uid, timestamp: Date.now(), /* game-specific data */ });
 
-6. TURN MANAGEMENT — use move count or a "currentTurn" field in meta:
-await db.ref('games/' + gameId + '/meta/currentTurn').set(opponentUid);
+6. TURN MANAGEMENT — cycle through player UIDs:
+// Get ordered player list and advance to next
+const playerIds = Object.keys(game.players);
+const currentIdx = playerIds.indexOf(currentTurnUid);
+const nextIdx = (currentIdx + 1) % playerIds.length;
+await db.ref('games/' + gameId + '/meta/currentTurn').set(playerIds[nextIdx]);
 
-7. GAME CLEANUP — When game ends:
+7. SHARED STATE — for data all players need (scores, board, round number):
+await db.ref('games/' + gameId + '/shared').update({ round: newRound, scores: updatedScores });
+
+8. GAME CLEANUP — When game ends:
 await db.ref('games/' + gameId + '/meta/status').set('finished');
 await db.ref('join_codes/' + joinCode).remove();
 
 UI FLOW:
 1. Start screen — Enter name, choose "Create Game" or "Join Game"
-2. If creating: Show a 4-character join code for the other player
+2. If creating: Set max players (if the game supports variable counts), show a 4-character join code
 3. If joining: Enter the join code
-4. Both players see a lobby showing who is connected
-5. When both ready, game begins with real-time sync
-6. Game plays with live updates via Firebase listeners
-7. End screen shows results
+4. Lobby screen — Shows all connected players, their ready status, and how many slots remain
+5. Host can start the game when all players are ready (or auto-start when full + all ready)
+6. Game plays with live updates via Firebase listeners; show whose turn it is
+7. End screen shows results / leaderboard for all players
 
 IMPORTANT:
 - Use .on('value') for real-time listeners, NOT .once() — the whole point is live sync
@@ -319,7 +345,11 @@ IMPORTANT:
 - Use server timestamps (firebase.database.ServerValue.TIMESTAMP) where possible
 - Clean up listeners with .off() when leaving the game
 - The join code should be short (4-6 chars) and easy to share verbally in a classroom
-- Test that BOTH players see changes immediately — if state is private to one player's /state/$uid path, the other player needs to read from the correct path
+- All players must see changes immediately — never cache stale state client-side
+- For turn-based games, enforce turns client-side by checking meta.currentTurn === uid before allowing actions
+- For team games, add a "team" field to each player entry and group accordingly
+- Handle late joins gracefully: if the game is already "playing", either block join or add as spectator
+- Show a player roster / scoreboard that dynamically updates as players join, disconnect, or score
 
 Output ONLY the complete HTML file — no explanation or commentary.`;
     }
@@ -729,7 +759,7 @@ For each suggestion, briefly describe the feature/improvement, the expected bene
               {([
                 { key: 'create_blocks' as AIMode, icon: <FileJson className="w-4 h-4" />, label: 'Lesson Blocks', desc: 'JSON blocks for Resource Editor' },
                 { key: 'create_html' as AIMode, icon: <Code className="w-4 h-4" />, label: 'HTML Interactive', desc: 'Standalone HTML activity' },
-                { key: 'create_multiplayer' as AIMode, icon: <Gamepad2 className="w-4 h-4" />, label: 'Multiplayer App', desc: 'Real-time 2-player game via RTDB' },
+                { key: 'create_multiplayer' as AIMode, icon: <Gamepad2 className="w-4 h-4" />, label: 'Multiplayer App', desc: 'Real-time multiplayer game via RTDB' },
                 { key: 'create_qbank' as AIMode, icon: <FlaskConical className="w-4 h-4" />, label: 'Question Bank', desc: '150 tiered questions (9 formats)' },
                 { key: 'create_study' as AIMode, icon: <GraduationCap className="w-4 h-4" />, label: 'Study Material', desc: 'Reading guide with LaTeX math' },
                 { key: 'create_boss' as AIMode, icon: <Swords className="w-4 h-4" />, label: 'Quiz Boss', desc: '200 tiered boss questions' },
