@@ -450,6 +450,55 @@ export const setAdminClaim = onRequest(async (req, res) => {
   }
 });
 
+// ============================================================
+// TELEMETRY FEEDBACK (ported from client lib/telemetry.ts)
+// ============================================================
+
+interface TelemetryThresholds {
+  flagPasteCount: number;
+  flagMinEngagement: number;
+  supportKeystrokes: number;
+  supportMinEngagement: number;
+  successMinKeystrokes: number;
+}
+
+const DEFAULT_THRESHOLDS: TelemetryThresholds = {
+  flagPasteCount: 5,
+  flagMinEngagement: 300,
+  supportKeystrokes: 500,
+  supportMinEngagement: 1800,
+  successMinKeystrokes: 100,
+};
+
+function calculateFeedbackServerSide(
+  metrics: { pasteCount: number; engagementTime: number; keystrokes: number; tabSwitchCount?: number },
+  thresholds: Partial<TelemetryThresholds> = {}
+): { status: string; feedback: string } {
+  const t = { ...DEFAULT_THRESHOLDS, ...thresholds };
+
+  // Assessment-specific: excessive tab switching
+  if ((metrics.tabSwitchCount || 0) > 5) {
+    return { status: "FLAGGED", feedback: "Excessive tab switching during assessment." };
+  }
+
+  // AI Usage Suspicion: High pastes, very low engagement time
+  if (metrics.pasteCount > t.flagPasteCount && metrics.engagementTime < t.flagMinEngagement) {
+    return { status: "FLAGGED", feedback: "AI Usage Suspected: Abnormal frequency of pasted content detected." };
+  }
+
+  // Support Needed: High keystrokes, very long engagement
+  if (metrics.keystrokes > t.supportKeystrokes && metrics.engagementTime > t.supportMinEngagement) {
+    return { status: "SUPPORT_NEEDED", feedback: "Student may be struggling — high effort with extended time." };
+  }
+
+  // Success: No pastes, steady progress
+  if (metrics.pasteCount === 0 && metrics.keystrokes > t.successMinKeystrokes) {
+    return { status: "SUCCESS", feedback: "Excellent independent work." };
+  }
+
+  return { status: "NORMAL", feedback: "Assignment submitted successfully." };
+}
+
 // ==========================================
 // GAMIFICATION CLOUD FUNCTIONS
 // ==========================================
@@ -1525,6 +1574,7 @@ export const submitEngagement = onCall(async (request) => {
   const keystrokes = Number(metrics.keystrokes) || 0;
   const pasteCount = Number(metrics.pasteCount) || 0;
   const clickCount = Number(metrics.clickCount) || 0;
+  const tabSwitchCount = Number(metrics.tabSwitchCount) || 0;
 
   // Reject impossible values
   if (engagementTime < 10) {
@@ -1538,6 +1588,7 @@ export const submitEngagement = onCall(async (request) => {
   // Calculate XP server-side — read per-class rate from config if available
   const db = admin.firestore();
   let xpPerMinute = DEFAULT_XP_PER_MINUTE;
+  let thresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
     const configSnap = await db.collection("class_configs")
       .where("className", "==", classType).limit(1).get();
@@ -1546,6 +1597,7 @@ export const submitEngagement = onCall(async (request) => {
       if (configData.xpPerMinute && configData.xpPerMinute > 0) {
         xpPerMinute = Math.min(configData.xpPerMinute, 100); // Cap at 100/min safety
       }
+      thresholds = configData.telemetryThresholds || {};
     }
   }
 
@@ -1579,14 +1631,15 @@ export const submitEngagement = onCall(async (request) => {
   });
 
   // Create submission
+  const validatedMetrics = { engagementTime, keystrokes, pasteCount, tabSwitchCount };
   const submission = {
     userId: uid,
     userName: request.data.userName || "Student",
     assignmentId,
     assignmentTitle: assignmentTitle || "",
-    metrics: { engagementTime, keystrokes, pasteCount, clickCount, startTime: metrics.startTime || 0, lastActive: metrics.lastActive || 0 },
+    metrics: { engagementTime, keystrokes, pasteCount, clickCount, tabSwitchCount, startTime: metrics.startTime || 0, lastActive: metrics.lastActive || 0 },
     submittedAt: new Date().toISOString(),
-    status: "SUCCESS",
+    status: calculateFeedbackServerSide(validatedMetrics, thresholds).status,
     score: xpEarned,
     privateComments: [],
     hasUnreadAdmin: false,
@@ -1612,7 +1665,167 @@ export const submitEngagement = onCall(async (request) => {
   });
 
   logger.info(`submitEngagement: ${uid} earned ${xpEarned} XP (${multiplier}x) on ${assignmentId}`);
-  return { xpEarned, baseXP, multiplier, leveledUp, status: "SUCCESS" };
+  return { xpEarned, baseXP, multiplier, leveledUp, status: submission.status };
+});
+
+// ==========================================
+// SUBMIT ASSESSMENT — Server-side grading + telemetry
+// ==========================================
+export const submitAssessment = onCall(async (request) => {
+  // 1. Verify auth
+  if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+  const uid = request.auth.uid;
+
+  const { assignmentId, userName, responses, metrics, classType } = request.data;
+  if (!assignmentId || !responses || !metrics) {
+    throw new HttpsError("invalid-argument", "Missing required fields");
+  }
+
+  // 2. Read assignment to get answer keys
+  const db = admin.firestore();
+  const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
+  if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
+  const assignment = assignmentSnap.data()!;
+
+  if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
+
+  // 3. Grade auto-gradable blocks
+  const blocks = assignment.lessonBlocks || [];
+  let correct = 0;
+  let total = 0;
+  const perBlock: Record<string, { correct: boolean; answer: unknown }> = {};
+
+  for (const block of blocks) {
+    if (["MC", "SHORT_ANSWER", "SORTING", "RANKING"].includes(block.type)) {
+      total++;
+      const resp = responses[block.id];
+      let isCorrect = false;
+
+      if (block.type === "MC" && resp?.selected === block.correctAnswer) {
+        isCorrect = true;
+      }
+      if (block.type === "SHORT_ANSWER") {
+        const accepted = (block.acceptedAnswers || []).map((a: string) => a.toLowerCase().trim());
+        isCorrect = accepted.includes((resp?.answer || "").toLowerCase().trim());
+      }
+      if (block.type === "SORTING") {
+        const sortItems = block.sortItems || [];
+        const placements = resp?.placements || {};
+        isCorrect = sortItems.length > 0 && sortItems.every((item: { correct: string }, idx: number) =>
+          placements[String(idx)] === item.correct
+        );
+      }
+      if (block.type === "RANKING") {
+        const items = block.items || [];
+        const order = resp?.order || [];
+        isCorrect = items.length > 0 && order.length === items.length &&
+          order.every((o: { item: string }, idx: number) => o.item === items[idx]);
+      }
+
+      if (isCorrect) correct++;
+      perBlock[block.id] = { correct: isCorrect, answer: resp };
+    }
+  }
+
+  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  // 4. Determine attempt number
+  const existingSubs = await db.collection("submissions")
+    .where("userId", "==", uid)
+    .where("assignmentId", "==", assignmentId)
+    .where("isAssessment", "==", true)
+    .get();
+  const attemptNumber = existingSubs.size + 1;
+
+  // 5. Calculate telemetry status
+  let assessmentThresholds: Partial<TelemetryThresholds> = {};
+  if (classType) {
+    const configSnap = await db.collection("class_configs")
+      .where("className", "==", classType).limit(1).get();
+    if (!configSnap.empty) {
+      assessmentThresholds = configSnap.docs[0].data().telemetryThresholds || {};
+    }
+  }
+  const { status } = calculateFeedbackServerSide({
+    pasteCount: metrics.pasteCount || 0,
+    engagementTime: metrics.engagementTime || 0,
+    keystrokes: metrics.keystrokes || 0,
+    tabSwitchCount: metrics.tabSwitchCount || 0,
+  }, assessmentThresholds);
+
+  // 6. Create submission doc
+  const assessmentSubmission = {
+    userId: uid,
+    userName: userName || "Student",
+    assignmentId,
+    assignmentTitle: assignment.title || "",
+    metrics: {
+      engagementTime: metrics.engagementTime || 0,
+      keystrokes: metrics.keystrokes || 0,
+      pasteCount: metrics.pasteCount || 0,
+      clickCount: metrics.clickCount || 0,
+      startTime: metrics.startTime || 0,
+      lastActive: metrics.lastActive || 0,
+      tabSwitchCount: metrics.tabSwitchCount || 0,
+      perBlockTiming: metrics.perBlockTiming || {},
+      typingCadence: metrics.typingCadence || {},
+    },
+    submittedAt: new Date().toISOString(),
+    status,
+    score: percentage,
+    isAssessment: true,
+    attemptNumber,
+    assessmentScore: { correct, total, percentage, perBlock },
+    blockResponses: responses,
+    privateComments: [],
+    hasUnreadAdmin: true,
+    hasUnreadStudent: false,
+  };
+
+  await db.collection("submissions").add(assessmentSubmission);
+
+  // 7. Award XP scaled by percentage
+  const baseXP = Math.round(percentage * 0.5); // 0-50 XP
+  let xpEarned = 0;
+  if (baseXP > 0) {
+    // Get active multiplier
+    const effectiveClass = classType || "Uncategorized";
+    const now = new Date().toISOString();
+    const xpEventsSnap = await db.collection("xp_events")
+      .where("isActive", "==", true)
+      .get();
+    let multiplier = 1;
+    xpEventsSnap.docs.forEach((d) => {
+      const ev = d.data();
+      if (ev.expiresAt && ev.expiresAt < now) return;
+      if (ev.scheduledAt && ev.scheduledAt > now) return;
+      if (ev.type === "GLOBAL" || ev.targetClass === effectiveClass) {
+        multiplier = Math.max(multiplier, ev.multiplier || 1);
+      }
+    });
+    xpEarned = Math.round(baseXP * multiplier);
+
+    const userRef = db.doc(`users/${uid}`);
+    await db.runTransaction(async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+      if (!userSnap.exists) return;
+      const data = userSnap.data()!;
+      const gam = data.gamification || {};
+      const classXp = gam.classXp || {};
+      transaction.update(userRef, {
+        "gamification.xp": (gam.xp || 0) + xpEarned,
+        [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
+      });
+    });
+  }
+
+  logger.info(`submitAssessment: ${uid} scored ${percentage}% (${correct}/${total}) on ${assignmentId}, attempt #${attemptNumber}`);
+  return {
+    assessmentScore: { correct, total, percentage, perBlock },
+    attemptNumber,
+    status,
+    xpEarned,
+  };
 });
 
 // ==========================================

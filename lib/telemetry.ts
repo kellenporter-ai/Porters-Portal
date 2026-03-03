@@ -94,6 +94,9 @@ export const createInitialMetrics = (): TelemetryMetrics => ({
   clickCount: 0,
   startTime: Date.now(),
   lastActive: Date.now(),
+  tabSwitchCount: 0,
+  perBlockTiming: {},
+  typingCadence: { avgIntervalMs: 0, burstCount: 0 },
 });
 
 // ========================================

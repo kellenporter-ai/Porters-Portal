@@ -133,6 +133,13 @@ export interface TelemetryMetrics {
   clickCount: number;
   startTime: number;
   lastActive: number;
+  // Assessment-specific telemetry
+  tabSwitchCount?: number;
+  perBlockTiming?: Record<string, number>;  // blockId -> seconds spent
+  typingCadence?: {
+    avgIntervalMs?: number;
+    burstCount?: number;
+  };
 }
 
 // RPG TYPES
@@ -349,6 +356,14 @@ export interface Assignment {
   scheduledAt?: string; // ISO date — if set & future, hidden from students until this time
   targetSections?: string[]; // e.g. ["Period 1", "Period 3"] — empty/undefined = all sections
   lessonBlocks?: LessonBlock[];
+  // Assessment mode
+  isAssessment?: boolean;
+  assessmentConfig?: {
+    allowResubmission?: boolean;    // default true
+    maxAttempts?: number;           // 0 = unlimited
+    showScoreOnSubmit?: boolean;    // default true
+    lockNavigation?: boolean;       // default true for assessments
+  };
 }
 
 export interface Submission {
@@ -366,6 +381,16 @@ export interface Submission {
   hasUnreadStudent?: boolean; 
   isPinned?: boolean;
   isArchived?: boolean;
+  // Assessment-specific fields
+  isAssessment?: boolean;
+  attemptNumber?: number;
+  assessmentScore?: {
+    correct: number;
+    total: number;
+    percentage: number;
+    perBlock: Record<string, { correct: boolean; answer: unknown }>;
+  };
+  blockResponses?: Record<string, unknown>;
 }
 
 export interface ChatMessage {

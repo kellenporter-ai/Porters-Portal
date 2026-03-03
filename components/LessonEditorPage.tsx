@@ -5,7 +5,7 @@ import {
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
-  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock
+  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield
 } from 'lucide-react';
 import { useDebounce } from '../lib/rateLimiting';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
@@ -243,6 +243,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [resScheduleDate, setResScheduleDate] = useState('');
   const [resDueDate, setResDueDate] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isAssessment, setIsAssessment] = useState(false);
+  const [assessmentConfig, setAssessmentConfig] = useState({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true });
 
   const classSections = useMemo(() => {
     const firstClass = Array.from(resClasses)[0];
@@ -330,6 +332,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setResSections(assignment.targetSections || []);
       setResScheduleDate(assignment.scheduledAt ? assignment.scheduledAt.slice(0, 16) : '');
       setResDueDate(assignment.dueDate ? assignment.dueDate.slice(0, 16) : '');
+      setIsAssessment(assignment.isAssessment || false);
+      setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true, ...assignment.assessmentConfig });
       setExpandedBlock(null);
       setPreviewMode(false);
       setHasUnsavedChanges(false);
@@ -350,6 +354,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     setResSections([]);
     setResScheduleDate('');
     setResDueDate('');
+    setIsAssessment(false);
+    setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true });
     setExpandedBlock(null);
     setPreviewMode(false);
     setHasUnsavedChanges(false);
@@ -402,13 +408,15 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       status,
       lessonBlocks: blocks,
       contentUrl: resContentUrl,
+      isAssessment,
+      assessmentConfig: isAssessment ? assessmentConfig : undefined,
     };
     if (resSections.length > 0) base.targetSections = resSections;
     if (scheduledAt) base.scheduledAt = new Date(scheduledAt).toISOString();
     if (resDueDate) base.dueDate = new Date(resDueDate).toISOString();
     if (selectedAssignment?.id && !isNewResource) base.id = selectedAssignment.id;
     return base;
-  }, [resTitle, resDescription, resUnit, resCategory, blocks, resContentUrl, resSections, resDueDate, selectedAssignment, isNewResource]);
+  }, [resTitle, resDescription, resUnit, resCategory, blocks, resContentUrl, resSections, resDueDate, selectedAssignment, isNewResource, isAssessment, assessmentConfig]);
 
   const handleDeploy = useCallback(async (status: AssignmentStatus, scheduledAt?: string) => {
     if (!resTitle.trim()) { toast.error('Title is required.'); return; }
@@ -681,6 +689,40 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <div className="grid grid-cols-2 gap-3">
                     <div><label className={labelClass}>Schedule <span className="text-gray-600">(optional)</span></label><input type="datetime-local" value={resScheduleDate} onChange={e => { setResScheduleDate(e.target.value); setHasUnsavedChanges(true); }} className={inputClass} /></div>
                     <div><label className={labelClass}>Due Date <span className="text-gray-600">(optional)</span></label><input type="datetime-local" value={resDueDate} onChange={e => { setResDueDate(e.target.value); setHasUnsavedChanges(true); }} className={inputClass} /></div>
+                  </div>
+
+                  {/* Assessment Mode */}
+                  <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <div
+                        className={`w-10 h-5 rounded-full transition-colors ${isAssessment ? 'bg-red-600' : 'bg-gray-700'} relative`}
+                        onClick={() => { setIsAssessment(prev => !prev); setHasUnsavedChanges(true); }}
+                      >
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform ${isAssessment ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </div>
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5 text-red-400" /> Assessment Mode
+                      </span>
+                    </label>
+                    {isAssessment && (
+                      <div className="mt-3 space-y-2 pl-2 border-l-2 border-red-500/30">
+                        <label className="flex items-center gap-2 text-[11px] text-gray-300 cursor-pointer">
+                          <input type="checkbox" checked={assessmentConfig.allowResubmission} onChange={e => { setAssessmentConfig(prev => ({ ...prev, allowResubmission: e.target.checked })); setHasUnsavedChanges(true); }} className="rounded bg-black/40 border-white/20 text-purple-500" />
+                          Allow resubmission
+                        </label>
+                        {assessmentConfig.allowResubmission && (
+                          <div className="flex items-center gap-2">
+                            <label className="text-[11px] text-gray-400">Max attempts:</label>
+                            <input type="number" min={0} value={assessmentConfig.maxAttempts} onChange={e => { setAssessmentConfig(prev => ({ ...prev, maxAttempts: parseInt(e.target.value) || 0 })); setHasUnsavedChanges(true); }} className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                            <span className="text-[10px] text-gray-500">0 = unlimited</span>
+                          </div>
+                        )}
+                        <label className="flex items-center gap-2 text-[11px] text-gray-300 cursor-pointer">
+                          <input type="checkbox" checked={assessmentConfig.showScoreOnSubmit} onChange={e => { setAssessmentConfig(prev => ({ ...prev, showScoreOnSubmit: e.target.checked })); setHasUnsavedChanges(true); }} className="rounded bg-black/40 border-white/20 text-purple-500" />
+                          Show score on submit
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   {/* Deploy Actions */}

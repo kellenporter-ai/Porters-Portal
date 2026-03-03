@@ -90,15 +90,21 @@ service cloud.firestore {
     // SUBMISSIONS
     // ==========================================
     match /submissions/{submissionId} {
-      // Students can read their own submissions, admin reads all
-      allow read: if isAdmin() || 
+      // Students can read their own submissions (including assessments), admin reads all
+      allow read: if isAdmin() ||
         (isAuthenticated() && resource.data.userId == request.auth.uid);
-      
-      // Students can create/update their own submissions
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin() || 
-        (isAuthenticated() && resource.data.userId == request.auth.uid);
-      
+
+      // Students can create their own submissions, but NOT assessments
+      // (assessments are created server-side via Cloud Functions / Admin SDK)
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.isAssessment != true;
+
+      // Students can update their own non-assessment submissions; admin can update all
+      allow update: if isAdmin() ||
+        (isAuthenticated() && resource.data.userId == request.auth.uid
+         && resource.data.isAssessment != true);
+
       // Only admin can delete submissions
       allow delete: if isAdmin();
     }

@@ -1,6 +1,6 @@
 
 import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem } from '../lib/firebase';
+import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -558,7 +558,18 @@ export const dataService = {
           dueDate: data.dueDate,
           targetSections: data.targetSections || [],
           scheduledAt: data.scheduledAt || undefined,
-          lessonBlocks: data.lessonBlocks || []
+          lessonBlocks: data.isAssessment
+            ? (data.lessonBlocks || []).map((block: Record<string, unknown>) => {
+                // Strip answer keys from assessment blocks to prevent client-side cheating
+                const { correctAnswer, acceptedAnswers, ...safeBlock } = block;
+                if (block.sortItems) {
+                  safeBlock.sortItems = (block.sortItems as Array<{ text: string; correct: string }>).map(si => ({ text: si.text, correct: '' }));
+                }
+                return safeBlock;
+              })
+            : (data.lessonBlocks || []),
+          isAssessment: data.isAssessment || false,
+          assessmentConfig: data.assessmentConfig || undefined,
         };
       });
       callback(assignments);
@@ -584,9 +595,13 @@ export const dataService = {
           hasUnreadStudent: data.hasUnreadStudent || false,
           isPinned: data.isPinned || false,
           isArchived: data.isArchived || false,
-          privateComments: (data.privateComments || []).sort((a: Comment, b: Comment) => 
+          privateComments: (data.privateComments || []).sort((a: Comment, b: Comment) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          )
+          ),
+          isAssessment: data.isAssessment || false,
+          attemptNumber: data.attemptNumber,
+          assessmentScore: data.assessmentScore,
+          blockResponses: data.blockResponses,
         } as Submission;
       });
       callback(submissions);
@@ -930,6 +945,16 @@ export const dataService = {
   submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: TelemetryMetrics, classType: string) => {
       const result = await callSubmitEngagement({ assignmentId, assignmentTitle, userName, metrics, classType });
       return result.data as { xpEarned: number; leveledUp: boolean; status: string };
+  },
+
+  submitAssessment: async (userName: string, assignmentId: string, responses: Record<string, unknown>, metrics: TelemetryMetrics, classType: string) => {
+      const result = await callSubmitAssessment({ assignmentId, userName, responses, metrics, classType });
+      return result.data as {
+        assessmentScore: { correct: number; total: number; percentage: number; perBlock: Record<string, { correct: boolean; answer: unknown }> };
+        attemptNumber: number;
+        status: string;
+        xpEarned: number;
+      };
   },
 
   subscribeToLeaderboard: (callback: (users: User[]) => void, maxResults?: number) => {

@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Download, BarChart3 } from 'lucide-react';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock } from '../types';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Download, BarChart3, Shield } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
@@ -33,7 +33,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'assessments'>('dashboard');
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
+  const [expandedSubmissionId, setExpandedSubmissionId] = useState<string | null>(null);
+  const [assessmentSortKey, setAssessmentSortKey] = useState<string>('score');
+  const [assessmentSortDesc, setAssessmentSortDesc] = useState(true);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const handleSort = useCallback((col: string) => {
@@ -248,12 +252,261 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <button onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
             <BarChart3 className="w-3.5 h-3.5" /> Analytics
           </button>
+          <button onClick={() => setAdminTab('assessments')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'assessments' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <Shield className="w-3.5 h-3.5" /> Assessments
+          </button>
         </div>
       </div>
 
       {adminTab === 'analytics' && (
         <AnalyticsTab users={users} assignments={assignments} submissions={submissions} bucketProfiles={bucketProfiles} />
       )}
+
+      {adminTab === 'assessments' && (() => {
+        const assessmentAssignments = assignments.filter(a => a.isAssessment);
+        const selectedAssessment = assessmentAssignments.find(a => a.id === selectedAssessmentId) || null;
+        const assessmentSubmissions = submissions.filter(s => s.isAssessment && (selectedAssessmentId ? s.assignmentId === selectedAssessmentId : true));
+
+        // Summary stats
+        const totalSubmissions = assessmentSubmissions.filter(s => s.status !== 'STARTED').length;
+        const avgScore = totalSubmissions > 0 ? Math.round(assessmentSubmissions.filter(s => s.status !== 'STARTED').reduce((acc, s) => acc + (s.assessmentScore?.percentage || s.score || 0), 0) / totalSubmissions) : 0;
+        const flaggedCount = assessmentSubmissions.filter(s => s.status === 'FLAGGED').length;
+
+        // Sort submissions
+        const sortedAssessmentSubs = [...assessmentSubmissions].filter(s => s.status !== 'STARTED').sort((a, b) => {
+          let av: number | string = 0, bv: number | string = 0;
+          switch (assessmentSortKey) {
+            case 'name': av = a.userName.toLowerCase(); bv = b.userName.toLowerCase(); return assessmentSortDesc ? bv.toString().localeCompare(av.toString()) : av.toString().localeCompare(bv.toString());
+            case 'attempt': av = a.attemptNumber || 1; bv = b.attemptNumber || 1; break;
+            case 'score': av = a.assessmentScore?.percentage || a.score || 0; bv = b.assessmentScore?.percentage || b.score || 0; break;
+            case 'status': av = a.status; bv = b.status; return assessmentSortDesc ? bv.toString().localeCompare(av.toString()) : av.toString().localeCompare(bv.toString());
+            case 'tabSwitches': av = a.metrics?.tabSwitchCount || 0; bv = b.metrics?.tabSwitchCount || 0; break;
+            case 'time': av = a.metrics?.engagementTime || 0; bv = b.metrics?.engagementTime || 0; break;
+            case 'pastes': av = a.metrics?.pasteCount || 0; bv = b.metrics?.pasteCount || 0; break;
+            default: av = a.assessmentScore?.percentage || a.score || 0; bv = b.assessmentScore?.percentage || b.score || 0; break;
+          }
+          return assessmentSortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
+        });
+
+        const handleAssessmentSort = (key: string) => {
+          if (assessmentSortKey === key) setAssessmentSortDesc(prev => !prev);
+          else { setAssessmentSortKey(key); setAssessmentSortDesc(true); }
+        };
+
+        const SortHeader = ({ label, sortKey, className = '' }: { label: string; sortKey: string; className?: string }) => (
+          <th className={`p-3 cursor-pointer select-none hover:text-gray-300 transition ${className}`} onClick={() => handleAssessmentSort(sortKey)}>
+            <div className="flex items-center gap-1">
+              <span>{label}</span>
+              <span className="flex flex-col gap-px">
+                <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${assessmentSortKey === sortKey && !assessmentSortDesc ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${assessmentSortKey === sortKey && assessmentSortDesc ? 'text-purple-400' : 'text-gray-600'} transition`} />
+              </span>
+            </div>
+          </th>
+        );
+
+        const formatEngagementTime = (seconds: number) => {
+          const m = Math.floor(seconds / 60);
+          const s = seconds % 60;
+          return `${m}m ${s}s`;
+        };
+
+        const getScoreColor = (pct: number) => pct >= 80 ? 'text-green-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400';
+        const getStatusBadge = (status: string) => {
+          switch (status) {
+            case 'FLAGGED': return 'bg-red-500/20 text-red-400 border-red-500/30';
+            case 'SUCCESS': return 'bg-green-500/20 text-green-400 border-green-500/30';
+            case 'SUPPORT_NEEDED': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+            default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+          }
+        };
+        const getTabSwitchColor = (count: number) => count > 5 ? 'text-red-400' : count >= 3 ? 'text-yellow-400' : 'text-green-400';
+
+        return (
+          <div className="space-y-6">
+            {/* Assessment Selector */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-red-400" />
+                  Assessment Review
+                </h3>
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
+                  {assessmentAssignments.length} assessment{assessmentAssignments.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <select
+                value={selectedAssessmentId || ''}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setExpandedSubmissionId(null); }}
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
+              >
+                <option value="">Select an assessment...</option>
+                {assessmentAssignments.map(a => (
+                  <option key={a.id} value={a.id}>{a.title} ({a.classType})</option>
+                ))}
+              </select>
+
+              {assessmentAssignments.length === 0 && (
+                <div className="text-center py-8 text-gray-500 italic mt-4">
+                  <Shield className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                  No assessments created yet. Toggle &quot;Assessment Mode&quot; in the Resource Editor to create one.
+                </div>
+              )}
+            </div>
+
+            {/* Summary Stats */}
+            {selectedAssessmentId && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <div className="text-3xl font-bold text-white">{avgScore}%</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <div className="text-3xl font-bold text-white">{totalSubmissions}</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Submissions</div>
+                </div>
+                <div className={`border rounded-2xl p-5 ${flaggedCount > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-white/5 border-white/10'}`}>
+                  <div className={`text-3xl font-bold ${flaggedCount > 0 ? 'text-red-400' : 'text-white'}`}>{flaggedCount}</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Flagged</div>
+                </div>
+              </div>
+            )}
+
+            {/* Submissions Table */}
+            {selectedAssessmentId && sortedAssessmentSubs.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+                <h4 className="text-lg font-bold text-white mb-4">Student Submissions</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
+                        <SortHeader label="Student" sortKey="name" />
+                        <SortHeader label="Attempt" sortKey="attempt" className="text-center" />
+                        <SortHeader label="Score" sortKey="score" className="text-center" />
+                        <SortHeader label="Status" sortKey="status" className="text-center" />
+                        <SortHeader label="Tab Switches" sortKey="tabSwitches" className="text-center" />
+                        <SortHeader label="Time" sortKey="time" className="text-center" />
+                        <SortHeader label="Pastes" sortKey="pastes" className="text-center" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {sortedAssessmentSubs.map(sub => {
+                        const pct = sub.assessmentScore?.percentage || sub.score || 0;
+                        const tabSwitches = sub.metrics?.tabSwitchCount || 0;
+                        const engTime = sub.metrics?.engagementTime || 0;
+                        const isExpanded = expandedSubmissionId === sub.id;
+
+                        return (
+                          <React.Fragment key={sub.id}>
+                            <tr
+                              className={`hover:bg-white/5 transition cursor-pointer ${isExpanded ? 'bg-white/5' : ''} ${sub.status === 'FLAGGED' ? 'bg-red-900/5' : ''}`}
+                              onClick={() => setExpandedSubmissionId(isExpanded ? null : sub.id)}
+                            >
+                              <td className="p-3">
+                                <div className="text-sm font-bold text-white">{sub.userName}</div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className="text-xs text-gray-300 font-mono">#{sub.attemptNumber || 1}</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`text-sm font-bold ${getScoreColor(pct)}`}>{pct}%</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(sub.status)}`}>
+                                  {sub.status}
+                                </span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`text-xs font-mono font-bold ${getTabSwitchColor(tabSwitches)}`}>{tabSwitches}</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className="text-xs text-gray-300 font-mono">{formatEngagementTime(engTime)}</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className="text-xs text-gray-300 font-mono">{sub.metrics?.pasteCount || 0}</span>
+                              </td>
+                            </tr>
+                            {/* Expanded per-question detail */}
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={7} className="p-0">
+                                  <div className="bg-black/20 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-200">
+                                    <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Per-Question Breakdown</h5>
+                                    {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
+                                      <div className="space-y-2">
+                                        {selectedAssessment.lessonBlocks
+                                          .filter((block: LessonBlock) => block.type === 'MC' || block.type === 'SHORT_ANSWER' || block.type === 'RANKING' || block.type === 'SORTING' || block.type === 'LINKED')
+                                          .map((block: LessonBlock, qi: number) => {
+                                            const blockResult = sub.assessmentScore?.perBlock?.[block.id];
+                                            const studentAnswer = sub.blockResponses?.[block.id];
+                                            return (
+                                              <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${blockResult?.correct ? 'bg-green-900/10 border-green-500/20' : 'bg-red-900/10 border-red-500/20'}`}>
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${blockResult?.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                  {blockResult?.correct ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="text-xs text-gray-300 mb-1">
+                                                    <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
+                                                  </div>
+                                                  <div className="text-[11px] text-gray-500">
+                                                    <span className="font-bold">Answer:</span>{' '}
+                                                    <span className={blockResult?.correct ? 'text-green-400' : 'text-red-400'}>
+                                                      {studentAnswer != null ? String(studentAnswer) : 'No answer'}
+                                                    </span>
+                                                    {!blockResult?.correct && block.type === 'MC' && block.correctAnswer !== undefined && block.options && (
+                                                      <span className="ml-2 text-green-400/60">
+                                                        (Correct: {block.options[block.correctAnswer]})
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            );
+                                          })
+                                        }
+                                      </div>
+                                    ) : sub.blockResponses ? (
+                                      <div className="space-y-2">
+                                        {Object.entries(sub.blockResponses).map(([blockId, answer]) => {
+                                          const blockResult = sub.assessmentScore?.perBlock?.[blockId];
+                                          return (
+                                            <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${blockResult?.correct ? 'bg-green-900/10 border-green-500/20' : blockResult ? 'bg-red-900/10 border-red-500/20' : 'bg-white/5 border-white/5'}`}>
+                                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${blockResult?.correct ? 'bg-green-500/20 text-green-400' : blockResult ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                {blockResult?.correct ? <CheckCircle className="w-3 h-3" /> : blockResult ? <AlertTriangle className="w-3 h-3" /> : '?'}
+                                              </div>
+                                              <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
+                                              <span className="text-xs text-gray-300 truncate flex-1">{String(answer)}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state when assessment selected but no submissions */}
+            {selectedAssessmentId && sortedAssessmentSubs.length === 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
+                <FileText className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
+                <p className="text-gray-500 text-sm">No submissions yet for this assessment.</p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className={adminTab === 'dashboard' ? '' : 'hidden'}>
 

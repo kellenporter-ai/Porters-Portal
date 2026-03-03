@@ -137,6 +137,11 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-black/40 text-gray-500 border-white/5'}`}>{isLessonOnly ? 'Lesson' : resource.category}</span>
+                            {resource.isAssessment && (
+                              <span className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest font-bold">
+                                Assessment
+                              </span>
+                            )}
                             <h4 className="font-bold text-white text-sm truncate">{resource.title}</h4>
                             {isModuleCompleted && (
                               <span className="text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">

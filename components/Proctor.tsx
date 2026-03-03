@@ -33,6 +33,8 @@ interface ProctorProps {
   assignmentId?: string;
   classType?: string;
   lessonBlocks?: LessonBlock[];
+  isAssessment?: boolean;
+  onGetMetricsAndResponses?: React.MutableRefObject<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>;
 }
 
 // ============================================================
@@ -93,7 +95,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -124,6 +126,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [blockResetKey, setBlockResetKey] = useState(0);
 
+  // Assessment telemetry
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const currentBlockRef = useRef<string | null>(null);
+  const blockTimingStartRef = useRef<number>(Date.now());
+  const blockTimingRef = useRef<Record<string, number>>({});
+  const keystrokeTimesRef = useRef<number[]>([]);
+
   // Load saved lesson block responses on mount
   useEffect(() => {
     if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
@@ -145,6 +154,19 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Debounced save of lesson block responses to Firestore
   const handleBlockResponseChange = useCallback((blockId: string, response: unknown) => {
+    // Track per-block timing
+    const now = Date.now();
+    if (currentBlockRef.current && currentBlockRef.current !== blockId) {
+      const elapsed = (now - blockTimingStartRef.current) / 1000;
+      blockTimingRef.current[currentBlockRef.current] = (blockTimingRef.current[currentBlockRef.current] || 0) + elapsed;
+    }
+    if (currentBlockRef.current !== blockId) {
+      currentBlockRef.current = blockId;
+      blockTimingStartRef.current = now;
+    }
+    // Update per-block timing in metrics
+    metricsRef.current.perBlockTiming = { ...blockTimingRef.current };
+
     blockResponsesRef.current = { ...blockResponsesRef.current, [blockId]: response };
     if (!userId || !assignmentId) return;
     // Debounce: save 1.5s after last change
@@ -317,6 +339,47 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       if (!isActive) setIsActive(true);
   }, [isActive]);
 
+  // Specific telemetry handlers
+  const handleKeyDown = useCallback(() => {
+    metricsRef.current.keystrokes++;
+    // Typing cadence tracking
+    const now = Date.now();
+    keystrokeTimesRef.current.push(now);
+    // Keep only last 50 timestamps for rolling window
+    if (keystrokeTimesRef.current.length > 50) {
+      keystrokeTimesRef.current = keystrokeTimesRef.current.slice(-50);
+    }
+    // Detect burst: 5+ keystrokes within 100ms each = likely paste
+    const times = keystrokeTimesRef.current;
+    if (times.length >= 5) {
+      const last5 = times.slice(-5);
+      const intervals = last5.slice(1).map((t, i) => t - last5[i]);
+      if (intervals.every(iv => iv < 30)) {
+        metricsRef.current.typingCadence = metricsRef.current.typingCadence || { avgIntervalMs: 0, burstCount: 0 };
+        metricsRef.current.typingCadence.burstCount = (metricsRef.current.typingCadence.burstCount || 0) + 1;
+      }
+    }
+    // Update average interval
+    if (times.length >= 2) {
+      const intervals = times.slice(1).map((t, i) => t - times[i]);
+      metricsRef.current.typingCadence = metricsRef.current.typingCadence || { avgIntervalMs: 0, burstCount: 0 };
+      metricsRef.current.typingCadence.avgIntervalMs = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+    }
+    handleInteraction();
+  }, [handleInteraction]);
+
+  const handlePaste = useCallback(() => {
+    metricsRef.current.pasteCount++;
+    metricsRef.current.typingCadence = metricsRef.current.typingCadence || { avgIntervalMs: 0, burstCount: 0 };
+    metricsRef.current.typingCadence.burstCount = (metricsRef.current.typingCadence.burstCount || 0) + 1;
+    handleInteraction();
+  }, [handleInteraction]);
+
+  const handleClick = useCallback(() => {
+    metricsRef.current.clickCount++;
+    handleInteraction();
+  }, [handleInteraction]);
+
   // Award XP when a lesson block is completed
   const handleBlockComplete = useCallback(async (blockId: string, correct: boolean) => {
     if (!correct || !userId || !assignmentId || awardedBlocksRef.current.has(blockId)) return;
@@ -363,12 +426,63 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       return () => clearInterval(interval);
   }, [isActive]);
 
-  // Global Listeners for AFK detection
+  // Global Listeners — specific handlers for telemetry, generic for AFK
   useEffect(() => {
-      const events = ['mousemove', 'keydown', 'scroll', 'click'];
-      events.forEach(ev => window.addEventListener(ev, handleInteraction));
-      return () => events.forEach(ev => window.removeEventListener(ev, handleInteraction));
-  }, [handleInteraction]);
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('paste', handlePaste);
+      window.addEventListener('click', handleClick);
+      window.addEventListener('mousemove', handleInteraction);
+      window.addEventListener('scroll', handleInteraction);
+      return () => {
+          window.removeEventListener('keydown', handleKeyDown);
+          window.removeEventListener('paste', handlePaste);
+          window.removeEventListener('click', handleClick);
+          window.removeEventListener('mousemove', handleInteraction);
+          window.removeEventListener('scroll', handleInteraction);
+      };
+  }, [handleKeyDown, handlePaste, handleClick, handleInteraction]);
+
+  // Assessment: Track tab switches
+  useEffect(() => {
+    if (!isAssessment) return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        metricsRef.current.tabSwitchCount = (metricsRef.current.tabSwitchCount || 0) + 1;
+        setTabSwitchCount(metricsRef.current.tabSwitchCount);
+      }
+    };
+    const handleBlur = () => {
+      metricsRef.current.tabSwitchCount = (metricsRef.current.tabSwitchCount || 0) + 1;
+      setTabSwitchCount(metricsRef.current.tabSwitchCount);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [isAssessment]);
+
+  // Expose metrics + responses getter for parent (assessment submission)
+  useEffect(() => {
+    if (onGetMetricsAndResponses) {
+      onGetMetricsAndResponses.current = () => {
+        // Flush current block timing
+        if (currentBlockRef.current) {
+          const elapsed = (Date.now() - blockTimingStartRef.current) / 1000;
+          blockTimingRef.current[currentBlockRef.current] = (blockTimingRef.current[currentBlockRef.current] || 0) + elapsed;
+          metricsRef.current.perBlockTiming = { ...blockTimingRef.current };
+        }
+        return {
+          metrics: { ...metricsRef.current },
+          responses: { ...blockResponsesRef.current },
+        };
+      };
+    }
+    return () => {
+      if (onGetMetricsAndResponses) onGetMetricsAndResponses.current = null;
+    };
+  }, [onGetMetricsAndResponses]);
 
   // ONE-TIME Submission on Unmount
   useEffect(() => {
@@ -777,6 +891,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 {!isActive && (
                     <div className="flex items-center gap-2 text-[10px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
                         <AlertTriangle className="w-3 h-3" /> Resume movement for XP
+                    </div>
+                )}
+                {isAssessment && tabSwitchCount > 0 && (
+                    <div className="flex items-center gap-2 text-[10px] text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 uppercase font-bold tracking-widest">
+                        <AlertTriangle className="w-3 h-3" /> Tab Switch Detected ({tabSwitchCount})
                     </div>
                 )}
             </div>
