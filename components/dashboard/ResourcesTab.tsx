@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Assignment, ClassConfig } from '../../types';
+import { Assignment, ClassConfig, Submission } from '../../types';
 import { ChevronRight, ChevronDown, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
 
@@ -80,9 +80,10 @@ interface ResourcesTabProps {
   onStartAssignment?: (id: string) => void;
   classConfigs?: ClassConfig[];
   activeClass: string;
+  submissions?: Submission[];
 }
 
-const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, onToggleUnit, practiceCompletion, onStartAssignment, classConfigs, activeClass }) => {
+const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, onToggleUnit, practiceCompletion, onStartAssignment, classConfigs, activeClass, submissions = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alpha' | 'type'>('newest');
 
@@ -143,13 +144,30 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
     const hasLessonBlocks = resource.lessonBlocks && resource.lessonBlocks.length > 0;
     const isLessonOnly = hasLessonBlocks && !resource.contentUrl;
 
+    // Assessment submission status for dashboard cards
+    const assessmentSubs = resource.isAssessment
+      ? submissions.filter(s => s.assignmentId === resource.id && s.isAssessment).sort((a, b) => (b.attemptNumber || 0) - (a.attemptNumber || 0))
+      : [];
+    const latestSub = assessmentSubs[0] || null;
+    const assessmentConfig = resource.assessmentConfig || {};
+    const maxAttempts = assessmentConfig.maxAttempts || 0;
+    const isUnlimitedAttempts = maxAttempts === 0;
+    const canStillRetake = latestSub && assessmentConfig.allowResubmission !== false &&
+      (isUnlimitedAttempts || (latestSub.attemptNumber || 1) < maxAttempts);
+
     return (
       <div
         key={resource.id}
-        className={`bg-white/5 border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-white/5'}`}
+        className={`border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${
+          resource.isAssessment
+            ? 'bg-red-500/5 border-red-500/25 ring-1 ring-red-500/10 hover:border-red-400/50'
+            : `bg-white/5 ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-white/5'}`
+        }`}
         onClick={() => onStartAssignment && onStartAssignment(resource.id)}
       >
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+          resource.isAssessment && !isModuleCompleted && !isSubstantial && !resource.lastEngagement
+            ? 'bg-red-500/15 text-red-400 ring-2 ring-red-500/25 group-hover:scale-110 shadow-lg group-hover:shadow-red-500/20' :
           isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
@@ -190,6 +208,46 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           <div className="flex items-center gap-2 mt-0.5">
             <p className="text-xs text-gray-500 truncate">{resource.description}</p>
           </div>
+          {/* Assessment submission status row */}
+          {resource.isAssessment && latestSub && (
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {latestSub.assessmentScore && assessmentConfig.showScoreOnSubmit !== false && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
+                  latestSub.assessmentScore.percentage >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                  : latestSub.assessmentScore.percentage >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                  : 'bg-red-500/10 text-red-400 border-red-500/20'
+                }`}>
+                  Score: {latestSub.assessmentScore.percentage}%
+                </span>
+              )}
+              <span className="text-[9px] text-gray-500 font-bold">
+                {isUnlimitedAttempts
+                  ? `Attempt ${latestSub.attemptNumber || 1}`
+                  : `Attempt ${latestSub.attemptNumber || 1} of ${maxAttempts}`
+                }
+              </span>
+              {canStillRetake && (
+                <span className="text-[9px] text-purple-400 font-bold flex items-center gap-0.5">
+                  <Play className="w-2.5 h-2.5 fill-current" /> Retake available
+                </span>
+              )}
+              {!canStillRetake && (
+                <span className="text-[9px] text-gray-500 font-bold">
+                  {assessmentConfig.allowResubmission === false ? 'No retakes allowed' : 'No retakes left'}
+                </span>
+              )}
+              {latestSub.flaggedAsAI && (
+                <span className="text-[9px] text-purple-400 font-bold">Flagged</span>
+              )}
+            </div>
+          )}
+          {resource.isAssessment && !latestSub && (
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[9px] text-red-400 font-bold flex items-center gap-0.5">
+                <Target className="w-2.5 h-2.5" /> Not yet submitted
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-3 mt-1">
             {resource.createdAt && (
               <span className="text-[9px] text-gray-500 font-bold flex items-center gap-0.5">

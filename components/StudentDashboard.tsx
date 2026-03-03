@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { User, Assignment, Submission, RPGItem, Quest, ClassConfig } from '../types';
-import { ChevronRight, Microscope, FlaskConical, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
+import { ChevronRight, Microscope, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
 import { dataService } from '../services/dataService';
@@ -44,11 +44,13 @@ interface StudentDashboardProps {
   submissions: Submission[];
   classConfigs?: ClassConfig[];
   enabledFeatures: {
-    physicsLab: boolean;
     evidenceLocker: boolean;
     leaderboard: boolean;
     physicsTools: boolean;
     communications: boolean;
+    dungeons: boolean;
+    pvpArena: boolean;
+    bossFights: boolean;
   };
   onNavigate: (tab: string) => void;
   onStartAssignment?: (id: string) => void;
@@ -480,19 +482,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
         <div className="space-y-2">
              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">Access Nodes</label>
-             {enabledFeatures.physicsLab && (
-                 <button onClick={() => onNavigate('Physics Lab')} className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 p-4 rounded-2xl flex items-center justify-between transition group">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400 shadow-inner"><FlaskConical className="w-5 h-5" /></div>
-                        <div className="text-left">
-                            <div className="font-bold text-gray-200 text-sm">Physics Lab</div>
-                            <div className="text-[10px] text-blue-300/70 uppercase font-bold tracking-tight">Active Simulations</div>
-                        </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition" />
-                 </button>
-             )}
-
              {enabledFeatures.evidenceLocker && (
                  <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-4 rounded-2xl flex items-center justify-between transition group">
                     <div className="flex items-center gap-3">
@@ -549,6 +538,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      onStartAssignment={onStartAssignment}
                      classConfigs={classConfigs}
                      activeClass={activeClass}
+                     submissions={submissions}
                  />
              )}
 
@@ -624,7 +614,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  />
              )}
 
-             {activeTab === 'DUNGEONS' && (
+             {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
                  <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Dungeons">
                        <DungeonPanel userId={user.id} classType={activeClass} />
@@ -632,7 +622,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  </div>
              )}
 
-             {activeTab === 'ARENA' && (
+             {activeTab === 'ARENA' && enabledFeatures.pvpArena && (
                  <div key="arena" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Arena">
                        <ArenaPanel userId={user.id} classType={activeClass} />
@@ -651,6 +641,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       </div>
 
       {/* BOSS ENCOUNTERS — Full-width panel */}
+      {enabledFeatures.bossFights && (
       <div className="lg:col-span-12">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <FeatureErrorBoundary feature="Boss Encounters">
@@ -661,6 +652,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               </FeatureErrorBoundary>
           </div>
       </div>
+      )}
 
       {/* Profile Showcase */}
       {showProfile && (

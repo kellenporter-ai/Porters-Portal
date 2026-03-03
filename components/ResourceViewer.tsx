@@ -9,6 +9,7 @@ import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
 import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot } from 'lucide-react';
+import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 
 const Proctor = lazy(() => import('./Proctor'));
@@ -32,6 +33,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const { assignments } = useAppData();
   const { setIsCommOpen } = useChat();
   const toast = useToast();
+  const { confirm } = useConfirm();
 
   const [assignViewMode, setAssignViewMode] = useState<'WORK' | 'REVIEW' | 'STUDY'>('WORK');
   const [adminViewMode, setAdminViewMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
@@ -162,22 +164,33 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     }
   }, [activeAssignment, user.name, toast]);
 
-  // Assessment retake handler — clear saved working responses so Proctor starts fresh
+  // Assessment retake handler — confirm, then clear saved working responses so Proctor starts fresh
   // Uses setDoc (not deleteDoc) because students only have create/update permission
   const handleRetake = useCallback(async () => {
-    if (activeAssignment) {
-      const docId = `${user.id}_${activeAssignment.id}_blocks`;
-      try {
-        await setDoc(doc(db, 'lesson_block_responses', docId), {
-          userId: user.id,
-          assignmentId: activeAssignment.id,
-          responses: {},
-          lastUpdated: new Date().toISOString(),
-        });
-      } catch { /* ignore if doc doesn't exist yet */ }
-    }
+    if (!activeAssignment) return;
+    const cfg = activeAssignment.assessmentConfig || {};
+    const isUnlim = cfg.maxAttempts === 0 || !cfg.maxAttempts;
+    const attLeft = isUnlim ? null : (cfg.maxAttempts! - (assessmentResult?.attemptNumber || 1));
+    const afterThis = attLeft != null ? attLeft - 1 : null;
+    const confirmed = await confirm({
+      title: 'Retake Assessment',
+      message: `Your previous answers will be cleared and you'll start fresh.${afterThis != null ? (afterThis === 0 ? ' This will be your last attempt.' : ` You will have ${afterThis} attempt${afterThis !== 1 ? 's' : ''} remaining after this.`) : ''} Are you sure you want to retake?`,
+      confirmLabel: 'Start Retake',
+      cancelLabel: 'Go Back',
+      variant: 'info',
+    });
+    if (!confirmed) return;
+    const docId = `${user.id}_${activeAssignment.id}_blocks`;
+    try {
+      await setDoc(doc(db, 'lesson_block_responses', docId), {
+        userId: user.id,
+        assignmentId: activeAssignment.id,
+        responses: {},
+        lastUpdated: new Date().toISOString(),
+      });
+    } catch { /* ignore if doc doesn't exist yet */ }
     setAssessmentResult(null);
-  }, [activeAssignment, user.id]);
+  }, [activeAssignment, user.id, assessmentResult, confirm]);
 
   const handleExit = () => {
     setAssignViewMode('WORK');
@@ -234,23 +247,83 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   if (assessmentResult) {
     const canRetake = config.allowResubmission !== false &&
       (config.maxAttempts === 0 || !config.maxAttempts || assessmentResult.attemptNumber < config.maxAttempts);
+    const isUnlimited = config.maxAttempts === 0 || !config.maxAttempts;
+    const attemptsRemaining = isUnlimited ? Infinity : (config.maxAttempts! - assessmentResult.attemptNumber);
+    const showScore = config.showScoreOnSubmit !== false;
+    const blockEntries = Object.entries(assessmentResult.perBlock);
+    const incorrectCount = blockEntries.filter(([, r]) => !r.correct && !r.needsReview).length;
+    const pendingCount = blockEntries.filter(([, r]) => r.needsReview).length;
+
+    // Performance-based feedback message
+    const feedbackMessage = !showScore ? null
+      : assessmentResult.status === 'FLAGGED' ? null
+      : assessmentResult.percentage >= 90 ? 'Excellent work! You demonstrated strong understanding.'
+      : assessmentResult.percentage >= 80 ? 'Great job! You have a solid grasp of this material.'
+      : assessmentResult.percentage >= 70 ? 'Good effort! Review the questions you missed and consider retaking.'
+      : assessmentResult.percentage >= 50 ? 'You\'re getting there. Focus on the incorrect questions and try again.'
+      : 'This material needs more review. Study the content and retake when ready.';
 
     return (
       <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416]' : ''} flex items-center justify-center h-full`}>
         <div className={`bg-white/5 border border-white/10 rounded-2xl p-8 w-full mx-4 backdrop-blur-md ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
+          {/* Header */}
           <div className="text-center mb-6">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
-              assessmentResult.percentage >= 80 ? 'bg-green-500/20 text-green-400' :
-              assessmentResult.percentage >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
-              'bg-red-500/20 text-red-400'
-            }`}>
-              <span className="text-3xl font-bold">{assessmentResult.percentage}%</span>
-            </div>
-            <h2 className="text-xl font-bold text-white mb-1">Assessment {config.showScoreOnSubmit !== false ? 'Complete' : 'Submitted'}</h2>
-            <p className="text-sm text-gray-400">Attempt #{assessmentResult.attemptNumber}</p>
+            {showScore ? (
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
+                assessmentResult.percentage >= 80 ? 'bg-green-500/20 text-green-400' :
+                assessmentResult.percentage >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                <span className="text-3xl font-bold">{assessmentResult.percentage}%</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-purple-500/20 text-purple-400">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+            )}
+            <h2 className="text-xl font-bold text-white mb-1">
+              {showScore ? 'Assessment Complete' : 'Assessment Submitted'}
+            </h2>
+            {/* Attempt tracker with remaining info */}
+            <p className="text-sm text-gray-400">
+              {isUnlimited
+                ? `Attempt ${assessmentResult.attemptNumber}`
+                : `Attempt ${assessmentResult.attemptNumber} of ${config.maxAttempts}`
+              }
+            </p>
+            {canRetake && !isUnlimited && (
+              <p className="text-xs text-purple-400 mt-1">
+                {attemptsRemaining === 1 ? '1 attempt remaining' : `${attemptsRemaining} attempts remaining`}
+              </p>
+            )}
+            {!canRetake && config.allowResubmission !== false && (
+              <p className="text-xs text-gray-500 mt-1">No attempts remaining</p>
+            )}
           </div>
 
-          {config.showScoreOnSubmit !== false && (
+          {/* Performance feedback */}
+          {feedbackMessage && (
+            <div className={`rounded-lg px-4 py-3 mb-5 text-center text-sm ${
+              assessmentResult.percentage >= 80 ? 'bg-green-500/10 text-green-300 border border-green-500/20'
+              : assessmentResult.percentage >= 60 ? 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20'
+              : 'bg-red-500/10 text-red-300 border border-red-500/20'
+            }`}>
+              {feedbackMessage}
+            </div>
+          )}
+
+          {/* FLAGGED banner — shown regardless of showScore setting */}
+          {assessmentResult.status === 'FLAGGED' && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 flex items-start gap-2 text-xs text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold mb-0.5">Submission flagged for review</p>
+                <p className="text-amber-300/80">Your teacher will follow up. You may retake the assessment if attempts are available.</p>
+              </div>
+            </div>
+          )}
+
+          {showScore && (
             <>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 <div className="bg-black/30 rounded-xl p-3 text-center">
@@ -267,16 +340,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 </div>
               </div>
 
-              {assessmentResult.status === 'FLAGGED' && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 flex items-center gap-2 text-xs text-amber-300">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  Your submission has been flagged for review. Your teacher will follow up.
-                </div>
-              )}
-
-              {/* Per-question results */}
-              <div className="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scrollbar">
-                {Object.entries(assessmentResult.perBlock).map(([blockId, result]) => {
+              {/* Per-question results with proper numbering */}
+              <div className="space-y-1.5 max-h-48 overflow-y-auto mb-6 custom-scrollbar">
+                {blockEntries.map(([blockId, result], index) => {
                   const isPending = result.needsReview;
                   return (
                     <div key={blockId} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
@@ -287,7 +353,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                       {isPending ? <Clock className="w-3.5 h-3.5 shrink-0" />
                         : result.correct ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                         : <XCircle className="w-3.5 h-3.5 shrink-0" />}
-                      <span className="truncate">Question {blockId.slice(0, 8)}...</span>
+                      <span className="truncate">Question {index + 1}</span>
                       <span className="ml-auto font-bold">
                         {isPending ? 'Pending Review' : result.correct ? 'Correct' : 'Incorrect'}
                       </span>
@@ -296,6 +362,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 })}
               </div>
             </>
+          )}
+
+          {/* Score hidden message */}
+          {!showScore && (
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-6 text-center">
+              <p className="text-sm text-gray-300">Your responses have been recorded.</p>
+              <p className="text-xs text-gray-500 mt-1">Your teacher will review your submission and share results.</p>
+            </div>
           )}
 
           {/* Rubric section in results */}
@@ -326,20 +400,33 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </div>
           )}
 
+          {/* Retake info panel */}
+          {canRetake && showScore && incorrectCount > 0 && (
+            <div className="bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 mb-4">
+              <p className="text-xs text-purple-300 font-medium mb-1">Ready to try again?</p>
+              <p className="text-[11px] text-purple-300/70">
+                You missed {incorrectCount} question{incorrectCount !== 1 ? 's' : ''}{pendingCount > 0 ? ` and ${pendingCount} ${pendingCount === 1 ? 'is' : 'are'} pending review` : ''}.
+                Retaking will clear your answers and let you start fresh.
+                {!isUnlimited && ` You have ${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} left.`}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-3">
             {canRetake && (
               <button
                 onClick={handleRetake}
                 className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition text-sm"
               >
-                <RotateCcw className="w-4 h-4" /> Retake Assessment
+                <RotateCcw className="w-4 h-4" />
+                <span>Retake{!isUnlimited ? ` (${attemptsRemaining} left)` : ''}</span>
               </button>
             )}
             <button
               onClick={handleExit}
               className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition text-sm"
             >
-              <ArrowLeft className="w-4 h-4" /> Exit
+              <ArrowLeft className="w-4 h-4" /> {canRetake ? 'Review Later' : 'Exit'}
             </button>
           </div>
         </div>
