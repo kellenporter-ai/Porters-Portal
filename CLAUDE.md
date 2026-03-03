@@ -13,3 +13,9 @@
 **Usage:** `/3d-activity [topic] [optional file paths for context]`
 **Description:** Generates standalone HTML files with interactive 3D Babylon.js simulations for physics and forensic science. Supports reference materials (PDFs, images, documents) for context. Asks which class (AP Physics, Honors Physics, Forensic Science) and whether graded or exploratory. Integrates with Proctor Bridge. Optimized for Chromebook GPUs.
 **Output:** `/home/kp/Desktop/Simulations/<class>/`
+
+### /create-assessment
+**Trigger:** "create an assessment", "build a quiz", "make a test", "generate an exam", "create assessment questions"
+**Usage:** `/create-assessment [topic]` or `/create-assessment [topic] [file path to PDF/document]`
+**Description:** Generates ISLE-pedagogy-aligned assessments with mixed question types (free response, interactive, simulation-based). Outputs either JSON lesson blocks or standalone HTML with Proctor Bridge integration. Always generates a matching 5-level rubric (Missing/Emerging/Approaching/Developing/Refining). Teacher-graded, not auto-graded.
+**Output:** `/home/kp/Desktop/Assessments/<class>/`
