@@ -249,6 +249,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         if (!groups[unit]) groups[unit] = [];
         groups[unit].push({ ...a, lastEngagement: log ? log.submittedAt || null : null, engagementTime: log?.metrics?.engagementTime || 0 });
       });
+    // Sort resources within each unit: newest first
+    Object.values(groups).forEach(items => {
+      items.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // newest first
+      });
+    });
     return groups;
   }, [assignments, submissions, activeClass]);
 

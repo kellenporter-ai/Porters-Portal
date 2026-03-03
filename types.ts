@@ -354,6 +354,8 @@ export interface Assignment {
   publicComments: Comment[];
   dueDate?: string;
   scheduledAt?: string; // ISO date — if set & future, hidden from students until this time
+  createdAt?: string; // ISO date — set once on creation
+  updatedAt?: string; // ISO date — updated on every save
   targetSections?: string[]; // e.g. ["Period 1", "Period 3"] — empty/undefined = all sections
   lessonBlocks?: LessonBlock[];
   // Assessment mode

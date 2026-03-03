@@ -80,6 +80,18 @@ camera.panningSensibility = 80;
 
 Adjust `alpha`, `beta`, `radius`, and target to frame the specific scene. Use `BABYLON.Animation.CreateAndStartAnimation` for smooth camera transitions between views.
 
+### Coordinate System & Rotation Direction
+
+Babylon.js uses a **left-handed coordinate system**. With the default `ArcRotateCamera` at `alpha = -Math.PI / 2`:
+
+- Camera sits on the **-Z axis**, looking toward **+Z**
+- **X** = right, **Y** = up, **Z** = into the screen (away from camera)
+- `rotation.z` on an object:
+  - **Negative** = **clockwise** from the camera's perspective
+  - **Positive** = **counter-clockwise** from the camera's perspective
+
+This is critical for rotating wheels, pulleys, gears, etc. — if the physics says CW, use negative `rotation.z`.
+
 ---
 
 ## Three-Light Recipe
@@ -248,6 +260,37 @@ cylinderMesh.dispose();
 - **Use Lathe** for objects with rotational symmetry: bottles, beakers, vases, rounded handles.
 - **Use Tube** for wires, ropes, curved pipes.
 - **Scale matters** — use real-world-ish proportions. A table is ~0.75m tall, a person ~1.7m, a pencil ~0.19m long.
+
+### Z-Fighting Prevention (Critical)
+
+When multiple meshes share the same position/depth, the GPU cannot decide which surface to draw in front, causing shimmering/flickering artifacts (z-fighting). **This is the #1 visual bug in multi-part assemblies.**
+
+**Rule: Never place coplanar surfaces at the same z-depth.** Separate parts into distinct z-layers with physical gaps between them.
+
+Example — a wheel/pulley with a disc, rim tori, and spokes:
+
+```javascript
+// ── Z-LAYER PLAN (camera at -Z looking +Z, positive z = behind) ──
+// Layer 0 (back):  Disc at z = +0.10   (behind torus back face)
+// Layer 1 (mid):   Tori at z = 0       (tube extends ±0.06)
+// Layer 2 (front): Spokes at z = -0.09 (in front of torus front face)
+// Layer 3 (front): Hub at z = -0.10
+
+// Disc — fully behind the tori (no geometric overlap)
+disc.position.z = 0.10;
+
+// Tori stay at z = 0 (default)
+
+// Spokes — in front of torus front face
+spoke.position.z = -0.09;
+```
+
+**Key principles:**
+1. Plan z-layers before building — sketch which parts are back/mid/front
+2. Gaps between layers must be larger than the tube/thickness radius of any mesh in that layer
+3. **Do NOT use `material.zOffset`** — it's a fragile hack. Use real geometric separation instead.
+4. When a parent `TransformNode` is scaled dynamically (e.g., radius slider), all child z-offsets scale proportionally. Make gaps large enough to survive the minimum scale factor.
+5. For flat-on-flat surfaces (cylinder face on plane), offset by at least 0.02–0.04 in z.
 
 ---
 
@@ -424,7 +467,18 @@ scene.onBeforeRenderObservable.add(() => {
 - **Spring:** `F = -k * displacement`
 - **Friction:** `F_friction = -mu * normalForce * sign(velocity)`
 - **Drag:** `F_drag = -0.5 * rho * Cd * A * v²`
-- **Collisions:** compare positions against boundaries, reverse/zero velocity
+- **Rotational:** `τ = Iα`, `I = ½MR²` (disc), `I = MR²` (ring). For coupled translational-rotational systems (e.g., hanging mass on pulley), solve `a = mg / (m + I/r²)`.
+- **Collisions:** Always implement explicit boundary checks. Objects must not clip through floors, tables, or walls. Clamp positions and zero/reverse velocities on contact:
+
+```javascript
+if (objectY <= floorY) {
+    objectY = floorY;
+    velocityY = 0;
+    // Transition to post-collision state (e.g., coasting)
+}
+```
+
+- **State transitions:** Use a state machine (`IDLE → RUNNING → COASTING → ENDED`) for clean simulation flow. After a collision event (e.g., pail lands), transition to a new state rather than stopping abruptly.
 
 ---
 
@@ -458,45 +512,54 @@ window.addEventListener('resize', () => engine.resize());
 
 ## Arrow / Vector Visualization
 
-For force and velocity vectors, build from a cylinder (shaft) + cone (head) with emissive material:
+For force and velocity vectors, build from a cylinder (shaft) + cone (head). Use **solid opaque StandardMaterial** with `disableLighting = true` — do NOT use GlowLayer on arrows, as bloom makes thin meshes unreadable.
 
 ```javascript
 function makeArrow(name, hexColor) {
     const color = BABYLON.Color3.FromHexString(hexColor);
     const mat   = new BABYLON.StandardMaterial(name + "_m", scene);
-    mat.emissiveColor   = color;
-    mat.disableLighting = true;
+    mat.emissiveColor    = color;
+    mat.diffuseColor     = color;
+    mat.disableLighting  = true;
+    mat.backFaceCulling  = false;
+    // Do NOT add to GlowLayer — bloom makes arrows hard to read
 
     const root = new BABYLON.TransformNode(name, scene);
 
     const shaft = BABYLON.MeshBuilder.CreateCylinder(name + "_s", {
-        diameter: 0.06, height: 1.0, tessellation: 8
+        diameter: 0.05, height: 1.0, tessellation: 12
     }, scene);
     shaft.material = mat;
     shaft.parent   = root;
     shaft.position.y = 0.5;
 
     const head = BABYLON.MeshBuilder.CreateCylinder(name + "_h", {
-        diameterTop: 0, diameterBottom: 0.16, height: 0.24, tessellation: 8
+        diameterTop: 0, diameterBottom: 0.14, height: 0.18, tessellation: 12
     }, scene);
     head.material = mat;
     head.parent   = root;
-    head.position.y = 1.12;
-
-    glow.addIncludedOnlyMesh(shaft);
-    glow.addIncludedOnlyMesh(head);
+    head.position.y = 1.09;
 
     return {
         root,
-        update(length, position, direction) {
-            if (length < 0.05) { root.scaling.setAll(0); return; }
-            root.scaling.set(1, length, 1);
-            root.position.copyFrom(position);
-            root.lookAt(position.add(direction), 0, Math.PI / 2, 0);
-        }
+        set(len, x, y, z, pointDown) {
+            if (len < 0.04) { root.setEnabled(false); return; }
+            root.setEnabled(true);
+            root.scaling.set(1, len, 1);
+            if (pointDown) {
+                root.position.set(x, y - len, z);
+                root.rotation.set(0, 0, Math.PI);
+            } else {
+                root.position.set(x, y, z);
+                root.rotation.set(0, 0, 0);
+            }
+        },
+        hide() { root.setEnabled(false); }
     };
 }
 ```
+
+Position arrows **in front** of the objects they annotate (use a separate z-layer, e.g., `ARROW_Z = OBJECT_Z - 0.15`).
 
 ---
 

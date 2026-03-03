@@ -9,6 +9,18 @@ import { sortUnitKeys } from '../AdminPanel';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
 
+function formatCompactDate(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return '1d ago';
+  if (diffDays <= 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Textbook': <BookOpen className="w-3 h-3" />,
   'Simulation': <PlayCircle className="w-3 h-3" />,
@@ -252,6 +264,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               const isArchived = a.status === AssignmentStatus.ARCHIVED;
                               const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
                               const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
+                              const compactDate = a.createdAt ? formatCompactDate(a.createdAt) : null;
+                              const isNew = a.createdAt ? (Date.now() - new Date(a.createdAt).getTime()) < 48 * 60 * 60 * 1000 : false;
                               return (
                                 <div
                                   key={a.id}
@@ -266,6 +280,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                     {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                                     <span className="truncate flex-1">{a.title}</span>
                                     <div className="flex items-center gap-1 shrink-0">
+                                      {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
+                                      {compactDate && <span className="text-[8px] text-gray-600 font-mono">{compactDate}</span>}
                                       {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
                                       {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
                                       {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
@@ -321,6 +337,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                   const isArchived = a.status === AssignmentStatus.ARCHIVED;
                   const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
                   const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
+                  const compactDate = a.createdAt ? formatCompactDate(a.createdAt) : null;
+                  const isNew = a.createdAt ? (Date.now() - new Date(a.createdAt).getTime()) < 48 * 60 * 60 * 1000 : false;
                   return (
                     <div
                       key={a.id}
@@ -335,6 +353,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                         {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate flex-1">{a.title}</span>
                         <div className="flex items-center gap-1 shrink-0">
+                          {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
+                          {compactDate && <span className="text-[8px] text-gray-600 font-mono">{compactDate}</span>}
                           {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
                           {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
                           {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}

@@ -77,3 +77,6 @@ export const callDismissAlert = httpsCallable(functions, 'dismissAlert');
 export const callAdminGrantItem = httpsCallable(functions, 'adminGrantItem');
 export const callAdminEditItem = httpsCallable(functions, 'adminEditItem');
 export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment');
+
+// One-time admin utilities
+export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');

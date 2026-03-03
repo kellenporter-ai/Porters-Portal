@@ -3798,3 +3798,46 @@ export const checkStreaksAtRisk = onSchedule(
     logger.info(`Streak-at-risk: queued ${emailsSent} warning emails (week: ${currentWeekId})`);
   },
 );
+
+// ==========================================
+// ONE-TIME BACKFILL: createdAt for assignments
+// ==========================================
+
+/**
+ * Backfills `createdAt` for all assignments that are missing it,
+ * using each Firestore document's native `createTime` metadata.
+ * Admin-only. Safe to call multiple times (skips docs that already have createdAt).
+ */
+export const backfillAssignmentDates = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+
+  const db = admin.firestore();
+  const snap = await db.collection("assignments").get();
+
+  let updated = 0;
+  let skipped = 0;
+  const batch = db.batch();
+
+  snap.docs.forEach((doc) => {
+    const data = doc.data();
+    if (data.createdAt) {
+      skipped++;
+      return;
+    }
+    // Use Firestore's native document creation timestamp
+    const createTime = doc.createTime?.toDate().toISOString() ||
+      new Date().toISOString();
+    batch.update(doc.ref, {
+      createdAt: createTime,
+      updatedAt: data.updatedAt || createTime,
+    });
+    updated++;
+  });
+
+  if (updated > 0) {
+    await batch.commit();
+  }
+
+  logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}`);
+  return { updated, skipped };
+});

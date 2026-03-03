@@ -558,6 +558,8 @@ export const dataService = {
           dueDate: data.dueDate,
           targetSections: data.targetSections || [],
           scheduledAt: data.scheduledAt || undefined,
+          createdAt: data.createdAt || undefined,
+          updatedAt: data.updatedAt || undefined,
           lessonBlocks: data.isAssessment
             ? (data.lessonBlocks || []).map((block: Record<string, unknown>) => {
                 // Strip answer keys from assessment blocks to prevent client-side cheating
@@ -676,12 +678,18 @@ export const dataService = {
         dueDate: assignment.dueDate || null,
         targetSections: assignment.targetSections && assignment.targetSections.length > 0 ? assignment.targetSections : [],
         scheduledAt: assignment.scheduledAt || null,
-        lessonBlocks: assignment.lessonBlocks && assignment.lessonBlocks.length > 0 ? assignment.lessonBlocks : []
+        lessonBlocks: assignment.lessonBlocks && assignment.lessonBlocks.length > 0 ? assignment.lessonBlocks : [],
+        updatedAt: new Date().toISOString(),
       };
 
       if (assignment.id) {
+          // Lazy backfill: if existing resource has no createdAt, set it now
+          if (!assignment.createdAt) {
+            data.createdAt = new Date().toISOString();
+          }
           await setDoc(doc(db, 'assignments', assignment.id), data, { merge: true });
       } else {
+        data.createdAt = new Date().toISOString();
         await addDoc(collection(db, 'assignments'), data);
       }
     } catch (error) {
