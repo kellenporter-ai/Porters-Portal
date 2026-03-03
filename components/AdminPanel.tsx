@@ -881,6 +881,7 @@ For each suggestion, briefly describe the feature/improvement, the expected bene
           </div>
         </div>
       )}
+
     </div>
   );
 };
