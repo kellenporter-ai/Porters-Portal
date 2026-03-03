@@ -1,16 +1,20 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Download, BarChart3, Shield } from 'lucide-react';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade } from '../types';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
+import { calculateRubricPercentage } from '../lib/rubricParser';
+import { analyzeIntegrity, type IntegrityReport } from '../lib/integrityAnalysis';
 import { reportError } from '../lib/errorReporting';
 import { useConfirm } from './ConfirmDialog';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
 import BehaviorQuickAward from './BehaviorQuickAward';
+
+const RubricViewer = React.lazy(() => import('./RubricViewer'));
 
 interface TeacherDashboardProps {
   users: User[];
@@ -38,6 +42,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [expandedSubmissionId, setExpandedSubmissionId] = useState<string | null>(null);
   const [assessmentSortKey, setAssessmentSortKey] = useState<string>('score');
   const [assessmentSortDesc, setAssessmentSortDesc] = useState(true);
+  const [rubricDraft, setRubricDraft] = useState<Record<string, Record<string, RubricSkillGrade>>>({});
+  const [isSavingRubric, setIsSavingRubric] = useState(false);
+  const [assessmentSearch, setAssessmentSearch] = useState('');
+  const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
+  const [expandedStudentIds, setExpandedStudentIds] = useState<Set<string>>(new Set());
+  const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
+  const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
+  const [expandedPairIdx, setExpandedPairIdx] = useState<number | null>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const handleSort = useCallback((col: string) => {
@@ -272,18 +284,61 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         const avgScore = totalSubmissions > 0 ? Math.round(assessmentSubmissions.filter(s => s.status !== 'STARTED').reduce((acc, s) => acc + (s.assessmentScore?.percentage || s.score || 0), 0) / totalSubmissions) : 0;
         const flaggedCount = assessmentSubmissions.filter(s => s.status === 'FLAGGED').length;
 
-        // Sort submissions
-        const sortedAssessmentSubs = [...assessmentSubmissions].filter(s => s.status !== 'STARTED').sort((a, b) => {
+        // Group submissions by student
+        const completedSubs = assessmentSubmissions.filter(s => s.status !== 'STARTED');
+        const studentMap = new Map<string, Submission[]>();
+        completedSubs.forEach(s => {
+          const existing = studentMap.get(s.userId) || [];
+          existing.push(s);
+          studentMap.set(s.userId, existing);
+        });
+
+        const allStudentGroups = Array.from(studentMap.entries()).map(([userId, subs]) => {
+          const sorted = [...subs].sort((a, b) => (b.attemptNumber || 1) - (a.attemptNumber || 1));
+          const latest = sorted[0];
+          return {
+            userId,
+            userName: latest.userName,
+            submissions: sorted,
+            latest,
+            attemptCount: sorted.length,
+            maxAttempts: selectedAssessment?.assessmentConfig?.maxAttempts || undefined,
+            hasRubricGrade: sorted.some(s => !!s.rubricGrade),
+            needsGrading: selectedAssessment?.rubric ? sorted.some(s => !s.rubricGrade) : false,
+          };
+        });
+
+        // Graded count for stats
+        const gradedCount = allStudentGroups.filter(g => g.hasRubricGrade).length;
+
+        // Apply search filter
+        const searchFiltered = assessmentSearch
+          ? allStudentGroups.filter(g => g.userName.toLowerCase().includes(assessmentSearch.toLowerCase()))
+          : allStudentGroups;
+
+        // Apply status filter
+        const statusFiltered = assessmentStatusFilter
+          ? searchFiltered.filter(g => {
+              switch (assessmentStatusFilter) {
+                case 'flagged': return g.latest.status === 'FLAGGED';
+                case 'needs_grading': return g.needsGrading;
+                case 'graded': return g.hasRubricGrade;
+                case 'normal': return g.latest.status !== 'FLAGGED' && !g.needsGrading;
+                default: return true;
+              }
+            })
+          : searchFiltered;
+
+        // Sort grouped rows
+        const studentGroups = [...statusFiltered].sort((a, b) => {
+          const aL = a.latest, bL = b.latest;
           let av: number | string = 0, bv: number | string = 0;
           switch (assessmentSortKey) {
-            case 'name': av = a.userName.toLowerCase(); bv = b.userName.toLowerCase(); return assessmentSortDesc ? bv.toString().localeCompare(av.toString()) : av.toString().localeCompare(bv.toString());
-            case 'attempt': av = a.attemptNumber || 1; bv = b.attemptNumber || 1; break;
-            case 'score': av = a.assessmentScore?.percentage || a.score || 0; bv = b.assessmentScore?.percentage || b.score || 0; break;
-            case 'status': av = a.status; bv = b.status; return assessmentSortDesc ? bv.toString().localeCompare(av.toString()) : av.toString().localeCompare(bv.toString());
-            case 'tabSwitches': av = a.metrics?.tabSwitchCount || 0; bv = b.metrics?.tabSwitchCount || 0; break;
-            case 'time': av = a.metrics?.engagementTime || 0; bv = b.metrics?.engagementTime || 0; break;
-            case 'pastes': av = a.metrics?.pasteCount || 0; bv = b.metrics?.pasteCount || 0; break;
-            default: av = a.assessmentScore?.percentage || a.score || 0; bv = b.assessmentScore?.percentage || b.score || 0; break;
+            case 'name': av = a.userName.toLowerCase(); bv = b.userName.toLowerCase(); return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
+            case 'attempt': av = a.attemptCount; bv = b.attemptCount; break;
+            case 'score': av = aL.assessmentScore?.percentage || aL.score || 0; bv = bL.assessmentScore?.percentage || bL.score || 0; break;
+            case 'status': av = aL.status; bv = bL.status; return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
+            default: av = aL.assessmentScore?.percentage || aL.score || 0; bv = bL.assessmentScore?.percentage || bL.score || 0; break;
           }
           return assessmentSortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
         });
@@ -338,7 +393,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               <select
                 value={selectedAssessmentId || ''}
-                onChange={e => { setSelectedAssessmentId(e.target.value || null); setExpandedSubmissionId(null); }}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setExpandedSubmissionId(null); setExpandedStudentIds(new Set()); setAssessmentSearch(''); setAssessmentStatusFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
@@ -357,137 +412,531 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {/* Summary Stats */}
             {selectedAssessmentId && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`grid grid-cols-2 ${selectedAssessment?.rubric ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                   <div className="text-3xl font-bold text-white">{avgScore}%</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                  <div className="text-3xl font-bold text-white">{totalSubmissions}</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Submissions</div>
+                  <div className="text-3xl font-bold text-white">{allStudentGroups.length}</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Students</div>
                 </div>
                 <div className={`border rounded-2xl p-5 ${flaggedCount > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-white/5 border-white/10'}`}>
                   <div className={`text-3xl font-bold ${flaggedCount > 0 ? 'text-red-400' : 'text-white'}`}>{flaggedCount}</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Flagged</div>
                 </div>
+                {selectedAssessment?.rubric && (
+                  <div className={`border rounded-2xl p-5 ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'bg-green-900/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
+                    <div className={`text-3xl font-bold ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'text-green-400' : 'text-white'}`}>{gradedCount}/{allStudentGroups.length}</div>
+                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Graded</div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Submissions Table */}
-            {selectedAssessmentId && sortedAssessmentSubs.length > 0 && (
+            {/* Search & Filter Bar */}
+            {selectedAssessmentId && completedSubs.length > 0 && (
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search students..."
+                    value={assessmentSearch}
+                    onChange={e => setAssessmentSearch(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+                  />
+                </div>
+                <select
+                  value={assessmentStatusFilter}
+                  onChange={e => setAssessmentStatusFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="flagged">Flagged</option>
+                  {selectedAssessment?.rubric && <option value="needs_grading">Needs Grading</option>}
+                  {selectedAssessment?.rubric && <option value="graded">Graded</option>}
+                  <option value="normal">Normal</option>
+                </select>
+                <button
+                  onClick={() => {
+                    if (showIntegrityPanel) {
+                      setShowIntegrityPanel(false);
+                    } else {
+                      const report = analyzeIntegrity(completedSubs, selectedAssessment?.lessonBlocks || []);
+                      setIntegrityReport(report);
+                      setShowIntegrityPanel(true);
+                      setExpandedPairIdx(null);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl transition whitespace-nowrap ${showIntegrityPanel ? 'bg-amber-500 text-black' : 'bg-amber-600/80 hover:bg-amber-500 text-white'}`}
+                >
+                  <Fingerprint className="w-3.5 h-3.5" />
+                  {showIntegrityPanel ? 'Hide Report' : 'Check Integrity'}
+                </button>
+              </div>
+            )}
+
+            {/* Integrity Analysis Report Panel */}
+            {showIntegrityPanel && integrityReport && (
+              <div className="bg-amber-900/10 border border-amber-500/20 rounded-3xl p-6 backdrop-blur-md space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-lg font-bold text-amber-400 flex items-center gap-2">
+                    <Fingerprint className="w-5 h-5" />
+                    Integrity Analysis
+                  </h4>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <span>{integrityReport.totalStudents} students</span>
+                    <span className="text-gray-600">&bull;</span>
+                    <span>{integrityReport.pairsAnalyzed} pairs compared</span>
+                    <span className="text-gray-600">&bull;</span>
+                    <span>{new Date(integrityReport.analyzedAt).toLocaleTimeString()}</span>
+                  </div>
+                </div>
+
+                {integrityReport.flaggedPairs.length === 0 ? (
+                  <div className="text-center py-6">
+                    <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400 opacity-40" />
+                    <p className="text-sm text-green-400 font-bold">No suspicious similarity detected</p>
+                    <p className="text-xs text-gray-500 mt-1">All student responses appear to be independently written.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-xs text-amber-400/70 font-bold uppercase tracking-widest mb-2">
+                      {integrityReport.flaggedPairs.length} suspicious pair{integrityReport.flaggedPairs.length !== 1 ? 's' : ''} found
+                    </div>
+                    {integrityReport.flaggedPairs.map((pair, idx) => {
+                      const isHigh = pair.overallSimilarity >= 90;
+                      const isExpanded = expandedPairIdx === idx;
+                      return (
+                        <div key={idx} className={`border rounded-2xl overflow-hidden transition ${isHigh ? 'bg-red-900/10 border-red-500/20' : 'bg-amber-900/10 border-amber-500/15'}`}>
+                          <div
+                            className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition"
+                            onClick={() => setExpandedPairIdx(isExpanded ? null : idx)}
+                          >
+                            <div className={`px-2 py-1 rounded-lg text-xs font-bold ${isHigh ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                              {pair.overallSimilarity > 0 ? `${pair.overallSimilarity}%` : 'MC'}
+                            </div>
+                            <div className="flex-1 text-sm text-white">
+                              <span className="font-bold">{pair.studentA.userName}</span>
+                              <span className="text-gray-500 mx-2">&harr;</span>
+                              <span className="font-bold">{pair.studentB.userName}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                              {pair.flaggedBlocks.length > 0 && (
+                                <span>{pair.flaggedBlocks.length} similar response{pair.flaggedBlocks.length !== 1 ? 's' : ''}</span>
+                              )}
+                              {pair.mcMatchCount > 0 && (
+                                <span className="text-amber-400">{pair.mcMatchCount}/{pair.mcTotalWrong} shared wrong MC</span>
+                              )}
+                            </div>
+                            <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                          </div>
+
+                          {isExpanded && (
+                            <div className="border-t border-white/5 p-4 space-y-3 bg-black/20">
+                              {pair.flaggedBlocks.length > 0 ? pair.flaggedBlocks.map((block, bi) => (
+                                <div key={bi} className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${block.similarity >= 90 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                      {block.similarity}%
+                                    </span>
+                                    <span className="text-xs text-gray-400">{block.question.length > 120 ? block.question.slice(0, 120) + '...' : block.question}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-white/5 rounded-lg p-3">
+                                      <div className="text-[10px] text-gray-500 font-bold mb-1">{pair.studentA.userName}</div>
+                                      <div className="text-xs text-gray-300 whitespace-pre-wrap break-words">{block.textA}</div>
+                                    </div>
+                                    <div className="bg-white/5 rounded-lg p-3">
+                                      <div className="text-[10px] text-gray-500 font-bold mb-1">{pair.studentB.userName}</div>
+                                      <div className="text-xs text-gray-300 whitespace-pre-wrap break-words">{block.textB}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )) : (
+                                <div className="text-xs text-gray-500 italic">
+                                  Flagged based on shared wrong MC answers only &mdash; no comparable text responses.
+                                </div>
+                              )}
+                              {pair.mcMatchCount > 0 && (
+                                <div className="mt-2 bg-amber-900/20 border border-amber-500/10 rounded-lg p-3 text-xs text-amber-400/80">
+                                  <span className="font-bold">MC Pattern:</span> {pair.mcMatchCount} of {pair.mcTotalWrong} incorrect MC answers are identical between these students.
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Student-Grouped Submissions Table */}
+            {selectedAssessmentId && studentGroups.length > 0 && (() => {
+              const computeTotalTime = (sub: Submission) => {
+                if (sub.submittedAt && sub.metrics?.startTime) {
+                  return Math.round((new Date(sub.submittedAt).getTime() - sub.metrics.startTime) / 1000);
+                }
+                return sub.metrics?.engagementTime || 0;
+              };
+              const colCount = selectedAssessment?.rubric ? 5 : 4;
+              return (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
                 <h4 className="text-lg font-bold text-white mb-4">Student Submissions</h4>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                   <table className="w-full text-left">
-                    <thead>
+                    <thead className="sticky top-0 bg-gray-900/95 backdrop-blur z-10">
                       <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
                         <SortHeader label="Student" sortKey="name" />
-                        <SortHeader label="Attempt" sortKey="attempt" className="text-center" />
                         <SortHeader label="Score" sortKey="score" className="text-center" />
                         <SortHeader label="Status" sortKey="status" className="text-center" />
-                        <SortHeader label="Tab Switches" sortKey="tabSwitches" className="text-center" />
-                        <SortHeader label="Time" sortKey="time" className="text-center" />
-                        <SortHeader label="Pastes" sortKey="pastes" className="text-center" />
+                        <SortHeader label="Attempts" sortKey="attempt" className="text-center" />
+                        {selectedAssessment?.rubric && <th className="p-3 text-center">Rubric</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {sortedAssessmentSubs.map(sub => {
-                        const pct = sub.assessmentScore?.percentage || sub.score || 0;
-                        const tabSwitches = sub.metrics?.tabSwitchCount || 0;
-                        const engTime = sub.metrics?.engagementTime || 0;
-                        const isExpanded = expandedSubmissionId === sub.id;
+                      {studentGroups.map(group => {
+                        const isStudentExpanded = expandedStudentIds.has(group.userId);
+                        const latestPct = group.latest.flaggedAsAI ? 0 : (group.latest.assessmentScore?.percentage || group.latest.score || 0);
 
                         return (
-                          <React.Fragment key={sub.id}>
+                          <React.Fragment key={group.userId}>
+                            {/* Student-level row */}
                             <tr
-                              className={`hover:bg-white/5 transition cursor-pointer ${isExpanded ? 'bg-white/5' : ''} ${sub.status === 'FLAGGED' ? 'bg-red-900/5' : ''}`}
-                              onClick={() => setExpandedSubmissionId(isExpanded ? null : sub.id)}
+                              className={`hover:bg-white/5 transition cursor-pointer ${isStudentExpanded ? 'bg-white/5' : ''} ${group.latest.status === 'FLAGGED' || group.latest.flaggedAsAI ? 'bg-red-900/5' : ''}`}
+                              onClick={() => {
+                                setExpandedStudentIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(group.userId)) next.delete(group.userId);
+                                  else next.add(group.userId);
+                                  return next;
+                                });
+                                setExpandedSubmissionId(null);
+                              }}
                             >
                               <td className="p-3">
-                                <div className="text-sm font-bold text-white">{sub.userName}</div>
+                                <div className="flex items-center gap-2">
+                                  <ChevronRight className={`w-3.5 h-3.5 text-gray-500 transition-transform ${isStudentExpanded ? 'rotate-90' : ''}`} />
+                                  <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                                    {group.userName}
+                                    {group.latest.flaggedAsAI && <span title="AI Suspected"><Bot className="w-3.5 h-3.5 text-red-400" /></span>}
+                                  </div>
+                                </div>
                               </td>
                               <td className="p-3 text-center">
-                                <span className="text-xs text-gray-300 font-mono">#{sub.attemptNumber || 1}</span>
+                                <span className={`text-sm font-bold ${group.latest.flaggedAsAI ? 'text-red-400 line-through' : getScoreColor(latestPct)}`}>{group.latest.flaggedAsAI ? '0%' : `${latestPct}%`}</span>
                               </td>
                               <td className="p-3 text-center">
-                                <span className={`text-sm font-bold ${getScoreColor(pct)}`}>{pct}%</span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(sub.status)}`}>
-                                  {sub.status}
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${group.latest.flaggedAsAI ? 'bg-red-500/20 text-red-400 border-red-500/30' : getStatusBadge(group.latest.status)}`}>
+                                  {group.latest.flaggedAsAI ? 'AI SUSPECTED' : group.latest.status}
                                 </span>
                               </td>
                               <td className="p-3 text-center">
-                                <span className={`text-xs font-mono font-bold ${getTabSwitchColor(tabSwitches)}`}>{tabSwitches}</span>
+                                <span className="text-xs text-gray-300 font-mono">
+                                  {group.attemptCount}{group.maxAttempts ? `/${group.maxAttempts}` : ''}
+                                </span>
                               </td>
-                              <td className="p-3 text-center">
-                                <span className="text-xs text-gray-300 font-mono">{formatEngagementTime(engTime)}</span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className="text-xs text-gray-300 font-mono">{sub.metrics?.pasteCount || 0}</span>
-                              </td>
+                              {selectedAssessment?.rubric && (
+                                <td className="p-3 text-center">
+                                  {group.hasRubricGrade ? (
+                                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30 font-bold">Graded</span>
+                                  ) : (
+                                    <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 font-bold">Pending</span>
+                                  )}
+                                </td>
+                              )}
                             </tr>
-                            {/* Expanded per-question detail */}
-                            {isExpanded && (
-                              <tr>
-                                <td colSpan={7} className="p-0">
-                                  <div className="bg-black/20 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-200">
-                                    <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Per-Question Breakdown</h5>
-                                    {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
-                                      <div className="space-y-2">
-                                        {selectedAssessment.lessonBlocks
-                                          .filter((block: LessonBlock) => block.type === 'MC' || block.type === 'SHORT_ANSWER' || block.type === 'RANKING' || block.type === 'SORTING' || block.type === 'LINKED')
-                                          .map((block: LessonBlock, qi: number) => {
-                                            const blockResult = sub.assessmentScore?.perBlock?.[block.id];
-                                            const studentAnswer = sub.blockResponses?.[block.id];
+
+                            {/* Expanded attempt sub-rows */}
+                            {isStudentExpanded && group.submissions.map(sub => {
+                              const pct = sub.flaggedAsAI ? 0 : (sub.assessmentScore?.percentage || sub.score || 0);
+                              const tabSwitches = sub.metrics?.tabSwitchCount || 0;
+                              const activeTime = sub.metrics?.engagementTime || 0;
+                              const totalTime = computeTotalTime(sub);
+                              const inactiveTime = Math.max(0, totalTime - activeTime);
+                              const isAttemptExpanded = expandedSubmissionId === sub.id;
+
+                              return (
+                                <React.Fragment key={sub.id}>
+                                  <tr
+                                    className={`hover:bg-purple-500/5 transition cursor-pointer ${isAttemptExpanded ? 'bg-purple-500/5' : 'bg-white/[0.02]'} ${sub.flaggedAsAI ? 'bg-red-900/10' : ''}`}
+                                    onClick={() => {
+                                      setExpandedSubmissionId(isAttemptExpanded ? null : sub.id);
+                                      if (!isAttemptExpanded) setRubricDraft(sub.rubricGrade?.grades || {});
+                                    }}
+                                  >
+                                    <td className="p-3 pl-10">
+                                      <div className="flex items-center gap-2">
+                                        <ChevronRight className={`w-3 h-3 text-gray-600 transition-transform ${isAttemptExpanded ? 'rotate-90' : ''}`} />
+                                        <span className="text-xs text-gray-400">Attempt #{sub.attemptNumber || 1}</span>
+                                        {sub.flaggedAsAI && <span title="AI Suspected"><Bot className="w-3 h-3 text-red-400" /></span>}
+                                      </div>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className={`text-xs font-bold ${sub.flaggedAsAI ? 'text-red-400 line-through' : getScoreColor(pct)}`}>{sub.flaggedAsAI ? '0%' : `${pct}%`}</span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${sub.flaggedAsAI ? 'bg-red-500/20 text-red-400 border-red-500/30' : getStatusBadge(sub.status)}`}>
+                                        {sub.flaggedAsAI ? 'AI SUSPECTED' : sub.status}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <div className="flex items-center justify-center gap-3 text-[10px] text-gray-400">
+                                        <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
+                                        <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
+                                        <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-gray-500'}>{formatEngagementTime(inactiveTime)} idle</span>
+                                        <span>{sub.metrics?.pasteCount || 0} pastes</span>
+                                      </div>
+                                    </td>
+                                    {selectedAssessment?.rubric && (
+                                      <td className="p-3 text-center">
+                                        {sub.rubricGrade ? (
+                                          <span className="text-[10px] text-green-400 font-mono">{sub.rubricGrade.overallPercentage}%</span>
+                                        ) : (
+                                          <span className="text-[10px] text-gray-600">&mdash;</span>
+                                        )}
+                                      </td>
+                                    )}
+                                  </tr>
+
+                                  {/* Expanded per-question detail */}
+                                  {isAttemptExpanded && (
+                                    <tr>
+                                      <td colSpan={colCount} className="p-0">
+                                        <div className="bg-black/20 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-200">
+                                          {/* AI Suspected Flag */}
+                                          <div className="flex items-center justify-between mb-4">
+                                            <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Per-Question Breakdown</h5>
+                                            {sub.flaggedAsAI ? (
+                                              <button
+                                                onClick={async (e) => {
+                                                  e.stopPropagation();
+                                                  if (await confirm({ title: 'Remove AI Flag', message: 'Remove AI suspected flag from this submission? The original score will not be restored automatically.', variant: 'warning' })) {
+                                                    try {
+                                                      await dataService.unflagSubmissionAsAI(sub.id);
+                                                    } catch (err) {
+                                                      reportError(err, { method: 'unflagSubmissionAsAI' });
+                                                    }
+                                                  }
+                                                }}
+                                                className="flex items-center gap-1.5 bg-gray-600 hover:bg-gray-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition uppercase tracking-wider"
+                                              >
+                                                <Undo2 className="w-3 h-3" />
+                                                Remove AI Flag
+                                              </button>
+                                            ) : (
+                                              <button
+                                                onClick={async (e) => {
+                                                  e.stopPropagation();
+                                                  if (await confirm({ title: 'Flag AI Suspected', message: `Flag ${sub.userName}'s submission as AI suspected? This will set their score to 0%.`, variant: 'danger', confirmLabel: 'Flag as AI' })) {
+                                                    try {
+                                                      await dataService.flagSubmissionAsAI(sub.id, 'Admin');
+                                                    } catch (err) {
+                                                      reportError(err, { method: 'flagSubmissionAsAI' });
+                                                    }
+                                                  }
+                                                }}
+                                                className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition uppercase tracking-wider"
+                                              >
+                                                <Bot className="w-3 h-3" />
+                                                Flag AI Suspected
+                                              </button>
+                                            )}
+                                          </div>
+                                          {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
+                                            <div className="space-y-2">
+                                              {selectedAssessment.lessonBlocks
+                                                .filter((block: LessonBlock) => block.type === 'MC' || block.type === 'SHORT_ANSWER' || block.type === 'RANKING' || block.type === 'SORTING' || block.type === 'LINKED')
+                                                .map((block: LessonBlock, qi: number) => {
+                                                  const blockResult = sub.assessmentScore?.perBlock?.[block.id];
+                                                  const rawAnswer = sub.blockResponses?.[block.id] as Record<string, unknown> | undefined;
+                                                  const isPending = blockResult?.needsReview;
+
+                                                  let displayAnswer = 'No answer';
+                                                  if (rawAnswer != null) {
+                                                    if (block.type === 'SHORT_ANSWER') {
+                                                      displayAnswer = String((rawAnswer as { answer?: string }).answer || 'No answer');
+                                                    } else if (block.type === 'MC') {
+                                                      const selected = (rawAnswer as { selected?: number }).selected;
+                                                      displayAnswer = selected != null && block.options ? String(block.options[selected]) : 'No selection';
+                                                    } else if (block.type === 'RANKING') {
+                                                      const order = (rawAnswer as { order?: { item: string }[] }).order || [];
+                                                      displayAnswer = order.map(o => o.item).join(' → ') || 'No answer';
+                                                    } else if (block.type === 'SORTING') {
+                                                      const placements = (rawAnswer as { placements?: Record<string, string> }).placements || {};
+                                                      displayAnswer = Object.values(placements).join(', ') || 'No answer';
+                                                    } else {
+                                                      displayAnswer = typeof rawAnswer === 'string' ? rawAnswer : JSON.stringify(rawAnswer);
+                                                    }
+                                                  }
+
+                                                  const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
+                                                    : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
+                                                    : 'bg-red-900/10 border-red-500/20';
+                                                  const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
+                                                    : blockResult?.correct ? 'bg-green-500/20 text-green-400'
+                                                    : 'bg-red-500/20 text-red-400';
+                                                  const answerColor = isPending ? 'text-amber-400'
+                                                    : blockResult?.correct ? 'text-green-400'
+                                                    : 'text-red-400';
+
+                                                  return (
+                                                    <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${borderClass}`}>
+                                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${iconClass}`}>
+                                                        {isPending ? <Clock className="w-3.5 h-3.5" /> : blockResult?.correct ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                                                      </div>
+                                                      <div className="flex-1 min-w-0">
+                                                        <div className="text-xs text-gray-300 mb-1">
+                                                          <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
+                                                        </div>
+                                                        <div className="text-[11px] text-gray-500">
+                                                          {isPending ? (
+                                                            <span className="text-amber-400 font-bold">Pending Review</span>
+                                                          ) : (
+                                                            <>
+                                                              <span className="font-bold">Answer:</span>{' '}
+                                                              <span className={answerColor}>{displayAnswer}</span>
+                                                              {!blockResult?.correct && block.type === 'MC' && block.correctAnswer !== undefined && block.options && (
+                                                                <span className="ml-2 text-green-400/60">
+                                                                  (Correct: {block.options[block.correctAnswer]})
+                                                                </span>
+                                                              )}
+                                                            </>
+                                                          )}
+                                                          {isPending && displayAnswer !== 'No answer' && (
+                                                            <div className="mt-1 text-gray-300 bg-white/5 rounded px-2 py-1.5 whitespace-pre-wrap">{displayAnswer}</div>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })
+                                              }
+                                            </div>
+                                          ) : sub.blockResponses ? (
+                                            <div className="space-y-2">
+                                              {Object.entries(sub.blockResponses).map(([blockId, answer]) => {
+                                                const blockResult = sub.assessmentScore?.perBlock?.[blockId];
+                                                const isPending = blockResult?.needsReview;
+                                                const ansObj = answer as Record<string, unknown> | null;
+                                                const answerText = ansObj != null
+                                                  ? (typeof ansObj === 'string' ? ansObj : (ansObj.answer as string) || (ansObj.selected != null ? `Option ${ansObj.selected}` : JSON.stringify(ansObj)))
+                                                  : 'No answer';
+                                                const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
+                                                  : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
+                                                  : blockResult ? 'bg-red-900/10 border-red-500/20'
+                                                  : 'bg-white/5 border-white/5';
+                                                const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
+                                                  : blockResult?.correct ? 'bg-green-500/20 text-green-400'
+                                                  : blockResult ? 'bg-red-500/20 text-red-400'
+                                                  : 'bg-gray-500/20 text-gray-400';
+                                                return (
+                                                  <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${borderClass}`}>
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${iconClass}`}>
+                                                      {isPending ? <Clock className="w-3 h-3" /> : blockResult?.correct ? <CheckCircle className="w-3 h-3" /> : blockResult ? <AlertTriangle className="w-3 h-3" /> : '?'}
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
+                                                    <span className="text-xs text-gray-300 truncate flex-1">{answerText}</span>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          ) : (
+                                            <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
+                                          )}
+
+                                          {/* Rubric Grading */}
+                                          {selectedAssessment?.rubric && (() => {
+                                            const TIER_PERCENTAGES = [0, 55, 65, 85, 100];
+                                            const currentGrades = sub.rubricGrade?.grades || rubricDraft;
+                                            const rubricPct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
+                                            const isAlreadyGraded = !!sub.rubricGrade;
+
                                             return (
-                                              <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${blockResult?.correct ? 'bg-green-900/10 border-green-500/20' : 'bg-red-900/10 border-red-500/20'}`}>
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${blockResult?.correct ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                  {blockResult?.correct ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                  <div className="text-xs text-gray-300 mb-1">
-                                                    <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
+                                              <div className="mt-4 border-t border-white/5 pt-4">
+                                                <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                                  <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
+                                                  {isAlreadyGraded && (
+                                                    <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
+                                                  )}
+                                                </h5>
+                                                <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
+                                                  <RubricViewer
+                                                    rubric={selectedAssessment.rubric}
+                                                    mode="grade"
+                                                    rubricGrade={{
+                                                      grades: currentGrades,
+                                                      overallPercentage: rubricPct,
+                                                      gradedAt: sub.rubricGrade?.gradedAt || '',
+                                                      gradedBy: sub.rubricGrade?.gradedBy || '',
+                                                    }}
+                                                    onGradeChange={(questionId, skillId, tierIndex) => {
+                                                      setRubricDraft(prev => ({
+                                                        ...prev,
+                                                        [questionId]: {
+                                                          ...(prev[questionId] || {}),
+                                                          [skillId]: {
+                                                            selectedTier: tierIndex,
+                                                            percentage: TIER_PERCENTAGES[tierIndex],
+                                                          },
+                                                        },
+                                                      }));
+                                                    }}
+                                                  />
+                                                </React.Suspense>
+                                                <div className="flex items-center justify-between mt-3 bg-white/5 border border-white/10 rounded-xl p-3">
+                                                  <div className="text-xs text-gray-400">
+                                                    Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
                                                   </div>
-                                                  <div className="text-[11px] text-gray-500">
-                                                    <span className="font-bold">Answer:</span>{' '}
-                                                    <span className={blockResult?.correct ? 'text-green-400' : 'text-red-400'}>
-                                                      {studentAnswer != null ? String(studentAnswer) : 'No answer'}
-                                                    </span>
-                                                    {!blockResult?.correct && block.type === 'MC' && block.correctAnswer !== undefined && block.options && (
-                                                      <span className="ml-2 text-green-400/60">
-                                                        (Correct: {block.options[block.correctAnswer]})
-                                                      </span>
+                                                  <button
+                                                    onClick={async () => {
+                                                      setIsSavingRubric(true);
+                                                      try {
+                                                        const gradesToSave = { ...currentGrades, ...rubricDraft };
+                                                        const pct = calculateRubricPercentage(gradesToSave, selectedAssessment.rubric!);
+                                                        const rubricGrade: RubricGrade = {
+                                                          grades: gradesToSave,
+                                                          overallPercentage: pct,
+                                                          gradedAt: new Date().toISOString(),
+                                                          gradedBy: 'Admin',
+                                                        };
+                                                        await dataService.saveRubricGrade(sub.id, rubricGrade);
+                                                        setRubricDraft({});
+                                                      } catch (err) {
+                                                        reportError(err, { method: 'saveRubricGrade' });
+                                                      } finally {
+                                                        setIsSavingRubric(false);
+                                                      }
+                                                    }}
+                                                    disabled={isSavingRubric}
+                                                    className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50"
+                                                  >
+                                                    {isSavingRubric ? (
+                                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                      <Save className="w-3.5 h-3.5" />
                                                     )}
-                                                  </div>
+                                                    {isSavingRubric ? 'Saving...' : isAlreadyGraded ? 'Update Grade' : 'Save Grade'}
+                                                  </button>
                                                 </div>
+                                                {isAlreadyGraded && sub.rubricGrade && (
+                                                  <div className="text-[10px] text-gray-600 mt-1.5">
+                                                    Last graded by {sub.rubricGrade.gradedBy} on {new Date(sub.rubricGrade.gradedAt).toLocaleDateString()}
+                                                  </div>
+                                                )}
                                               </div>
                                             );
-                                          })
-                                        }
-                                      </div>
-                                    ) : sub.blockResponses ? (
-                                      <div className="space-y-2">
-                                        {Object.entries(sub.blockResponses).map(([blockId, answer]) => {
-                                          const blockResult = sub.assessmentScore?.perBlock?.[blockId];
-                                          return (
-                                            <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${blockResult?.correct ? 'bg-green-900/10 border-green-500/20' : blockResult ? 'bg-red-900/10 border-red-500/20' : 'bg-white/5 border-white/5'}`}>
-                                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${blockResult?.correct ? 'bg-green-500/20 text-green-400' : blockResult ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                                                {blockResult?.correct ? <CheckCircle className="w-3 h-3" /> : blockResult ? <AlertTriangle className="w-3 h-3" /> : '?'}
-                                              </div>
-                                              <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
-                                              <span className="text-xs text-gray-300 truncate flex-1">{String(answer)}</span>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    ) : (
-                                      <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
+                                          })()}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
                           </React.Fragment>
                         );
                       })}
@@ -495,13 +944,22 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   </table>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Empty state when assessment selected but no submissions */}
-            {selectedAssessmentId && sortedAssessmentSubs.length === 0 && (
+            {selectedAssessmentId && completedSubs.length === 0 && (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
                 <FileText className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
                 <p className="text-gray-500 text-sm">No submissions yet for this assessment.</p>
+              </div>
+            )}
+
+            {/* No results from search/filter */}
+            {selectedAssessmentId && completedSubs.length > 0 && studentGroups.length === 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
+                <Search className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
+                <p className="text-gray-500 text-sm">No students match your search or filter.</p>
               </div>
             )}
           </div>
