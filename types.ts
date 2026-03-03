@@ -27,11 +27,13 @@ export interface ClassConfig {
   className: string;
   unitOrder?: string[]; 
   features: {
-    physicsLab: boolean;
     evidenceLocker: boolean;
     leaderboard: boolean;
     physicsTools: boolean;
     communications: boolean;
+    dungeons: boolean;
+    pvpArena: boolean;
+    bossFights: boolean;
   };
   // Admin-configurable telemetry thresholds (optional — falls back to defaults)
   telemetryThresholds?: {
@@ -340,6 +342,53 @@ export interface WhitelistedUser {
 
 export type ResourceCategory = 'Textbook' | 'Supplemental' | 'Lab Guide' | 'Practice Set' | 'Simulation' | 'Article' | 'Video Lesson';
 
+// Rubric types
+export type RubricTierLabel = 'Missing' | 'Emerging' | 'Approaching' | 'Developing' | 'Refining';
+
+export interface RubricTier {
+  label: RubricTierLabel;
+  percentage: number;
+  descriptor: string;
+}
+
+export interface RubricSkill {
+  id: string;
+  skillText: string;
+  tiers: RubricTier[];
+}
+
+export interface RubricQuestion {
+  id: string;
+  questionLabel: string;
+  skills: RubricSkill[];
+}
+
+export interface Rubric {
+  title: string;
+  questions: RubricQuestion[];
+  rawMarkdown: string;
+}
+
+export interface RubricSkillGrade {
+  selectedTier: number;
+  percentage: number;
+}
+
+export interface RubricGrade {
+  grades: Record<string, Record<string, RubricSkillGrade>>;
+  overallPercentage: number;
+  gradedAt: string;
+  gradedBy: string;
+}
+
+export const RUBRIC_TIER_COLORS: Record<RubricTierLabel, { bg: string; text: string; border: string; solid: string }> = {
+  Missing:     { bg: 'bg-red-500/20',    text: 'text-red-400',    border: 'border-red-500/40',    solid: 'bg-red-600' },
+  Emerging:    { bg: 'bg-orange-500/20',  text: 'text-orange-400', border: 'border-orange-500/40', solid: 'bg-orange-600' },
+  Approaching: { bg: 'bg-yellow-500/20',  text: 'text-yellow-400', border: 'border-yellow-500/40', solid: 'bg-yellow-600' },
+  Developing:  { bg: 'bg-green-500/20',   text: 'text-green-400',  border: 'border-green-500/40',  solid: 'bg-green-600' },
+  Refining:    { bg: 'bg-blue-500/20',    text: 'text-blue-400',   border: 'border-blue-500/40',   solid: 'bg-blue-600' },
+};
+
 export interface Assignment {
   id: string;
   title: string;
@@ -366,6 +415,7 @@ export interface Assignment {
     showScoreOnSubmit?: boolean;    // default true
     lockNavigation?: boolean;       // default true for assessments
   };
+  rubric?: Rubric;
 }
 
 export interface Submission {
@@ -390,9 +440,14 @@ export interface Submission {
     correct: number;
     total: number;
     percentage: number;
-    perBlock: Record<string, { correct: boolean; answer: unknown }>;
+    perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }>;
   };
   blockResponses?: Record<string, unknown>;
+  rubricGrade?: RubricGrade;
+  userSection?: string;
+  flaggedAsAI?: boolean;
+  flaggedAsAIBy?: string;
+  flaggedAsAIAt?: string;
 }
 
 export interface ChatMessage {

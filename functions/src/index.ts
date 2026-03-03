@@ -1693,20 +1693,25 @@ export const submitAssessment = onCall(async (request) => {
   const blocks = assignment.lessonBlocks || [];
   let correct = 0;
   let total = 0;
-  const perBlock: Record<string, { correct: boolean; answer: unknown }> = {};
+  const perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }> = {};
 
   for (const block of blocks) {
     if (["MC", "SHORT_ANSWER", "SORTING", "RANKING"].includes(block.type)) {
-      total++;
       const resp = responses[block.id];
       let isCorrect = false;
+      let needsReview = false;
 
       if (block.type === "MC" && resp?.selected === block.correctAnswer) {
         isCorrect = true;
       }
       if (block.type === "SHORT_ANSWER") {
-        const accepted = (block.acceptedAnswers || []).map((a: string) => a.toLowerCase().trim());
-        isCorrect = accepted.includes((resp?.answer || "").toLowerCase().trim());
+        const accepted = (block.acceptedAnswers || []).map((a: string) => a.toLowerCase().trim()).filter(Boolean);
+        if (accepted.length === 0) {
+          // No accepted answers — requires manual/rubric review
+          needsReview = true;
+        } else {
+          isCorrect = accepted.includes((resp?.answer || "").toLowerCase().trim());
+        }
       }
       if (block.type === "SORTING") {
         const sortItems = block.sortItems || [];
@@ -1722,8 +1727,13 @@ export const submitAssessment = onCall(async (request) => {
           order.every((o: { item: string }, idx: number) => o.item === items[idx]);
       }
 
-      if (isCorrect) correct++;
-      perBlock[block.id] = { correct: isCorrect, answer: resp };
+      if (needsReview) {
+        perBlock[block.id] = { correct: false, answer: resp, needsReview: true };
+      } else {
+        total++;
+        if (isCorrect) correct++;
+        perBlock[block.id] = { correct: isCorrect, answer: resp };
+      }
     }
   }
 
@@ -1753,6 +1763,17 @@ export const submitAssessment = onCall(async (request) => {
     tabSwitchCount: metrics.tabSwitchCount || 0,
   }, assessmentThresholds);
 
+  // 5b. Look up student's section for this class
+  let userSection: string | undefined;
+  if (classType) {
+    const userSnap = await db.doc(`users/${uid}`).get();
+    if (userSnap.exists) {
+      const userData = userSnap.data()!;
+      userSection = userData.classSections?.[classType]
+        ?? ((userData.classType === classType || (userData.enrolledClasses || []).includes(classType)) ? userData.section : undefined);
+    }
+  }
+
   // 6. Create submission doc
   const assessmentSubmission = {
     userId: uid,
@@ -1780,6 +1801,7 @@ export const submitAssessment = onCall(async (request) => {
     privateComments: [],
     hasUnreadAdmin: true,
     hasUnreadStudent: false,
+    ...(userSection ? { userSection } : {}),
   };
 
   await db.collection("submissions").add(assessmentSubmission);

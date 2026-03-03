@@ -1,5 +1,5 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -572,6 +572,7 @@ export const dataService = {
             : (data.lessonBlocks || []),
           isAssessment: data.isAssessment || false,
           assessmentConfig: data.assessmentConfig || undefined,
+          rubric: data.rubric || undefined,
         };
       });
       callback(assignments);
@@ -604,6 +605,8 @@ export const dataService = {
           attemptNumber: data.attemptNumber,
           assessmentScore: data.assessmentScore,
           blockResponses: data.blockResponses,
+          rubricGrade: data.rubricGrade || undefined,
+          userSection: data.userSection || undefined,
         } as Submission;
       });
       callback(submissions);
@@ -633,7 +636,13 @@ export const dataService = {
           isArchived: data.isArchived || false,
           privateComments: (data.privateComments || []).sort((a: Comment, b: Comment) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          )
+          ),
+          isAssessment: data.isAssessment || false,
+          attemptNumber: data.attemptNumber,
+          assessmentScore: data.assessmentScore,
+          blockResponses: data.blockResponses,
+          rubricGrade: data.rubricGrade || undefined,
+          userSection: data.userSection || undefined,
         } as Submission;
       })
       // Sort client-side instead
@@ -679,6 +688,9 @@ export const dataService = {
         targetSections: assignment.targetSections && assignment.targetSections.length > 0 ? assignment.targetSections : [],
         scheduledAt: assignment.scheduledAt || null,
         lessonBlocks: assignment.lessonBlocks && assignment.lessonBlocks.length > 0 ? assignment.lessonBlocks : [],
+        isAssessment: assignment.isAssessment || false,
+        assessmentConfig: assignment.assessmentConfig || null,
+        rubric: assignment.rubric || null,
         updatedAt: new Date().toISOString(),
       };
 
@@ -741,14 +753,21 @@ export const dataService = {
     }
   },
 
-  updateWhitelistSection: async (email: string, section: string) => {
+  updateWhitelistSection: async (email: string, section: string, classType?: string) => {
     try {
       await updateDoc(doc(db, 'allowed_emails', email), { section });
       // Also update user doc if they already exist
       const q = query(collection(db, 'users'), where('email', '==', email));
       const snap = await getDocs(q);
       await Promise.all(snap.docs.map(async (d) => {
-        await updateDoc(doc(db, 'users', d.id), { section });
+        if (classType) {
+          // Write to per-class classSections map
+          await updateDoc(doc(db, 'users', d.id), {
+            [`classSections.${classType}`]: section || null,
+          });
+        } else {
+          await updateDoc(doc(db, 'users', d.id), { section });
+        }
       }));
     } catch (error) {
       reportError(error, { method: 'updateWhitelistSection' });
@@ -963,6 +982,47 @@ export const dataService = {
         status: string;
         xpEarned: number;
       };
+  },
+
+  saveRubricGrade: async (submissionId: string, rubricGrade: RubricGrade) => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        rubricGrade,
+        score: rubricGrade.overallPercentage,
+      });
+    } catch (error) {
+      reportError(error, { method: 'saveRubricGrade' });
+      throw error;
+    }
+  },
+
+  flagSubmissionAsAI: async (submissionId: string, flaggedBy: string) => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        flaggedAsAI: true,
+        flaggedAsAIBy: flaggedBy,
+        flaggedAsAIAt: new Date().toISOString(),
+        status: 'FLAGGED',
+        score: 0,
+        'assessmentScore.percentage': 0,
+      });
+    } catch (error) {
+      reportError(error, { method: 'flagSubmissionAsAI' });
+      throw error;
+    }
+  },
+
+  unflagSubmissionAsAI: async (submissionId: string) => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        flaggedAsAI: false,
+        flaggedAsAIBy: '',
+        flaggedAsAIAt: '',
+      });
+    } catch (error) {
+      reportError(error, { method: 'unflagSubmissionAsAI' });
+      throw error;
+    }
   },
 
   subscribeToLeaderboard: (callback: (users: User[]) => void, maxResults?: number) => {

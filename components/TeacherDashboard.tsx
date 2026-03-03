@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade } from '../types';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass } from '../types';
 import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
@@ -46,6 +46,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [isSavingRubric, setIsSavingRubric] = useState(false);
   const [assessmentSearch, setAssessmentSearch] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
+  const [assessmentSectionFilter, setAssessmentSectionFilter] = useState('');
   const [expandedStudentIds, setExpandedStudentIds] = useState<Set<string>>(new Set());
   const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
   const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
@@ -279,13 +280,34 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         const selectedAssessment = assessmentAssignments.find(a => a.id === selectedAssessmentId) || null;
         const assessmentSubmissions = submissions.filter(s => s.isAssessment && (selectedAssessmentId ? s.assignmentId === selectedAssessmentId : true));
 
-        // Summary stats
-        const totalSubmissions = assessmentSubmissions.filter(s => s.status !== 'STARTED').length;
-        const avgScore = totalSubmissions > 0 ? Math.round(assessmentSubmissions.filter(s => s.status !== 'STARTED').reduce((acc, s) => acc + (s.assessmentScore?.percentage || s.score || 0), 0) / totalSubmissions) : 0;
-        const flaggedCount = assessmentSubmissions.filter(s => s.status === 'FLAGGED').length;
+        // Resolve section for each submission: prefer stored userSection, fall back to user lookup
+        const getSubmissionSection = (s: Submission): string | undefined => {
+          if (s.userSection) return s.userSection;
+          if (selectedAssessment?.classType) {
+            const u = users.find(u => u.id === s.userId);
+            if (u) return getUserSectionForClass(u, selectedAssessment.classType);
+          }
+          return undefined;
+        };
+
+        // Compute available sections
+        const availableSections = Array.from(new Set(
+          assessmentSubmissions.map(getSubmissionSection).filter((s): s is string => !!s)
+        )).sort();
+
+        // Apply section filter early (before stats)
+        const sectionFilteredSubs = assessmentSectionFilter
+          ? assessmentSubmissions.filter(s => getSubmissionSection(s) === assessmentSectionFilter)
+          : assessmentSubmissions;
+
+        // Summary stats (respects section filter)
+        const totalSubmissions = sectionFilteredSubs.filter(s => s.status !== 'STARTED').length;
+        const getEffectiveScore = (s: Submission) => s.rubricGrade?.overallPercentage ?? s.assessmentScore?.percentage ?? s.score ?? 0;
+        const avgScore = totalSubmissions > 0 ? Math.round(sectionFilteredSubs.filter(s => s.status !== 'STARTED').reduce((acc, s) => acc + getEffectiveScore(s), 0) / totalSubmissions) : 0;
+        const flaggedCount = sectionFilteredSubs.filter(s => s.status === 'FLAGGED').length;
 
         // Group submissions by student
-        const completedSubs = assessmentSubmissions.filter(s => s.status !== 'STARTED');
+        const completedSubs = sectionFilteredSubs.filter(s => s.status !== 'STARTED');
         const studentMap = new Map<string, Submission[]>();
         completedSubs.forEach(s => {
           const existing = studentMap.get(s.userId) || [];
@@ -299,6 +321,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           return {
             userId,
             userName: latest.userName,
+            userSection: getSubmissionSection(latest),
             submissions: sorted,
             latest,
             attemptCount: sorted.length,
@@ -336,9 +359,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           switch (assessmentSortKey) {
             case 'name': av = a.userName.toLowerCase(); bv = b.userName.toLowerCase(); return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
             case 'attempt': av = a.attemptCount; bv = b.attemptCount; break;
-            case 'score': av = aL.assessmentScore?.percentage || aL.score || 0; bv = bL.assessmentScore?.percentage || bL.score || 0; break;
+            case 'score': av = getEffectiveScore(aL); bv = getEffectiveScore(bL); break;
             case 'status': av = aL.status; bv = bL.status; return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
-            default: av = aL.assessmentScore?.percentage || aL.score || 0; bv = bL.assessmentScore?.percentage || bL.score || 0; break;
+            default: av = getEffectiveScore(aL); bv = getEffectiveScore(bL); break;
           }
           return assessmentSortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
         });
@@ -393,7 +416,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               <select
                 value={selectedAssessmentId || ''}
-                onChange={e => { setSelectedAssessmentId(e.target.value || null); setExpandedSubmissionId(null); setExpandedStudentIds(new Set()); setAssessmentSearch(''); setAssessmentStatusFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); }}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setExpandedSubmissionId(null); setExpandedStudentIds(new Set()); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
@@ -458,6 +481,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   {selectedAssessment?.rubric && <option value="graded">Graded</option>}
                   <option value="normal">Normal</option>
                 </select>
+                {availableSections.length > 1 && (
+                  <select
+                    value={assessmentSectionFilter}
+                    onChange={e => setAssessmentSectionFilter(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
+                  >
+                    <option value="">All Sections</option>
+                    {availableSections.map(sec => (
+                      <option key={sec} value={sec}>{sec}</option>
+                    ))}
+                  </select>
+                )}
                 <button
                   onClick={() => {
                     if (showIntegrityPanel) {
@@ -600,7 +635,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <tbody className="divide-y divide-white/5">
                       {studentGroups.map(group => {
                         const isStudentExpanded = expandedStudentIds.has(group.userId);
-                        const latestPct = group.latest.flaggedAsAI ? 0 : (group.latest.assessmentScore?.percentage || group.latest.score || 0);
+                        const latestPct = group.latest.flaggedAsAI ? 0 : getEffectiveScore(group.latest);
 
                         return (
                           <React.Fragment key={group.userId}>
@@ -622,6 +657,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   <ChevronRight className={`w-3.5 h-3.5 text-gray-500 transition-transform ${isStudentExpanded ? 'rotate-90' : ''}`} />
                                   <div className="text-sm font-bold text-white flex items-center gap-1.5">
                                     {group.userName}
+                                    {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
+                                      <span className="text-[9px] text-gray-500 font-normal">{group.userSection}</span>
+                                    )}
                                     {group.latest.flaggedAsAI && <span title="AI Suspected"><Bot className="w-3.5 h-3.5 text-red-400" /></span>}
                                   </div>
                                 </div>
@@ -652,7 +690,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                             {/* Expanded attempt sub-rows */}
                             {isStudentExpanded && group.submissions.map(sub => {
-                              const pct = sub.flaggedAsAI ? 0 : (sub.assessmentScore?.percentage || sub.score || 0);
+                              const pct = sub.flaggedAsAI ? 0 : getEffectiveScore(sub);
                               const tabSwitches = sub.metrics?.tabSwitchCount || 0;
                               const activeTime = sub.metrics?.engagementTime || 0;
                               const totalTime = computeTotalTime(sub);
