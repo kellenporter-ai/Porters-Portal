@@ -22,6 +22,9 @@ interface BattleSceneProps {
     isCrit?: boolean;
     healAmount?: number;
     shieldBlocked?: boolean;
+    playerRole?: string;
+    phaseTransition?: { phase: number; name: string; dialogue?: string } | null;
+    triggeredAbility?: { name: string; effect: string; value: number } | null;
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -36,6 +39,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     isCrit,
     healAmount,
     shieldBlocked,
+    playerRole,
+    phaseTransition,
+    triggeredAbility,
 }) => {
     const [showSlash, setShowSlash] = useState(false);
     const [showImpact, setShowImpact] = useState(false);
@@ -45,6 +51,8 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     const [showShield, setShowShield] = useState(false);
     const [particles, setParticles] = useState<{ id: number; x: number; y: number; color: string; px: number; py: number }[]>([]);
     const [screenShake, setScreenShake] = useState(false);
+    const [showPhaseFlash, setShowPhaseFlash] = useState(false);
+    const [abilityEffect, setAbilityEffect] = useState<string | null>(null);
 
     const bossType = bossAppearance?.bossType || 'BRUTE';
     const bossHue = bossAppearance?.hue ?? 0;
@@ -112,11 +120,56 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         }
     }, [attackState, damage, isCrit, healAmount, shieldBlocked]);
 
+    // Phase transition — brief red screen flash
+    useEffect(() => {
+        if (!phaseTransition) return;
+        setShowPhaseFlash(true);
+        const t = setTimeout(() => setShowPhaseFlash(false), 800);
+        return () => clearTimeout(t);
+    }, [phaseTransition]);
+
+    // Boss ability triggered — set visual effect type, clear after 3 seconds
+    useEffect(() => {
+        if (!triggeredAbility) {
+            setAbilityEffect(null);
+            return;
+        }
+        setAbilityEffect(triggeredAbility.effect);
+        // Spawn visual particles for heal/aoe
+        if (triggeredAbility.effect === 'HEAL_BOSS') {
+            spawnParticles('right', '#4ade80', 10); // Green particles on boss
+        } else if (triggeredAbility.effect === 'AOE_DAMAGE') {
+            spawnParticles('left', '#ef4444', 8);   // Red particles on player
+        }
+        const t = setTimeout(() => setAbilityEffect(null), 2500);
+        return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [triggeredAbility]);
+
     return (
         <div className={`relative w-full h-48 flex items-end justify-between px-4 overflow-hidden select-none ${screenShake ? 'animate-[battleShake_0.3s_ease-in-out]' : ''}`}>
             {/* Crit flash overlay */}
             {showCritFlash && (
                 <div className="absolute inset-0 bg-amber-400/20 animate-[critFlash_0.4s_ease-out_forwards] z-10 pointer-events-none" />
+            )}
+
+            {/* Phase transition red flash */}
+            {showPhaseFlash && (
+                <div className="absolute inset-0 bg-red-500/30 animate-pulse z-10 pointer-events-none" />
+            )}
+
+            {/* Boss ability visual effects */}
+            {abilityEffect === 'ENRAGE' && (
+                <div className="absolute right-4 top-0 bottom-0 w-28 bg-red-500/20 animate-pulse pointer-events-none z-5" />
+            )}
+            {abilityEffect === 'SILENCE' && (
+                <div className="absolute left-0 top-0 bottom-0 w-28 bg-gray-500/30 animate-pulse pointer-events-none z-5" />
+            )}
+            {abilityEffect === 'FOCUS_FIRE' && (
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-20 h-20 pointer-events-none z-5">
+                    <div className="w-full h-full rounded-full border-2 border-red-400/70 animate-ping" />
+                    <div className="absolute inset-2 rounded-full border border-red-400/40" />
+                </div>
             )}
 
             {/* Shield block effect */}
@@ -174,6 +227,20 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                         style={{ width: `${playerHpPercent}%` }}
                     />
                 </div>
+                {/* Player role indicator */}
+                {playerRole && (
+                    <div className={`absolute -top-4 left-0 right-0 text-center text-[8px] font-black tracking-wide ${
+                        playerRole === 'VANGUARD' ? 'text-blue-400' :
+                        playerRole === 'STRIKER' ? 'text-green-400' :
+                        playerRole === 'SENTINEL' ? 'text-yellow-400' :
+                        'text-purple-400'
+                    }`}>
+                        {playerRole === 'VANGUARD' && '⚔'}
+                        {playerRole === 'STRIKER' && '⚡'}
+                        {playerRole === 'SENTINEL' && '🛡'}
+                        {playerRole === 'COMMANDER' && '👑'}
+                    </div>
+                )}
             </div>
 
             {/* Center effects area */}

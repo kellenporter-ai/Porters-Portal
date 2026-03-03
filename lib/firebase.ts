@@ -80,3 +80,17 @@ export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment')
 
 // One-time admin utilities
 export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');
+export const callScaleBossHp = httpsCallable(functions, 'scaleBossHp');
+
+// Dungeon Expedition Cloud Functions
+export const callStartDungeonRun = httpsCallable(functions, 'startDungeonRun');
+export const callAnswerDungeonRoom = httpsCallable(functions, 'answerDungeonRoom');
+export const callClaimDungeonRewards = httpsCallable(functions, 'claimDungeonRewards');
+
+// Idle Agent Mission Cloud Functions
+export const callDeployIdleMission = httpsCallable(functions, 'deployIdleMission');
+export const callClaimIdleMission = httpsCallable(functions, 'claimIdleMission');
+
+// PvP Arena Cloud Functions
+export const callQueueArenaDuel = httpsCallable(functions, 'queueArenaDuel');
+export const callCancelArenaQueue = httpsCallable(functions, 'cancelArenaQueue');

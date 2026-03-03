@@ -1,6 +1,6 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment } from '../lib/firebase';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch } from '../types';
+import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -1254,6 +1254,11 @@ export const dataService = {
     return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean };
   },
 
+  scaleBossHp: async (quizId: string) => {
+    const result = await callScaleBossHp({ quizId });
+    return result.data as { scaledMaxHp: number; originalMaxHp: number };
+  },
+
   // Admin: subscribe to ALL quiz bosses (including inactive)
   subscribeToAllBossQuizzes: (callback: (quizzes: BossQuizEvent[]) => void) => {
     const q = collection(db, 'boss_quizzes');
@@ -1706,5 +1711,164 @@ export const dataService = {
     });
 
     return { currentStreak: newStreak, freezeUsed, newMilestone };
+  },
+
+  // --- DUNGEON EXPEDITIONS ---
+
+  subscribeToDungeons: (classType: string, callback: (dungeons: Dungeon[]) => void) => {
+    const q = query(
+      collection(db, 'dungeons'),
+      where('classType', '==', classType),
+      where('isActive', '==', true)
+    );
+    return guardedSnapshot('dungeons', q, (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Dungeon)));
+    });
+  },
+
+  subscribeToAllDungeons: (callback: (dungeons: Dungeon[]) => void) => {
+    return guardedSnapshot('dungeons', collection(db, 'dungeons'), (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Dungeon)));
+    });
+  },
+
+  saveDungeon: async (dungeon: Dungeon) => {
+    await setDoc(doc(db, 'dungeons', dungeon.id), dungeon);
+  },
+
+  deleteDungeon: async (id: string) => {
+    await deleteDoc(doc(db, 'dungeons', id));
+  },
+
+  subscribeToActiveDungeonRun: (userId: string, dungeonId: string, callback: (run: DungeonRun | null) => void) => {
+    const q = query(
+      collection(db, 'dungeon_runs'),
+      where('userId', '==', userId),
+      where('dungeonId', '==', dungeonId),
+      where('status', '==', 'IN_PROGRESS')
+    );
+    return guardedSnapshot('dungeon_runs', q, (snapshot: any) => {
+      const doc = snapshot.docs[0];
+      callback(doc ? ({ id: doc.id, ...doc.data() } as DungeonRun) : null);
+    });
+  },
+
+  startDungeonRun: async (dungeonId: string) => {
+    const result = await callStartDungeonRun({ dungeonId });
+    return result.data as DungeonRun & { resumed: boolean };
+  },
+
+  answerDungeonRoom: async (runId: string, questionId: string, answer: number) => {
+    const result = await callAnswerDungeonRoom({ runId, questionId, answer });
+    return result.data as {
+      correct: boolean;
+      damage: number;
+      playerDamage?: number;
+      playerHp: number;
+      enemyHp: number;
+      roomCleared: boolean;
+      runCompleted: boolean;
+      isCrit?: boolean;
+      healAmount?: number;
+      loot?: { itemName: string; rarity: string };
+    };
+  },
+
+  claimDungeonRewards: async (runId: string) => {
+    const result = await callClaimDungeonRewards({ runId });
+    return result.data as { xp: number; flux: number; loot: { itemName: string; rarity: string }[] };
+  },
+
+  // ========================================
+  // IDLE AGENT MISSIONS
+  // ========================================
+
+  subscribeToIdleMissions: (classType: string, callback: (missions: IdleMission[]) => void) => {
+    const q = query(
+      collection(db, 'idle_missions'),
+      where('isActive', '==', true),
+      where('classType', '==', classType)
+    );
+    return guardedSnapshot('idle_missions', q, (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as IdleMission)));
+    });
+  },
+
+  subscribeToAllIdleMissions: (callback: (missions: IdleMission[]) => void) => {
+    return guardedSnapshot('idle_missions_all', collection(db, 'idle_missions'), (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as IdleMission)));
+    });
+  },
+
+  deployIdleMission: async (missionId: string) => {
+    const result = await callDeployIdleMission({ missionId });
+    return result.data as { deployed: boolean; completesAt: string; stats: Record<string, number>; gearScore: number };
+  },
+
+  claimIdleMission: async (missionId: string) => {
+    const result = await callClaimIdleMission({ missionId });
+    return result.data as { xpAwarded: number; fluxAwarded: number; bonusesApplied: string[]; leveledUp: boolean; newLevel: number; loot: boolean };
+  },
+
+  saveIdleMission: async (mission: IdleMission) => {
+    await setDoc(doc(db, 'idle_missions', mission.id), mission);
+  },
+
+  deleteIdleMission: async (id: string) => {
+    await deleteDoc(doc(db, 'idle_missions', id));
+  },
+
+  // ========================================
+  // PVP ARENA
+  // ========================================
+
+  queueArenaDuel: async (classType: string) => {
+    const result = await callQueueArenaDuel({ classType });
+    return result.data as {
+      status: 'MATCHED' | 'QUEUED';
+      matchId: string;
+      winnerId?: string | null;
+      rounds?: any[];
+      opponent?: any;
+    };
+  },
+
+  cancelArenaQueue: async (matchId: string) => {
+    const result = await callCancelArenaQueue({ matchId });
+    return result.data as { cancelled: boolean };
+  },
+
+  /**
+   * Subscribe to a single arena_match document to watch for status changes (QUEUED -> COMPLETED).
+   * Used while waiting in queue.
+   */
+  subscribeToArenaQueue: (matchId: string, callback: (match: ArenaMatch | null) => void) => {
+    const matchRef = doc(db, 'arena_matches', matchId);
+    return onSnapshot(matchRef, (snap) => {
+      callback(snap.exists() ? ({ id: snap.id, ...snap.data() } as ArenaMatch) : null);
+    });
+  },
+
+  /**
+   * Subscribe to completed arena matches for a user.
+   * Firestore can't query nested fields, so we fetch the last 20 COMPLETED matches
+   * and filter client-side for the given userId.
+   */
+  subscribeToArenaMatches: (userId: string, classType: string, callback: (matches: ArenaMatch[]) => void) => {
+    const q = query(
+      collection(db, 'arena_matches'),
+      where('status', '==', 'COMPLETED'),
+      where('classType', '==', classType),
+      orderBy('completedAt', 'desc'),
+      limit(20)
+    );
+    return guardedSnapshot('arena_matches', q, (snapshot: any) => {
+      const all = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ArenaMatch));
+      // Filter to matches involving this user
+      const mine = all.filter((m: ArenaMatch) =>
+        m.player1?.userId === userId || m.player2?.userId === userId
+      );
+      callback(mine.slice(0, 10));
+    });
   },
 };

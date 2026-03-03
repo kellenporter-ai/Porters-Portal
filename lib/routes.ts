@@ -27,6 +27,9 @@ export const STUDENT_ROUTES = {
   INTEL: '/intel',
   PROGRESS: '/progress',
   CALENDAR: '/calendar',
+  DUNGEONS: '/dungeons',
+  ARENA: '/arena',
+  DEPLOY: '/deploy',
   FORENSICS: '/forensics',
   PHYSICS_LAB: '/physics-lab',
   LEADERBOARD: '/leaderboard',
@@ -41,6 +44,8 @@ export const XP_SUB_ROUTES: Record<string, string> = {
   'Boss Ops': 'boss-ops',
   'Tutoring': 'tutoring',
   'Analytics': 'analytics',
+  'Dungeon Ops': 'dungeon-ops',
+  'Idle Missions': 'idle-missions',
 };
 
 /**
@@ -63,6 +68,8 @@ export const TAB_TO_PATH: Record<string, string> = {
   'XP Command:Boss Ops': '/xp/boss-ops',
   'XP Command:Tutoring': '/xp/tutoring',
   'XP Command:Analytics': '/xp/analytics',
+  'XP Command:Dungeon Ops': '/xp/dungeon-ops',
+  'XP Command:Idle Missions': '/xp/idle-missions',
   // Student
   'Home': STUDENT_ROUTES.HOME,
   'Resources': STUDENT_ROUTES.RESOURCES,
@@ -75,6 +82,9 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Intel Dossier': STUDENT_ROUTES.INTEL,
   'Progress': STUDENT_ROUTES.PROGRESS,
   'Calendar': STUDENT_ROUTES.CALENDAR,
+  'Dungeons': STUDENT_ROUTES.DUNGEONS,
+  'Arena': STUDENT_ROUTES.ARENA,
+  'Deploy': STUDENT_ROUTES.DEPLOY,
   'Forensics': STUDENT_ROUTES.FORENSICS,
   'Physics Lab': STUDENT_ROUTES.PHYSICS_LAB,
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
@@ -86,7 +96,7 @@ export const PATH_TO_TAB: Record<string, string> = Object.fromEntries(
 );
 
 /** Map student tab name → StudentDashboard tab prop */
-export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR'> = {
+export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY'> = {
   'Home': 'HOME',
   'Resources': 'RESOURCES',
   'Agent Loadout': 'LOADOUT',
@@ -98,6 +108,9 @@ export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 
   'Intel Dossier': 'INTEL',
   'Progress': 'PROGRESS',
   'Calendar': 'CALENDAR',
+  'Dungeons': 'DUNGEONS',
+  'Arena': 'ARENA',
+  'Deploy': 'DEPLOY',
 };
 
 /** Student paths that render via StudentDashboard */
@@ -113,4 +126,7 @@ export const STUDENT_DASHBOARD_PATHS = new Set([
   STUDENT_ROUTES.INTEL,
   STUDENT_ROUTES.PROGRESS,
   STUDENT_ROUTES.CALENDAR,
+  STUDENT_ROUTES.DUNGEONS,
+  STUDENT_ROUTES.ARENA,
+  STUDENT_ROUTES.DEPLOY,
 ]);

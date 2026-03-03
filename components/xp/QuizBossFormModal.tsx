@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BossQuizEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DefaultClassTypes } from '../../types';
+import { BossQuizEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DefaultClassTypes, DifficultyTier, DIFFICULTY_TIER_DEFS, AutoScaleConfig, BossPhase, BossAbility, BossAbilityEffect, BOSS_ABILITY_EFFECT_DEFS, BossLootEntry, EquipmentSlot, ItemRarity } from '../../types';
 import { Plus, Trash2, Check, X, Copy, Upload, FileJson } from 'lucide-react';
 import BossAvatar from './BossAvatar';
 import SectionPicker from '../SectionPicker';
@@ -39,6 +39,11 @@ interface QuizBossFormState {
   targetSections: string[];
   bossType: BossType;
   bossHue: number;
+  difficultyTier: DifficultyTier;
+  autoScale: AutoScaleConfig;
+  phases: BossPhase[];
+  bossAbilities: BossAbility[];
+  lootTable: BossLootEntry[];
 }
 
 const emptyForm = (): QuizBossFormState => {
@@ -58,6 +63,11 @@ const emptyForm = (): QuizBossFormState => {
     targetSections: [],
     bossType: 'BRUTE',
     bossHue: 0,
+    difficultyTier: 'NORMAL',
+    autoScale: { enabled: false, factors: [] },
+    phases: [],
+    bossAbilities: [],
+    lootTable: [],
   };
 };
 
@@ -126,6 +136,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           targetSections: editingQuizBoss.targetSections || [],
           bossType: editingQuizBoss.bossAppearance?.bossType || 'BRUTE',
           bossHue: editingQuizBoss.bossAppearance?.hue ?? 0,
+          difficultyTier: editingQuizBoss.difficultyTier || 'NORMAL',
+          autoScale: editingQuizBoss.autoScale || { enabled: false, factors: [] },
+          phases: editingQuizBoss.phases || [],
+          bossAbilities: editingQuizBoss.bossAbilities || [],
+          lootTable: editingQuizBoss.lootTable || [],
         });
         setFormModifiers(editingQuizBoss.modifiers || []);
       } else {
@@ -301,6 +316,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
         ...(formModifiers.length > 0 ? { modifiers: formModifiers } : {}),
         ...(usedBankIds.length > 0 ? { questionBankIds: usedBankIds } : {}),
+        ...(quizBossForm.difficultyTier !== 'NORMAL' ? { difficultyTier: quizBossForm.difficultyTier } : {}),
+        ...(quizBossForm.autoScale.enabled ? { autoScale: quizBossForm.autoScale } : {}),
+        ...(quizBossForm.phases.length > 0 ? { phases: quizBossForm.phases } : {}),
+        ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
+        ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
       };
       await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
       toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
@@ -345,6 +365,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
       ...(formModifiers.length > 0 ? { modifiers: formModifiers } : {}),
       ...(usedBankIds.length > 0 ? { questionBankIds: usedBankIds } : {}),
+      ...(quizBossForm.difficultyTier !== 'NORMAL' ? { difficultyTier: quizBossForm.difficultyTier } : {}),
+      ...(quizBossForm.autoScale.enabled ? { autoScale: quizBossForm.autoScale } : {}),
+      ...(quizBossForm.phases.length > 0 ? { phases: quizBossForm.phases } : {}),
+      ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
+      ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
     };
     await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
     toast.success('Quiz boss saved as draft (inactive).');
@@ -397,6 +422,78 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Difficulty & Scaling */}
+        <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+          <label className="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3">Difficulty & Scaling</label>
+
+          {/* Difficulty Tier Selector */}
+          <div className="mb-3">
+            <label className="block text-[9px] text-gray-500 mb-1">Difficulty Tier</label>
+            <div className="grid grid-cols-4 gap-2">
+              {(Object.entries(DIFFICULTY_TIER_DEFS) as [DifficultyTier, typeof DIFFICULTY_TIER_DEFS[DifficultyTier]][]).map(([tier]) => {
+                const tierClasses: Record<DifficultyTier, string> = {
+                  NORMAL:     'bg-gray-600/20 border-gray-500/40 text-gray-400',
+                  HARD:       'bg-amber-600/20 border-amber-500/40 text-amber-400',
+                  NIGHTMARE:  'bg-red-600/20 border-red-500/40 text-red-400',
+                  APOCALYPSE: 'bg-purple-600/20 border-purple-500/40 text-purple-400',
+                };
+                const def = DIFFICULTY_TIER_DEFS[tier];
+                return (
+                  <button key={tier} type="button"
+                    onClick={() => setQuizBossForm({ ...quizBossForm, difficultyTier: tier })}
+                    className={`px-2 py-2 rounded-lg text-[10px] font-bold transition-all border text-center ${
+                      quizBossForm.difficultyTier === tier
+                        ? tierClasses[tier]
+                        : 'bg-black/30 border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
+                    }`}>
+                    <div>{def.name}</div>
+                    <div className="text-[8px] opacity-60 mt-0.5">{def.hpMultiplier}x HP</div>
+                  </button>
+                );
+              })}
+            </div>
+            {quizBossForm.difficultyTier !== 'NORMAL' && (
+              <p className="text-[9px] text-gray-500 mt-1">
+                {DIFFICULTY_TIER_DEFS[quizBossForm.difficultyTier].description}
+              </p>
+            )}
+          </div>
+
+          {/* Auto-Scale Toggle */}
+          <div className="border-t border-white/5 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[9px] text-gray-500">Auto-Scale HP</label>
+              <button type="button"
+                onClick={() => setQuizBossForm({ ...quizBossForm, autoScale: { ...quizBossForm.autoScale, enabled: !quizBossForm.autoScale.enabled } })}
+                className={`w-10 h-5 rounded-full relative transition-colors ${quizBossForm.autoScale.enabled ? 'bg-red-600' : 'bg-gray-700'}`}>
+                <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${quizBossForm.autoScale.enabled ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
+            {quizBossForm.autoScale.enabled && (
+              <div className="flex flex-wrap gap-2">
+                {(['CLASS_SIZE', 'AVG_GEAR_SCORE', 'AVG_LEVEL'] as const).map(factor => {
+                  const active = quizBossForm.autoScale.factors.includes(factor);
+                  const labels: Record<string, string> = { CLASS_SIZE: 'Class Size', AVG_GEAR_SCORE: 'Avg Gear Score', AVG_LEVEL: 'Avg Level' };
+                  const descriptions: Record<string, string> = { CLASS_SIZE: '+10% HP per student above 10', AVG_GEAR_SCORE: '+1% HP per gear score above 50', AVG_LEVEL: '+0.5% HP per level above 10' };
+                  return (
+                    <button key={factor} type="button"
+                      onClick={() => {
+                        const factors = active
+                          ? quizBossForm.autoScale.factors.filter(f => f !== factor)
+                          : [...quizBossForm.autoScale.factors, factor];
+                        setQuizBossForm({ ...quizBossForm, autoScale: { ...quizBossForm.autoScale, factors } });
+                      }}
+                      className={`flex-1 min-w-[100px] rounded-lg border p-2 text-left transition ${active ? 'border-red-500/30 bg-red-500/10' : 'border-white/10 bg-black/20 hover:border-white/20'}`}>
+                      <div className="text-[10px] font-bold text-white">{labels[factor]}</div>
+                      <div className="text-[8px] text-gray-500">{descriptions[factor]}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -471,6 +568,249 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               );
             })}
           </div>
+        </div>
+
+        {/* Boss Phases */}
+        <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Boss Phases ({quizBossForm.phases.length})</label>
+            <button type="button" onClick={() => setQuizBossForm(prev => ({
+              ...prev,
+              phases: [...prev.phases, { name: `Phase ${prev.phases.length + 1}`, hpThreshold: Math.max(10, 75 - prev.phases.length * 25), modifiers: [], dialogue: '' }],
+            }))} className="text-xs bg-orange-600/20 text-orange-400 px-3 py-1 rounded-lg hover:bg-orange-600/30 transition font-bold flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add Phase
+            </button>
+          </div>
+          <p className="text-[9px] text-gray-600 mb-2">Boss changes form at HP thresholds. Each phase can add new modifiers and change appearance.</p>
+
+          {quizBossForm.phases.map((phase, idx) => (
+            <div key={idx} className="bg-black/30 rounded-lg border border-white/5 p-3 mb-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <input value={phase.name} onChange={e => {
+                  const phases = [...quizBossForm.phases];
+                  phases[idx] = { ...phases[idx], name: e.target.value };
+                  setQuizBossForm({ ...quizBossForm, phases });
+                }} className="flex-1 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs font-bold" placeholder="Phase name" />
+                <div className="flex items-center gap-1">
+                  <label className="text-[9px] text-gray-500">HP %:</label>
+                  <input type="number" min={1} max={99} value={phase.hpThreshold} onChange={e => {
+                    const phases = [...quizBossForm.phases];
+                    phases[idx] = { ...phases[idx], hpThreshold: parseInt(e.target.value) || 50 };
+                    setQuizBossForm({ ...quizBossForm, phases });
+                  }} className="w-14 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs font-bold" />
+                </div>
+                <button type="button" onClick={() => setQuizBossForm(prev => ({ ...prev, phases: prev.phases.filter((_, i) => i !== idx) }))} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+              <input value={phase.dialogue || ''} onChange={e => {
+                const phases = [...quizBossForm.phases];
+                phases[idx] = { ...phases[idx], dialogue: e.target.value };
+                setQuizBossForm({ ...quizBossForm, phases });
+              }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" placeholder="Boss dialogue on phase transition (optional)" />
+              <div className="flex items-center gap-2">
+                <select value={phase.bossAppearance?.bossType || ''} onChange={e => {
+                  const phases = [...quizBossForm.phases];
+                  phases[idx] = { ...phases[idx], bossAppearance: e.target.value ? { bossType: e.target.value as BossType, hue: phase.bossAppearance?.hue ?? quizBossForm.bossHue } : undefined };
+                  setQuizBossForm({ ...quizBossForm, phases });
+                }} className="bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]">
+                  <option value="">Same appearance</option>
+                  <option value="BRUTE">Brute</option>
+                  <option value="PHANTOM">Phantom</option>
+                  <option value="SERPENT">Serpent</option>
+                </select>
+                {phase.bossAppearance && (
+                  <input type="range" min="0" max="360" value={phase.bossAppearance.hue ?? 0} onChange={e => {
+                    const phases = [...quizBossForm.phases];
+                    phases[idx] = { ...phases[idx], bossAppearance: { ...phases[idx].bossAppearance!, hue: parseInt(e.target.value) } };
+                    setQuizBossForm({ ...quizBossForm, phases });
+                  }} className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                    style={{ background: 'linear-gradient(to right, hsl(0,80%,50%), hsl(60,80%,50%), hsl(120,80%,50%), hsl(180,80%,50%), hsl(240,80%,50%), hsl(300,80%,50%), hsl(360,80%,50%))' }} />
+                )}
+                <div className="flex items-center gap-1">
+                  <label className="text-[9px] text-gray-500">Dmg Override:</label>
+                  <input type="number" value={phase.damagePerCorrect || ''} onChange={e => {
+                    const phases = [...quizBossForm.phases];
+                    phases[idx] = { ...phases[idx], damagePerCorrect: parseInt(e.target.value) || undefined };
+                    setQuizBossForm({ ...quizBossForm, phases });
+                  }} className="w-14 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs" placeholder="-" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Boss Abilities */}
+        <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">Boss Abilities ({quizBossForm.bossAbilities.length})</label>
+            <button type="button" onClick={() => setQuizBossForm(prev => ({
+              ...prev,
+              bossAbilities: [...prev.bossAbilities, { id: Math.random().toString(36).substring(2, 8), name: 'New Ability', description: '', trigger: 'EVERY_N_QUESTIONS' as const, triggerValue: 5, effect: 'AOE_DAMAGE' as const, value: 10, duration: 0 }],
+            }))} className="text-xs bg-cyan-600/20 text-cyan-400 px-3 py-1 rounded-lg hover:bg-cyan-600/30 transition font-bold flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add Ability
+            </button>
+          </div>
+
+          {quizBossForm.bossAbilities.map((ability, idx) => (
+            <div key={ability.id} className="bg-black/30 rounded-lg border border-white/5 p-3 mb-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <input value={ability.name} onChange={e => {
+                  const abilities = [...quizBossForm.bossAbilities];
+                  abilities[idx] = { ...abilities[idx], name: e.target.value };
+                  setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+                }} className="flex-1 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs font-bold" placeholder="Ability name" />
+                <button type="button" onClick={() => setQuizBossForm(prev => ({ ...prev, bossAbilities: prev.bossAbilities.filter((_, i) => i !== idx) }))} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+              <input value={ability.description} onChange={e => {
+                const abilities = [...quizBossForm.bossAbilities];
+                abilities[idx] = { ...abilities[idx], description: e.target.value };
+                setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+              }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" placeholder="Description" />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[8px] text-gray-500">Trigger</label>
+                  <select value={ability.trigger} onChange={e => {
+                    const abilities = [...quizBossForm.bossAbilities];
+                    abilities[idx] = { ...abilities[idx], trigger: e.target.value as BossAbility['trigger'] };
+                    setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]">
+                    <option value="EVERY_N_QUESTIONS">Every N Questions</option>
+                    <option value="HP_THRESHOLD">HP Threshold %</option>
+                    <option value="RANDOM_CHANCE">Random Chance %</option>
+                    <option value="ON_PHASE">On Phase #</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[8px] text-gray-500">Trigger Value</label>
+                  <input type="number" value={ability.triggerValue} onChange={e => {
+                    const abilities = [...quizBossForm.bossAbilities];
+                    abilities[idx] = { ...abilities[idx], triggerValue: parseInt(e.target.value) || 0 };
+                    setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" />
+                </div>
+                <div>
+                  <label className="text-[8px] text-gray-500">Effect</label>
+                  <select value={ability.effect} onChange={e => {
+                    const abilities = [...quizBossForm.bossAbilities];
+                    abilities[idx] = { ...abilities[idx], effect: e.target.value as BossAbilityEffect };
+                    setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]">
+                    {(Object.entries(BOSS_ABILITY_EFFECT_DEFS) as [BossAbilityEffect, typeof BOSS_ABILITY_EFFECT_DEFS[BossAbilityEffect]][]).map(([effect, def]) => (
+                      <option key={effect} value={effect}>{def.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <div>
+                    <label className="text-[8px] text-gray-500">Value</label>
+                    <input type="number" value={ability.value} onChange={e => {
+                      const abilities = [...quizBossForm.bossAbilities];
+                      abilities[idx] = { ...abilities[idx], value: parseInt(e.target.value) || 0 };
+                      setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+                    }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" />
+                  </div>
+                  <div>
+                    <label className="text-[8px] text-gray-500">Duration</label>
+                    <input type="number" value={ability.duration || 0} onChange={e => {
+                      const abilities = [...quizBossForm.bossAbilities];
+                      abilities[idx] = { ...abilities[idx], duration: parseInt(e.target.value) || 0 };
+                      setQuizBossForm({ ...quizBossForm, bossAbilities: abilities });
+                    }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" placeholder="0=instant" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Boss Loot Table */}
+        <div className="border border-white/10 rounded-xl p-4 bg-black/20">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Boss Loot Table ({quizBossForm.lootTable.length})</label>
+            <button type="button" onClick={() => setQuizBossForm(prev => ({
+              ...prev,
+              lootTable: [...prev.lootTable, { id: Math.random().toString(36).substring(2, 8), itemName: '', slot: 'AMULET' as EquipmentSlot, rarity: 'RARE' as ItemRarity, stats: {}, dropChance: 50, isExclusive: true }],
+            }))} className="text-xs bg-emerald-600/20 text-emerald-400 px-3 py-1 rounded-lg hover:bg-emerald-600/30 transition font-bold flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add Loot
+            </button>
+          </div>
+          <p className="text-[9px] text-gray-600 mb-2">Unique items that can only drop from this boss. Top contributors have priority.</p>
+
+          {quizBossForm.lootTable.map((loot, idx) => (
+            <div key={loot.id} className="bg-black/30 rounded-lg border border-white/5 p-3 mb-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <input value={loot.itemName} onChange={e => {
+                  const table = [...quizBossForm.lootTable];
+                  table[idx] = { ...table[idx], itemName: e.target.value };
+                  setQuizBossForm({ ...quizBossForm, lootTable: table });
+                }} className="flex-1 bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-xs font-bold" placeholder="Item name" />
+                <button type="button" onClick={() => setQuizBossForm(prev => ({ ...prev, lootTable: prev.lootTable.filter((_, i) => i !== idx) }))} className="text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                <div>
+                  <label className="text-[8px] text-gray-500">Slot</label>
+                  <select value={loot.slot} onChange={e => {
+                    const table = [...quizBossForm.lootTable];
+                    table[idx] = { ...table[idx], slot: e.target.value as EquipmentSlot };
+                    setQuizBossForm({ ...quizBossForm, lootTable: table });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]">
+                    {['HEAD', 'CHEST', 'HANDS', 'FEET', 'BELT', 'AMULET', 'RING'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[8px] text-gray-500">Rarity</label>
+                  <select value={loot.rarity} onChange={e => {
+                    const table = [...quizBossForm.lootTable];
+                    table[idx] = { ...table[idx], rarity: e.target.value as ItemRarity };
+                    setQuizBossForm({ ...quizBossForm, lootTable: table });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]">
+                    <option value="UNCOMMON">Uncommon</option>
+                    <option value="RARE">Rare</option>
+                    <option value="UNIQUE">Unique</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[8px] text-gray-500">Drop %</label>
+                  <input type="number" min={1} max={100} value={loot.dropChance} onChange={e => {
+                    const table = [...quizBossForm.lootTable];
+                    table[idx] = { ...table[idx], dropChance: parseInt(e.target.value) || 50 };
+                    setQuizBossForm({ ...quizBossForm, lootTable: table });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" />
+                </div>
+                <div>
+                  <label className="text-[8px] text-gray-500">Max Drops</label>
+                  <input type="number" min={1} value={loot.maxDrops || ''} onChange={e => {
+                    const table = [...quizBossForm.lootTable];
+                    table[idx] = { ...table[idx], maxDrops: parseInt(e.target.value) || undefined };
+                    setQuizBossForm({ ...quizBossForm, lootTable: table });
+                  }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" placeholder="All" />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {(['tech', 'focus', 'analysis', 'charisma'] as const).map(stat => (
+                  <div key={stat}>
+                    <label className="text-[8px] text-gray-500 capitalize">{stat}</label>
+                    <input type="number" value={(loot.stats as Record<string, number>)[stat] || ''} onChange={e => {
+                      const table = [...quizBossForm.lootTable];
+                      const stats = { ...table[idx].stats };
+                      const val = parseInt(e.target.value);
+                      if (val) (stats as Record<string, number>)[stat] = val;
+                      else delete (stats as Record<string, number>)[stat];
+                      table[idx] = { ...table[idx], stats };
+                      setQuizBossForm({ ...quizBossForm, lootTable: table });
+                    }} className="w-full bg-black/40 border border-white/10 rounded-lg p-1.5 text-white text-[10px]" placeholder="0" />
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={loot.isExclusive} onChange={e => {
+                  const table = [...quizBossForm.lootTable];
+                  table[idx] = { ...table[idx], isExclusive: e.target.checked };
+                  setQuizBossForm({ ...quizBossForm, lootTable: table });
+                }} className="rounded border-white/20 bg-black/40" />
+                <span className="text-[9px] text-gray-400">Exclusive (only drops from this boss)</span>
+              </label>
+            </div>
+          ))}
         </div>
 
         {/* Import from Question Banks */}

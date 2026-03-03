@@ -420,6 +420,21 @@ const App: React.FC = () => {
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="CALENDAR" />
             </Suspense>
           } />
+          <Route path="/dungeons" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="DUNGEONS" />
+            </Suspense>
+          } />
+          <Route path="/arena" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ARENA" />
+            </Suspense>
+          } />
+          <Route path="/deploy" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="DEPLOY" />
+            </Suspense>
+          } />
           <Route path="/forensics" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>
           } />
@@ -460,7 +475,7 @@ const App: React.FC = () => {
 const StudentRouteWrapper: React.FC<{
   user: User;
   submissions: Submission[];
-  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
+  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
 }> = ({ user, submissions, tab }) => {
   const { assignments, classConfigs, enabledFeatures } = useAppData();
   const navigate = useNavigate();

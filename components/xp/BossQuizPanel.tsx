@@ -192,15 +192,16 @@ const QuizBossCard: React.FC<{
   quiz: BossQuizEvent;
   userId: string;
   onAnswer: (quizId: string, questionId: string, answer: number, callbacks: {
-    onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean }) => void;
+    onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: { bossType: string; hue: number } } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
   }) => void;
   playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
   playerAppearance?: BossQuizPanelProps['playerAppearance'];
   playerEquipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
   playerEvolutionLevel: number;
 }> = ({ quiz, userId, onAnswer, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
-  const currentHp = useQuizBossHealth(quiz.id, quiz.maxHp);
-  const hpPercent = (currentHp / quiz.maxHp) * 100;
+  const effectiveMaxHp = quiz.scaledMaxHp || quiz.maxHp;
+  const currentHp = useQuizBossHealth(quiz.id, effectiveMaxHp);
+  const hpPercent = (currentHp / effectiveMaxHp) * 100;
 
   // Shuffle questions deterministically per student so each sees a unique order
   const shuffledQuestions = React.useMemo(
@@ -231,7 +232,9 @@ const QuizBossCard: React.FC<{
   const [playerMaxHp, setPlayerMaxHp] = useState<number>(derivedMaxHp);
   const [knockedOut, setKnockedOut] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean } | null>(null);
+  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: { bossType: string; hue: number } } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
+  const [showPhaseTransition, setShowPhaseTransition] = useState<{ phase: number; name: string; dialogue?: string } | null>(null);
+  const [showAbility, setShowAbility] = useState<{ name: string; effect: string; value: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attackState, setAttackState] = useState<'idle' | 'player-attack' | 'boss-attack'>('idle');
   const [attackDamage, setAttackDamage] = useState<number | undefined>(undefined);
@@ -313,6 +316,18 @@ const QuizBossCard: React.FC<{
 
         setAnswerResult(result);
 
+        // Phase transition — show overlay for 3 seconds then dismiss
+        if (result.phaseTransition) {
+          setShowPhaseTransition(result.phaseTransition);
+          setTimeout(() => setShowPhaseTransition(null), 3000);
+        }
+
+        // Boss ability trigger — show notification for 3 seconds
+        if (result.triggeredAbility) {
+          setShowAbility(result.triggeredAbility);
+          setTimeout(() => setShowAbility(null), 3000);
+        }
+
         if (!result.knockedOut) {
           setTimeout(() => {
             setCurrentQuestion(prev => prev + 1);
@@ -329,7 +344,18 @@ const QuizBossCard: React.FC<{
     <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/30 to-black/50 p-5 space-y-4">
       {/* Boss info */}
       <div>
-        <h4 className="text-lg font-black text-amber-400">{quiz.bossName}</h4>
+        <h4 className="text-lg font-black text-amber-400">
+          {quiz.bossName}
+          {quiz.difficultyTier && quiz.difficultyTier !== 'NORMAL' && (
+            <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded ${
+              quiz.difficultyTier === 'HARD' ? 'text-amber-400 bg-amber-900/30' :
+              quiz.difficultyTier === 'NIGHTMARE' ? 'text-red-400 bg-red-900/30' :
+              'text-purple-400 bg-purple-900/30'
+            }`}>
+              {quiz.difficultyTier}
+            </span>
+          )}
+        </h4>
         <p className="text-sm text-gray-500">{quiz.description}</p>
       </div>
 
@@ -348,7 +374,20 @@ const QuizBossCard: React.FC<{
       ) : (
         <>
           {/* Battle Scene — animated player vs boss */}
-          <div className="rounded-xl bg-black/30 border border-white/5 overflow-hidden">
+          <div className="relative rounded-xl bg-black/30 border border-white/5 overflow-hidden">
+            {/* Boss Ability Alert */}
+            {showAbility && (
+              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/80 to-transparent p-4 text-center animate-in slide-in-from-top duration-300 z-10">
+                <div className="text-lg font-black text-red-400 uppercase tracking-wider">{showAbility.name}</div>
+                <div className="text-xs text-red-300">
+                  {showAbility.effect === 'AOE_DAMAGE' && `All students take ${showAbility.value} damage!`}
+                  {showAbility.effect === 'HEAL_BOSS' && `Boss regenerates ${showAbility.value}% HP!`}
+                  {showAbility.effect === 'ENRAGE' && `Boss damage increased by ${showAbility.value}%!`}
+                  {showAbility.effect === 'SILENCE' && `Critical hits disabled!`}
+                  {showAbility.effect === 'FOCUS_FIRE' && `Top damage dealer targeted!`}
+                </div>
+              </div>
+            )}
             <BattleScene
               playerAppearance={playerAppearance}
               playerEquipped={playerEquipped}
@@ -361,6 +400,9 @@ const QuizBossCard: React.FC<{
               isCrit={attackIsCrit}
               healAmount={attackHealAmount}
               shieldBlocked={attackShieldBlocked}
+              playerRole={answerResult?.playerRole}
+              phaseTransition={showPhaseTransition}
+              triggeredAbility={showAbility}
             />
           </div>
 
@@ -368,7 +410,7 @@ const QuizBossCard: React.FC<{
           <div>
             <div className="flex justify-between text-xs mb-1">
               <span className="text-red-400 font-mono">{currentHp} HP</span>
-              <span className="text-gray-600">{quiz.maxHp}</span>
+              <span className="text-gray-600">{effectiveMaxHp}</span>
             </div>
             <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
               <div
@@ -390,7 +432,35 @@ const QuizBossCard: React.FC<{
                 style={{ width: `${playerHpPercent}%` }}
               />
             </div>
+            {/* Player Role Badge */}
+            {answerResult?.playerRole && (
+              <div className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                answerResult.playerRole === 'VANGUARD' ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' :
+                answerResult.playerRole === 'STRIKER' ? 'text-green-400 border-green-500/30 bg-green-500/10' :
+                answerResult.playerRole === 'SENTINEL' ? 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' :
+                'text-purple-400 border-purple-500/30 bg-purple-500/10'
+              }`}>
+                {answerResult.playerRole === 'VANGUARD' && '⚔'}
+                {answerResult.playerRole === 'STRIKER' && '⚡'}
+                {answerResult.playerRole === 'SENTINEL' && '🛡'}
+                {answerResult.playerRole === 'COMMANDER' && '👑'}
+                {' '}{answerResult.playerRole}
+              </div>
+            )}
           </div>
+
+          {/* Phase Transition Overlay */}
+          {showPhaseTransition && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-500">
+              <div className="text-center space-y-4 animate-in zoom-in-95 duration-700">
+                <div className="text-6xl font-black text-red-500 animate-pulse">PHASE SHIFT</div>
+                <div className="text-2xl font-bold text-orange-400">{showPhaseTransition.name}</div>
+                {showPhaseTransition.dialogue && (
+                  <div className="text-lg text-gray-300 italic max-w-md mx-auto">"{showPhaseTransition.dialogue}"</div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Knocked out state */}
           {knockedOut ? (
@@ -539,7 +609,7 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     quizId: string,
     questionId: string,
     answer: number,
-    callbacks: { onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean }) => void }
+    callbacks: { onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: { bossType: string; hue: number } } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
   ) => {
     try {
       const result = await dataService.answerBossQuiz(quizId, questionId, answer);

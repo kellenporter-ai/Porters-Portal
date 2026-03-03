@@ -675,6 +675,76 @@ export interface BossAppearance {
   hue: number; // 0-360 colour wheel
 }
 
+// --- Difficulty Scaling ---
+export type DifficultyTier = 'NORMAL' | 'HARD' | 'NIGHTMARE' | 'APOCALYPSE';
+
+export const DIFFICULTY_TIER_DEFS: Record<DifficultyTier, { name: string; description: string; hpMultiplier: number; color: string; forcedModifiers: BossModifierType[] }> = {
+  NORMAL:     { name: 'Normal',     description: 'Standard difficulty',                                        hpMultiplier: 1,   color: 'gray',   forcedModifiers: [] },
+  HARD:       { name: 'Hard',       description: '1.5x HP, boss rage enabled',                                 hpMultiplier: 1.5, color: 'amber',  forcedModifiers: ['BOSS_DAMAGE_BOOST'] },
+  NIGHTMARE:  { name: 'Nightmare',  description: '2.5x HP, boss rage + time pressure + armor break',           hpMultiplier: 2.5, color: 'red',    forcedModifiers: ['BOSS_DAMAGE_BOOST', 'TIME_PRESSURE', 'ARMOR_BREAK'] },
+  APOCALYPSE: { name: 'Apocalypse', description: '4x HP, all nightmare mods + double or nothing',              hpMultiplier: 4,   color: 'purple', forcedModifiers: ['BOSS_DAMAGE_BOOST', 'TIME_PRESSURE', 'ARMOR_BREAK', 'DOUBLE_OR_NOTHING'] },
+};
+
+export interface AutoScaleConfig {
+  enabled: boolean;
+  factors: ('CLASS_SIZE' | 'AVG_GEAR_SCORE' | 'AVG_LEVEL')[];
+}
+
+// --- Multi-Phase Bosses ---
+export interface BossPhase {
+  name: string;                    // e.g., "Enraged Form"
+  hpThreshold: number;             // Triggers at this % of maxHp (e.g., 75, 50, 25)
+  modifiers: BossModifier[];       // New modifiers that activate for this phase
+  bossAppearance?: BossAppearance; // Visual change on phase transition
+  dialogue?: string;               // Boss says something dramatic
+  damagePerCorrect?: number;       // Override base damage for this phase
+}
+
+// --- Boss Abilities ---
+export type BossAbilityTrigger = 'ON_PHASE' | 'EVERY_N_QUESTIONS' | 'HP_THRESHOLD' | 'RANDOM_CHANCE';
+export type BossAbilityEffect = 'AOE_DAMAGE' | 'HEAL_BOSS' | 'ENRAGE' | 'SILENCE' | 'FOCUS_FIRE';
+
+export interface BossAbility {
+  id: string;
+  name: string;                    // e.g., "Seismic Slam"
+  description: string;
+  trigger: BossAbilityTrigger;
+  triggerValue: number;            // Phase #, N questions, HP %, or % chance (0-100)
+  effect: BossAbilityEffect;
+  value: number;                   // Damage amount, heal %, damage boost %, etc.
+  duration?: number;               // How many questions the effect lasts (0 = instant)
+}
+
+export const BOSS_ABILITY_EFFECT_DEFS: Record<BossAbilityEffect, { name: string; description: string; unit: string }> = {
+  AOE_DAMAGE:  { name: 'Seismic Slam',  description: 'All active students lose HP',                    unit: 'HP' },
+  HEAL_BOSS:   { name: 'Regeneration',   description: 'Boss regains % of max HP',                      unit: '%' },
+  ENRAGE:      { name: 'Enrage',         description: 'Boss damage increased for N questions',          unit: '%' },
+  SILENCE:     { name: 'Silence',        description: 'Students cannot crit for N questions',           unit: 'questions' },
+  FOCUS_FIRE:  { name: 'Focus Fire',     description: 'Top damage dealer takes double boss damage',     unit: 'questions' },
+};
+
+// --- Team Roles ---
+export type PlayerRole = 'VANGUARD' | 'STRIKER' | 'SENTINEL' | 'COMMANDER';
+
+export const PLAYER_ROLE_DEFS: Record<PlayerRole, { name: string; description: string; stat: string; color: string; icon: string }> = {
+  VANGUARD:  { name: 'Vanguard',  description: '+15% base damage',                                stat: 'tech',     color: 'blue',   icon: 'Sword' },
+  STRIKER:   { name: 'Striker',   description: '+10% crit chance, +0.5 crit multiplier',           stat: 'focus',    color: 'green',  icon: 'Zap' },
+  SENTINEL:  { name: 'Sentinel',  description: '+10% armor, absorbs 20% AoE for team',            stat: 'analysis', color: 'yellow', icon: 'Shield' },
+  COMMANDER: { name: 'Commander', description: 'Heals 5 HP to 2 allies on correct, +10% XP',      stat: 'charisma', color: 'purple', icon: 'Crown' },
+};
+
+// --- Boss Loot Tables ---
+export interface BossLootEntry {
+  id: string;
+  itemName: string;                // Display name
+  slot: EquipmentSlot;
+  rarity: ItemRarity;
+  stats: Partial<Record<'tech' | 'focus' | 'analysis' | 'charisma', number>>;
+  dropChance: number;              // 0-100%
+  isExclusive: boolean;            // Only drops from this boss (shown as unique tag)
+  maxDrops?: number;               // How many can drop total across all students
+}
+
 export interface BossQuizEvent {
   id: string;
   bossName: string;
@@ -696,6 +766,17 @@ export interface BossQuizEvent {
   bossAppearance?: BossAppearance;
   modifiers?: BossModifier[];
   questionBankIds?: string[]; // IDs of banks this boss pulled from
+
+  // Phase 1 additions
+  difficultyTier?: DifficultyTier;
+  autoScale?: AutoScaleConfig;
+  scaledMaxHp?: number;            // HP after auto-scale calculation (original maxHp preserved)
+  phases?: BossPhase[];
+  currentPhase?: number;           // 0-indexed, tracks current active phase
+  bossAbilities?: BossAbility[];
+  activeAbilities?: { abilityId: string; effect: BossAbilityEffect; value: number; remainingQuestions: number }[];
+  lootTable?: BossLootEntry[];
+  totalQuestionsAnswered?: number; // Global counter for ability triggers
 }
 
 export interface BossQuizQuestion {
@@ -778,6 +859,11 @@ export interface BossQuizCombatStats {
   healingReceived: number;
   questionsAttempted: number;
   questionsCorrect: number;
+  // Phase 1 additions
+  role?: PlayerRole;           // Derived role for this fight
+  roleHealingGiven?: number;   // Commander: total HP healed to allies
+  aoeDamageAbsorbed?: number;  // Sentinel: AoE damage absorbed for team
+  abilitiesSurvived?: number;  // Number of boss abilities weathered
 }
 
 export interface BossQuizProgress {
@@ -794,6 +880,180 @@ export interface BossQuizProgress {
 export const BOSS_REWARD_TIERS = [1.5, 1.4, 1.3, 1.2, 1.1] as const;
 export const BOSS_PARTICIPATION_MIN_ATTEMPTS = 5;
 export const BOSS_PARTICIPATION_MIN_CORRECT = 1;
+
+// ========================================
+// DUNGEON EXPEDITIONS
+// ========================================
+
+export type DungeonRoomType = 'COMBAT' | 'PUZZLE' | 'BOSS' | 'REST' | 'TREASURE';
+
+export interface DungeonRoom {
+  id: string;
+  name: string;
+  description: string;
+  type: DungeonRoomType;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  questions?: BossQuizQuestion[];     // Reuse boss quiz question format
+  enemyHp?: number;                   // For COMBAT/BOSS rooms
+  enemyDamage?: number;               // Damage on wrong answer
+  enemyName?: string;                 // Name of the enemy
+  enemyAppearance?: BossAppearance;   // Reuse boss visual system
+  isBonusRoom?: boolean;              // Optional harder room for bonus loot
+  loot?: BossLootEntry[];             // Room-specific drops
+  healAmount?: number;                // For REST rooms — HP restored
+}
+
+export interface Dungeon {
+  id: string;
+  name: string;
+  description: string;
+  classType: string;
+  targetSections?: string[];
+  rooms: DungeonRoom[];
+  rewards: {
+    xp: number;
+    flux: number;
+    itemRarity?: ItemRarity;
+  };
+  bonusRoomRewards?: {
+    xp: number;
+    flux: number;
+  };
+  isActive: boolean;
+  resetsAt?: 'DAILY' | 'WEEKLY';
+  minLevel?: number;
+  minGearScore?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DungeonRun {
+  id: string;
+  dungeonId: string;
+  dungeonName: string;
+  userId: string;
+  currentRoom: number;               // 0-indexed
+  playerHp: number;
+  maxHp: number;
+  roomsCleared: number;
+  totalDamageDealt: number;
+  questionsCorrect: number;
+  questionsAttempted: number;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+  startedAt: string;
+  completedAt?: string;
+  answeredQuestions: string[];        // Track answered questions across rooms
+  currentRoomEnemyHp?: number;       // Track current room enemy HP
+  lootCollected: { itemName: string; rarity: ItemRarity }[];
+  combatStats: BossQuizCombatStats;
+}
+
+// ========================================
+// IDLE AGENT MISSIONS
+// ========================================
+
+export interface IdleMission {
+  id: string;
+  name: string;
+  description: string;
+  classType: string;
+  targetSections?: string[];
+  duration: number;              // Minutes (30, 60, 120, 240)
+  isActive: boolean;
+  rewards: {
+    xp: number;
+    flux: number;
+    itemRarity?: ItemRarity;
+  };
+  statBonuses?: {                // Better rewards at higher stats
+    stat: 'tech' | 'focus' | 'analysis' | 'charisma';
+    threshold: number;           // Stat value needed for bonus
+    bonusMultiplier: number;     // e.g., 1.5 = +50% rewards
+    description: string;         // e.g., "High Tech: +50% Flux"
+  }[];
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  minLevel?: number;
+  createdAt: string;
+}
+
+export interface ActiveIdleMission {
+  missionId: string;
+  missionName: string;
+  deployedAt: string;            // ISO date
+  completesAt: string;           // ISO date
+  stats: { tech: number; focus: number; analysis: number; charisma: number };
+  gearScore: number;
+  classType: string;
+  claimed: boolean;
+}
+
+// ========================================
+// PVP ARENA
+// ========================================
+
+export type ArenaMatchMode = 'AUTO_DUEL' | 'QUIZ_RACE';
+export type ArenaMatchStatus = 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface ArenaMatch {
+  id: string;
+  classType: string;
+  mode: ArenaMatchMode;
+  player1: ArenaPlayer;
+  player2: ArenaPlayer;
+  rounds: ArenaRound[];
+  winnerId?: string;
+  status: ArenaMatchStatus;
+  createdAt: string;
+  completedAt?: string;
+  seasonId?: string;
+}
+
+export interface ArenaPlayer {
+  userId: string;
+  name: string;
+  gearScore: number;
+  stats: { tech: number; focus: number; analysis: number; charisma: number };
+  role: string;         // PlayerRole derived from stats
+  hp: number;
+  maxHp: number;
+}
+
+export interface ArenaRound {
+  roundNumber: number;
+  p1Action: { damage: number; isCrit: boolean; blocked: number };
+  p2Action: { damage: number; isCrit: boolean; blocked: number };
+  p1HpAfter: number;
+  p2HpAfter: number;
+}
+
+export interface ArenaSeason {
+  id: string;
+  name: string;
+  classType: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  entryRewards: {        // Rewards per match
+    winXp: number;
+    winFlux: number;
+    lossXp: number;
+    lossFlux: number;
+  };
+  ratingChange: {
+    win: number;          // e.g., +15
+    loss: number;         // e.g., -10
+  };
+  dailyMatchLimit: number;
+}
+
+export interface ArenaProfile {
+  rating: number;
+  wins: number;
+  losses: number;
+  matchesPlayedToday: number;
+  lastMatchDate?: string;
+  seasonId?: string;
+}
 
 // ========================================
 // KNOWLEDGE-GATED LOOT

@@ -1,5 +1,5 @@
 
-import { ItemRarity, RPGItem, EquipmentSlot, User } from '../types';
+import { ItemRarity, RPGItem, EquipmentSlot, User, PlayerRole } from '../types';
 import { RUNEWORD_DEFINITIONS } from './runewords';
 import { getActiveSetBonuses } from './achievements';
 
@@ -175,6 +175,19 @@ export const deriveCombatStats = (stats: { tech: number; focus: number; analysis
     const critChance = Math.min(stats.focus * 0.01, 0.40);
     const critMultiplier = 2 + Math.max(0, stats.focus - 10) * 0.02;
     return { maxHp, armorPercent, critChance, critMultiplier };
+};
+
+// --- PLAYER ROLE DERIVATION ---
+export const derivePlayerRole = (stats: { tech: number; focus: number; analysis: number; charisma: number }): PlayerRole => {
+  const statMap: { stat: number; role: PlayerRole }[] = [
+    { stat: stats.tech, role: 'VANGUARD' },
+    { stat: stats.focus, role: 'STRIKER' },
+    { stat: stats.analysis, role: 'SENTINEL' },
+    { stat: stats.charisma, role: 'COMMANDER' },
+  ];
+  // Highest stat wins; ties go to first in order (tech > focus > analysis > charisma)
+  statMap.sort((a, b) => b.stat - a.stat);
+  return statMap[0].role;
 };
 
 // craftItem, generateLoot, generateQuestRewards — removed (server-side only)

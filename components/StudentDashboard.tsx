@@ -32,8 +32,11 @@ import AgentLoadoutTab from './dashboard/AgentLoadoutTab';
 import BadgesTab from './dashboard/BadgesTab';
 import ProgressDashboard from './dashboard/ProgressDashboard';
 import CalendarView from './dashboard/CalendarView';
+import DungeonPanel from './xp/DungeonPanel';
+import ArenaPanel from './xp/ArenaPanel';
+import IdleMissionsPanel from './xp/IdleMissionsPanel';
 
-type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
+type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
 
 interface StudentDashboardProps {
   user: User;
@@ -619,6 +622,30 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      activeClass={activeClass}
                      onStartAssignment={onStartAssignment}
                  />
+             )}
+
+             {activeTab === 'DUNGEONS' && (
+                 <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <FeatureErrorBoundary feature="Dungeons">
+                       <DungeonPanel userId={user.id} classType={activeClass} />
+                     </FeatureErrorBoundary>
+                 </div>
+             )}
+
+             {activeTab === 'ARENA' && (
+                 <div key="arena" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <FeatureErrorBoundary feature="Arena">
+                       <ArenaPanel userId={user.id} classType={activeClass} />
+                     </FeatureErrorBoundary>
+                 </div>
+             )}
+
+             {activeTab === 'DEPLOY' && (
+                 <div key="deploy" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <FeatureErrorBoundary feature="Idle Missions">
+                       <IdleMissionsPanel userId={user.id} classType={activeClass} />
+                     </FeatureErrorBoundary>
+                 </div>
              )}
           </div>
       </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem } from '../types';
+import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem, Dungeon, IdleMission } from '../types';
 import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain, Copy } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
@@ -19,8 +19,10 @@ import XPTutoringTab from './xp/XPTutoringTab';
 import QuizBossFormModal from './xp/QuizBossFormModal';
 import QuestionBankFormModal from './xp/QuestionBankFormModal';
 import GamificationAnalyticsTab from './xp/GamificationAnalyticsTab';
+import DungeonFormModal from './xp/DungeonFormModal';
+import IdleMissionFormModal from './xp/IdleMissionFormModal';
 
-type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING' | 'ANALYTICS';
+type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING' | 'ANALYTICS' | 'DUNGEON_OPS' | 'IDLE_MISSIONS';
 
 const TAB_NAME_MAP: Record<string, XPTab> = {
   'Operatives': 'OPERATIVES',
@@ -30,6 +32,8 @@ const TAB_NAME_MAP: Record<string, XPTab> = {
   'Boss Ops': 'BOSS_OPS',
   'Tutoring': 'TUTORING',
   'Analytics': 'ANALYTICS',
+  'Dungeon Ops': 'DUNGEON_OPS',
+  'Idle Missions': 'IDLE_MISSIONS',
 };
 
 interface XPManagementProps {
@@ -72,6 +76,16 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const [allTutoringSessions, setAllTutoringSessions] = useState<import('../types').TutoringSession[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
 
+  // Dungeon Ops state
+  const [dungeons, setDungeons] = useState<Dungeon[]>([]);
+  const [isDungeonModalOpen, setIsDungeonModalOpen] = useState(false);
+  const [editingDungeon, setEditingDungeon] = useState<Dungeon | null>(null);
+
+  // Idle Missions state
+  const [idleMissions, setIdleMissions] = useState<IdleMission[]>([]);
+  const [isIdleMissionModalOpen, setIsIdleMissionModalOpen] = useState(false);
+  const [editingIdleMission, setEditingIdleMission] = useState<IdleMission | null>(null);
+
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
     const unsubQuests = dataService.subscribeToQuests(setQuests);
@@ -79,7 +93,9 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
     const unsubTutoring = dataService.subscribeToAllTutoringSessions(setAllTutoringSessions);
     const unsubBanks = dataService.subscribeToBossQuestionBanks(setQuestionBanks);
     const unsubCustomItems = dataService.subscribeToCustomItems(setCustomItems);
-    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); unsubBanks(); unsubCustomItems(); };
+    const unsubDungeons = dataService.subscribeToAllDungeons(setDungeons);
+    const unsubIdleMissions = dataService.subscribeToAllIdleMissions(setIdleMissions);
+    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); unsubBanks(); unsubCustomItems(); unsubDungeons(); unsubIdleMissions(); };
   }, []);
 
   useEffect(() => {
@@ -323,6 +339,8 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
     BOSS_OPS: 'Boss Ops',
     TUTORING: 'Tutoring',
     ANALYTICS: 'Analytics',
+    DUNGEON_OPS: 'Dungeon Ops',
+    IDLE_MISSIONS: 'Idle Missions',
   };
 
   return (
@@ -457,6 +475,95 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
               quizBosses={quizBosses}
             />
           )}
+
+          {activeTab === 'DUNGEON_OPS' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Create and manage dungeon expeditions for students.</p>
+                <button
+                  onClick={() => { setEditingDungeon(null); setIsDungeonModalOpen(true); }}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition text-xs"
+                >
+                  <Plus className="w-3 h-3" /> New Dungeon
+                </button>
+              </div>
+              {dungeons.length === 0 && (
+                <div className="text-center py-14 text-gray-500">
+                  <Brain className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold">No dungeons created yet.</p>
+                  <p className="text-sm mt-1">Create dungeon expeditions for students to explore.</p>
+                </div>
+              )}
+              {dungeons.map((dungeon) => (
+                <div key={dungeon.id} className={`p-4 rounded-2xl border flex items-center gap-4 mb-3 ${dungeon.isActive ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-white text-sm truncate">{dungeon.name}</h4>
+                    <p className="text-xs text-gray-500 truncate">{dungeon.description}</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      <span className="text-[10px] font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-500/20">{dungeon.rooms.length} Rooms</span>
+                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{dungeon.classType}</span>
+                      {dungeon.resetsAt && <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{dungeon.resetsAt}</span>}
+                      <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{dungeon.rewards.xp} XP / {dungeon.rewards.flux} Flux</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => { setEditingDungeon(dungeon); setIsDungeonModalOpen(true); }} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase">Edit</button>
+                    <button
+                      onClick={async () => { await dataService.saveDungeon({ ...dungeon, isActive: !dungeon.isActive }); }}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${dungeon.isActive ? 'bg-indigo-600' : 'bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${dungeon.isActive ? 'translate-x-6' : ''}`} />
+                    </button>
+                    <button onClick={() => dataService.deleteDungeon(dungeon.id)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === 'IDLE_MISSIONS' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Create idle agent missions students can deploy on timed runs.</p>
+                <button
+                  onClick={() => { setEditingIdleMission(null); setIsIdleMissionModalOpen(true); }}
+                  className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition text-xs"
+                >
+                  <Plus className="w-3 h-3" /> New Idle Mission
+                </button>
+              </div>
+              {idleMissions.length === 0 && (
+                <div className="text-center py-14 text-gray-500">
+                  <Rocket className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold">No idle missions created yet.</p>
+                  <p className="text-sm mt-1">Create timed missions students can deploy agents on.</p>
+                </div>
+              )}
+              {idleMissions.map((mission) => (
+                <div key={mission.id} className={`p-4 rounded-2xl border flex items-center gap-4 mb-3 ${mission.isActive ? 'bg-orange-600/10 border-orange-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-white text-sm truncate">{mission.name}</h4>
+                    <p className="text-xs text-gray-500 truncate">{mission.description}</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">{mission.duration}m duration</span>
+                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{mission.classType}</span>
+                      <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{mission.rewards.xp} XP / {mission.rewards.flux} Flux</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => { setEditingIdleMission(mission); setIsIdleMissionModalOpen(true); }} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase">Edit</button>
+                    <button
+                      onClick={async () => { await dataService.saveIdleMission({ ...mission, isActive: !mission.isActive }); }}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${mission.isActive ? 'bg-orange-600' : 'bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${mission.isActive ? 'translate-x-6' : ''}`} />
+                    </button>
+                    <button onClick={() => dataService.deleteIdleMission(mission.id)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -523,6 +630,18 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
         loading={loadingEndgame}
         users={users}
         onClose={() => { setEndgameQuiz(null); setEndgameProgress([]); }}
+      />
+
+      <DungeonFormModal
+        isOpen={isDungeonModalOpen}
+        onClose={() => { setIsDungeonModalOpen(false); setEditingDungeon(null); }}
+        editingDungeon={editingDungeon}
+      />
+
+      <IdleMissionFormModal
+        isOpen={isIdleMissionModalOpen}
+        onClose={() => { setIsIdleMissionModalOpen(false); setEditingIdleMission(null); }}
+        editingMission={editingIdleMission}
       />
     </div>
   );

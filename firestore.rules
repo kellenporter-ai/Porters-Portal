@@ -438,6 +438,41 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // DUNGEON EXPEDITIONS
+    // ==========================================
+    match /dungeons/{dungeonId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Dungeon run progress — students can read their own runs
+    match /dungeon_runs/{runId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin SDK only (Cloud Functions)
+    }
+
+    // ==========================================
+    // PVP ARENA
+    // ==========================================
+    match /arena_matches/{matchId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin SDK only (Cloud Functions)
+    }
+
+    match /arena_seasons/{seasonId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // IDLE AGENT MISSIONS
+    // ==========================================
+    match /idle_missions/{missionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
     // BUG REPORTS
     // ==========================================
     match /bug_reports/{reportId} {

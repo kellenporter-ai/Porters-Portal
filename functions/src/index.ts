@@ -2907,6 +2907,16 @@ function modVal(mods: { type: string; value?: number }[] | undefined, type: stri
   const m = mods?.find((m) => m.type === type);
   return m?.value ?? fallback;
 }
+function derivePlayerRole(stats: { tech: number; focus: number; analysis: number; charisma: number }): string {
+  const statMap = [
+    { stat: stats.tech, role: 'VANGUARD' },
+    { stat: stats.focus, role: 'STRIKER' },
+    { stat: stats.analysis, role: 'SENTINEL' },
+    { stat: stats.charisma, role: 'COMMANDER' },
+  ];
+  statMap.sort((a, b) => b.stat - a.stat);
+  return statMap[0].role;
+}
 
 const BOSS_REWARD_TIERS = [1.5, 1.4, 1.3, 1.2, 1.1];
 const BOSS_PARTICIPATION_MIN_ATTEMPTS = 5;
@@ -2961,12 +2971,34 @@ export const answerBossQuiz = onCall(async (request) => {
   let { maxHp } = baseCombat;
   let armorPercent = baseCombat.armorPercent;
   let critChance = baseCombat.critChance;
-  const critMultiplier = baseCombat.critMultiplier;
+  let adjustedCritMultiplier = baseCombat.critMultiplier;
 
   // --- Apply modifiers to combat stats ---
   const mods: { type: string; value?: number }[] = quiz.modifiers || [];
   if (hasMod(mods, "ARMOR_BREAK") || hasMod(mods, "GLASS_CANNON")) armorPercent = 0;
   if (hasMod(mods, "CRIT_SURGE")) critChance = Math.min(1, critChance + modVal(mods, "CRIT_SURGE", 20) / 100);
+
+  // --- Derive player role and apply role bonuses ---
+  const playerRole = derivePlayerRole(playerAttrStats);
+  let roleDamageMultiplier = 1;
+  if (playerRole === 'VANGUARD') roleDamageMultiplier = 1.15;
+  if (playerRole === 'STRIKER') {
+    critChance = Math.min(1, critChance + 0.10);
+    adjustedCritMultiplier += 0.5;
+  }
+
+  // --- Check active boss abilities ---
+  const activeAbilities: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] = quiz.activeAbilities || [];
+  let silenced = false;
+  let enrageMultiplier = 1;
+
+  for (const ability of activeAbilities) {
+    if (ability.effect === 'SILENCE' && ability.remainingQuestions > 0) silenced = true;
+    if (ability.effect === 'ENRAGE' && ability.remainingQuestions > 0) enrageMultiplier = 1 + (ability.value / 100);
+    if (ability.effect === 'FOCUS_FIRE' && ability.remainingQuestions > 0) {
+      // Focus fire targets top damage dealer — resolved on client via return data
+    }
+  }
 
   // Initialize player HP
   let playerHp = progress.currentHp >= 0 ? progress.currentHp : maxHp;
@@ -3021,10 +3053,13 @@ export const answerBossQuiz = onCall(async (request) => {
       damage = Math.round(damage * 1.5);
     }
 
-    // Crit roll
-    if (Math.random() < critChance) {
+    // Role damage multiplier (VANGUARD +15%)
+    damage = Math.round(damage * roleDamageMultiplier);
+
+    // Crit roll — silence prevents crits
+    if (!silenced && Math.random() < critChance) {
       isCrit = true;
-      damage = Math.round(damage * critMultiplier);
+      damage = Math.round(damage * adjustedCritMultiplier);
       cs.criticalHits++;
     }
 
@@ -3071,6 +3106,8 @@ export const answerBossQuiz = onCall(async (request) => {
       let baseBossDamage = question.difficulty === "HARD" ? 30 : question.difficulty === "MEDIUM" ? 20 : 15;
       if (hasMod(mods, "BOSS_DAMAGE_BOOST")) baseBossDamage += modVal(mods, "BOSS_DAMAGE_BOOST", 15);
       if (hasMod(mods, "DOUBLE_OR_NOTHING")) baseBossDamage *= 2;
+      // Apply enrage multiplier from active abilities
+      baseBossDamage = Math.round(baseBossDamage * enrageMultiplier);
 
       const rawDamage = baseBossDamage;
       playerDamage = Math.max(1, Math.round(rawDamage * (1 - armorPercent / 100)));
@@ -3088,7 +3125,37 @@ export const answerBossQuiz = onCall(async (request) => {
     cs.bossDamageTaken += tickDmg;
   }
 
-  // Persist progress + combat stats
+  // --- Commander healing: on correct answer, heal 2 random allies by 5 HP ---
+  if (playerRole === 'COMMANDER' && isCorrect) {
+    try {
+      const allProgressSnaps = await db.collection("boss_quiz_progress")
+        .where("quizId", "==", quizId).get();
+      const allies: string[] = [];
+      allProgressSnaps.forEach(d => {
+        const data = d.data();
+        if (data.userId && data.userId !== uid && data.currentHp > 0) allies.push(data.userId);
+      });
+      const shuffled = allies.sort(() => Math.random() - 0.5).slice(0, 2);
+      let totalHealed = 0;
+      for (const allyId of shuffled) {
+        const allyRef = db.doc(`boss_quiz_progress/${allyId}_${quizId}`);
+        const allySnap = await allyRef.get();
+        if (allySnap.exists) {
+          const allyData = allySnap.data()!;
+          const allyMaxHp = allyData.maxHp || 100;
+          const oldHp = allyData.currentHp || 0;
+          const newAllyHp = Math.min(allyMaxHp, oldHp + 5);
+          if (newAllyHp > oldHp) {
+            await allyRef.update({ currentHp: newAllyHp });
+            totalHealed += (newAllyHp - oldHp);
+          }
+        }
+      }
+      cs.roleHealingGiven = (cs.roleHealingGiven || 0) + totalHealed;
+    } catch { /* ignore healing errors */ }
+  }
+
+  // Persist progress + combat stats (includes role for leaderboard/display)
   batch.set(progressRef, {
     userId: uid,
     quizId,
@@ -3096,16 +3163,99 @@ export const answerBossQuiz = onCall(async (request) => {
     currentHp: playerHp,
     maxHp,
     lastUpdated: new Date().toISOString(),
-    combatStats: cs,
+    combatStats: { ...cs, role: playerRole },
   }, { merge: true });
 
   await batch.commit();
 
-  // Aggregate HP from shards
+  // Aggregate HP from shards — use scaledMaxHp if set, otherwise maxHp
   const shardsSnap = await db.collection(`boss_quizzes/${quizId}/shards`).get();
   let totalDamage = 0;
   shardsSnap.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
-  const newHp = Math.max(0, quiz.maxHp - totalDamage);
+  const effectiveMaxHp = quiz.scaledMaxHp || quiz.maxHp;
+  const newHp = Math.max(0, effectiveMaxHp - totalDamage);
+
+  // --- Phase transition check ---
+  let phaseTransition: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null = null;
+  const phases = quiz.phases || [];
+  const currentPhase = quiz.currentPhase || 0;
+  if (phases.length > 0 && newHp > 0) {
+    const hpPercent = (newHp / effectiveMaxHp) * 100;
+    for (let i = phases.length - 1; i >= 0; i--) {
+      if (i > currentPhase && hpPercent <= phases[i].hpThreshold) {
+        phaseTransition = {
+          phase: i,
+          name: phases[i].name,
+          dialogue: phases[i].dialogue,
+          newAppearance: phases[i].bossAppearance,
+        };
+        await quizRef.update({
+          currentPhase: i,
+          ...(phases[i].damagePerCorrect ? { damagePerCorrect: phases[i].damagePerCorrect } : {}),
+        });
+        break;
+      }
+    }
+  }
+
+  // --- Boss ability triggers ---
+  let triggeredAbility: { name: string; effect: string; value: number } | null = null;
+  const bossAbilities = quiz.bossAbilities || [];
+  const totalQuestions = (quiz.totalQuestionsAnswered || 0) + 1;
+
+  for (const ability of bossAbilities) {
+    let shouldTrigger = false;
+    if (ability.trigger === 'EVERY_N_QUESTIONS' && totalQuestions % ability.triggerValue === 0) shouldTrigger = true;
+    if (ability.trigger === 'HP_THRESHOLD' && newHp > 0) {
+      const hpPct = (newHp / effectiveMaxHp) * 100;
+      if (hpPct <= ability.triggerValue) shouldTrigger = true;
+    }
+    if (ability.trigger === 'RANDOM_CHANCE' && Math.random() * 100 < ability.triggerValue) shouldTrigger = true;
+    if (ability.trigger === 'ON_PHASE' && phaseTransition && phaseTransition.phase === ability.triggerValue) shouldTrigger = true;
+
+    if (shouldTrigger) {
+      triggeredAbility = { name: ability.name, effect: ability.effect, value: ability.value };
+
+      if (ability.effect === 'AOE_DAMAGE') {
+        // Sentinels absorb 20% of AOE damage
+        const aoeAmount = playerRole === 'SENTINEL'
+          ? Math.round(ability.value * 0.80)
+          : ability.value;
+        const absorbed = ability.value - aoeAmount;
+        playerHp = Math.max(0, playerHp - aoeAmount);
+        cs.bossDamageTaken += aoeAmount;
+        cs.abilitiesSurvived = (cs.abilitiesSurvived || 0) + 1;
+        if (absorbed > 0) cs.aoeDamageAbsorbed = (cs.aoeDamageAbsorbed || 0) + absorbed;
+      }
+      if (ability.effect === 'HEAL_BOSS') {
+        const healAmount = Math.round(effectiveMaxHp * (ability.value / 100));
+        const healShardId = Math.floor(Math.random() * BOSS_SHARD_COUNT).toString();
+        await db.doc(`boss_quizzes/${quizId}/shards/${healShardId}`).set({
+          damageDealt: admin.firestore.FieldValue.increment(-healAmount),
+        }, { merge: true });
+      }
+
+      if (ability.duration && ability.duration > 0) {
+        const updatedAbilities = [
+          ...activeAbilities.filter((a) => a.abilityId !== ability.id),
+          { abilityId: ability.id, effect: ability.effect, value: ability.value, remainingQuestions: ability.duration },
+        ];
+        await quizRef.update({ activeAbilities: updatedAbilities });
+      }
+
+      break; // Only trigger one ability per answer
+    }
+  }
+
+  // Decrement remaining questions on active abilities
+  if (activeAbilities.length > 0) {
+    const decremented = activeAbilities
+      .map((a) => ({ ...a, remainingQuestions: a.remainingQuestions - 1 }))
+      .filter((a) => a.remainingQuestions > 0);
+    await quizRef.update({ activeAbilities: decremented, totalQuestionsAnswered: totalQuestions });
+  } else {
+    await quizRef.update({ totalQuestionsAnswered: totalQuestions });
+  }
 
   // Boss defeated — distribute tiered rewards
   let bossDefeated = false;
@@ -3118,25 +3268,26 @@ export const answerBossQuiz = onCall(async (request) => {
     const baseRewardFlux = rewards.flux || 0;
     const rewardItemRarity = rewards.itemRarity || null;
 
-    if (baseRewardXp > 0 || baseRewardFlux > 0 || rewardItemRarity) {
-      const allProgressSnaps = await db.collection("boss_quiz_progress")
-        .where("quizId", "==", quizId).get();
+    // Collect contributors for both standard rewards and loot
+    const allProgressSnaps = await db.collection("boss_quiz_progress")
+      .where("quizId", "==", quizId).get();
 
-      // Build leaderboard sorted by totalDamageDealt
-      const contributors: { id: string; dmg: number; attempts: number; correct: number }[] = [];
-      allProgressSnaps.forEach((d) => {
-        const data = d.data();
-        if (!data.userId) return;
-        const stats = data.combatStats || {};
-        contributors.push({
-          id: data.userId,
-          dmg: stats.totalDamageDealt || 0,
-          attempts: stats.questionsAttempted || data.answeredQuestions?.length || 0,
-          correct: stats.questionsCorrect || 0,
-        });
+    const contributors: { id: string; dmg: number; attempts: number; correct: number }[] = [];
+    allProgressSnaps.forEach((d) => {
+      const data = d.data();
+      if (!data.userId) return;
+      const stats = data.combatStats || {};
+      contributors.push({
+        id: data.userId,
+        dmg: stats.totalDamageDealt || 0,
+        attempts: stats.questionsAttempted || data.answeredQuestions?.length || 0,
+        correct: stats.questionsCorrect || 0,
       });
-      contributors.sort((a, b) => b.dmg - a.dmg);
+    });
+    contributors.sort((a, b) => b.dmg - a.dmg);
 
+    if (baseRewardXp > 0 || baseRewardFlux > 0 || rewardItemRarity) {
+      // Build leaderboard sorted by totalDamageDealt
       const quizClass = quiz.classType && quiz.classType !== "GLOBAL" ? quiz.classType : undefined;
 
       for (let i = 0; i < contributors.length; i++) {
@@ -3208,6 +3359,60 @@ export const answerBossQuiz = onCall(async (request) => {
         }
       }
     }
+
+    // --- Distribute boss-specific loot from lootTable ---
+    const lootTable = quiz.lootTable || [];
+    if (lootTable.length > 0 && contributors.length > 0) {
+      const lootDrops: Record<string, unknown[]> = {};
+      const quizClass = quiz.classType && quiz.classType !== "GLOBAL" ? quiz.classType : undefined;
+
+      for (const entry of lootTable) {
+        let drops = 0;
+        const maxDrops = entry.maxDrops || contributors.length;
+
+        for (const c of contributors) {
+          if (drops >= maxDrops) break;
+          if (c.attempts < BOSS_PARTICIPATION_MIN_ATTEMPTS || c.correct < BOSS_PARTICIPATION_MIN_CORRECT) continue;
+
+          if (Math.random() * 100 < entry.dropChance) {
+            if (!lootDrops[c.id]) lootDrops[c.id] = [];
+            lootDrops[c.id].push({
+              id: Math.random().toString(36).substring(2, 12),
+              name: entry.itemName,
+              slot: entry.slot,
+              rarity: entry.rarity,
+              stats: entry.stats || {},
+              affixes: [],
+              gems: [],
+              sockets: 0,
+              isBossLoot: true,
+              bossName: quiz.bossName,
+            });
+            drops++;
+          }
+        }
+      }
+
+      for (const [userId, items] of Object.entries(lootDrops)) {
+        try {
+          const userRef = db.doc(`users/${userId}`);
+          const userSnap = await userRef.get();
+          if (!userSnap.exists) continue;
+          const userData2 = userSnap.data()!;
+          const gam2 = userData2.gamification || {};
+
+          if (quizClass && gam2.classProfiles?.[quizClass]) {
+            const inv = gam2.classProfiles[quizClass].inventory || [];
+            await userRef.update({
+              [`gamification.classProfiles.${quizClass}.inventory`]: [...inv, ...items],
+            });
+          } else {
+            const inv = gam2.inventory || [];
+            await userRef.update({ "gamification.inventory": [...inv, ...items] });
+          }
+        } catch { /* ignore individual loot errors */ }
+      }
+    }
   }
 
   return {
@@ -3215,7 +3420,89 @@ export const answerBossQuiz = onCall(async (request) => {
     playerDamage, playerHp, playerMaxHp: maxHp,
     knockedOut: playerHp <= 0,
     isCrit, healAmount, shieldBlocked,
+    // Phase 1 additions
+    playerRole,
+    phaseTransition,
+    triggeredAbility,
+    activeAbilities: activeAbilities.filter((a) => a.remainingQuestions > 0),
   };
+});
+
+export const scaleBossHp = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  // Admin check
+  const userSnap = await admin.firestore().doc(`users/${uid}`).get();
+  if (!userSnap.exists || userSnap.data()?.role !== 'ADMIN') {
+    throw new HttpsError("permission-denied", "Admin only.");
+  }
+
+  const { quizId } = request.data;
+  if (!quizId) throw new HttpsError("invalid-argument", "Quiz ID required.");
+
+  const db = admin.firestore();
+  const quizRef = db.doc(`boss_quizzes/${quizId}`);
+  const quizSnap = await quizRef.get();
+  if (!quizSnap.exists) throw new HttpsError("not-found", "Quiz not found.");
+
+  const quiz = quizSnap.data()!;
+  const autoScale = quiz.autoScale;
+  const difficultyTier = quiz.difficultyTier || 'NORMAL';
+
+  // Difficulty tier HP multiplier
+  const tierMultipliers: Record<string, number> = { NORMAL: 1, HARD: 1.5, NIGHTMARE: 2.5, APOCALYPSE: 4 };
+  let scaledHp = quiz.maxHp * (tierMultipliers[difficultyTier] || 1);
+
+  if (autoScale?.enabled && autoScale.factors?.length > 0) {
+    const usersSnap = await db.collection('users').where('role', '==', 'STUDENT').get();
+    const targetStudents: FirebaseFirestore.DocumentData[] = [];
+
+    usersSnap.forEach(d => {
+      const data = d.data();
+      if (quiz.classType && quiz.classType !== 'GLOBAL') {
+        if (data.classType !== quiz.classType) return;
+      }
+      if (quiz.targetSections?.length > 0) {
+        if (!quiz.targetSections.includes(data.section)) return;
+      }
+      targetStudents.push(data);
+    });
+
+    const classSize = targetStudents.length;
+
+    for (const factor of autoScale.factors) {
+      if (factor === 'CLASS_SIZE' && classSize > 10) {
+        scaledHp *= 1 + ((classSize - 10) * 0.10);
+      }
+      if (factor === 'AVG_GEAR_SCORE') {
+        let totalGearScore = 0;
+        for (const student of targetStudents) {
+          const gam = student.gamification || {};
+          const studentProfile = gam.classProfiles?.[quiz.classType];
+          const equipped = studentProfile?.equipped || gam.equipped || {};
+          totalGearScore += calculateServerGearScore(equipped);
+        }
+        const avgGearScore = classSize > 0 ? totalGearScore / classSize : 0;
+        if (avgGearScore > 50) {
+          scaledHp *= 1 + ((avgGearScore - 50) * 0.01);
+        }
+      }
+      if (factor === 'AVG_LEVEL') {
+        let totalLevel = 0;
+        for (const student of targetStudents) {
+          totalLevel += student.gamification?.level || 1;
+        }
+        const avgLevel = classSize > 0 ? totalLevel / classSize : 1;
+        if (avgLevel > 10) {
+          scaledHp *= 1 + ((avgLevel - 10) * 0.005);
+        }
+      }
+    }
+  }
+
+  const finalHp = Math.round(scaledHp);
+  await quizRef.update({ scaledMaxHp: finalHp, currentHp: finalHp });
+
+  return { scaledMaxHp: finalHp, originalMaxHp: quiz.maxHp };
 });
 
 // ==========================================
@@ -3840,4 +4127,767 @@ export const backfillAssignmentDates = onCall(async (request) => {
 
   logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}`);
   return { updated, skipped };
+});
+
+// ==========================================
+// DUNGEON EXPEDITION FUNCTIONS
+// ==========================================
+
+export const startDungeonRun = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { dungeonId } = request.data;
+  if (!dungeonId) throw new HttpsError("invalid-argument", "Dungeon ID required.");
+
+  const db = admin.firestore();
+  const dungeonRef = db.doc(`dungeons/${dungeonId}`);
+  const userRef = db.doc(`users/${uid}`);
+
+  const [dungeonSnap, userSnap] = await Promise.all([dungeonRef.get(), userRef.get()]);
+  if (!dungeonSnap.exists) throw new HttpsError("not-found", "Dungeon not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const dungeon = dungeonSnap.data()!;
+  if (!dungeon.isActive) throw new HttpsError("failed-precondition", "Dungeon is not active.");
+
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+
+  // Check level requirement
+  if (dungeon.minLevel && (gam.level || 1) < dungeon.minLevel) {
+    throw new HttpsError("failed-precondition", `Requires level ${dungeon.minLevel}.`);
+  }
+
+  // Check gear score requirement
+  const activeClass = dungeon.classType || userData.classType || '';
+  const profile = gam.classProfiles?.[activeClass];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const gearScore = calculateServerGearScore(equipped);
+  if (dungeon.minGearScore && gearScore < dungeon.minGearScore) {
+    throw new HttpsError("failed-precondition", `Requires gear score ${dungeon.minGearScore}.`);
+  }
+
+  // Check reset cooldown
+  if (dungeon.resetsAt) {
+    const existingRuns = await db.collection('dungeon_runs')
+      .where('userId', '==', uid)
+      .where('dungeonId', '==', dungeonId)
+      .where('status', 'in', ['COMPLETED', 'FAILED'])
+      .orderBy('startedAt', 'desc')
+      .limit(1)
+      .get();
+
+    if (!existingRuns.empty) {
+      const lastRun = existingRuns.docs[0].data();
+      const lastRunTime = new Date(lastRun.startedAt);
+      const now = new Date();
+
+      if (dungeon.resetsAt === 'DAILY') {
+        if (lastRunTime.toDateString() === now.toDateString()) {
+          throw new HttpsError("failed-precondition", "Dungeon resets daily. Try again tomorrow.");
+        }
+      } else if (dungeon.resetsAt === 'WEEKLY') {
+        const weekMs = 7 * 24 * 60 * 60 * 1000;
+        if (now.getTime() - lastRunTime.getTime() < weekMs) {
+          throw new HttpsError("failed-precondition", "Dungeon resets weekly.");
+        }
+      }
+    }
+  }
+
+  // Check for active run
+  const activeRuns = await db.collection('dungeon_runs')
+    .where('userId', '==', uid)
+    .where('dungeonId', '==', dungeonId)
+    .where('status', '==', 'IN_PROGRESS')
+    .limit(1)
+    .get();
+
+  if (!activeRuns.empty) {
+    // Return existing active run
+    const existingRun = activeRuns.docs[0].data();
+    return { runId: activeRuns.docs[0].id, ...existingRun, resumed: true };
+  }
+
+  // Calculate player combat stats
+  const playerStats = calculateServerStats(equipped);
+  const combat = deriveCombatStats(playerStats);
+
+  // Create new run
+  const runId = `${uid}_${dungeonId}_${Date.now()}`;
+  const firstRoom = dungeon.rooms?.[0];
+
+  const run = {
+    id: runId,
+    dungeonId,
+    dungeonName: dungeon.name,
+    userId: uid,
+    currentRoom: 0,
+    playerHp: combat.maxHp,
+    maxHp: combat.maxHp,
+    roomsCleared: 0,
+    totalDamageDealt: 0,
+    questionsCorrect: 0,
+    questionsAttempted: 0,
+    status: 'IN_PROGRESS',
+    startedAt: new Date().toISOString(),
+    answeredQuestions: [],
+    currentRoomEnemyHp: firstRoom?.enemyHp || 0,
+    lootCollected: [],
+    combatStats: {
+      totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0,
+      correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
+      incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
+      longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
+      healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
+    },
+  };
+
+  await db.doc(`dungeon_runs/${runId}`).set(run);
+
+  return { runId, ...run, resumed: false };
+});
+
+export const answerDungeonRoom = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { runId, questionId, answer } = request.data;
+  if (!runId || !questionId || answer === undefined) {
+    throw new HttpsError("invalid-argument", "Run ID, question ID, and answer required.");
+  }
+
+  const db = admin.firestore();
+  const runRef = db.doc(`dungeon_runs/${runId}`);
+  const userRef = db.doc(`users/${uid}`);
+
+  const [runSnap, userSnap] = await Promise.all([runRef.get(), userRef.get()]);
+  if (!runSnap.exists) throw new HttpsError("not-found", "Run not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const run = runSnap.data()!;
+  if (run.userId !== uid) throw new HttpsError("permission-denied", "Not your run.");
+  if (run.status !== 'IN_PROGRESS') throw new HttpsError("failed-precondition", "Run is not active.");
+
+  // Get dungeon data
+  const dungeonSnap = await db.doc(`dungeons/${run.dungeonId}`).get();
+  if (!dungeonSnap.exists) throw new HttpsError("not-found", "Dungeon not found.");
+  const dungeon = dungeonSnap.data()!;
+
+  const currentRoom = dungeon.rooms?.[run.currentRoom];
+  if (!currentRoom) throw new HttpsError("not-found", "Room not found.");
+
+  // Find question in current room
+  const question = currentRoom.questions?.find((q: { id: string }) => q.id === questionId);
+  if (!question) throw new HttpsError("not-found", "Question not found.");
+
+  // Check if already answered
+  if (run.answeredQuestions.includes(questionId)) {
+    return { alreadyAnswered: true, correct: false, damage: 0, playerHp: run.playerHp, enemyHp: run.currentRoomEnemyHp, roomCleared: false, dungeonComplete: false, dungeonFailed: false };
+  }
+
+  // Player combat stats from gear
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+  const activeClass = dungeon.classType || userData.classType || '';
+  const profile = gam.classProfiles?.[activeClass];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const playerStats = calculateServerStats(equipped);
+  const gearScore = calculateServerGearScore(equipped);
+  const combat = deriveCombatStats(playerStats);
+
+  let playerHp = run.playerHp;
+  let enemyHp = run.currentRoomEnemyHp || currentRoom.enemyHp || 100;
+  const cs = run.combatStats || { totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0, correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 }, incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 }, longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0, healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0 };
+  cs.questionsAttempted++;
+
+  const isCorrect = Number(answer) === question.correctAnswer;
+  let damage = 0;
+  let playerDamage = 0;
+  let isCrit = false;
+
+  if (isCorrect) {
+    cs.questionsCorrect++;
+    cs.currentStreak++;
+    if (cs.currentStreak > cs.longestStreak) cs.longestStreak = cs.currentStreak;
+    cs.correctByDifficulty[question.difficulty as 'EASY' | 'MEDIUM' | 'HARD']++;
+
+    // Calculate damage using existing boss damage formula
+    const result = calculateBossDamage(playerStats, gearScore);
+    damage = result.damage;
+    isCrit = result.isCrit;
+
+    // Add question difficulty bonus
+    if (question.damageBonus) damage += question.damageBonus;
+
+    if (isCrit) cs.criticalHits++;
+    cs.totalDamageDealt += damage;
+    enemyHp = Math.max(0, enemyHp - damage);
+  } else {
+    cs.currentStreak = 0;
+    cs.incorrectByDifficulty[question.difficulty as 'EASY' | 'MEDIUM' | 'HARD']++;
+
+    // Enemy retaliates
+    const baseDamage = currentRoom.enemyDamage || (question.difficulty === 'HARD' ? 25 : question.difficulty === 'MEDIUM' ? 15 : 10);
+    const rawDamage = baseDamage;
+    playerDamage = Math.max(1, Math.round(rawDamage * (1 - combat.armorPercent / 100)));
+    cs.damageReduced += Math.max(0, rawDamage - playerDamage);
+    cs.bossDamageTaken += playerDamage;
+    playerHp = Math.max(0, playerHp - playerDamage);
+  }
+
+  // Check room clear
+  let roomCleared = false;
+  let nextRoom = run.currentRoom;
+  let nextEnemyHp = enemyHp;
+  let healAmount = 0;
+  let lootDrop: unknown = null;
+
+  if (currentRoom.type === 'REST') {
+    // REST rooms auto-clear and heal
+    roomCleared = true;
+    healAmount = currentRoom.healAmount || 25;
+    playerHp = Math.min(run.maxHp, playerHp + healAmount);
+    cs.healingReceived += healAmount;
+  } else if (currentRoom.type === 'TREASURE') {
+    // TREASURE rooms auto-clear
+    roomCleared = true;
+    if (currentRoom.loot?.length) {
+      // Roll for room loot
+      for (const entry of currentRoom.loot) {
+        if (Math.random() * 100 < entry.dropChance) {
+          lootDrop = { id: Math.random().toString(36).substring(2, 12), name: entry.itemName, slot: entry.slot, rarity: entry.rarity, stats: entry.stats || {}, affixes: [], gems: [], sockets: 0, isDungeonLoot: true, dungeonName: dungeon.name };
+          break;
+        }
+      }
+    }
+  } else if (enemyHp <= 0) {
+    roomCleared = true;
+  }
+
+  // Check if all room questions answered (for PUZZLE rooms)
+  const roomQuestions = currentRoom.questions || [];
+  const answeredInRoom = [...run.answeredQuestions, questionId].filter(
+    (qId: string) => roomQuestions.some((rq: { id: string }) => rq.id === qId)
+  );
+  if (currentRoom.type === 'PUZZLE' && answeredInRoom.length >= roomQuestions.length) {
+    roomCleared = true;
+  }
+
+  if (roomCleared) {
+    nextRoom = run.currentRoom + 1;
+    const nextRoomData = dungeon.rooms?.[nextRoom];
+    nextEnemyHp = nextRoomData?.enemyHp || 0;
+  }
+
+  // Check dungeon completion or failure
+  let dungeonComplete = false;
+  let dungeonFailed = false;
+  let status = 'IN_PROGRESS';
+
+  if (playerHp <= 0) {
+    dungeonFailed = true;
+    status = 'FAILED';
+  } else if (roomCleared && nextRoom >= (dungeon.rooms?.length || 0)) {
+    dungeonComplete = true;
+    status = 'COMPLETED';
+  }
+
+  // Update run
+  const runUpdate: Record<string, unknown> = {
+    playerHp,
+    currentRoom: roomCleared ? nextRoom : run.currentRoom,
+    currentRoomEnemyHp: roomCleared ? nextEnemyHp : enemyHp,
+    roomsCleared: roomCleared ? run.roomsCleared + 1 : run.roomsCleared,
+    totalDamageDealt: cs.totalDamageDealt,
+    questionsCorrect: cs.questionsCorrect,
+    questionsAttempted: cs.questionsAttempted,
+    answeredQuestions: [...run.answeredQuestions, questionId],
+    combatStats: cs,
+    status,
+  };
+
+  if (lootDrop) {
+    runUpdate.lootCollected = [...(run.lootCollected || []), { itemName: (lootDrop as { name: string }).name, rarity: (lootDrop as { rarity: string }).rarity }];
+  }
+
+  if (dungeonComplete || dungeonFailed) {
+    runUpdate.completedAt = new Date().toISOString();
+  }
+
+  await runRef.update(runUpdate);
+
+  // If loot dropped, add to inventory
+  if (lootDrop) {
+    try {
+      if (activeClass && activeClass !== 'Uncategorized' && gam.classProfiles?.[activeClass]) {
+        const inv = gam.classProfiles[activeClass].inventory || [];
+        await userRef.update({ [`gamification.classProfiles.${activeClass}.inventory`]: [...inv, lootDrop] });
+      } else {
+        const inv = gam.inventory || [];
+        await userRef.update({ "gamification.inventory": [...inv, lootDrop] });
+      }
+    } catch { /* ignore */ }
+  }
+
+  return {
+    correct: isCorrect, damage, isCrit, playerDamage, playerHp, enemyHp: roomCleared ? nextEnemyHp : enemyHp,
+    roomCleared, dungeonComplete, dungeonFailed, healAmount,
+    currentRoom: roomCleared ? nextRoom : run.currentRoom,
+    roomsCleared: roomCleared ? run.roomsCleared + 1 : run.roomsCleared,
+    lootDrop: lootDrop ? { name: (lootDrop as { name: string }).name, rarity: (lootDrop as { rarity: string }).rarity } : null,
+  };
+});
+
+export const claimDungeonRewards = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { runId } = request.data;
+  if (!runId) throw new HttpsError("invalid-argument", "Run ID required.");
+
+  const db = admin.firestore();
+  const runRef = db.doc(`dungeon_runs/${runId}`);
+  const runSnap = await runRef.get();
+  if (!runSnap.exists) throw new HttpsError("not-found", "Run not found.");
+
+  const run = runSnap.data()!;
+  if (run.userId !== uid) throw new HttpsError("permission-denied", "Not your run.");
+  if (run.status !== 'COMPLETED') throw new HttpsError("failed-precondition", "Dungeon not completed.");
+  if (run.rewardsClaimed) throw new HttpsError("failed-precondition", "Rewards already claimed.");
+
+  // Get dungeon data for rewards
+  const dungeonSnap = await db.doc(`dungeons/${run.dungeonId}`).get();
+  if (!dungeonSnap.exists) throw new HttpsError("not-found", "Dungeon not found.");
+  const dungeon = dungeonSnap.data()!;
+
+  const rewards = dungeon.rewards || {};
+  const userRef = db.doc(`users/${uid}`);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+  const activeClass = dungeon.classType || userData.classType;
+
+  // Award XP (may trigger level-up with loot)
+  const xpResult = buildXPUpdates(userData, rewards.xp || 0, activeClass);
+  const updates: Record<string, unknown> = { ...xpResult.updates };
+
+  // Award Flux
+  if (rewards.flux) {
+    const baseCurrency = updates["gamification.currency"] ?? (gam.currency || 0);
+    updates["gamification.currency"] = (baseCurrency as number) + rewards.flux;
+  }
+
+  // Generate guaranteed loot if specified
+  if (rewards.itemRarity) {
+    const loot = generateLoot(gam.level || 1, rewards.itemRarity);
+    if (activeClass && activeClass !== 'Uncategorized' && gam.classProfiles?.[activeClass]) {
+      const invPath = `gamification.classProfiles.${activeClass}.inventory`;
+      const currentInv = updates[invPath] || gam.classProfiles[activeClass].inventory || [];
+      updates[invPath] = [...(currentInv as unknown[]), loot];
+    } else {
+      const currentInv = updates["gamification.inventory"] || gam.inventory || [];
+      updates["gamification.inventory"] = [...(currentInv as unknown[]), loot];
+    }
+  }
+
+  await userRef.update(updates);
+  await runRef.update({ rewardsClaimed: true });
+
+  return {
+    xpAwarded: rewards.xp || 0,
+    fluxAwarded: rewards.flux || 0,
+    itemRarityAwarded: rewards.itemRarity || null,
+    leveledUp: xpResult.leveledUp,
+    newLevel: xpResult.newLevel,
+  };
+});
+
+// ==========================================
+// IDLE AGENT MISSIONS
+// ==========================================
+
+export const deployIdleMission = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { missionId } = request.data;
+  if (!missionId) throw new HttpsError("invalid-argument", "Mission ID required.");
+
+  const db = admin.firestore();
+  const missionRef = db.doc(`idle_missions/${missionId}`);
+  const userRef = db.doc(`users/${uid}`);
+
+  const [missionSnap, userSnap] = await Promise.all([missionRef.get(), userRef.get()]);
+  if (!missionSnap.exists) throw new HttpsError("not-found", "Mission not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const mission = missionSnap.data()!;
+  if (!mission.isActive) throw new HttpsError("failed-precondition", "Mission not active.");
+
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+
+  // Check level requirement
+  if (mission.minLevel && (gam.level || 1) < mission.minLevel) {
+    throw new HttpsError("failed-precondition", `Requires level ${mission.minLevel}.`);
+  }
+
+  // Check mission slots (1 at lv1, 2 at lv25, 3 at lv50)
+  const level = gam.level || 1;
+  const maxSlots = level >= 50 ? 3 : level >= 25 ? 2 : 1;
+  const activeMissions: unknown[] = gam.activeMissions || [];
+  const unclaimed = activeMissions.filter((m: any) => !m.claimed);
+  if (unclaimed.length >= maxSlots) {
+    throw new HttpsError(
+      "failed-precondition",
+      `All ${maxSlots} mission slot${maxSlots > 1 ? "s" : ""} are in use. Claim or wait for a mission to finish.`
+    );
+  }
+
+  // Check not already deployed on this specific mission
+  if (activeMissions.some((m: any) => m.missionId === missionId && !m.claimed)) {
+    throw new HttpsError("failed-precondition", "Already deployed on this mission.");
+  }
+
+  // Snapshot player stats from the mission's class profile
+  const activeClass = mission.classType || userData.classType || '';
+  const profile = gam.classProfiles?.[activeClass];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const stats = calculateServerStats(equipped);
+  const gearScore = calculateServerGearScore(equipped);
+
+  const now = new Date();
+  const completesAt = new Date(now.getTime() + mission.duration * 60 * 1000);
+
+  const newMission = {
+    missionId,
+    missionName: mission.name,
+    deployedAt: now.toISOString(),
+    completesAt: completesAt.toISOString(),
+    stats,
+    gearScore,
+    classType: activeClass,
+    claimed: false,
+  };
+
+  await userRef.update({
+    "gamification.activeMissions": [...activeMissions, newMission],
+  });
+
+  return { deployed: true, completesAt: completesAt.toISOString(), stats, gearScore };
+});
+
+export const claimIdleMission = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { missionId } = request.data;
+  if (!missionId) throw new HttpsError("invalid-argument", "Mission ID required.");
+
+  const db = admin.firestore();
+  const missionRef = db.doc(`idle_missions/${missionId}`);
+  const userRef = db.doc(`users/${uid}`);
+
+  const [missionSnap, userSnap] = await Promise.all([missionRef.get(), userRef.get()]);
+  if (!missionSnap.exists) throw new HttpsError("not-found", "Mission not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const mission = missionSnap.data()!;
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+  const activeMissions: any[] = gam.activeMissions || [];
+
+  // Find the matching unclaimed active mission
+  const idx = activeMissions.findIndex((m: any) => m.missionId === missionId && !m.claimed);
+  if (idx === -1) throw new HttpsError("not-found", "No active mission found.");
+
+  const active = activeMissions[idx];
+
+  // Check if timer has completed
+  if (new Date(active.completesAt) > new Date()) {
+    throw new HttpsError("failed-precondition", "Mission not yet complete.");
+  }
+
+  // Calculate base rewards
+  const rewards = mission.rewards || {};
+  let xpReward = rewards.xp || 0;
+  let fluxReward = rewards.flux || 0;
+  const bonusesApplied: string[] = [];
+
+  // Apply stat bonuses
+  if (mission.statBonuses?.length) {
+    for (const bonus of mission.statBonuses) {
+      const statValue = active.stats[bonus.stat] || 10;
+      if (statValue >= bonus.threshold) {
+        xpReward = Math.round(xpReward * bonus.bonusMultiplier);
+        fluxReward = Math.round(fluxReward * bonus.bonusMultiplier);
+        bonusesApplied.push(bonus.description);
+      }
+    }
+  }
+
+  // Gear score bonus: +1% rewards per 10 gear score above 0
+  const gsBonus = 1 + (active.gearScore / 1000);
+  xpReward = Math.round(xpReward * gsBonus);
+  fluxReward = Math.round(fluxReward * gsBonus);
+
+  // Award XP (handles level-up logic)
+  const xpResult = buildXPUpdates(userData, xpReward, active.classType);
+  const updates: Record<string, unknown> = { ...xpResult.updates };
+
+  // Award Flux
+  if (fluxReward > 0) {
+    const baseCurrency = updates["gamification.currency"] ?? (gam.currency || 0);
+    updates["gamification.currency"] = (baseCurrency as number) + fluxReward;
+  }
+
+  // Generate loot if specified
+  let lootGenerated: unknown = null;
+  if (rewards.itemRarity) {
+    lootGenerated = generateLoot(gam.level || 1, rewards.itemRarity);
+    const activeClass = active.classType;
+    if (activeClass && activeClass !== 'Uncategorized' && gam.classProfiles?.[activeClass]) {
+      const invPath = `gamification.classProfiles.${activeClass}.inventory`;
+      const inv = updates[invPath] || gam.classProfiles[activeClass].inventory || [];
+      updates[invPath] = [...(inv as unknown[]), lootGenerated];
+    } else {
+      const inv = updates["gamification.inventory"] || gam.inventory || [];
+      updates["gamification.inventory"] = [...(inv as unknown[]), lootGenerated];
+    }
+  }
+
+  // Mark mission as claimed
+  const updatedMissions = [...activeMissions];
+  updatedMissions[idx] = { ...updatedMissions[idx], claimed: true };
+  updates["gamification.activeMissions"] = updatedMissions;
+
+  await userRef.update(updates);
+
+  return {
+    xpAwarded: xpReward,
+    fluxAwarded: fluxReward,
+    bonusesApplied,
+    leveledUp: xpResult.leveledUp,
+    newLevel: xpResult.newLevel,
+    loot: lootGenerated ? true : false,
+  };
+});
+
+// ==========================================
+// PVP ARENA
+// ==========================================
+
+/**
+ * simulateArenaCombat — Server-side 10-round combat simulation.
+ * Both players attack simultaneously each round; roles apply bonuses/mitigation.
+ */
+function simulateArenaCombat(p1: any, p2: any): any[] {
+  const rounds: any[] = [];
+  let p1Hp = p1.maxHp;
+  let p2Hp = p2.maxHp;
+
+  const p1Combat = deriveCombatStats(p1.stats);
+  const p2Combat = deriveCombatStats(p2.stats);
+
+  for (let i = 0; i < 10 && p1Hp > 0 && p2Hp > 0; i++) {
+    // P1 attacks P2
+    const p1Atk = calculateBossDamage(p1.stats, p1.gearScore);
+    let p1Dmg = p1Atk.damage;
+    if (p1.role === 'VANGUARD') p1Dmg = Math.round(p1Dmg * 1.15);
+    const p2Blocked = Math.round(p1Dmg * (p2Combat.armorPercent / 100));
+    p1Dmg = Math.max(1, p1Dmg - p2Blocked);
+    if (p2.role === 'SENTINEL') p1Dmg = Math.max(1, Math.round(p1Dmg * 0.9));
+
+    // P2 attacks P1
+    const p2Atk = calculateBossDamage(p2.stats, p2.gearScore);
+    let p2Dmg = p2Atk.damage;
+    if (p2.role === 'VANGUARD') p2Dmg = Math.round(p2Dmg * 1.15);
+    const p1Blocked = Math.round(p2Dmg * (p1Combat.armorPercent / 100));
+    p2Dmg = Math.max(1, p2Dmg - p1Blocked);
+    if (p1.role === 'SENTINEL') p2Dmg = Math.max(1, Math.round(p2Dmg * 0.9));
+
+    // Commander heals self each round
+    if (p1.role === 'COMMANDER') p1Hp = Math.min(p1.maxHp, p1Hp + 3);
+    if (p2.role === 'COMMANDER') p2Hp = Math.min(p2.maxHp, p2Hp + 3);
+
+    p2Hp = Math.max(0, p2Hp - p1Dmg);
+    p1Hp = Math.max(0, p1Hp - p2Dmg);
+
+    rounds.push({
+      roundNumber: i + 1,
+      p1Action: { damage: p1Dmg, isCrit: p1Atk.isCrit, blocked: p2Blocked },
+      p2Action: { damage: p2Dmg, isCrit: p2Atk.isCrit, blocked: p1Blocked },
+      p1HpAfter: p1Hp,
+      p2HpAfter: p2Hp,
+    });
+  }
+
+  return rounds;
+}
+
+/**
+ * updateArenaProfiles — Updates both players' arena profiles and awards XP/Flux.
+ */
+async function updateArenaProfiles(
+  db: FirebaseFirestore.Firestore,
+  p1Id: string,
+  p2Id: string,
+  winnerId: string | null,
+  classType: string
+) {
+  const today = new Date().toDateString();
+
+  for (const playerId of [p1Id, p2Id]) {
+    const isWinner = playerId === winnerId;
+    const userRef = db.doc(`users/${playerId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) continue;
+
+    const userData = userSnap.data()!;
+    const gam = userData.gamification || {};
+    const ap = gam.arenaProfile || { rating: 1000, wins: 0, losses: 0, matchesPlayedToday: 0 };
+
+    const matchesToday = ap.lastMatchDate === today ? ap.matchesPlayedToday + 1 : 1;
+
+    const updates: Record<string, unknown> = {
+      "gamification.arenaProfile": {
+        rating: Math.max(0, ap.rating + (isWinner ? 15 : winnerId === null ? 0 : -10)),
+        wins: ap.wins + (isWinner ? 1 : 0),
+        losses: ap.losses + (!isWinner && winnerId !== null ? 1 : 0),
+        matchesPlayedToday: matchesToday,
+        lastMatchDate: today,
+      },
+    };
+
+    // Award XP and Flux
+    const xpReward = isWinner ? 50 : 20;
+    const fluxReward = isWinner ? 10 : 5;
+
+    const xpResult = buildXPUpdates(userData, xpReward, classType);
+    Object.assign(updates, xpResult.updates);
+
+    const baseCurrency = updates["gamification.currency"] ?? (gam.currency || 0);
+    updates["gamification.currency"] = (baseCurrency as number) + fluxReward;
+
+    await userRef.update(updates);
+  }
+}
+
+/**
+ * queueArenaDuel — Student calls this to enter the arena matchmaking queue.
+ * If an opponent is found within ±100 gear score, the duel is simulated immediately.
+ * Otherwise, the player is placed in a QUEUED document to wait for a challenger.
+ */
+export const queueArenaDuel = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { classType } = request.data;
+  if (!classType) throw new HttpsError("invalid-argument", "Class type required.");
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const userData = userSnap.data()!;
+  const gam = userData.gamification || {};
+
+  // Check daily match limit (5 per day)
+  const arenaProfile: any = gam.arenaProfile || { rating: 1000, wins: 0, losses: 0, matchesPlayedToday: 0 };
+  const today = new Date().toDateString();
+  if (arenaProfile.lastMatchDate === today && arenaProfile.matchesPlayedToday >= 5) {
+    throw new HttpsError("failed-precondition", "Daily match limit reached (5/day).");
+  }
+
+  // Get player stats from equipped gear
+  const profile = gam.classProfiles?.[classType];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const stats = calculateServerStats(equipped);
+  const gearScore = calculateServerGearScore(equipped);
+  const combat = deriveCombatStats(stats);
+  const role = derivePlayerRole(stats);
+
+  const player: any = {
+    userId: uid,
+    name: gam.codename || userData.name || 'Student',
+    gearScore,
+    stats,
+    role,
+    hp: combat.maxHp,
+    maxHp: combat.maxHp,
+  };
+
+  // Search for a queued opponent within gear score bracket
+  const queueSnap = await db.collection('arena_matches')
+    .where('status', '==', 'QUEUED')
+    .where('classType', '==', classType)
+    .limit(10)
+    .get();
+
+  let matchedDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  for (const docSnap of queueSnap.docs) {
+    const match = docSnap.data();
+    if (match.player1?.userId === uid) continue; // Can't fight yourself
+    const scoreDiff = Math.abs((match.player1?.gearScore || 0) - gearScore);
+    if (scoreDiff <= 100) {
+      matchedDoc = docSnap;
+      break;
+    }
+  }
+
+  if (matchedDoc) {
+    // Opponent found — simulate combat server-side
+    const matchData = matchedDoc.data();
+    const p1 = matchData.player1;
+    const p2 = player;
+
+    const rounds = simulateArenaCombat(p1, p2);
+    const finalRound = rounds[rounds.length - 1];
+    const winnerId =
+      finalRound.p1HpAfter > finalRound.p2HpAfter ? p1.userId :
+      finalRound.p2HpAfter > finalRound.p1HpAfter ? p2.userId :
+      null; // Tie = no winner
+
+    await matchedDoc.ref.update({
+      player2: p2,
+      rounds,
+      winnerId: winnerId || null,
+      status: 'COMPLETED',
+      completedAt: new Date().toISOString(),
+    });
+
+    // Update both players' profiles and award rewards
+    await updateArenaProfiles(db, p1.userId, p2.userId, winnerId, classType);
+
+    return { status: 'MATCHED', matchId: matchedDoc.id, winnerId, rounds, opponent: p1 };
+  } else {
+    // No opponent found — join queue
+    const matchId = Math.random().toString(36).substring(2, 12);
+    await db.doc(`arena_matches/${matchId}`).set({
+      id: matchId,
+      classType,
+      mode: 'AUTO_DUEL',
+      player1: player,
+      player2: null,
+      rounds: [],
+      status: 'QUEUED',
+      createdAt: new Date().toISOString(),
+    });
+
+    return { status: 'QUEUED', matchId };
+  }
+});
+
+/**
+ * cancelArenaQueue — Removes a QUEUED arena match created by the calling user.
+ */
+export const cancelArenaQueue = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { matchId } = request.data;
+  if (!matchId) throw new HttpsError("invalid-argument", "Match ID required.");
+
+  const db = admin.firestore();
+  const matchRef = db.doc(`arena_matches/${matchId}`);
+  const matchSnap = await matchRef.get();
+  if (!matchSnap.exists) throw new HttpsError("not-found", "Match not found.");
+
+  const match = matchSnap.data()!;
+  if (match.player1?.userId !== uid) throw new HttpsError("permission-denied", "Not your match.");
+  if (match.status !== 'QUEUED') throw new HttpsError("failed-precondition", "Match already in progress.");
+
+  await matchRef.delete();
+  return { cancelled: true };
 });
