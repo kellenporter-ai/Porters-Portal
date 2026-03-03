@@ -607,6 +607,9 @@ export const dataService = {
           blockResponses: data.blockResponses,
           rubricGrade: data.rubricGrade || undefined,
           userSection: data.userSection || undefined,
+          flaggedAsAI: data.flaggedAsAI || false,
+          flaggedAsAIBy: data.flaggedAsAIBy || '',
+          flaggedAsAIAt: data.flaggedAsAIAt || '',
         } as Submission;
       });
       callback(submissions);
@@ -643,6 +646,9 @@ export const dataService = {
           blockResponses: data.blockResponses,
           rubricGrade: data.rubricGrade || undefined,
           userSection: data.userSection || undefined,
+          flaggedAsAI: data.flaggedAsAI || false,
+          flaggedAsAIBy: data.flaggedAsAIBy || '',
+          flaggedAsAIAt: data.flaggedAsAIAt || '',
         } as Submission;
       })
       // Sort client-side instead
@@ -1012,21 +1018,21 @@ export const dataService = {
         preFlagStatus: prev?.status ?? 'NORMAL',
         preFlagPercentage: prev?.assessmentScore?.percentage ?? 0,
       });
-      // Send notification to the student
-      if (studentUserId) {
-        await addDoc(collection(db, 'notifications'), {
-          userId: studentUserId,
-          type: 'AI_FLAGGED',
-          title: 'Assessment Flagged for Academic Integrity',
-          message: `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been flagged for suspected AI usage and is currently scored as 0%. You may resubmit or provide a written defense to your teacher.`,
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          meta: { submissionId, assessmentTitle },
-        });
-      }
     } catch (error) {
       reportError(error, { method: 'flagSubmissionAsAI' });
       throw error;
+    }
+    // Send notification to the student (fire-and-forget — don't block the flag operation)
+    if (studentUserId) {
+      addDoc(collection(db, 'notifications'), {
+        userId: studentUserId,
+        type: 'AI_FLAGGED',
+        title: 'Assessment Flagged for Academic Integrity',
+        message: `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been flagged for suspected AI usage and is currently scored as 0%. You may resubmit or provide a written defense to your teacher.`,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        meta: { submissionId, assessmentTitle },
+      }).catch(err => reportError(err, { method: 'flagSubmissionAsAI:notification' }));
     }
   },
 
