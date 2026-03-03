@@ -301,10 +301,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           : assessmentSubmissions;
 
         // Summary stats (respects section filter)
-        const totalSubmissions = sectionFilteredSubs.filter(s => s.status !== 'STARTED').length;
+        const scorableSubs = sectionFilteredSubs.filter(s => s.status !== 'STARTED' && !s.flaggedAsAI);
         const getEffectiveScore = (s: Submission) => s.rubricGrade?.overallPercentage ?? s.assessmentScore?.percentage ?? s.score ?? 0;
-        const avgScore = totalSubmissions > 0 ? Math.round(sectionFilteredSubs.filter(s => s.status !== 'STARTED').reduce((acc, s) => acc + getEffectiveScore(s), 0) / totalSubmissions) : 0;
-        const flaggedCount = sectionFilteredSubs.filter(s => s.status === 'FLAGGED').length;
+        const avgScore = scorableSubs.length > 0 ? Math.round(scorableSubs.reduce((acc, s) => acc + getEffectiveScore(s), 0) / scorableSubs.length) : 0;
+        const flaggedCount = sectionFilteredSubs.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
+        const aiFlaggedCount = sectionFilteredSubs.filter(s => s.flaggedAsAI).length;
 
         // Group submissions by student
         const completedSubs = sectionFilteredSubs.filter(s => s.status !== 'STARTED');
@@ -343,10 +344,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         const statusFiltered = assessmentStatusFilter
           ? searchFiltered.filter(g => {
               switch (assessmentStatusFilter) {
-                case 'flagged': return g.latest.status === 'FLAGGED';
+                case 'flagged': return g.latest.status === 'FLAGGED' && !g.latest.flaggedAsAI;
+                case 'ai_flagged': return !!g.latest.flaggedAsAI;
                 case 'needs_grading': return g.needsGrading;
                 case 'graded': return g.hasRubricGrade;
-                case 'normal': return g.latest.status !== 'FLAGGED' && !g.needsGrading;
+                case 'normal': return g.latest.status !== 'FLAGGED' && !g.latest.flaggedAsAI && !g.needsGrading;
                 default: return true;
               }
             })
@@ -390,13 +392,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         };
 
         const getScoreColor = (pct: number) => pct >= 80 ? 'text-green-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400';
-        const getStatusBadge = (status: string) => {
+        const getStatusBadge = (status: string, flaggedAsAI?: boolean) => {
+          if (flaggedAsAI) return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
           switch (status) {
-            case 'FLAGGED': return 'bg-red-500/20 text-red-400 border-red-500/30';
+            case 'FLAGGED': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
             case 'SUCCESS': return 'bg-green-500/20 text-green-400 border-green-500/30';
             case 'SUPPORT_NEEDED': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
             default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
           }
+        };
+        const getStatusLabel = (status: string, flaggedAsAI?: boolean) => {
+          if (flaggedAsAI) return 'AI FLAGGED';
+          if (status === 'FLAGGED') return 'AUTO FLAGGED';
+          return status;
         };
         const getTabSwitchColor = (count: number) => count > 5 ? 'text-red-400' : count >= 3 ? 'text-yellow-400' : 'text-green-400';
 
@@ -435,7 +443,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {/* Summary Stats */}
             {selectedAssessmentId && (
-              <div className={`grid grid-cols-2 ${selectedAssessment?.rubric ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+              <div className={`grid grid-cols-2 ${selectedAssessment?.rubric ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                   <div className="text-3xl font-bold text-white">{avgScore}%</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
@@ -444,9 +452,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <div className="text-3xl font-bold text-white">{allStudentGroups.length}</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Students</div>
                 </div>
-                <div className={`border rounded-2xl p-5 ${flaggedCount > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-white/5 border-white/10'}`}>
-                  <div className={`text-3xl font-bold ${flaggedCount > 0 ? 'text-red-400' : 'text-white'}`}>{flaggedCount}</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Flagged</div>
+                <div className={`border rounded-2xl p-5 ${flaggedCount > 0 ? 'bg-amber-900/10 border-amber-500/30' : 'bg-white/5 border-white/10'}`}>
+                  <div className={`text-3xl font-bold ${flaggedCount > 0 ? 'text-amber-400' : 'text-white'}`}>{flaggedCount}</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Auto Flagged</div>
+                </div>
+                <div className={`border rounded-2xl p-5 ${aiFlaggedCount > 0 ? 'bg-purple-900/10 border-purple-500/30' : 'bg-white/5 border-white/10'}`}>
+                  <div className={`text-3xl font-bold ${aiFlaggedCount > 0 ? 'text-purple-400' : 'text-white'}`}>{aiFlaggedCount}</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Flagged</div>
                 </div>
                 {selectedAssessment?.rubric && (
                   <div className={`border rounded-2xl p-5 ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'bg-green-900/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
@@ -476,7 +488,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
                 >
                   <option value="">All Statuses</option>
-                  <option value="flagged">Flagged</option>
+                  <option value="flagged">Auto Flagged</option>
+                  <option value="ai_flagged">AI Flagged</option>
                   {selectedAssessment?.rubric && <option value="needs_grading">Needs Grading</option>}
                   {selectedAssessment?.rubric && <option value="graded">Graded</option>}
                   <option value="normal">Normal</option>
@@ -641,7 +654,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           <React.Fragment key={group.userId}>
                             {/* Student-level row */}
                             <tr
-                              className={`hover:bg-white/5 transition cursor-pointer ${isStudentExpanded ? 'bg-white/5' : ''} ${group.latest.status === 'FLAGGED' || group.latest.flaggedAsAI ? 'bg-red-900/5' : ''}`}
+                              className={`hover:bg-white/5 transition cursor-pointer ${isStudentExpanded ? 'bg-white/5' : ''} ${group.latest.flaggedAsAI ? 'bg-purple-900/10' : group.latest.status === 'FLAGGED' ? 'bg-amber-900/5' : ''}`}
                               onClick={() => {
                                 setExpandedStudentIds(prev => {
                                   const next = new Set(prev);
@@ -660,16 +673,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
                                       <span className="text-[9px] text-gray-500 font-normal">{group.userSection}</span>
                                     )}
-                                    {group.latest.flaggedAsAI && <span title="AI Suspected"><Bot className="w-3.5 h-3.5 text-red-400" /></span>}
+                                    {group.latest.flaggedAsAI && <span title="AI Flagged"><Bot className="w-3.5 h-3.5 text-purple-400" /></span>}
                                   </div>
                                 </div>
                               </td>
                               <td className="p-3 text-center">
-                                <span className={`text-sm font-bold ${group.latest.flaggedAsAI ? 'text-red-400 line-through' : getScoreColor(latestPct)}`}>{group.latest.flaggedAsAI ? '0%' : `${latestPct}%`}</span>
+                                <span className={`text-sm font-bold ${group.latest.flaggedAsAI ? 'text-purple-400 line-through' : getScoreColor(latestPct)}`}>{group.latest.flaggedAsAI ? '0%' : `${latestPct}%`}</span>
                               </td>
                               <td className="p-3 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${group.latest.flaggedAsAI ? 'bg-red-500/20 text-red-400 border-red-500/30' : getStatusBadge(group.latest.status)}`}>
-                                  {group.latest.flaggedAsAI ? 'AI SUSPECTED' : group.latest.status}
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(group.latest.status, group.latest.flaggedAsAI)}`}>
+                                  {getStatusLabel(group.latest.status, group.latest.flaggedAsAI)}
                                 </span>
                               </td>
                               <td className="p-3 text-center">
@@ -700,7 +713,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               return (
                                 <React.Fragment key={sub.id}>
                                   <tr
-                                    className={`hover:bg-purple-500/5 transition cursor-pointer ${isAttemptExpanded ? 'bg-purple-500/5' : 'bg-white/[0.02]'} ${sub.flaggedAsAI ? 'bg-red-900/10' : ''}`}
+                                    className={`hover:bg-purple-500/5 transition cursor-pointer ${isAttemptExpanded ? 'bg-purple-500/5' : 'bg-white/[0.02]'} ${sub.flaggedAsAI ? 'bg-purple-900/10' : ''}`}
                                     onClick={() => {
                                       setExpandedSubmissionId(isAttemptExpanded ? null : sub.id);
                                       if (!isAttemptExpanded) setRubricDraft(sub.rubricGrade?.grades || {});
@@ -710,15 +723,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       <div className="flex items-center gap-2">
                                         <ChevronRight className={`w-3 h-3 text-gray-600 transition-transform ${isAttemptExpanded ? 'rotate-90' : ''}`} />
                                         <span className="text-xs text-gray-400">Attempt #{sub.attemptNumber || 1}</span>
-                                        {sub.flaggedAsAI && <span title="AI Suspected"><Bot className="w-3 h-3 text-red-400" /></span>}
+                                        {sub.flaggedAsAI && <span title="AI Flagged"><Bot className="w-3 h-3 text-purple-400" /></span>}
                                       </div>
                                     </td>
                                     <td className="p-3 text-center">
-                                      <span className={`text-xs font-bold ${sub.flaggedAsAI ? 'text-red-400 line-through' : getScoreColor(pct)}`}>{sub.flaggedAsAI ? '0%' : `${pct}%`}</span>
+                                      <span className={`text-xs font-bold ${sub.flaggedAsAI ? 'text-purple-400 line-through' : getScoreColor(pct)}`}>{sub.flaggedAsAI ? '0%' : `${pct}%`}</span>
                                     </td>
                                     <td className="p-3 text-center">
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${sub.flaggedAsAI ? 'bg-red-500/20 text-red-400 border-red-500/30' : getStatusBadge(sub.status)}`}>
-                                        {sub.flaggedAsAI ? 'AI SUSPECTED' : sub.status}
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(sub.status, sub.flaggedAsAI)}`}>
+                                        {getStatusLabel(sub.status, sub.flaggedAsAI)}
                                       </span>
                                     </td>
                                     <td className="p-3 text-center">
@@ -752,7 +765,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               <button
                                                 onClick={async (e) => {
                                                   e.stopPropagation();
-                                                  if (await confirm({ title: 'Remove AI Flag', message: 'Remove AI suspected flag from this submission? The original score will not be restored automatically.', variant: 'warning' })) {
+                                                  if (await confirm({ title: 'Remove AI Flag', message: 'Remove AI suspected flag from this submission? The original score and status will be restored.', variant: 'warning' })) {
                                                     try {
                                                       await dataService.unflagSubmissionAsAI(sub.id);
                                                     } catch (err) {
@@ -769,9 +782,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               <button
                                                 onClick={async (e) => {
                                                   e.stopPropagation();
-                                                  if (await confirm({ title: 'Flag AI Suspected', message: `Flag ${sub.userName}'s submission as AI suspected? This will set their score to 0%.`, variant: 'danger', confirmLabel: 'Flag as AI' })) {
+                                                  if (await confirm({ title: 'Flag AI Suspected', message: `Flag ${sub.userName}'s submission as AI suspected? This will set their score to 0% and notify the student.`, variant: 'danger', confirmLabel: 'Flag as AI' })) {
                                                     try {
-                                                      await dataService.flagSubmissionAsAI(sub.id, 'Admin');
+                                                      await dataService.flagSubmissionAsAI(sub.id, 'Admin', sub.userId, selectedAssessment?.title);
                                                     } catch (err) {
                                                       reportError(err, { method: 'flagSubmissionAsAI' });
                                                     }

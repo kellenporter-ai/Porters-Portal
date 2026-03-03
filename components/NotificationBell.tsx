@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Notification, UserSettings } from '../types';
-import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing } from 'lucide-react';
+import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing, ShieldAlert } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { sfx } from '../lib/sfx';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
@@ -23,6 +23,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'LEVEL_UP': <ArrowUp className="w-4 h-4 text-amber-400" />,
   'ANNOUNCEMENT': <Megaphone className="w-4 h-4 text-orange-400" />,
   'XP_EVENT': <Zap className="w-4 h-4 text-cyan-400" />,
+  'AI_FLAGGED': <ShieldAlert className="w-4 h-4 text-purple-400" />,
 };
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, onUpdateSettings, dropUp }) => {

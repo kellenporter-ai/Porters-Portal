@@ -996,8 +996,11 @@ export const dataService = {
     }
   },
 
-  flagSubmissionAsAI: async (submissionId: string, flaggedBy: string) => {
+  flagSubmissionAsAI: async (submissionId: string, flaggedBy: string, studentUserId?: string, assessmentTitle?: string) => {
     try {
+      // Save original score/status so unflagging can restore them
+      const snap = await getDoc(doc(db, 'submissions', submissionId));
+      const prev = snap.data();
       await updateDoc(doc(db, 'submissions', submissionId), {
         flaggedAsAI: true,
         flaggedAsAIBy: flaggedBy,
@@ -1005,7 +1008,22 @@ export const dataService = {
         status: 'FLAGGED',
         score: 0,
         'assessmentScore.percentage': 0,
+        preFlagScore: prev?.score ?? 0,
+        preFlagStatus: prev?.status ?? 'NORMAL',
+        preFlagPercentage: prev?.assessmentScore?.percentage ?? 0,
       });
+      // Send notification to the student
+      if (studentUserId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: studentUserId,
+          type: 'AI_FLAGGED',
+          title: 'Assessment Flagged for Academic Integrity',
+          message: `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been flagged for suspected AI usage and is currently scored as 0%. You may resubmit or provide a written defense to your teacher.`,
+          timestamp: new Date().toISOString(),
+          isRead: false,
+          meta: { submissionId, assessmentTitle },
+        });
+      }
     } catch (error) {
       reportError(error, { method: 'flagSubmissionAsAI' });
       throw error;
@@ -1014,10 +1032,15 @@ export const dataService = {
 
   unflagSubmissionAsAI: async (submissionId: string) => {
     try {
+      const snap = await getDoc(doc(db, 'submissions', submissionId));
+      const prev = snap.data();
       await updateDoc(doc(db, 'submissions', submissionId), {
         flaggedAsAI: false,
         flaggedAsAIBy: '',
         flaggedAsAIAt: '',
+        status: prev?.preFlagStatus ?? 'NORMAL',
+        score: prev?.preFlagScore ?? 0,
+        'assessmentScore.percentage': prev?.preFlagPercentage ?? 0,
       });
     } catch (error) {
       reportError(error, { method: 'unflagSubmissionAsAI' });

@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAppData } from '../lib/AppDataContext';
 import { useChat } from '../lib/ChatContext';
 import { dataService } from '../services/dataService';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot } from 'lucide-react';
 import { BlockResponseMap } from './LessonBlocks';
 
 const Proctor = lazy(() => import('./Proctor'));
 const ReviewQuestions = lazy(() => import('./ReviewQuestions'));
+const RubricViewer = lazy(() => import('./RubricViewer'));
 const StudyMaterial = lazy(() => import('./StudyMaterial'));
 
 const LazyFallback = () => (
@@ -44,12 +45,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     correct: number;
     total: number;
     percentage: number;
-    perBlock: Record<string, { correct: boolean; answer: unknown }>;
+    perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }>;
     attemptNumber: number;
     status: string;
     xpEarned: number;
   } | null>(null);
   const [showBlockerModal, setShowBlockerModal] = useState(false);
+  const [showRubric, setShowRubric] = useState(false);
+  const [existingSubmission, setExistingSubmission] = useState<Submission | null>(null);
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
@@ -57,6 +60,28 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const activeAssignment = assignments.find(a => a.id === id) || null;
   const isAssessment = activeAssignment?.isAssessment === true && user.role !== UserRole.ADMIN;
   const config = activeAssignment?.assessmentConfig || { allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true };
+
+  // Fetch student's existing submission for rubric grade display
+  useEffect(() => {
+    if (!id || user.role === UserRole.ADMIN || !activeAssignment?.isAssessment) return;
+    const q = query(
+      collection(db, 'submissions'),
+      where('userId', '==', user.id),
+      where('assignmentId', '==', id),
+      where('isAssessment', '==', true),
+      orderBy('submittedAt', 'desc'),
+      limit(1)
+    );
+    const unsub = onSnapshot(q, snap => {
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        setExistingSubmission({ id: snap.docs[0].id, ...data } as Submission);
+      } else {
+        setExistingSubmission(null);
+      }
+    }, err => reportError(err, { context: 'fetch student assessment submission' }));
+    return () => unsub();
+  }, [id, user.id, user.role, activeAssignment?.isAssessment]);
 
   // Probe supplemental tabs
   useEffect(() => {
@@ -137,36 +162,63 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     }
   }, [activeAssignment, user.name, toast]);
 
-  // Assessment retake handler
-  const handleRetake = useCallback(() => {
+  // Assessment retake handler — clear saved working responses so Proctor starts fresh
+  // Uses setDoc (not deleteDoc) because students only have create/update permission
+  const handleRetake = useCallback(async () => {
+    if (activeAssignment) {
+      const docId = `${user.id}_${activeAssignment.id}_blocks`;
+      try {
+        await setDoc(doc(db, 'lesson_block_responses', docId), {
+          userId: user.id,
+          assignmentId: activeAssignment.id,
+          responses: {},
+          lastUpdated: new Date().toISOString(),
+        });
+      } catch { /* ignore if doc doesn't exist yet */ }
+    }
     setAssessmentResult(null);
-  }, []);
+  }, [activeAssignment, user.id]);
 
   const handleExit = () => {
     setAssignViewMode('WORK');
-    navigate(-1);
+    // The navigation guard pushed an extra history entry; skip past it
+    if (guardHistoryPushedRef.current) {
+      guardHistoryPushedRef.current = false;
+      navigate(-2);
+    } else {
+      navigate(-1);
+    }
   };
 
   // Navigation guard for assessments — prevent leaving during active assessment
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isAssessment && !assessmentResult && currentLocation.pathname !== nextLocation.pathname
-  );
+  // Uses popstate + history.pushState since useBlocker requires a data router
+  const blockerProceedRef = useRef(false);
+  const guardHistoryPushedRef = useRef(false);
 
-  useEffect(() => {
-    if (blocker.state === 'blocked') {
-      setShowBlockerModal(true);
-    }
-  }, [blocker.state]);
-
-  // Prevent browser close/refresh during assessment
   useEffect(() => {
     if (!isAssessment || assessmentResult) return;
+
+    // Push a duplicate state so back button can be intercepted
+    window.history.pushState(null, '', window.location.href);
+    guardHistoryPushedRef.current = true;
+
+    const handlePopState = () => {
+      if (blockerProceedRef.current) return;
+      // Re-push state to prevent navigation, then show modal
+      window.history.pushState(null, '', window.location.href);
+      setShowBlockerModal(true);
+    };
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
+
+    window.addEventListener('popstate', handlePopState);
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [isAssessment, assessmentResult]);
 
   if (!activeAssignment) {
@@ -185,7 +237,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
     return (
       <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416]' : ''} flex items-center justify-center h-full`}>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-lg w-full mx-4 backdrop-blur-md">
+        <div className={`bg-white/5 border border-white/10 rounded-2xl p-8 w-full mx-4 backdrop-blur-md ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
           <div className="text-center mb-6">
             <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
               assessmentResult.percentage >= 80 ? 'bg-green-500/20 text-green-400' :
@@ -216,7 +268,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </div>
 
               {assessmentResult.status === 'FLAGGED' && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 flex items-center gap-2 text-xs text-red-300">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 flex items-center gap-2 text-xs text-amber-300">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   Your submission has been flagged for review. Your teacher will follow up.
                 </div>
@@ -224,17 +276,54 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
               {/* Per-question results */}
               <div className="space-y-2 max-h-48 overflow-y-auto mb-6 custom-scrollbar">
-                {Object.entries(assessmentResult.perBlock).map(([blockId, result]) => (
-                  <div key={blockId} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
-                    result.correct ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'
-                  }`}>
-                    {result.correct ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <XCircle className="w-3.5 h-3.5 shrink-0" />}
-                    <span className="truncate">Question {blockId.slice(0, 8)}...</span>
-                    <span className="ml-auto font-bold">{result.correct ? 'Correct' : 'Incorrect'}</span>
-                  </div>
-                ))}
+                {Object.entries(assessmentResult.perBlock).map(([blockId, result]) => {
+                  const isPending = result.needsReview;
+                  return (
+                    <div key={blockId} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+                      isPending ? 'bg-amber-500/10 text-amber-300'
+                        : result.correct ? 'bg-green-500/10 text-green-300'
+                        : 'bg-red-500/10 text-red-300'
+                    }`}>
+                      {isPending ? <Clock className="w-3.5 h-3.5 shrink-0" />
+                        : result.correct ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        : <XCircle className="w-3.5 h-3.5 shrink-0" />}
+                      <span className="truncate">Question {blockId.slice(0, 8)}...</span>
+                      <span className="ml-auto font-bold">
+                        {isPending ? 'Pending Review' : result.correct ? 'Correct' : 'Incorrect'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </>
+          )}
+
+          {/* Rubric section in results */}
+          {activeAssignment.rubric && (
+            <div className="mb-6">
+              <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" /> Assessment Rubric
+              </h4>
+              <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                <Suspense fallback={<LazyFallback />}>
+                  <RubricViewer
+                    rubric={activeAssignment.rubric}
+                    mode={existingSubmission?.rubricGrade ? 'results' : 'view'}
+                    rubricGrade={existingSubmission?.rubricGrade}
+                  />
+                </Suspense>
+              </div>
+              {existingSubmission?.rubricGrade ? (
+                <div className="mt-3 bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+                  <span className="text-sm font-bold text-white">{existingSubmission.rubricGrade.overallPercentage}%</span>
+                  <span className="text-[10px] text-gray-500 ml-2">Rubric Score</span>
+                </div>
+              ) : (
+                <p className="text-[10px] text-gray-500 mt-2 text-center italic">
+                  Your teacher will grade rubric-assessed questions. Check back for results.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex gap-3">
@@ -261,7 +350,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   return (
     <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416] flex flex-col' : 'space-y-2 h-full flex flex-col'}`}>
       {/* Navigation blocker modal */}
-      {showBlockerModal && blocker.state === 'blocked' && (
+      {showBlockerModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center">
           <div className="bg-[#1a0a2e] border border-red-500/30 rounded-2xl p-6 max-w-sm mx-4">
             <div className="flex items-center gap-2 text-red-400 mb-3">
@@ -273,17 +362,52 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => { setShowBlockerModal(false); blocker.reset?.(); }}
+                onClick={() => { setShowBlockerModal(false); }}
                 className="flex-1 bg-purple-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-purple-500 transition"
               >
                 Stay
               </button>
               <button
-                onClick={() => { setShowBlockerModal(false); blocker.proceed?.(); }}
+                onClick={() => { setShowBlockerModal(false); blockerProceedRef.current = true; navigate(-1); }}
                 className="flex-1 bg-red-600/20 text-red-300 text-xs font-bold py-2 rounded-lg border border-red-500/30 hover:bg-red-600/30 transition"
               >
                 Leave Anyway
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rubric modal */}
+      {showRubric && activeAssignment?.rubric && (
+        <div className="fixed inset-0 z-[55] bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-[#0f0720]/95 backdrop-blur-xl border border-white/10 rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center p-5 border-b border-white/10 shrink-0">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}
+              </h3>
+              <button onClick={() => setShowRubric(false)} className="text-gray-400 hover:text-white transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-5 custom-scrollbar">
+              <Suspense fallback={<LazyFallback />}>
+                <RubricViewer
+                  rubric={activeAssignment.rubric}
+                  mode={existingSubmission?.rubricGrade ? 'results' : 'view'}
+                  rubricGrade={existingSubmission?.rubricGrade}
+                />
+              </Suspense>
+              {existingSubmission?.rubricGrade && (
+                <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{existingSubmission.rubricGrade.overallPercentage}%</div>
+                  <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">Rubric Score</div>
+                  <div className="text-[10px] text-gray-600 mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
+                </div>
+              )}
+              {!existingSubmission?.rubricGrade && existingSubmission && (
+                <p className="text-[10px] text-gray-500 mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
+              )}
             </div>
           </div>
         </div>
@@ -323,6 +447,15 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <button onClick={() => setAdminViewMode('ADMIN')} className={`px-2 py-1 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Admin</button>
             </div>
           )}
+          {/* Rubric button — visible during assessment and after for students who have a rubric */}
+          {activeAssignment?.rubric && (activeAssignment.isAssessment || existingSubmission?.rubricGrade) && (
+            <button
+              onClick={() => setShowRubric(prev => !prev)}
+              className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg transition"
+            >
+              <BookOpen className="w-3.5 h-3.5" /> Rubric
+            </button>
+          )}
           {/* Assessment: Submit button instead of Exit */}
           {isAssessment ? (
             <button
@@ -340,6 +473,17 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           )}
         </div>
       </div>
+
+      {/* AI Flag Banner — shown to students whose submission was flagged for AI */}
+      {existingSubmission?.flaggedAsAI && user.role !== UserRole.ADMIN && (
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg mx-1 mt-2 p-3 flex items-start gap-3 text-xs text-purple-200 animate-in fade-in duration-300">
+          <Bot className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-purple-300 mb-1">Your submission has been flagged for suspected AI usage.</p>
+            <p className="text-purple-300/80">Your score is currently recorded as <span className="font-bold text-white">0%</span> until you either resubmit the assessment using your own work or provide a written defense to your teacher.</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-hidden relative">
         <Suspense fallback={<LazyFallback />}>
