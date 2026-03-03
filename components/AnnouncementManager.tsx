@@ -44,7 +44,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
         ...(targetSections.length > 0 ? { targetSections } : {}),
       });
       // Notify students
-      await dataService.notifyUsers(studentIds, 'ANNOUNCEMENT', title.trim(), content.trim().slice(0, 100));
+      await dataService.notifyUsers(studentIds, 'ANNOUNCEMENT', title.trim(), content.trim());
       setTitle('');
       setContent('');
       setTargetSections([]);

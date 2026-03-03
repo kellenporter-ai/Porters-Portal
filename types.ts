@@ -581,7 +581,7 @@ export type NotificationType =
   | 'ACHIEVEMENT_UNLOCKED' | 'DAILY_REWARD' | 'STREAK_MILESTONE'
   | 'BOSS_DEFEATED' | 'PARTY_INVITE' | 'WHEEL_PRIZE' | 'SKILL_UNLOCKED'
   | 'SET_BONUS_ACTIVE' | 'TUTORING_REWARD' | 'BOSS_QUIZ_START'
-  | 'AI_FLAGGED';
+  | 'AI_FLAGGED' | 'ASSESSMENT_GRADED';
 
 export interface Notification {
   id: string;

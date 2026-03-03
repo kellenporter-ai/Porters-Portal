@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks,
-  ExternalLink, GripVertical, Target, Link, Play, FileDown, Trash2, MoreVertical
+  ExternalLink, GripVertical, Target, Link, Play, FileDown, Trash2, MoreVertical, Pencil
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
@@ -108,8 +108,20 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
         </button>
       )}
       {answered && (
-        <div className={`text-xs font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-          {isCorrect ? 'Correct!' : 'Incorrect — review the material above.'}
+        <div className="flex items-center gap-3">
+          <div className={`text-xs font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            {isCorrect ? 'Correct!' : 'Incorrect — review the material above.'}
+          </div>
+          <button
+            onClick={() => {
+              setAnswered(false);
+              setSelected(null);
+              onResponseChange?.({ selected: null, answered: false });
+            }}
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
         </div>
       )}
     </div>
@@ -137,9 +149,8 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
         <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0" />
         {block.content}
       </p>
-      <div className="flex gap-2">
-        <input
-          type="text"
+      <div className="flex gap-2 items-end">
+        <textarea
           value={answer}
           onChange={e => {
             const val = e.target.value;
@@ -147,20 +158,37 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
             onResponseChange?.({ answer: val, answered: false, isCorrect: false });
           }}
           disabled={answered}
-          placeholder="Type your answer..."
+          placeholder="Type your answer... (Ctrl+Enter to submit)"
           aria-label={block.content || 'Short answer'}
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y min-h-[38px]"
+          rows={2}
+          onKeyDown={e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
         />
         {!answered && (
-          <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition">
+          <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0">
             Submit
           </button>
         )}
       </div>
       {answered && (
-        <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
-          {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> Accepted answers: {(block.acceptedAnswers || []).join(', ')}</>}
+        <div className="flex items-center gap-3">
+          <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
+            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> Accepted answers: {(block.acceptedAnswers || []).join(', ')}</>}
+          </div>
+          <button
+            onClick={() => {
+              setAnswered(false);
+              onResponseChange?.({ answer, answered: false, isCorrect: false });
+            }}
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
         </div>
       )}
     </div>
@@ -492,8 +520,19 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
         </button>
       )}
       {submitted && (
-        <div className={`text-xs font-bold ${correctCount === items.length ? 'text-green-400' : 'text-amber-400'}`}>
-          {correctCount === items.length ? 'All correct!' : `${correctCount}/${items.length} correct`}
+        <div className="flex items-center gap-3">
+          <div className={`text-xs font-bold ${correctCount === items.length ? 'text-green-400' : 'text-amber-400'}`}>
+            {correctCount === items.length ? 'All correct!' : `${correctCount}/${items.length} correct`}
+          </div>
+          <button
+            onClick={() => {
+              setSubmitted(false);
+              onResponseChange?.({ placements, submitted: false });
+            }}
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
         </div>
       )}
     </div>
@@ -690,8 +729,19 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
         </button>
       )}
       {submitted && (
-        <div className={`text-xs font-bold ${correctCount === correctOrder.length ? 'text-green-400' : 'text-amber-400'}`}>
-          {correctCount === correctOrder.length ? 'Perfect order!' : `${correctCount}/${correctOrder.length} in correct position`}
+        <div className="flex items-center gap-3">
+          <div className={`text-xs font-bold ${correctCount === correctOrder.length ? 'text-green-400' : 'text-amber-400'}`}>
+            {correctCount === correctOrder.length ? 'Perfect order!' : `${correctCount}/${correctOrder.length} in correct position`}
+          </div>
+          <button
+            onClick={() => {
+              setSubmitted(false);
+              onResponseChange?.({ order, submitted: false });
+            }}
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
         </div>
       )}
     </div>
@@ -728,9 +778,8 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
         <Link className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
-      <div className="flex gap-2">
-        <input
-          type="text"
+      <div className="flex gap-2 items-end">
+        <textarea
           value={answer}
           onChange={e => {
             const val = e.target.value;
@@ -738,20 +787,37 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
             onResponseChange?.({ answer: val, answered: false, isCorrect: false });
           }}
           disabled={answered}
-          placeholder="Type your answer..."
+          placeholder="Type your answer... (Ctrl+Enter to submit)"
           aria-label={block.content || 'Linked question answer'}
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y min-h-[38px]"
+          rows={2}
+          onKeyDown={e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
         />
         {!answered && (
-          <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition">
+          <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0">
             Submit
           </button>
         )}
       </div>
       {answered && (
-        <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
-          {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? `Accepted: ${block.acceptedAnswers?.join(', ')}` : 'Response recorded'}</>}
+        <div className="flex items-center gap-3">
+          <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
+            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? `Accepted: ${block.acceptedAnswers?.join(', ')}` : 'Response recorded'}</>}
+          </div>
+          <button
+            onClick={() => {
+              setAnswered(false);
+              onResponseChange?.({ answer, answered: false, isCorrect: false });
+            }}
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
         </div>
       )}
     </div>
@@ -794,18 +860,32 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  const allCompleteFireRef = useRef(false);
+
   const handleBlockComplete = useCallback((blockId: string, correct: boolean) => {
     onBlockComplete?.(blockId, correct);
     setCompletedBlocks(prev => {
       const next = new Set(prev);
       next.add(blockId);
       const interactiveBlocks = blocks.filter(b => INTERACTIVE_TYPES.includes(b.type));
-      if (interactiveBlocks.every(b => next.has(b.id))) {
+      if (interactiveBlocks.every(b => next.has(b.id)) && !allCompleteFireRef.current) {
+        allCompleteFireRef.current = true;
         onAllComplete?.();
       }
       return next;
     });
   }, [blocks, onBlockComplete, onAllComplete]);
+
+  // Remove a block from completed set when student clicks Edit
+  const handleBlockUncomplete = useCallback((blockId: string) => {
+    setCompletedBlocks(prev => {
+      if (!prev.has(blockId)) return prev;
+      const next = new Set(prev);
+      next.delete(blockId);
+      allCompleteFireRef.current = false;
+      return next;
+    });
+  }, []);
 
   // IntersectionObserver for scroll-reveal animations + tracking visible block
   useEffect(() => {
@@ -861,7 +941,14 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const renderBlock = (block: LessonBlock) => {
     const onComplete = (correct: boolean) => handleBlockComplete(block.id, correct);
     const saved = savedResponses?.[block.id];
-    const onRespChange = onResponseChange ? (resp: unknown) => onResponseChange(block.id, resp) : undefined;
+    const onRespChange = onResponseChange ? (resp: unknown) => {
+      onResponseChange(block.id, resp);
+      // If the response signals un-submission (Edit button clicked), remove from completed set
+      const r = resp as Record<string, unknown> | null;
+      if (r && (r.answered === false || r.submitted === false)) {
+        handleBlockUncomplete(block.id);
+      }
+    } : undefined;
 
     switch (block.type) {
       case 'TEXT': return <TextBlock block={block} />;

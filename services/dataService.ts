@@ -990,7 +990,7 @@ export const dataService = {
       };
   },
 
-  saveRubricGrade: async (submissionId: string, rubricGrade: RubricGrade) => {
+  saveRubricGrade: async (submissionId: string, rubricGrade: RubricGrade, studentUserId?: string, assessmentTitle?: string) => {
     try {
       await updateDoc(doc(db, 'submissions', submissionId), {
         rubricGrade,
@@ -999,6 +999,18 @@ export const dataService = {
     } catch (error) {
       reportError(error, { method: 'saveRubricGrade' });
       throw error;
+    }
+    // Notify the student that their assessment has been graded
+    if (studentUserId) {
+      addDoc(collection(db, 'notifications'), {
+        userId: studentUserId,
+        type: 'ASSESSMENT_GRADED',
+        title: 'Assessment Graded',
+        message: `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been graded. You received ${rubricGrade.overallPercentage}%.`,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        meta: { submissionId, assessmentTitle, percentage: rubricGrade.overallPercentage },
+      }).catch(err => reportError(err, { method: 'saveRubricGrade:notification' }));
     }
   },
 

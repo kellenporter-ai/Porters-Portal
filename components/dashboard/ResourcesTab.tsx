@@ -211,15 +211,19 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           {/* Assessment submission status row */}
           {resource.isAssessment && latestSub && (
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {latestSub.assessmentScore && assessmentConfig.showScoreOnSubmit !== false && (
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
-                  latestSub.assessmentScore.percentage >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                  : latestSub.assessmentScore.percentage >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                  : 'bg-red-500/10 text-red-400 border-red-500/20'
-                }`}>
-                  Score: {latestSub.assessmentScore.percentage}%
-                </span>
-              )}
+              {(() => {
+                const effectiveScore = latestSub.rubricGrade?.overallPercentage ?? latestSub.assessmentScore?.percentage ?? latestSub.score ?? 0;
+                const hasScore = latestSub.rubricGrade || latestSub.assessmentScore;
+                return hasScore && assessmentConfig.showScoreOnSubmit !== false ? (
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
+                    effectiveScore >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                    : effectiveScore >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                  }`}>
+                    Score: {effectiveScore}%
+                  </span>
+                ) : null;
+              })()}
               <span className="text-[9px] text-gray-500 font-bold">
                 {isUnlimitedAttempts
                   ? `Attempt ${latestSub.attemptNumber || 1}`

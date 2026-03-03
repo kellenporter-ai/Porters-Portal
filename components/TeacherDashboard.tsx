@@ -954,7 +954,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                           gradedAt: new Date().toISOString(),
                                                           gradedBy: 'Admin',
                                                         };
-                                                        await dataService.saveRubricGrade(sub.id, rubricGrade);
+                                                        await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
                                                         setRubricDraft({});
                                                       } catch (err) {
                                                         reportError(err, { method: 'saveRubricGrade' });

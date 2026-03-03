@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Notification, UserSettings } from '../types';
-import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing, ShieldAlert } from 'lucide-react';
+import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing, ShieldAlert, ClipboardCheck } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { sfx } from '../lib/sfx';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
@@ -24,12 +24,14 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'ANNOUNCEMENT': <Megaphone className="w-4 h-4 text-orange-400" />,
   'XP_EVENT': <Zap className="w-4 h-4 text-cyan-400" />,
   'AI_FLAGGED': <ShieldAlert className="w-4 h-4 text-purple-400" />,
+  'ASSESSMENT_GRADED': <ClipboardCheck className="w-4 h-4 text-green-400" />,
 };
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, onUpdateSettings, dropUp }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({});
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -104,6 +106,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   };
 
   const handleClickNotification = async (n: Notification) => {
+    setExpandedId(prev => prev === n.id ? null : n.id);
     if (!n.isRead) {
       await dataService.markNotificationRead(n.id);
     }
@@ -118,7 +121,11 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   };
 
   const handleToggle = () => {
-    if (!isOpen) updatePosition();
+    if (!isOpen) {
+      updatePosition();
+    } else {
+      setExpandedId(null);
+    }
     setIsOpen(!isOpen);
   };
 
@@ -213,8 +220,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
                     {ICON_MAP[n.type] || <Bell className="w-4 h-4 text-gray-400" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{n.title}</p>
-                    <p className="text-[11px] text-gray-400 leading-tight mt-0.5 line-clamp-2">{n.message}</p>
+                    <p className={`text-xs font-bold text-white ${expandedId === n.id ? '' : 'truncate'}`}>{n.title}</p>
+                    <p className={`text-[11px] text-gray-400 leading-tight mt-0.5 ${expandedId === n.id ? '' : 'line-clamp-2'}`}>{n.message}</p>
                     <p className="text-[9px] text-gray-600 mt-1">{formatTime(n.timestamp)}</p>
                   </div>
                   {!n.isRead && (
