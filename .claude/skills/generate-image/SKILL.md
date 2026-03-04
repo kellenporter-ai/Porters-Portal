@@ -87,19 +87,45 @@ Make changes if requested. Only proceed to JSON generation once the user confirm
 
 Build the complete JSON prompt using the schema in [schema-reference.md](schema-reference.md).
 
-Structure the output as:
+**Example output** (portrait of a mechanic):
 
 ```json
 {
-  "user_intent": "<natural language summary>",
-  "meta": { ... },
-  "subject": [ ... ],
-  "scene": { ... },
-  "technical": { ... },
-  "composition": { ... },
-  "text_rendering": { ... },
-  "style_modifiers": { ... },
-  "advanced": { ... }
+  "user_intent": "A weathered female mechanic in her 40s leaning against a vintage muscle car in a sunlit garage, wiping grease from her hands with a red shop rag, shot on a Canon R5 with an 85mm lens at f/1.8",
+  "meta": {
+    "quality_preset": "ultra_photorealistic",
+    "guidance_scale": 7.5,
+    "steps": 40
+  },
+  "subject": [
+    {
+      "type": "person",
+      "description": "Weathered female mechanic, early 40s, confident expression",
+      "pose": "Leaning against car fender, wiping hands with red shop rag",
+      "expression": "Satisfied half-smile, eyes squinting slightly",
+      "clothing": "Faded navy coveralls, sleeves rolled to elbows, steel-toe boots",
+      "hair": "Dark brown, pulled back in a messy bun with loose strands",
+      "age": "early 40s"
+    }
+  ],
+  "scene": {
+    "location": "Cluttered independent auto repair garage",
+    "time_of_day": "golden_hour",
+    "lighting": { "type": "natural", "direction": "side", "notes": "Golden light streaming through open garage door" },
+    "background_elements": ["Tool pegboard", "Vintage muscle car (1969 Camaro)", "Oil stains on concrete floor"],
+    "mood": "Warm, authentic, hardworking"
+  },
+  "technical": {
+    "camera_model": "Canon EOS R5",
+    "lens": "85mm",
+    "aperture": "f/1.8"
+  },
+  "composition": {
+    "framing": "medium_shot",
+    "camera_angle": "eye_level",
+    "focus_point": "eyes",
+    "aspect_ratio": "3:2"
+  }
 }
 ```
 

@@ -76,61 +76,44 @@ For each selected mode, spawn subagents to generate questions in parallel. Targe
 - Spawn all tier subagents for a mode concurrently
 - Each subagent outputs valid JSON arrays ONLY — no markdown fences, no commentary
 
-**Subagent delegation — for each mode, spawn agents as follows:**
+**Subagent delegation — for each mode, spawn agents as follows.**
 
-#### Question Bank Mode
-Spawn 3 subagents (one per Bloom's tier):
+Every subagent prompt follows this template (customize the bracketed parts):
 
-**Subagent 1 prompt:**
-> You are an expert educational assessment designer. Generate 200 questions for TIER 1 (Remember & Understand) on the topic: [topic]. [If source content provided: Base ALL questions on this content: (paste content)]. Class level: [class].
->
-> Use a MIX of these question formats: multiple_choice, multiple_select, ranking, qualitative_reasoning, linked_mc, troubleshooting, conflicting_contentions, whats_wrong, working_backwards.
->
-> Each question awards +10 XP. See the JSON schema in schemas.md for the exact output format. IDs start at "t1q001".
->
-> Output ONLY a valid JSON array. No markdown fences. No commentary. End cleanly with ].
+> You are an expert educational assessment designer. Generate 200 [MODE-SPECIFIC DETAILS] questions on the topic: [topic]. [If source content: Base ALL questions on this content: (paste)]. Class: [class]. See schemas.md for the exact JSON format. IDs start at "[prefix]q001". Output ONLY a valid JSON array — no markdown fences, no commentary. End cleanly with ].
 
-**Subagent 2:** Same but TIER 2 (Apply & Analyze), +25 XP, IDs start at "t2q001", generate 200 questions.
+#### Question Bank Mode — 3 subagents (one per Bloom's tier)
 
-**Subagent 3:** Same but TIER 3 (Evaluate & Create), +50 XP, IDs start at "t3q001", generate 200 questions.
+| Subagent | Tier | XP | ID Prefix | Question Formats |
+|----------|------|-----|-----------|-----------------|
+| 1 | Tier 1: Remember & Understand | +10 | t1q | Mix of: multiple_choice, multiple_select, ranking, qualitative_reasoning, linked_mc, troubleshooting, conflicting_contentions, whats_wrong, working_backwards |
+| 2 | Tier 2: Apply & Analyze | +25 | t2q | Same format mix |
+| 3 | Tier 3: Evaluate & Create | +50 | t3q | Same format mix |
 
-#### Boss Battle Mode
-Spawn 3 subagents (one per difficulty):
+#### Boss Battle Mode — 3 subagents (one per difficulty)
 
-**Subagent prompt pattern:**
-> You are an expert educational assessment designer. Generate 200 [EASY/MEDIUM/HARD] multiple choice questions for Boss Battles on the topic: [topic]. [If source content provided: Base ALL questions on this content: (paste content)]. Class level: [class].
->
-> Each question has exactly 4 options. correctAnswer is the 0-based index. damageBonus: EASY=0, MEDIUM=25, HARD=50.
->
-> See the JSON schema in schemas.md for the exact output format. IDs start at "[difficulty_prefix]q001".
->
-> Output ONLY a valid JSON array. No markdown fences. No commentary. End cleanly with ].
+Each question: 4 MC options, correctAnswer is 0-based index.
 
-#### PVP Arena Mode
-Spawn 3 subagents (Balanced, Tactical, Blitz):
+| Subagent | Difficulty | damageBonus | ID Prefix |
+|----------|-----------|------------|-----------|
+| 1 | EASY | 0 | eq |
+| 2 | MEDIUM | 25 | mq |
+| 3 | HARD | 50 | hq |
 
-**Subagent prompt pattern:**
-> You are an expert educational assessment designer. Generate 200 [BALANCED/TACTICAL/BLITZ] PVP Arena questions on the topic: [topic]. [If source content provided: Base ALL questions on this content: (paste content)]. Class level: [class].
->
-> BALANCED: Standard MC, mixed difficulty, 10 points each.
-> TACTICAL: Requires strategic thinking, multi-step reasoning, 20 points each.
-> BLITZ: Quick-recall questions, short stems, designed for speed rounds, 5 points each.
->
-> See the JSON schema in schemas.md for the exact output format.
->
-> Output ONLY a valid JSON array. No markdown fences. No commentary. End cleanly with ].
+#### PVP Arena Mode — 3 subagents
 
-#### Dungeon Rooms Mode
-Spawn 2 subagents (Rooms 1-5 and Rooms 6-10):
+| Subagent | Type | Points | Description |
+|----------|------|--------|-------------|
+| 1 | BALANCED | 10 | Standard MC, mixed difficulty |
+| 2 | TACTICAL | 20 | Multi-step reasoning, strategic thinking |
+| 3 | BLITZ | 5 | Quick-recall, short stems, speed rounds |
 
-**Subagent prompt pattern:**
-> You are an expert educational assessment designer. Generate dungeon room questions for Rooms [1-5 / 6-10] on the topic: [topic]. [If source content provided: Base ALL questions on this content: (paste content)]. Class level: [class].
->
-> Each room has 50 questions. Difficulty escalates per room. Room 1 = easy recall, Room 10 = expert synthesis.
->
-> See the JSON schema in schemas.md for the exact output format.
->
-> Output ONLY a valid JSON array. No markdown fences. No commentary. End cleanly with ].
+#### Dungeon Rooms Mode — 2 subagents
+
+| Subagent | Rooms | Notes |
+|----------|-------|-------|
+| 1 | Rooms 1–5 | 50 questions per room. Difficulty escalates: Room 1 = easy recall |
+| 2 | Rooms 6–10 | 50 questions per room. Room 10 = expert synthesis |
 
 ### Step 4b: Generate Boss Config (if Boss Battle selected)
 
@@ -187,59 +170,13 @@ After all subagents complete:
 3. **Count questions** — report the final count per mode. If significantly under 500, note it to the user.
 4. **Deduplicate** — scan for duplicate stems (exact or near-match). Remove duplicates.
 5. **Validate IDs** — ensure no duplicate IDs. Reassign sequential IDs if needed.
-6. **Shuffle answer positions (MANDATORY)** — LLMs heavily bias the correct answer toward option A/B (index 0/1). After collecting all questions, run a Fisher-Yates shuffle on every question's `options` array and remap `correctAnswer` to the new position. Use a **Python script** (not manual editing) to guarantee uniform randomization:
+6. **Shuffle answer positions (MANDATORY)** — LLMs heavily bias the correct answer toward option A/B (index 0/1). Run the bundled shuffle script on every output file:
 
-```python
-import json, random
-
-def shuffle_options(q):
-    opts = q.get('options', [])
-    ca = q.get('correctAnswer')
-    if not opts or ca is None:
-        return q
-    # Index-based correctAnswer (boss/dungeon/pvp: int 0-3)
-    if isinstance(ca, int) and 0 <= ca < len(opts):
-        correct = opts[ca]
-        random.shuffle(opts)
-        q['options'] = opts
-        q['correctAnswer'] = opts.index(correct)
-    # Object options {id, text} with letter correctAnswer
-    elif isinstance(opts[0], dict) and isinstance(ca, str) and len(ca) == 1:
-        old_map = {o['id']: o['text'] for o in opts}
-        correct_text = old_map.get(ca)
-        random.shuffle(opts)
-        ids = ['a','b','c','d','e','f'][:len(opts)]
-        new_map = {}
-        for i, o in enumerate(opts):
-            new_map[o['text']] = ids[i]
-            o['id'] = ids[i]
-        q['correctAnswer'] = new_map.get(correct_text, ca)
-    # Array correctAnswer (multiple_select)
-    elif isinstance(ca, list) and isinstance(opts[0], dict):
-        old_map = {o['id']: o['text'] for o in opts}
-        correct_texts = {old_map[l] for l in ca if l in old_map}
-        random.shuffle(opts)
-        ids = ['a','b','c','d','e','f'][:len(opts)]
-        new_ca = []
-        for i, o in enumerate(opts):
-            if o['text'] in correct_texts:
-                new_ca.append(ids[i])
-            o['id'] = ids[i]
-        q['correctAnswer'] = sorted(new_ca)
-    # Ranking: shuffle display order, correctAnswer tracks ids (unchanged)
-    elif q.get('type') == 'ranking':
-        random.shuffle(opts)
-    # Shuffle linkedFollowUp too
-    if q.get('linkedFollowUp'):
-        shuffle_options(q['linkedFollowUp'])
-    return q
-
-# Apply to all questions
-for q in questions:
-    shuffle_options(q)
+```bash
+python scripts/shuffle_options.py <input.json> <output.json>
 ```
 
-**Target distribution:** ~25% per answer position (A/B/C/D). Verify after shuffling. If any position exceeds 35%, re-shuffle with a different seed.
+The script handles all question formats (index-based, letter-based, multiple-select, ranking, linkedFollowUp) and verifies ~25% distribution per answer position, re-shuffling if any position exceeds 35%. See [scripts/shuffle_options.py](scripts/shuffle_options.py) for the implementation.
 
 ### Step 5b: Merge Questions into Boss/Dungeon Configs
 

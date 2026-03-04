@@ -110,98 +110,23 @@ window.addEventListener('load', () => PortalBridge.init());
 - **Graded mode:** Call `PortalBridge.answer(questionId, correct, attempts)` when a student answers a question. Call `PortalBridge.complete(score, total, correct)` when the activity finishes. Call `PortalBridge.save(stateObj, currentQuestionIndex)` periodically.
 - **Exploratory mode:** Call `PortalBridge.save(stateObj, 0)` periodically to preserve student progress. Do NOT call `answer` or `complete`.
 
-### Dark Theme UI
+### Dark Theme UI & Proctor Bridge
 
-Use this color scheme for all overlay panels:
-
-```css
-:root {
-    --bg:       #0f0720;
-    --panel-bg: rgba(18, 10, 38, 0.88);
-    --border:   rgba(160, 100, 255, 0.18);
-    --text:     #e8e4f4;
-    --muted:    #8a85a8;
-    --blue:     #5b9cf6;
-    --green:    #22d47a;
-    --orange:   #f5a623;
-    --red:      #e8504a;
-    --purple:   #9b6bff;
-}
-```
-
-- Glassmorphism panels: `backdrop-filter: blur(14px); background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;`
-- Canvas fills the viewport. UI overlays on top with `pointer-events: none` on the container, `pointer-events: auto` on interactive panels.
-- Mobile responsive — stack panels vertically on narrow screens.
+Use the shared dark theme and Proctor Bridge patterns from [portal-bridge.md](../shared/portal-bridge.md).
 
 ### Babylon.js Scene Requirements
 
-Follow the detailed patterns in [babylon-reference.md](babylon-reference.md). Key requirements:
+Follow the detailed patterns in [babylon-reference.md](babylon-reference.md). The reference file has everything — engine setup, camera, lighting, shadows, materials, models, post-processing, particles, and animation patterns. Read it before writing any simulation code.
 
-**Engine & Scene:**
-- Use `BABYLON.Engine` with `stencil: true`
-- Hardware scaling: `Math.min(window.devicePixelRatio, 1.5)` — cap at 1.5 for Chromebooks
-- Clear color matching the dark theme background
-- Scene fog (EXP2) for depth
-
-**Camera:**
-- `ArcRotateCamera` with orbit, zoom, and pan
-- Set `lowerRadiusLimit` and `upperRadiusLimit` to keep the scene framed
-- Set `upperBetaLimit` to prevent flipping under the ground
-- Enable inertia for smooth feel
-
-**Lighting — Use the Three-Light Recipe:**
-1. `HemisphericLight` (intensity 0.3–0.4) — ambient fill with cool diffuse and dark ground color
-2. `DirectionalLight` (intensity 0.8–1.0) — main sun/key light, casts shadows
-3. `PointLight` or `SpotLight` (optional) — accent/mood light for focal objects
-
-Do NOT add more than 3 lights. See [babylon-reference.md](babylon-reference.md) for the exact lighting setup.
-
-**Shadows:**
-- `ShadowGenerator` with `useBlurExponentialShadowMap = true`
-- Shadow map size: **1024** (not 2048 — Chromebook budget)
-- `blurKernel: 16`, `darkness: 0.4`
-- Add key objects as shadow casters. Ground receives shadows.
-
-**Materials — Use PBR:**
-- `PBRMaterial` for all objects — set `albedoColor`, `roughness`, `metallic`
-- Do NOT set `emissiveColor` on PBR materials unless the mesh is explicitly whitelisted in a GlowLayer. Use `albedoColor` + proper lighting for appearance.
-- For ground: use `GridMaterial` for lab/abstract settings, OR create a textured ground with `PBRMaterial` for realistic environments
-
-**Models — Procedural Construction:**
-- Build all models from Babylon.js primitives: `CreateBox`, `CreateCylinder`, `CreateSphere`, `CreateTorus`, `CreateLathe`, `CreateTube`, `CreateRibbon`, etc.
-- Use `TransformNode` to group multi-part objects
-- Use CSG (Constructive Solid Geometry) for complex shapes when needed
-- Target medium polygon counts — use `tessellation: 24-32` for curved surfaces (not 8-12, not 64+)
-- Make objects recognizable — combine multiple primitives to build representative models rather than using a single low-poly box
-
-**Environment — Make It Realistic:**
-- Add context-appropriate surroundings: lab tables, walls, floor textures, outdoor terrain — not just a floating grid
-- Use a skybox or gradient background for outdoor scenes
-- Use fog to fade distant edges naturally
-- Add subtle environmental details: baseboards, table legs, equipment stands — things that ground the scene in reality
-
-**Post-Processing Pipeline:**
-- `DefaultRenderingPipeline` with FXAA enabled
-- `samples: 2` (not 4 — Chromebook budget)
-- Tone mapping enabled, contrast ~1.1, exposure ~1.05
-- `GlowLayer` — **ONLY if specific meshes need bloom.** MUST use `addIncludedOnlyMesh()` to whitelist glowing meshes. NEVER use blanket GlowLayer — it blooms all emissive materials including labels, turning them into unreadable white blobs. If no meshes need bloom, skip GlowLayer entirely.
-- `HighlightLayer` for interactive object outlines (optional)
-
-**Particles (when appropriate):**
-- Use built-in `ParticleSystem` for effects (dust, sparks, splatter)
-- Keep max particles under 300
-- Use procedural `DynamicTexture` for particle textures — no external images
-
-**Animation:**
-- Use `BABYLON.Animation.CreateAndStartAnimation` for camera transitions and UI-triggered animations
-- Use `scene.onBeforeRenderObservable` for physics/simulation loops
-- Use `engine.getDeltaTime()` for frame-rate-independent physics
-
-**Resize & Render Loop:**
-```javascript
-engine.runRenderLoop(() => scene.render());
-window.addEventListener('resize', () => engine.resize());
-```
+**Critical rules to internalize** (these cause the most bugs when forgotten):
+- Cap `devicePixelRatio` at **1.5** — Chromebooks choke on higher values
+- Shadow maps at **1024**, MSAA samples at **2** — performance over fidelity
+- **Three lights maximum** — hemispheric fill + directional key + optional accent
+- **Never use blanket GlowLayer** — it blooms labels into unreadable white. Use `addIncludedOnlyMesh()` or skip GlowLayer entirely
+- **No emissiveColor on PBR materials** unless the mesh is whitelisted in a GlowLayer. Use `albedoColor` + proper lighting instead
+- **No Havok or Ammo.js** — implement physics manually in the render loop using `engine.getDeltaTime()`
+- Build all models from **Babylon.js primitives** (boxes, cylinders, spheres, etc.) — no external model files
+- Make environments **realistic** — lab tables, walls, terrain, not floating objects on a grid
 
 ---
 

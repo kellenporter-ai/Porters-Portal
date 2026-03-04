@@ -34,7 +34,9 @@ If no arguments are provided, ask: "What bug should I fix or feature should I bu
 
 ## Step 2: Research Best Practices
 
-Search for current best practices and proven solutions using web search. Target these resources:
+**Skip this step for trivial fixes** — typos, missing imports, simple CSS adjustments, and obvious one-line bugs don't need web research. Jump straight to Step 3.
+
+For non-trivial changes, search for current best practices and proven solutions using web search. Target these resources:
 
 - **Stack Overflow** — search for the specific error, pattern, or technique
 - **MDN Web Docs** — for web API, CSS, and JavaScript reference
@@ -168,23 +170,22 @@ Write a commit message that describes the **why**, not the **what**. Keep it und
 
 ### 6b: Deploy to Firebase
 
-```bash
-cd /home/kp/Desktop/Porters-Portal && firebase deploy
-```
-
-If only hosting changed (no Cloud Functions modified):
+Choose the narrowest deploy scope that covers your changes:
 
 ```bash
+# Only frontend changes (most common)
 firebase deploy --only hosting
-```
 
-If only Cloud Functions changed:
-
-```bash
+# Only Cloud Functions changed
 firebase deploy --only functions
+
+# Both hosting and functions changed
+firebase deploy
 ```
 
 Wait for deployment to complete and verify no errors in the output.
+
+**When to skip deploy:** If the fix is purely local tooling, dev config, or documentation — don't deploy. Only deploy when production-facing code changed.
 
 ---
 

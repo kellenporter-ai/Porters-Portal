@@ -48,7 +48,7 @@ Present your analysis to the user and ask them to confirm or correct:
 2. **Output format:** JSON lesson blocks (for the lesson editor) or standalone HTML?
 3. **Scope:** Confirm the key concepts and skills you plan to assess
 
-Do NOT proceed until the user confirms.
+If the user provided enough detail upfront (clear topic, obvious course level, specified format), present your plan and proceed unless they object. Only block on confirmation when the request is genuinely ambiguous.
 
 ---
 
@@ -142,49 +142,11 @@ Generate a single self-contained HTML file.
 </html>
 ```
 
-#### Proctor Bridge — Always Include
+#### Proctor Bridge & Dark Theme
 
-```javascript
-const PortalBridge = (() => {
-    const send = (type, data) => {
-        if (window.parent) window.parent.postMessage({ source: 'portal-activity', type, ...data }, '*');
-    };
-    return {
-        init:     ()              => send('PROCTOR_READY'),
-        save:     (state, q)      => send('SAVE_STATE',  { state, currentQuestion: q }),
-        answer:   (id, ok, tries) => send('ANSWER',      { questionId: id, correct: ok, attempts: tries }),
-        complete: (s, t, c)       => send('COMPLETE',    { score: s, total: t, correct: c })
-    };
-})();
-window.addEventListener('load', () => PortalBridge.init());
-```
+Use the shared Proctor Bridge and dark theme from [portal-bridge.md](../shared/portal-bridge.md). For teacher-graded assessments, call `PortalBridge.complete(0, numQuestions, 0)` on submit — the teacher overrides with actual grades. Call `PortalBridge.save()` on every input change to preserve progress.
 
-Call `PortalBridge.save(stateObj, currentQuestionIndex)` whenever a student modifies an answer, so progress is preserved.
-Call `PortalBridge.complete(score, total, correct)` when the student submits the assessment. Since this is teacher-graded, pass `score: 0, total: [numQuestions], correct: 0` — the teacher will override with actual grades.
-
-#### Dark Theme UI
-
-Use this color scheme for the assessment:
-
-```css
-:root {
-    --bg:       #0f0720;
-    --panel-bg: rgba(18, 10, 38, 0.88);
-    --border:   rgba(160, 100, 255, 0.18);
-    --text:     #e8e4f4;
-    --muted:    #8a85a8;
-    --blue:     #5b9cf6;
-    --green:    #22d47a;
-    --orange:   #f5a623;
-    --red:      #e8504a;
-    --purple:   #9b6bff;
-}
-```
-
-- Glassmorphism panels: `backdrop-filter: blur(14px); background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px;`
-- Clean, readable layout — questions flow vertically
-- Mobile responsive for Chromebook screens
-- Min 44px touch targets for all interactive elements
+Clean, readable layout — questions flow vertically. Mobile responsive for Chromebook screens.
 
 #### Assessment Features
 
@@ -241,6 +203,14 @@ Generate a rubric for every assessment, regardless of output format. Follow the 
 4. **Be content-specific:** Rubric criteria must reference the actual physics concepts, representations, and reasoning being assessed. Never use generic criteria.
 
 5. **Include concrete examples** at the Approaching and Developing levels where helpful (use bullet points under "For example").
+
+### Example Rubric Row
+
+Here's what one skill row looks like across all 5 levels:
+
+| Skill | Missing 0% | Emerging 55% | Approaching 65% | Developing 85% | Refining 100% |
+|-------|-----------|-------------|-----------------|----------------|---------------|
+| I am able to use energy bar charts to track energy transformations within an isolated system. | There is no attempt to use energy bar charts. | There is an attempt to draw energy bar charts -BUT- the bars do not correspond to the correct energy types -OR- the system is not isolated. | There is a decent attempt to use energy bar charts -BECAUSE- the correct energy types are identified -BUT- the bar heights do not reflect the correct proportions -OR- energy is not conserved across the charts. | There is a good attempt to use energy bar charts -BECAUSE- the correct energy types and proportions are shown -AND- energy is conserved -BUT- minor labeling errors or one transformation is slightly off. | There is an excellent attempt to use energy bar charts -BECAUSE- all energy types are correct -AND- proportions accurately reflect the physics -AND- energy is clearly conserved across all stages of the process. |
 
 ### Rubric Output
 

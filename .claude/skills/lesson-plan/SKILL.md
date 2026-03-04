@@ -156,6 +156,47 @@ After the JSON, provide a brief summary:
 
 ---
 
+## Lesson Scope & Size
+
+A well-scoped lesson for a single class period typically has **15–30 blocks**. If you're exceeding 40 blocks, the lesson is probably trying to cover too much — split it into two lessons. Conversely, under 10 blocks usually means the lesson needs more interactive elements.
+
+**Rule of thumb:** For every TEXT block, include at least one interactive block (MC, SHORT_ANSWER, SORTING, DATA_TABLE, ACTIVITY) nearby. Students learn by doing, not reading walls of text.
+
+---
+
+## Example: Mini Lesson Fragment
+
+Here's what a well-structured Observation phase looks like as JSON:
+
+```json
+[
+  { "type": "SECTION_HEADER", "icon": "🔍", "title": "2. Observe and Find a Pattern", "subtitle": "What happens when we change the angle?" },
+  { "type": "TEXT", "content": "Watch the following video of a ball launched at different angles. Pay attention to how the range changes." },
+  { "type": "IMAGE", "url": "PLACEHOLDER: Video or diagram of projectile launches at 15°, 30°, 45°, 60°, 75°", "alt": "Projectile launches at various angles" },
+  { "type": "DATA_TABLE", "columns": [
+    { "header": "Launch Angle (°)", "editable": false },
+    { "header": "Horizontal Range (m)", "editable": true },
+    { "header": "Max Height (m)", "editable": true }
+  ], "rows": [["15", "", ""], ["30", "", ""], ["45", "", ""], ["60", "", ""], ["75", "", ""]] },
+  { "type": "SHORT_ANSWER", "content": "What pattern do you notice about the relationship between launch angle and range? At what angle is the range greatest?", "acceptedAnswers": ["45 degrees gives the maximum range", "The range is greatest at 45 degrees", "Range increases up to 45° then decreases symmetrically"] },
+  { "type": "DIVIDER" }
+]
+```
+
+Notice the rhythm: context (TEXT) → visual (IMAGE) → data collection (DATA_TABLE) → reflection (SHORT_ANSWER). This pattern keeps students actively engaged rather than passively reading.
+
+---
+
+## Common Mistakes to Avoid
+
+- **Wall of text:** Three or more TEXT blocks in a row with no interaction. Break them up.
+- **Vague SHORT_ANSWER prompts:** "What did you learn?" is too open. Be specific: "Based on your data, what is the relationship between force and acceleration?"
+- **Skipping Observation:** Jumping straight to formulas. ISLE works because students discover patterns before being given equations.
+- **Too many MC blocks:** Multiple choice is easy to write but low-value for learning. Use it sparingly — SHORT_ANSWER forces deeper thinking.
+- **Missing DIVIDER blocks:** Without visual separation between phases, the lesson feels like one undifferentiated wall.
+
+---
+
 ## Notes
 
 - **Scope:** Keep lessons appropriately scoped for high school / AP Physics 1. Don't overload a single lesson.
