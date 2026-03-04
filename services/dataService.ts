@@ -12,6 +12,9 @@ import { reportError } from '../lib/errorReporting';
 // Uses a Map<name, deniedAtMs> with a 5-minute TTL so transient permission errors
 // don't permanently block a collection for the rest of the session.
 const DENIED_TTL_MS = 5 * 60 * 1000;
+
+/** Strip undefined values from an object before passing to Firestore setDoc(). */
+const stripUndefined = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 const _deniedCollections = new Map<string, number>();
 
 /** Clear all denial caches — call when auth state changes. */
@@ -64,7 +67,7 @@ export const dataService = {
   },
 
   saveXPEvent: async (event: XPEvent) => {
-    await setDoc(doc(db, 'xp_events', event.id), event);
+    await setDoc(doc(db, 'xp_events', event.id), stripUndefined(event));
   },
 
   deleteXPEvent: async (id: string) => {
@@ -81,7 +84,7 @@ export const dataService = {
   },
 
   saveQuest: async (quest: Quest) => {
-    await setDoc(doc(db, 'quests', quest.id), quest);
+    await setDoc(doc(db, 'quests', quest.id), stripUndefined(quest));
   },
 
   deleteQuest: async (id: string) => {
@@ -147,7 +150,7 @@ export const dataService = {
   },
 
   saveCustomItem: async (item: CustomItem) => {
-    await setDoc(doc(db, 'customItems', item.id), item);
+    await setDoc(doc(db, 'customItems', item.id), stripUndefined(item));
   },
 
   deleteCustomItem: async (id: string) => {
@@ -166,7 +169,7 @@ export const dataService = {
 
   saveQuestTemplate: async (template: Record<string, unknown>) => {
     const id = (template.id as string) || Math.random().toString(36).substring(2, 9);
-    await setDoc(doc(db, 'quest_templates', id), { ...template, id });
+    await setDoc(doc(db, 'quest_templates', id), stripUndefined({ ...template, id }));
   },
 
   deleteQuestTemplate: async (id: string) => {
@@ -1834,7 +1837,7 @@ export const dataService = {
   },
 
   saveDungeon: async (dungeon: Dungeon) => {
-    await setDoc(doc(db, 'dungeons', dungeon.id), dungeon);
+    await setDoc(doc(db, 'dungeons', dungeon.id), stripUndefined(dungeon));
   },
 
   deleteDungeon: async (id: string) => {
@@ -1912,7 +1915,7 @@ export const dataService = {
   },
 
   saveIdleMission: async (mission: IdleMission) => {
-    await setDoc(doc(db, 'idle_missions', mission.id), mission);
+    await setDoc(doc(db, 'idle_missions', mission.id), stripUndefined(mission));
   },
 
   deleteIdleMission: async (id: string) => {
