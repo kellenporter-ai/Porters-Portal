@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity } from '../../types';
-import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { dataService } from '../../services/dataService';
-import { callGenerateDungeonWithAI } from '../../lib/firebase';
 import { useToast } from '../ToastProvider';
 import Modal from '../Modal';
 
@@ -314,14 +313,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
   const toast = useToast();
   const [form, setForm] = useState<DungeonFormState>(emptyForm());
   const [saving, setSaving] = useState(false);
-
-  // AI Generation state
-  const [aiMode, setAiMode] = useState(false);
-  const [aiTopic, setAiTopic] = useState('');
-  const [aiClass, setAiClass] = useState('AP_PHYSICS');
-  const [aiDifficulty, setAiDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
-  const [aiNumRooms, setAiNumRooms] = useState(8);
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const dungeonConfigFileRef = React.useRef<HTMLInputElement>(null);
 
   // Populate form when opening
   useEffect(() => {
@@ -379,24 +371,23 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
     setForm(prev => ({ ...prev, rooms: [...prev.rooms, emptyRoom()] }));
   };
 
-  // --- AI Dungeon Generation ---
-  const handleAIGenerate = async () => {
-    if (!aiTopic.trim()) { toast.error('Enter a topic for the dungeon.'); return; }
-    setAiGenerating(true);
+  // --- Import Full Dungeon Config JSON (from /generate-questions skill) ---
+  const handleImportDungeonConfig = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     try {
-      const result = await callGenerateDungeonWithAI({
-        topic: aiTopic.trim(),
-        classType: aiClass,
-        numRooms: aiNumRooms,
-        difficulty: aiDifficulty,
-      });
-      const dungeon = result.data as Record<string, unknown>;
+      const text = await file.text();
+      let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+      const objMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (objMatch) cleaned = objMatch[0];
+      const dungeon = JSON.parse(cleaned) as Record<string, unknown>;
 
-      // Populate form with AI-generated data
+      if (!dungeon.name || !dungeon.rooms) throw new Error('Missing name or rooms — not a valid dungeon config.');
+
       setForm({
         name: (dungeon.name as string) || '',
         description: (dungeon.description as string) || '',
-        classType: aiClass,
+        classType: (dungeon.classType as string) || 'AP_PHYSICS',
         targetSections: '',
         rooms: ((dungeon.rooms as Array<Record<string, unknown>>) || []).map(r => ({
           id: (r.id as string) || Math.random().toString(36).substring(2, 10),
@@ -411,7 +402,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
           questions: ((r.questions as Array<Record<string, unknown>>) || []).map(q => ({
             id: (q.id as string) || Math.random().toString(36).substring(2, 10),
             stem: (q.stem as string) || '',
-            options: (q.options as string[]) || ['', '', '', ''],
+            options: ((q.options as string[]) || ['', '', '', '']).slice(0, 4),
             correctAnswer: (q.correctAnswer as number) ?? 0,
             difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
             damageBonus: (q.damageBonus as number) || 0,
@@ -422,18 +413,16 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
         rewardItemRarity: ((dungeon.rewards as Record<string, unknown>)?.itemRarity as string) || '',
         minLevel: (dungeon.minLevel as number) || 0,
         minGearScore: (dungeon.minGearScore as number) || 0,
-        resetsAt: 'WEEKLY',
+        resetsAt: (dungeon.resetsAt as '' | 'DAILY' | 'WEEKLY') || 'WEEKLY',
         isActive: true,
       });
 
-      setAiMode(false);
       const roomCount = ((dungeon.rooms as unknown[]) || []).length;
-      toast.success(`Dungeon "${dungeon.name}" generated with ${roomCount} rooms!`);
+      toast.success(`Imported dungeon "${dungeon.name}" with ${roomCount} rooms!`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'AI generation failed. Try again.');
-    } finally {
-      setAiGenerating(false);
+      toast.error(err instanceof Error ? err.message : 'Failed to import dungeon config.');
     }
+    if (dungeonConfigFileRef.current) dungeonConfigFileRef.current.value = '';
   };
 
   const handleSave = async () => {
@@ -488,88 +477,17 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
     <Modal isOpen={isOpen} onClose={onClose} title={editingDungeon ? 'Edit Dungeon' : 'New Dungeon'} maxWidth="max-w-2xl">
       <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
 
-        {/* AI Generation Panel */}
+        {/* Import Full Dungeon Config (from /generate-questions skill) */}
         {!editingDungeon && (
-          <div className="border border-purple-500/20 rounded-xl bg-purple-500/5 overflow-hidden">
-            <button
-              type="button"
-              aria-expanded={aiMode}
-              onClick={() => setAiMode(!aiMode)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-purple-500/10 transition"
-            >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-bold text-purple-300">Generate with AI</span>
-              <span className="text-[10px] text-purple-500 ml-1">Auto-create rooms, monsters, questions & rewards</span>
-              <span className={`ml-auto text-purple-500 text-xs transition-transform ${aiMode ? 'rotate-180' : ''}`}>&#9660;</span>
-            </button>
-
-            {aiMode && (
-              <div className="px-4 pb-4 space-y-3 border-t border-purple-500/10">
-                <div className="pt-3">
-                  <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Topic / Subject</label>
-                  <input
-                    value={aiTopic}
-                    onChange={e => setAiTopic(e.target.value)}
-                    placeholder="e.g. Kinematics, Wave Mechanics, Fingerprint Analysis..."
-                    className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-3 text-white placeholder-gray-600 focus:border-purple-500/40 transition"
-                    disabled={aiGenerating}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Class</label>
-                    <select
-                      value={aiClass}
-                      onChange={e => setAiClass(e.target.value)}
-                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
-                      disabled={aiGenerating}
-                    >
-                      {CLASS_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Difficulty</label>
-                    <select
-                      value={aiDifficulty}
-                      onChange={e => setAiDifficulty(e.target.value as 'EASY' | 'MEDIUM' | 'HARD')}
-                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
-                      disabled={aiGenerating}
-                    >
-                      <option value="EASY">Easy</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HARD">Hard</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Rooms</label>
-                    <input
-                      type="number"
-                      min={4}
-                      max={15}
-                      value={aiNumRooms}
-                      onChange={e => setAiNumRooms(Number(e.target.value) || 8)}
-                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
-                      disabled={aiGenerating}
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAIGenerate}
-                  disabled={aiGenerating || !aiTopic.trim()}
-                  className="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white shadow-lg shadow-purple-500/20"
-                >
-                  {aiGenerating ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Generating dungeon...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" /> Generate Complete Dungeon</>
-                  )}
-                </button>
-                {aiGenerating && (
-                  <p className="text-[10px] text-purple-500 text-center">AI is designing rooms, monsters & questions. This may take 15-30 seconds.</p>
-                )}
-              </div>
-            )}
+          <div className="border border-purple-500/20 rounded-xl bg-purple-500/5 p-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-bold text-purple-300">Import Dungeon Config</div>
+              <div className="text-[10px] text-purple-500">Import a complete dungeon JSON from <code className="text-purple-400">/generate-questions</code> — includes rooms, monsters, questions & rewards</div>
+            </div>
+            <label className="flex-shrink-0 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-600/30 transition cursor-pointer flex items-center gap-1.5">
+              <Upload className="w-3.5 h-3.5" /> Import JSON
+              <input ref={dungeonConfigFileRef} type="file" accept=".json" onChange={handleImportDungeonConfig} className="hidden" />
+            </label>
           </div>
         )}
 

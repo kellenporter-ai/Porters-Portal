@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BossQuizEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DefaultClassTypes, DifficultyTier, DIFFICULTY_TIER_DEFS, AutoScaleConfig, BossPhase, BossAbility, BossAbilityEffect, BOSS_ABILITY_EFFECT_DEFS, BossLootEntry, EquipmentSlot, ItemRarity } from '../../types';
-import { Plus, Trash2, Check, X, Copy, Upload, FileJson, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Check, X, Copy, Upload, FileJson } from 'lucide-react';
 import BossAvatar from './BossAvatar';
 import SectionPicker from '../SectionPicker';
 import { dataService } from '../../services/dataService';
-import { callGenerateBossWithAI } from '../../lib/firebase';
 import { useToast } from '../ToastProvider';
 import Modal from '../Modal';
 
@@ -118,14 +117,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   const [promptCopied, setPromptCopied] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const quizFileRef = useRef<HTMLInputElement>(null);
-
-  // AI Generation state
-  const [aiMode, setAiMode] = useState(false);
-  const [aiTopic, setAiTopic] = useState('');
-  const [aiClass, setAiClass] = useState('AP_PHYSICS');
-  const [aiDifficulty, setAiDifficulty] = useState<DifficultyTier>('NORMAL');
-  const [aiNumQuestions, setAiNumQuestions] = useState(20);
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const bossConfigFileRef = useRef<HTMLInputElement>(null);
 
   // Initialize form from editingQuizBoss on open
   useEffect(() => {
@@ -288,20 +280,19 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
     toast.success('Prompt copied to clipboard!');
   };
 
-  // --- AI Boss Generation ---
-  const handleAIGenerate = async () => {
-    if (!aiTopic.trim()) { toast.error('Enter a topic for the boss.'); return; }
-    setAiGenerating(true);
+  // --- Import Full Boss Config JSON (from /generate-questions skill) ---
+  const handleImportBossConfig = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     try {
-      const result = await callGenerateBossWithAI({
-        topic: aiTopic.trim(),
-        classType: aiClass,
-        difficulty: aiDifficulty,
-        numQuestions: aiNumQuestions,
-      });
-      const boss = result.data as Record<string, unknown>;
+      const text = await file.text();
+      let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+      const objMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (objMatch) cleaned = objMatch[0];
+      const boss = JSON.parse(cleaned) as Record<string, unknown>;
 
-      // Populate the form with AI-generated data
+      if (!boss.bossName) throw new Error('Missing bossName — not a valid boss config.');
+
       const defaultDeadline = new Date();
       defaultDeadline.setDate(defaultDeadline.getDate() + 7);
 
@@ -309,7 +300,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         bossName: (boss.bossName as string) || '',
         description: (boss.description as string) || '',
         maxHp: (boss.maxHp as number) || 1000,
-        classType: aiClass,
+        classType: (boss.classType as string) || 'GLOBAL',
         damagePerCorrect: (boss.damagePerCorrect as number) || 50,
         rewardXp: (boss.rewards as Record<string, unknown>)?.xp as number || 500,
         rewardFlux: (boss.rewards as Record<string, unknown>)?.flux as number || 100,
@@ -318,7 +309,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         questions: ((boss.questions as Array<Record<string, unknown>>) || []).map(q => ({
           id: (q.id as string) || Math.random().toString(36).substring(2, 10),
           stem: (q.stem as string) || '',
-          options: (q.options as string[]) || ['', '', '', ''],
+          options: ((q.options as string[]) || ['', '', '', '']).slice(0, 4),
           correctAnswer: (q.correctAnswer as number) ?? 0,
           difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
           damageBonus: (q.damageBonus as number) || 0,
@@ -326,7 +317,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         targetSections: [],
         bossType: (['BRUTE', 'PHANTOM', 'SERPENT'].includes(boss.bossType as string) ? boss.bossType : 'BRUTE') as BossType,
         bossHue: (boss.bossHue as number) ?? 0,
-        difficultyTier: (['NORMAL', 'HARD', 'NIGHTMARE', 'APOCALYPSE'].includes(boss.difficultyTier as string) ? boss.difficultyTier : aiDifficulty) as DifficultyTier,
+        difficultyTier: (['NORMAL', 'HARD', 'NIGHTMARE', 'APOCALYPSE'].includes(boss.difficultyTier as string) ? boss.difficultyTier : 'NORMAL') as DifficultyTier,
         autoScale: { enabled: false, factors: [] },
         phases: ((boss.phases as Array<Record<string, unknown>>) || []).map(p => ({
           name: (p.name as string) || 'Phase',
@@ -362,19 +353,18 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       });
 
       // Set modifiers
-      const aiModifiers = (boss.modifiers as Array<Record<string, unknown>>) || [];
-      setFormModifiers(aiModifiers.map(m => ({
+      const importedModifiers = (boss.modifiers as Array<Record<string, unknown>>) || [];
+      setFormModifiers(importedModifiers.map(m => ({
         type: m.type as BossModifierType,
         ...(m.value !== undefined ? { value: m.value as number } : {}),
       })));
 
-      setAiMode(false);
-      toast.success(`Boss "${boss.bossName}" generated with ${((boss.questions as unknown[]) || []).length} questions!`);
+      const qCount = ((boss.questions as unknown[]) || []).length;
+      toast.success(`Imported boss "${boss.bossName}" with ${qCount} questions, ${((boss.phases as unknown[]) || []).length} phases, ${((boss.bossAbilities as unknown[]) || []).length} abilities`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'AI generation failed. Try again.');
-    } finally {
-      setAiGenerating(false);
+      toast.error(err instanceof Error ? err.message : 'Failed to import boss config.');
     }
+    if (bossConfigFileRef.current) bossConfigFileRef.current.value = '';
   };
 
   // --- Save / Deploy ---
@@ -478,89 +468,17 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title={editingQuizBoss ? 'Edit Quiz Boss' : 'Deploy Quiz Boss'} maxWidth="max-w-2xl">
       <form onSubmit={handleSaveQuizBoss} className="space-y-4 text-gray-100 p-2 max-h-[70vh] overflow-y-auto">
 
-        {/* AI Generation Panel */}
+        {/* Import Full Boss Config (from /generate-questions skill) */}
         {!editingQuizBoss && (
-          <div className="border border-purple-500/20 rounded-xl bg-purple-500/5 overflow-hidden">
-            <button
-              type="button"
-              aria-expanded={aiMode}
-              onClick={() => setAiMode(!aiMode)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-purple-500/10 transition"
-            >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-bold text-purple-300">Generate with AI</span>
-              <span className="text-[10px] text-purple-500 ml-1">Auto-create boss, questions, phases, abilities & loot</span>
-              <span className={`ml-auto text-purple-500 text-xs transition-transform ${aiMode ? 'rotate-180' : ''}`}>&#9660;</span>
-            </button>
-
-            {aiMode && (
-              <div className="px-4 pb-4 space-y-3 border-t border-purple-500/10">
-                <div className="pt-3">
-                  <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Topic / Subject</label>
-                  <input
-                    value={aiTopic}
-                    onChange={e => setAiTopic(e.target.value)}
-                    placeholder="e.g. Newton's Laws of Motion, Projectile Motion, Blood Spatter Analysis..."
-                    className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-3 text-white placeholder-gray-600 focus:border-purple-500/40 transition"
-                    disabled={aiGenerating}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Class</label>
-                    <select
-                      value={aiClass}
-                      onChange={e => setAiClass(e.target.value)}
-                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
-                      disabled={aiGenerating}
-                    >
-                      {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Difficulty</label>
-                    <select
-                      value={aiDifficulty}
-                      onChange={e => setAiDifficulty(e.target.value as DifficultyTier)}
-                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
-                      disabled={aiGenerating}
-                    >
-                      <option value="NORMAL">Normal</option>
-                      <option value="HARD">Hard</option>
-                      <option value="NIGHTMARE">Nightmare</option>
-                      <option value="APOCALYPSE">Apocalypse</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Questions</label>
-                    <input
-                      type="number"
-                      min={10}
-                      max={40}
-                      value={aiNumQuestions}
-                      onChange={e => setAiNumQuestions(Number(e.target.value) || 20)}
-                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
-                      disabled={aiGenerating}
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAIGenerate}
-                  disabled={aiGenerating || !aiTopic.trim()}
-                  className="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white shadow-lg shadow-purple-500/20"
-                >
-                  {aiGenerating ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Generating boss encounter...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" /> Generate Complete Boss</>
-                  )}
-                </button>
-                {aiGenerating && (
-                  <p className="text-[10px] text-purple-500 text-center">AI is creating your boss with questions, phases, abilities & loot. This may take 15-30 seconds.</p>
-                )}
-              </div>
-            )}
+          <div className="border border-purple-500/20 rounded-xl bg-purple-500/5 p-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-bold text-purple-300">Import Boss Config</div>
+              <div className="text-[10px] text-purple-500">Import a complete boss JSON from <code className="text-purple-400">/generate-questions</code> — includes stats, phases, abilities, loot & questions</div>
+            </div>
+            <label className="flex-shrink-0 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-600/30 transition cursor-pointer flex items-center gap-1.5">
+              <Upload className="w-3.5 h-3.5" /> Import JSON
+              <input ref={bossConfigFileRef} type="file" accept=".json" onChange={handleImportBossConfig} className="hidden" />
+            </label>
           </div>
         )}
 

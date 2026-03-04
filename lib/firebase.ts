@@ -95,6 +95,3 @@ export const callClaimIdleMission = httpsCallable(functions, 'claimIdleMission')
 export const callQueueArenaDuel = httpsCallable(functions, 'queueArenaDuel');
 export const callCancelArenaQueue = httpsCallable(functions, 'cancelArenaQueue');
 
-// AI Generation Cloud Functions
-export const callGenerateBossWithAI = httpsCallable(functions, 'generateBossWithAI');
-export const callGenerateDungeonWithAI = httpsCallable(functions, 'generateDungeonWithAI');
