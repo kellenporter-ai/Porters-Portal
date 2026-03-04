@@ -172,6 +172,18 @@ Edge case: if user not in `users` prop array, section is `undefined` — submiss
 - If the grade write itself succeeds but notification fails, student never gets notified.
 - Consider logging the error at minimum (reportError pattern used elsewhere).
 
+## PhysicsTools.tsx Draggable Toolbar Patterns (added 2026-03-03)
+- **Key file:** `components/PhysicsTools.tsx`
+- **localStorage key:** `portersPortal_toolBtnPos` — stores `{x, y}` as left/top pixel values.
+- **CRITICAL (open):** Missing `onPointerCancel` handler. OS interruptions (ChromeOS gestures, app switch) fire `pointercancel` without `pointerup`. dragRef and isDragging are never cleared → toolbar stuck in permanent drag state (no hover, no tooltips, no clicks) until page refresh.
+- **MAJOR (open):** No mount-time viewport clamp. Position saved on large monitor restores off-screen on Chromebook. Resize handler only runs on `window.resize`, not on mount. Fix: clamp in useState initializer or mount useEffect.
+- **MINOR (open):** `dblclick` on grip is not guarded after a drag — a drag followed within ~500ms by a second tap triggers `resetPosition()` unexpectedly.
+- **MINOR (open):** No structural validation of localStorage restore. Valid JSON but non-`{x,y}` shape (e.g. `{}`) renders toolbar at viewport top-left.
+- **MINOR (open):** Grip div has static `cursor-grab` — during active drag, grip shows grab instead of grabbing (child cursor overrides parent during drag).
+- **MINOR (open):** Tooltip `<span>` elements rendered conditionally on `!isDragging`. React `setIsDragging(true)` batches asynchronously; on very fast drags tooltips may briefly flash before state updates.
+- **WARNING:** `e.button !== 0` guard blocks touch events on browsers where touch `pointerdown` fires `button=-1` (non-standard but observed on some Android/ChromeOS builds). Recommend checking `e.pointerType === 'touch'` as fallback bypass.
+- **CONFIRMED CORRECT:** 5px drag threshold uses per-axis `Math.abs(dx) > 5` — good for touchscreen tremor. Guard function uses `skipClick` ref (not state) — no race condition. Coordinate system on first drag uses `rect.left/rect.top` correctly. z-index: Communications z-60 > PhysicsTools z-50 — correct hierarchy.
+
 ## integrityAnalysis.ts Known Bugs & Patterns
 - **MC denominator inflation (MAJOR):** `mcWrong` increments on `(aWrong || bWrong)`, not `(aWrong && bWrong)`. If one student has 3+ solo wrong answers, shared-wrong ratio dilutes below 0.75 threshold → false negatives. Fix: count only questions where BOTH got it wrong.
 - **Missing `correctAnswer` false positive (MAJOR):** MC blocks with `correctAnswer: undefined` treat every student selection as wrong. 3+ such blocks where both students selected same answer triggers `mcSuspicious = true` even for correct answers. Guard: `if (block.correctAnswer == null) continue;`
