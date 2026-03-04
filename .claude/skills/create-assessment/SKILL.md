@@ -274,6 +274,7 @@ Ask the user if they want to make any changes before finalizing.
 - **No external assets.** HTML files must be fully self-contained. All styles inline, all scripts inline or from CDN.
 - **Teacher-graded.** These assessments are graded by the teacher using the rubric, not auto-graded. The assessment collects student responses; the teacher evaluates them.
 - **Print support.** HTML assessments must include print-friendly styles so students or teachers can print a paper copy if needed.
-- **Agent delegation.** For HTML mode assessments, consider delegating to specialized agents:
+- **Agent delegation.** For HTML mode assessments, delegate to the project's specialized agents (always prioritize these over general-purpose):
   - **content-strategist-ux-writer** — for reviewing assessment instructions, question wording, and rubric clarity. Delegate when assessment copy needs refinement for student comprehension.
   - **qa-bug-resolution** — for validating HTML output (accessibility, Proctor Bridge integration, print styles). Delegate after generating the HTML file to get a quality audit before delivering to the user.
+  - Always use project agents first. Only fall back to general-purpose agents if project agents are unavailable.

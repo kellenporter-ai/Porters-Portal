@@ -65,6 +65,12 @@ Use AskUserQuestion:
 
 For each selected mode, spawn subagents to generate questions in parallel. Target: **500-1000 questions per mode**.
 
+**Agent priority:** Always use the project's custom agents first:
+- **content-strategist-ux-writer** — for question generation subagents (educational content is its specialty)
+- **qa-bug-resolution** — for validation passes
+- **backend-integration-engineer** — for config generation (boss/dungeon structures)
+- Only fall back to **general-purpose** agents if project agents are busy or unavailable.
+
 **Batching strategy:**
 - Each subagent generates ONE tier/difficulty level worth of questions (150-350 per batch)
 - Spawn all tier subagents for a mode concurrently
@@ -296,3 +302,4 @@ Flag any issues (low counts, parse errors, deduplications).
 - **Boss/Dungeon config files are separate from question files.** The config file includes a sample of questions embedded in it for convenience, but the full question bank is always the separate questions file.
 - **CRITICAL: Always shuffle answer positions.** LLMs consistently place the correct answer as option A or B (~90%+ of the time). The Fisher-Yates shuffle in Step 5.6 is MANDATORY. Never skip it. Never write question files without first shuffling. Verify the distribution is ~25% per position before writing files.
 - **The config files match the portal's import format.** The boss config matches what `QuizBossFormModal` expects; the dungeon config matches what `DungeonFormModal` expects. Teachers import, review, tweak, and deploy.
+- **Always prioritize project agents over general-purpose.** Use content-strategist-ux-writer for question generation, qa-bug-resolution for validation, backend-integration-engineer for config structures. General-purpose is a fallback only.

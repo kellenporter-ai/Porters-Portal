@@ -210,9 +210,10 @@ After successful deployment, provide a brief summary:
 - **Auto-fix on QA failure.** If QA finds issues, route bugs to the responsible agent (ui-accessibility-engineer or backend-integration-engineer) and re-test. Do not stop to ask the user.
 - **Commit messages matter.** Write clear, descriptive commit messages. Use imperative mood ("Fix X" not "Fixed X").
 - **Firebase deploy is production.** The deploy goes to the live production site. This is why build + QA must pass first.
-- **Agent team.** The available specialized agents are:
+- **Agent team — ALWAYS prioritize project agents over general-purpose.** The available specialized agents are:
   - **ui-accessibility-engineer** — frontend UI, components, styling, WCAG accessibility
   - **backend-integration-engineer** — Cloud Functions, Firestore, APIs, auth, data models
   - **qa-bug-resolution** — testing, static analysis, accessibility audit, integration sign-off
   - **content-strategist-ux-writer** — UI copy, error messages, instructional text (use when adding user-facing text)
   - **portal-orchestrator** — for complex multi-step features that need architectural planning (not typically needed in dev-pipeline, but available for large features)
+  - General-purpose agents are a **fallback only** — use project agents first for all delegated work.
