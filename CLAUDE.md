@@ -17,7 +17,7 @@
 ### /dev-pipeline
 **Trigger:** "fix a bug", "implement a feature", "add functionality", "resolve an issue", "build and deploy", "fix and ship"
 **Usage:** `/dev-pipeline [description of bug or feature]`
-**Description:** Full development lifecycle automation. Analyzes the bug/feature, researches best practices online (Stack Overflow, MDN, official docs, GitHub), implements the solution, builds, runs QA via the qa-tester agent, auto-fixes any issues found, then commits, pushes, and deploys to Firebase production. Fully autonomous — no checkpoints.
+**Description:** Full development lifecycle automation. Analyzes the bug/feature, researches best practices, implements the solution (delegating to ui-accessibility-engineer and backend-integration-engineer as needed), builds, runs QA via the qa-bug-resolution agent, auto-fixes any issues found, then commits, pushes, and deploys to Firebase production. Fully autonomous — no checkpoints.
 
 ### /create-assessment
 **Trigger:** "create an assessment", "build a quiz", "make a test", "generate an exam", "create assessment questions"
@@ -31,7 +31,19 @@
 **Description:** Conversational image prompt builder for Nano Banana Pro 2 (Gemini). Guides through subject, scene, style, and technical discovery to produce structured JSON prompts optimized for highly detailed, realistic image generation. Outputs JSON ready to paste into Gemini / AI Studio.
 **Output:** `/home/kp/Desktop/ImagePrompts/`
 
-### /workflow-agent
-**Trigger:** "automate a workflow", "run a pipeline", "orchestrate tasks", "handle this end-to-end", "batch process", "automate this", "run the full pipeline"
-**Usage:** `/workflow-agent [task description]`
-**Description:** Fully autonomous meta-orchestrator. Analyzes any task, routes it to the right subagents (PM, programmer, QA, explorer) and/or chains existing skills (`/dev-pipeline`, `/lesson-plan`, `/create-assessment`, `/3d-activity`, `/generate-image`), then runs a structured pipeline (Analyze → Route → Plan → Execute → Verify → Report) to completion. No checkpoints — fully autonomous. Guardrails: no destructive git ops, no paid API calls without permission.
+### /skill-builder
+**Trigger:** "create a new skill", "optimize a skill", "audit skill quality", "build a skill"
+**Usage:** `/skill-builder`
+**Description:** Guides creation and optimization of Claude Code skills using official best practices. Two modes: build a new skill (runs a discovery interview then generates the SKILL.md), or audit an existing skill against a comprehensive checklist.
+
+## Agent Team
+
+The following specialized agents are available for delegation:
+
+| Agent | Role | When to Use |
+|-------|------|-------------|
+| **portal-orchestrator** | Lead architect — plans, decomposes, delegates | Complex multi-step features, architectural decisions, cross-cutting work |
+| **ui-accessibility-engineer** | Frontend specialist — WCAG compliance, components, responsive design | UI changes, accessibility fixes, visual bugs, layout issues |
+| **backend-integration-engineer** | Server-side — APIs, database, auth, Cloud Functions | Backend logic, Firestore schemas, API endpoints, security middleware |
+| **qa-bug-resolution** | QA gatekeeper — tests, static analysis, accessibility audit | Post-implementation audit, integration sign-off, regression testing |
+| **content-strategist-ux-writer** | UX copy — UI text, instructions, FAQs, error messages | Student-facing copy, instructional text, content strategy |

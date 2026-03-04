@@ -2,7 +2,7 @@
 name: lesson-plan
 description: Use when someone asks to plan a lesson, create a lesson plan, build lesson blocks, convert a resource into a lesson, or generate an ISLE physics lesson.
 disable-model-invocation: true
-argument-hint: [topic or file path]
+argument-hint: "[topic or file path]"
 ---
 
 ## What This Skill Does

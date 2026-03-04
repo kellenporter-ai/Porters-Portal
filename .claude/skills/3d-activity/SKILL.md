@@ -2,7 +2,7 @@
 name: 3d-activity
 description: Use when someone asks to create a 3D simulation, build a Babylon.js activity, make a 3D interactive scene, generate a physics sim, or create a forensic science simulation.
 disable-model-invocation: true
-argument-hint: [topic] [optional file paths for context]
+argument-hint: "[topic] [optional file paths for context]"
 ---
 
 ## What This Skill Does
@@ -238,3 +238,6 @@ After writing the file, provide a brief summary:
 - **Scientific accuracy matters.** Physics equations, forensic science principles, and educational content must be correct. Do not fabricate inaccurate science.
 - **Mobile/touch support.** The ArcRotateCamera handles touch natively. Ensure UI buttons are large enough for touch (min 44px tap targets). Use `touch-action: none` on the canvas.
 - **Do NOT use Havok or Ammo.js physics engines** — they require additional large CDN downloads. Implement physics logic manually (gravity, velocity, collisions) in the render loop, as shown in the example simulation.
+- **Agent delegation.** After generating the HTML file, consider delegating to:
+  - **qa-bug-resolution** — for validating the HTML output (accessibility of UI overlays, Proctor Bridge integration, Chromebook performance concerns). Delegate for graded simulations where correctness is critical.
+  - **content-strategist-ux-writer** — for reviewing instructional text, UI labels, and question wording within the simulation. Delegate when the simulation includes assessment questions or complex instructions.

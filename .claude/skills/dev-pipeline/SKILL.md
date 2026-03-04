@@ -1,7 +1,8 @@
 ---
 name: dev-pipeline
 description: Use when someone asks to fix a bug, implement a feature, add functionality, resolve an issue, or build something new in Porter's Portal. Also triggers on "dev pipeline", "fix and ship", or "build and deploy".
-argument-hint: [description of bug or feature]
+disable-model-invocation: true
+argument-hint: "[description of bug or feature]"
 ---
 
 ## What This Skill Does
@@ -51,7 +52,27 @@ Synthesize findings into a clear implementation approach. Do NOT present researc
 
 ## Step 3: Implement the Solution
 
-Apply the researched approach to the codebase:
+Apply the researched approach to the codebase. For complex changes that span both frontend and backend, delegate to the specialized agents:
+
+### Agent Delegation
+
+- **UI changes** (components, layouts, styling, accessibility) — delegate to the **ui-accessibility-engineer** agent:
+  ```
+  Implement the following UI changes for [feature/fix]. Files to modify: [paths].
+  Requirements: [specific UI requirements from your analysis].
+  Follow existing Tailwind dark theme patterns. Ensure Chromebook responsiveness and WCAG AA compliance.
+  ```
+
+- **Backend changes** (Cloud Functions, Firestore rules, data models, API endpoints) — delegate to the **backend-integration-engineer** agent:
+  ```
+  Implement the following backend changes for [feature/fix]. Files to modify: [paths].
+  Requirements: [specific backend requirements from your analysis].
+  Follow existing patterns in dataService.ts and functions/src/index.ts. Parameterize all queries.
+  ```
+
+- **Simple or tightly coupled changes** — implement directly without delegation when the fix is small and spans both layers (e.g., adding a field end-to-end).
+
+### Implementation Guidelines
 
 1. **Follow existing patterns** — Match the coding style, naming conventions, and architectural patterns already in the project:
    - Dark theme UI with Tailwind (backdrop-blur, rounded cards, glassmorphism)
@@ -99,19 +120,30 @@ cd /home/kp/Desktop/Porters-Portal/functions && npm run build
 
 ## Step 5: QA Testing
 
-Launch the **qa-tester** agent to verify the changes work correctly:
+Launch the **qa-bug-resolution** agent to audit the changes:
 
-- Test from the student perspective (Chromebook browser)
-- Test from the admin/teacher perspective
-- Verify the fix actually resolves the reported bug or the feature works as described
-- Check for regressions in related functionality
+```
+Audit the following changes for [feature/fix description].
 
-If the QA agent finds bugs:
-1. Analyze the QA report
-2. Fix the identified issues
-3. Re-run the build (Step 4)
-4. Re-launch QA testing
-5. Repeat until QA passes
+Files changed: [list all modified files with paths].
+
+Verify:
+1. Build passes without errors or warnings
+2. No security vulnerabilities (XSS, injection, exposed secrets)
+3. No performance regressions (unnecessary re-renders, N+1 queries, large bundle impact)
+4. WCAG AA accessibility compliance on any UI changes
+5. The fix resolves the reported issue / the feature works as described
+6. No regressions in related functionality
+
+Test from both student (Chromebook) and admin/teacher perspectives.
+Provide your QA Integration Sign-Off report.
+```
+
+If the QA agent rejects with bug reports:
+1. Route each bug to the responsible agent (ui-accessibility-engineer for frontend bugs, backend-integration-engineer for backend bugs) or fix directly if simple
+2. Re-run the build (Step 4)
+3. Re-launch QA with the qa-bug-resolution agent
+4. Repeat until QA grants integration sign-off
 
 ---
 
@@ -123,12 +155,14 @@ Once build passes and QA is clean:
 
 ```bash
 cd /home/kp/Desktop/Porters-Portal
-git add -A
+git add <specific files that were modified>
 git commit -m "<concise description of what was fixed/added>
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 git push origin main
 ```
+
+**Important:** Stage specific files by name — do NOT use `git add -A` or `git add .`, which can accidentally stage sensitive files (.env, credentials, local config). List each modified file explicitly.
 
 Write a commit message that describes the **why**, not the **what**. Keep it under 72 characters for the first line.
 
@@ -172,7 +206,13 @@ After successful deployment, provide a brief summary:
 - **No file limits.** Any file in the project can be modified as needed.
 - **Research is mandatory.** Always search for best practices before implementing. Don't rely solely on existing knowledge — the web has the latest patterns and solutions.
 - **Build must pass.** Never skip the build step. Never deploy broken code.
-- **QA is mandatory.** Always run the qa-tester agent before deploying. Never skip QA.
-- **Auto-fix on QA failure.** If QA finds issues, fix them and re-test automatically. Do not stop to ask the user.
+- **QA is mandatory.** Always run the qa-bug-resolution agent before deploying. Never skip QA.
+- **Auto-fix on QA failure.** If QA finds issues, route bugs to the responsible agent (ui-accessibility-engineer or backend-integration-engineer) and re-test. Do not stop to ask the user.
 - **Commit messages matter.** Write clear, descriptive commit messages. Use imperative mood ("Fix X" not "Fixed X").
 - **Firebase deploy is production.** The deploy goes to the live production site. This is why build + QA must pass first.
+- **Agent team.** The available specialized agents are:
+  - **ui-accessibility-engineer** — frontend UI, components, styling, WCAG accessibility
+  - **backend-integration-engineer** — Cloud Functions, Firestore, APIs, auth, data models
+  - **qa-bug-resolution** — testing, static analysis, accessibility audit, integration sign-off
+  - **content-strategist-ux-writer** — UI copy, error messages, instructional text (use when adding user-facing text)
+  - **portal-orchestrator** — for complex multi-step features that need architectural planning (not typically needed in dev-pipeline, but available for large features)

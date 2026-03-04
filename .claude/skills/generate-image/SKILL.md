@@ -1,7 +1,8 @@
 ---
 name: generate-image
 description: Use when someone asks to generate an image, create a picture, make an image prompt, build an image prompt for Nano Banana Pro 2, or needs a detailed JSON image prompt.
-argument-hint: [subject or scene description]
+disable-model-invocation: true
+argument-hint: "[subject or scene description]"
 ---
 
 ## What This Skill Does
@@ -14,7 +15,7 @@ The JSON format reduces token confusion by explicitly categorizing elements (sub
 
 ### 1. Establish the Concept
 
-If `<argument>` is provided, use it as the starting concept and skip to step 2.
+If `<ARGUMENTS>` is provided, use it as the starting concept and skip to step 2.
 
 Otherwise, ask: "What do you want this image to depict? Give me a rough idea — I'll help you refine it."
 
