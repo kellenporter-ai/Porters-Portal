@@ -181,6 +181,59 @@ After all subagents complete:
 3. **Count questions** — report the final count per mode. If significantly under 500, note it to the user.
 4. **Deduplicate** — scan for duplicate stems (exact or near-match). Remove duplicates.
 5. **Validate IDs** — ensure no duplicate IDs. Reassign sequential IDs if needed.
+6. **Shuffle answer positions (MANDATORY)** — LLMs heavily bias the correct answer toward option A/B (index 0/1). After collecting all questions, run a Fisher-Yates shuffle on every question's `options` array and remap `correctAnswer` to the new position. Use a **Python script** (not manual editing) to guarantee uniform randomization:
+
+```python
+import json, random
+
+def shuffle_options(q):
+    opts = q.get('options', [])
+    ca = q.get('correctAnswer')
+    if not opts or ca is None:
+        return q
+    # Index-based correctAnswer (boss/dungeon/pvp: int 0-3)
+    if isinstance(ca, int) and 0 <= ca < len(opts):
+        correct = opts[ca]
+        random.shuffle(opts)
+        q['options'] = opts
+        q['correctAnswer'] = opts.index(correct)
+    # Object options {id, text} with letter correctAnswer
+    elif isinstance(opts[0], dict) and isinstance(ca, str) and len(ca) == 1:
+        old_map = {o['id']: o['text'] for o in opts}
+        correct_text = old_map.get(ca)
+        random.shuffle(opts)
+        ids = ['a','b','c','d','e','f'][:len(opts)]
+        new_map = {}
+        for i, o in enumerate(opts):
+            new_map[o['text']] = ids[i]
+            o['id'] = ids[i]
+        q['correctAnswer'] = new_map.get(correct_text, ca)
+    # Array correctAnswer (multiple_select)
+    elif isinstance(ca, list) and isinstance(opts[0], dict):
+        old_map = {o['id']: o['text'] for o in opts}
+        correct_texts = {old_map[l] for l in ca if l in old_map}
+        random.shuffle(opts)
+        ids = ['a','b','c','d','e','f'][:len(opts)]
+        new_ca = []
+        for i, o in enumerate(opts):
+            if o['text'] in correct_texts:
+                new_ca.append(ids[i])
+            o['id'] = ids[i]
+        q['correctAnswer'] = sorted(new_ca)
+    # Ranking: shuffle display order, correctAnswer tracks ids (unchanged)
+    elif q.get('type') == 'ranking':
+        random.shuffle(opts)
+    # Shuffle linkedFollowUp too
+    if q.get('linkedFollowUp'):
+        shuffle_options(q['linkedFollowUp'])
+    return q
+
+# Apply to all questions
+for q in questions:
+    shuffle_options(q)
+```
+
+**Target distribution:** ~25% per answer position (A/B/C/D). Verify after shuffling. If any position exceeds 35%, re-shuffle with a different seed.
 
 ### Step 5b: Merge Questions into Boss/Dungeon Configs
 
@@ -241,4 +294,5 @@ Flag any issues (low counts, parse errors, deduplications).
 - **ID format matters** — each mode has its own ID prefix convention (see schemas.md).
 - **Do NOT auto-invoke this skill** — it generates large files and uses significant compute. User must explicitly request it.
 - **Boss/Dungeon config files are separate from question files.** The config file includes a sample of questions embedded in it for convenience, but the full question bank is always the separate questions file.
+- **CRITICAL: Always shuffle answer positions.** LLMs consistently place the correct answer as option A or B (~90%+ of the time). The Fisher-Yates shuffle in Step 5.6 is MANDATORY. Never skip it. Never write question files without first shuffling. Verify the distribution is ~25% per position before writing files.
 - **The config files match the portal's import format.** The boss config matches what `QuizBossFormModal` expects; the dungeon config matches what `DungeonFormModal` expects. Teachers import, review, tweak, and deploy.
