@@ -164,7 +164,7 @@ Do NOT add more than 3 lights. See [babylon-reference.md](babylon-reference.md) 
 
 **Materials — Use PBR:**
 - `PBRMaterial` for all objects — set `albedoColor`, `roughness`, `metallic`
-- Use `emissiveColor` sparingly for glowing/highlighted objects
+- Do NOT set `emissiveColor` on PBR materials unless the mesh is explicitly whitelisted in a GlowLayer. Use `albedoColor` + proper lighting for appearance.
 - For ground: use `GridMaterial` for lab/abstract settings, OR create a textured ground with `PBRMaterial` for realistic environments
 
 **Models — Procedural Construction:**
@@ -184,7 +184,7 @@ Do NOT add more than 3 lights. See [babylon-reference.md](babylon-reference.md) 
 - `DefaultRenderingPipeline` with FXAA enabled
 - `samples: 2` (not 4 — Chromebook budget)
 - Tone mapping enabled, contrast ~1.1, exposure ~1.05
-- `GlowLayer` with intensity 1.0–1.5 for emissive objects
+- `GlowLayer` — **ONLY if specific meshes need bloom.** MUST use `addIncludedOnlyMesh()` to whitelist glowing meshes. NEVER use blanket GlowLayer — it blooms all emissive materials including labels, turning them into unreadable white blobs. If no meshes need bloom, skip GlowLayer entirely.
 - `HighlightLayer` for interactive object outlines (optional)
 
 **Particles (when appropriate):**

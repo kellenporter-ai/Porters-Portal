@@ -27,7 +27,7 @@ Do NOT include Havok, Ammo.js, or other physics engine CDNs. Implement physics m
 | Max lights | 3 |
 | Max particles (active) | 300 |
 | Tessellation (curved surfaces) | 24–32 |
-| GlowLayer intensity | 1.0–1.5 |
+| GlowLayer intensity | 1.0–1.5 (opt-in only — requires `addIncludedOnlyMesh()`) |
 | Blur kernel (shadows) | 16 |
 | Post-process passes | FXAA + tone mapping only |
 
@@ -184,8 +184,10 @@ const matGlass  = pbr("glass",  "#aaddff", 0.05, 0.0);   // very smooth
 | Chalk | 0.95 | 0.0 | Subtle emissive for glow |
 
 ### Emissive & Glow
-- Set `material.emissiveColor` for objects that should glow via the GlowLayer
-- Keep emissive subtle (0.05–0.2 per channel) unless the object is a light source or indicator
+- **Do NOT set `emissiveColor` on PBR materials by default.** Only add emissive to meshes that are explicitly whitelisted in a GlowLayer via `addIncludedOnlyMesh()`.
+- If no GlowLayer is used, emissive on PBR materials is unnecessary — use `albedoColor` + the three-light recipe for proper appearance.
+- Self-lit elements (labels, text planes) use `emissiveColor` with `disableLighting = true` on StandardMaterial — this is fine, but these meshes must NEVER be added to a GlowLayer.
+- If you do use emissive for glow, keep values subtle (0.05–0.15 per channel).
 
 ---
 
@@ -368,12 +370,25 @@ pipeline.imageProcessing.toneMappingEnabled = true;
 
 ### GlowLayer
 
-```javascript
-const glow = new BABYLON.GlowLayer("glow", scene);
-glow.intensity = 1.2;
+**CRITICAL: GlowLayer blooms ALL meshes with `emissiveColor` by default.** If you create a GlowLayer without restricting it, every PBR material with emissive, every self-lit label, and every StandardMaterial with emissive will bloom — turning labels into unreadable white blobs and flooding the scene with light.
 
-// Limit glow to specific meshes:
-glow.addIncludedOnlyMesh(myGlowingMesh);
+**Rules:**
+1. **ALWAYS use `addIncludedOnlyMesh()`** to whitelist only the specific meshes that should glow. Never rely on the default "glow everything with emissive" behavior.
+2. **NEVER add labels/text planes** to the GlowLayer — they use `emissiveColor` for self-lit display, not for bloom.
+3. **Do NOT set `emissiveColor` on PBR materials** unless the mesh is explicitly added to the GlowLayer's include list. Use `albedoColor` + proper lighting instead.
+4. **If no meshes need bloom, skip GlowLayer entirely.** Educational/exploratory sims rarely need it.
+
+```javascript
+// CORRECT — opt-in glow on specific meshes only
+const glow = new BABYLON.GlowLayer("glow", scene);
+glow.intensity = 1.0;
+glow.addIncludedOnlyMesh(glowingOrb);  // ONLY this mesh blooms
+glowingOrb.material.emissiveColor = new BABYLON.Color3(0.1, 0.3, 0.1);
+
+// WRONG — blanket glow that blooms everything
+// const glow = new BABYLON.GlowLayer("glow", scene);
+// glow.intensity = 1.2;
+// (now every emissive material in the scene blooms uncontrollably)
 ```
 
 ### HighlightLayer
