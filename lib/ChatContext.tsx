@@ -47,7 +47,10 @@ export const ChatProvider: React.FC<{ user: User; children: React.ReactNode }> =
   }, []);
 
   // Subscribe to recent messages for per-channel unread detection
+  // Students can't query class_messages without a channelId filter (Firestore rules),
+  // so we only subscribe for admin. Per-channel unread can be added later if needed.
   useEffect(() => {
+    if (user.role !== UserRole.ADMIN) return;
     const unsub = dataService.subscribeToRecentMessages((msgs) => {
       const newUnread = new Set<string>();
       const lastSeen = channelLastSeenRef.current;

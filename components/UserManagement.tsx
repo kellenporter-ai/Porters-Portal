@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser } from '../types';
+import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser, getUserSectionForClass } from '../types';
 import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
 import { dataService } from '../services/dataService';
@@ -130,7 +130,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                     className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/20'}`}
                   >
                     {student.classSections && Object.keys(student.classSections).length > 0
-                      ? Object.values(student.classSections).filter(Boolean).join(', ') || 'Assign'
+                      ? [...new Set(Object.values(student.classSections).filter(Boolean))].join(', ') || 'Assign'
                       : student.section || 'Assign'}
                   </button>
                 )}
@@ -190,11 +190,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const [isEditingGroup, setIsEditingGroup] = useState(false);
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupFeatures, setGroupFeatures] = useState({
-      physicsLab: true,
       evidenceLocker: false,
       leaderboard: true,
       physicsTools: false,
-      communications: true
+      communications: true,
+      dungeons: true,
+      pvpArena: true,
+      bossFights: true
   });
   const [groupXpPerMinute, setGroupXpPerMinute] = useState<number>(10);
 
@@ -238,12 +240,14 @@ const UserManagement: React.FC<UserManagementProps> = ({
     }
   };
 
-  const handleBulkSetSection = async (section: string) => {
+  const handleBulkSetSection = async (section: string, classType?: string) => {
     if (selectedUsers.size === 0) return;
     try {
-      await Promise.all(Array.from(selectedUsers).map(id => dataService.updateUserSection(id, section)));
+      await Promise.all(Array.from(selectedUsers).map(id =>
+        classType ? dataService.updateUserClassSection(id, classType, section) : dataService.updateUserSection(id, section)
+      ));
       setSelectedUsers(new Set());
-      toast.success(`Set ${selectedUsers.size} students to ${section}`);
+      toast.success(`Set ${selectedUsers.size} students to ${section}${classType ? ` for ${classType}` : ''}`);
     } catch {
       toast.error('Failed to bulk update sections');
     }
@@ -353,7 +357,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           setGroupFeatures(config.features);
           setGroupXpPerMinute(config.xpPerMinute || 10);
       } else {
-          setGroupFeatures({ physicsLab: true, evidenceLocker: false, leaderboard: true, physicsTools: false, communications: true });
+          setGroupFeatures({ evidenceLocker: false, leaderboard: true, physicsTools: false, communications: true, dungeons: true, pvpArena: true, bossFights: true });
           setGroupXpPerMinute(10);
       }
       setIsGroupModalOpen(true);
@@ -362,9 +366,9 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const handleWhitelistSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onWhitelist(newEmail, newClass);
-    // Store section in whitelist doc if provided
+    // Store section in whitelist doc if provided (class-aware)
     if (newSection.trim()) {
-        dataService.updateWhitelistSection(newEmail, newSection.trim());
+        dataService.updateWhitelistSection(newEmail, newSection.trim(), newClass);
     }
     setNewEmail('');
     setNewSection('');
@@ -414,7 +418,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       try {
         await dataService.addToWhitelist(row.email, row.classType);
         if (row.section) {
-          await dataService.updateWhitelistSection(row.email, row.section);
+          await dataService.updateWhitelistSection(row.email, row.section, row.classType);
         }
         row.status = 'success';
         successCount++;
@@ -466,7 +470,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         (isUncategorized && (!s.enrolledClasses || s.enrolledClasses.length === 0))
     )].sort((a, b) => {
         switch (sort.col) {
-            case 'section': { const av = a.section || ''; const bv = b.section || ''; return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
+            case 'section': { const av = getUserSectionForClass(a, type) || ''; const bv = getUserSectionForClass(b, type) || ''; return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
             case 'status': { const av = a.isWhitelisted ? 1 : 0; const bv = b.isWhitelisted ? 1 : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
             case 'lastSeen': { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
             case 'xp': { const av = a.gamification?.classXp?.[type] || 0; const bv = b.gamification?.classXp?.[type] || 0; return sort.dir === 'asc' ? av - bv : bv - av; }
@@ -501,7 +505,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 <>
                   <div className="flex items-center gap-1">
                     <select
-                      onChange={e => { if (e.target.value) handleBulkSetSection(e.target.value); e.target.value = ''; }}
+                      onChange={e => { if (e.target.value) handleBulkSetSection(e.target.value, type); e.target.value = ''; }}
                       className="bg-black/40 border border-purple-500/30 text-purple-400 text-[11px] font-bold px-2 py-1.5 rounded-lg appearance-none focus:outline-none cursor-pointer"
                       defaultValue=""
                     >
@@ -603,7 +607,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <button 
                 onClick={() => {
                     setGroupName('');
-                    setGroupFeatures({ physicsLab: true, evidenceLocker: false, leaderboard: true, physicsTools: false, communications: true });
+                    setGroupFeatures({ evidenceLocker: false, leaderboard: true, physicsTools: false, communications: true, dungeons: true, pvpArena: true, bossFights: true });
                     setIsEditingGroup(false);
                     setIsGroupModalOpen(true);
                 }}
@@ -851,10 +855,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Modular Feature Access</label>
                   <div className="space-y-3">
                       <label className="flex items-center gap-3 cursor-pointer group">
-                          <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.physicsLab} onChange={e => setGroupFeatures({...groupFeatures, physicsLab: e.target.checked})} />
-                          <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Physics Lab (Simulations & Reports)</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer group">
                           <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.evidenceLocker} onChange={e => setGroupFeatures({...groupFeatures, evidenceLocker: e.target.checked})} />
                           <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Evidence Log (Weekly Portfolio)</span>
                       </label>
@@ -869,6 +869,18 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <label className="flex items-center gap-3 cursor-pointer group">
                           <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.communications} onChange={e => setGroupFeatures({...groupFeatures, communications: e.target.checked})} />
                           <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Real-time Class Communications</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                          <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.dungeons} onChange={e => setGroupFeatures({...groupFeatures, dungeons: e.target.checked})} />
+                          <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Dungeon Expeditions</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                          <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.pvpArena} onChange={e => setGroupFeatures({...groupFeatures, pvpArena: e.target.checked})} />
+                          <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">PvP Arena</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                          <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.bossFights} onChange={e => setGroupFeatures({...groupFeatures, bossFights: e.target.checked})} />
+                          <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Boss Fights</span>
                       </label>
                   </div>
               </div>

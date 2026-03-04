@@ -31,7 +31,6 @@ export const STUDENT_ROUTES = {
   ARENA: '/arena',
   DEPLOY: '/deploy',
   FORENSICS: '/forensics',
-  PHYSICS_LAB: '/physics-lab',
   LEADERBOARD: '/leaderboard',
 } as const;
 
@@ -86,7 +85,6 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Arena': STUDENT_ROUTES.ARENA,
   'Deploy': STUDENT_ROUTES.DEPLOY,
   'Forensics': STUDENT_ROUTES.FORENSICS,
-  'Physics Lab': STUDENT_ROUTES.PHYSICS_LAB,
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
 };
 

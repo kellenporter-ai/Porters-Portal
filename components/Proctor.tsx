@@ -442,7 +442,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       };
   }, [handleKeyDown, handlePaste, handleClick, handleInteraction]);
 
-  // Assessment: Track tab switches
+  // Assessment: Track tab switches (visibilitychange only — blur fires on iframe focus)
   useEffect(() => {
     if (!isAssessment) return;
     const handleVisibilityChange = () => {
@@ -451,15 +451,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         setTabSwitchCount(metricsRef.current.tabSwitchCount);
       }
     };
-    const handleBlur = () => {
-      metricsRef.current.tabSwitchCount = (metricsRef.current.tabSwitchCount || 0) + 1;
-      setTabSwitchCount(metricsRef.current.tabSwitchCount);
-    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
     };
   }, [isAssessment]);
 

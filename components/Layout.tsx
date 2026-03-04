@@ -10,6 +10,7 @@ import { ref, getDownloadURL } from 'firebase/storage';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
 import { dataService } from '../services/dataService';
+import { useAppData } from '../lib/AppDataContext';
 
 interface LayoutProps {
   user: User;
@@ -71,9 +72,17 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, [activeTab]);
 
   const NavItems = () => {
+    const { enabledFeatures } = useAppData();
+
+    const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
+      'Dungeons': 'dungeons',
+      'Arena': 'pvpArena',
+    };
+
     const filteredItems = NAVIGATION.filter(item => {
       if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return false;
       if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return false;
+      if (user.role === UserRole.STUDENT && featureNavMap[item.name] && !enabledFeatures[featureNavMap[item.name]]) return false;
       return true;
     });
 

@@ -34,7 +34,6 @@ const PhysicsTools = lazy(() => import('./components/PhysicsTools'));
 const Communications = lazy(() => import('./components/Communications'));
 const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
 const EvidenceLocker = lazy(() => import('./components/EvidenceLocker'));
-const PhysicsLab = lazy(() => import('./components/PhysicsLab'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
 const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
@@ -437,9 +436,6 @@ const App: React.FC = () => {
           } />
           <Route path="/forensics" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/physics-lab" element={
-            <Suspense fallback={<LazyFallback />}><PhysicsLab user={user} /></Suspense>
           } />
           <Route path="/leaderboard" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Leaderboard"><Leaderboard user={user} /></FeatureErrorBoundary></Suspense>

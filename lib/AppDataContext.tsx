@@ -8,7 +8,7 @@ interface AppData {
   classConfigs: ClassConfig[];
   xpEvents: XPEvent[];
   quests: Quest[];
-  enabledFeatures: { physicsLab: boolean; evidenceLocker: boolean; leaderboard: boolean; physicsTools: boolean; communications: boolean };
+  enabledFeatures: { evidenceLocker: boolean; leaderboard: boolean; physicsTools: boolean; communications: boolean; dungeons: boolean; pvpArena: boolean; bossFights: boolean };
 }
 
 const AppDataContext = createContext<AppData | null>(null);
@@ -45,7 +45,7 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
   }, [user.id, user.isWhitelisted, user.role]);
 
   const enabledFeatures = useMemo(() => {
-    const defaults = { physicsLab: true, evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true };
+    const defaults = { evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true, dungeons: true, pvpArena: true, bossFights: true };
     if (user.role === 'STUDENT' && user.classType) {
       const config = classConfigs.find(c => c.className === user.classType);
       if (config) return config.features;

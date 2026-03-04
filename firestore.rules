@@ -252,8 +252,9 @@ service cloud.firestore {
     // Saved by the parent app (authenticated) when HTML practice sets
     // send portal-save messages. Doc ID = userId_assignmentId.
     match /practice_progress/{docId} {
+      // resource == null handles getDoc() on non-existent docs (first visit)
       allow read: if isAuthenticated() &&
-        (resource.data.userId == request.auth.uid || isAdmin());
+        (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
       allow create, update: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid;
     }
@@ -264,8 +265,9 @@ service cloud.firestore {
     // Saved by the parent app when students interact with lesson blocks.
     // Doc ID = userId_assignmentId_blocks.
     match /lesson_block_responses/{docId} {
+      // resource == null handles getDoc() on non-existent docs (first visit)
       allow read: if isAuthenticated() &&
-        (resource.data.userId == request.auth.uid || isAdmin());
+        (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
       allow create, update: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid;
     }

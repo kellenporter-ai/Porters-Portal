@@ -8,9 +8,12 @@ import {
   ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield
 } from 'lucide-react';
 import { useDebounce } from '../lib/rateLimiting';
-import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, getSectionsForClass } from '../types';
+import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass } from '../types';
+import { parseRubricMarkdown, validateRubric } from '../lib/rubricParser';
 import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
+
+const RubricViewer = React.lazy(() => import('./RubricViewer'));
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
@@ -245,6 +248,9 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [isUploading, setIsUploading] = useState(false);
   const [isAssessment, setIsAssessment] = useState(false);
   const [assessmentConfig, setAssessmentConfig] = useState({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true });
+  const [rubricMarkdown, setRubricMarkdown] = useState('');
+  const [parsedRubric, setParsedRubric] = useState<Rubric | null>(null);
+  const [rubricErrors, setRubricErrors] = useState<string[]>([]);
 
   const classSections = useMemo(() => {
     const firstClass = Array.from(resClasses)[0];
@@ -334,6 +340,9 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setResDueDate(assignment.dueDate ? assignment.dueDate.slice(0, 16) : '');
       setIsAssessment(assignment.isAssessment || false);
       setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true, ...assignment.assessmentConfig });
+      setRubricMarkdown(assignment.rubric?.rawMarkdown || '');
+      setParsedRubric(assignment.rubric || null);
+      setRubricErrors([]);
       setExpandedBlock(null);
       setPreviewMode(false);
       setHasUnsavedChanges(false);
@@ -356,6 +365,9 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     setResDueDate('');
     setIsAssessment(false);
     setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true });
+    setRubricMarkdown('');
+    setParsedRubric(null);
+    setRubricErrors([]);
     setExpandedBlock(null);
     setPreviewMode(false);
     setHasUnsavedChanges(false);
@@ -410,13 +422,14 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       contentUrl: resContentUrl,
       isAssessment,
       assessmentConfig: isAssessment ? assessmentConfig : undefined,
+      rubric: isAssessment && parsedRubric ? parsedRubric : undefined,
     };
     if (resSections.length > 0) base.targetSections = resSections;
     if (scheduledAt) base.scheduledAt = new Date(scheduledAt).toISOString();
     if (resDueDate) base.dueDate = new Date(resDueDate).toISOString();
     if (selectedAssignment?.id && !isNewResource) base.id = selectedAssignment.id;
     return base;
-  }, [resTitle, resDescription, resUnit, resCategory, blocks, resContentUrl, resSections, resDueDate, selectedAssignment, isNewResource, isAssessment, assessmentConfig]);
+  }, [resTitle, resDescription, resUnit, resCategory, blocks, resContentUrl, resSections, resDueDate, selectedAssignment, isNewResource, isAssessment, assessmentConfig, parsedRubric]);
 
   const handleDeploy = useCallback(async (status: AssignmentStatus, scheduledAt?: string) => {
     if (!resTitle.trim()) { toast.error('Title is required.'); return; }
@@ -721,6 +734,57 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                           <input type="checkbox" checked={assessmentConfig.showScoreOnSubmit} onChange={e => { setAssessmentConfig(prev => ({ ...prev, showScoreOnSubmit: e.target.checked })); setHasUnsavedChanges(true); }} className="rounded bg-black/40 border-white/20 text-purple-500" />
                           Show score on submit
                         </label>
+
+                        {/* Rubric Import */}
+                        <div className="mt-2 pt-2 border-t border-white/5">
+                          <label className="text-[11px] text-gray-300 font-bold flex items-center gap-1.5 mb-1.5">
+                            <BookOpen className="w-3 h-3 text-amber-400" /> Assessment Rubric
+                          </label>
+                          <textarea
+                            value={rubricMarkdown}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setRubricMarkdown(val);
+                              setHasUnsavedChanges(true);
+                              if (val.trim()) {
+                                const parsed = parseRubricMarkdown(val);
+                                const errors = validateRubric(parsed);
+                                setParsedRubric(errors.length === 0 ? parsed : null);
+                                setRubricErrors(errors);
+                              } else {
+                                setParsedRubric(null);
+                                setRubricErrors([]);
+                              }
+                            }}
+                            placeholder="Paste rubric markdown here..."
+                            rows={4}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 font-mono resize-y focus:outline-none focus:border-purple-500/50 transition"
+                          />
+                          {rubricErrors.length > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {rubricErrors.map((err, i) => (
+                                <div key={i} className="text-[10px] text-red-400">{err}</div>
+                              ))}
+                            </div>
+                          )}
+                          {parsedRubric && (
+                            <div className="mt-1 text-[10px] text-green-400">
+                              Rubric parsed: {parsedRubric.questions.length} question{parsedRubric.questions.length !== 1 ? 's' : ''}, {parsedRubric.questions.reduce((acc, q) => acc + q.skills.length, 0)} skill{parsedRubric.questions.reduce((acc, q) => acc + q.skills.length, 0) !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                          {parsedRubric && (
+                            <details className="mt-2">
+                              <summary className="text-[10px] text-gray-500 cursor-pointer hover:text-gray-300 transition">
+                                Preview rubric
+                              </summary>
+                              <div className="mt-2 max-h-64 overflow-y-auto custom-scrollbar">
+                                <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading preview...</div>}>
+                                  <RubricViewer rubric={parsedRubric} mode="view" />
+                                </React.Suspense>
+                              </div>
+                            </details>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

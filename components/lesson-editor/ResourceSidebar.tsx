@@ -3,7 +3,7 @@ import { Assignment, AssignmentStatus, ClassConfig, ResourceCategory } from '../
 import {
   Plus, ChevronDown, ChevronRight, Search, Filter, ArrowUpDown,
   ChevronUp, Rocket, Archive, Eye, Trash2, CalendarClock, Layers,
-  BookOpen, PlayCircle, FlaskConical, Target, Newspaper, Video
+  BookOpen, PlayCircle, FlaskConical, Target, Newspaper, Video, Shield
 } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
 import { dataService } from '../../services/dataService';
@@ -125,7 +125,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
       if (existing) {
         await dataService.saveClassConfig({ ...existing, unitOrder: pendingOrder });
       } else {
-        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: pendingOrder, features: { physicsLab: false, evidenceLocker: false, leaderboard: false, physicsTools: false, communications: false } } as ClassConfig);
+        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: pendingOrder, features: { evidenceLocker: false, leaderboard: false, physicsTools: false, communications: false, dungeons: true, pvpArena: true, bossFights: true } } as ClassConfig);
       }
       toast.success('Unit order saved!');
       setPendingOrder(null);
@@ -271,15 +271,20 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                   key={a.id}
                                   onMouseEnter={() => setHoverResourceId(a.id)}
                                   onMouseLeave={() => setHoverResourceId(null)}
-                                  className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
+                                  className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${
+                                    selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30'
+                                    : a.isAssessment ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10'
+                                    : 'hover:bg-white/5 border border-transparent'
+                                  }`}
                                 >
                                   <button
                                     onClick={() => onSelectResource(a.id)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-gray-400 hover:text-gray-200'}`}
                                   >
-                                    {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                                    {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                                     <span className="truncate flex-1">{a.title}</span>
                                     <div className="flex items-center gap-1 shrink-0">
+                                      {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
                                       {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
                                       {compactDate && <span className="text-[8px] text-gray-600 font-mono">{compactDate}</span>}
                                       {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
@@ -344,15 +349,20 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                       key={a.id}
                       onMouseEnter={() => setHoverResourceId(a.id)}
                       onMouseLeave={() => setHoverResourceId(null)}
-                      className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30' : 'hover:bg-white/5 border border-transparent'}`}
+                      className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${
+                        selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30'
+                        : a.isAssessment ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10'
+                        : 'hover:bg-white/5 border border-transparent'
+                      }`}
                     >
                       <button
                         onClick={() => onSelectResource(a.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : 'text-gray-400 hover:text-gray-200'}`}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-gray-400 hover:text-gray-200'}`}
                       >
-                        {catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                        {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate flex-1">{a.title}</span>
                         <div className="flex items-center gap-1 shrink-0">
+                          {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
                           {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
                           {compactDate && <span className="text-[8px] text-gray-600 font-mono">{compactDate}</span>}
                           {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
