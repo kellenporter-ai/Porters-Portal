@@ -94,3 +94,7 @@ export const callClaimIdleMission = httpsCallable(functions, 'claimIdleMission')
 // PvP Arena Cloud Functions
 export const callQueueArenaDuel = httpsCallable(functions, 'queueArenaDuel');
 export const callCancelArenaQueue = httpsCallable(functions, 'cancelArenaQueue');
+
+// AI Generation Cloud Functions
+export const callGenerateBossWithAI = httpsCallable(functions, 'generateBossWithAI');
+export const callGenerateDungeonWithAI = httpsCallable(functions, 'generateDungeonWithAI');

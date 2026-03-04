@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity } from '../../types';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
+import { callGenerateDungeonWithAI } from '../../lib/firebase';
 import { useToast } from '../ToastProvider';
 import Modal from '../Modal';
 
@@ -314,6 +315,14 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
   const [form, setForm] = useState<DungeonFormState>(emptyForm());
   const [saving, setSaving] = useState(false);
 
+  // AI Generation state
+  const [aiMode, setAiMode] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiClass, setAiClass] = useState('AP_PHYSICS');
+  const [aiDifficulty, setAiDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
+  const [aiNumRooms, setAiNumRooms] = useState(8);
+  const [aiGenerating, setAiGenerating] = useState(false);
+
   // Populate form when opening
   useEffect(() => {
     if (!isOpen) return;
@@ -370,6 +379,63 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
     setForm(prev => ({ ...prev, rooms: [...prev.rooms, emptyRoom()] }));
   };
 
+  // --- AI Dungeon Generation ---
+  const handleAIGenerate = async () => {
+    if (!aiTopic.trim()) { toast.error('Enter a topic for the dungeon.'); return; }
+    setAiGenerating(true);
+    try {
+      const result = await callGenerateDungeonWithAI({
+        topic: aiTopic.trim(),
+        classType: aiClass,
+        numRooms: aiNumRooms,
+        difficulty: aiDifficulty,
+      });
+      const dungeon = result.data as Record<string, unknown>;
+
+      // Populate form with AI-generated data
+      setForm({
+        name: (dungeon.name as string) || '',
+        description: (dungeon.description as string) || '',
+        classType: aiClass,
+        targetSections: '',
+        rooms: ((dungeon.rooms as Array<Record<string, unknown>>) || []).map(r => ({
+          id: (r.id as string) || Math.random().toString(36).substring(2, 10),
+          name: (r.name as string) || 'Room',
+          description: (r.description as string) || '',
+          type: (ROOM_TYPES.includes(r.type as DungeonRoomType) ? r.type : 'COMBAT') as DungeonRoomType,
+          difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(r.difficulty as string) ? r.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
+          enemyHp: (r.enemyHp as number) || 200,
+          enemyDamage: (r.enemyDamage as number) || 20,
+          enemyName: (r.enemyName as string) || '',
+          healAmount: (r.healAmount as number) || 30,
+          questions: ((r.questions as Array<Record<string, unknown>>) || []).map(q => ({
+            id: (q.id as string) || Math.random().toString(36).substring(2, 10),
+            stem: (q.stem as string) || '',
+            options: (q.options as string[]) || ['', '', '', ''],
+            correctAnswer: (q.correctAnswer as number) ?? 0,
+            difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
+            damageBonus: (q.damageBonus as number) || 0,
+          })),
+        })),
+        rewardXp: (dungeon.rewards as Record<string, unknown>)?.xp as number || 500,
+        rewardFlux: (dungeon.rewards as Record<string, unknown>)?.flux as number || 100,
+        rewardItemRarity: ((dungeon.rewards as Record<string, unknown>)?.itemRarity as string) || '',
+        minLevel: (dungeon.minLevel as number) || 0,
+        minGearScore: (dungeon.minGearScore as number) || 0,
+        resetsAt: 'WEEKLY',
+        isActive: true,
+      });
+
+      setAiMode(false);
+      const roomCount = ((dungeon.rooms as unknown[]) || []).length;
+      toast.success(`Dungeon "${dungeon.name}" generated with ${roomCount} rooms!`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'AI generation failed. Try again.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Dungeon name is required'); return; }
     if (form.rooms.length === 0) { toast.error('At least one room is required'); return; }
@@ -421,6 +487,91 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingDungeon ? 'Edit Dungeon' : 'New Dungeon'} maxWidth="max-w-2xl">
       <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+
+        {/* AI Generation Panel */}
+        {!editingDungeon && (
+          <div className="border border-purple-500/20 rounded-xl bg-purple-500/5 overflow-hidden">
+            <button
+              type="button"
+              aria-expanded={aiMode}
+              onClick={() => setAiMode(!aiMode)}
+              className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-purple-500/10 transition"
+            >
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-bold text-purple-300">Generate with AI</span>
+              <span className="text-[10px] text-purple-500 ml-1">Auto-create rooms, monsters, questions & rewards</span>
+              <span className={`ml-auto text-purple-500 text-xs transition-transform ${aiMode ? 'rotate-180' : ''}`}>&#9660;</span>
+            </button>
+
+            {aiMode && (
+              <div className="px-4 pb-4 space-y-3 border-t border-purple-500/10">
+                <div className="pt-3">
+                  <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Topic / Subject</label>
+                  <input
+                    value={aiTopic}
+                    onChange={e => setAiTopic(e.target.value)}
+                    placeholder="e.g. Kinematics, Wave Mechanics, Fingerprint Analysis..."
+                    className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-3 text-white placeholder-gray-600 focus:border-purple-500/40 transition"
+                    disabled={aiGenerating}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Class</label>
+                    <select
+                      value={aiClass}
+                      onChange={e => setAiClass(e.target.value)}
+                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
+                      disabled={aiGenerating}
+                    >
+                      {CLASS_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Difficulty</label>
+                    <select
+                      value={aiDifficulty}
+                      onChange={e => setAiDifficulty(e.target.value as 'EASY' | 'MEDIUM' | 'HARD')}
+                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
+                      disabled={aiGenerating}
+                    >
+                      <option value="EASY">Easy</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HARD">Hard</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-purple-400 uppercase mb-1">Rooms</label>
+                    <input
+                      type="number"
+                      min={4}
+                      max={15}
+                      value={aiNumRooms}
+                      onChange={e => setAiNumRooms(Number(e.target.value) || 8)}
+                      className="w-full bg-black/40 border border-purple-500/20 rounded-xl p-2.5 text-white text-sm"
+                      disabled={aiGenerating}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAIGenerate}
+                  disabled={aiGenerating || !aiTopic.trim()}
+                  className="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white shadow-lg shadow-purple-500/20"
+                >
+                  {aiGenerating ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Generating dungeon...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Generate Complete Dungeon</>
+                  )}
+                </button>
+                {aiGenerating && (
+                  <p className="text-[10px] text-purple-500 text-center">AI is designing rooms, monsters & questions. This may take 15-30 seconds.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Basic info */}
         <div className="space-y-3">

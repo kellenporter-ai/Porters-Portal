@@ -1,8 +1,12 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 
 admin.initializeApp();
@@ -4912,4 +4916,245 @@ export const cancelArenaQueue = onCall(async (request) => {
 
   await matchRef.delete();
   return { cancelled: true };
+});
+
+// ==========================================
+// AI GENERATION — Boss & Dungeon
+// ==========================================
+
+function getGeminiModel() {
+  const key = geminiApiKey.value();
+  if (!key) throw new HttpsError("failed-precondition", "Gemini API key not configured.");
+  const genAI = new GoogleGenerativeAI(key);
+  return genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+}
+
+/**
+ * generateBossWithAI — Generates a complete boss encounter using Gemini.
+ * Admin-only. Returns boss config ready for the form.
+ */
+export const generateBossWithAI = onCall({ secrets: [geminiApiKey], timeoutSeconds: 120 }, async (request) => {
+  await verifyAdmin(request.auth);
+  const { topic: rawTopic, classType, difficulty, numQuestions } = request.data;
+  if (!rawTopic) throw new HttpsError("invalid-argument", "Topic is required.");
+  const topic = String(rawTopic).slice(0, 300);
+
+  const classLabel = classType === "AP_PHYSICS" ? "AP Physics 1" :
+    classType === "HONORS_PHYSICS" ? "Honors Physics" :
+    classType === "FORENSIC_SCIENCE" ? "Forensic Science" : "General Science";
+
+  const diffLabel = difficulty || "NORMAL";
+  const qCount = Math.min(Math.max(numQuestions || 20, 10), 40);
+
+  const prompt = `You are an expert game designer AND educational assessment specialist. Generate a complete boss encounter for a gamified high school LMS.
+
+TOPIC: "${topic}"
+CLASS: ${classLabel}
+DIFFICULTY TIER: ${diffLabel}
+QUESTION COUNT: ${qCount}
+
+Generate a complete boss with the following JSON structure. Respond with ONLY valid JSON, no markdown fences, no commentary:
+
+{
+  "bossName": "A creative, thematic boss name related to the topic",
+  "description": "2-3 sentence dramatic description of the boss and the encounter theme",
+  "maxHp": <number: scale with difficulty — NORMAL: 800-1500, HARD: 2000-3500, NIGHTMARE: 4000-6000, APOCALYPSE: 8000-12000>,
+  "damagePerCorrect": <number: NORMAL: 40-60, HARD: 30-50, NIGHTMARE: 25-40, APOCALYPSE: 20-35>,
+  "bossType": <"BRUTE" | "PHANTOM" | "SERPENT" — pick one that fits thematically>,
+  "bossHue": <0-360: pick a color that fits the boss theme>,
+  "difficultyTier": "${diffLabel}",
+  "modifiers": [
+    { "type": "<modifier type>", "value": <optional number> }
+  ],
+  "phases": [
+    {
+      "name": "Phase name",
+      "hpThreshold": <1-99: % HP when this phase triggers>,
+      "dialogue": "Boss says something dramatic",
+      "damagePerCorrect": <optional override>,
+      "bossAppearance": { "bossType": "<type>", "hue": <0-360> }
+    }
+  ],
+  "bossAbilities": [
+    {
+      "id": "<random 6 char string>",
+      "name": "Ability name",
+      "description": "What it does",
+      "trigger": "<ON_PHASE | EVERY_N_QUESTIONS | HP_THRESHOLD | RANDOM_CHANCE>",
+      "triggerValue": <number>,
+      "effect": "<AOE_DAMAGE | HEAL_BOSS | ENRAGE | SILENCE | FOCUS_FIRE>",
+      "value": <number>,
+      "duration": <0 for instant, or number of questions>
+    }
+  ],
+  "lootTable": [
+    {
+      "id": "<random 6 char string>",
+      "itemName": "Thematic item name",
+      "slot": "<HEAD | CHEST | HANDS | FEET | BELT | AMULET | RING>",
+      "rarity": "<UNCOMMON | RARE | UNIQUE>",
+      "stats": { "tech": <0-15>, "focus": <0-15>, "analysis": <0-15>, "charisma": <0-15> },
+      "dropChance": <10-80>,
+      "isExclusive": true
+    }
+  ],
+  "rewards": { "xp": <300-1500>, "flux": <50-500>, "itemRarity": "<UNCOMMON | RARE | UNIQUE>" },
+  "questions": [
+    {
+      "id": "<unique id like q001>",
+      "stem": "Question text related to ${classLabel} topic: ${topic}",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": <0-3>,
+      "difficulty": "<EASY | MEDIUM | HARD>",
+      "damageBonus": <EASY: 0, MEDIUM: 25, HARD: 50>
+    }
+  ]
+}
+
+RULES:
+- Generate exactly ${qCount} questions split roughly: 30% EASY, 40% MEDIUM, 30% HARD
+- Questions must be accurate, educational, and specific to ${classLabel} material on "${topic}"
+- Each question needs exactly 4 plausible options with 1 correct answer
+- "correctAnswer" is the 0-based index (0=A, 1=B, 2=C, 3=D)
+- For NORMAL difficulty: 0-1 phases, 1-2 abilities, 1-2 modifiers, 1-2 loot items
+- For HARD: 1-2 phases, 2-3 abilities, 2-3 modifiers, 2-3 loot items
+- For NIGHTMARE: 2-3 phases, 3-4 abilities, 3-5 modifiers, 2-4 loot items
+- For APOCALYPSE: 3-4 phases, 4-5 abilities, 4-6 modifiers, 3-5 loot items
+- Available modifier types: PLAYER_DAMAGE_BOOST, BOSS_DAMAGE_BOOST, HARD_ONLY, DOUBLE_OR_NOTHING, CRIT_SURGE, ARMOR_BREAK, HEALING_WAVE, SHIELD_WALL, STREAK_BONUS, GLASS_CANNON, LAST_STAND, TIME_PRESSURE
+- Loot item stats should be thematically appropriate (e.g. analysis-heavy for science topics)
+- Boss phases should have descending hpThreshold values (e.g. 75, 50, 25)
+- Make the boss name, abilities, and loot items creative and thematically tied to the topic
+- Output ONLY the JSON object — no markdown fences, no commentary`;
+
+  try {
+    const model = getGeminiModel();
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    // Parse JSON, stripping markdown fences if present
+    let cleaned = text.replace(/```json\s*|```\s*/g, "").trim();
+    const objMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!objMatch) throw new Error("No JSON object found in response");
+    cleaned = objMatch[0];
+
+    const boss = JSON.parse(cleaned);
+
+    // Validate essential fields
+    if (!boss.bossName || !boss.questions || !Array.isArray(boss.questions)) {
+      throw new Error("Invalid boss structure returned");
+    }
+
+    logger.info(`Generated boss "${boss.bossName}" with ${boss.questions.length} questions for topic "${topic}"`);
+    return boss;
+  } catch (err) {
+    logger.error("Boss generation failed:", err);
+    throw new HttpsError("internal", `AI generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+  }
+});
+
+/**
+ * generateDungeonWithAI — Generates a complete dungeon using Gemini.
+ * Admin-only. Returns dungeon config ready for the form.
+ */
+export const generateDungeonWithAI = onCall({ secrets: [geminiApiKey], timeoutSeconds: 120 }, async (request) => {
+  await verifyAdmin(request.auth);
+  const { topic: rawTopic, classType, numRooms, difficulty } = request.data;
+  if (!rawTopic) throw new HttpsError("invalid-argument", "Topic is required.");
+  const topic = String(rawTopic).slice(0, 300);
+
+  const classLabel = classType === "AP_PHYSICS" ? "AP Physics 1" :
+    classType === "HONORS_PHYSICS" ? "Honors Physics" :
+    classType === "FORENSIC_SCIENCE" ? "Forensic Science" : "General Science";
+
+  const roomCount = Math.min(Math.max(numRooms || 8, 4), 15);
+  const diffLabel = difficulty || "MEDIUM";
+
+  const prompt = `You are an expert game designer AND educational assessment specialist. Generate a complete dungeon for a gamified high school LMS.
+
+TOPIC: "${topic}"
+CLASS: ${classLabel}
+NUMBER OF ROOMS: ${roomCount}
+OVERALL DIFFICULTY: ${diffLabel}
+
+Generate a complete dungeon with the following JSON structure. Respond with ONLY valid JSON, no markdown fences, no commentary:
+
+{
+  "name": "Creative dungeon name themed to the topic",
+  "description": "2-3 sentence atmospheric description of the dungeon",
+  "rooms": [
+    {
+      "id": "<random 8 char string>",
+      "name": "Room name",
+      "description": "Brief atmospheric description",
+      "type": "<COMBAT | PUZZLE | BOSS | REST | TREASURE>",
+      "difficulty": "<EASY | MEDIUM | HARD>",
+      "enemyHp": <number if COMBAT/BOSS, 0 otherwise>,
+      "enemyDamage": <number if COMBAT/BOSS, 0 otherwise>,
+      "enemyName": "<creative enemy name if COMBAT/BOSS, empty otherwise>",
+      "healAmount": <number if REST room, 0 otherwise>,
+      "questions": [
+        {
+          "id": "<unique id>",
+          "stem": "Question text",
+          "options": ["A", "B", "C", "D"],
+          "correctAnswer": <0-3>,
+          "difficulty": "<EASY | MEDIUM | HARD>",
+          "damageBonus": <0 | 25 | 50>
+        }
+      ]
+    }
+  ],
+  "rewards": { "xp": <300-1200>, "flux": <50-300>, "itemRarity": "<UNCOMMON | RARE>" },
+  "minLevel": <0-20 based on difficulty>,
+  "minGearScore": <0-100 based on difficulty>
+}
+
+ROOM DESIGN RULES:
+- Create exactly ${roomCount} rooms
+- Room progression should follow this pattern:
+  * Start with 1-2 EASY combat/puzzle rooms (warm up)
+  * Escalate through MEDIUM rooms with varied types
+  * Include 1-2 REST rooms spread through the middle for recovery
+  * Include 0-1 TREASURE rooms as optional rewards
+  * End with a BOSS room as the climax
+- COMBAT rooms: 3-5 questions each, enemy HP 100-400, enemy damage 10-40
+- PUZZLE rooms: 3-6 questions, no enemy stats
+- BOSS room: 5-8 questions, enemy HP 300-800, enemy damage 20-50, creative boss name
+- REST rooms: heal 20-50 HP, no questions
+- TREASURE rooms: no questions, no enemy
+- Total questions across all rooms: roughly 25-50
+- Difficulty scaling: EASY rooms at start → MEDIUM in middle → HARD near end
+- Each enemy name should be creative and thematically tied to "${topic}"
+- Questions must be accurate, educational, and specific to ${classLabel} material on "${topic}"
+- Each question needs exactly 4 plausible options with 1 correct answer
+- "correctAnswer" is the 0-based index (0=A, 1=B, 2=C, 3=D)
+- "damageBonus": EASY=0, MEDIUM=25, HARD=50
+- For ${diffLabel} overall difficulty:
+  * EASY: minLevel 0, minGearScore 0, more REST rooms, lower enemy stats
+  * MEDIUM: minLevel 5, minGearScore 25, balanced
+  * HARD: minLevel 10, minGearScore 50, fewer REST rooms, higher enemy stats
+- Output ONLY the JSON object — no markdown fences, no commentary`;
+
+  try {
+    const model = getGeminiModel();
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    let cleaned = text.replace(/```json\s*|```\s*/g, "").trim();
+    const objMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!objMatch) throw new Error("No JSON object found in response");
+    cleaned = objMatch[0];
+
+    const dungeon = JSON.parse(cleaned);
+
+    if (!dungeon.name || !dungeon.rooms || !Array.isArray(dungeon.rooms)) {
+      throw new Error("Invalid dungeon structure returned");
+    }
+
+    logger.info(`Generated dungeon "${dungeon.name}" with ${dungeon.rooms.length} rooms for topic "${topic}"`);
+    return dungeon;
+  } catch (err) {
+    logger.error("Dungeon generation failed:", err);
+    throw new HttpsError("internal", `AI generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+  }
 });
