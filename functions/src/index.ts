@@ -4188,18 +4188,24 @@ export const startDungeonRun = onCall(async (request) => {
     throw new HttpsError("failed-precondition", `Requires gear score ${dungeon.minGearScore}.`);
   }
 
-  // Check reset cooldown
+  // Check reset cooldown — query completed/failed runs separately to avoid complex composite index
   if (dungeon.resetsAt) {
-    const existingRuns = await db.collection('dungeon_runs')
+    const completedRuns = await db.collection('dungeon_runs')
       .where('userId', '==', uid)
       .where('dungeonId', '==', dungeonId)
-      .where('status', 'in', ['COMPLETED', 'FAILED'])
-      .orderBy('startedAt', 'desc')
-      .limit(1)
+      .where('status', '==', 'COMPLETED')
       .get();
+    const failedRuns = await db.collection('dungeon_runs')
+      .where('userId', '==', uid)
+      .where('dungeonId', '==', dungeonId)
+      .where('status', '==', 'FAILED')
+      .get();
+    const allFinished = [...completedRuns.docs, ...failedRuns.docs]
+      .map(d => d.data())
+      .sort((a, b) => (b.startedAt || '').localeCompare(a.startedAt || ''));
 
-    if (!existingRuns.empty) {
-      const lastRun = existingRuns.docs[0].data();
+    if (allFinished.length > 0) {
+      const lastRun = allFinished[0];
       const lastRunTime = new Date(lastRun.startedAt);
       const now = new Date();
 
