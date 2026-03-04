@@ -5,7 +5,7 @@ import {
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
-  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield
+  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield, Brain
 } from 'lucide-react';
 import { useDebounce } from '../lib/rateLimiting';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass } from '../types';
@@ -14,6 +14,7 @@ import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
 
 const RubricViewer = React.lazy(() => import('./RubricViewer'));
+const QuestionBankManager = React.lazy(() => import('./QuestionBankManager'));
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
@@ -234,6 +235,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showQuestionBank, setShowQuestionBank] = useState(false);
 
   // Resource settings state
   const [resTitle, setResTitle] = useState('');
@@ -347,6 +349,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setPreviewMode(false);
       setHasUnsavedChanges(false);
       setShowSettings(false);
+      setShowQuestionBank(false);
     }
   }, [assignments]);
 
@@ -372,6 +375,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     setPreviewMode(false);
     setHasUnsavedChanges(false);
     setShowSettings(true);
+    setShowQuestionBank(false);
   }, [availableClasses]);
 
   // Initialize with initialAssignmentId
@@ -789,6 +793,21 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                     )}
                   </div>
 
+                  {/* Review Questions */}
+                  {selectedAssignment && !isNewResource && (
+                    <button
+                      type="button"
+                      onClick={() => setShowQuestionBank(true)}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-teal-900/20 border border-teal-500/30 rounded-xl hover:bg-teal-900/30 transition"
+                    >
+                      <Brain aria-hidden="true" className="w-4 h-4 text-teal-400" />
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-teal-300">Review Questions</div>
+                        <div className="text-[10px] text-gray-400">Manage the conceptual review question bank for this resource</div>
+                      </div>
+                    </button>
+                  )}
+
                   {/* Deploy Actions */}
                   <div className="flex gap-2 pt-1">
                     <button type="button" disabled={isSaving} onClick={() => handleDeploy(AssignmentStatus.DRAFT)} className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-3 rounded-xl font-bold text-xs transition">
@@ -854,6 +873,16 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           )}
         </div>
       </div>
+      {/* Question Bank Manager Modal */}
+      {selectedAssignment && showQuestionBank && (
+        <React.Suspense fallback={null}>
+          <QuestionBankManager
+            assignment={selectedAssignment}
+            isOpen={showQuestionBank}
+            onClose={() => setShowQuestionBank(false)}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };
