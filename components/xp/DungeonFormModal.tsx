@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity } from '../../types';
+import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity, DefaultClassTypes } from '../../types';
 import { Plus, Trash2, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
@@ -39,7 +39,7 @@ interface DungeonFormState {
   isActive: boolean;
 }
 
-const CLASS_OPTIONS = ['AP_PHYSICS', 'HONORS_PHYSICS', 'FORENSIC_SCIENCE', 'GLOBAL'];
+const CLASS_OPTIONS = [...Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized'), 'GLOBAL'];
 const ROOM_TYPES: DungeonRoomType[] = ['COMBAT', 'PUZZLE', 'BOSS', 'REST', 'TREASURE'];
 const RARITIES: Array<ItemRarity | ''> = ['', 'COMMON', 'UNCOMMON', 'RARE', 'UNIQUE'];
 
@@ -59,7 +59,7 @@ const emptyRoom = (): DungeonFormRoom => ({
 const emptyForm = (): DungeonFormState => ({
   name: '',
   description: '',
-  classType: 'AP_PHYSICS',
+  classType: DefaultClassTypes.AP_PHYSICS,
   targetSections: '',
   rooms: [emptyRoom()],
   rewardXp: 500,
@@ -387,7 +387,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
       setForm({
         name: (dungeon.name as string) || '',
         description: (dungeon.description as string) || '',
-        classType: (dungeon.classType as string) || 'AP_PHYSICS',
+        classType: (dungeon.classType as string) || DefaultClassTypes.AP_PHYSICS,
         targetSections: '',
         rooms: ((dungeon.rooms as Array<Record<string, unknown>>) || []).map(r => ({
           id: (r.id as string) || Math.random().toString(36).substring(2, 10),

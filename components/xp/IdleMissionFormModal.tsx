@@ -41,12 +41,7 @@ const emptyForm = (): FormState => ({
   statBonuses: [],
 });
 
-const CLASS_OPTIONS = [
-  DefaultClassTypes.AP_PHYSICS,
-  DefaultClassTypes.HONORS_PHYSICS,
-  DefaultClassTypes.FORENSICS,
-  DefaultClassTypes.UNCATEGORIZED,
-];
+const CLASS_OPTIONS = Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized');
 
 const DURATION_OPTIONS = [
   { label: '30 minutes', value: 30 },
