@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { ItemRarity, DefaultClassTypes, CustomItem } from '../../types';
+import { ItemRarity, CustomItem } from '../../types';
 import { getAssetColors } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
+import { useAppData } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 import SectionPicker from '../SectionPicker';
 import { Save, FolderOpen, Copy, Trash2 } from 'lucide-react';
@@ -68,6 +69,8 @@ interface MissionFormModalProps {
 }
 
 const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, onSaveDraft, isSubmitting, availableSections = [], customItems = [] }) => {
+    const { classConfigs } = useAppData();
+    const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
     const isSkillCheck = form.type === 'SKILL_CHECK';
     const [templates, setTemplates] = useState<QuestTemplate[]>([]);
     const [showTemplates, setShowTemplates] = useState(false);
@@ -229,7 +232,7 @@ const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, fo
                             className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold focus:border-purple-500 focus:outline-none"
                         >
                             <option value="">All Classes</option>
-                            {Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized').map(c => (
+                            {classOptions.map(c => (
                                 <option key={c} value={c}>{c}</option>
                             ))}
                         </select>

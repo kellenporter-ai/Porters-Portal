@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity, DefaultClassTypes } from '../../types';
+import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity } from '../../types';
 import { Plus, Trash2, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
+import { useAppData } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 
 interface DungeonFormModalProps {
@@ -39,7 +40,7 @@ interface DungeonFormState {
   isActive: boolean;
 }
 
-const CLASS_OPTIONS = [...Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized'), 'GLOBAL'];
+const FALLBACK_CLASS_OPTIONS = ['AP Physics', 'Honors Physics', 'Forensic Science', 'GLOBAL'];
 const ROOM_TYPES: DungeonRoomType[] = ['COMBAT', 'PUZZLE', 'BOSS', 'REST', 'TREASURE'];
 const RARITIES: Array<ItemRarity | ''> = ['', 'COMMON', 'UNCOMMON', 'RARE', 'UNIQUE'];
 
@@ -56,10 +57,10 @@ const emptyRoom = (): DungeonFormRoom => ({
   questions: [],
 });
 
-const emptyForm = (): DungeonFormState => ({
+const emptyForm = (defaultClass?: string): DungeonFormState => ({
   name: '',
   description: '',
-  classType: DefaultClassTypes.AP_PHYSICS,
+  classType: defaultClass || 'AP Physics',
   targetSections: '',
   rooms: [emptyRoom()],
   rewardXp: 500,
@@ -311,7 +312,11 @@ const RoomEditor: React.FC<{
 // -------------------------------------------------------
 const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, editingDungeon }) => {
   const toast = useToast();
-  const [form, setForm] = useState<DungeonFormState>(emptyForm());
+  const { classConfigs } = useAppData();
+  const classOptions = classConfigs.length > 0
+    ? [...classConfigs.map(c => c.className), 'GLOBAL']
+    : FALLBACK_CLASS_OPTIONS;
+  const [form, setForm] = useState<DungeonFormState>(emptyForm(classOptions[0]));
   const [saving, setSaving] = useState(false);
   const dungeonConfigFileRef = React.useRef<HTMLInputElement>(null);
 
@@ -387,7 +392,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
       setForm({
         name: (dungeon.name as string) || '',
         description: (dungeon.description as string) || '',
-        classType: (dungeon.classType as string) || DefaultClassTypes.AP_PHYSICS,
+        classType: (dungeon.classType as string) || classOptions[0],
         targetSections: '',
         rooms: ((dungeon.rooms as Array<Record<string, unknown>>) || []).map(r => ({
           id: (r.id as string) || Math.random().toString(36).substring(2, 10),
@@ -515,7 +520,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
                 onChange={e => setForm(prev => ({ ...prev, classType: e.target.value }))}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
               >
-                {CLASS_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>

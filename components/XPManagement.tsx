@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, DefaultClassTypes, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem, Dungeon, IdleMission } from '../types';
+import { User, XPEvent, Quest, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem, Dungeon, IdleMission } from '../types';
+import { useAppData } from '../lib/AppDataContext';
 import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain, Copy } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
@@ -44,6 +45,8 @@ interface XPManagementProps {
 const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
+  const { classConfigs } = useAppData();
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const activeTab: XPTab = (initialTab && TAB_NAME_MAP[initialTab]) || 'OPERATIVES';
 
   const [events, setEvents] = useState<XPEvent[]>([]);
@@ -56,7 +59,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const [isSubmittingQuest, setIsSubmittingQuest] = useState(false);
   const [activeDeployments, setActiveDeployments] = useState<{ user: User; quest: Quest; status: string; roll?: number; acceptedAt?: string }[]>([]);
   const [newEventData, setNewEventData] = useState({
-      title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: DefaultClassTypes.AP_PHYSICS, targetSections: [] as string[]
+      title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: (classOptions[0] || 'AP Physics'), targetSections: [] as string[]
   });
 
   // Quiz Boss / Question Bank modal state (form state managed inside modals)
@@ -136,7 +139,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   // --- Handlers ---
   const handleAdjustXP = async (user: User, amount: number) => {
     try {
-        await dataService.adjustUserXP(user.id, amount, user.classType || DefaultClassTypes.UNCATEGORIZED);
+        await dataService.adjustUserXP(user.id, amount, user.classType || 'Uncategorized');
         toast.success(`${amount > 0 ? '+' : ''}${amount} XP applied to ${user.name}.`);
     } catch (e) { toast.error('Failed to adjust XP.'); }
     setAdjustingUser(null);
@@ -155,7 +158,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       if (newEventData.targetSections.length > 0) event.targetSections = newEventData.targetSections;
       await dataService.saveXPEvent(event);
       setIsEventModalOpen(false);
-      setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: DefaultClassTypes.AP_PHYSICS, targetSections: [] });
+      setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: (classOptions[0] || 'AP Physics'), targetSections: [] });
   };
 
   const handleIssueMission = async (e: React.FormEvent) => {
@@ -599,10 +602,10 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Multiplier</label><input type="number" step="0.5" value={newEventData.multiplier} onChange={e => setNewEventData({...newEventData, multiplier: parseFloat(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" /></div>
             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Uplink Type</label><select value={newEventData.type} onChange={e => setNewEventData({...newEventData, type: e.target.value as 'GLOBAL' | 'CLASS_SPECIFIC', targetSections: []})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold"><option value="GLOBAL">Global Node</option><option value="CLASS_SPECIFIC">Class Sub-Node</option></select></div>
           </div>
-          {newEventData.type === 'CLASS_SPECIFIC' && <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Sub-Node</label><select value={newEventData.targetClass} onChange={e => setNewEventData({...newEventData, targetClass: e.target.value, targetSections: []})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">{Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}</select></div>}
+          {newEventData.type === 'CLASS_SPECIFIC' && <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Sub-Node</label><select value={newEventData.targetClass} onChange={e => setNewEventData({...newEventData, targetClass: e.target.value, targetSections: []})} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold">{classOptions.map(c => <option key={c} value={c}>{c}</option>)}</select></div>}
           <SectionPicker availableSections={protocolSections} selectedSections={newEventData.targetSections} onChange={s => setNewEventData({...newEventData, targetSections: s})} />
           <div className="flex gap-3">
-            <button type="button" onClick={async () => { const event: XPEvent = { id: Math.random().toString(36).substring(2, 9), title: newEventData.title, multiplier: newEventData.multiplier, isActive: false, type: newEventData.type, ...(newEventData.type === 'CLASS_SPECIFIC' ? { targetClass: newEventData.targetClass } : {}), ...(newEventData.targetSections.length > 0 ? { targetSections: newEventData.targetSections } : {}) }; await dataService.saveXPEvent(event); setIsEventModalOpen(false); setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: DefaultClassTypes.AP_PHYSICS, targetSections: [] }); toast.success('Protocol saved as draft (standby).'); }} className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition">Save Draft</button>
+            <button type="button" onClick={async () => { const event: XPEvent = { id: Math.random().toString(36).substring(2, 9), title: newEventData.title, multiplier: newEventData.multiplier, isActive: false, type: newEventData.type, ...(newEventData.type === 'CLASS_SPECIFIC' ? { targetClass: newEventData.targetClass } : {}), ...(newEventData.targetSections.length > 0 ? { targetSections: newEventData.targetSections } : {}) }; await dataService.saveXPEvent(event); setIsEventModalOpen(false); setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: (classOptions[0] || 'AP Physics'), targetSections: [] }); toast.success('Protocol saved as draft (standby).'); }} className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition">Save Draft</button>
             <button type="submit" className="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-blue-700">Initiate Uplink</button>
           </div>
         </form>

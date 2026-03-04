@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BossQuizEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DefaultClassTypes, DifficultyTier, DIFFICULTY_TIER_DEFS, AutoScaleConfig, BossPhase, BossAbility, BossAbilityEffect, BOSS_ABILITY_EFFECT_DEFS, BossLootEntry, EquipmentSlot, ItemRarity } from '../../types';
+import { BossQuizEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DifficultyTier, DIFFICULTY_TIER_DEFS, AutoScaleConfig, BossPhase, BossAbility, BossAbilityEffect, BOSS_ABILITY_EFFECT_DEFS, BossLootEntry, EquipmentSlot, ItemRarity } from '../../types';
 import { Plus, Trash2, Check, X, Copy, Upload, FileJson } from 'lucide-react';
 import BossAvatar from './BossAvatar';
 import SectionPicker from '../SectionPicker';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
+import { useAppData } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 
 interface QuizBossFormModalProps {
@@ -112,6 +113,8 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   availableSections,
 }) => {
   const toast = useToast();
+  const { classConfigs } = useAppData();
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const [quizBossForm, setQuizBossForm] = useState<QuizBossFormState>(emptyForm());
   const [formModifiers, setFormModifiers] = useState<BossModifier[]>([]);
   const [promptCopied, setPromptCopied] = useState(false);
@@ -613,7 +616,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
             <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Target Class</label>
             <select value={quizBossForm.classType} onChange={e => setQuizBossForm({ ...quizBossForm, classType: e.target.value, targetSections: [] })} className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white font-bold text-sm">
               <option value="GLOBAL">All Classes</option>
-              {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
         </div>

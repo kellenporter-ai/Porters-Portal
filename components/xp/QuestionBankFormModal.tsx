@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BossQuestionBank, DefaultClassTypes } from '../../types';
+import { BossQuestionBank } from '../../types';
 import { Plus, Trash2, Check, X, Upload, FileJson } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
+import { useAppData } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 
 interface QuestionBankFormModalProps {
@@ -36,6 +37,8 @@ const emptyForm: BankFormState = {
 
 const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, onClose, editingBank }) => {
   const toast = useToast();
+  const { classConfigs } = useAppData();
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const [bankForm, setBankForm] = useState<BankFormState>(emptyForm);
   const [bankImportError, setBankImportError] = useState<string | null>(null);
   const bankFileRef = useRef<HTMLInputElement>(null);
@@ -181,7 +184,7 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
             <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Class</label>
             <select value={bankForm.classType} onChange={e => setBankForm({ ...bankForm, classType: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold text-sm">
               <option value="GLOBAL">All Classes</option>
-              {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>

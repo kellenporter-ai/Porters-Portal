@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { IdleMission, ItemRarity, DefaultClassTypes } from '../../types';
+import { IdleMission, ItemRarity } from '../../types';
 import { Plus, Trash2 } from 'lucide-react';
 import Modal from '../Modal';
 import { dataService } from '../../services/dataService';
+import { useAppData } from '../../lib/AppDataContext';
 import { useToast } from '../ToastProvider';
 
 interface IdleMissionFormModalProps {
@@ -30,7 +31,7 @@ interface FormState {
 const emptyForm = (): FormState => ({
   name: '',
   description: '',
-  classType: DefaultClassTypes.AP_PHYSICS,
+  classType: 'AP Physics',
   duration: 60,
   difficulty: 'MEDIUM',
   rewardXp: 100,
@@ -41,7 +42,7 @@ const emptyForm = (): FormState => ({
   statBonuses: [],
 });
 
-const CLASS_OPTIONS = Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized');
+const FALLBACK_CLASS_OPTIONS = ['AP Physics', 'Honors Physics', 'Forensic Science'];
 
 const DURATION_OPTIONS = [
   { label: '30 minutes', value: 30 },
@@ -87,6 +88,8 @@ function formToMission(form: FormState, id: string): IdleMission {
 
 const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onClose, editingMission }) => {
   const toast = useToast();
+  const { classConfigs } = useAppData();
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : FALLBACK_CLASS_OPTIONS;
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
 
@@ -172,7 +175,7 @@ const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onC
           <div>
             <label className={labelCls}>Class</label>
             <select className={inputCls} value={form.classType} onChange={e => set('classType', e.target.value)}>
-              {CLASS_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>

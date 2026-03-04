@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { User, DefaultClassTypes } from '../../types';
+import { User } from '../../types';
+import { useAppData } from '../../lib/AppDataContext';
 import { Search, ChevronDown, Filter, Users } from 'lucide-react';
 import Modal from '../Modal';
 
@@ -14,6 +15,8 @@ interface AdjustXPModalProps {
 const QUICK_AMOUNTS = [+10, +50, +100, -10, -50, -100];
 
 const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, allStudents }) => {
+    const { classConfigs } = useAppData();
+    const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
     const [adjustAmount, setAdjustAmount] = useState(50);
     const [bulkMode, setBulkMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -121,7 +124,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                                     className="bg-black/40 border border-white/10 rounded-xl py-2 pl-8 pr-8 text-sm text-white font-bold appearance-none focus:outline-none focus:border-purple-500/50"
                                 >
                                     <option>All Classes</option>
-                                    {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+                                    {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
                             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, DefaultClassTypes } from '../../types';
+import { User } from '../../types';
+import { useAppData } from '../../lib/AppDataContext';
 import { Search, Plus, ChevronDown, ChevronUp, Filter, Briefcase, Pencil, Check, X, Lock, Unlock } from 'lucide-react';
 import { calculateGearScore } from '../../lib/gamification';
 
@@ -19,6 +20,8 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
   onSaveCodename,
   onSaveCodenameLocked,
 }) => {
+  const { classConfigs } = useAppData();
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');
   const [filterSection, setFilterSection] = useState('All Sections');
@@ -131,7 +134,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
               className="bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50"
             >
               <option>All Classes</option>
-              {Object.values(DefaultClassTypes).map(c => <option key={c} value={c}>{c}</option>)}
+              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
           </div>
