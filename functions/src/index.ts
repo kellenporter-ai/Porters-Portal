@@ -4946,7 +4946,7 @@ export const cancelArenaQueue = onCall(async (request) => {
 
 /** Server-side item catalog — must mirror client FLUX_SHOP_ITEMS */
 const FLUX_SHOP_CATALOG: Record<string, {
-  type: 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR';
+  type: 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC';
   cost: number;
   value?: number;
   duration?: number; // hours
@@ -4959,6 +4959,24 @@ const FLUX_SHOP_CATALOG: Record<string, {
   name_color_gold: { type: 'NAME_COLOR', cost: 100, value: 0xffd700, dailyLimit: 0 },
   name_color_magenta: { type: 'NAME_COLOR', cost: 100, value: 0xff00ff, dailyLimit: 0 },
   name_color_lime: { type: 'NAME_COLOR', cost: 100, value: 0x76ff03, dailyLimit: 0 },
+  // Auras - 150 Flux each
+  aura_ember: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_frost: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_void: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_radiant: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  // Particles - 200 Flux each
+  particle_fireflies: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_stardust: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_embers: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_snow: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  // Frames - 250 Flux each
+  frame_circuit: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  frame_thorns: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  frame_diamond: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  // Trails - 300 Flux each
+  trail_lightning: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  trail_shadow: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  trail_plasma: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
 };
 
 export const purchaseFluxItem = onCall(async (request) => {
@@ -4995,8 +5013,12 @@ export const purchaseFluxItem = onCall(async (request) => {
     // Build updates
     const updates: Record<string, unknown> = {
       "gamification.currency": currency - item.cost,
-      [`gamification.consumablePurchases.${dailyKey}`]: todayCount + 1,
     };
+
+    // Only track daily purchase counts for items with daily limits
+    if (item.dailyLimit > 0) {
+      updates[`gamification.consumablePurchases.${dailyKey}`] = todayCount + 1;
+    }
 
     const result: Record<string, unknown> = { success: true };
 
@@ -5025,9 +5047,46 @@ export const purchaseFluxItem = onCall(async (request) => {
       const hexColor = '#' + (item.value || 0).toString(16).padStart(6, '0');
       updates["gamification.nameColor"] = hexColor;
       result.nameColor = hexColor;
+    } else if (item.type === 'AGENT_COSMETIC') {
+      const ownedCosmetics: string[] = gam.ownedCosmetics || [];
+      if (ownedCosmetics.includes(itemId)) {
+        throw new HttpsError("already-exists", "You already own this cosmetic.");
+      }
+      ownedCosmetics.push(itemId);
+      updates["gamification.ownedCosmetics"] = ownedCosmetics;
+      updates["gamification.activeCosmetic"] = itemId;
+      result.cosmeticId = itemId;
     }
 
     transaction.update(userRef, updates);
     return result;
   });
+});
+
+// Equip or unequip an agent cosmetic (server-validated ownership check)
+export const equipFluxCosmetic = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { cosmeticId } = request.data;
+
+  // cosmeticId can be null (unequip) or a string (equip)
+  if (cosmeticId !== null && typeof cosmeticId !== 'string') {
+    throw new HttpsError("invalid-argument", "Cosmetic ID must be a string or null.");
+  }
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const gam = userSnap.data()!.gamification || {};
+
+  if (cosmeticId !== null) {
+    const ownedCosmetics: string[] = gam.ownedCosmetics || [];
+    if (!ownedCosmetics.includes(cosmeticId)) {
+      throw new HttpsError("failed-precondition", "You do not own this cosmetic.");
+    }
+  }
+
+  await userRef.update({ "gamification.activeCosmetic": cosmeticId });
+  return { success: true, activeCosmetic: cosmeticId };
 });

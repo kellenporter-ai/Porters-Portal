@@ -97,4 +97,5 @@ export const callCancelArenaQueue = httpsCallable(functions, 'cancelArenaQueue')
 
 // Flux Shop Cloud Functions
 export const callPurchaseFluxItem = httpsCallable(functions, 'purchaseFluxItem');
+export const callEquipFluxCosmetic = httpsCallable(functions, 'equipFluxCosmetic');
 

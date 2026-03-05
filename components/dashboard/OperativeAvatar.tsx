@@ -29,6 +29,10 @@ interface OperativeAvatarProps {
     evolutionLevel?: number;
     activeCosmetic?: string;
     cosmeticColor?: string;
+    cosmeticSecondaryColor?: string;
+    cosmeticType?: 'AURA' | 'PARTICLE' | 'FRAME' | 'TRAIL';
+    cosmeticIntensity?: number;
+    cosmeticParticleCount?: number;
 }
 
 const RARITY_COLORS: Record<string, { primary: string; glow: string; particle: string; intensity: number }> = {
@@ -77,7 +81,17 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
     }
 };
 
-const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance, evolutionLevel = 1, activeCosmetic, cosmeticColor }) => {
+const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
+    equipped,
+    appearance,
+    evolutionLevel = 1,
+    activeCosmetic,
+    cosmeticColor,
+    cosmeticSecondaryColor,
+    cosmeticType,
+    cosmeticIntensity = 0.6,
+    cosmeticParticleCount = 8,
+}) => {
     const hue = appearance?.hue || 0;
     const bodyType = appearance?.bodyType || 'A';
     const isTypeB = bodyType === 'B';
@@ -489,19 +503,195 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({ equipped, appearance,
                     </g>
                 )}
 
-                {/* Seasonal cosmetic particles */}
-                {activeCosmetic && cosmeticColor && (
+                {/* === AGENT COSMETICS ===
+                    Each visual type uses deterministic index-based positioning to avoid
+                    Math.random() in render (which causes flicker on every re-render).
+                    The cosmetic group is placed after evolution particles so it renders
+                    on top, but still within the breathing animation group. */}
+
+                {/* AURA: radial glow centered on torso. Intensity drives opacity. */}
+                {activeCosmetic && cosmeticColor && cosmeticType === 'AURA' && (
+                    <g filter="url(#av-bloom)">
+                        {/* Primary soft ellipse covering the torso */}
+                        <ellipse
+                            cx="100" cy="150" rx="55" ry="75"
+                            fill="none"
+                            stroke={cosmeticColor}
+                            strokeWidth="18"
+                            strokeOpacity={(cosmeticIntensity * 0.35).toFixed(2)}
+                            style={{ filter: `blur(8px)` }}
+                        >
+                            <animate attributeName="strokeOpacity"
+                                values={`${(cosmeticIntensity * 0.35).toFixed(2)};${(cosmeticIntensity * 0.15).toFixed(2)};${(cosmeticIntensity * 0.35).toFixed(2)}`}
+                                dur="3s" repeatCount="indefinite" />
+                        </ellipse>
+                        {/* Secondary outer ring using secondary color if available */}
+                        <ellipse
+                            cx="100" cy="150" rx="70" ry="95"
+                            fill="none"
+                            stroke={cosmeticSecondaryColor || cosmeticColor}
+                            strokeWidth="8"
+                            strokeOpacity={(cosmeticIntensity * 0.18).toFixed(2)}
+                        >
+                            <animate attributeName="strokeOpacity"
+                                values={`${(cosmeticIntensity * 0.18).toFixed(2)};${(cosmeticIntensity * 0.06).toFixed(2)};${(cosmeticIntensity * 0.18).toFixed(2)}`}
+                                dur="4s" repeatCount="indefinite" />
+                        </ellipse>
+                    </g>
+                )}
+
+                {/* PARTICLE: floating orbs orbiting/drifting around the agent body.
+                    Positions are derived from index and a fixed angle step so they
+                    never change between renders. Primary + secondary colors alternate. */}
+                {activeCosmetic && cosmeticColor && cosmeticType === 'PARTICLE' && (
                     <g filter="url(#av-soft)">
-                        {Array.from({ length: 8 }).map((_, i) => {
-                            const px = 60 + Math.random() * 80;
-                            const py = 20 + Math.random() * 260;
+                        {Array.from({ length: cosmeticParticleCount }).map((_, i) => {
+                            // Evenly distribute particles in a vertical band around the avatar
+                            const totalAngle = 360;
+                            const angleDeg = (i * totalAngle) / cosmeticParticleCount;
+                            const angleRad = (angleDeg * Math.PI) / 180;
+                            // Elliptical orbit: wide enough to clear arms, tall to span body
+                            const orbitRx = 48 + (i % 3) * 6;
+                            const orbitRy = 80 + (i % 4) * 8;
+                            const cx = 100 + Math.cos(angleRad) * orbitRx;
+                            const cy = 145 + Math.sin(angleRad) * orbitRy;
+                            // Vary radius between 1 and 2.5 based on index
+                            const r = 1 + (i % 4) * 0.5;
+                            // Alternate primary/secondary colors
+                            const fill = i % 2 === 0 ? cosmeticColor : (cosmeticSecondaryColor || cosmeticColor);
+                            const dur = 2.5 + i * 0.35;
+                            // Float distance varies by position in orbit
+                            const floatDist = 10 + (i % 3) * 5;
                             return (
-                                <circle key={`c-${i}`} cx={px} cy={py} r={1 + Math.random()} fill={cosmeticColor} fillOpacity="0.45">
-                                    <animate attributeName="cy" values={`${py};${py - 25};${py}`} dur={`${3 + i * 0.5}s`} repeatCount="indefinite" />
-                                    <animate attributeName="fillOpacity" values="0.45;0;0.45" dur={`${3 + i * 0.5}s`} repeatCount="indefinite" />
+                                <circle
+                                    key={`cp-${i}`}
+                                    cx={cx}
+                                    cy={cy}
+                                    r={r}
+                                    fill={fill}
+                                    fillOpacity={(cosmeticIntensity * 0.55).toFixed(2)}
+                                >
+                                    <animate
+                                        attributeName="cy"
+                                        values={`${cy};${cy - floatDist};${cy}`}
+                                        dur={`${dur}s`}
+                                        repeatCount="indefinite"
+                                    />
+                                    <animate
+                                        attributeName="fillOpacity"
+                                        values={`${(cosmeticIntensity * 0.55).toFixed(2)};0;${(cosmeticIntensity * 0.55).toFixed(2)}`}
+                                        dur={`${dur}s`}
+                                        repeatCount="indefinite"
+                                    />
                                 </circle>
                             );
                         })}
+                    </g>
+                )}
+
+                {/* FRAME: rounded rect outline around the avatar with animated dash travel.
+                    The stroke-dashoffset animation creates a "marching ants" / circuit effect. */}
+                {activeCosmetic && cosmeticColor && cosmeticType === 'FRAME' && (
+                    <g filter="url(#av-soft)">
+                        {/* Outer frame */}
+                        <rect
+                            x="46" y="14" width="108" height="258"
+                            rx="14" ry="14"
+                            fill="none"
+                            stroke={cosmeticColor}
+                            strokeWidth="2.5"
+                            strokeOpacity={(cosmeticIntensity * 0.8).toFixed(2)}
+                            strokeDasharray="12 6"
+                        >
+                            <animate attributeName="strokeDashoffset" values="0;-54" dur="3s" repeatCount="indefinite" />
+                            <animate
+                                attributeName="strokeOpacity"
+                                values={`${(cosmeticIntensity * 0.8).toFixed(2)};${(cosmeticIntensity * 0.4).toFixed(2)};${(cosmeticIntensity * 0.8).toFixed(2)}`}
+                                dur="2s" repeatCount="indefinite"
+                            />
+                        </rect>
+                        {/* Inner glow frame using secondary color */}
+                        <rect
+                            x="52" y="20" width="96" height="246"
+                            rx="10" ry="10"
+                            fill="none"
+                            stroke={cosmeticSecondaryColor || cosmeticColor}
+                            strokeWidth="1"
+                            strokeOpacity={(cosmeticIntensity * 0.3).toFixed(2)}
+                            strokeDasharray="6 10"
+                        >
+                            <animate attributeName="strokeDashoffset" values="-16;0" dur="3s" repeatCount="indefinite" />
+                        </rect>
+                        {/* Corner accent dots at each corner of the outer frame */}
+                        {[
+                            [46, 14], [154, 14], [46, 272], [154, 272],
+                        ].map(([fx, fy], ci) => (
+                            <circle key={`fc-${ci}`} cx={fx} cy={fy} r="3" fill={cosmeticColor} fillOpacity={(cosmeticIntensity * 0.9).toFixed(2)}>
+                                <animate
+                                    attributeName="fillOpacity"
+                                    values={`${(cosmeticIntensity * 0.9).toFixed(2)};${(cosmeticIntensity * 0.3).toFixed(2)};${(cosmeticIntensity * 0.9).toFixed(2)}`}
+                                    dur={`${1.5 + ci * 0.25}s`}
+                                    repeatCount="indefinite"
+                                />
+                            </circle>
+                        ))}
+                    </g>
+                )}
+
+                {/* TRAIL: curved bezier arcs emanating from behind/below the agent.
+                    Four wisps using alternating primary/secondary colors with staggered timing. */}
+                {activeCosmetic && cosmeticColor && cosmeticType === 'TRAIL' && (
+                    <g filter="url(#av-soft)">
+                        {/* Left-side wisps */}
+                        <path
+                            d="M 78 200 Q 40 230 30 290"
+                            fill="none"
+                            stroke={cosmeticColor}
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeOpacity={(cosmeticIntensity * 0.6).toFixed(2)}
+                        >
+                            <animate attributeName="strokeOpacity"
+                                values={`${(cosmeticIntensity * 0.6).toFixed(2)};0;${(cosmeticIntensity * 0.6).toFixed(2)}`}
+                                dur="2.4s" repeatCount="indefinite" />
+                        </path>
+                        <path
+                            d="M 72 180 Q 28 215 20 270"
+                            fill="none"
+                            stroke={cosmeticSecondaryColor || cosmeticColor}
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeOpacity={(cosmeticIntensity * 0.4).toFixed(2)}
+                        >
+                            <animate attributeName="strokeOpacity"
+                                values={`0;${(cosmeticIntensity * 0.4).toFixed(2)};0`}
+                                dur="2.4s" repeatCount="indefinite" />
+                        </path>
+                        {/* Right-side wisps (mirrored) */}
+                        <path
+                            d="M 122 200 Q 160 230 170 290"
+                            fill="none"
+                            stroke={cosmeticColor}
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeOpacity={(cosmeticIntensity * 0.6).toFixed(2)}
+                        >
+                            <animate attributeName="strokeOpacity"
+                                values={`${(cosmeticIntensity * 0.6).toFixed(2)};0;${(cosmeticIntensity * 0.6).toFixed(2)}`}
+                                dur="2.8s" repeatCount="indefinite" />
+                        </path>
+                        <path
+                            d="M 128 180 Q 172 215 180 270"
+                            fill="none"
+                            stroke={cosmeticSecondaryColor || cosmeticColor}
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeOpacity={(cosmeticIntensity * 0.4).toFixed(2)}
+                        >
+                            <animate attributeName="strokeOpacity"
+                                values={`0;${(cosmeticIntensity * 0.4).toFixed(2)};0`}
+                                dur="2.8s" repeatCount="indefinite" />
+                        </path>
                     </g>
                 )}
             </g>

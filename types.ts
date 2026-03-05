@@ -1206,7 +1206,20 @@ export interface SeasonalCosmetic {
 // FLUX SHOP CONSUMABLES
 // ========================================
 
-export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR';
+export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC';
+
+export type CosmeticVisualType = 'AURA' | 'PARTICLE' | 'FRAME' | 'TRAIL';
+
+export interface AgentCosmeticDef {
+  id: string;
+  name: string;
+  description: string;
+  visualType: CosmeticVisualType;
+  color: string; // primary hex color
+  secondaryColor?: string; // optional secondary for gradients
+  particleCount?: number; // for PARTICLE type
+  intensity?: number; // 0-1, glow/effect strength
+}
 
 export interface FluxShopItem {
   id: string;

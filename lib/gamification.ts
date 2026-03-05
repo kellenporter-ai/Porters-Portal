@@ -131,7 +131,34 @@ export const getRankDetails = (level: number) => {
 // --- FLUX SHOP CATALOG ---
 // Consumable items students can purchase with Cyber-Flux.
 // IDs must match server-side validation in purchaseFluxItem Cloud Function.
-import { FluxShopItem } from '../types';
+import { FluxShopItem, AgentCosmeticDef } from '../types';
+
+// --- AGENT COSMETIC DEFINITIONS ---
+// Visual cosmetics for operative avatars. Each cosmetic has a unique visual effect.
+// These definitions drive both the shop display and avatar rendering.
+export const AGENT_COSMETICS: AgentCosmeticDef[] = [
+    // --- AURAS (ambient glow around the agent) ---
+    { id: 'aura_ember', name: 'Ember Aura', description: 'A warm flickering glow surrounds your operative', visualType: 'AURA', color: '#ff6b35', secondaryColor: '#ffd700', intensity: 0.6 },
+    { id: 'aura_frost', name: 'Frost Aura', description: 'Icy blue radiance emanates from your operative', visualType: 'AURA', color: '#00d4ff', secondaryColor: '#e0f7ff', intensity: 0.6 },
+    { id: 'aura_void', name: 'Void Aura', description: 'Dark purple energy pulses around your operative', visualType: 'AURA', color: '#9333ea', secondaryColor: '#1a0033', intensity: 0.7 },
+    { id: 'aura_radiant', name: 'Radiant Aura', description: 'Brilliant golden light radiates from your operative', visualType: 'AURA', color: '#fbbf24', secondaryColor: '#fff7ed', intensity: 0.8 },
+
+    // --- PARTICLES (floating elements around the agent) ---
+    { id: 'particle_fireflies', name: 'Fireflies', description: 'Glowing fireflies drift around your operative', visualType: 'PARTICLE', color: '#84cc16', secondaryColor: '#fef08a', particleCount: 10, intensity: 0.5 },
+    { id: 'particle_stardust', name: 'Stardust', description: 'Sparkling star particles float around your operative', visualType: 'PARTICLE', color: '#f0abfc', secondaryColor: '#ffffff', particleCount: 12, intensity: 0.6 },
+    { id: 'particle_embers', name: 'Floating Embers', description: 'Hot embers rise and fade around your operative', visualType: 'PARTICLE', color: '#f97316', secondaryColor: '#ef4444', particleCount: 8, intensity: 0.5 },
+    { id: 'particle_snow', name: 'Snowfall', description: 'Gentle snowflakes drift around your operative', visualType: 'PARTICLE', color: '#e0f2fe', secondaryColor: '#ffffff', particleCount: 14, intensity: 0.4 },
+
+    // --- FRAMES (decorative border/outline around the agent) ---
+    { id: 'frame_circuit', name: 'Circuit Frame', description: 'A glowing circuit-board frame outlines your operative', visualType: 'FRAME', color: '#22d3ee', secondaryColor: '#0e7490', intensity: 0.6 },
+    { id: 'frame_thorns', name: 'Thorn Frame', description: 'Twisted energy thorns frame your operative', visualType: 'FRAME', color: '#dc2626', secondaryColor: '#7f1d1d', intensity: 0.5 },
+    { id: 'frame_diamond', name: 'Diamond Frame', description: 'A crystalline diamond border frames your operative', visualType: 'FRAME', color: '#a78bfa', secondaryColor: '#f5f3ff', intensity: 0.7 },
+
+    // --- TRAILS (motion/energy trails behind the agent) ---
+    { id: 'trail_lightning', name: 'Lightning Trail', description: 'Electric bolts crackle around your operative', visualType: 'TRAIL', color: '#38bdf8', secondaryColor: '#ffffff', intensity: 0.7 },
+    { id: 'trail_shadow', name: 'Shadow Trail', description: 'Dark wisps trail behind your operative', visualType: 'TRAIL', color: '#475569', secondaryColor: '#1e293b', intensity: 0.5 },
+    { id: 'trail_plasma', name: 'Plasma Trail', description: 'Superheated plasma arcs around your operative', visualType: 'TRAIL', color: '#e879f9', secondaryColor: '#7c3aed', intensity: 0.8 },
+];
 
 export const FLUX_SHOP_ITEMS: FluxShopItem[] = [
     {
@@ -212,6 +239,51 @@ export const FLUX_SHOP_ITEMS: FluxShopItem[] = [
         dailyLimit: 0,
         isAvailable: true,
     },
+    // --- AGENT COSMETICS ---
+    // Auras (150 Flux)
+    ...AGENT_COSMETICS.filter(c => c.visualType === 'AURA').map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        type: 'AGENT_COSMETIC' as const,
+        cost: 150,
+        icon: '✨',
+        dailyLimit: 0,
+        isAvailable: true,
+    })),
+    // Particles (200 Flux)
+    ...AGENT_COSMETICS.filter(c => c.visualType === 'PARTICLE').map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        type: 'AGENT_COSMETIC' as const,
+        cost: 200,
+        icon: '🌟',
+        dailyLimit: 0,
+        isAvailable: true,
+    })),
+    // Frames (250 Flux)
+    ...AGENT_COSMETICS.filter(c => c.visualType === 'FRAME').map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        type: 'AGENT_COSMETIC' as const,
+        cost: 250,
+        icon: '🔲',
+        dailyLimit: 0,
+        isAvailable: true,
+    })),
+    // Trails (300 Flux)
+    ...AGENT_COSMETICS.filter(c => c.visualType === 'TRAIL').map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        type: 'AGENT_COSMETIC' as const,
+        cost: 300,
+        icon: '💫',
+        dailyLimit: 0,
+        isAvailable: true,
+    })),
 ];
 
 export const FLUX_COSTS: Record<string, number> = {
