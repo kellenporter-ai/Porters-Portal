@@ -348,13 +348,18 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
 
   const equipped = playerEquipped ?? {};
 
-  // Reset selection when room index advances
+  // Derive the current question so we can reset selection when it changes
+  const question     = room.questions?.find(q => !run.answeredQuestions.includes(q.id));
+  const questionId   = question?.id ?? null;
+
+  // Reset selection when room advances OR when the current question changes
+  // (e.g. after answering one question in a multi-question room)
   useEffect(() => {
     setSelectedAnswer(null);
     setAttackState('idle');
     setAnimDamage(undefined);
     setAnimCrit(undefined);
-  }, [run.currentRoom]);
+  }, [run.currentRoom, questionId]);
 
   const handleSelect = async (idx: number) => {
     if (submitting || selectedAnswer !== null) return;
@@ -393,7 +398,6 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
     };
   }, [lastResult]);
 
-  const question     = room.questions?.find(q => !run.answeredQuestions.includes(q.id));
   const enemyHp      = run.currentRoomEnemyHp ?? (room.enemyHp || 0);
   const enemyMaxHp   = room.enemyHp || 0;
   const playerHpPct  = run.maxHp > 0 ? Math.max(0, (run.playerHp / run.maxHp) * 100) : 0;
@@ -793,6 +797,7 @@ const DungeonCard: React.FC<{
         type="button"
         onClick={() => onStart(dungeon.id)}
         disabled={locked || loading}
+        aria-busy={loading ? true : undefined}
         className={`
           w-full py-2.5 rounded-xl text-sm font-bold transition
           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
@@ -807,6 +812,14 @@ const DungeonCard: React.FC<{
           <>
             <Lock className="w-3.5 h-3.5 inline mr-1.5" aria-hidden="true" />
             Locked
+          </>
+        ) : loading ? (
+          <>
+            <svg className="w-3.5 h-3.5 inline mr-1.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+              <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+            Entering Dungeon...
           </>
         ) : (
           <>
