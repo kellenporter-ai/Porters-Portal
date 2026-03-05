@@ -60,6 +60,14 @@
 ## Pre-Existing Test Failures (do NOT re-flag as regressions)
 - `lib/__tests__/achievements.test.ts`: 2 failing assertions in `generateDailyChallenges` (Monday weekly challenge count). Pre-dates Agent Cosmetics feature.
 
+## Babylon.js Simulation Patterns
+- GUI labels: use `labelAtWorldPos` with invisible sphere anchors + `linkWithMesh` on Rectangle — correct pattern for world-space labels
+- `onPointerCancel` not handled in Babylon scene pointer events — same pattern as PhysicsTools.tsx, causes drag state lock on ChromeOS gesture interruptions
+- Drag source detection for TransformNode groups: child meshes need `setPickableRecursive` to pick them. testTubeGroup uses only `testTubeMesh.isPickable = true` without tagging metadata — liquid/strand children are unpickable as drag sources but tubeMesh is enough to initiate the drag. Watch this pattern in new sims.
+- `stepInProgress` locking: set true at drag step completions, only reset inside explain overlay close handler. Locking is correct for its purpose but creates permanent lockout if explain overlay is blocked/skipped.
+- Drop detection correctness: `BABYLON.Vector3.Distance` between `dragState.node.position` and `dragState.targetNode.position` — both world-space for TransformNodes, works correctly.
+- Dead state field pattern: `dragState.targetDist` declared in state object but never read; actual field used is `dragState.threshold`. Check for dead state fields in drag objects.
+
 ## Architecture Notes
 - No tests exist for Cloud Functions (purchaseFluxItem, equipItem, etc.)
 - No tests for OperativeAvatar rendering or FluxShopPanel behavior

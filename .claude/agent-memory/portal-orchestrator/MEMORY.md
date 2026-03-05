@@ -43,6 +43,17 @@
 - Proctor Bridge: postMessage protocol (PROCTOR_READY, SAVE_STATE, ANSWER, COMPLETE) for embedded HTML activities
 - ISLE pedagogy: observe → model → test → apply before formulas
 
+## Cosmetic System
+- 30 cosmetics total: 8 Auras (150 Flux), 8 Particles (200 Flux), 7 Frames (250 Flux), 7 Trails (300 Flux)
+- Definitions: `lib/gamification.ts` AGENT_COSMETICS array (AgentCosmeticDef[])
+- Server catalog: `functions/src/index.ts` FLUX_SHOP_CATALOG — must stay in sync with client
+- Shop UI: `components/xp/FluxShopPanel.tsx` — subcategories by visualType (AURA/PARTICLE/FRAME/TRAIL)
+- Avatar rendering: `components/dashboard/OperativeAvatar.tsx` — SVG animations per cosmetic type, keyed by activeCosmetic ID
+- Type: `CosmeticVisualType` in `types.ts`; `ConsumableType` includes 'AGENT_COSMETIC'
+- Only one cosmetic active at a time (global, not per-class)
+- Each aura/trail has UNIQUE rendering (not just color swaps): ember=flame tongues, frost=crystal shards, void=vortex, radiant=starburst, toxic=bubbles, bloodmoon=heartbeat, aurora=bands, solar=corona; trails similarly differentiated
+- FluxShopPanel has preview system: Eye icon per card, avatar panel at top. Accepts playerEquipped/playerAppearance/playerEvolutionLevel props
+
 ## Known Technical Debt
 - `functions/src/index.ts` is a 5,060-line monolith — should be split into modules
 - `dataService.ts` at 1,985 lines handles everything — could use domain splitting
