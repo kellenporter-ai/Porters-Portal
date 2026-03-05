@@ -587,6 +587,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            ownedCosmetics={user.gamification?.ownedCosmetics || []}
                            activeCosmetic={user.gamification?.activeCosmetic}
                            onEquipCosmetic={(cosmeticId) => dataService.equipCosmetic(user.id, cosmeticId)}
+                           playerEquipped={equipped}
+                           playerAppearance={classProfile.appearance}
+                           playerEvolutionLevel={level}
                        />
                      </FeatureErrorBoundary>
                  </div>

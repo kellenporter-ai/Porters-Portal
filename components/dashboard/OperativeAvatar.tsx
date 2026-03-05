@@ -509,36 +509,276 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     The cosmetic group is placed after evolution particles so it renders
                     on top, but still within the breathing animation group. */}
 
-                {/* AURA: radial glow centered on torso. Intensity drives opacity. */}
-                {activeCosmetic && cosmeticColor && cosmeticType === 'AURA' && (
-                    <g filter="url(#av-bloom)">
-                        {/* Primary soft ellipse covering the torso */}
-                        <ellipse
-                            cx="100" cy="150" rx="55" ry="75"
-                            fill="none"
-                            stroke={cosmeticColor}
-                            strokeWidth="18"
-                            strokeOpacity={(cosmeticIntensity * 0.35).toFixed(2)}
-                            style={{ filter: `blur(8px)` }}
-                        >
-                            <animate attributeName="strokeOpacity"
-                                values={`${(cosmeticIntensity * 0.35).toFixed(2)};${(cosmeticIntensity * 0.15).toFixed(2)};${(cosmeticIntensity * 0.35).toFixed(2)}`}
-                                dur="3s" repeatCount="indefinite" />
-                        </ellipse>
-                        {/* Secondary outer ring using secondary color if available */}
-                        <ellipse
-                            cx="100" cy="150" rx="70" ry="95"
-                            fill="none"
-                            stroke={cosmeticSecondaryColor || cosmeticColor}
-                            strokeWidth="8"
-                            strokeOpacity={(cosmeticIntensity * 0.18).toFixed(2)}
-                        >
-                            <animate attributeName="strokeOpacity"
-                                values={`${(cosmeticIntensity * 0.18).toFixed(2)};${(cosmeticIntensity * 0.06).toFixed(2)};${(cosmeticIntensity * 0.18).toFixed(2)}`}
-                                dur="4s" repeatCount="indefinite" />
-                        </ellipse>
-                    </g>
-                )}
+                {/* AURA: unique visual per aura ID. Each aura has distinct shape, animation, and layering. */}
+                {activeCosmetic && cosmeticColor && cosmeticType === 'AURA' && (() => {
+                    const ci = cosmeticIntensity;
+                    const sc = cosmeticSecondaryColor || cosmeticColor;
+                    const auraId = activeCosmetic;
+
+                    // Ember Aura: flickering flame tongues rising from base
+                    if (auraId === 'aura_ember') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Wide warm base glow */}
+                            <ellipse cx="100" cy="165" rx="80" ry="110" fill="none" stroke={cosmeticColor} strokeWidth="22" strokeOpacity={(ci * 0.25).toFixed(2)} style={{ filter: 'blur(12px)' }}>
+                                <animate attributeName="strokeOpacity" values={`${(ci * 0.25).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.25).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Flame tongues rising asymmetrically */}
+                            {[
+                                { d: 'M60 220 Q50 160 65 100 Q72 70 60 40', w: 3, dur: '1.6s', delay: '0s' },
+                                { d: 'M80 230 Q68 170 78 110 Q85 65 75 20', w: 4, dur: '1.4s', delay: '0.3s' },
+                                { d: 'M100 240 Q95 180 100 120 Q105 60 100 10', w: 5, dur: '1.2s', delay: '0.1s' },
+                                { d: 'M120 230 Q132 170 122 110 Q115 65 125 20', w: 4, dur: '1.5s', delay: '0.4s' },
+                                { d: 'M140 220 Q150 160 135 100 Q128 70 140 40', w: 3, dur: '1.7s', delay: '0.2s' },
+                            ].map((f, i) => (
+                                <path key={`ef-${i}`} d={f.d} fill="none" stroke={i % 2 === 0 ? cosmeticColor : sc} strokeWidth={f.w} strokeLinecap="round" strokeOpacity={(ci * 0.4).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.4).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.4).toFixed(2)}`} dur={f.dur} begin={f.delay} repeatCount="indefinite" />
+                                    <animate attributeName="strokeWidth" values={`${f.w};${f.w + 2};${f.w}`} dur={f.dur} begin={f.delay} repeatCount="indefinite" />
+                                </path>
+                            ))}
+                            {/* Rising ember sparks */}
+                            {[0,1,2,3,4,5].map(i => {
+                                const cx = 70 + i * 12;
+                                const cy = 200 - i * 15;
+                                return <circle key={`es-${i}`} cx={cx} cy={cy} r={1.5 + (i % 3)} fill={i % 2 === 0 ? sc : cosmeticColor} fillOpacity={(ci * 0.5).toFixed(2)}>
+                                    <animate attributeName="cy" values={`${cy};${cy - 40};${cy}`} dur={`${1.8 + i * 0.3}s`} repeatCount="indefinite" />
+                                    <animate attributeName="fillOpacity" values={`${(ci * 0.5).toFixed(2)};0;${(ci * 0.5).toFixed(2)}`} dur={`${1.8 + i * 0.3}s`} repeatCount="indefinite" />
+                                </circle>;
+                            })}
+                        </g>
+                    );
+
+                    // Frost Aura: crystalline shards radiating outward with icy mist
+                    if (auraId === 'aura_frost') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Icy mist base */}
+                            <ellipse cx="100" cy="160" rx="85" ry="115" fill="none" stroke={sc} strokeWidth="28" strokeOpacity={(ci * 0.15).toFixed(2)} style={{ filter: 'blur(16px)' }}>
+                                <animate attributeName="rx" values="85;90;85" dur="4s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Crystalline shard rays radiating from center */}
+                            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+                                const rad = (angle * Math.PI) / 180;
+                                const x1 = 100 + Math.cos(rad) * 30;
+                                const y1 = 145 + Math.sin(rad) * 40;
+                                const x2 = 100 + Math.cos(rad) * (70 + (i % 3) * 12);
+                                const y2 = 145 + Math.sin(rad) * (95 + (i % 3) * 15);
+                                return <line key={`fs-${i}`} x1={x1} y1={y1} x2={x2} y2={y2}
+                                    stroke={i % 2 === 0 ? cosmeticColor : sc} strokeWidth={1 + (i % 2)} strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.5).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.5).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.5).toFixed(2)}`} dur={`${2 + i * 0.3}s`} repeatCount="indefinite" />
+                                    <animate attributeName="x2" values={`${x2};${x2 + Math.cos(rad) * 5};${x2}`} dur={`${3 + i * 0.2}s`} repeatCount="indefinite" />
+                                    <animate attributeName="y2" values={`${y2};${y2 + Math.sin(rad) * 5};${y2}`} dur={`${3 + i * 0.2}s`} repeatCount="indefinite" />
+                                </line>;
+                            })}
+                            {/* Frost ring */}
+                            <ellipse cx="100" cy="145" rx="65" ry="88" fill="none" stroke={cosmeticColor} strokeWidth="1.5" strokeOpacity={(ci * 0.4).toFixed(2)} strokeDasharray="4 8">
+                                <animate attributeName="strokeDashoffset" values="0;-24" dur="3s" repeatCount="indefinite" />
+                            </ellipse>
+                        </g>
+                    );
+
+                    // Void Aura: dark vortex with swirling rings and inward-pulling particles
+                    if (auraId === 'aura_void') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Dark vortex background */}
+                            <ellipse cx="100" cy="150" rx="78" ry="105" fill={sc} fillOpacity={(ci * 0.08).toFixed(2)}>
+                                <animate attributeName="rx" values="78;82;78" dur="5s" repeatCount="indefinite" />
+                                <animate attributeName="ry" values="105;110;105" dur="5s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Swirling orbit rings at different angles */}
+                            {[0, 1, 2].map(i => (
+                                <ellipse key={`vr-${i}`} cx="100" cy="150"
+                                    rx={55 + i * 18} ry={20 + i * 8}
+                                    fill="none" stroke={i % 2 === 0 ? cosmeticColor : sc}
+                                    strokeWidth={2 - i * 0.4} strokeOpacity={(ci * (0.5 - i * 0.12)).toFixed(2)}
+                                    strokeDasharray={`${6 + i * 2} ${8 + i * 3}`}
+                                    transform={`rotate(${-20 + i * 35}, 100, 150)`}>
+                                    <animate attributeName="strokeDashoffset" values={`0;${i % 2 === 0 ? -30 : 30}`} dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite" />
+                                </ellipse>
+                            ))}
+                            {/* Inward-spiraling particles */}
+                            {[0,1,2,3,4,5].map(i => {
+                                const angle = (i * 60) * Math.PI / 180;
+                                const cx = 100 + Math.cos(angle) * 72;
+                                const cy = 150 + Math.sin(angle) * 95;
+                                return <circle key={`vp-${i}`} cx={cx} cy={cy} r={2 - i * 0.15} fill={cosmeticColor} fillOpacity={(ci * 0.45).toFixed(2)}>
+                                    <animate attributeName="cx" values={`${cx};100;${cx}`} dur={`${3 + i * 0.4}s`} repeatCount="indefinite" />
+                                    <animate attributeName="cy" values={`${cy};150;${cy}`} dur={`${3 + i * 0.4}s`} repeatCount="indefinite" />
+                                    <animate attributeName="fillOpacity" values={`${(ci * 0.45).toFixed(2)};0;${(ci * 0.45).toFixed(2)}`} dur={`${3 + i * 0.4}s`} repeatCount="indefinite" />
+                                </circle>;
+                            })}
+                        </g>
+                    );
+
+                    // Radiant Aura: brilliant starburst with pulsing concentric rings
+                    if (auraId === 'aura_radiant') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Warm golden glow base */}
+                            <ellipse cx="100" cy="145" rx="85" ry="115" fill="none" stroke={sc} strokeWidth="30" strokeOpacity={(ci * 0.18).toFixed(2)} style={{ filter: 'blur(14px)' }}>
+                                <animate attributeName="strokeOpacity" values={`${(ci * 0.18).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.18).toFixed(2)}`} dur="2.5s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Starburst rays emanating from core */}
+                            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => {
+                                const rad = (angle * Math.PI) / 180;
+                                const len = 60 + (i % 3) * 20;
+                                const x1 = 100 + Math.cos(rad) * 15;
+                                const y1 = 130 + Math.sin(rad) * 20;
+                                const x2 = 100 + Math.cos(rad) * len;
+                                const y2 = 130 + Math.sin(rad) * (len * 1.3);
+                                return <line key={`rb-${i}`} x1={x1} y1={y1} x2={x2} y2={y2}
+                                    stroke={cosmeticColor} strokeWidth={i % 3 === 0 ? 2.5 : 1.2} strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.35).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.35).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.35).toFixed(2)}`} dur={`${1.5 + (i % 4) * 0.3}s`} repeatCount="indefinite" />
+                                </line>;
+                            })}
+                            {/* Concentric pulsing rings */}
+                            {[35, 55, 75].map((r, i) => (
+                                <ellipse key={`rr-${i}`} cx="100" cy="140" rx={r} ry={r * 1.3} fill="none"
+                                    stroke={cosmeticColor} strokeWidth="1" strokeOpacity={(ci * (0.4 - i * 0.1)).toFixed(2)}>
+                                    <animate attributeName="rx" values={`${r};${r + 6};${r}`} dur={`${2 + i * 0.5}s`} repeatCount="indefinite" />
+                                    <animate attributeName="ry" values={`${r * 1.3};${r * 1.3 + 8};${r * 1.3}`} dur={`${2 + i * 0.5}s`} repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity" values={`${(ci * (0.4 - i * 0.1)).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * (0.4 - i * 0.1)).toFixed(2)}`} dur={`${2 + i * 0.5}s`} repeatCount="indefinite" />
+                                </ellipse>
+                            ))}
+                        </g>
+                    );
+
+                    // Toxic Aura: bubbling drips rising with toxic cloud
+                    if (auraId === 'aura_toxic') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Toxic cloud */}
+                            <ellipse cx="100" cy="170" rx="80" ry="100" fill="none" stroke={cosmeticColor} strokeWidth="20" strokeOpacity={(ci * 0.18).toFixed(2)} style={{ filter: 'blur(14px)' }}>
+                                <animate attributeName="ry" values="100;108;100" dur="3.5s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Bubbling orbs rising at various speeds */}
+                            {[0,1,2,3,4,5,6,7].map(i => {
+                                const cx = 60 + i * 11;
+                                const startY = 260 - (i % 3) * 20;
+                                const r = 2 + (i % 4) * 1.2;
+                                return <circle key={`tb-${i}`} cx={cx} cy={startY} r={r}
+                                    fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity={(ci * 0.4).toFixed(2)}>
+                                    <animate attributeName="cy" values={`${startY};${startY - 80 - (i % 3) * 30};${startY}`} dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />
+                                    <animate attributeName="r" values={`${r};${r + 2};0`} dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />
+                                    <animate attributeName="fillOpacity" values={`${(ci * 0.4).toFixed(2)};${(ci * 0.2).toFixed(2)};0`} dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />
+                                </circle>;
+                            })}
+                            {/* Dripping lines from bottom */}
+                            {[75, 100, 125].map((x, i) => (
+                                <line key={`td-${i}`} x1={x} y1={280} x2={x} y2={300}
+                                    stroke={cosmeticColor} strokeWidth={2} strokeLinecap="round" strokeOpacity={(ci * 0.3).toFixed(2)}>
+                                    <animate attributeName="y2" values="280;310;280" dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.3).toFixed(2)};0;${(ci * 0.3).toFixed(2)}`} dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                                </line>
+                            ))}
+                        </g>
+                    );
+
+                    // Blood Moon Aura: pulsing crimson heartbeat with veiny tendrils
+                    if (auraId === 'aura_bloodmoon') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Deep crimson pulse — fast heartbeat rhythm */}
+                            <ellipse cx="100" cy="150" rx="80" ry="108" fill={cosmeticColor} fillOpacity={(ci * 0.06).toFixed(2)}>
+                                <animate attributeName="fillOpacity" values={`${(ci * 0.06).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.06).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.06).toFixed(2)}`} dur="1.2s" repeatCount="indefinite" />
+                                <animate attributeName="rx" values="80;86;80;84;80" dur="1.2s" repeatCount="indefinite" />
+                                <animate attributeName="ry" values="108;116;108;113;108" dur="1.2s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Veiny tendrils radiating outward */}
+                            {[
+                                'M60 140 Q40 120 25 95', 'M55 180 Q30 195 15 220',
+                                'M140 140 Q160 120 175 95', 'M145 180 Q170 195 185 220',
+                                'M80 80 Q70 55 55 30', 'M120 80 Q130 55 145 30',
+                            ].map((d, i) => (
+                                <path key={`bv-${i}`} d={d} fill="none" stroke={i % 2 === 0 ? cosmeticColor : sc}
+                                    strokeWidth={1.5} strokeLinecap="round" strokeOpacity={(ci * 0.35).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.35).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.35).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.35).toFixed(2)}`} dur="1.2s" repeatCount="indefinite" />
+                                </path>
+                            ))}
+                            {/* Orbiting blood droplets */}
+                            {[0,1,2,3].map(i => {
+                                const angle = (i * 90 + 20) * Math.PI / 180;
+                                const cx = 100 + Math.cos(angle) * 65;
+                                const cy = 150 + Math.sin(angle) * 88;
+                                return <circle key={`bd-${i}`} cx={cx} cy={cy} r={2.5} fill={cosmeticColor} fillOpacity={(ci * 0.5).toFixed(2)}>
+                                    <animate attributeName="fillOpacity" values={`${(ci * 0.5).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.5).toFixed(2)};${(ci * 0.2).toFixed(2)};${(ci * 0.5).toFixed(2)}`} dur="1.2s" repeatCount="indefinite" />
+                                </circle>;
+                            })}
+                        </g>
+                    );
+
+                    // Aurora Aura: horizontal shifting color bands like northern lights
+                    if (auraId === 'aura_aurora') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Horizontal aurora bands at different heights */}
+                            {[
+                                { y: 40, rx: 75, ry: 12, color: cosmeticColor, dur: '4s' },
+                                { y: 80, rx: 82, ry: 15, color: sc, dur: '5s' },
+                                { y: 120, rx: 78, ry: 14, color: cosmeticColor, dur: '3.5s' },
+                                { y: 165, rx: 85, ry: 16, color: sc, dur: '4.5s' },
+                                { y: 210, rx: 72, ry: 11, color: cosmeticColor, dur: '3.8s' },
+                                { y: 250, rx: 68, ry: 10, color: sc, dur: '4.2s' },
+                            ].map((band, i) => (
+                                <ellipse key={`ab-${i}`} cx="100" cy={band.y}
+                                    rx={band.rx} ry={band.ry}
+                                    fill="none" stroke={band.color}
+                                    strokeWidth={8 + (i % 3) * 3} strokeOpacity={(ci * 0.2).toFixed(2)}
+                                    style={{ filter: 'blur(6px)' }}>
+                                    <animate attributeName="cx" values={`${95 + (i % 2) * 10};${105 - (i % 2) * 10};${95 + (i % 2) * 10}`} dur={band.dur} repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.2).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.2).toFixed(2)}`} dur={band.dur} repeatCount="indefinite" />
+                                </ellipse>
+                            ))}
+                            {/* Shimmering sparkle points */}
+                            {[0,1,2,3,4].map(i => {
+                                const cx = 65 + i * 18;
+                                const cy = 60 + i * 40;
+                                return <circle key={`as-${i}`} cx={cx} cy={cy} r={1.5} fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity={(ci * 0.5).toFixed(2)}>
+                                    <animate attributeName="fillOpacity" values={`${(ci * 0.5).toFixed(2)};0;${(ci * 0.5).toFixed(2)}`} dur={`${1.5 + i * 0.4}s`} repeatCount="indefinite" />
+                                </circle>;
+                            })}
+                        </g>
+                    );
+
+                    // Solar Flare Aura: explosive corona with erupting arcs
+                    if (auraId === 'aura_solar') return (
+                        <g filter="url(#av-bloom)">
+                            {/* Intense core glow */}
+                            <ellipse cx="100" cy="140" rx="45" ry="60" fill={sc} fillOpacity={(ci * 0.12).toFixed(2)}>
+                                <animate attributeName="fillOpacity" values={`${(ci * 0.12).toFixed(2)};${(ci * 0.06).toFixed(2)};${(ci * 0.12).toFixed(2)}`} dur="1.5s" repeatCount="indefinite" />
+                            </ellipse>
+                            {/* Corona flare arcs erupting outward */}
+                            {[
+                                'M65 100 Q40 60 55 20', 'M50 155 Q15 140 5 110',
+                                'M135 100 Q160 60 145 20', 'M150 155 Q185 140 195 110',
+                                'M75 230 Q55 260 40 290', 'M125 230 Q145 260 160 290',
+                                'M100 65 Q100 35 100 5', 'M60 200 Q25 210 10 240',
+                            ].map((d, i) => (
+                                <path key={`sf-${i}`} d={d} fill="none"
+                                    stroke={i % 3 === 0 ? sc : cosmeticColor}
+                                    strokeWidth={2.5 - (i % 3) * 0.5} strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.4).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.4).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.4).toFixed(2)}`} dur={`${1.2 + i * 0.25}s`} repeatCount="indefinite" />
+                                    <animate attributeName="strokeWidth" values={`${2.5 - (i % 3) * 0.5};${3.5 - (i % 3) * 0.5};${2.5 - (i % 3) * 0.5}`} dur={`${1.2 + i * 0.25}s`} repeatCount="indefinite" />
+                                </path>
+                            ))}
+                            {/* Outer heat shimmer ring */}
+                            <ellipse cx="100" cy="145" rx="88" ry="118" fill="none" stroke={cosmeticColor} strokeWidth="3" strokeOpacity={(ci * 0.2).toFixed(2)}>
+                                <animate attributeName="rx" values="88;95;88" dur="2s" repeatCount="indefinite" />
+                                <animate attributeName="ry" values="118;126;118" dur="2s" repeatCount="indefinite" />
+                                <animate attributeName="strokeOpacity" values={`${(ci * 0.2).toFixed(2)};${(ci * 0.06).toFixed(2)};${(ci * 0.2).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
+                            </ellipse>
+                        </g>
+                    );
+
+                    // Fallback: generic aura for any unrecognized ID
+                    return (
+                        <g filter="url(#av-bloom)">
+                            <ellipse cx="100" cy="150" rx="80" ry="108" fill="none" stroke={cosmeticColor} strokeWidth="20" strokeOpacity={(ci * 0.3).toFixed(2)} style={{ filter: 'blur(10px)' }}>
+                                <animate attributeName="strokeOpacity" values={`${(ci * 0.3).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.3).toFixed(2)}`} dur="3s" repeatCount="indefinite" />
+                            </ellipse>
+                            <ellipse cx="100" cy="150" rx="90" ry="120" fill="none" stroke={sc} strokeWidth="8" strokeOpacity={(ci * 0.15).toFixed(2)}>
+                                <animate attributeName="strokeOpacity" values={`${(ci * 0.15).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * 0.15).toFixed(2)}`} dur="4s" repeatCount="indefinite" />
+                            </ellipse>
+                        </g>
+                    );
+                })()}
 
                 {/* PARTICLE: floating orbs orbiting/drifting around the agent body.
                     Positions are derived from index and a fixed angle step so they
@@ -638,114 +878,316 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     </g>
                 )}
 
-                {/* TRAIL: Multi-layered energy wisps with animated dash travel,
-                    staggered opacity, and particle sparkles at the tips.
-                    Six wisps (3 per side) with alternating primary/secondary colors. */}
+                {/* TRAIL: unique visual per trail ID. Each trail has distinct path shapes, wisp behaviors, and particle patterns. */}
                 {activeCosmetic && cosmeticColor && cosmeticType === 'TRAIL' && (() => {
                     const ci = cosmeticIntensity;
                     const sc = cosmeticSecondaryColor || cosmeticColor;
-                    return (
+                    const trailId = activeCosmetic;
+
+                    // Lightning Trail: jagged electric bolts crackling outward
+                    if (trailId === 'trail_lightning') return (
                         <g>
-                            {/* Glow underlayer — wide soft bloom behind everything */}
                             <g filter="url(#av-bloom)">
-                                <path d="M 75 195 Q 35 235 22 300" fill="none"
-                                    stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.12).toFixed(2)}>
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)}`}
-                                        dur="3s" repeatCount="indefinite" />
+                                <path d="M75 195 L60 210 L72 220 L50 245 L68 250 L40 290" fill="none" stroke={cosmeticColor} strokeWidth="3" strokeLinecap="round" strokeOpacity={(ci * 0.6).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.6).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * 0.6).toFixed(2)}`} dur="0.8s" repeatCount="indefinite" />
                                 </path>
-                                <path d="M 125 195 Q 165 235 178 300" fill="none"
-                                    stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.12).toFixed(2)}>
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)}`}
-                                        dur="3s" repeatCount="indefinite" />
+                                <path d="M125 195 L140 210 L128 220 L150 245 L132 250 L160 290" fill="none" stroke={cosmeticColor} strokeWidth="3" strokeLinecap="round" strokeOpacity={(ci * 0.6).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.05).toFixed(2)};${(ci * 0.6).toFixed(2)};${(ci * 0.05).toFixed(2)}`} dur="0.9s" repeatCount="indefinite" />
                                 </path>
-                            </g>
-
-                            {/* Core wisps with animated dash travel */}
-                            <g filter="url(#av-soft)">
-                                {/* Left primary wisp — thick, animated dashes */}
-                                <path d="M 78 200 Q 48 225 38 260 Q 30 280 25 310" fill="none"
-                                    stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.65).toFixed(2)}
-                                    strokeDasharray="8 12">
-                                    <animate attributeName="strokeDashoffset" values="0;-40" dur="1.8s" repeatCount="indefinite" />
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.65).toFixed(2)};${(ci * 0.25).toFixed(2)};${(ci * 0.65).toFixed(2)}`}
-                                        dur="2.4s" repeatCount="indefinite" />
+                                {/* Secondary forking bolts */}
+                                <path d="M68 250 L55 260 L65 268 L48 300" fill="none" stroke={sc} strokeWidth="1.5" strokeLinecap="round" strokeOpacity={(ci * 0.4).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.4).toFixed(2)};0;${(ci * 0.4).toFixed(2)}`} dur="0.6s" repeatCount="indefinite" />
                                 </path>
-                                {/* Left secondary wisp — thinner, offset timing */}
-                                <path d="M 72 185 Q 32 218 22 265 Q 16 290 14 320" fill="none"
-                                    stroke={sc} strokeWidth="1.5" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.45).toFixed(2)}
-                                    strokeDasharray="5 10">
-                                    <animate attributeName="strokeDashoffset" values="0;-30" dur="2.2s" repeatCount="indefinite" />
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.15).toFixed(2)};${(ci * 0.45).toFixed(2)};${(ci * 0.15).toFixed(2)}`}
-                                        dur="2.4s" repeatCount="indefinite" />
+                                <path d="M132 250 L145 260 L135 268 L152 300" fill="none" stroke={sc} strokeWidth="1.5" strokeLinecap="round" strokeOpacity={(ci * 0.4).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`0;${(ci * 0.4).toFixed(2)};0`} dur="0.7s" repeatCount="indefinite" />
                                 </path>
-                                {/* Left tertiary wisp — thin accent */}
-                                <path d="M 82 210 Q 55 240 45 275 Q 38 300 35 325" fill="none"
-                                    stroke={cosmeticColor} strokeWidth="1" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.35).toFixed(2)}
-                                    strokeDasharray="3 8">
-                                    <animate attributeName="strokeDashoffset" values="0;-22" dur="1.5s" repeatCount="indefinite" />
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.35).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.35).toFixed(2)}`}
-                                        dur="3s" repeatCount="indefinite" />
-                                </path>
-
-                                {/* Right primary wisp */}
-                                <path d="M 122 200 Q 152 225 162 260 Q 170 280 175 310" fill="none"
-                                    stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.65).toFixed(2)}
-                                    strokeDasharray="8 12">
-                                    <animate attributeName="strokeDashoffset" values="0;-40" dur="2s" repeatCount="indefinite" />
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.25).toFixed(2)};${(ci * 0.65).toFixed(2)};${(ci * 0.25).toFixed(2)}`}
-                                        dur="2.4s" repeatCount="indefinite" />
-                                </path>
-                                {/* Right secondary wisp */}
-                                <path d="M 128 185 Q 168 218 178 265 Q 184 290 186 320" fill="none"
-                                    stroke={sc} strokeWidth="1.5" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.45).toFixed(2)}
-                                    strokeDasharray="5 10">
-                                    <animate attributeName="strokeDashoffset" values="0;-30" dur="2.4s" repeatCount="indefinite" />
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.45).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.45).toFixed(2)}`}
-                                        dur="2.4s" repeatCount="indefinite" />
-                                </path>
-                                {/* Right tertiary wisp */}
-                                <path d="M 118 210 Q 145 240 155 275 Q 162 300 165 325" fill="none"
-                                    stroke={cosmeticColor} strokeWidth="1" strokeLinecap="round"
-                                    strokeOpacity={(ci * 0.35).toFixed(2)}
-                                    strokeDasharray="3 8">
-                                    <animate attributeName="strokeDashoffset" values="0;-22" dur="1.7s" repeatCount="indefinite" />
-                                    <animate attributeName="strokeOpacity"
-                                        values={`${(ci * 0.1).toFixed(2)};${(ci * 0.35).toFixed(2)};${(ci * 0.1).toFixed(2)}`}
-                                        dur="3s" repeatCount="indefinite" />
+                                {/* Center bolt */}
+                                <path d="M100 200 L95 220 L105 230 L98 255 L108 265 L100 300" fill="none" stroke={cosmeticColor} strokeWidth="2" strokeLinecap="round" strokeOpacity={(ci * 0.35).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.35).toFixed(2)};0;0;${(ci * 0.35).toFixed(2)}`} dur="1.2s" repeatCount="indefinite" />
                                 </path>
                             </g>
-
-                            {/* Sparkle particles at wisp tips */}
+                            {/* Electric sparkle flashes */}
                             <g filter="url(#av-glow)">
-                                {[
-                                    { cx: 25, cy: 305, dur: 1.8 },
-                                    { cx: 14, cy: 315, dur: 2.2 },
-                                    { cx: 175, cy: 305, dur: 2.0 },
-                                    { cx: 186, cy: 315, dur: 2.4 },
-                                ].map((p, i) => (
-                                    <circle key={`ts-${i}`} cx={p.cx} cy={p.cy} r="2"
-                                        fill={i % 2 === 0 ? cosmeticColor : sc}
-                                        fillOpacity={(ci * 0.6).toFixed(2)}>
-                                        <animate attributeName="r" values="2;3.5;2" dur={`${p.dur}s`} repeatCount="indefinite" />
-                                        <animate attributeName="fillOpacity"
-                                            values={`${(ci * 0.6).toFixed(2)};0;${(ci * 0.6).toFixed(2)}`}
-                                            dur={`${p.dur}s`} repeatCount="indefinite" />
+                                {[{cx:50,cy:245},{cx:160,cy:245},{cx:40,cy:290},{cx:160,cy:290},{cx:100,cy:255}].map((p, i) => (
+                                    <circle key={`ls-${i}`} cx={p.cx} cy={p.cy} r="3" fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity="0">
+                                        <animate attributeName="fillOpacity" values={`0;${(ci * 0.7).toFixed(2)};0`} dur={`${0.4 + i * 0.15}s`} repeatCount="indefinite" />
+                                        <animate attributeName="r" values="1;4;1" dur={`${0.4 + i * 0.15}s`} repeatCount="indefinite" />
                                     </circle>
                                 ))}
+                            </g>
+                        </g>
+                    );
+
+                    // Shadow Trail: dark smoky tendrils creeping downward
+                    if (trailId === 'trail_shadow') return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                {/* Dark smoke clouds */}
+                                {[
+                                    { cx: 70, cy: 220, rx: 25, ry: 15 },
+                                    { cx: 130, cy: 225, rx: 22, ry: 13 },
+                                    { cx: 85, cy: 255, rx: 30, ry: 18 },
+                                    { cx: 115, cy: 260, rx: 28, ry: 16 },
+                                    { cx: 100, cy: 290, rx: 35, ry: 20 },
+                                ].map((c, i) => (
+                                    <ellipse key={`ss-${i}`} cx={c.cx} cy={c.cy} rx={c.rx} ry={c.ry}
+                                        fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity={(ci * 0.15).toFixed(2)}>
+                                        <animate attributeName="ry" values={`${c.ry};${c.ry + 4};${c.ry}`} dur={`${3 + i * 0.5}s`} repeatCount="indefinite" />
+                                        <animate attributeName="fillOpacity" values={`${(ci * 0.15).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * 0.15).toFixed(2)}`} dur={`${3 + i * 0.5}s`} repeatCount="indefinite" />
+                                    </ellipse>
+                                ))}
+                            </g>
+                            <g filter="url(#av-soft)">
+                                {/* Creeping shadow tendrils */}
+                                {[
+                                    'M75 200 Q55 230 45 270 Q38 295 30 330',
+                                    'M85 205 Q70 240 60 280 Q52 310 48 340',
+                                    'M125 200 Q145 230 155 270 Q162 295 170 330',
+                                    'M115 205 Q130 240 140 280 Q148 310 152 340',
+                                ].map((d, i) => (
+                                    <path key={`st-${i}`} d={d} fill="none" stroke={i % 2 === 0 ? cosmeticColor : sc}
+                                        strokeWidth={2.5 - i * 0.3} strokeLinecap="round" strokeOpacity={(ci * 0.4).toFixed(2)}>
+                                        <animate attributeName="strokeOpacity" values={`${(ci * 0.4).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.4).toFixed(2)}`} dur={`${4 + i * 0.5}s`} repeatCount="indefinite" />
+                                    </path>
+                                ))}
+                            </g>
+                        </g>
+                    );
+
+                    // Plasma Trail: superheated arcs with bright core streaks
+                    if (trailId === 'trail_plasma') return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                {/* Plasma glow */}
+                                <path d="M75 195 Q35 235 22 300" fill="none" stroke={cosmeticColor} strokeWidth="12" strokeLinecap="round" strokeOpacity={(ci * 0.15).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.15).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * 0.15).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M125 195 Q165 235 178 300" fill="none" stroke={cosmeticColor} strokeWidth="12" strokeLinecap="round" strokeOpacity={(ci * 0.15).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.05).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.05).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
+                                </path>
+                            </g>
+                            <g filter="url(#av-soft)">
+                                {/* Spiraling plasma arcs */}
+                                <path d="M80 195 Q55 210 65 235 Q75 260 55 280 Q40 295 30 320" fill="none" stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round" strokeOpacity={(ci * 0.55).toFixed(2)} strokeDasharray="10 6">
+                                    <animate attributeName="strokeDashoffset" values="0;-48" dur="1.5s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M120 195 Q145 210 135 235 Q125 260 145 280 Q160 295 170 320" fill="none" stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round" strokeOpacity={(ci * 0.55).toFixed(2)} strokeDasharray="10 6">
+                                    <animate attributeName="strokeDashoffset" values="0;-48" dur="1.7s" repeatCount="indefinite" />
+                                </path>
+                                {/* Hot core streaks */}
+                                <path d="M78 200 Q50 220 58 250 Q66 275 48 300" fill="none" stroke={sc} strokeWidth="1.5" strokeLinecap="round" strokeOpacity={(ci * 0.6).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.6).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.6).toFixed(2)}`} dur="1.8s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M122 200 Q150 220 142 250 Q134 275 152 300" fill="none" stroke={sc} strokeWidth="1.5" strokeLinecap="round" strokeOpacity={(ci * 0.6).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.15).toFixed(2)};${(ci * 0.6).toFixed(2)};${(ci * 0.15).toFixed(2)}`} dur="1.8s" repeatCount="indefinite" />
+                                </path>
+                            </g>
+                            {/* Plasma orbs along trails */}
+                            <g filter="url(#av-glow)">
+                                {[{cx:55,cy:280},{cx:145,cy:280},{cx:30,cy:315},{cx:170,cy:315}].map((p, i) => (
+                                    <circle key={`po-${i}`} cx={p.cx} cy={p.cy} r="3" fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity={(ci * 0.5).toFixed(2)}>
+                                        <animate attributeName="r" values="2;4.5;2" dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                                        <animate attributeName="fillOpacity" values={`${(ci * 0.5).toFixed(2)};0;${(ci * 0.5).toFixed(2)}`} dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                                    </circle>
+                                ))}
+                            </g>
+                        </g>
+                    );
+
+                    // Venom Trail: dripping toxic drops with splatter at base
+                    if (trailId === 'trail_venom') return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                <ellipse cx="100" cy="310" rx="50" ry="10" fill={cosmeticColor} fillOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="rx" values="50;55;50" dur="3s" repeatCount="indefinite" />
+                                </ellipse>
+                            </g>
+                            <g filter="url(#av-soft)">
+                                {/* Dripping streams */}
+                                {[65, 80, 100, 120, 135].map((x, i) => {
+                                    const h = 60 + (i % 3) * 25;
+                                    return <g key={`vd-${i}`}>
+                                        <line x1={x} y1={200} x2={x} y2={200 + h} stroke={i % 2 === 0 ? cosmeticColor : sc}
+                                            strokeWidth={2 + (i % 2)} strokeLinecap="round" strokeOpacity={(ci * 0.45).toFixed(2)}>
+                                            <animate attributeName="y2" values={`${200};${200 + h};${200 + h + 15};${200}`} dur={`${1.8 + i * 0.3}s`} repeatCount="indefinite" />
+                                            <animate attributeName="strokeOpacity" values={`0;${(ci * 0.45).toFixed(2)};${(ci * 0.45).toFixed(2)};0`} dur={`${1.8 + i * 0.3}s`} repeatCount="indefinite" />
+                                        </line>
+                                        {/* Drip drop at bottom */}
+                                        <circle cx={x} cy={200 + h + 10} r={2 + (i % 2)} fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity="0">
+                                            <animate attributeName="fillOpacity" values={`0;0;${(ci * 0.5).toFixed(2)};0`} dur={`${1.8 + i * 0.3}s`} repeatCount="indefinite" />
+                                            <animate attributeName="r" values={`${2 + (i % 2)};${2 + (i % 2)};${4 + (i % 2)};0`} dur={`${1.8 + i * 0.3}s`} repeatCount="indefinite" />
+                                        </circle>
+                                    </g>;
+                                })}
+                                {/* Splatter puddle ripples at base */}
+                                {[0, 1, 2].map(i => (
+                                    <ellipse key={`vr-${i}`} cx="100" cy="310" rx={15 + i * 12} ry={3 + i * 1.5}
+                                        fill="none" stroke={cosmeticColor} strokeWidth="1" strokeOpacity={(ci * (0.3 - i * 0.08)).toFixed(2)}>
+                                        <animate attributeName="rx" values={`${15 + i * 12};${20 + i * 14};${15 + i * 12}`} dur={`${2 + i * 0.5}s`} repeatCount="indefinite" />
+                                        <animate attributeName="strokeOpacity" values={`${(ci * (0.3 - i * 0.08)).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * (0.3 - i * 0.08)).toFixed(2)}`} dur={`${2 + i * 0.5}s`} repeatCount="indefinite" />
+                                    </ellipse>
+                                ))}
+                            </g>
+                        </g>
+                    );
+
+                    // Inferno Trail: roaring flames with heat distortion
+                    if (trailId === 'trail_inferno') return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                {/* Wide flame glow at base */}
+                                <path d="M50 300 Q75 260 65 220 Q60 200 75 190" fill="none" stroke={cosmeticColor} strokeWidth="14" strokeLinecap="round" strokeOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)}`} dur="1.5s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M150 300 Q125 260 135 220 Q140 200 125 190" fill="none" stroke={cosmeticColor} strokeWidth="14" strokeLinecap="round" strokeOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)}`} dur="1.5s" repeatCount="indefinite" />
+                                </path>
+                            </g>
+                            <g filter="url(#av-soft)">
+                                {/* Flame shapes (irregular, organic curves) */}
+                                {[
+                                    { d: 'M75 195 Q55 210 48 240 Q42 265 55 280 Q45 300 38 325', c: cosmeticColor, w: 3, dur: '1.3s' },
+                                    { d: 'M70 200 Q45 225 52 255 Q58 275 42 295 Q35 315 30 340', c: sc, w: 2, dur: '1.5s' },
+                                    { d: 'M82 200 Q65 220 60 250 Q55 275 65 295 Q58 310 55 330', c: cosmeticColor, w: 1.5, dur: '1.1s' },
+                                    { d: 'M125 195 Q145 210 152 240 Q158 265 145 280 Q155 300 162 325', c: cosmeticColor, w: 3, dur: '1.4s' },
+                                    { d: 'M130 200 Q155 225 148 255 Q142 275 158 295 Q165 315 170 340', c: sc, w: 2, dur: '1.6s' },
+                                    { d: 'M118 200 Q135 220 140 250 Q145 275 135 295 Q142 310 145 330', c: cosmeticColor, w: 1.5, dur: '1.2s' },
+                                ].map((f, i) => (
+                                    <path key={`if-${i}`} d={f.d} fill="none" stroke={f.c} strokeWidth={f.w} strokeLinecap="round"
+                                        strokeOpacity={(ci * 0.5).toFixed(2)}>
+                                        <animate attributeName="strokeOpacity" values={`${(ci * 0.5).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.5).toFixed(2)}`} dur={f.dur} repeatCount="indefinite" />
+                                        <animate attributeName="strokeWidth" values={`${f.w};${f.w + 1.5};${f.w}`} dur={f.dur} repeatCount="indefinite" />
+                                    </path>
+                                ))}
+                            </g>
+                            {/* Rising heat sparks */}
+                            <g filter="url(#av-glow)">
+                                {[0,1,2,3,4,5].map(i => {
+                                    const cx = 50 + i * 20;
+                                    const cy = 290 - (i % 3) * 15;
+                                    return <circle key={`hs-${i}`} cx={cx} cy={cy} r={1.5} fill={i % 2 === 0 ? sc : cosmeticColor} fillOpacity={(ci * 0.5).toFixed(2)}>
+                                        <animate attributeName="cy" values={`${cy};${cy - 35};${cy}`} dur={`${1.2 + i * 0.2}s`} repeatCount="indefinite" />
+                                        <animate attributeName="fillOpacity" values={`${(ci * 0.5).toFixed(2)};0;${(ci * 0.5).toFixed(2)}`} dur={`${1.2 + i * 0.2}s`} repeatCount="indefinite" />
+                                    </circle>;
+                                })}
+                            </g>
+                        </g>
+                    );
+
+                    // Frost Wake Trail: crystalline ice forming and shattering
+                    if (trailId === 'trail_ice') return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                {/* Frosty mist at base */}
+                                <ellipse cx="100" cy="300" rx="60" ry="12" fill={sc} fillOpacity={(ci * 0.15).toFixed(2)} style={{ filter: 'blur(8px)' }}>
+                                    <animate attributeName="rx" values="60;68;60" dur="3s" repeatCount="indefinite" />
+                                </ellipse>
+                            </g>
+                            <g filter="url(#av-soft)">
+                                {/* Ice crystal shards growing downward */}
+                                {[
+                                    { points: '70,200 62,230 70,225 58,260 68,255 55,290', dur: '2.5s' },
+                                    { points: '85,205 78,235 86,230 75,265 84,260 72,295', dur: '2.8s' },
+                                    { points: '130,200 138,230 130,225 142,260 132,255 145,290', dur: '2.6s' },
+                                    { points: '115,205 122,235 114,230 125,265 116,260 128,295', dur: '2.9s' },
+                                ].map((s, i) => (
+                                    <polyline key={`ic-${i}`} points={s.points} fill="none"
+                                        stroke={i % 2 === 0 ? cosmeticColor : sc}
+                                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                        strokeOpacity={(ci * 0.5).toFixed(2)}>
+                                        <animate attributeName="strokeOpacity" values={`${(ci * 0.5).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.5).toFixed(2)}`} dur={s.dur} repeatCount="indefinite" />
+                                    </polyline>
+                                ))}
+                                {/* Hexagonal snowflake shapes */}
+                                {[{cx:55,cy:275},{cx:145,cy:278},{cx:100,cy:295}].map((p, i) => {
+                                    const r = 5 + i * 2;
+                                    return <g key={`sf-${i}`}>
+                                        {[0,60,120].map(a => {
+                                            const rad = (a * Math.PI) / 180;
+                                            return <line key={a} x1={p.cx - Math.cos(rad) * r} y1={p.cy - Math.sin(rad) * r}
+                                                x2={p.cx + Math.cos(rad) * r} y2={p.cy + Math.sin(rad) * r}
+                                                stroke={cosmeticColor} strokeWidth="1" strokeOpacity={(ci * 0.35).toFixed(2)}>
+                                                <animate attributeName="strokeOpacity" values={`${(ci * 0.35).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.35).toFixed(2)}`} dur={`${2 + i * 0.4}s`} repeatCount="indefinite" />
+                                            </line>;
+                                        })}
+                                    </g>;
+                                })}
+                            </g>
+                        </g>
+                    );
+
+                    // Spectral Trail: ghostly after-images with wispy echoes
+                    if (trailId === 'trail_spectral') return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                {/* Ghostly silhouette echoes at offset positions */}
+                                {[
+                                    { x: -12, y: 15, opacity: 0.08, scale: 0.95 },
+                                    { x: 12, y: 25, opacity: 0.05, scale: 0.9 },
+                                    { x: -8, y: 40, opacity: 0.03, scale: 0.85 },
+                                ].map((echo, i) => (
+                                    <ellipse key={`ge-${i}`}
+                                        cx={100 + echo.x} cy={150 + echo.y}
+                                        rx={40 * echo.scale} ry={80 * echo.scale}
+                                        fill={i % 2 === 0 ? cosmeticColor : sc}
+                                        fillOpacity={(ci * echo.opacity).toFixed(3)}>
+                                        <animate attributeName="fillOpacity"
+                                            values={`${(ci * echo.opacity).toFixed(3)};${(ci * echo.opacity * 0.3).toFixed(3)};${(ci * echo.opacity).toFixed(3)}`}
+                                            dur={`${3 + i * 0.8}s`} repeatCount="indefinite" />
+                                        <animate attributeName="cx"
+                                            values={`${100 + echo.x};${100 + echo.x * 1.5};${100 + echo.x}`}
+                                            dur={`${3 + i * 0.8}s`} repeatCount="indefinite" />
+                                    </ellipse>
+                                ))}
+                            </g>
+                            <g filter="url(#av-soft)">
+                                {/* Wispy spectral tendrils */}
+                                {[
+                                    'M78 200 Q60 225 55 260 Q52 285 58 310 Q50 320 45 340',
+                                    'M72 190 Q48 215 42 250 Q38 280 45 305 Q38 315 32 335',
+                                    'M122 200 Q140 225 145 260 Q148 285 142 310 Q150 320 155 340',
+                                    'M128 190 Q152 215 158 250 Q162 280 155 305 Q162 315 168 335',
+                                ].map((d, i) => (
+                                    <path key={`sp-${i}`} d={d} fill="none"
+                                        stroke={i % 2 === 0 ? cosmeticColor : sc}
+                                        strokeWidth={1.8} strokeLinecap="round"
+                                        strokeOpacity={(ci * 0.35).toFixed(2)}
+                                        strokeDasharray="12 8">
+                                        <animate attributeName="strokeDashoffset" values={`0;${i % 2 === 0 ? -40 : 40}`} dur={`${3 + i * 0.4}s`} repeatCount="indefinite" />
+                                        <animate attributeName="strokeOpacity" values={`${(ci * 0.35).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.35).toFixed(2)}`} dur={`${3 + i * 0.4}s`} repeatCount="indefinite" />
+                                    </path>
+                                ))}
+                            </g>
+                            {/* Ghostly orbs fading in and out */}
+                            <g filter="url(#av-glow)">
+                                {[{cx:48,cy:270},{cx:152,cy:275},{cx:55,cy:310},{cx:145,cy:315},{cx:100,cy:330}].map((p, i) => (
+                                    <circle key={`go-${i}`} cx={p.cx} cy={p.cy} r={2.5} fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity="0">
+                                        <animate attributeName="fillOpacity" values={`0;${(ci * 0.45).toFixed(2)};0`} dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite" />
+                                        <animate attributeName="r" values="1.5;3.5;1.5" dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite" />
+                                    </circle>
+                                ))}
+                            </g>
+                        </g>
+                    );
+
+                    // Fallback: generic wisp trail
+                    return (
+                        <g>
+                            <g filter="url(#av-bloom)">
+                                <path d="M75 195 Q35 235 22 300" fill="none" stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round" strokeOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)}`} dur="3s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M125 195 Q165 235 178 300" fill="none" stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round" strokeOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity" values={`${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)}`} dur="3s" repeatCount="indefinite" />
+                                </path>
+                            </g>
+                            <g filter="url(#av-soft)">
+                                <path d="M78 200 Q48 225 38 260 Q30 280 25 310" fill="none" stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round" strokeOpacity={(ci * 0.55).toFixed(2)} strokeDasharray="8 12">
+                                    <animate attributeName="strokeDashoffset" values="0;-40" dur="1.8s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M122 200 Q152 225 162 260 Q170 280 175 310" fill="none" stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round" strokeOpacity={(ci * 0.55).toFixed(2)} strokeDasharray="8 12">
+                                    <animate attributeName="strokeDashoffset" values="0;-40" dur="2s" repeatCount="indefinite" />
+                                </path>
                             </g>
                         </g>
                     );

@@ -1,10 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
-import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind, Eye, EyeOff } from 'lucide-react';
 import { FLUX_SHOP_ITEMS, AGENT_COSMETICS } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
 import { ActiveBoost, FluxShopItem, CosmeticVisualType } from '../../types';
+import OperativeAvatar from '../dashboard/OperativeAvatar';
 
 interface FluxShopPanelProps {
   currency: number;
@@ -15,6 +16,10 @@ interface FluxShopPanelProps {
   ownedCosmetics: string[];
   activeCosmetic?: string;
   onEquipCosmetic: (cosmeticId: string | null) => Promise<unknown>;
+  // Avatar props for preview system
+  playerEquipped?: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
+  playerAppearance?: { bodyType?: 'A' | 'B' | 'C'; hue?: number; skinTone?: number; hairStyle?: number; hairColor?: number };
+  playerEvolutionLevel?: number;
 }
 
 const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
@@ -26,11 +31,31 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   ownedCosmetics,
   activeCosmetic,
   onEquipCosmetic,
+  playerEquipped,
+  playerAppearance,
+  playerEvolutionLevel,
 }) => {
   const toast = useToast();
   const [purchasing, setPurchasing] = useState<string | null>(null);
   // Track in-flight equip calls to prevent double-clicks
   const [equipping, setEquipping] = useState<string | null>(null);
+  // Cosmetic preview: null = show currently equipped, string = preview that cosmetic ID
+  const [previewCosmeticId, setPreviewCosmeticId] = useState<string | null>(null);
+
+  // Resolve which cosmetic to show on the avatar (preview takes priority over equipped)
+  const displayedCosmeticId = previewCosmeticId || activeCosmetic || undefined;
+  const displayedCosmeticDef = useMemo(() =>
+    displayedCosmeticId ? AGENT_COSMETICS.find(c => c.id === displayedCosmeticId) : undefined,
+    [displayedCosmeticId]
+  );
+
+  const handlePreview = useCallback((cosmeticId: string) => {
+    setPreviewCosmeticId(prev => prev === cosmeticId ? null : cosmeticId);
+  }, []);
+
+  const clearPreview = useCallback(() => {
+    setPreviewCosmeticId(null);
+  }, []);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -235,6 +260,73 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
         </div>
       </div>
 
+      {/* Agent Preview Panel */}
+      {playerEquipped && (
+        <div className="bg-black/30 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <User className="w-4 h-4 text-teal-400" aria-hidden="true" />
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Agent Preview</h3>
+            {previewCosmeticId && (
+              <button
+                type="button"
+                onClick={clearPreview}
+                className="ml-auto flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400"
+                aria-label="Clear preview and show equipped cosmetic"
+              >
+                <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
+                Clear Preview
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-28 h-44 flex-shrink-0 bg-black/40 rounded-xl border border-white/10 overflow-hidden relative"
+                 style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(playerAppearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, rgba(0,0,0,0.4) 70%)` }}>
+              <OperativeAvatar
+                equipped={playerEquipped}
+                appearance={playerAppearance}
+                evolutionLevel={playerEvolutionLevel}
+                activeCosmetic={displayedCosmeticId}
+                {...(displayedCosmeticDef ? {
+                  cosmeticColor: displayedCosmeticDef.color,
+                  cosmeticSecondaryColor: displayedCosmeticDef.secondaryColor,
+                  cosmeticType: displayedCosmeticDef.visualType,
+                  cosmeticIntensity: displayedCosmeticDef.intensity,
+                  cosmeticParticleCount: displayedCosmeticDef.particleCount,
+                } : {})}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              {displayedCosmeticDef ? (
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-white">{displayedCosmeticDef.name}</span>
+                    {previewCosmeticId ? (
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                        Preview
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-1.5 py-0.5 rounded">
+                        Equipped
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">{displayedCosmeticDef.description}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: displayedCosmeticDef.color }} aria-hidden="true" />
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{displayedCosmeticDef.visualType}</span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-sm font-bold text-gray-400">No Cosmetic Active</span>
+                  <p className="text-xs text-gray-500 mt-1">Tap the eye icon on any cosmetic below to preview it on your agent.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Non-cosmetic Item Categories (XP Boosts, Utility, Name Colors) */}
       {Object.entries(grouped).map(([type, items]) => {
         const colors = getCategoryColor(type);
@@ -389,6 +481,22 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                           </div>
                           <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
                         </div>
+                        {/* Preview toggle */}
+                        {playerEquipped && (
+                          <button
+                            type="button"
+                            onClick={() => handlePreview(item.id)}
+                            aria-label={previewCosmeticId === item.id ? `Stop previewing ${item.name}` : `Preview ${item.name} on agent`}
+                            aria-pressed={previewCosmeticId === item.id}
+                            className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400 ${
+                              previewCosmeticId === item.id
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                            }`}
+                          >
+                            {previewCosmeticId === item.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        )}
                       </div>
 
                       <button
@@ -450,6 +558,22 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         <h4 className="font-bold text-white text-sm">{item.name}</h4>
                         <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
                       </div>
+                      {/* Preview toggle */}
+                      {playerEquipped && (
+                        <button
+                          type="button"
+                          onClick={() => handlePreview(item.id)}
+                          aria-label={previewCosmeticId === item.id ? `Stop previewing ${item.name}` : `Preview ${item.name} on agent`}
+                          aria-pressed={previewCosmeticId === item.id}
+                          className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400 ${
+                            previewCosmeticId === item.id
+                              ? 'bg-amber-500/20 text-amber-400'
+                              : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                          }`}
+                        >
+                          {previewCosmeticId === item.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      )}
                     </div>
 
                     <button
