@@ -617,7 +617,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
                  <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Dungeons">
-                       <DungeonPanel userId={user.id} classType={activeClass} />
+                       <DungeonPanel userId={user.id} classType={activeClass} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
                      </FeatureErrorBoundary>
                  </div>
              )}
