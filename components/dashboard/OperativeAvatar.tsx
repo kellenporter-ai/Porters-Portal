@@ -638,62 +638,118 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     </g>
                 )}
 
-                {/* TRAIL: curved bezier arcs emanating from behind/below the agent.
-                    Four wisps using alternating primary/secondary colors with staggered timing. */}
-                {activeCosmetic && cosmeticColor && cosmeticType === 'TRAIL' && (
-                    <g filter="url(#av-soft)">
-                        {/* Left-side wisps */}
-                        <path
-                            d="M 78 200 Q 40 230 30 290"
-                            fill="none"
-                            stroke={cosmeticColor}
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeOpacity={(cosmeticIntensity * 0.6).toFixed(2)}
-                        >
-                            <animate attributeName="strokeOpacity"
-                                values={`${(cosmeticIntensity * 0.6).toFixed(2)};0;${(cosmeticIntensity * 0.6).toFixed(2)}`}
-                                dur="2.4s" repeatCount="indefinite" />
-                        </path>
-                        <path
-                            d="M 72 180 Q 28 215 20 270"
-                            fill="none"
-                            stroke={cosmeticSecondaryColor || cosmeticColor}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeOpacity={(cosmeticIntensity * 0.4).toFixed(2)}
-                        >
-                            <animate attributeName="strokeOpacity"
-                                values={`0;${(cosmeticIntensity * 0.4).toFixed(2)};0`}
-                                dur="2.4s" repeatCount="indefinite" />
-                        </path>
-                        {/* Right-side wisps (mirrored) */}
-                        <path
-                            d="M 122 200 Q 160 230 170 290"
-                            fill="none"
-                            stroke={cosmeticColor}
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeOpacity={(cosmeticIntensity * 0.6).toFixed(2)}
-                        >
-                            <animate attributeName="strokeOpacity"
-                                values={`${(cosmeticIntensity * 0.6).toFixed(2)};0;${(cosmeticIntensity * 0.6).toFixed(2)}`}
-                                dur="2.8s" repeatCount="indefinite" />
-                        </path>
-                        <path
-                            d="M 128 180 Q 172 215 180 270"
-                            fill="none"
-                            stroke={cosmeticSecondaryColor || cosmeticColor}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeOpacity={(cosmeticIntensity * 0.4).toFixed(2)}
-                        >
-                            <animate attributeName="strokeOpacity"
-                                values={`0;${(cosmeticIntensity * 0.4).toFixed(2)};0`}
-                                dur="2.8s" repeatCount="indefinite" />
-                        </path>
-                    </g>
-                )}
+                {/* TRAIL: Multi-layered energy wisps with animated dash travel,
+                    staggered opacity, and particle sparkles at the tips.
+                    Six wisps (3 per side) with alternating primary/secondary colors. */}
+                {activeCosmetic && cosmeticColor && cosmeticType === 'TRAIL' && (() => {
+                    const ci = cosmeticIntensity;
+                    const sc = cosmeticSecondaryColor || cosmeticColor;
+                    return (
+                        <g>
+                            {/* Glow underlayer — wide soft bloom behind everything */}
+                            <g filter="url(#av-bloom)">
+                                <path d="M 75 195 Q 35 235 22 300" fill="none"
+                                    stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)}`}
+                                        dur="3s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M 125 195 Q 165 235 178 300" fill="none"
+                                    stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.12).toFixed(2)}>
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)}`}
+                                        dur="3s" repeatCount="indefinite" />
+                                </path>
+                            </g>
+
+                            {/* Core wisps with animated dash travel */}
+                            <g filter="url(#av-soft)">
+                                {/* Left primary wisp — thick, animated dashes */}
+                                <path d="M 78 200 Q 48 225 38 260 Q 30 280 25 310" fill="none"
+                                    stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.65).toFixed(2)}
+                                    strokeDasharray="8 12">
+                                    <animate attributeName="strokeDashoffset" values="0;-40" dur="1.8s" repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.65).toFixed(2)};${(ci * 0.25).toFixed(2)};${(ci * 0.65).toFixed(2)}`}
+                                        dur="2.4s" repeatCount="indefinite" />
+                                </path>
+                                {/* Left secondary wisp — thinner, offset timing */}
+                                <path d="M 72 185 Q 32 218 22 265 Q 16 290 14 320" fill="none"
+                                    stroke={sc} strokeWidth="1.5" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.45).toFixed(2)}
+                                    strokeDasharray="5 10">
+                                    <animate attributeName="strokeDashoffset" values="0;-30" dur="2.2s" repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.15).toFixed(2)};${(ci * 0.45).toFixed(2)};${(ci * 0.15).toFixed(2)}`}
+                                        dur="2.4s" repeatCount="indefinite" />
+                                </path>
+                                {/* Left tertiary wisp — thin accent */}
+                                <path d="M 82 210 Q 55 240 45 275 Q 38 300 35 325" fill="none"
+                                    stroke={cosmeticColor} strokeWidth="1" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.35).toFixed(2)}
+                                    strokeDasharray="3 8">
+                                    <animate attributeName="strokeDashoffset" values="0;-22" dur="1.5s" repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.35).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.35).toFixed(2)}`}
+                                        dur="3s" repeatCount="indefinite" />
+                                </path>
+
+                                {/* Right primary wisp */}
+                                <path d="M 122 200 Q 152 225 162 260 Q 170 280 175 310" fill="none"
+                                    stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.65).toFixed(2)}
+                                    strokeDasharray="8 12">
+                                    <animate attributeName="strokeDashoffset" values="0;-40" dur="2s" repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.25).toFixed(2)};${(ci * 0.65).toFixed(2)};${(ci * 0.25).toFixed(2)}`}
+                                        dur="2.4s" repeatCount="indefinite" />
+                                </path>
+                                {/* Right secondary wisp */}
+                                <path d="M 128 185 Q 168 218 178 265 Q 184 290 186 320" fill="none"
+                                    stroke={sc} strokeWidth="1.5" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.45).toFixed(2)}
+                                    strokeDasharray="5 10">
+                                    <animate attributeName="strokeDashoffset" values="0;-30" dur="2.4s" repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.45).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.45).toFixed(2)}`}
+                                        dur="2.4s" repeatCount="indefinite" />
+                                </path>
+                                {/* Right tertiary wisp */}
+                                <path d="M 118 210 Q 145 240 155 275 Q 162 300 165 325" fill="none"
+                                    stroke={cosmeticColor} strokeWidth="1" strokeLinecap="round"
+                                    strokeOpacity={(ci * 0.35).toFixed(2)}
+                                    strokeDasharray="3 8">
+                                    <animate attributeName="strokeDashoffset" values="0;-22" dur="1.7s" repeatCount="indefinite" />
+                                    <animate attributeName="strokeOpacity"
+                                        values={`${(ci * 0.1).toFixed(2)};${(ci * 0.35).toFixed(2)};${(ci * 0.1).toFixed(2)}`}
+                                        dur="3s" repeatCount="indefinite" />
+                                </path>
+                            </g>
+
+                            {/* Sparkle particles at wisp tips */}
+                            <g filter="url(#av-glow)">
+                                {[
+                                    { cx: 25, cy: 305, dur: 1.8 },
+                                    { cx: 14, cy: 315, dur: 2.2 },
+                                    { cx: 175, cy: 305, dur: 2.0 },
+                                    { cx: 186, cy: 315, dur: 2.4 },
+                                ].map((p, i) => (
+                                    <circle key={`ts-${i}`} cx={p.cx} cy={p.cy} r="2"
+                                        fill={i % 2 === 0 ? cosmeticColor : sc}
+                                        fillOpacity={(ci * 0.6).toFixed(2)}>
+                                        <animate attributeName="r" values="2;3.5;2" dur={`${p.dur}s`} repeatCount="indefinite" />
+                                        <animate attributeName="fillOpacity"
+                                            values={`${(ci * 0.6).toFixed(2)};0;${(ci * 0.6).toFixed(2)}`}
+                                            dur={`${p.dur}s`} repeatCount="indefinite" />
+                                    </circle>
+                                ))}
+                            </g>
+                        </g>
+                    );
+                })()}
             </g>
         </svg>
     );

@@ -4964,19 +4964,35 @@ const FLUX_SHOP_CATALOG: Record<string, {
   aura_frost: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
   aura_void: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
   aura_radiant: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_toxic: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_bloodmoon: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_aurora: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
+  aura_solar: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
   // Particles - 200 Flux each
   particle_fireflies: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
   particle_stardust: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
   particle_embers: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
   particle_snow: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_sakura: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_binary: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_ashes: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
+  particle_crystals: { type: 'AGENT_COSMETIC', cost: 200, dailyLimit: 0 },
   // Frames - 250 Flux each
   frame_circuit: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
   frame_thorns: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
   frame_diamond: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  frame_hex: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  frame_glitch: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  frame_rune: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
+  frame_neon: { type: 'AGENT_COSMETIC', cost: 250, dailyLimit: 0 },
   // Trails - 300 Flux each
   trail_lightning: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
   trail_shadow: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
   trail_plasma: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  trail_venom: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  trail_inferno: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  trail_ice: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  trail_spectral: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
 };
 
 export const purchaseFluxItem = onCall(async (request) => {

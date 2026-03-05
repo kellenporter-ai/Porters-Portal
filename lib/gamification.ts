@@ -142,22 +142,38 @@ export const AGENT_COSMETICS: AgentCosmeticDef[] = [
     { id: 'aura_frost', name: 'Frost Aura', description: 'Icy blue radiance emanates from your operative', visualType: 'AURA', color: '#00d4ff', secondaryColor: '#e0f7ff', intensity: 0.6 },
     { id: 'aura_void', name: 'Void Aura', description: 'Dark purple energy pulses around your operative', visualType: 'AURA', color: '#9333ea', secondaryColor: '#1a0033', intensity: 0.7 },
     { id: 'aura_radiant', name: 'Radiant Aura', description: 'Brilliant golden light radiates from your operative', visualType: 'AURA', color: '#fbbf24', secondaryColor: '#fff7ed', intensity: 0.8 },
+    { id: 'aura_toxic', name: 'Toxic Aura', description: 'Corrosive green fumes seep from your operative', visualType: 'AURA', color: '#22c55e', secondaryColor: '#064e3b', intensity: 0.65 },
+    { id: 'aura_bloodmoon', name: 'Blood Moon Aura', description: 'A crimson haze pulses with each heartbeat', visualType: 'AURA', color: '#dc2626', secondaryColor: '#450a0a', intensity: 0.7 },
+    { id: 'aura_aurora', name: 'Aurora Aura', description: 'Shifting northern lights shimmer around your operative', visualType: 'AURA', color: '#34d399', secondaryColor: '#818cf8', intensity: 0.55 },
+    { id: 'aura_solar', name: 'Solar Flare Aura', description: 'Blinding solar corona erupts from your operative', visualType: 'AURA', color: '#fb923c', secondaryColor: '#fef08a', intensity: 0.85 },
 
     // --- PARTICLES (floating elements around the agent) ---
     { id: 'particle_fireflies', name: 'Fireflies', description: 'Glowing fireflies drift around your operative', visualType: 'PARTICLE', color: '#84cc16', secondaryColor: '#fef08a', particleCount: 10, intensity: 0.5 },
     { id: 'particle_stardust', name: 'Stardust', description: 'Sparkling star particles float around your operative', visualType: 'PARTICLE', color: '#f0abfc', secondaryColor: '#ffffff', particleCount: 12, intensity: 0.6 },
     { id: 'particle_embers', name: 'Floating Embers', description: 'Hot embers rise and fade around your operative', visualType: 'PARTICLE', color: '#f97316', secondaryColor: '#ef4444', particleCount: 8, intensity: 0.5 },
     { id: 'particle_snow', name: 'Snowfall', description: 'Gentle snowflakes drift around your operative', visualType: 'PARTICLE', color: '#e0f2fe', secondaryColor: '#ffffff', particleCount: 14, intensity: 0.4 },
+    { id: 'particle_sakura', name: 'Cherry Blossoms', description: 'Delicate pink petals swirl in an unseen breeze', visualType: 'PARTICLE', color: '#f9a8d4', secondaryColor: '#fce7f3', particleCount: 10, intensity: 0.45 },
+    { id: 'particle_binary', name: 'Binary Rain', description: 'Cascading data fragments dissolve into the void', visualType: 'PARTICLE', color: '#4ade80', secondaryColor: '#22c55e', particleCount: 16, intensity: 0.5 },
+    { id: 'particle_ashes', name: 'Cinder Ash', description: 'Smoldering ash drifts upward like dying stars', visualType: 'PARTICLE', color: '#a3a3a3', secondaryColor: '#f97316', particleCount: 8, intensity: 0.4 },
+    { id: 'particle_crystals', name: 'Shattered Crystals', description: 'Fractured crystal shards orbit your operative', visualType: 'PARTICLE', color: '#67e8f9', secondaryColor: '#a78bfa', particleCount: 6, intensity: 0.65 },
 
     // --- FRAMES (decorative border/outline around the agent) ---
     { id: 'frame_circuit', name: 'Circuit Frame', description: 'A glowing circuit-board frame outlines your operative', visualType: 'FRAME', color: '#22d3ee', secondaryColor: '#0e7490', intensity: 0.6 },
     { id: 'frame_thorns', name: 'Thorn Frame', description: 'Twisted energy thorns frame your operative', visualType: 'FRAME', color: '#dc2626', secondaryColor: '#7f1d1d', intensity: 0.5 },
     { id: 'frame_diamond', name: 'Diamond Frame', description: 'A crystalline diamond border frames your operative', visualType: 'FRAME', color: '#a78bfa', secondaryColor: '#f5f3ff', intensity: 0.7 },
+    { id: 'frame_hex', name: 'Hex Grid Frame', description: 'Tessellating hexagons lock around your operative', visualType: 'FRAME', color: '#f59e0b', secondaryColor: '#78350f', intensity: 0.6 },
+    { id: 'frame_glitch', name: 'Glitch Frame', description: 'Corrupted scan-lines flicker at the edges of reality', visualType: 'FRAME', color: '#f43f5e', secondaryColor: '#22d3ee', intensity: 0.65 },
+    { id: 'frame_rune', name: 'Rune Frame', description: 'Ancient glyphs inscribe a ward around your operative', visualType: 'FRAME', color: '#c084fc', secondaryColor: '#e9d5ff', intensity: 0.7 },
+    { id: 'frame_neon', name: 'Neon Frame', description: 'Bright neon tubing buzzes with electric energy', visualType: 'FRAME', color: '#a3e635', secondaryColor: '#ecfccb', intensity: 0.75 },
 
     // --- TRAILS (motion/energy trails behind the agent) ---
     { id: 'trail_lightning', name: 'Lightning Trail', description: 'Electric bolts crackle around your operative', visualType: 'TRAIL', color: '#38bdf8', secondaryColor: '#ffffff', intensity: 0.7 },
     { id: 'trail_shadow', name: 'Shadow Trail', description: 'Dark wisps trail behind your operative', visualType: 'TRAIL', color: '#475569', secondaryColor: '#1e293b', intensity: 0.5 },
     { id: 'trail_plasma', name: 'Plasma Trail', description: 'Superheated plasma arcs around your operative', visualType: 'TRAIL', color: '#e879f9', secondaryColor: '#7c3aed', intensity: 0.8 },
+    { id: 'trail_venom', name: 'Venom Trail', description: 'Toxic droplets sizzle in your operative\'s wake', visualType: 'TRAIL', color: '#4ade80', secondaryColor: '#166534', intensity: 0.6 },
+    { id: 'trail_inferno', name: 'Inferno Trail', description: 'Roaring flames lick the ground behind your operative', visualType: 'TRAIL', color: '#f97316', secondaryColor: '#dc2626', intensity: 0.75 },
+    { id: 'trail_ice', name: 'Frost Wake Trail', description: 'Crystalline ice shards form and shatter in your path', visualType: 'TRAIL', color: '#67e8f9', secondaryColor: '#e0f2fe', intensity: 0.6 },
+    { id: 'trail_spectral', name: 'Spectral Trail', description: 'Ghostly after-images echo your operative\'s movements', visualType: 'TRAIL', color: '#c4b5fd', secondaryColor: '#4c1d95', intensity: 0.65 },
 ];
 
 export const FLUX_SHOP_ITEMS: FluxShopItem[] = [
