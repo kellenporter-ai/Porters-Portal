@@ -378,7 +378,19 @@ function buildXPUpdates(
   const gam = data.gamification || {};
   const currentXP = gam.xp || 0;
   const currentLevel = gam.level || 1;
-  const newXP = Math.max(0, currentXP + xpAmount);
+
+  // Apply active XP boosts (Flux Shop consumables)
+  let boostMultiplier = 1;
+  const now = new Date();
+  const activeBoosts: Array<{ expiresAt: string; value: number }> = gam.activeBoosts || [];
+  for (const boost of activeBoosts) {
+    if (boost.value > 1 && new Date(boost.expiresAt) > now) {
+      boostMultiplier = Math.max(boostMultiplier, boost.value);
+    }
+  }
+  const boostedXP = xpAmount > 0 ? Math.round(xpAmount * boostMultiplier) : xpAmount;
+
+  const newXP = Math.max(0, currentXP + boostedXP);
   const newLevel = Math.min(levelForXp(newXP), MAX_LEVEL);
   const leveledUp = newLevel > currentLevel;
 
@@ -390,7 +402,7 @@ function buildXPUpdates(
   if (classType) {
     const classXpMap = gam.classXp || {};
     const currentClassXp = classXpMap[classType] || 0;
-    updates[`gamification.classXp.${classType}`] = Math.max(0, currentClassXp + xpAmount);
+    updates[`gamification.classXp.${classType}`] = Math.max(0, currentClassXp + boostedXP);
   }
 
   if (leveledUp) {
@@ -849,7 +861,11 @@ export const craftItem = onCall(async (request) => {
     const currentCurrency = data.gamification?.currency || 0;
     const playerLevel = data.gamification?.level || 1;
 
-    if (currentCurrency < cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+    // Check if player wants to use a reroll token for REFORGE
+    const rerollTokens = data.gamification?.rerollTokens || 0;
+    const useRerollToken = action === "REFORGE" && rerollTokens > 0 && request.data.useRerollToken === true;
+
+    if (!useRerollToken && currentCurrency < cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
 
     // Item can be in inventory OR currently equipped — check both
     const itemIdx = inventory.findIndex((i: LootItem) => i.id === itemId);
@@ -933,7 +949,11 @@ export const craftItem = onCall(async (request) => {
     }
 
     // Write modified item back to wherever it was found
-    const updates: Record<string, unknown> = { "gamification.currency": currentCurrency - cost };
+    const actualCost = useRerollToken ? 0 : cost;
+    const updates: Record<string, unknown> = { "gamification.currency": currentCurrency - actualCost };
+    if (useRerollToken) {
+      updates["gamification.rerollTokens"] = rerollTokens - 1;
+    }
     if (equippedSlot) {
       updates[`${paths.equipped}.${equippedSlot}`] = item;
     } else {
@@ -941,7 +961,7 @@ export const craftItem = onCall(async (request) => {
       updates[paths.inventory] = inventory;
     }
     transaction.update(userRef, updates);
-    return { item, newCurrency: currentCurrency - cost };
+    return { item, newCurrency: currentCurrency - actualCost, usedRerollToken: useRerollToken };
   });
 });
 
@@ -4918,4 +4938,96 @@ export const cancelArenaQueue = onCall(async (request) => {
 
   await matchRef.delete();
   return { cancelled: true };
+});
+
+// ==========================================
+// FLUX SHOP — Consumable Purchases
+// ==========================================
+
+/** Server-side item catalog — must mirror client FLUX_SHOP_ITEMS */
+const FLUX_SHOP_CATALOG: Record<string, {
+  type: 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR';
+  cost: number;
+  value?: number;
+  duration?: number; // hours
+  dailyLimit: number;
+}> = {
+  xp_boost_1h: { type: 'XP_BOOST', cost: 75, value: 1.5, duration: 1, dailyLimit: 2 },
+  xp_boost_3h: { type: 'XP_BOOST', cost: 150, value: 1.5, duration: 3, dailyLimit: 1 },
+  reroll_token: { type: 'REROLL_TOKEN', cost: 50, dailyLimit: 3 },
+  name_color_cyan: { type: 'NAME_COLOR', cost: 100, value: 0x00e5ff, dailyLimit: 0 },
+  name_color_gold: { type: 'NAME_COLOR', cost: 100, value: 0xffd700, dailyLimit: 0 },
+  name_color_magenta: { type: 'NAME_COLOR', cost: 100, value: 0xff00ff, dailyLimit: 0 },
+  name_color_lime: { type: 'NAME_COLOR', cost: 100, value: 0x76ff03, dailyLimit: 0 },
+};
+
+export const purchaseFluxItem = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { itemId } = request.data;
+  if (!itemId || typeof itemId !== 'string') throw new HttpsError("invalid-argument", "Item ID required.");
+
+  const item = FLUX_SHOP_CATALOG[itemId];
+  if (!item) throw new HttpsError("not-found", "Item not found in shop catalog.");
+
+  const db = admin.firestore();
+
+  return db.runTransaction(async (transaction) => {
+    const userRef = db.doc(`users/${uid}`);
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const userData = userSnap.data()!;
+    const gam = userData.gamification || {};
+    const currency = gam.currency || 0;
+
+    if (currency < item.cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+
+    // Check daily purchase limit
+    const today = new Date().toISOString().split('T')[0];
+    const purchases: Record<string, number> = gam.consumablePurchases || {};
+    const dailyKey = `${today}_${itemId}`;
+    const todayCount = purchases[dailyKey] || 0;
+
+    if (item.dailyLimit > 0 && todayCount >= item.dailyLimit) {
+      throw new HttpsError("resource-exhausted", "Daily purchase limit reached for this item.");
+    }
+
+    // Build updates
+    const updates: Record<string, unknown> = {
+      "gamification.currency": currency - item.cost,
+      [`gamification.consumablePurchases.${dailyKey}`]: todayCount + 1,
+    };
+
+    const result: Record<string, unknown> = { success: true };
+
+    if (item.type === 'XP_BOOST') {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + (item.duration || 1) * 60 * 60 * 1000);
+      const boost = {
+        itemId,
+        type: 'XP_BOOST',
+        value: item.value || 1.5,
+        activatedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      };
+      // Filter out expired boosts, then add the new one
+      const activeBoosts = (gam.activeBoosts || []).filter(
+        (b: { expiresAt: string }) => new Date(b.expiresAt) > now
+      );
+      activeBoosts.push(boost);
+      updates["gamification.activeBoosts"] = activeBoosts;
+      result.boost = boost;
+    } else if (item.type === 'REROLL_TOKEN') {
+      // Increment reroll token count
+      const currentTokens = gam.rerollTokens || 0;
+      updates["gamification.rerollTokens"] = currentTokens + 1;
+    } else if (item.type === 'NAME_COLOR') {
+      const hexColor = '#' + (item.value || 0).toString(16).padStart(6, '0');
+      updates["gamification.nameColor"] = hexColor;
+      result.nameColor = hexColor;
+    }
+
+    transaction.update(userRef, updates);
+    return result;
+  });
 });

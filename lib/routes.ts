@@ -23,6 +23,7 @@ export const STUDENT_ROUTES = {
   BADGES: '/badges',
   SKILLS: '/skills',
   FORTUNE: '/fortune',
+  FLUX_SHOP: '/flux-shop',
   TUTORING: '/tutoring',
   INTEL: '/intel',
   PROGRESS: '/progress',
@@ -77,6 +78,7 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Badges': STUDENT_ROUTES.BADGES,
   'Skills': STUDENT_ROUTES.SKILLS,
   'Fortune': STUDENT_ROUTES.FORTUNE,
+  'Flux Shop': STUDENT_ROUTES.FLUX_SHOP,
   'Tutoring': STUDENT_ROUTES.TUTORING,
   'Intel Dossier': STUDENT_ROUTES.INTEL,
   'Progress': STUDENT_ROUTES.PROGRESS,
@@ -94,7 +96,7 @@ export const PATH_TO_TAB: Record<string, string> = Object.fromEntries(
 );
 
 /** Map student tab name → StudentDashboard tab prop */
-export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY'> = {
+export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY'> = {
   'Home': 'HOME',
   'Resources': 'RESOURCES',
   'Agent Loadout': 'LOADOUT',
@@ -102,6 +104,7 @@ export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 
   'Badges': 'ACHIEVEMENTS',
   'Skills': 'SKILLS',
   'Fortune': 'FORTUNE',
+  'Flux Shop': 'FLUX_SHOP',
   'Tutoring': 'TUTORING',
   'Intel Dossier': 'INTEL',
   'Progress': 'PROGRESS',
@@ -120,6 +123,7 @@ export const STUDENT_DASHBOARD_PATHS = new Set([
   STUDENT_ROUTES.BADGES,
   STUDENT_ROUTES.SKILLS,
   STUDENT_ROUTES.FORTUNE,
+  STUDENT_ROUTES.FLUX_SHOP,
   STUDENT_ROUTES.TUTORING,
   STUDENT_ROUTES.INTEL,
   STUDENT_ROUTES.PROGRESS,

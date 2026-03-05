@@ -399,6 +399,11 @@ const App: React.FC = () => {
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FORTUNE" />
             </Suspense>
           } />
+          <Route path="/flux-shop" element={
+            <Suspense fallback={<LazyFallback />}>
+              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FLUX_SHOP" />
+            </Suspense>
+          } />
           <Route path="/tutoring" element={
             <Suspense fallback={<LazyFallback />}>
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="TUTORING" />
@@ -471,7 +476,7 @@ const App: React.FC = () => {
 const StudentRouteWrapper: React.FC<{
   user: User;
   submissions: Submission[];
-  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
+  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
 }> = ({ user, submissions, tab }) => {
   const { assignments, classConfigs, enabledFeatures } = useAppData();
   const navigate = useNavigate();

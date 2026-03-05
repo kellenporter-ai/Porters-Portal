@@ -323,6 +323,12 @@ export interface User {
     ownedCosmetics?: string[]; // Cosmetic IDs
     activeCosmetic?: string; // Currently displayed cosmetic
 
+    // === FLUX SHOP ===
+    activeBoosts?: ActiveBoost[]; // Currently active temporary boosts
+    nameColor?: string; // Hex color for codename display
+    rerollTokens?: number; // Free reforge tokens
+    consumablePurchases?: { [dateItemKey: string]: number }; // "2026-03-04_xp_boost_1h" → count
+
     // === GROUP QUESTS ===
     partyId?: string; // Current quest party
 
@@ -1194,6 +1200,36 @@ export interface SeasonalCosmetic {
   isAvailable: boolean;
   cost: number; // Flux cost
   expiresAt?: string;
+}
+
+// ========================================
+// FLUX SHOP CONSUMABLES
+// ========================================
+
+export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR';
+
+export interface FluxShopItem {
+  id: string;
+  name: string;
+  description: string;
+  type: ConsumableType;
+  cost: number; // Flux cost
+  icon: string; // emoji or icon key
+  /** For XP_BOOST: multiplier (e.g. 1.5 = +50%). For NAME_COLOR: hex color string stored in value field */
+  value?: number;
+  /** Duration in hours (XP_BOOST only) */
+  duration?: number;
+  /** Max purchases per day (0 = unlimited) */
+  dailyLimit: number;
+  isAvailable: boolean;
+}
+
+export interface ActiveBoost {
+  itemId: string;
+  type: ConsumableType;
+  value: number;
+  activatedAt: string; // ISO
+  expiresAt: string; // ISO
 }
 
 // ========================================

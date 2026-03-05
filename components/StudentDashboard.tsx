@@ -35,8 +35,9 @@ import CalendarView from './dashboard/CalendarView';
 import DungeonPanel from './xp/DungeonPanel';
 import ArenaPanel from './xp/ArenaPanel';
 import IdleMissionsPanel from './xp/IdleMissionsPanel';
+import FluxShopPanel from './xp/FluxShopPanel';
 
-type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
+type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
 
 interface StudentDashboardProps {
   user: User;
@@ -386,7 +387,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       className={`w-full h-full rounded-full border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
                     />
                 </div>
-                <h2 className="text-xl font-bold text-white tracking-tight">{user.gamification?.codename || user.name}</h2>
+                <h2 className="text-xl font-bold tracking-tight" style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : { color: 'white' }}>{user.gamification?.codename || user.name}</h2>
                 <div className="flex flex-col items-center gap-1">
                     <span className={`font-mono text-xs uppercase tracking-[0.2em] mt-1 font-bold ${rankDetails.tierColor.split(' ')[1]}`}>
                     {rankDetails.rankName} (Lvl {level})
@@ -569,6 +570,20 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            currency={currency}
                            lastSpin={user.gamification?.lastWheelSpin}
                            classType={activeClass}
+                       />
+                     </FeatureErrorBoundary>
+                 </div>
+             )}
+
+             {activeTab === 'FLUX_SHOP' && (
+                 <div key="flux-shop" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+                     <FeatureErrorBoundary feature="Flux Shop">
+                       <FluxShopPanel
+                           currency={currency}
+                           activeBoosts={user.gamification?.activeBoosts || []}
+                           nameColor={user.gamification?.nameColor}
+                           rerollTokens={user.gamification?.rerollTokens || 0}
+                           consumablePurchases={user.gamification?.consumablePurchases || {}}
                        />
                      </FeatureErrorBoundary>
                  </div>

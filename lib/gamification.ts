@@ -128,6 +128,92 @@ export const getRankDetails = (level: number) => {
 
 // --- CRAFTING & ECONOMY ---
 
+// --- FLUX SHOP CATALOG ---
+// Consumable items students can purchase with Cyber-Flux.
+// IDs must match server-side validation in purchaseFluxItem Cloud Function.
+import { FluxShopItem } from '../types';
+
+export const FLUX_SHOP_ITEMS: FluxShopItem[] = [
+    {
+        id: 'xp_boost_1h',
+        name: 'XP Surge (1h)',
+        description: '+50% XP from all sources for 1 hour',
+        type: 'XP_BOOST',
+        cost: 75,
+        icon: '⚡',
+        value: 1.5,
+        duration: 1,
+        dailyLimit: 2,
+        isAvailable: true,
+    },
+    {
+        id: 'xp_boost_3h',
+        name: 'XP Overdrive (3h)',
+        description: '+50% XP from all sources for 3 hours',
+        type: 'XP_BOOST',
+        cost: 150,
+        icon: '🔥',
+        value: 1.5,
+        duration: 3,
+        dailyLimit: 1,
+        isAvailable: true,
+    },
+    {
+        id: 'reroll_token',
+        name: 'Reroll Token',
+        description: 'Free reforge on any item (saves 25 Flux)',
+        type: 'REROLL_TOKEN',
+        cost: 50,
+        icon: '🔄',
+        dailyLimit: 3,
+        isAvailable: true,
+    },
+    {
+        id: 'name_color_cyan',
+        name: 'Cyan Codename',
+        description: 'Change your codename color to cyan',
+        type: 'NAME_COLOR',
+        cost: 100,
+        icon: '🎨',
+        value: 0x00e5ff,
+        dailyLimit: 0,
+        isAvailable: true,
+    },
+    {
+        id: 'name_color_gold',
+        name: 'Gold Codename',
+        description: 'Change your codename color to gold',
+        type: 'NAME_COLOR',
+        cost: 100,
+        icon: '🎨',
+        value: 0xffd700,
+        dailyLimit: 0,
+        isAvailable: true,
+    },
+    {
+        id: 'name_color_magenta',
+        name: 'Magenta Codename',
+        description: 'Change your codename color to magenta',
+        type: 'NAME_COLOR',
+        cost: 100,
+        icon: '🎨',
+        value: 0xff00ff,
+        dailyLimit: 0,
+        isAvailable: true,
+    },
+    {
+        id: 'name_color_lime',
+        name: 'Lime Codename',
+        description: 'Change your codename color to lime',
+        type: 'NAME_COLOR',
+        cost: 100,
+        icon: '🎨',
+        value: 0x76ff03,
+        dailyLimit: 0,
+        isAvailable: true,
+    },
+];
+
 export const FLUX_COSTS: Record<string, number> = {
     RECALIBRATE: 5,
     REFORGE: 25,
