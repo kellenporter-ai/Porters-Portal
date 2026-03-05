@@ -4,8 +4,15 @@ import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User
 import { FLUX_SHOP_ITEMS, AGENT_COSMETICS } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
-import { ActiveBoost, FluxShopItem, CosmeticVisualType } from '../../types';
+import { ActiveBoost, FluxShopItem, CosmeticVisualType, ActiveCosmetics } from '../../types';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+
+/** Helper: derive the cosmetic slot from its ID prefix */
+const getCosmeticSlot = (id: string): keyof ActiveCosmetics | null =>
+  id.startsWith('aura_') ? 'aura'
+    : id.startsWith('particle_') ? 'particle'
+    : id.startsWith('frame_') ? 'frame'
+    : id.startsWith('trail_') ? 'trail' : null;
 
 interface FluxShopPanelProps {
   currency: number;
@@ -14,8 +21,8 @@ interface FluxShopPanelProps {
   rerollTokens: number;
   consumablePurchases: Record<string, number>;
   ownedCosmetics: string[];
-  activeCosmetic?: string;
-  onEquipCosmetic: (cosmeticId: string | null) => Promise<unknown>;
+  activeCosmetics?: ActiveCosmetics;
+  onEquipCosmetic: (cosmeticId: string | null, slot?: string) => Promise<unknown>;
   // Avatar props for preview system
   playerEquipped?: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
   playerAppearance?: { bodyType?: 'A' | 'B' | 'C'; hue?: number; skinTone?: number; hairStyle?: number; hairColor?: number };
@@ -29,7 +36,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   rerollTokens,
   consumablePurchases,
   ownedCosmetics,
-  activeCosmetic,
+  activeCosmetics,
   onEquipCosmetic,
   playerEquipped,
   playerAppearance,
@@ -42,11 +49,19 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   // Cosmetic preview: null = show currently equipped, string = preview that cosmetic ID
   const [previewCosmeticId, setPreviewCosmeticId] = useState<string | null>(null);
 
-  // Resolve which cosmetic to show on the avatar (preview takes priority over equipped)
-  const displayedCosmeticId = previewCosmeticId || activeCosmetic || undefined;
-  const displayedCosmeticDef = useMemo(() =>
-    displayedCosmeticId ? AGENT_COSMETICS.find(c => c.id === displayedCosmeticId) : undefined,
-    [displayedCosmeticId]
+  // Build a merged activeCosmetics for preview: preview overrides only its slot
+  const displayedCosmetics: ActiveCosmetics = useMemo(() => {
+    const base = { ...activeCosmetics };
+    if (previewCosmeticId) {
+      const slot = getCosmeticSlot(previewCosmeticId);
+      if (slot) base[slot] = previewCosmeticId;
+    }
+    return base;
+  }, [activeCosmetics, previewCosmeticId]);
+
+  const previewCosmeticDef = useMemo(() =>
+    previewCosmeticId ? AGENT_COSMETICS.find(c => c.id === previewCosmeticId) : undefined,
+    [previewCosmeticId]
   );
 
   const handlePreview = useCallback((cosmeticId: string) => {
@@ -90,12 +105,20 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
     }
   };
 
+  /** Check if a specific cosmetic is currently equipped in its slot */
+  const isCosmeticEquipped = (cosmeticId: string): boolean => {
+    const slot = getCosmeticSlot(cosmeticId);
+    return slot ? activeCosmetics?.[slot] === cosmeticId : false;
+  };
+
   const handleEquipCosmetic = async (cosmeticId: string) => {
     if (equipping) return;
     setEquipping(cosmeticId);
     try {
-      const newValue = activeCosmetic === cosmeticId ? null : cosmeticId;
-      await onEquipCosmetic(newValue);
+      const slot = getCosmeticSlot(cosmeticId);
+      const isCurrentlyEquipped = isCosmeticEquipped(cosmeticId);
+      const newValue = isCurrentlyEquipped ? null : cosmeticId;
+      await onEquipCosmetic(newValue, slot || undefined);
       toast.success(newValue ? 'Cosmetic equipped!' : 'Cosmetic unequipped.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to equip cosmetic';
@@ -244,19 +267,24 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
               <span className="text-xs font-bold text-gray-300">Active Name Color</span>
             </div>
           )}
-          {activeCosmetic && cosmeticDefMap[activeCosmetic] && (
-            <div className="flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 px-3 py-1.5 rounded-lg">
-              {/* Primary color swatch — decorative, text carries the meaning */}
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: cosmeticDefMap[activeCosmetic].color }}
-                aria-hidden="true"
-              />
-              <span className="text-xs font-bold text-teal-300">
-                {cosmeticDefMap[activeCosmetic].name} equipped
-              </span>
-            </div>
-          )}
+          {/* Show all equipped cosmetics (one per slot) */}
+          {activeCosmetics && (['aura', 'particle', 'frame', 'trail'] as const).map(slot => {
+            const id = activeCosmetics[slot];
+            if (!id || !cosmeticDefMap[id]) return null;
+            const def = cosmeticDefMap[id];
+            return (
+              <div key={slot} className="flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 px-3 py-1.5 rounded-lg">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: def.color }}
+                  aria-hidden="true"
+                />
+                <span className="text-xs font-bold text-teal-300">
+                  {def.name}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -285,41 +313,41 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                 equipped={playerEquipped}
                 appearance={playerAppearance}
                 evolutionLevel={playerEvolutionLevel}
-                activeCosmetic={displayedCosmeticId}
-                {...(displayedCosmeticDef ? {
-                  cosmeticColor: displayedCosmeticDef.color,
-                  cosmeticSecondaryColor: displayedCosmeticDef.secondaryColor,
-                  cosmeticType: displayedCosmeticDef.visualType,
-                  cosmeticIntensity: displayedCosmeticDef.intensity,
-                  cosmeticParticleCount: displayedCosmeticDef.particleCount,
-                } : {})}
+                activeCosmetics={displayedCosmetics}
               />
             </div>
             <div className="flex-1 min-w-0">
-              {displayedCosmeticDef ? (
+              {previewCosmeticDef ? (
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-white">{displayedCosmeticDef.name}</span>
-                    {previewCosmeticId ? (
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
-                        Preview
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-1.5 py-0.5 rounded">
-                        Equipped
-                      </span>
-                    )}
+                    <span className="text-sm font-bold text-white">{previewCosmeticDef.name}</span>
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                      Preview
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{displayedCosmeticDef.description}</p>
+                  <p className="text-xs text-gray-400 mt-1">{previewCosmeticDef.description}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: displayedCosmeticDef.color }} aria-hidden="true" />
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{displayedCosmeticDef.visualType}</span>
+                    <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: previewCosmeticDef.color }} aria-hidden="true" />
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{previewCosmeticDef.visualType}</span>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <span className="text-sm font-bold text-gray-400">No Cosmetic Active</span>
-                  <p className="text-xs text-gray-500 mt-1">Tap the eye icon on any cosmetic below to preview it on your agent.</p>
+                  <span className="text-sm font-bold text-gray-300">Equipped Cosmetics</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(['aura', 'particle', 'frame', 'trail'] as const).map(slot => {
+                      const id = activeCosmetics?.[slot];
+                      const def = id ? cosmeticDefMap[id] : null;
+                      return def ? (
+                        <span key={slot} className="text-[10px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">
+                          {def.name}
+                        </span>
+                      ) : null;
+                    })}
+                    {!activeCosmetics?.aura && !activeCosmetics?.particle && !activeCosmetics?.frame && !activeCosmetics?.trail && (
+                      <p className="text-xs text-gray-500">Tap the eye icon on any cosmetic to preview it.</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -418,7 +446,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           <span className="text-teal-400" aria-hidden="true"><User className="w-5 h-5" /></span>
           <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Agent Cosmetics</h3>
         </div>
-        <p className="text-xs text-gray-500 px-1">Customize your operative with auras, particles, frames, and trails. Only one cosmetic can be active at a time.</p>
+        <p className="text-xs text-gray-500 px-1">Customize your operative with auras, particles, frames, and trails. Equip one of each type simultaneously.</p>
       </div>
 
       {cosmeticSubOrder.map(visualType => {
@@ -443,7 +471,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
 
                 // --- Owned cosmetics show equip controls ---
                 if (isOwned) {
-                  const isEquipped = activeCosmetic === item.id;
+                  const isEquipped = isCosmeticEquipped(item.id);
                   const isEquipping = equipping === item.id;
 
                   return (

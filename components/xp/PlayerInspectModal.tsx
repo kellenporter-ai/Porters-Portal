@@ -7,6 +7,7 @@ import { getEvolutionTier, getActiveSetBonuses } from '../../lib/achievements';
 import { getClassProfile } from '../../lib/classProfile';
 import { useFocusTrap } from '../../lib/useFocusTrap';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+import ProfileFrame from '../dashboard/ProfileFrame';
 import { X, Shield, Zap, Trophy, Star, Target } from 'lucide-react';
 
 interface PlayerInspectModalProps {
@@ -89,9 +90,17 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
           </button>
 
           <div className="flex items-center gap-4">
-            {/* Avatar */}
-            <div className="w-24 h-32 shrink-0">
-              <OperativeAvatar equipped={equipped} appearance={appearance} />
+            {/* Avatar + Profile Frame */}
+            <div className="flex flex-col items-center gap-2 shrink-0">
+              <div className="w-24 h-32">
+                <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
+              </div>
+              <ProfileFrame
+                photoUrl={player?.avatarUrl}
+                initials={displayName}
+                frameId={gam.activeCosmetics?.frame}
+                size={40}
+              />
             </div>
 
             <div>

@@ -5070,7 +5070,14 @@ export const purchaseFluxItem = onCall(async (request) => {
       }
       ownedCosmetics.push(itemId);
       updates["gamification.ownedCosmetics"] = ownedCosmetics;
-      updates["gamification.activeCosmetic"] = itemId;
+      // Auto-equip to the correct slot based on cosmetic ID prefix
+      const slot = itemId.startsWith('aura_') ? 'aura'
+        : itemId.startsWith('particle_') ? 'particle'
+        : itemId.startsWith('frame_') ? 'frame'
+        : itemId.startsWith('trail_') ? 'trail' : null;
+      if (slot) {
+        updates[`gamification.activeCosmetics.${slot}`] = itemId;
+      }
       result.cosmeticId = itemId;
     }
 
@@ -5080,13 +5087,26 @@ export const purchaseFluxItem = onCall(async (request) => {
 });
 
 // Equip or unequip an agent cosmetic (server-validated ownership check)
+// Supports per-slot multi-equip: { cosmeticId, slot } where slot is 'aura'|'particle'|'frame'|'trail'
 export const equipFluxCosmetic = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
-  const { cosmeticId } = request.data;
+  const { cosmeticId, slot } = request.data;
 
   // cosmeticId can be null (unequip) or a string (equip)
   if (cosmeticId !== null && typeof cosmeticId !== 'string') {
     throw new HttpsError("invalid-argument", "Cosmetic ID must be a string or null.");
+  }
+
+  // Determine the slot: from explicit param, from cosmetic ID prefix, or reject
+  const validSlots = ['aura', 'particle', 'frame', 'trail'] as const;
+  const resolvedSlot = slot
+    || (cosmeticId?.startsWith('aura_') ? 'aura'
+      : cosmeticId?.startsWith('particle_') ? 'particle'
+      : cosmeticId?.startsWith('frame_') ? 'frame'
+      : cosmeticId?.startsWith('trail_') ? 'trail' : null);
+
+  if (!resolvedSlot || !validSlots.includes(resolvedSlot)) {
+    throw new HttpsError("invalid-argument", "Could not determine cosmetic slot.");
   }
 
   const db = admin.firestore();
@@ -5103,6 +5123,8 @@ export const equipFluxCosmetic = onCall(async (request) => {
     }
   }
 
-  await userRef.update({ "gamification.activeCosmetic": cosmeticId });
-  return { success: true, activeCosmetic: cosmeticId };
+  // Write to the per-slot field; null clears the slot
+  const updateField = `gamification.activeCosmetics.${resolvedSlot}`;
+  await userRef.update({ [updateField]: cosmeticId || admin.firestore.FieldValue.delete() });
+  return { success: true, slot: resolvedSlot, cosmeticId };
 });

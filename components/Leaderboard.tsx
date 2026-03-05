@@ -6,6 +6,7 @@ import { dataService } from '../services/dataService';
 import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
 import { getRankDetails, levelForXp } from '../lib/gamification';
 import PlayerInspectModal from './xp/PlayerInspectModal';
+import ProfileFrame from './dashboard/ProfileFrame';
 
 interface LeaderboardProps {
   user: User;
@@ -116,7 +117,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                         const rd = getRankDetails(lvl);
                         const isFirst = rank === 0;
                         const heights = ['h-28', 'h-20', 'h-16'];
-                        const sizes = ['w-20 h-20', 'w-14 h-14', 'w-14 h-14'];
                         const badges = [
                             { icon: <Trophy className="w-5 h-5" />, color: 'bg-yellow-500 text-yellow-900', ring: 'ring-yellow-400/40' },
                             { icon: <Medal className="w-4 h-4" />, color: 'bg-gray-300 text-gray-700', ring: 'ring-gray-300/30' },
@@ -126,9 +126,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                             <div key={u.id} className={`flex flex-col items-center ${isFirst ? 'order-2' : rank === 1 ? 'order-1' : 'order-3'}`}
                                  style={{ animation: `fadeSlideUp 0.5s ease-out ${0.1 + rank * 0.15}s both` }}>
                                 <div className={`relative mb-2 ${isFirst ? 'mb-3' : ''}`}>
-                                    <div className={`${sizes[rank]} rounded-full p-0.5 bg-white/10 ring-2 ${badges[rank].ring} relative ${isFirst ? 'shadow-[0_0_30px_rgba(234,179,8,0.3)]' : ''}`}>
-                                        <img src={u.avatarUrl} alt={displayName} className={`w-full h-full rounded-full border-2 ${rd.tierColor.split(' ')[0]} object-cover`} />
-                                    </div>
+                                    <ProfileFrame
+                                        photoUrl={u.avatarUrl}
+                                        initials={displayName}
+                                        frameId={u.gamification?.activeCosmetics?.frame}
+                                        size={isFirst ? 80 : 56}
+                                        className={`ring-2 ${badges[rank].ring} rounded-full ${isFirst ? 'shadow-[0_0_30px_rgba(234,179,8,0.3)]' : ''}`}
+                                    />
                                     <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${badges[rank].color} rounded-full w-6 h-6 flex items-center justify-center shadow-lg`}>
                                         {badges[rank].icon}
                                     </div>
@@ -182,8 +186,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                         {i >= 3 && `#${i+1}`}
                                     </div>
 
-                                    <div className="w-12 h-12 rounded-full p-0.5 bg-white/5 relative">
-                                        <img src={u.avatarUrl} alt={displayName} loading="lazy" className={`w-full h-full rounded-full border-2 ${rankDetails.tierColor.split(' ')[0]}`} />
+                                    <div className="relative">
+                                        <ProfileFrame
+                                            photoUrl={u.avatarUrl}
+                                            initials={displayName}
+                                            frameId={u.gamification?.activeCosmetics?.frame}
+                                            size={48}
+                                        />
                                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center text-[9px] font-bold border border-gray-600 text-white">
                                             {level}
                                         </div>

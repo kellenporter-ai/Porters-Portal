@@ -1544,9 +1544,9 @@ export const dataService = {
     return result.data as { success: boolean };
   },
 
-  equipCosmetic: async (_userId: string, cosmeticId: string | null) => {
-    const result = await callEquipFluxCosmetic({ cosmeticId });
-    return result.data as { success: boolean; activeCosmetic: string | null };
+  equipCosmetic: async (_userId: string, cosmeticId: string | null, slot?: string) => {
+    const result = await callEquipFluxCosmetic({ cosmeticId, slot });
+    return result.data as { success: boolean; slot: string; cosmeticId: string | null };
   },
 
   // --- FLUX SHOP ---

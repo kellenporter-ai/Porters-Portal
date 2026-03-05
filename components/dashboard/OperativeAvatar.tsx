@@ -17,6 +17,19 @@ export const HAIR_STYLE_NAMES = [
     'Long Flow', 'Ponytail', 'Spiky',
 ];
 
+import { ActiveCosmetics, AgentCosmeticDef } from '../../types';
+import { AGENT_COSMETICS } from '../../lib/gamification';
+
+/** Resolved cosmetic props for a single slot */
+interface ResolvedCosmetic {
+    id: string;
+    color: string;
+    secondaryColor: string;
+    type: 'AURA' | 'PARTICLE' | 'FRAME' | 'TRAIL';
+    intensity: number;
+    particleCount: number;
+}
+
 interface OperativeAvatarProps {
     equipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
     appearance?: {
@@ -27,6 +40,9 @@ interface OperativeAvatarProps {
         hairColor?: number;
     };
     evolutionLevel?: number;
+    /** Multi-equip: per-slot cosmetic IDs */
+    activeCosmetics?: ActiveCosmetics;
+    /** @deprecated Single cosmetic — kept for backward compat */
     activeCosmetic?: string;
     cosmeticColor?: string;
     cosmeticSecondaryColor?: string;
@@ -81,17 +97,57 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
     }
 };
 
+/** Lookup helper: resolve a cosmetic ID to its render props */
+const resolveCosmetic = (id: string | undefined): ResolvedCosmetic | null => {
+    if (!id) return null;
+    const def = AGENT_COSMETICS.find((c: AgentCosmeticDef) => c.id === id);
+    if (!def) return null;
+    return {
+        id: def.id,
+        color: def.color,
+        secondaryColor: def.secondaryColor || def.color,
+        type: def.visualType,
+        intensity: def.intensity ?? 0.6,
+        particleCount: def.particleCount ?? 8,
+    };
+};
+
 const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
     equipped,
     appearance,
     evolutionLevel = 1,
-    activeCosmetic,
-    cosmeticColor,
-    cosmeticSecondaryColor,
-    cosmeticType,
-    cosmeticIntensity = 0.6,
-    cosmeticParticleCount = 8,
+    activeCosmetics: multiCosmetics,
+    activeCosmetic: legacySingleCosmetic,
+    cosmeticColor: legacyColor,
+    cosmeticSecondaryColor: legacySecondary,
+    cosmeticType: legacyType,
+    cosmeticIntensity: legacyIntensity = 0.6,
+    cosmeticParticleCount: legacyParticleCount = 8,
 }) => {
+    // Resolve all active cosmetics from multi-equip or fall back to legacy single-equip
+    const auraCosmetic = useMemo(() => resolveCosmetic(multiCosmetics?.aura), [multiCosmetics?.aura]);
+    const particleCosmetic = useMemo(() => resolveCosmetic(multiCosmetics?.particle), [multiCosmetics?.particle]);
+    const trailCosmetic = useMemo(() => resolveCosmetic(multiCosmetics?.trail), [multiCosmetics?.trail]);
+
+    // Legacy fallback: if no multi-equip, derive from single cosmetic props
+    const legacyResolved: ResolvedCosmetic | null = useMemo(() => {
+        if (multiCosmetics) return null; // multi-equip takes precedence
+        if (!legacySingleCosmetic || !legacyColor) return null;
+        return {
+            id: legacySingleCosmetic,
+            color: legacyColor,
+            secondaryColor: legacySecondary || legacyColor,
+            type: legacyType || 'AURA',
+            intensity: legacyIntensity,
+            particleCount: legacyParticleCount,
+        };
+    }, [multiCosmetics, legacySingleCosmetic, legacyColor, legacySecondary, legacyType, legacyIntensity, legacyParticleCount]);
+
+    // Final resolved per-type (multi-equip OR legacy single)
+    const activeAura = auraCosmetic || (legacyResolved?.type === 'AURA' ? legacyResolved : null);
+    const activeParticle = particleCosmetic || (legacyResolved?.type === 'PARTICLE' ? legacyResolved : null);
+    const activeTrail = trailCosmetic || (legacyResolved?.type === 'TRAIL' ? legacyResolved : null);
+
     const hue = appearance?.hue || 0;
     const bodyType = appearance?.bodyType || 'A';
     const isTypeB = bodyType === 'B';
@@ -510,10 +566,11 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     on top, but still within the breathing animation group. */}
 
                 {/* AURA: unique visual per aura ID. Each aura has distinct shape, animation, and layering. */}
-                {activeCosmetic && cosmeticColor && cosmeticType === 'AURA' && (() => {
-                    const ci = cosmeticIntensity;
-                    const sc = cosmeticSecondaryColor || cosmeticColor;
-                    const auraId = activeCosmetic;
+                {activeAura && (() => {
+                    const cosmeticColor = activeAura.color;
+                    const ci = activeAura.intensity;
+                    const sc = activeAura.secondaryColor || cosmeticColor;
+                    const auraId = activeAura.id;
 
                     // Ember Aura: flickering flame tongues rising from base
                     if (auraId === 'aura_ember') return (
@@ -783,24 +840,24 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {/* PARTICLE: floating orbs orbiting/drifting around the agent body.
                     Positions are derived from index and a fixed angle step so they
                     never change between renders. Primary + secondary colors alternate. */}
-                {activeCosmetic && cosmeticColor && cosmeticType === 'PARTICLE' && (
+                {activeParticle && (() => {
+                    const pColor = activeParticle.color;
+                    const pSecondary = activeParticle.secondaryColor || pColor;
+                    const pIntensity = activeParticle.intensity;
+                    const pCount = activeParticle.particleCount;
+                    return (
                     <g filter="url(#av-soft)">
-                        {Array.from({ length: cosmeticParticleCount }).map((_, i) => {
-                            // Evenly distribute particles in a vertical band around the avatar
+                        {Array.from({ length: pCount }).map((_, i) => {
                             const totalAngle = 360;
-                            const angleDeg = (i * totalAngle) / cosmeticParticleCount;
+                            const angleDeg = (i * totalAngle) / pCount;
                             const angleRad = (angleDeg * Math.PI) / 180;
-                            // Elliptical orbit: wide enough to clear arms, tall to span body
                             const orbitRx = 48 + (i % 3) * 6;
                             const orbitRy = 80 + (i % 4) * 8;
                             const cx = 100 + Math.cos(angleRad) * orbitRx;
                             const cy = 145 + Math.sin(angleRad) * orbitRy;
-                            // Vary radius between 1 and 2.5 based on index
                             const r = 1 + (i % 4) * 0.5;
-                            // Alternate primary/secondary colors
-                            const fill = i % 2 === 0 ? cosmeticColor : (cosmeticSecondaryColor || cosmeticColor);
+                            const fill = i % 2 === 0 ? pColor : pSecondary;
                             const dur = 2.5 + i * 0.35;
-                            // Float distance varies by position in orbit
                             const floatDist = 10 + (i % 3) * 5;
                             return (
                                 <circle
@@ -809,7 +866,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     cy={cy}
                                     r={r}
                                     fill={fill}
-                                    fillOpacity={(cosmeticIntensity * 0.55).toFixed(2)}
+                                    fillOpacity={(pIntensity * 0.55).toFixed(2)}
                                 >
                                     <animate
                                         attributeName="cy"
@@ -819,7 +876,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     />
                                     <animate
                                         attributeName="fillOpacity"
-                                        values={`${(cosmeticIntensity * 0.55).toFixed(2)};0;${(cosmeticIntensity * 0.55).toFixed(2)}`}
+                                        values={`${(pIntensity * 0.55).toFixed(2)};0;${(pIntensity * 0.55).toFixed(2)}`}
                                         dur={`${dur}s`}
                                         repeatCount="indefinite"
                                     />
@@ -827,62 +884,17 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                             );
                         })}
                     </g>
-                )}
+                    );
+                })()}
 
-                {/* FRAME: rounded rect outline around the avatar with animated dash travel.
-                    The stroke-dashoffset animation creates a "marching ants" / circuit effect. */}
-                {activeCosmetic && cosmeticColor && cosmeticType === 'FRAME' && (
-                    <g filter="url(#av-soft)">
-                        {/* Outer frame */}
-                        <rect
-                            x="46" y="14" width="108" height="258"
-                            rx="14" ry="14"
-                            fill="none"
-                            stroke={cosmeticColor}
-                            strokeWidth="2.5"
-                            strokeOpacity={(cosmeticIntensity * 0.8).toFixed(2)}
-                            strokeDasharray="12 6"
-                        >
-                            <animate attributeName="strokeDashoffset" values="0;-54" dur="3s" repeatCount="indefinite" />
-                            <animate
-                                attributeName="strokeOpacity"
-                                values={`${(cosmeticIntensity * 0.8).toFixed(2)};${(cosmeticIntensity * 0.4).toFixed(2)};${(cosmeticIntensity * 0.8).toFixed(2)}`}
-                                dur="2s" repeatCount="indefinite"
-                            />
-                        </rect>
-                        {/* Inner glow frame using secondary color */}
-                        <rect
-                            x="52" y="20" width="96" height="246"
-                            rx="10" ry="10"
-                            fill="none"
-                            stroke={cosmeticSecondaryColor || cosmeticColor}
-                            strokeWidth="1"
-                            strokeOpacity={(cosmeticIntensity * 0.3).toFixed(2)}
-                            strokeDasharray="6 10"
-                        >
-                            <animate attributeName="strokeDashoffset" values="-16;0" dur="3s" repeatCount="indefinite" />
-                        </rect>
-                        {/* Corner accent dots at each corner of the outer frame */}
-                        {[
-                            [46, 14], [154, 14], [46, 272], [154, 272],
-                        ].map(([fx, fy], ci) => (
-                            <circle key={`fc-${ci}`} cx={fx} cy={fy} r="3" fill={cosmeticColor} fillOpacity={(cosmeticIntensity * 0.9).toFixed(2)}>
-                                <animate
-                                    attributeName="fillOpacity"
-                                    values={`${(cosmeticIntensity * 0.9).toFixed(2)};${(cosmeticIntensity * 0.3).toFixed(2)};${(cosmeticIntensity * 0.9).toFixed(2)}`}
-                                    dur={`${1.5 + ci * 0.25}s`}
-                                    repeatCount="indefinite"
-                                />
-                            </circle>
-                        ))}
-                    </g>
-                )}
+                {/* FRAME rendering removed — frames now wrap profile pictures via ProfileFrame component */}
 
                 {/* TRAIL: unique visual per trail ID. Each trail has distinct path shapes, wisp behaviors, and particle patterns. */}
-                {activeCosmetic && cosmeticColor && cosmeticType === 'TRAIL' && (() => {
-                    const ci = cosmeticIntensity;
-                    const sc = cosmeticSecondaryColor || cosmeticColor;
-                    const trailId = activeCosmetic;
+                {activeTrail && (() => {
+                    const cosmeticColor = activeTrail.color;
+                    const ci = activeTrail.intensity;
+                    const sc = activeTrail.secondaryColor || cosmeticColor;
+                    const trailId = activeTrail.id;
 
                     // Lightning Trail: jagged electric bolts crackling outward
                     if (trailId === 'trail_lightning') return (

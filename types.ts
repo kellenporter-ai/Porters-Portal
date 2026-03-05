@@ -321,7 +321,8 @@ export interface User {
 
     // === SEASONAL ===
     ownedCosmetics?: string[]; // Cosmetic IDs
-    activeCosmetic?: string; // Currently displayed cosmetic
+    activeCosmetic?: string; // DEPRECATED: single cosmetic (kept for backward compat migration)
+    activeCosmetics?: ActiveCosmetics; // Per-slot equipped cosmetics (aura, particle, frame, trail)
 
     // === FLUX SHOP ===
     activeBoosts?: ActiveBoost[]; // Currently active temporary boosts
@@ -1219,6 +1220,14 @@ export interface AgentCosmeticDef {
   secondaryColor?: string; // optional secondary for gradients
   particleCount?: number; // for PARTICLE type
   intensity?: number; // 0-1, glow/effect strength
+}
+
+/** Per-slot equipped cosmetics — one of each type can be active simultaneously */
+export interface ActiveCosmetics {
+  aura?: string;    // aura cosmetic ID
+  particle?: string; // particle cosmetic ID
+  frame?: string;    // frame cosmetic ID
+  trail?: string;    // trail cosmetic ID
 }
 
 export interface FluxShopItem {

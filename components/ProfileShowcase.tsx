@@ -5,6 +5,7 @@ import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColor
 import { getEvolutionTier, getActiveSetBonuses, ACHIEVEMENTS } from '../lib/achievements';
 import { getClassProfile } from '../lib/classProfile';
 import OperativeAvatar from './dashboard/OperativeAvatar';
+import ProfileFrame from './dashboard/ProfileFrame';
 import { Shield, Zap, Trophy, Star, Target, Flame, Swords, GraduationCap, Copy, Check } from 'lucide-react';
 
 interface ProfileShowcaseProps {
@@ -69,9 +70,18 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
           />
 
           <div className="relative flex items-center gap-6">
-            {/* Avatar */}
-            <div className="w-32 h-44 shrink-0">
-              <OperativeAvatar equipped={equipped} appearance={appearance} />
+            {/* Avatar + Profile Frame */}
+            <div className="flex flex-col items-center gap-2 shrink-0">
+              <div className="w-32 h-44">
+                <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
+              </div>
+              {/* Profile picture with frame cosmetic */}
+              <ProfileFrame
+                photoUrl={user.avatarUrl}
+                initials={displayName}
+                frameId={gam.activeCosmetics?.frame}
+                size={48}
+              />
             </div>
 
             <div className="flex-1">

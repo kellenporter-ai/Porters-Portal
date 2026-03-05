@@ -585,8 +585,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            rerollTokens={user.gamification?.rerollTokens || 0}
                            consumablePurchases={user.gamification?.consumablePurchases || {}}
                            ownedCosmetics={user.gamification?.ownedCosmetics || []}
-                           activeCosmetic={user.gamification?.activeCosmetic}
-                           onEquipCosmetic={(cosmeticId) => dataService.equipCosmetic(user.id, cosmeticId)}
+                           activeCosmetics={user.gamification?.activeCosmetics}
+                           onEquipCosmetic={(cosmeticId, slot) => dataService.equipCosmetic(user.id, cosmeticId, slot)}
                            playerEquipped={equipped}
                            playerAppearance={classProfile.appearance}
                            playerEvolutionLevel={level}

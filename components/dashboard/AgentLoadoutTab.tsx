@@ -5,7 +5,7 @@ import { Briefcase, User as UserIcon, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
-import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats, AGENT_COSMETICS } from '../../lib/gamification';
+import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats } from '../../lib/gamification';
 import { getClassProfile } from '../../lib/classProfile';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
@@ -339,18 +339,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     equipped={equipped}
                     appearance={classProfile.appearance}
                     evolutionLevel={level}
-                    activeCosmetic={user.gamification?.activeCosmetic}
-                    {...(() => {
-                      const def = AGENT_COSMETICS.find(c => c.id === user.gamification?.activeCosmetic);
-                      if (!def) return {};
-                      return {
-                        cosmeticColor: def.color,
-                        cosmeticSecondaryColor: def.secondaryColor,
-                        cosmeticType: def.visualType,
-                        cosmeticIntensity: def.intensity,
-                        cosmeticParticleCount: def.particleCount,
-                      };
-                    })()}
+                    activeCosmetics={user.gamification?.activeCosmetics}
                   />
                 </div>
                 <div className="flex flex-col gap-4">
