@@ -7,153 +7,76 @@ argument-hint: "[description of bug or feature]"
 
 ## What This Skill Does
 
-Full development lifecycle automation for Porter's Portal. Takes a bug report or feature request, researches best practices, implements the solution, runs QA, and deploys to Firebase production — all autonomously.
+Orchestrator-driven development pipeline for Porter's Portal. Takes a bug report or feature request, hands it to the portal-orchestrator who coordinates specialized agents to investigate, implement, and QA the work — then builds, commits, and deploys to Firebase production.
 
-**Pipeline stages:** Analyze → Research → Implement → Build → QA → Deploy
+**Pipeline:** Orchestrate → Build → Deploy → Verify
 
----
-
-## Step 1: Analyze the Request
-
-Parse `<ARGUMENTS>` to extract:
-
-- **What** — the bug symptom or feature description
-- **Where** — any mentioned files, components, or areas of the codebase
-- **Why** — the user's intent or the problem being solved
-
-Then explore the codebase to understand the affected areas:
-
-1. Use the Explore agent to map out relevant files, components, and data flows
-2. If it's a bug, reproduce the issue by reading the relevant code paths and identifying the root cause
-3. If it's a feature, identify where the new code fits into the existing architecture
-4. Check `types.ts`, `services/dataService.ts`, and relevant components to understand current data models and patterns
-
-If no arguments are provided, ask: "What bug should I fix or feature should I build? Describe the problem or what you want added."
+You are a thin dispatch layer. Your job is to launch agents, run builds, and deploy. You do NOT write production code or investigate bugs yourself.
 
 ---
 
-## Step 2: Research Best Practices
+## Step 1: Hand Off to the Orchestrator
 
-**Skip this step for trivial fixes** — typos, missing imports, simple CSS adjustments, and obvious one-line bugs don't need web research. Jump straight to Step 3.
+Parse `<ARGUMENTS>` to extract the user's request. If no arguments are provided, ask: "What bug should I fix or feature should I build?"
 
-For non-trivial changes, search for current best practices and proven solutions using web search. Target these resources:
+Immediately launch the **portal-orchestrator** agent with the full request. The orchestrator's job is to:
 
-- **Stack Overflow** — search for the specific error, pattern, or technique
-- **MDN Web Docs** — for web API, CSS, and JavaScript reference
-- **Official docs** — React, Firebase/Firestore, TypeScript, Tailwind CSS, Vite docs as relevant
-- **GitHub issues/discussions** — search for similar bugs or feature implementations in related projects
+1. **Investigate** — deploy specialized agents to explore the affected systems and report back
+2. **Decompose** — break the work into atomic tasks assigned to the right agents
+3. **Delegate** — send each task to the specialist who owns that layer
+4. **Integrate** — ensure all agent outputs work together cleanly
+5. **QA** — send the integrated result to qa-bug-resolution for sign-off
 
-Research goals:
-- Find the recommended approach for the specific problem
-- Identify potential pitfalls or edge cases others have encountered
-- Confirm the solution aligns with the project's tech stack (React 19, Firebase 10, TypeScript, Tailwind, Vite)
+Prompt the orchestrator like this:
 
-Synthesize findings into a clear implementation approach. Do NOT present research findings to the user — proceed directly to implementation.
+```
+The user wants: [full description from ARGUMENTS]
 
----
+Run your full protocol for this request:
+1. Investigate the relevant systems by delegating exploration to the appropriate specialist agents (ui-accessibility-engineer for frontend, backend-integration-engineer for backend/data, content-strategist-ux-writer for copy). Have them report back what they find before you plan any changes.
+2. Based on their investigation reports, decompose the work into tasks and delegate implementation to the responsible agents.
+3. After all agents complete their work, send the integrated result to qa-bug-resolution for audit.
+4. If QA rejects, route each bug back to the responsible agent, then re-run QA.
+5. Report back with: all files changed, QA sign-off status, and any issues encountered.
 
-## Step 3: Implement the Solution
+This is autonomous — do not pause to ask the user questions. If requirements are ambiguous, investigate the codebase for answers rather than asking. Make your best judgment call and proceed.
 
-Apply the researched approach to the codebase. For complex changes that span both frontend and backend, delegate to the specialized agents:
+Available agents and their domains:
+- ui-accessibility-engineer: React components, Tailwind styling, WCAG compliance, responsive design
+- backend-integration-engineer: Cloud Functions, Firestore queries/rules/indexes, types.ts, dataService.ts
+- qa-bug-resolution: Testing, static analysis, accessibility audit, integration sign-off
+- content-strategist-ux-writer: UI copy, error messages, RPG flavor text, instructional content
+- data-analyst: Student data queries, engagement metrics (for data-driven investigation)
+- economy-designer: RPG economy items, abilities, loot, boss tuning (for gamification changes)
+- 3d-graphics-engineer: Visual effects, avatars, Babylon.js scenes (for graphics changes)
+```
 
-### Agent Delegation
-
-- **UI changes** (components, layouts, styling, accessibility) — delegate to the **ui-accessibility-engineer** agent:
-  ```
-  Implement the following UI changes for [feature/fix]. Files to modify: [paths].
-  Requirements: [specific UI requirements from your analysis].
-  Follow existing Tailwind dark theme patterns. Ensure Chromebook responsiveness and WCAG AA compliance.
-  ```
-
-- **Backend changes** (Cloud Functions, Firestore rules, data models, API endpoints) — delegate to the **backend-integration-engineer** agent:
-  ```
-  Implement the following backend changes for [feature/fix]. Files to modify: [paths].
-  Requirements: [specific backend requirements from your analysis].
-  Follow existing patterns in dataService.ts and functions/src/index.ts. Parameterize all queries.
-  ```
-
-- **Simple or tightly coupled changes** — implement directly without delegation when the fix is small and spans both layers (e.g., adding a field end-to-end).
-
-### Implementation Guidelines
-
-1. **Follow existing patterns** — Match the coding style, naming conventions, and architectural patterns already in the project:
-   - Dark theme UI with Tailwind (backdrop-blur, rounded cards, glassmorphism)
-   - Firestore subscriptions via `onSnapshot` in `dataService.ts`
-   - Lazy-loaded components via `React.lazy()`
-   - Types defined in `types.ts`
-   - Firebase callable functions in `functions/src/index.ts`
-
-2. **Make minimal, focused changes** — Only modify what's necessary. Don't refactor surrounding code, add unnecessary abstractions, or over-engineer.
-
-3. **Handle the data layer** — If the change involves new data:
-   - Add types to `types.ts`
-   - Add Firestore CRUD operations to `services/dataService.ts`
-   - Add Cloud Functions to `functions/src/index.ts` if server-side logic is needed
-   - Update `firestore.rules` if new collections/documents are added
-
-4. **Handle the UI layer** — If the change involves UI:
-   - Use existing Tailwind classes and the dark theme color scheme
-   - Ensure mobile responsiveness for Chromebook screens
-   - Add lazy loading for new route-level components
+Wait for the orchestrator to complete. It will return a summary of all work done, files changed, and QA status.
 
 ---
 
-## Step 4: Build
+## Step 2: Build
 
-Run the build to catch compile errors:
+Once the orchestrator reports back with QA sign-off, you MUST actually execute the build — never skip it or predict the result. The orchestrator's QA is a code review; the build is a compiler check. Both are required.
 
 ```bash
 cd /home/kp/Desktop/Porters-Portal && npm run build
 ```
 
-If the build fails:
-1. Read the error output carefully
-2. Fix the issues (type errors, import errors, syntax errors)
-3. Re-run the build
-4. Repeat until the build passes
-
-If Cloud Functions were modified, also build those:
+If Cloud Functions were modified:
 
 ```bash
 cd /home/kp/Desktop/Porters-Portal/functions && npm run build
 ```
 
----
-
-## Step 5: QA Testing
-
-Launch the **qa-bug-resolution** agent to audit the changes:
-
-```
-Audit the following changes for [feature/fix description].
-
-Files changed: [list all modified files with paths].
-
-Verify:
-1. Build passes without errors or warnings
-2. No security vulnerabilities (XSS, injection, exposed secrets)
-3. No performance regressions (unnecessary re-renders, N+1 queries, large bundle impact)
-4. WCAG AA accessibility compliance on any UI changes
-5. The fix resolves the reported issue / the feature works as described
-6. No regressions in related functionality
-
-Test from both student (Chromebook) and admin/teacher perspectives.
-Provide your QA Integration Sign-Off report.
-```
-
-If the QA agent rejects with bug reports:
-1. Route each bug to the responsible agent (ui-accessibility-engineer for frontend bugs, backend-integration-engineer for backend bugs) or fix directly if simple
-2. Re-run the build (Step 4)
-3. Re-launch QA with the qa-bug-resolution agent
-4. Repeat until QA grants integration sign-off
+If the build fails:
+1. Read the errors — determine which agent's code caused them (frontend vs backend)
+2. Launch the responsible agent to fix the build errors
+3. Re-build until clean
 
 ---
 
-## Step 6: Deploy
-
-Once build passes and QA is clean:
-
-### 6a: Commit and Push
+## Step 3: Commit and Push
 
 ```bash
 cd /home/kp/Desktop/Porters-Portal
@@ -164,13 +87,13 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 git push origin main
 ```
 
-**Important:** Stage specific files by name — do NOT use `git add -A` or `git add .`, which can accidentally stage sensitive files (.env, credentials, local config). List each modified file explicitly.
+Stage specific files by name — never use `git add -A` or `git add .`. Write a commit message that describes the **why**, not the **what**. Keep the first line under 72 characters. Use imperative mood ("Fix X" not "Fixed X").
 
-Write a commit message that describes the **why**, not the **what**. Keep it under 72 characters for the first line.
+---
 
-### 6b: Deploy to Firebase
+## Step 4: Deploy to Firebase
 
-Choose the narrowest deploy scope that covers your changes:
+Choose the narrowest scope that covers the changes:
 
 ```bash
 # Only frontend changes (most common)
@@ -179,42 +102,47 @@ firebase deploy --only hosting
 # Only Cloud Functions changed
 firebase deploy --only functions
 
-# Both hosting and functions changed
+# Firestore rules or indexes changed
+firebase deploy --only firestore
+
+# Multiple layers changed
 firebase deploy
 ```
 
-Wait for deployment to complete and verify no errors in the output.
-
-**When to skip deploy:** If the fix is purely local tooling, dev config, or documentation — don't deploy. Only deploy when production-facing code changed.
+Skip deploy if the fix is purely local tooling, dev config, or documentation.
 
 ---
 
-## Step 7: Report
+## Step 5: Post-Deploy Verification
 
-After successful deployment, provide a brief summary:
+Launch the **deployment-monitor** agent to verify production health:
+
+```
+Verify the deployment that just completed. Changes made: [summary from orchestrator].
+Check hosting status, Cloud Function logs for errors, and Firestore index deployment.
+```
+
+---
+
+## Step 6: Report
+
+Provide a brief summary:
 
 - What was changed and why
+- Which agents contributed
 - Files modified
-- Build status
-- QA results
-- Deploy status and URL
+- Build + QA status
+- Deploy status
+- Post-deploy health check results
 
 ---
 
 ## Notes
 
-- **Autonomous execution.** This skill runs the full pipeline without pausing for approval. The user trusts the process.
-- **No file limits.** Any file in the project can be modified as needed.
-- **Research is mandatory.** Always search for best practices before implementing. Don't rely solely on existing knowledge — the web has the latest patterns and solutions.
-- **Build must pass.** Never skip the build step. Never deploy broken code.
-- **QA is mandatory.** Always run the qa-bug-resolution agent before deploying. Never skip QA.
-- **Auto-fix on QA failure.** If QA finds issues, route bugs to the responsible agent (ui-accessibility-engineer or backend-integration-engineer) and re-test. Do not stop to ask the user.
-- **Commit messages matter.** Write clear, descriptive commit messages. Use imperative mood ("Fix X" not "Fixed X").
-- **Firebase deploy is production.** The deploy goes to the live production site. This is why build + QA must pass first.
-- **Agent team — ALWAYS prioritize project agents over general-purpose.** The available specialized agents are:
-  - **ui-accessibility-engineer** — frontend UI, components, styling, WCAG accessibility
-  - **backend-integration-engineer** — Cloud Functions, Firestore, APIs, auth, data models
-  - **qa-bug-resolution** — testing, static analysis, accessibility audit, integration sign-off
-  - **content-strategist-ux-writer** — UI copy, error messages, instructional text (use when adding user-facing text)
-  - **portal-orchestrator** — for complex multi-step features that need architectural planning (not typically needed in dev-pipeline, but available for large features)
-  - General-purpose agents are a **fallback only** — use project agents first for all delegated work.
+- **Orchestrator-first.** Every request goes through the portal-orchestrator. You never investigate bugs or implement features yourself — you dispatch, build, and deploy.
+- **Autonomous execution.** The full pipeline runs without pausing for user approval.
+- **Agent team is the workforce.** The orchestrator coordinates specialists. Each agent works on the layer they own. This produces better results than one generalist trying to do everything.
+- **Build must pass.** Never deploy broken code. If the build fails after agent work, route the errors back to the responsible agent.
+- **QA is mandatory.** The orchestrator must get qa-bug-resolution sign-off before you proceed to build. If QA rejects, the orchestrator routes bugs back to agents and re-tests.
+- **Deploy is production.** Firebase deploy goes to the live site students use. Build + QA must pass first.
+- **Post-deploy verification.** Always run the deployment-monitor after deploying to catch issues early.

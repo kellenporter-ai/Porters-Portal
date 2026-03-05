@@ -20,15 +20,37 @@ const MILESTONE_COLORS: Record<number, string> = {
   100: 'text-cyan-400',
 };
 
+/** Ensure all numeric fields have safe defaults to prevent NaN rendering */
+function sanitizeStreakData(data: Partial<StreakData> | null | undefined): StreakData | null {
+  if (!data) return null;
+  return {
+    currentStreak: Number(data.currentStreak) || 0,
+    longestStreak: Number(data.longestStreak) || 0,
+    lastActiveDate: data.lastActiveDate || '',
+    freezeTokens: Number(data.freezeTokens) || 0,
+    maxFreezeTokens: Number(data.maxFreezeTokens) || 3,
+    streakHistory: Array.isArray(data.streakHistory) ? data.streakHistory : [],
+    milestones: Array.isArray(data.milestones) ? data.milestones : [],
+  };
+}
+
 const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compact }) => {
-  const [streak, setStreak] = useState<StreakData | null>(streakData || null);
+  const [streak, setStreak] = useState<StreakData | null>(sanitizeStreakData(streakData));
   const [showToast, setShowToast] = useState<{ message: string; type: 'streak' | 'freeze' | 'milestone' } | null>(null);
 
-  // Update streak on mount (once per day)
+  // Update streak on mount (once per day) and fetch fresh data
   useEffect(() => {
+    let cancelled = false;
     const updateStreak = async () => {
       try {
         const result = await dataService.updateDailyStreak(userId);
+
+        // Fetch the full streak data from Firestore so local state is current
+        const freshData = await dataService.getStreakData(userId);
+        if (!cancelled) {
+          setStreak(sanitizeStreakData(freshData));
+        }
+
         if (result.freezeUsed) {
           setShowToast({ message: 'Streak Freeze used! Streak saved.', type: 'freeze' });
           setTimeout(() => setShowToast(null), 3000);
@@ -37,15 +59,16 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
           setTimeout(() => setShowToast(null), 3000);
         }
       } catch {
-        // silent
+        // silent — streak display is non-critical UI
       }
     };
     updateStreak();
+    return () => { cancelled = true; };
   }, [userId]);
 
   // Update local state when prop changes
   useEffect(() => {
-    if (streakData) setStreak(streakData);
+    if (streakData) setStreak(sanitizeStreakData(streakData));
   }, [streakData]);
 
   if (!streak) return null;

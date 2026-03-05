@@ -1,13 +1,13 @@
 ---
 name: generate-questions
-description: "Use when someone asks to generate questions, create a question bank, make boss battle questions, generate PVP arena questions, create dungeon room questions, or build quiz questions from content."
+description: "Use when someone asks to generate questions, create a question bank, make boss battle questions, create dungeon room questions, or build quiz questions from content."
 argument-hint: "[topic] [optional file path to PDF/document]"
 disable-model-invocation: true
 ---
 
 ## What This Skill Does
 
-Generates massive question banks (500-1000 per mode) from source content for a gamified LMS. Supports four game modes with distinct JSON formats. Uses parallel subagents to hit high question counts reliably.
+Generates massive question banks (500-1000 per mode) from source content for a gamified LMS. Supports three game modes with distinct JSON formats. Uses parallel subagents to hit high question counts reliably.
 
 When **Boss Battle** or **Dungeon Rooms** modes are selected, also generates the complete game structure (boss config or dungeon config) as an importable JSON file — ready to import directly into the portal's boss/dungeon creation forms.
 
@@ -39,9 +39,8 @@ Default to "General" if the user skips or says it doesn't matter.
 Ask the user which game mode(s) to generate questions for. Allow multiple selections.
 
 Use AskUserQuestion with multiSelect:
-- **Question Bank** — Bloom's taxonomy 3-tier, 9 question types, XP-based (10/25/50)
+- **Question Bank** — Easy/Medium/Hard MC across 3 Bloom's taxonomy tiers, importable via Question Bank form
 - **Boss Battle** — Easy/Medium/Hard MC, 4 options, damage bonus scoring. Also generates a complete boss config (name, stats, phases, abilities, loot) importable into the portal.
-- **PVP Arena** — Balanced-difficulty MC for head-to-head competition, point-based
 - **Dungeon Rooms** — Progressive difficulty across 10 rooms, room-themed groupings. Also generates a complete dungeon config (rooms, monsters, structure) importable into the portal.
 
 ### Step 3b: Ask Boss/Dungeon Preferences (if applicable)
@@ -82,13 +81,17 @@ Every subagent prompt follows this template (customize the bracketed parts):
 
 > You are an expert educational assessment designer. Generate 200 [MODE-SPECIFIC DETAILS] questions on the topic: [topic]. [If source content: Base ALL questions on this content: (paste)]. Class: [class]. See schemas.md for the exact JSON format. IDs start at "[prefix]q001". Output ONLY a valid JSON array — no markdown fences, no commentary. End cleanly with ].
 
-#### Question Bank Mode — 3 subagents (one per Bloom's tier)
+#### Question Bank Mode — 3 subagents (one per difficulty tier)
 
-| Subagent | Tier | XP | ID Prefix | Question Formats |
-|----------|------|-----|-----------|-----------------|
-| 1 | Tier 1: Remember & Understand | +10 | t1q | Mix of: multiple_choice, multiple_select, ranking, qualitative_reasoning, linked_mc, troubleshooting, conflicting_contentions, whats_wrong, working_backwards |
-| 2 | Tier 2: Apply & Analyze | +25 | t2q | Same format mix |
-| 3 | Tier 3: Evaluate & Create | +50 | t3q | Same format mix |
+Each question: 4 MC options (plain string array), correctAnswer is 0-based index. Same format as Boss Battle questions.
+
+| Subagent | Tier (Bloom's) | Difficulty | damageBonus | ID Prefix |
+|----------|----------------|-----------|------------|-----------|
+| 1 | Remember & Understand | EASY | 0 | t1q |
+| 2 | Apply & Analyze | MEDIUM | 25 | t2q |
+| 3 | Evaluate & Create | HARD | 50 | t3q |
+
+Vary stem styles (standard MC, conflicting contentions, troubleshooting, what's wrong, working backwards, qualitative reasoning) — but all encode as standard 4-option MC.
 
 #### Boss Battle Mode — 3 subagents (one per difficulty)
 
@@ -99,14 +102,6 @@ Each question: 4 MC options, correctAnswer is 0-based index.
 | 1 | EASY | 0 | eq |
 | 2 | MEDIUM | 25 | mq |
 | 3 | HARD | 50 | hq |
-
-#### PVP Arena Mode — 3 subagents
-
-| Subagent | Type | Points | Description |
-|----------|------|--------|-------------|
-| 1 | BALANCED | 10 | Standard MC, mixed difficulty |
-| 2 | TACTICAL | 20 | Multi-step reasoning, strategic thinking |
-| 3 | BLITZ | 5 | Quick-recall, short stems, speed rounds |
 
 #### Dungeon Rooms Mode — 2 subagents
 
@@ -128,10 +123,10 @@ After the question subagents are spawned, spawn ONE additional subagent to gener
 > - Creative thematic boss name and description tied to the topic
 > - Stats scaled to the difficulty tier (HP, damage per correct)
 > - Boss appearance (type: BRUTE/PHANTOM/SERPENT, hue: 0-360)
-> - Modifiers appropriate for the difficulty tier
-> - Phases with descending HP thresholds (e.g. 75%, 50%, 25%)
+> - Top-level modifiers appropriate for the difficulty tier
+> - Phases with descending HP thresholds (e.g. 75%, 50%, 25%) — do NOT include modifiers on phases (the importer ignores them)
 > - Abilities with varied triggers and effects
-> - Loot table with thematically named items and stat allocations
+> - Loot table with thematically named items and stat allocations (slots: HEAD, CHEST, HANDS, FEET, BELT, AMULET, RING1, RING2)
 > - Rewards (XP, flux, item rarity)
 >
 > Do NOT include questions — they are generated separately and will be merged in.
@@ -182,9 +177,16 @@ The script handles all question formats (index-based, letter-based, multiple-sel
 
 **For Boss Battle mode:** Take the boss config JSON and add the merged questions array as `boss.questions`. Select a representative sample of questions (20-30) across all difficulties. The full question bank is written separately.
 
-**For Dungeon Rooms mode:** Take the dungeon config JSON and distribute questions from the question bank into each room:
-- For each room in the dungeon config, assign 3-6 questions from the question bank matching the room's difficulty level (EASY rooms get Novice/Apprentice questions, MEDIUM rooms get Journeyman questions, HARD rooms get Expert/Master questions).
-- Map the dungeon room question format: `{ id, stem, options, correctAnswer, difficulty, damageBonus }`.
+**For Dungeon Rooms mode:** Take the dungeon config JSON and distribute questions from the question bank into each room. The question count per room must be high enough that a student can always either kill the enemy or die trying — running out of questions soft-locks the dungeon run with no recovery. Use this formula based on enemy HP and expected player damage:
+
+- **EASY COMBAT rooms (enemyHp 100-200):** 10-15 questions
+- **MEDIUM COMBAT rooms (enemyHp 200-400):** 15-20 questions
+- **HARD COMBAT rooms (enemyHp 300-500):** 20-25 questions
+- **BOSS rooms (enemyHp 500-800):** 25-30 questions
+- **PUZZLE rooms:** 8-12 questions (all must be answered to clear)
+- **REST/TREASURE rooms:** 1-2 questions (auto-clear)
+
+Match room difficulty to question difficulty: EASY rooms get EASY questions, MEDIUM rooms get MEDIUM questions, HARD/BOSS rooms get HARD questions. Map the dungeon room question format: `{ id, stem, options, correctAnswer, difficulty, damageBonus }`.
 
 ### Step 6: Write Output Files
 
@@ -194,8 +196,8 @@ Create the output directory structure and write files:
 ~/Desktop/Questions/[class]/[mode]/[topic-slug].json
 ```
 
-- `[class]` = "AP Physics 1", "Honors Physics", "Forensic Science", or "General"
-- `[mode]` = "question-bank", "boss-battle", "pvp-arena", "dungeon-rooms"
+- `[class]` = "AP Physics", "Honors Physics", "Forensic Science", or "GLOBAL"
+- `[mode]` = "question-bank", "boss-battle", "dungeon-rooms"
 - `[topic-slug]` = topic in kebab-case (e.g., "newtons-laws")
 
 Each questions file contains a single JSON array of question objects.
@@ -239,4 +241,5 @@ Flag any issues (low counts, parse errors, deduplications).
 - **Boss/Dungeon config files are separate from question files.** The config file includes a sample of questions embedded in it for convenience, but the full question bank is always the separate questions file.
 - **CRITICAL: Always shuffle answer positions.** LLMs consistently place the correct answer as option A or B (~90%+ of the time). The Fisher-Yates shuffle in Step 5.6 is MANDATORY. Never skip it. Never write question files without first shuffling. Verify the distribution is ~25% per position before writing files.
 - **The config files match the portal's import format.** The boss config matches what `QuizBossFormModal` expects; the dungeon config matches what `DungeonFormModal` expects. Teachers import, review, tweak, and deploy.
+- **Dungeon rooms need enough questions to resolve combat.** If a room runs out of questions before the enemy dies or the player dies, the run is permanently soft-locked with no recovery. A base student deals ~10 damage per correct answer (plus damageBonus), so a 200 HP enemy needs ~20 correct answers with no bonus, or ~6 with +25 bonus. Always embed generously — it's better to have unused questions than a soft-locked dungeon.
 - **Always prioritize project agents over general-purpose.** Use content-strategist-ux-writer for question generation, qa-bug-resolution for validation, backend-integration-engineer for config structures. General-purpose is a fallback only.

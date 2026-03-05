@@ -6,102 +6,49 @@ JSON schema definitions for each game mode. Subagents MUST follow these exactly.
 
 ## Question Bank Schema
 
-9 question types across 3 Bloom's Taxonomy tiers.
+The Question Bank uses the same `BossQuizQuestion` format as Boss Battle — this is what the portal's `QuestionBankFormModal` actually imports. Questions are organized into 3 difficulty tiers that map to Bloom's Taxonomy levels, but the stored format is identical to Boss Battle questions.
 
 ### Tier Distribution
-| Tier | Bloom's Levels | XP | Target Count |
-|------|---------------|-----|-------------|
-| 1 | Remember, Understand | 10 | 150-350 |
-| 2 | Apply, Analyze | 25 | 150-350 |
-| 3 | Evaluate, Create | 50 | 150-350 |
+| Tier | Bloom's Levels | Difficulty | Target Count |
+|------|---------------|------------|-------------|
+| 1 | Remember, Understand | EASY | 150-350 |
+| 2 | Apply, Analyze | MEDIUM | 150-350 |
+| 3 | Evaluate, Create | HARD | 150-350 |
 
-### Question Types
-All 9 types should be used across every tier. Mix them — do not cluster by type.
+### Question Variety
+Vary question stems across these pedagogical styles — do not cluster by style:
+- Standard multiple choice (1 correct)
+- Conflicting contentions ("Student A says X, Student B says Y. Who is correct?")
+- Qualitative reasoning (conceptual MC requiring deep understanding)
+- Troubleshooting (identify the error in a scenario)
+- What's wrong (find the flaw in given reasoning/solution)
+- Working backwards (given the answer, determine what produced it)
 
-1. **multiple_choice** — 4 options, 1 correct
-2. **multiple_select** — 4 options, 2-3 correct
-3. **ranking** — 4 items to order correctly
-4. **conflicting_contentions** — Two students disagree, who is correct and why
-5. **linked_mc** — Two connected questions where part B depends on part A
-6. **qualitative_reasoning** — Conceptual MC requiring deep understanding
-7. **troubleshooting** — Identify the error in a scenario
-8. **whats_wrong** — Find the flaw in given reasoning/solution
-9. **working_backwards** — Given the answer, determine what produced it
+Encode all of these as standard 4-option MC — the variety comes from stem design, not from the JSON structure.
 
 ### JSON Object Format
 
 ```json
 {
   "id": "t1q001",
-  "tier": 1,
-  "xp": 10,
-  "type": "multiple_choice",
-  "bloomsLevel": "Remember",
   "stem": "The question text",
-  "context": "Optional scenario/context text or null",
-  "options": [
-    {"id": "a", "text": "Option A"},
-    {"id": "b", "text": "Option B"},
-    {"id": "c", "text": "Option C"},
-    {"id": "d", "text": "Option D"}
-  ],
-  "correctAnswer": "b",
-  "explanation": "Why this is the correct answer",
-  "linkedFollowUp": null
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctAnswer": 0,
+  "difficulty": "EASY",
+  "damageBonus": 0
 }
 ```
 
-### Type-Specific Fields
-
-**multiple_choice:**
-- `correctAnswer`: single string, e.g. `"b"`
-
-**multiple_select:**
-- `correctAnswer`: array of strings, e.g. `["a", "c"]`
-
-**ranking:**
-- `correctAnswer`: array in correct order, e.g. `["c", "a", "d", "b"]`
-- Options represent items to be ranked, not answer choices
-
-**conflicting_contentions:**
-- `stem`: Describes two students' positions (e.g., "Student A says X. Student B says Y. Who is correct?")
-- `correctAnswer`: single string identifying the correct student's option
-
-**linked_mc:**
-- `correctAnswer`: single string for part A
-- `linkedFollowUp`: object with its own `stem`, `options`, `correctAnswer`, `explanation`
-
-```json
-{
-  "linkedFollowUp": {
-    "stem": "Based on your answer above, what would happen if...",
-    "options": [
-      {"id": "a", "text": "..."},
-      {"id": "b", "text": "..."},
-      {"id": "c", "text": "..."},
-      {"id": "d", "text": "..."}
-    ],
-    "correctAnswer": "d",
-    "explanation": "Because..."
-  }
-}
-```
-
-**qualitative_reasoning, troubleshooting, whats_wrong, working_backwards:**
-- Same base format as `multiple_choice`
-- `context` field is typically populated with a scenario, diagram description, or worked solution
+### Field Rules
+- `correctAnswer`: 0-based index (0=A, 1=B, 2=C, 3=D)
+- `options`: array of 4 strings (NOT objects — plain string array)
+- `difficulty`: EASY, MEDIUM, or HARD (maps to Bloom's tiers 1, 2, 3)
+- `damageBonus`: EASY=0, MEDIUM=25, HARD=50
 
 ### ID Convention
-- Tier 1: `t1q001`, `t1q002`, ... `t1q350`
-- Tier 2: `t2q001`, `t2q002`, ... `t2q350`
-- Tier 3: `t3q001`, `t3q002`, ... `t3q350`
-
-### Bloom's Level Assignment
-| Tier | Valid bloomsLevel values |
-|------|------------------------|
-| 1 | "Remember", "Understand" |
-| 2 | "Apply", "Analyze" |
-| 3 | "Evaluate", "Create" |
+- Tier 1 (EASY): `t1q001`, `t1q002`, ... `t1q350`
+- Tier 2 (MEDIUM): `t2q001`, `t2q002`, ... `t2q350`
+- Tier 3 (HARD): `t3q001`, `t3q002`, ... `t3q350`
 
 ---
 
@@ -138,44 +85,6 @@ Multiple choice questions with difficulty-based damage bonuses.
 - EASY: `eq001`, `eq002`, ...
 - MEDIUM: `mq001`, `mq002`, ...
 - HARD: `hq001`, `hq002`, ...
-
----
-
-## PVP Arena Schema
-
-Balanced questions designed for head-to-head competition. Three round types ensure varied gameplay.
-
-### Round Types
-| Round Type | Description | Points | Target Count |
-|-----------|------------|--------|-------------|
-| BALANCED | Standard MC, mixed difficulty | 10 | 150-350 |
-| TACTICAL | Multi-step reasoning, strategic thinking | 20 | 150-350 |
-| BLITZ | Quick-recall, short stems, speed rounds | 5 | 150-350 |
-
-### JSON Object Format
-
-```json
-{
-  "id": "bal001",
-  "stem": "The question text",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correctAnswer": 0,
-  "roundType": "BALANCED",
-  "points": 10,
-  "timeLimit": 30
-}
-```
-
-### Field Rules
-- `correctAnswer`: 0-based index (0=A, 1=B, 2=C, 3=D)
-- `options`: array of 4 strings
-- `timeLimit`: seconds — BALANCED=30, TACTICAL=45, BLITZ=15
-- `points`: must match round type (BALANCED=10, TACTICAL=20, BLITZ=5)
-
-### ID Convention
-- BALANCED: `bal001`, `bal002`, ...
-- TACTICAL: `tac001`, `tac002`, ...
-- BLITZ: `blz001`, `blz002`, ...
 
 ---
 
@@ -244,7 +153,7 @@ This is the complete boss encounter config that gets imported into the portal's 
   "description": "A spectral entity born from collapsed spacetime. It warps the very fabric of physics around it, testing students' mastery of gravitational concepts.",
   "maxHp": 2500,
   "damagePerCorrect": 40,
-  "classType": "AP_PHYSICS",
+  "classType": "AP Physics",
   "bossType": "PHANTOM",
   "bossHue": 270,
   "difficultyTier": "HARD",
@@ -304,7 +213,7 @@ This is the complete boss encounter config that gets imported into the portal's 
     {
       "id": "lt02",
       "itemName": "Graviton Ring",
-      "slot": "RING",
+      "slot": "RING1",
       "rarity": "RARE",
       "stats": { "tech": 6, "analysis": 6 },
       "dropChance": 40,
@@ -336,7 +245,7 @@ This is the complete boss encounter config that gets imported into the portal's 
 - `description`: 2-3 dramatic sentences
 - `maxHp`: Scale with difficulty — NORMAL: 800-1500, HARD: 2000-3500, NIGHTMARE: 4000-6000, APOCALYPSE: 8000-12000
 - `damagePerCorrect`: NORMAL: 40-60, HARD: 30-50, NIGHTMARE: 25-40, APOCALYPSE: 20-35
-- `classType`: AP_PHYSICS, HONORS_PHYSICS, FORENSIC_SCIENCE, or GLOBAL
+- `classType`: "AP Physics", "Honors Physics", "Forensic Science", or "GLOBAL" (must match the portal's class config display names)
 - `bossType`: BRUTE, PHANTOM, or SERPENT
 - `bossHue`: 0-360 (color wheel)
 - `difficultyTier`: NORMAL, HARD, NIGHTMARE, or APOCALYPSE
@@ -347,7 +256,7 @@ This is the complete boss encounter config that gets imported into the portal's 
 - `modifiers`: Array of `{ type, value? }`. Available types: PLAYER_DAMAGE_BOOST, BOSS_DAMAGE_BOOST, HARD_ONLY, DOUBLE_OR_NOTHING, CRIT_SURGE, ARMOR_BREAK, HEALING_WAVE, SHIELD_WALL, STREAK_BONUS, GLASS_CANNON, LAST_STAND, TIME_PRESSURE
 - `phases`: Array of phase objects. HP thresholds should descend (75, 50, 25).
 - `bossAbilities`: Array of ability objects. Triggers: ON_PHASE, EVERY_N_QUESTIONS, HP_THRESHOLD, RANDOM_CHANCE. Effects: AOE_DAMAGE, HEAL_BOSS, ENRAGE, SILENCE, FOCUS_FIRE.
-- `lootTable`: Array of loot objects. Slots: HEAD, CHEST, HANDS, FEET, BELT, AMULET, RING. Rarities: UNCOMMON, RARE, UNIQUE. Stats: tech, focus, analysis, charisma (0-15 each).
+- `lootTable`: Array of loot objects. Slots: HEAD, CHEST, HANDS, FEET, BELT, AMULET, RING1, RING2. Rarities: UNCOMMON, RARE, UNIQUE. Stats: tech, focus, analysis, charisma (0-15 each).
 
 ---
 
@@ -361,7 +270,7 @@ This is the complete dungeon config that gets imported into the portal's "New Du
 {
   "name": "The Kinematic Catacombs",
   "description": "Ancient tunnels carved by the forces of motion itself. Each chamber tests a deeper understanding of how objects move through space and time.",
-  "classType": "AP_PHYSICS",
+  "classType": "AP Physics",
   "rooms": [
     {
       "id": "rm01",
@@ -461,7 +370,7 @@ This is the complete dungeon config that gets imported into the portal's "New Du
 **Required fields:**
 - `name`: Creative dungeon name themed to the topic
 - `description`: 2-3 atmospheric sentences
-- `classType`: AP_PHYSICS, HONORS_PHYSICS, FORENSIC_SCIENCE, or GLOBAL
+- `classType`: "AP Physics", "Honors Physics", "Forensic Science", or "GLOBAL" (must match the portal's class config display names)
 - `rooms`: Array of room objects (see below)
 - `rewards`: { xp, flux, itemRarity }
 
@@ -480,7 +389,7 @@ This is the complete dungeon config that gets imported into the portal's "New Du
 - `enemyDamage`: Number (0 for non-combat rooms)
 - `enemyName`: Creative enemy name for COMBAT/BOSS rooms, empty string otherwise
 - `healAmount`: Number for REST rooms (20-50), 0 otherwise
-- `questions`: Array of Boss Battle question objects (3-8 per combat room). Set to `[]` initially — the skill will populate from the question bank.
+- `questions`: Array of Boss Battle question objects. Set to `[]` initially — the skill will populate from the question bank. Question counts must be high enough to guarantee the encounter resolves (enemy dies or player dies) before running out — running out of questions soft-locks the run. Minimums: EASY COMBAT 10-15, MEDIUM COMBAT 15-20, HARD COMBAT 20-25, BOSS 25-30, PUZZLE 8-12, REST/TREASURE 1-2.
 
 ### Room Sequence Pattern
 Follow this progression:
