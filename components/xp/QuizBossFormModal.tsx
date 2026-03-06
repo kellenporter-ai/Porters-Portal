@@ -119,6 +119,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   const [formModifiers, setFormModifiers] = useState<BossModifier[]>([]);
   const [promptCopied, setPromptCopied] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const quizFileRef = useRef<HTMLInputElement>(null);
   const bossConfigFileRef = useRef<HTMLInputElement>(null);
 
@@ -373,10 +374,12 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   // --- Save / Deploy ---
   const handleSaveQuizBoss = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (quizBossForm.questions.length === 0) {
       toast.error('Add at least one question.');
       return;
     }
+    setIsSaving(true);
     try {
       const usedBankIds = [...new Set(quizBossForm.questions.map(q => q.bankId).filter(Boolean))] as string[];
       const quizData: Record<string, unknown> = {
@@ -387,7 +390,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         currentHp: editingQuizBoss?.currentHp ?? quizBossForm.maxHp,
         classType: quizBossForm.classType,
         isActive: editingQuizBoss?.isActive ?? true,
-        deadline: new Date(quizBossForm.deadline).toISOString(),
+        deadline: quizBossForm.deadline ? new Date(quizBossForm.deadline).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
         damagePerCorrect: quizBossForm.damagePerCorrect,
         questions: quizBossForm.questions.map(q => ({
           id: q.id,
@@ -417,54 +420,66 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
       onClose();
     } catch (err) {
-      toast.error('Failed to save quiz boss.');
+      console.error('Failed to save quiz boss:', err);
+      toast.error(err instanceof Error ? `Save failed: ${err.message}` : 'Failed to save quiz boss.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // --- Save Draft (inactive) ---
   const handleSaveDraft = async () => {
+    if (isSaving) return;
     if (quizBossForm.questions.length === 0) {
       toast.error('Add at least one question.');
       return;
     }
-    const usedBankIds = [...new Set(quizBossForm.questions.map(q => q.bankId).filter(Boolean))] as string[];
-    const quizData: Record<string, unknown> = {
-      id: Math.random().toString(36).substring(2, 12),
-      bossName: quizBossForm.bossName,
-      description: quizBossForm.description,
-      maxHp: quizBossForm.maxHp,
-      currentHp: quizBossForm.maxHp,
-      classType: quizBossForm.classType,
-      isActive: false,
-      deadline: quizBossForm.deadline ? new Date(quizBossForm.deadline).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
-      damagePerCorrect: quizBossForm.damagePerCorrect,
-      questions: quizBossForm.questions.map(q => ({
-        id: q.id,
-        stem: q.stem,
-        options: q.options.filter(o => o.trim()),
-        correctAnswer: q.correctAnswer,
-        difficulty: q.difficulty,
-        ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}),
-        ...(q.bankId ? { bankId: q.bankId } : {}),
-      })),
-      rewards: {
-        xp: quizBossForm.rewardXp,
-        flux: quizBossForm.rewardFlux,
-        ...(quizBossForm.rewardItemRarity ? { itemRarity: quizBossForm.rewardItemRarity } : {}),
-      },
-      ...(quizBossForm.targetSections.length > 0 ? { targetSections: quizBossForm.targetSections } : {}),
-      bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
-      ...(formModifiers.length > 0 ? { modifiers: formModifiers } : {}),
-      ...(usedBankIds.length > 0 ? { questionBankIds: usedBankIds } : {}),
-      ...(quizBossForm.difficultyTier !== 'NORMAL' ? { difficultyTier: quizBossForm.difficultyTier } : {}),
-      ...(quizBossForm.autoScale.enabled ? { autoScale: quizBossForm.autoScale } : {}),
-      ...(quizBossForm.phases.length > 0 ? { phases: quizBossForm.phases } : {}),
-      ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
-      ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
-    };
-    await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
-    toast.success('Quiz boss saved as draft (inactive).');
-    onClose();
+    setIsSaving(true);
+    try {
+      const usedBankIds = [...new Set(quizBossForm.questions.map(q => q.bankId).filter(Boolean))] as string[];
+      const quizData: Record<string, unknown> = {
+        id: Math.random().toString(36).substring(2, 12),
+        bossName: quizBossForm.bossName,
+        description: quizBossForm.description,
+        maxHp: quizBossForm.maxHp,
+        currentHp: quizBossForm.maxHp,
+        classType: quizBossForm.classType,
+        isActive: false,
+        deadline: quizBossForm.deadline ? new Date(quizBossForm.deadline).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
+        damagePerCorrect: quizBossForm.damagePerCorrect,
+        questions: quizBossForm.questions.map(q => ({
+          id: q.id,
+          stem: q.stem,
+          options: q.options.filter(o => o.trim()),
+          correctAnswer: q.correctAnswer,
+          difficulty: q.difficulty,
+          ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}),
+          ...(q.bankId ? { bankId: q.bankId } : {}),
+        })),
+        rewards: {
+          xp: quizBossForm.rewardXp,
+          flux: quizBossForm.rewardFlux,
+          ...(quizBossForm.rewardItemRarity ? { itemRarity: quizBossForm.rewardItemRarity } : {}),
+        },
+        ...(quizBossForm.targetSections.length > 0 ? { targetSections: quizBossForm.targetSections } : {}),
+        bossAppearance: { bossType: quizBossForm.bossType, hue: quizBossForm.bossHue },
+        ...(formModifiers.length > 0 ? { modifiers: formModifiers } : {}),
+        ...(usedBankIds.length > 0 ? { questionBankIds: usedBankIds } : {}),
+        ...(quizBossForm.difficultyTier !== 'NORMAL' ? { difficultyTier: quizBossForm.difficultyTier } : {}),
+        ...(quizBossForm.autoScale.enabled ? { autoScale: quizBossForm.autoScale } : {}),
+        ...(quizBossForm.phases.length > 0 ? { phases: quizBossForm.phases } : {}),
+        ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
+        ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
+      };
+      await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
+      toast.success('Quiz boss saved as draft (inactive).');
+      onClose();
+    } catch (err) {
+      console.error('Failed to save draft boss:', err);
+      toast.error(err instanceof Error ? `Draft save failed: ${err.message}` : 'Failed to save draft.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -1041,13 +1056,13 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
 
         <div className="flex gap-3">
           {!editingQuizBoss && (
-            <button type="button" onClick={handleSaveDraft}
-              className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition">
-              Save Draft
+            <button type="button" onClick={handleSaveDraft} disabled={isSaving}
+              className="flex-1 bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {isSaving ? 'Saving...' : 'Save Draft'}
             </button>
           )}
-          <button type="submit" className={`${editingQuizBoss ? 'w-full' : 'flex-[2]'} bg-amber-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-amber-700`}>
-            {editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
+          <button type="submit" disabled={isSaving} className={`${editingQuizBoss ? 'w-full' : 'flex-[2]'} bg-amber-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed`}>
+            {isSaving ? 'Saving...' : editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
           </button>
         </div>
       </form>
