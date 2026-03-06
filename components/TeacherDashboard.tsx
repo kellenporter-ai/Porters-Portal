@@ -1027,6 +1027,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                           gradedBy: 'Admin',
                                                         };
                                                         const result = await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
+                                                        // Optimistically update local state so grade displays instantly
+                                                        // (don't wait for Firestore onSnapshot round-trip)
+                                                        setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
+                                                          ...s,
+                                                          rubricGrade,
+                                                          score: pct,
+                                                          ...(result.clearedAIFlag ? { flaggedAsAI: false, flaggedAsAIBy: '', flaggedAsAIAt: '', status: 'NORMAL' as const } : {}),
+                                                        } : s));
                                                         setRubricDraft({});
                                                         if (result.clearedAIFlag) {
                                                           toast.success(`Grade saved: ${pct}% — AI flag automatically cleared`);
