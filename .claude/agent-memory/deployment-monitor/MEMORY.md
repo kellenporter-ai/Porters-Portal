@@ -24,11 +24,48 @@
 
 ## Hosting
 - Production URL: https://porters-portal.web.app (live channel, never expires)
-- Last verified deploy: 2026-03-05 23:03:14 UTC (commit fbadda0, assessment best-score aggregation + trivial attempt detection)
+- Last verified deploy: 2026-03-06 14:15:18 UTC (assessment session token security deploy)
+
+## Log Inspection Pattern — Per-Function vs Cross-Function
+- `firebase functions:log --only <name> -n 50` can miss the most recent deploy audit entries if 50 entries fills up with older runtime logs
+- When a function's deploy hash is in doubt, use `firebase functions:log -n 100` (all functions) and grep for the hash — deploy completion audits (type N, UpdateFunction/CreateFunction with `"status":{}`) appear there even when per-function log window is saturated
+- Always confirm deploy hash via cross-function log if per-function result looks stale
 
 ## App Check Baseline
 - All function logs show `"app":"MISSING"` in verifications — App Check is not enforced (expected for this environment)
 - Auth always shows `"auth":"VALID"` on real invocations — authentication is working correctly
+
+## Assessment Session Token Deploy Summary (2026-03-06)
+- Deploy hash: `dfff44de86a22f7883261dc5c80dc65c9a7ae1c0`
+- New function: `startAssessmentSession` (CreateFunction, first deploy, revision startassessmentsession-00001-vod)
+- Updated function: `submitAssessment` (UpdateFunction, now on dfff44, revision submitassessment-00013-len)
+- Frontend changes: Proctor.tsx and ResourceViewer.tsx (not verified directly, hosting deploy included)
+- Firestore: No new indexes deployed — `assessment_sessions` collection requires no composite indexes (likely queried by document ID only)
+- Hosting released at 14:15:18 UTC
+- startAssessmentSession: cold start at 19:13:50, STARTUP TCP probe succeeded — state ACTIVE, no runtime errors
+- submitAssessment: confirmed on dfff44 hash at 19:14:03 UTC, state ACTIVE — no post-deploy errors
+- No `assessment_sessions` index in firestore:indexes output — consistent with session tokens read by doc ID, not queried
+- Zero errors detected post-deploy
+- Result: HEALTHY — hosting up, HTTP 200, both functions deployed and active
+
+## Commit e1863de Deploy Summary (2026-03-06)
+- Hosting-only deploy (no Cloud Functions or Firestore changes)
+- Assessment grading UX overhaul in TeacherDashboard.tsx: side-by-side layout (student answers left, rubric panel right with sticky positioning)
+- Tier descriptors always visible in grade mode; compact prop added to RubricViewer
+- Hosting released at 12:45:03 UTC
+- Functions unchanged — dismissAlert, submitEngagement, updateStreak all firing cleanly post-deploy
+- Zero errors detected post-deploy
+- Result: HEALTHY — hosting up, HTTP 200, zero errors
+
+## Commit a608b89 Deploy Summary (2026-03-06)
+- Hosting-only deploy (no Cloud Functions or Firestore changes)
+- saveRubricGrade in dataService.ts auto-clears AI integrity flag when teacher grades a flagged submission
+- TeacherDashboard.tsx adds inline info banner explaining the auto-clear behavior + contextual toast
+- Files changed: services/dataService.ts, components/TeacherDashboard.tsx
+- Hosting released at 07:24:11 UTC
+- No function deploys — functions unchanged (still on hash 589dcccc)
+- Zero errors detected post-deploy
+- Result: HEALTHY — hosting up, HTTP 200, zero errors
 
 ## Commit d5d2481 Deploy Summary (2026-03-05)
 - Deploy hash: `589dcccc3dde943c6b48e8720adb081394804483`

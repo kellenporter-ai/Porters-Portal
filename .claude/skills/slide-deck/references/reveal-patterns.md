@@ -131,40 +131,131 @@ Best for: Engaging review sessions, game-related presentations, RPG-themed conte
 }
 ```
 
-### Floating Orbs (CSS-only, lightweight)
-Use pseudo-elements for 2-3 blurred orbs that drift slowly:
+### Floating Orbs / Ambient Light Overlays
+
+**CRITICAL: Reveal.js stacking context rules.**
+- `::before`/`::after` on `.reveal` with `z-index: -1` are **invisible** — they render behind `.reveal`'s opaque background gradient. Do NOT use this pattern.
+- Sibling `<div>` outside `.reveal` also fails — Reveal.js creates its own stacking context that covers siblings.
+- **The only working approach:** Place overlay `<div>` elements **inside** `.reveal` as children (siblings of `.slides`), with `position: absolute` and `z-index: 1`. Then set `.reveal .slides { position: relative; z-index: 2; }` so slides render above the overlay.
+
+```html
+<!-- Correct structure -->
+<div class="reveal">
+    <div class="ambient-overlay"> <!-- z-index: 1 -->
+        <div class="orb-1"></div>
+        <div class="orb-2"></div>
+    </div>
+    <div class="slides"> <!-- z-index: 2 -->
+        ...
+    </div>
+</div>
+```
+
 ```css
-.reveal::before,
-.reveal::after {
-    content: '';
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.15;
-    z-index: -1;
+.reveal { position: relative; }
+.ambient-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
 }
-.reveal::before {
-    width: 40vw; height: 40vw;
-    background: var(--accent);
+.reveal .slides { position: relative; z-index: 2; }
+
+.ambient-overlay .orb-1,
+.ambient-overlay .orb-2 {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    width: 50vw; height: 50vh;
+}
+.ambient-overlay .orb-1 {
+    background: radial-gradient(circle, var(--accent) 0%, transparent 65%);
     top: -10vh; left: -10vw;
     animation: orbFloat1 30s ease-in-out infinite;
 }
-.reveal::after {
-    width: 30vw; height: 30vw;
-    background: var(--highlight);
+.ambient-overlay .orb-2 {
+    background: radial-gradient(circle, var(--highlight) 0%, transparent 65%);
     bottom: -10vh; right: -10vw;
     animation: orbFloat2 25s ease-in-out infinite;
 }
 @keyframes orbFloat1 {
-    0%, 100% { transform: translate(0, 0); }
-    33% { transform: translate(15vw, 10vh); }
-    66% { transform: translate(-5vw, 20vh); }
+    0%, 100% { opacity: 0.15; transform: translate(0, 0); }
+    33% { opacity: 0.25; transform: translate(15vw, 10vh); }
+    66% { opacity: 0.15; transform: translate(-5vw, 20vh); }
 }
 @keyframes orbFloat2 {
-    0%, 100% { transform: translate(0, 0); }
-    33% { transform: translate(-10vw, -15vh); }
-    66% { transform: translate(10vw, -5vh); }
+    0%, 100% { opacity: 0.15; transform: translate(0, 0); }
+    33% { opacity: 0.25; transform: translate(-10vw, -15vh); }
+    66% { opacity: 0.15; transform: translate(10vw, -5vh); }
+}
+```
+
+**Opacity guidelines for ambient effects against dark backgrounds:**
+- 0.05-0.10 = invisible, don't bother
+- 0.15-0.25 = subtle ambient (good for floating orbs)
+- 0.35-0.45 = noticeable but non-distracting (good for police lights, pulsing effects)
+- 0.50+ = prominent, use sparingly for dramatic emphasis
+
+### Police / Emergency Lights (Noir Lab)
+Alternating red/blue diffused glow simulating distant emergency vehicle lights. Uses the same overlay `<div>` pattern as floating orbs.
+
+```html
+<div class="reveal">
+    <div class="police-lights">
+        <div class="light-red"></div>
+        <div class="light-blue"></div>
+    </div>
+    <div class="slides">...</div>
+</div>
+```
+
+```css
+.police-lights {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+.reveal .slides { position: relative; z-index: 2; }
+
+.police-lights .light-red,
+.police-lights .light-blue {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    width: 60vw; height: 60vh;
+}
+.police-lights .light-red {
+    background: radial-gradient(circle, rgba(232,80,74,0.8) 0%, rgba(232,80,74,0.3) 40%, transparent 70%);
+    top: -5vh; left: -5vw;
+    animation: policeRed 3.5s ease-in-out infinite;
+}
+.police-lights .light-blue {
+    background: radial-gradient(circle, rgba(59,110,246,0.8) 0%, rgba(59,110,246,0.3) 40%, transparent 70%);
+    bottom: -5vh; right: -5vw;
+    animation: policeBlue 3.5s ease-in-out infinite;
+}
+/* Double-pulse pattern: flash-dim-flash before fading out */
+@keyframes policeRed {
+    0%   { opacity: 0; transform: translate(0,0); }
+    10%  { opacity: 0.45; transform: translate(3vw,2vh); }
+    20%  { opacity: 0.15; transform: translate(5vw,3vh); }
+    30%  { opacity: 0.35; transform: translate(4vw,2vh); }
+    42%  { opacity: 0; transform: translate(3vw,1vh); }
+    100% { opacity: 0; transform: translate(0,0); }
+}
+@keyframes policeBlue {
+    0%   { opacity: 0; transform: translate(0,0); }
+    42%  { opacity: 0; transform: translate(-2vw,-1vh); }
+    52%  { opacity: 0.45; transform: translate(-4vw,-2vh); }
+    62%  { opacity: 0.15; transform: translate(-5vw,-3vh); }
+    72%  { opacity: 0.35; transform: translate(-4vw,-2vh); }
+    84%  { opacity: 0; transform: translate(-2vw,-1vh); }
+    100% { opacity: 0; transform: translate(0,0); }
 }
 ```
 
@@ -280,6 +371,55 @@ Since we can't embed real photos, use styled placeholder cards:
 ```
 
 Suggest the user run `/generate-image` for real visuals. Include the description in the placeholder so they know exactly what image to generate.
+
+---
+
+## Interactive Navigation Buttons
+
+When slides need clickable buttons that navigate to other slides (e.g., "Another Round?" → back to Argue, or "Wrap Up" → forward), use `Reveal.slide(index)` or `Reveal.next()` wired up in the `.then()` callback:
+
+1. Give the target slide an `id` attribute: `<section id="slide-argue">`
+2. Give buttons `id` attributes: `<div id="btn-loop-back">`
+3. Wire up after `Reveal.initialize()`:
+
+```javascript
+Reveal.initialize({ /* config */ }).then(function() {
+    var targetSlide = document.getElementById('slide-argue');
+    var slides = document.querySelectorAll('.reveal .slides > section');
+    var targetIndex = Array.prototype.indexOf.call(slides, targetSlide);
+
+    document.getElementById('btn-loop-back').addEventListener('click', function() {
+        Reveal.slide(targetIndex);
+    });
+    document.getElementById('btn-advance').addEventListener('click', function() {
+        Reveal.next();
+    });
+});
+```
+
+**Important:** Always find slide indices dynamically via `id` lookup — never hardcode numbers. Slides shift when content is added/removed.
+
+Add hover feedback with inline `onmouseenter`/`onmouseleave` or a CSS class:
+```html
+<div id="btn-loop-back" style="cursor: pointer; transition: background 0.2s;"
+     onmouseenter="this.style.background='rgba(232,80,74,0.25)'"
+     onmouseleave="this.style.background='rgba(232,80,74,0.1)'">
+```
+
+---
+
+## Grid Sizing for Dense Content Slides
+
+When a slide has 6+ items in a grid (evidence logs, vocabulary lists, etc.), the default 2-column layout at `0.8em` will overflow the 1080p viewport. Use these guidelines:
+
+| Items | Columns | Font Size | Gap | Max Width |
+|-------|---------|-----------|-----|-----------|
+| 4 | 2 | 0.8em | 1em | 900px |
+| 5-6 | 3 | 0.6em | 0.6em | 1000px |
+| 7-9 | 3 | 0.55em | 0.6em | 1100px |
+| 10+ | Consider splitting across 2 slides |
+
+Center an odd last item with `grid-column: 2` (for 3-col) or auto-flow.
 
 ---
 

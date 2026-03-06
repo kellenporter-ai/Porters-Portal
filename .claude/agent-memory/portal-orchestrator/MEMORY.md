@@ -56,6 +56,14 @@
 - FluxShopPanel: per-slot equip/unequip, preview merges with current equipped set
 - Backend: `equipFluxCosmetic` writes to `gamification.activeCosmetics.{slot}`, `purchaseFluxItem` auto-equips to correct slot
 
+## Assessment Security (fixed 2026-03-06)
+- **Pre-fill exploit patched**: Students could write answers into `lesson_block_responses` via DevTools before timer starts. Fix: Proctor clears saved responses on mount for assessments.
+- **Server telemetry validation**: `calculateFeedbackServerSide` now flags: <30s engagement with responses, <5s/response, 0 keystrokes+0 pastes with responses (ghost submissions).
+- **Server elapsed time cap**: `submitAssessment` computes `serverElapsedSec`, caps `engagementTime` to prevent fabricated high values. Stores audit fields: `clientReportedEngagement`, `serverElapsedSec`.
+- **Client gate**: 30s minimum engagement before submit button works (UX only; server enforces independently).
+- **Session tokens (added 2026-03-06)**: `startAssessmentSession` CF issues crypto token -> stored in `assessment_sessions/{token}`. `submitAssessment` validates + consumes token atomically via transaction. Token provides server-authoritative `startedAt` for elapsed time. Grace period (12h from deploy) allows tokenless submissions with `legacySubmission: true` flag. After grace, tokenless submissions rejected. Client stores token in sessionStorage (key: `assessment_session_{assignmentId}`), clears on submit/retake.
+- RULE: Never trust client-reported metrics. Always validate server-side.
+
 ## Known Technical Debt
 - `functions/src/index.ts` is a 5,060-line monolith — should be split into modules
 - `dataService.ts` at ~2,020 lines handles everything — could use domain splitting
@@ -69,15 +77,19 @@
 - **Global query limits + client-side filtering = silent data loss**: subscribeToSubmissions limit(200) caused assessment submissions to vanish as total count grew past 200. Fixed 2026-03-05 with `subscribeToAssignmentSubmissions` (scoped by assignmentId, no limit). Same pattern could recur in any view filtering the global submissions list.
 - **Silent Firestore write failures**: TeacherDashboard rubric grade save had try/catch with only console logging. No toast feedback. Fixed 2026-03-05. RULE: every user-initiated Firestore write must have toast feedback on success and failure.
 - **"Latest" vs "Best" attempt confusion**: Grade aggregation used `latest` (highest attemptNumber) instead of best score. Fixed 2026-03-05. RULE: always use best score across attempts for student-facing and teacher-facing grade display. The `best` field on studentGroup now holds the highest-scoring non-AI-flagged submission.
+- **Missing try/catch on async handlers**: `handleSaveDraft` in QuizBossFormModal had no try/catch — Firestore write failures were unhandled promise rejections with zero user feedback. Fixed 2026-03-06. RULE: every async handler that calls Firestore must have try/catch with toast.error AND console.error showing the actual error message, not a generic string. Also add `isSaving` state to prevent double-clicks.
 
 ## Assessment Grading Architecture
-- `TeacherDashboard.tsx` handles all assessment grading UI (~1,520 lines)
+- `TeacherDashboard.tsx` handles all assessment grading UI (~1,590 lines)
 - Student groups computed in `useMemo` within the assessments tab IIFE (line ~291+)
 - Key fields per group: `latest` (most recent), `best` (highest score), `bestGraded` (highest rubric-graded)
 - `getEffectiveScore()`: rubricGrade.overallPercentage > assessmentScore.percentage > score > 0
 - `isTrivialAttempt()`: <30s engagement + 0% score + not FLAGGED -> dimmed in UI
 - `saveRubricGrade` in dataService writes rubricGrade + score to submission doc, sends notification
 - `rubricDraft` state holds in-progress rubric tier selections (single shared state, resets on attempt switch)
+- **Side-by-side layout**: Expanded submission uses `flex lg:flex-row` — answers left (lg:w-1/2), rubric right (lg:w-1/2 sticky). Stacks on mobile.
+- **RubricViewer** has `compact` prop for tighter spacing in side panels. Grade mode always shows tier descriptors (no toggle).
+- Rubric panel is `lg:sticky lg:top-0 lg:max-h-[80vh] lg:overflow-y-auto` — stays visible while scrolling answers. Save bar is `sticky bottom-0`.
 
 ## Simulation Output
 - Simulations live at `/home/kp/Desktop/Simulations/<class>/` (AP Physics, Honors Physics, Forensic Science)
