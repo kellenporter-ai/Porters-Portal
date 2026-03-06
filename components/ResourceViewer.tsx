@@ -58,6 +58,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
+  // Session token for assessment security (issued by startAssessmentSession Cloud Function)
+  const sessionTokenRef = useRef<string | null>(null);
 
   const activeAssignment = assignments.find(a => a.id === id) || null;
   const isAssessment = activeAssignment?.isAssessment === true && user.role !== UserRole.ADMIN;
@@ -155,7 +157,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         activeAssignment.id,
         responses,
         metrics,
-        activeAssignment.classType
+        activeAssignment.classType,
+        sessionTokenRef.current || undefined
       );
       setAssessmentResult({
         correct: result.assessmentScore.correct,
@@ -166,6 +169,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         status: result.status,
         xpEarned: result.xpEarned,
       });
+      // Clear cached session token so retakes get a fresh one
+      if (activeAssignment.id) {
+        sessionStorage.removeItem(`assessment_session_${activeAssignment.id}`);
+        sessionTokenRef.current = null;
+      }
       toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
     } catch (err) {
       reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
@@ -200,6 +208,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         lastUpdated: new Date().toISOString(),
       });
     } catch { /* ignore if doc doesn't exist yet */ }
+    // Clear cached session token so retake gets a fresh one
+    sessionStorage.removeItem(`assessment_session_${activeAssignment.id}`);
+    sessionTokenRef.current = null;
     setAssessmentResult(null);
   }, [activeAssignment, user.id, assessmentResult, confirm]);
 
@@ -598,6 +609,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   lessonBlocks={activeAssignment.lessonBlocks}
                   isAssessment={isAssessment}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
+                  onSessionToken={(token) => { sessionTokenRef.current = token; }}
                 />
               </div>
               {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
-import { db, callAwardQuestionXP } from '../lib/firebase';
+import { db, callAwardQuestionXP, callStartAssessmentSession } from '../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
@@ -35,6 +35,7 @@ interface ProctorProps {
   lessonBlocks?: LessonBlock[];
   isAssessment?: boolean;
   onGetMetricsAndResponses?: React.MutableRefObject<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>;
+  onSessionToken?: (token: string | null) => void;
 }
 
 // ============================================================
@@ -95,7 +96,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -132,6 +133,57 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const blockTimingStartRef = useRef<number>(Date.now());
   const blockTimingRef = useRef<Record<string, number>>({});
   const keystrokeTimesRef = useRef<number[]>([]);
+  const [sessionTokenError, setSessionTokenError] = useState<string | null>(null);
+
+  // Start assessment session and obtain server-issued token
+  useEffect(() => {
+    if (!isAssessment || !assignmentId) return;
+
+    // Check sessionStorage first (handles page refresh)
+    const storageKey = `assessment_session_${assignmentId}`;
+    const cached = sessionStorage.getItem(storageKey);
+    if (cached) {
+      onSessionToken?.(cached);
+      return;
+    }
+
+    let cancelled = false;
+    const requestToken = async () => {
+      const MAX_RETRIES = 3;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const result = await callStartAssessmentSession({ assignmentId });
+          const data = result.data as { sessionToken: string; startedAt: number };
+          if (cancelled) return;
+          sessionStorage.setItem(storageKey, data.sessionToken);
+          onSessionToken?.(data.sessionToken);
+          setSessionTokenError(null);
+          return;
+        } catch (err: unknown) {
+          if (cancelled) return;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          // If it's a definitive error (not transient), don't retry
+          if (errMsg.includes('resource-exhausted') || errMsg.includes('permission-denied')) {
+            setSessionTokenError(errMsg);
+            onSessionToken?.(null);
+            return;
+          }
+          if (attempt < MAX_RETRIES - 1) {
+            // Exponential backoff: 1s, 2s, 4s
+            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+          }
+        }
+      }
+      // All retries failed
+      if (!cancelled) {
+        setSessionTokenError('Unable to start assessment session. Please check your internet connection and refresh the page.');
+        onSessionToken?.(null);
+      }
+    };
+    requestToken();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAssessment, assignmentId]);
 
   // Load saved lesson block responses on mount
   // For ASSESSMENTS: always start fresh — clear any pre-existing saved responses to prevent
@@ -826,6 +878,23 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Transform Google Drive URLs for the main iframe
   const resolvedContentUrl = contentUrl ? toGoogleDrivePreview(contentUrl) : contentUrl;
+
+  // Block assessment if session token request failed
+  if (isAssessment && sessionTokenError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-black/20 border border-white/10 rounded-2xl p-8 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+        <h3 className="text-lg font-bold text-white mb-2">Cannot Start Assessment</h3>
+        <p className="text-gray-300 text-sm max-w-md mb-4">{sessionTokenError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">

@@ -516,6 +516,13 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // ASSESSMENT SESSIONS (Server-only via Admin SDK)
+    // ==========================================
+    match /assessment_sessions/{sessionId} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {

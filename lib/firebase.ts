@@ -76,6 +76,7 @@ export const callDismissAlert = httpsCallable(functions, 'dismissAlert');
 // Admin item management
 export const callAdminGrantItem = httpsCallable(functions, 'adminGrantItem');
 export const callAdminEditItem = httpsCallable(functions, 'adminEditItem');
+export const callStartAssessmentSession = httpsCallable(functions, 'startAssessmentSession');
 export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment');
 
 // One-time admin utilities

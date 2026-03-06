@@ -1021,8 +1021,8 @@ export const dataService = {
       return result.data as { xpEarned: number; leveledUp: boolean; status: string };
   },
 
-  submitAssessment: async (userName: string, assignmentId: string, responses: Record<string, unknown>, metrics: TelemetryMetrics, classType: string) => {
-      const result = await callSubmitAssessment({ assignmentId, userName, responses, metrics, classType });
+  submitAssessment: async (userName: string, assignmentId: string, responses: Record<string, unknown>, metrics: TelemetryMetrics, classType: string, sessionToken?: string) => {
+      const result = await callSubmitAssessment({ assignmentId, userName, responses, metrics, classType, ...(sessionToken ? { sessionToken } : {}) });
       return result.data as {
         assessmentScore: { correct: number; total: number; percentage: number; perBlock: Record<string, { correct: boolean; answer: unknown }> };
         attemptNumber: number;

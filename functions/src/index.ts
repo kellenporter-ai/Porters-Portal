@@ -1712,20 +1712,112 @@ export const submitEngagement = onCall(async (request) => {
 });
 
 // ==========================================
+// START ASSESSMENT SESSION — Issue cryptographic session token
+// ==========================================
+export const startAssessmentSession = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+  const uid = request.auth.uid;
+  const { assignmentId } = request.data;
+  if (!assignmentId) throw new HttpsError("invalid-argument", "Missing assignmentId");
+
+  const db = admin.firestore();
+
+  // Validate assignment exists and is an assessment
+  const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
+  if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
+  const assignment = assignmentSnap.data()!;
+  if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
+
+  // Check max attempts
+  const cfg = assignment.assessmentConfig || {};
+  if (cfg.maxAttempts && cfg.maxAttempts > 0) {
+    const existingSubs = await db.collection("submissions")
+      .where("userId", "==", uid)
+      .where("assignmentId", "==", assignmentId)
+      .where("isAssessment", "==", true)
+      .get();
+    if (existingSubs.size >= cfg.maxAttempts) {
+      throw new HttpsError("resource-exhausted", "You have used all available attempts for this assessment.");
+    }
+  }
+
+  // Generate cryptographic session token
+  const crypto = await import("crypto");
+  const token = crypto.randomUUID();
+
+  await db.collection("assessment_sessions").doc(token).set({
+    userId: uid,
+    assignmentId,
+    startedAt: admin.firestore.FieldValue.serverTimestamp(),
+    used: false,
+  });
+
+  logger.info(`startAssessmentSession: token issued for uid=${uid}, assignment=${assignmentId}`);
+  return { sessionToken: token, startedAt: Date.now() };
+});
+
+// ==========================================
 // SUBMIT ASSESSMENT — Server-side grading + telemetry
 // ==========================================
+// Grace period: tokenless submissions allowed until this timestamp.
+// Set to ~12 hours after deployment on 2026-03-06.
+const SESSION_TOKEN_REQUIRED_AFTER = 1772755200000 + 12 * 60 * 60 * 1000; // 2026-03-06T00:00:00Z + 12h = 2026-03-06T12:00:00Z
+
 export const submitAssessment = onCall(async (request) => {
   // 1. Verify auth
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
 
-  const { assignmentId, userName, responses, metrics, classType } = request.data;
+  const { assignmentId, userName, responses, metrics, classType, sessionToken } = request.data;
   if (!assignmentId || !responses || !metrics) {
     throw new HttpsError("invalid-argument", "Missing required fields");
   }
 
-  // 2. Read assignment to get answer keys
+  // 2. Validate session token (or enforce grace period)
   const db = admin.firestore();
+  let sessionStartedAt: number | null = null;
+  let legacySubmission = false;
+
+  if (sessionToken) {
+    // Validate and consume token atomically via transaction
+    const tokenRef = db.collection("assessment_sessions").doc(sessionToken);
+    const tokenData = await db.runTransaction(async (transaction) => {
+      const tokenSnap = await transaction.get(tokenRef);
+      if (!tokenSnap.exists) {
+        throw new HttpsError("not-found", "Invalid session token. Please refresh the page and try again.");
+      }
+      const data = tokenSnap.data()!;
+      if (data.userId !== uid) {
+        throw new HttpsError("permission-denied", "Session token does not match your account.");
+      }
+      if (data.assignmentId !== assignmentId) {
+        throw new HttpsError("invalid-argument", "Session token does not match this assessment.");
+      }
+      if (data.used) {
+        throw new HttpsError("already-exists", "This assessment session has already been submitted. Please start a new attempt.");
+      }
+      // Atomically mark as used
+      transaction.update(tokenRef, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+      return data;
+    });
+    // Extract startedAt from the session doc (Firestore Timestamp -> millis)
+    if (tokenData.startedAt && typeof tokenData.startedAt.toMillis === "function") {
+      sessionStartedAt = tokenData.startedAt.toMillis();
+    } else if (tokenData.startedAt) {
+      sessionStartedAt = Number(tokenData.startedAt);
+    }
+  } else {
+    // No token provided — check grace period
+    const now = Date.now();
+    if (now > SESSION_TOKEN_REQUIRED_AFTER) {
+      throw new HttpsError("failed-precondition",
+        "Your page is out of date. Please refresh the page to start a new assessment session.");
+    }
+    legacySubmission = true;
+    logger.warn(`submitAssessment: tokenless submission from uid=${uid}, assignment=${assignmentId} (grace period)`);
+  }
+
+  // 3. Read assignment to get answer keys
   const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
   if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
   const assignment = assignmentSnap.data()!;
@@ -1800,11 +1892,12 @@ export const submitAssessment = onCall(async (request) => {
     }
   }
   // 5a. Server-side elapsed time validation
-  // Compare client-reported startTime to server's current time to detect fabricated metrics.
-  // If client claims 30min of engagement but only 2min have elapsed since startTime, cap it.
+  // If we have a session token, use its server-recorded startedAt for elapsed time
+  // (much more trustworthy than client-reported startTime).
+  // Otherwise fall back to client-reported startTime.
   const serverNow = Date.now();
-  const clientStartTime = metrics.startTime || serverNow;
-  const serverElapsedSec = Math.max(0, (serverNow - clientStartTime) / 1000);
+  const effectiveStartTime = sessionStartedAt || metrics.startTime || serverNow;
+  const serverElapsedSec = Math.max(0, (serverNow - effectiveStartTime) / 1000);
   // Use the lesser of client-reported engagement and server-computed elapsed time.
   // This prevents students from fabricating high engagement times via direct API calls.
   const validatedEngagement = metrics.engagementTime > 0
@@ -1885,6 +1978,8 @@ export const submitAssessment = onCall(async (request) => {
     hasUnreadAdmin: true,
     hasUnreadStudent: false,
     ...(userSection ? { userSection } : {}),
+    ...(legacySubmission ? { legacySubmission: true } : {}),
+    ...(sessionToken ? { sessionToken } : {}),
   };
 
   await db.collection("submissions").add(assessmentSubmission);
