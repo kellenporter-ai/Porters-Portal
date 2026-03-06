@@ -40,3 +40,53 @@
 ## Simulation Files
 - Standalone HTML sims live at `/home/kp/Desktop/Context/` or `/home/kp/Desktop/Simulations/`
 - Pattern: single `<script>` block after canvas, all Babylon code inline
+- Forensic Science sims: `/home/kp/Desktop/Simulations/Forensic Science/`
+
+## DynamicTexture Procedural Material Pattern (confirmed working)
+- Use `pbrTex(name, texW, texH, roughness, metallic, paintFn)` factory that creates DynamicTexture + PBRMaterial
+- Set `tex.wrapU = tex.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE` before painting for tiling
+- Set `mat.albedoTexture.uScale` / `vScale` AFTER the factory returns (not inside the callback)
+- Canvas 2D API is available via `tex.getContext()` — standard `fillRect`, `strokeRect`, `fillText`, `arc` all work
+- Always call `tex.update()` after all drawing operations
+- For grout/seam lines: draw colored background first, then overlay border/line geometry in a darker shade
+- `backFaceCulling = false` needed on any panel material that may be seen from both sides (evidence marker panels)
+
+## A-Frame Evidence Marker Pattern
+- Two `CreateBox` panels parented to TransformNode, rotated `rotation.x = ±leanAngle` (~0.52 rad = 30°)
+- Position each panel at `y = (panelH/2) * cos(leanAngle)`, `z = ±(panelH/2) * sin(leanAngle)` so bases meet at floor
+- Number texture: 128x128 DynamicTexture, yellow fill, black border, bold 72px numeral centered
+- Set `backFaceCulling = false` on panel material so number is readable from all angles
+
+## Catenary Crime Scene Tape Pattern
+- `CreateTube` with 14-step parabolic path: `sagY = yMid - sag * 4 * t * (1-t)` (sag ~0.08-0.15 looks natural)
+- `radius: 0.018`, `tessellation: 6` — low-poly enough for Chromebook budget
+- Apply `matTape.albedoTexture.uScale = 6` to repeat "CRIME SCENE DO NOT CROSS" text along length
+- DynamicTexture for tape: 512x64px, yellow fill, black bold 11px text; use `measureText` loop to tile text
+
+## Police Strobe Light Pattern
+- Use the 3rd PointLight slot (hemi + directional = 2, so 1 slot left)
+- Position outside door: `position.z = 8.5`, `range = 14.0`, `intensity = 5.0` when active
+- Cycle in render loop: 0.3s red -> 0.1s dim -> 0.3s blue -> 0.1s dim -> 0.2s ambient
+- Rotate position: `x = cos(t * 0.4) * 3.5`, `z = 8.5 + sin(t * 0.4) * 1.5` for sweep effect
+- Set `specular = Color3.Black()` to prevent harsh specular glints on low-poly geometry
+
+## Soda Can Proportions (12oz standard)
+- Body: `diameter: 0.066`, `height: 0.108`, `tessellation: 28`
+- Neck taper: `CreateCylinder` with `diameterTop: 0.053`, `diameterBottom: 0.066`, `height: 0.014`
+- Lid: `diameter: 0.053`, `height: 0.006`
+- Pull tab: `CreateTorus` with `diameter: 0.016`, `thickness: 0.003`, `tessellation: 12`, rotated on X axis
+- Tab lever: thin box `0.022 x 0.002 x 0.010`
+
+## Monitor Detail Pattern
+- Wrap monitor parts in a TransformNode parented to desk group
+- Apply `rotation.x = -0.18` to the group for a realistic backward tilt (~10 degrees)
+- Bezel: slightly smaller box with dark `albedoColor`, `roughness: 0.6`, `metallic: 0.3`, positioned 2mm in front of body
+- Power LED: `CreateSphere` diameter 0.008, `StandardMaterial` with `emissiveColor = (0.1, 0.8, 0.3)` (green standby)
+- Stand base: use `CreateBox` (rectangular footprint) rather than cylinder for modern monitor style
+
+## Large File Visual Upgrade Strategy
+- Never attempt to rewrite a file >1000 lines in one Write call — hits output token limit every time
+- Use surgical Edit operations per visual system: materials block, geometry block, props block, render loop
+- Organize edits by section marker comments (// ===) for reliable old_string anchoring
+- Add pbrTex factory immediately after existing pbr() helper — same section, clean insertion point
+- Environmental props go between the last geometry section and the INTERACTIVITY marker

@@ -580,7 +580,210 @@ Position arrows **in front** of the objects they annotate (use a separate z-laye
 
 ## Procedural Textures with DynamicTexture
 
-For labels, rulers, measurement markings, or simple patterns:
+DynamicTexture uses Canvas 2D to paint textures at runtime — no external image files needed. This is the primary technique for making surfaces look realistic instead of flat-colored. Every surface that would have visible texture in reality (wood grain, tile grout, brick mortar, metal panels, fabric weave) should get a procedural texture.
+
+### The `pbrTex` Helper
+
+Use this helper to create PBR materials with painted textures in one call:
+
+```javascript
+function pbrTex(name, texW, texH, roughness, metallic, paintFn) {
+    const tex = new BABYLON.DynamicTexture("dt_" + name, { width: texW, height: texH }, scene, false);
+    tex.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
+    tex.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
+    const ctx = tex.getContext();
+    paintFn(ctx, texW, texH);
+    tex.update();
+    const m = new BABYLON.PBRMaterial(name, scene);
+    m.albedoTexture = tex;
+    m.roughness = roughness;
+    m.metallic = metallic;
+    return m;
+}
+```
+
+After creating, control tiling with `mat.albedoTexture.uScale` / `vScale`.
+
+### Texture Recipes
+
+These recipes show the Canvas 2D painting patterns for common surfaces. Adapt colors and proportions to fit each simulation's context.
+
+#### Floor Tiles (vinyl/linoleum with grout)
+
+```javascript
+const matTile = pbrTex("tile", 512, 512, 0.72, 0.04, (ctx, w, h) => {
+    const tileSize = 128; // 4 tiles across 512px
+    for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 4; col++) {
+            // Subtle hue variation per tile
+            const hue = (row * 4 + col) % 3;
+            const base = hue === 0 ? '#3d3d44' : hue === 1 ? '#3a3a40' : '#42424a';
+            ctx.fillStyle = base;
+            ctx.fillRect(col * tileSize + 2, row * tileSize + 2, tileSize - 4, tileSize - 4);
+            // Worn highlight near top edge
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(col * tileSize + 8, row * tileSize + 8, tileSize - 20, 20);
+            // Grout lines
+            ctx.fillStyle = '#1e1e24';
+            ctx.fillRect(col * tileSize, row * tileSize, tileSize, 2);
+            ctx.fillRect(col * tileSize, row * tileSize, 2, tileSize);
+        }
+    }
+});
+matTile.albedoTexture.uScale = 5;
+matTile.albedoTexture.vScale = 4;
+```
+
+#### Wall — Cinderblock / Brick
+
+```javascript
+const matWall = pbrTex("wall", 512, 256, 0.92, 0.0, (ctx, w, h) => {
+    ctx.fillStyle = '#2e2840';
+    ctx.fillRect(0, 0, w, h);
+    const brickH = 64, brickW = 128;
+    ctx.strokeStyle = '#1a1626';
+    ctx.lineWidth = 3;
+    for (let row = 0; row < h / brickH; row++) {
+        const offset = (row % 2) * (brickW / 2); // staggered bond
+        for (let col = -1; col < w / brickW + 1; col++) {
+            const x = col * brickW + offset;
+            ctx.strokeRect(x + 2, row * brickH + 2, brickW - 4, brickH - 4);
+            // Subtle face variation
+            ctx.fillStyle = row % 3 === 0 ? 'rgba(255,255,255,0.012)' : 'rgba(0,0,0,0.02)';
+            ctx.fillRect(x + 4, row * brickH + 4, brickW - 8, brickH - 8);
+        }
+    }
+});
+matWall.albedoTexture.uScale = 3;
+matWall.albedoTexture.vScale = 2;
+```
+
+#### Wood Grain (doors, furniture)
+
+```javascript
+const matDoor = pbrTex("door", 256, 512, 0.78, 0.02, (ctx, w, h) => {
+    ctx.fillStyle = '#5c4a32';
+    ctx.fillRect(0, 0, w, h);
+    // Grain lines with sine-wave wobble
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 40; i++) {
+        const x = (i / 40) * w + Math.sin(i * 0.7) * 6;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        for (let y = 0; y < h; y += 20) {
+            ctx.lineTo(x + Math.sin(y * 0.04 + i) * 3, y);
+        }
+        ctx.stroke();
+    }
+    // Panel insets (optional — for doors with recessed panels)
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(18, 20, w - 36, h / 2 - 30);
+    ctx.strokeRect(18, h / 2 + 10, w - 36, h / 2 - 30);
+    // Subtle highlight on panel edges
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(20, 22, w - 40, h / 2 - 34);
+});
+```
+
+#### Metal Panels (lockers, equipment)
+
+```javascript
+const matLocker = pbrTex("locker", 128, 256, 0.45, 0.55, (ctx, w, h) => {
+    ctx.fillStyle = '#3d5a7a';
+    ctx.fillRect(0, 0, w, h);
+    // Door seam
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+    // Vent slits
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    for (let i = 0; i < 5; i++) {
+        ctx.fillRect(10, 12 + i * 8, w - 20, 3);
+    }
+    // Handle
+    ctx.fillStyle = '#7a9ab8';
+    ctx.fillRect(w / 2 - 6, h / 2 - 16, 10, 32);
+    // Metal sheen highlight strip
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(4, 0, 20, h);
+});
+```
+
+#### Laminate / Desk Surface
+
+```javascript
+const matTable = pbrTex("table", 256, 128, 0.35, 0.05, (ctx, w, h) => {
+    ctx.fillStyle = '#1c1c26';
+    ctx.fillRect(0, 0, w, h);
+    // Subtle wood-grain streaks
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 20; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, (i / 20) * h);
+        ctx.lineTo(w, (i / 20) * h + Math.sin(i) * 4);
+        ctx.stroke();
+    }
+    // Front edge band
+    ctx.fillStyle = '#111118';
+    ctx.fillRect(0, h - 8, w, 8);
+});
+```
+
+#### Repeating Text (tape, labels, signage)
+
+```javascript
+const matTape = pbrTex("tape", 512, 64, 0.7, 0.0, (ctx, w, h) => {
+    ctx.fillStyle = '#e8c800';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#111111';
+    ctx.font = 'bold 11px Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    const msg = 'CRIME SCENE DO NOT CROSS  ';
+    let x = 0;
+    while (x < w + 200) {
+        ctx.fillText(msg, x, h / 2);
+        x += ctx.measureText(msg).width;
+    }
+});
+matTape.albedoTexture.uScale = 6;
+```
+
+#### Ceiling Tiles (drop ceiling grid)
+
+```javascript
+const matCeiling = pbrTex("ceiling", 512, 512, 0.88, 0.0, (ctx, w, h) => {
+    ctx.fillStyle = '#23222e';
+    ctx.fillRect(0, 0, w, h);
+    const cell = 128;
+    ctx.strokeStyle = '#111018';
+    ctx.lineWidth = 4;
+    for (let i = 0; i <= w; i += cell) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+    }
+    for (let j = 0; j <= h; j += cell) {
+        ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(w, j); ctx.stroke();
+    }
+});
+matCeiling.albedoTexture.uScale = 4;
+matCeiling.albedoTexture.vScale = 3;
+```
+
+### Texturing Principles
+
+1. **Every major surface should be textured.** Floors, walls, ceilings, furniture tops, doors — anything larger than ~0.5m that the student will see up close. Flat-color PBR looks like clay; textured PBR looks real.
+2. **Keep texture sizes modest.** 256x256 or 512x512 is plenty. Let `uScale`/`vScale` handle tiling — one small texture tiled 4x looks better than one giant texture.
+3. **Vary within the pattern.** Alternate tile hues, add worn spots, shift brick offsets. Small randomness prevents the tiled-wallpaper look.
+4. **Use subtle highlights and shadows.** `rgba(255,255,255,0.03)` for worn edges, `rgba(0,0,0,0.02)` for dirt. These are barely visible individually but add depth in aggregate.
+5. **Match roughness to surface.** Glossy surfaces (metal, glass) use low roughness with sharp highlights in the texture. Matte surfaces (concrete, fabric) use high roughness with soft diffuse patterns.
+6. **Flat-color `pbr()` is still fine for small parts** — table legs, bolts, handles, wires — that the student won't scrutinize. Save texturing effort for surfaces that occupy significant screen area.
+
+### Labels and Measurement Markings
+
+For text labels, rulers, and measurement displays, use `StandardMaterial` with `disableLighting = true`:
 
 ```javascript
 const labelTex = new BABYLON.DynamicTexture("label", { width: 256, height: 64 }, scene, false);

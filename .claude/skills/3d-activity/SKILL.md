@@ -127,6 +127,7 @@ Follow the detailed patterns in [babylon-reference.md](babylon-reference.md). Th
 - **No Havok or Ammo.js** — implement physics manually in the render loop using `engine.getDeltaTime()`
 - Build all models from **Babylon.js primitives** (boxes, cylinders, spheres, etc.) — no external model files
 - Make environments **realistic** — lab tables, walls, terrain, not floating objects on a grid
+- **Texture major surfaces procedurally** — use the `pbrTex()` helper with Canvas 2D painting (see babylon-reference.md "Procedural Textures" section). Floors, walls, ceilings, doors, furniture tops, and equipment panels should have painted textures (tile grout, brick mortar, wood grain, metal panels, etc.), not flat-color PBR. Flat-color `pbr()` is fine only for small parts like legs, bolts, and handles
 
 ---
 

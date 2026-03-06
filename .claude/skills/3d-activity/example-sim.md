@@ -79,22 +79,45 @@ The UI floats over the 3D canvas. The container is `pointer-events: none` so the
 
 ---
 
-## What to Improve Over the Example
+## Gold Standard: The Break-In (DNA Profiling)
 
-When building new simulations, improve on these areas:
+The Break-In simulation (`Forensic Science/the-break-in-dna-profiling.html`) represents the quality bar to aim for. Key patterns it demonstrates:
 
-1. **Models:** The example uses single-primitive objects (one box = brick, one cylinder = chalk). Build multi-primitive composite models that are more recognizable — e.g., a brick with beveled edges and mortar texture lines, a piece of chalk with tapered ends and a rounded cross-section.
+1. **Procedural textures on every major surface** — uses the `pbrTex()` helper to paint:
+   - Floor: vinyl linoleum tiles with grout lines and per-tile hue variation
+   - Walls: cinderblock with mortar lines and staggered bond pattern
+   - Ceiling: drop-ceiling grid with recessed tile faces
+   - Doors: wood grain with sine-wave wobble lines and recessed panel insets
+   - Lockers: metal panels with vent slits, door seam, handle, and sheen highlight
+   - Desk surface: dark laminate with subtle wood-grain streaks and edge band
+   - Crime scene tape: yellow with repeating "CRIME SCENE DO NOT CROSS" text
 
-2. **Environment:** The example uses a `GridMaterial` floor floating in void. Build context-appropriate environments:
-   - Lab simulations → lab table, walls, floor with realistic materials
-   - Outdoor physics → ground plane with terrain color, sky gradient, distant horizon
-   - Forensic scenes → room with walls, floor, doorways, furniture, evidence markers
+2. **Composite models with realistic detail** — the soft-drink can uses 6 primitives (body, bottom dome, neck taper, lid, pull tab torus, tab lever). Evidence markers are A-frame tent-style with numbered DynamicTexture faces.
 
-3. **Lighting:** The example lighting is functional but flat. Use the three-light recipe with:
+3. **Context-rich environment** — the scene has walls, ceiling, doors (propped open with paper wedge evidence), lockers, desks, computers, crime scene tape strung as sagging catenary tubes, and numbered evidence markers placed at key locations.
+
+4. **Police strobe accent light** — the third light slot alternates red/blue to simulate police presence outside, adding atmosphere without extra GPU cost.
+
+5. **Clickable 3D evidence** — objects in the scene have `metadata.evidence` flags. Students click highlighted items to collect them. Tooltip follows the pointer with item description.
+
+---
+
+## What to Improve Over the Save the Chalk Example
+
+When building new simulations, improve on these areas from the basic Save the Chalk example:
+
+1. **Textures:** The basic example uses flat-color `pbr()` everywhere. Use `pbrTex()` with Canvas 2D painting for all major surfaces — see the texture recipes in babylon-reference.md. This is the single biggest visual quality improvement.
+
+2. **Models:** The basic example uses single-primitive objects (one box = brick, one cylinder = chalk). Build multi-primitive composite models — e.g., a soda can with body, neck taper, lid, and pull tab; a door with window pane and push bar.
+
+3. **Environment:** The basic example uses a `GridMaterial` floor floating in void. Build context-appropriate environments:
+   - Lab simulations → textured lab table, cinderblock walls, tile floor, ceiling
+   - Outdoor physics → terrain ground, sky gradient, distant horizon
+   - Forensic scenes → room with walls, doors, furniture, evidence markers, crime scene tape
+
+4. **Lighting:** The basic example lighting is functional but flat. Use the three-light recipe with:
    - Warmer/cooler color contrast between hemisphere up and down
    - Accent light positioned to create dramatic shadows on the focal area
-   - Adjust intensity so shadows have depth but fill light prevents pure black areas
-
-4. **Shadow map:** The example uses 2048 resolution. Use 1024 for Chromebook performance and compensate with slightly higher blur kernel.
+   - Consider thematic accent colors (police strobes, UV light, emergency red)
 
 5. **Interactivity:** Go beyond buttons — add clickable objects in the 3D scene, draggable elements, slider controls for variables, toggle switches for conditions.

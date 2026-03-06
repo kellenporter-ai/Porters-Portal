@@ -24,7 +24,7 @@
 
 ## Hosting
 - Production URL: https://porters-portal.web.app (live channel, never expires)
-- Last verified deploy: 2026-03-05 12:59:09 UTC (commit d5d2481, multi-equip + ProfileFrame)
+- Last verified deploy: 2026-03-05 23:03:14 UTC (commit fbadda0, assessment best-score aggregation + trivial attempt detection)
 
 ## App Check Baseline
 - All function logs show `"app":"MISSING"` in verifications — App Check is not enforced (expected for this environment)
@@ -54,3 +54,32 @@
 - Trail rendering enhanced in OperativeAvatar.tsx (multi-layered bloom/wisp/sparkle)
 - FLUX_SHOP_CATALOG synced server-side in functions/src/index.ts
 - Result: HEALTHY — no errors detected post-deploy
+
+## Commit 98cd9e6 Deploy Summary (2026-03-05)
+- Hosting-only deploy (no Cloud Functions or Firestore changes)
+- Grade save flow in TeacherDashboard.tsx: success toast, error toast, empty-grades validation, stopPropagation fix
+- Hosting released at 22:50:58 UTC
+- Active functions post-deploy: claimdailylogin, ongradeposted, submitassessment, submitengagement, updatestreak
+- Log window (22:45–03:43 UTC): 100 entries, all INFO or DEBUG, zero errors or warnings
+- Result: HEALTHY — hosting up, HTTP 200, zero errors
+
+## Commit fbadda0 Deploy Summary (2026-03-05)
+- Hosting-only deploy (no Cloud Functions or Firestore changes)
+- Assessment grade aggregation changed to use best score across attempts (not latest)
+- Trivial attempt detection added (<30s + 0% = flagged, not counted toward best)
+- Best attempt highlighting with blue badge, auto-expand on click
+- Improved grading UX in TeacherDashboard
+- Hosting released at 23:03:14 UTC
+- Functions active post-deploy: submitAssessment, onGradePosted (both firing cleanly)
+- submitAssessment: multiple real invocations (attempts #1, #2, #5 observed), all auth VALID, zero errors
+- onGradePosted: multiple grade-post events processed, grade notifications queued for yrodriguez186@paps.net
+- 0% scores on assignment EKHyCqwEosoWyuc0anc6 are expected (trivial attempt detection — new feature)
+- Result: HEALTHY — hosting up, HTTP 200, zero errors
+
+## Commit f0390f1 Deploy Summary (2026-03-05)
+- Hosting-only deploy (no Cloud Functions or Firestore changes)
+- Student sidebar navigation reorganized from 16 flat items into 3 collapsible groups (Learning, Operations, Intel) with Home ungrouped at top
+- Files changed: src/components/Layout.tsx, src/constants.tsx
+- Hosting released at 21:53:56 UTC
+- Zero function errors post-deploy; WARNING entries are the known benign GCP infra pattern (no message body, deployment-callable label only)
+- Result: HEALTHY — hosting up, HTTP 200, zero errors
