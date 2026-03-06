@@ -19,6 +19,6 @@
     "types": ["vite/client"]
   },
   "include": ["."],
-  "exclude": ["functions"],
+  "exclude": ["functions", "dev-pipeline-workspace", "study-guide-workspace", "game-balance-workspace"],
   "references": []
 }

@@ -52,6 +52,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
   const [expandedPairIdx, setExpandedPairIdx] = useState<number | null>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const [assessmentSubmissions, setAssessmentSubmissions] = useState<Submission[]>([]);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -75,6 +76,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           clearInterval(interval);
       };
   }, []);
+
+  // Subscribe to ALL submissions for the selected assessment (bypasses global 200-doc limit)
+  useEffect(() => {
+    if (!selectedAssessmentId) {
+      setAssessmentSubmissions([]);
+      return;
+    }
+    const unsub = dataService.subscribeToAssignmentSubmissions(selectedAssessmentId, setAssessmentSubmissions);
+    return () => unsub();
+  }, [selectedAssessmentId]);
 
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
   const availableSections = useMemo(() => {
@@ -278,7 +289,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       {adminTab === 'assessments' && (() => {
         const assessmentAssignments = assignments.filter(a => a.isAssessment);
         const selectedAssessment = assessmentAssignments.find(a => a.id === selectedAssessmentId) || null;
-        const assessmentSubmissions = submissions.filter(s => s.isAssessment && (selectedAssessmentId ? s.assignmentId === selectedAssessmentId : true));
+        // When a specific assessment is selected, use the dedicated assignment-scoped subscription
+        // (bypasses the global 200-doc limit). Otherwise fall back to global submissions for the overview.
+        const filteredAssessmentSubmissions = selectedAssessmentId
+          ? assessmentSubmissions
+          : submissions.filter(s => s.isAssessment);
 
         // Resolve section for each submission: prefer stored userSection, fall back to user lookup
         const getSubmissionSection = (s: Submission): string | undefined => {
@@ -292,13 +307,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
         // Compute available sections
         const availableSections = Array.from(new Set(
-          assessmentSubmissions.map(getSubmissionSection).filter((s): s is string => !!s)
+          filteredAssessmentSubmissions.map(getSubmissionSection).filter((s): s is string => !!s)
         )).sort();
 
         // Apply section filter early (before stats)
         const sectionFilteredSubs = assessmentSectionFilter
-          ? assessmentSubmissions.filter(s => getSubmissionSection(s) === assessmentSectionFilter)
-          : assessmentSubmissions;
+          ? filteredAssessmentSubmissions.filter(s => getSubmissionSection(s) === assessmentSectionFilter)
+          : filteredAssessmentSubmissions;
 
         // Summary stats (respects section filter)
         const scorableSubs = sectionFilteredSubs.filter(s => s.status !== 'STARTED' && !s.flaggedAsAI);

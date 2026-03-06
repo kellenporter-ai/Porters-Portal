@@ -619,6 +619,44 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'submissions' }));
   },
 
+  /** Assignment-scoped submissions — fetches ALL submissions for a specific assignment (no global limit). */
+  subscribeToAssignmentSubmissions: (assignmentId: string, callback: (submissions: Submission[]) => void) => {
+    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), orderBy('submittedAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const submissions = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          userId: data.userId,
+          userName: data.userName,
+          assignmentId: data.assignmentId,
+          assignmentTitle: data.assignmentTitle,
+          metrics: data.metrics || createInitialMetrics(),
+          submittedAt: data.submittedAt,
+          status: data.status,
+          score: data.score,
+          hasUnreadAdmin: data.hasUnreadAdmin || false,
+          hasUnreadStudent: data.hasUnreadStudent || false,
+          isPinned: data.isPinned || false,
+          isArchived: data.isArchived || false,
+          privateComments: (data.privateComments || []).sort((a: Comment, b: Comment) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          ),
+          isAssessment: data.isAssessment || false,
+          attemptNumber: data.attemptNumber,
+          assessmentScore: data.assessmentScore,
+          blockResponses: data.blockResponses,
+          rubricGrade: data.rubricGrade || undefined,
+          userSection: data.userSection || undefined,
+          flaggedAsAI: data.flaggedAsAI || false,
+          flaggedAsAIBy: data.flaggedAsAIBy || '',
+          flaggedAsAIAt: data.flaggedAsAIAt || '',
+        } as Submission;
+      });
+      callback(submissions);
+    }, (error: unknown) => reportError(error, { subscription: 'assignmentSubmissions', assignmentId }));
+  },
+
   /** Student-scoped submissions — avoids Firestore permission error on unfiltered query */
   subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void) => {
     // Only filter by userId — no orderBy to avoid composite index requirement
