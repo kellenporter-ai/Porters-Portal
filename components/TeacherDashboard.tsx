@@ -959,12 +959,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                           {/* Rubric Grading */}
                                           {selectedAssessment?.rubric && (() => {
                                             const TIER_PERCENTAGES = [0, 55, 65, 85, 100];
-                                            const currentGrades = sub.rubricGrade?.grades || rubricDraft;
+                                            const currentGrades = { ...(sub.rubricGrade?.grades || {}), ...rubricDraft };
                                             const rubricPct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
                                             const isAlreadyGraded = !!sub.rubricGrade;
 
                                             return (
-                                              <div className="mt-4 border-t border-white/5 pt-4">
+                                              <div className="mt-4 border-t border-white/5 pt-4" onClick={e => e.stopPropagation()}>
                                                 <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                                   <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
                                                   {isAlreadyGraded && (
