@@ -10,6 +10,7 @@ import { calculateRubricPercentage } from '../lib/rubricParser';
 import { analyzeIntegrity, type IntegrityReport } from '../lib/integrityAnalysis';
 import { reportError } from '../lib/errorReporting';
 import { useConfirm } from './ConfirmDialog';
+import { useToast } from './ToastProvider';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
 import BehaviorQuickAward from './BehaviorQuickAward';
@@ -24,6 +25,7 @@ interface TeacherDashboardProps {
 
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments = [], submissions = [] }) => {
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -958,10 +960,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                     Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
                                                   </div>
                                                   <button
-                                                    onClick={async () => {
+                                                    onClick={async (e) => {
+                                                      e.stopPropagation();
                                                       setIsSavingRubric(true);
                                                       try {
                                                         const gradesToSave = { ...currentGrades, ...rubricDraft };
+                                                        // Validate that at least one skill has been graded
+                                                        const hasAnyGrade = Object.values(gradesToSave).some(
+                                                          q => Object.keys(q).length > 0
+                                                        );
+                                                        if (!hasAnyGrade) {
+                                                          toast.error('Select at least one rubric tier before saving.');
+                                                          return;
+                                                        }
                                                         const pct = calculateRubricPercentage(gradesToSave, selectedAssessment.rubric!);
                                                         const rubricGrade: RubricGrade = {
                                                           grades: gradesToSave,
@@ -971,8 +982,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                         };
                                                         await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
                                                         setRubricDraft({});
+                                                        toast.success(`Grade saved: ${pct}%`);
                                                       } catch (err) {
                                                         reportError(err, { method: 'saveRubricGrade' });
+                                                        toast.error('Failed to save grade. Check console for details.');
                                                       } finally {
                                                         setIsSavingRubric(false);
                                                       }
