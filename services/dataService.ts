@@ -1031,28 +1031,48 @@ export const dataService = {
       };
   },
 
-  saveRubricGrade: async (submissionId: string, rubricGrade: RubricGrade, studentUserId?: string, assessmentTitle?: string) => {
+  saveRubricGrade: async (submissionId: string, rubricGrade: RubricGrade, studentUserId?: string, assessmentTitle?: string): Promise<{ clearedAIFlag: boolean }> => {
+    let clearedAIFlag = false;
     try {
-      await updateDoc(doc(db, 'submissions', submissionId), {
+      // Check if submission is AI-flagged — grading implies teacher cleared it
+      const snap = await getDoc(doc(db, 'submissions', submissionId));
+      const prev = snap.data();
+      const updatePayload: Record<string, unknown> = {
         rubricGrade,
         score: rubricGrade.overallPercentage,
-      });
+      };
+      if (prev?.flaggedAsAI) {
+        // Auto-clear AI flag: teacher grading is an implicit decision the work is legitimate
+        updatePayload.flaggedAsAI = false;
+        updatePayload.flaggedAsAIBy = '';
+        updatePayload.flaggedAsAIAt = '';
+        updatePayload.status = prev.preFlagStatus ?? 'NORMAL';
+        updatePayload['assessmentScore.percentage'] = rubricGrade.overallPercentage;
+        clearedAIFlag = true;
+      }
+      await updateDoc(doc(db, 'submissions', submissionId), updatePayload);
     } catch (error) {
       reportError(error, { method: 'saveRubricGrade' });
       throw error;
     }
     // Notify the student that their assessment has been graded
     if (studentUserId) {
+      const notificationType = clearedAIFlag ? 'AI_FLAGGED' : 'ASSESSMENT_GRADED';
+      const notificationTitle = clearedAIFlag ? 'AI Flag Cleared & Assessment Graded' : 'Assessment Graded';
+      const notificationMessage = clearedAIFlag
+        ? `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been reviewed. The AI flag has been removed and you received ${rubricGrade.overallPercentage}%.`
+        : `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been graded. You received ${rubricGrade.overallPercentage}%.`;
       addDoc(collection(db, 'notifications'), {
         userId: studentUserId,
-        type: 'ASSESSMENT_GRADED',
-        title: 'Assessment Graded',
-        message: `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been graded. You received ${rubricGrade.overallPercentage}%.`,
+        type: notificationType,
+        title: notificationTitle,
+        message: notificationMessage,
         timestamp: new Date().toISOString(),
         isRead: false,
         meta: { submissionId, assessmentTitle, percentage: rubricGrade.overallPercentage },
       }).catch(err => reportError(err, { method: 'saveRubricGrade:notification' }));
     }
+    return { clearedAIFlag };
   },
 
   flagSubmissionAsAI: async (submissionId: string, flaggedBy: string, studentUserId?: string, assessmentTitle?: string) => {

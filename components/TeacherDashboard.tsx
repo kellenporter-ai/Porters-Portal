@@ -971,6 +971,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                     <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
                                                   )}
                                                 </h5>
+                                                {sub.flaggedAsAI && (
+                                                  <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
+                                                    <Bot className="w-4 h-4 text-purple-400 shrink-0" />
+                                                    <span className="text-[11px] text-purple-300">This submission is AI-flagged. Saving a rubric grade will automatically clear the AI flag and restore the submission.</span>
+                                                  </div>
+                                                )}
                                                 <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
                                                   <RubricViewer
                                                     rubric={selectedAssessment.rubric}
@@ -1020,9 +1026,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                           gradedAt: new Date().toISOString(),
                                                           gradedBy: 'Admin',
                                                         };
-                                                        await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
+                                                        const result = await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
                                                         setRubricDraft({});
-                                                        toast.success(`Grade saved: ${pct}%`);
+                                                        if (result.clearedAIFlag) {
+                                                          toast.success(`Grade saved: ${pct}% — AI flag automatically cleared`);
+                                                        } else {
+                                                          toast.success(`Grade saved: ${pct}%`);
+                                                        }
                                                       } catch (err) {
                                                         reportError(err, { method: 'saveRubricGrade' });
                                                         toast.error('Failed to save grade. Check console for details.');
