@@ -413,7 +413,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
         ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
       };
-      await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
+      await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
       toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
       onClose();
     } catch (err) {
@@ -462,7 +462,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
       ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
     };
-    await dataService.saveBossQuiz(quizData as unknown as BossQuizEvent);
+    await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
     toast.success('Quiz boss saved as draft (inactive).');
     onClose();
   };
