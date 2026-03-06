@@ -815,7 +815,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     <tr>
                                       <td colSpan={colCount} className="p-0">
                                         <div className="bg-black/20 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-200">
-                                          {/* AI Suspected Flag */}
+                                          {/* AI Suspected Flag — full width toolbar */}
                                           <div className="flex items-center justify-between mb-4">
                                             <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Per-Question Breakdown</h5>
                                             {sub.flaggedAsAI ? (
@@ -854,6 +854,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               </button>
                                             )}
                                           </div>
+
+                                          {/* Side-by-side layout: answers left, rubric right (when rubric exists) */}
+                                          <div className={selectedAssessment?.rubric ? 'flex flex-col lg:flex-row gap-4' : ''}>
+                                            {/* Left panel: Student answers */}
+                                            <div className={selectedAssessment?.rubric ? 'lg:w-1/2 min-w-0' : ''}>
                                           {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
                                             <div className="space-y-2">
                                               {selectedAssessment.lessonBlocks
@@ -872,7 +877,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                       displayAnswer = selected != null && block.options ? String(block.options[selected]) : 'No selection';
                                                     } else if (block.type === 'RANKING') {
                                                       const order = (rawAnswer as { order?: { item: string }[] }).order || [];
-                                                      displayAnswer = order.map(o => o.item).join(' → ') || 'No answer';
+                                                      displayAnswer = order.map(o => o.item).join(' \u2192 ') || 'No answer';
                                                     } else if (block.type === 'SORTING') {
                                                       const placements = (rawAnswer as { placements?: Record<string, string> }).placements || {};
                                                       displayAnswer = Object.values(placements).join(', ') || 'No answer';
@@ -955,8 +960,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                           ) : (
                                             <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
                                           )}
+                                            </div>
 
-                                          {/* Rubric Grading */}
+                                          {/* Right panel: Rubric Grading (sticky on desktop) */}
                                           {selectedAssessment?.rubric && (() => {
                                             const TIER_PERCENTAGES = [0, 55, 65, 85, 100];
                                             const currentGrades = { ...(sub.rubricGrade?.grades || {}), ...rubricDraft };
@@ -964,7 +970,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                             const isAlreadyGraded = !!sub.rubricGrade;
 
                                             return (
-                                              <div className="mt-4 border-t border-white/5 pt-4" onClick={e => e.stopPropagation()}>
+                                              <div className="lg:w-1/2 min-w-0 lg:sticky lg:top-0 lg:self-start lg:max-h-[80vh] lg:overflow-y-auto" onClick={e => e.stopPropagation()}>
+                                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3">
                                                 <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                                   <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
                                                   {isAlreadyGraded && (
@@ -974,13 +981,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                 {sub.flaggedAsAI && (
                                                   <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
                                                     <Bot className="w-4 h-4 text-purple-400 shrink-0" />
-                                                    <span className="text-[11px] text-purple-300">This submission is AI-flagged. Saving a rubric grade will automatically clear the AI flag and restore the submission.</span>
+                                                    <span className="text-[11px] text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
                                                   </div>
                                                 )}
                                                 <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
                                                   <RubricViewer
                                                     rubric={selectedAssessment.rubric}
                                                     mode="grade"
+                                                    compact
                                                     rubricGrade={{
                                                       grades: currentGrades,
                                                       overallPercentage: rubricPct,
@@ -1001,7 +1009,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                     }}
                                                   />
                                                 </React.Suspense>
-                                                <div className="flex items-center justify-between mt-3 bg-white/5 border border-white/10 rounded-xl p-3">
+                                                {/* Save bar — sticky at bottom of rubric panel */}
+                                                <div className="flex items-center justify-between mt-3 bg-white/5 border border-white/10 rounded-xl p-3 sticky bottom-0">
                                                   <div className="text-xs text-gray-400">
                                                     Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
                                                   </div>
@@ -1028,7 +1037,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                         };
                                                         const result = await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
                                                         // Optimistically update local state so grade displays instantly
-                                                        // (don't wait for Firestore onSnapshot round-trip)
                                                         setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
                                                           ...s,
                                                           rubricGrade,
@@ -1037,7 +1045,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                         } : s));
                                                         setRubricDraft({});
                                                         if (result.clearedAIFlag) {
-                                                          toast.success(`Grade saved: ${pct}% — AI flag automatically cleared`);
+                                                          toast.success(`Grade saved: ${pct}% -- AI flag automatically cleared`);
                                                         } else {
                                                           toast.success(`Grade saved: ${pct}%`);
                                                         }
@@ -1064,9 +1072,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                     Last graded by {sub.rubricGrade.gradedBy} on {new Date(sub.rubricGrade.gradedAt).toLocaleDateString()}
                                                   </div>
                                                 )}
+                                                </div>
                                               </div>
                                             );
                                           })()}
+                                          </div>
                                         </div>
                                       </td>
                                     </tr>
