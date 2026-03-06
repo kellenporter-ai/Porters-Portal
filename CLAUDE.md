@@ -81,6 +81,12 @@ This portal uses three instructional frameworks. All content-generating agents a
 **Description:** Generates condensed student-facing study guides from existing lessons, question banks, and reading materials. Includes key concepts, vocabulary, formulas, practice problems with worked solutions, and self-check questions. Outputs either JSON lesson blocks (importable to the lesson editor) or printable HTML with dark/print themes.
 **Output:** JSON blocks or `/home/kp/Desktop/StudyGuides/<class>/`
 
+### /slide-deck
+**Trigger:** "slide deck", "presentation", "slides", "lecture slides", "make a deck", "build slides for class", "present this topic", "turn this into a presentation", "slideshow", "I need to present this to my students"
+**Usage:** `/slide-deck [topic or file path] [optional: audience context]`
+**Description:** Generates polished, presentation-ready standalone HTML slide decks using Reveal.js. Features modern design with dynamic CSS backgrounds, smooth transitions, speaker notes, and KaTeX math rendering. Supports ingesting content from PDFs/documents or generating from a topic. Includes theme presets for Physics (Deep Space), Forensic Science (Noir Lab), professional (Clean Slate), and high-energy (Neon Pulse). Agent-callable from dev-pipeline. Optimized for Chromebook projection.
+**Output:** `~/Desktop/Presentations/<class>/`
+
 ### /crime-scene-generator (model-invocable)
 **Trigger:** "crime scene", "forensic scenario", "mystery case", "investigative activity", or any forensic topic (arson, DNA, trace evidence, toxicology, blood spatter, ballistics, fingerprinting, digital forensics, entomology)
 **Usage:** `/crime-scene-generator [forensic topic] [optional: downstream context]`
