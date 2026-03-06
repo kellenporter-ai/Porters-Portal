@@ -1,0 +1,47 @@
+{
+  "eval_id": 1,
+  "eval_name": "arson-3d-simulation",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Output is valid JSON matching the skill's schema (all 5 components present)",
+      "passed": true,
+      "evidence": "JSON has scenario.scene, scenario.evidence, scenario.characters, scenario.debateTriggers, scenario.teacherKey, scenario.portalIntegration — all present and correctly structured."
+    },
+    {
+      "text": "Contains exactly 4-6 pieces of forensic evidence",
+      "passed": true,
+      "evidence": "6 evidence items (E1-E6): accelerant residue, electrical arc bead, cigarette butt DNA, shoe impression, fireproof document box, security camera footage."
+    },
+    {
+      "text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)",
+      "passed": true,
+      "evidence": "E1 (accelerant) suggests arson pointing to any suspect. E2 (arc bead as 'cause bead') suggests accidental electrical fire — contradicting arson entirely. E3 (cigarette DNA) points to Karen. E4 (boot print) points to Daniel. E6 (camera figure) could be Karen or Ryan."
+    },
+    {
+      "text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)",
+      "passed": true,
+      "evidence": "All 4 characters (Daniel, Karen, Ryan, Mitch) have explicit selflessAct and selfishAct fields with specific, detailed past instances."
+    },
+    {
+      "text": "Arson/fire investigation terminology is scientifically accurate and 9th-grade appropriate",
+      "passed": true,
+      "evidence": "Uses GC-MS, ILR, V-pattern, accelerant, arc bead, SEM, cause bead vs. victim bead, NFPA 921 reference, Class 3 ignitable liquid, pour pattern. Terms explained in context."
+    },
+    {
+      "text": "Teacher key explains all contradictory evidence with valid forensic science",
+      "passed": true,
+      "evidence": "All 6 evidence items explained. Arc bead controversy acknowledged (real debate in fire forensics). GC-MS overlap between lighter fluid and polyurethane explained. Cigarette timing resolved. Boot print explained (Daniel's panic entry). Camera figure identified (Karen, not Ryan)."
+    },
+    {
+      "text": "Scene has enhanced spatial detail suitable for 3D modeling (dimensions, object placement, entry points)",
+      "passed": true,
+      "evidence": "7.3m x 6.1m x 3.7m peaked roof. 9 spatial markers with precise metric measurements. Compass directions. Entry/exit points (roll-up door south, personnel door east, windows west/north). Interior zones defined (west=workshop, east=storage). Excellent 3D detail."
+    },
+    {
+      "text": "portalIntegration section is present with evidenceLockerItems, discoveryMilestones, and narrativeHooks",
+      "passed": true,
+      "evidence": "portalIntegration has 9 evidenceLockerItems, 7 discoveryMilestones with XP values, and 3 narrativeHooks with quest connections."
+    }
+  ]
+}

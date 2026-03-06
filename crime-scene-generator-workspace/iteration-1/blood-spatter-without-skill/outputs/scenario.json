@@ -1,0 +1,269 @@
+{
+  "metadata": {
+    "title": "The Lakewood Gallery Incident",
+    "subject": "Forensic Science - Blood Spatter Analysis",
+    "gradeLevel": "9th Grade",
+    "estimatedDuration": "3-4 class periods (50 min each)",
+    "objectives": [
+      "Identify and classify blood spatter patterns (passive, projected, transfer)",
+      "Calculate approximate angle of impact using width-to-length ratio",
+      "Determine area of origin/convergence from multiple spatter patterns",
+      "Evaluate competing hypotheses using physical evidence",
+      "Construct an evidence-based argument for a sequence of events"
+    ],
+    "vocabularyTargets": [
+      "passive drop",
+      "cast-off pattern",
+      "impact spatter",
+      "transfer stain",
+      "angle of impact",
+      "area of convergence",
+      "area of origin",
+      "satellite spatter",
+      "directionality",
+      "void pattern"
+    ]
+  },
+  "sceneDescription": {
+    "setting": "Lakewood Community Art Gallery, a converted warehouse space in a small town. The gallery features exposed brick walls, polished concrete floors, and movable partition walls used to display artwork. The incident occurred on the evening of Friday, October 18, during a private showing for local artists.",
+    "location": "Main exhibition hall, approximately 18m x 12m. The area of interest is concentrated around a 4m x 4m zone near the northwest corner, between a partition wall displaying oil paintings and a metal sculpture pedestal.",
+    "timeOfDiscovery": "Saturday, October 19, 7:45 AM by gallery owner Maria Orozco when she arrived to open for the weekend.",
+    "victim": {
+      "name": "Daniel Ashworth",
+      "age": 34,
+      "description": "Local artist and high school art teacher. Found unconscious on the concrete floor with a significant laceration above the left temple and a fractured left wrist. He survived but has no memory of the event (retrograde amnesia covering approximately 2 hours before the injury). Currently hospitalized in stable condition."
+    },
+    "environmentalConditions": {
+      "temperature": "Gallery interior maintained at 20C (68F) by HVAC system",
+      "lighting": "Overhead track lighting was on when victim was found; some bulbs in the northwest section had been switched off",
+      "doors": "Front entrance was locked from the inside (deadbolt). Rear emergency exit was found closed but unlocked.",
+      "securityCameras": "The gallery has one camera at the front entrance. It recorded four people entering between 6:00 PM and 7:15 PM on Friday evening. The camera does not cover the interior or rear exit."
+    }
+  },
+  "evidence": [
+    {
+      "id": "E1",
+      "type": "Blood Spatter Pattern",
+      "label": "Impact Spatter on Partition Wall",
+      "location": "Partition wall, 0.9m to 1.4m above floor level, northwest corner",
+      "description": "A radial pattern of small to medium blood droplets (1-4mm diameter) on the white partition wall. The droplets are elongated, with tails pointing upward and to the right. The pattern spans roughly 0.5m wide and 0.5m tall. Several droplets show measurable elliptical shapes suitable for angle-of-impact calculations.",
+      "analysisNotes": "The elongation and directionality indicate the blood source was below and to the left of the spatter. The droplet size range (1-4mm) is consistent with a medium-velocity impact event such as blunt force. Students should measure at least 5 droplets and calculate sin(angle) = width/length to estimate impact angles. Stringing or triangulation should converge on a point approximately 1.1m above the floor and 0.6m from the wall.",
+      "studentTask": "Measure 5 representative droplets from the provided 1:1 scale photograph. Calculate the angle of impact for each. Use the directional tails to determine convergence. Estimate the height of the area of origin."
+    },
+    {
+      "id": "E2",
+      "type": "Blood Spatter Pattern",
+      "label": "Cast-Off Pattern on Ceiling",
+      "location": "Ceiling directly above the area of interest, running in a linear arc approximately 1.8m long",
+      "description": "A linear series of medium-sized blood droplets (3-6mm) on the ceiling, forming a slight arc. The droplets progress from smaller to larger along the arc and show consistent directionality (northeast to southwest). The pattern begins abruptly and terminates abruptly.",
+      "analysisNotes": "This is a cast-off pattern consistent with a bloody object being swung in an arc. The single arc suggests one swing, not repeated blows. The directionality (NE to SW) combined with the abrupt start and stop suggests a single backswing or a single forward swing. This is a critical debate point: does the single arc indicate one deliberate strike, or could it be from someone swinging an arm/object for a non-violent reason?",
+      "studentTask": "Identify the pattern type. Determine the direction of the swing. Explain what the single arc (vs. multiple arcs) tells us about the number of blows. Discuss what types of objects could produce this pattern."
+    },
+    {
+      "id": "E3",
+      "type": "Transfer Stain",
+      "label": "Bloody Handprint on Metal Sculpture Pedestal",
+      "location": "Top surface of the metal sculpture pedestal, 1.0m tall, located 1.5m from where the victim was found",
+      "description": "A partial handprint in blood on the flat top of the pedestal. The print shows four fingers and a partial palm, oriented as if someone placed their right hand flat on the surface while facing the partition wall. The print shows slight smearing in the direction away from the victim's body, suggesting the hand slid forward.",
+      "analysisNotes": "The handprint is a transfer stain. The smearing direction suggests the person was moving away from the victim or losing balance. The handprint's size is consistent with an adult but is too smeared for fingerprint ridge detail. Students should note that this could belong to the victim (reaching for support after being struck) or to an assailant. The orientation and smearing direction become important when reconstructing the sequence.",
+      "studentTask": "Classify this as a transfer stain. Determine the hand (right) and likely body position of the person who left it. Propose at least two hypotheses for who left this print and under what circumstances."
+    },
+    {
+      "id": "E4",
+      "type": "Blood Spatter Pattern",
+      "label": "Passive Blood Drops and Small Pool",
+      "location": "Concrete floor where the victim was found, spreading 0.3m from the victim's head",
+      "description": "A pool of blood approximately 15cm in diameter near the victim's left temple, with passive drip patterns extending outward. Several round, large drops (8-10mm) with satellite spatter form a trail from the pool toward the pedestal (E3), covering a distance of about 1.2m. The drops are circular (not elongated), indicating they fell at or near 90 degrees.",
+      "analysisNotes": "The passive pool is consistent with the victim lying still while bleeding from the head wound. The drip trail toward the pedestal is critical: round drops falling at 90 degrees mean the source was directly above them and moving slowly. This trail could mean the victim walked to the pedestal after being struck and then collapsed, OR that someone stood over the victim and dripped blood while walking toward the pedestal.",
+      "studentTask": "Classify the pool and drip trail. Explain what the circular shape of the drip drops tells you about the angle and speed of travel. Propose a sequence: did the victim crawl/walk, or did someone else leave this trail?"
+    },
+    {
+      "id": "E5",
+      "type": "Physical Evidence",
+      "label": "Bronze Sculpture Fragment",
+      "location": "On the floor 2.1m from the victim, partially under a display table",
+      "description": "A bronze abstract sculpture piece (approximately 30cm long, 1.2kg) with a narrow cylindrical grip section and a wider decorative head. One edge of the decorative head has a visible stain that tested presumptive positive for blood (Kastle-Meyer test). The piece was part of a larger sculpture that was displayed on the pedestal (E3); the sculpture had broken at a joint.",
+      "analysisNotes": "This object is consistent with the wound on the victim's temple. The shape matches the laceration geometry. However, the blood on the sculpture is minimal -- only a thin contact stain on one edge, not heavy saturation. Students should consider: if this was used to strike someone, would you expect more blood? Could the sculpture have broken when the victim fell against it, producing the wound incidentally rather than from a deliberate strike?",
+      "studentTask": "Evaluate this object as a potential weapon. Compare the stain type (contact/transfer vs. saturation) to what you would expect from a deliberate blow. Consider alternative explanations for how the blood got on the sculpture."
+    },
+    {
+      "id": "E6",
+      "type": "Void Pattern / Absence Evidence",
+      "label": "Void in Spatter on Partition Wall",
+      "location": "Within the impact spatter field (E1), a roughly rectangular void approximately 25cm x 35cm where no blood is present, at a height of 1.0m-1.35m",
+      "description": "Within the radial impact spatter pattern on the partition wall, there is a clean rectangular area with no blood droplets. The shape is consistent with a canvas or framed artwork that was hanging on the wall at the time of the blood-producing event and was later removed.",
+      "analysisNotes": "A painting was hanging in this spot during the incident and blocked the spatter. Gallery records show a painting by one of the suspects (Nadia Petrova) was displayed there. The painting was found the next morning in the back storage room, face-down, with no visible blood on the front. This raises questions: who moved it and why? Was it moved to conceal evidence, or was it moved innocently before the incident?",
+      "studentTask": "Explain what a void pattern is and what it tells investigators. Determine the approximate size of the object that created the void. Discuss why someone might move the painting and what forensic tests should be performed on it."
+    }
+  ],
+  "suspects": [
+    {
+      "id": "S1",
+      "name": "Marcus Reeves",
+      "age": 29,
+      "relationship": "Fellow artist and former close friend of the victim",
+      "background": "Marcus and Daniel were college roommates who both pursued art careers. While Daniel found stable work as a high school teacher and part-time gallery artist, Marcus has struggled financially, working as a bartender while trying to sell his art. Six months ago, Marcus submitted three paintings to the Lakewood Gallery's annual juried competition. Daniel was on the jury panel and voted against including Marcus's work, calling it 'derivative.' Marcus found out about Daniel's vote through another jury member and confronted Daniel publicly at a gallery event in August. Witnesses described the confrontation as heated but not physical. Marcus has since told friends he felt 'betrayed' and that Daniel was 'threatened by his talent.'",
+      "alibiStatement": "Marcus states he arrived at the gallery at 6:15 PM, viewed the exhibit, spoke briefly with Daniel around 6:45 PM ('We were civil, talked about the show'), then left through the rear exit around 7:30 PM to smoke. He says he re-entered, grabbed his jacket, and left for good through the rear exit by 7:45 PM. He went to O'Malley's Pub and has a credit card receipt at 8:22 PM.",
+      "physicalEvidence": "Security camera confirms arrival at 6:15 PM. No visible injuries on hands or arms when interviewed Saturday afternoon. His jacket (retrieved from his apartment) tested negative for blood. However, he was wearing a different shirt Friday night (per camera footage) than the one he presented to police; he says he spilled beer on the original and threw it away.",
+      "suspicionFactors": [
+        "Known conflict with victim over jury decision",
+        "Missing shirt from the night in question",
+        "Used the rear exit (no camera coverage)",
+        "Gap between leaving gallery (~7:45 PM) and pub receipt (8:22 PM) -- 37 unaccounted minutes"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Nadia Petrova",
+      "age": 41,
+      "relationship": "Established gallery artist, mentor to Daniel",
+      "background": "Nadia is a well-respected painter who has exhibited at Lakewood Gallery for over a decade. She took Daniel under her wing when he first started showing work five years ago. Recently, their relationship became strained after Daniel began receiving more prominent placement in the gallery and higher sales prices, while Nadia's sales declined. Gallery owner Maria Orozco privately told Nadia that she was considering reducing Nadia's wall space for the spring show in favor of younger artists including Daniel. Nadia's painting was the one hanging in the void area (E6) and was found in the storage room Saturday morning. Nadia is also going through a difficult divorce and has been described by friends as 'under enormous stress.'",
+      "alibiStatement": "Nadia says she arrived at 6:00 PM (confirmed by camera) and spent most of the evening near her own paintings on the east wall. She says she spoke to Daniel briefly around 7:00 PM about a collaborative project. She claims she left through the front door around 7:40 PM, but the security camera's timestamp shows no one exiting the front door between 7:15 PM and the time the camera stopped recording at 8:00 PM (it is on a timer). She later amended her statement to say she 'might have' left through the back.",
+      "physicalEvidence": "Her painting was moved from the partition wall to storage. She initially said she moved it 'earlier in the week' to replace the frame, but gallery records show the painting was re-hung on Thursday, the day before the incident. A small spot of blood (type matching the victim's) was found on the back of the canvas stretcher bar. Nadia has a fresh bandage on her left index finger, which she says is from a paper cut on Wednesday.",
+      "suspicionFactors": [
+        "Her painting was in the void area and was moved post-incident",
+        "Blood on the back of her canvas matches the victim's type",
+        "Changed her story about how she exited the gallery",
+        "Professional jealousy as motive",
+        "Bandaged finger with a questionable explanation"
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Tomasz Wozniak",
+      "age": 52,
+      "relationship": "Building maintenance contractor, not personally connected to the victim",
+      "background": "Tomasz has been the maintenance contractor for the Lakewood Gallery building for three years. He was at the gallery Friday evening to fix a flickering light in the northwest section -- the same section where the incident occurred. Tomasz has a prior record: an aggravated assault conviction from 17 years ago stemming from a bar fight, for which he served 14 months. He has had no legal trouble since and has been described by his employer as 'reliable and quiet.' Tomasz speaks English as a second language and has expressed frustration that police focused on him early due to his record rather than the evidence.",
+      "alibiStatement": "Tomasz says he arrived at approximately 6:30 PM through the rear entrance (not captured on front camera). He went directly to the electrical panel and the northwest light fixtures. He says he completed the repair around 7:15 PM, packed his tools, and left through the rear exit by 7:20 PM. He drove straight home and his wife confirms he arrived around 7:40 PM (a 15-20 minute drive).",
+      "physicalEvidence": "His toolbox was examined. A claw hammer and a heavy wrench were tested -- both negative for blood. His work boots showed no blood. However, he was working on the light fixture directly above the area where the incident occurred, and one of the overhead lights in that section was found switched off. His fingerprints are on the light switch panel (expected given his job).",
+      "suspicionFactors": [
+        "Was in the exact area of the incident shortly before it occurred",
+        "Prior assault conviction (though 17 years old)",
+        "Entered and exited via the rear (no camera)",
+        "Light in the incident area was off -- did he switch it off, and when?"
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "Elena Ashworth",
+      "age": 32,
+      "relationship": "Victim's wife, also an artist",
+      "background": "Elena and Daniel have been married for four years. Friends describe their relationship as 'passionate but volatile.' Elena is also a sculptor, and the bronze sculpture on the pedestal (E5) is her work. She and Daniel had a public argument two weeks before the incident about Daniel's decision to display Elena's sculpture without her permission -- she considered the piece unfinished and was embarrassed by its inclusion. Elena told a friend she was 'furious' that Daniel went behind her back. Elena was not recorded on the front entrance camera Friday evening, but she has a key to the rear entrance.",
+      "alibiStatement": "Elena says she was home all evening watching TV. She says she did not go to the gallery. Her phone GPS data shows her phone was at their home address from 5:00 PM onward. However, the home is only a 10-minute drive from the gallery, and she could have left the phone at home.",
+      "physicalEvidence": "Elena was not seen on the front camera. Her car was parked at home (confirmed by a neighbor). However, the gallery is within walking or biking distance (1.6 km). The bronze sculpture that may be the weapon is her artwork, and she would know its structural weak points. No blood was found on her clothing or in her car, but police did not search the home until Sunday morning, giving time for cleanup. A pair of her running shoes found in the laundry had damp soles consistent with recent wear, though she says she went for a run Thursday morning.",
+      "suspicionFactors": [
+        "Angry about the unauthorized display of her sculpture",
+        "Knows the gallery layout and has rear entrance key",
+        "Phone left at home does not confirm her presence there",
+        "Damp running shoes could indicate recent nighttime trip",
+        "The potential weapon is her own sculpture -- she would know where it breaks"
+      ]
+    }
+  ],
+  "debateTriggers": [
+    {
+      "id": "D1",
+      "title": "Accident vs. Assault: Was This Deliberate?",
+      "description": "The bronze sculpture (E5) has minimal blood -- just a thin contact stain. If someone swung it at Daniel's head deliberately, forensic science suggests there would likely be more blood transfer and possibly impact spatter on the object itself. Could Daniel have tripped or stumbled into the sculpture on its pedestal, breaking it and lacerating his temple on the way down? The cast-off on the ceiling (E2) could be from the sculpture fragment flying through the air after breaking, rather than from a deliberate swing.",
+      "sideA": "This was an accident. The minimal blood on the sculpture, the single cast-off arc, and the passive drip trail from the victim to the pedestal are consistent with Daniel falling, hitting the sculpture, and the broken piece tumbling away.",
+      "sideB": "This was an assault. The impact spatter on the wall (E1) shows a forceful, directed blow, not a passive fall. The void (E6) and the moved painting prove someone was covering up evidence afterward. Falls produce different spatter patterns than strikes.",
+      "evidenceToAnalyze": ["E1", "E2", "E5", "E6"],
+      "teacherNotes": "This is the central debate. Strong students will note that the HEIGHT of the area of convergence (~1.1m) matters: if Daniel is 5'10\" (1.78m), a blow to his temple while standing would produce spatter at roughly head height (1.5-1.7m), but the spatter is at 0.9-1.4m, suggesting he may have already been lower (bending, falling, or seated). This is ambiguous by design. The cast-off arc direction and the drip trail direction should be analyzed together."
+    },
+    {
+      "id": "D2",
+      "title": "The Moved Painting: Concealment or Coincidence?",
+      "description": "Nadia's painting was in the void area during the blood event but was found in storage the next morning. Nadia claims she moved it earlier in the week, but gallery records contradict this. Blood was found on the back of the canvas. Did Nadia move the painting to hide evidence of the assault, or did someone else move it?",
+      "sideA": "Nadia moved the painting to conceal evidence. She lied about when she moved it. The blood on the back of the canvas proves it was present during the event. She changed her story about which exit she used. She had motive (professional jealousy) and opportunity.",
+      "sideB": "Someone else moved the painting after the event, possibly to frame Nadia or simply to check if the painting was damaged. The blood on the stretcher bar (back of canvas) could have gotten there from someone with bloody hands handling it after the event. Multiple people had access to the storage room. Nadia's lie about the exit could be embarrassment about using the 'employee' entrance rather than evidence of guilt.",
+      "evidenceToAnalyze": ["E1", "E6"],
+      "teacherNotes": "Guide students to focus on what the blood location tells them: blood on the BACK of the stretcher bar means it was transferred by a hand or contact AFTER the painting was removed from the wall (since the back faces the wall while hanging). This means whoever moved the painting had blood on their hands. This narrows the timeline significantly."
+    },
+    {
+      "id": "D3",
+      "title": "The Drip Trail: Victim or Assailant?",
+      "description": "The passive drip trail (E4) runs from the blood pool near the victim's head toward the pedestal where the handprint (E3) was found. The drops are circular, indicating a slow-moving source dripping from directly above. Did Daniel get up after being hurt and stumble toward the pedestal for support? Or did an assailant, dripping the victim's blood from their hands or a weapon, walk to the pedestal?",
+      "sideA": "The victim left the trail. After being struck or falling, Daniel was disoriented and tried to stand, dripping blood from his head wound. He reached the pedestal (leaving the handprint E3) and then collapsed back to where he was found.",
+      "sideB": "The assailant left the trail. The handprint on the pedestal is from the assailant steadying themselves. The victim's body position (found near the blood pool, not near the pedestal) suggests he did not move far. The assailant walked toward the pedestal, set down the sculpture piece or steadied themselves, then moved the painting and exited.",
+      "evidenceToAnalyze": ["E3", "E4"],
+      "teacherNotes": "Neither answer is definitively provable from the available evidence, which is realistic. Push students to consider: (1) If the victim crawled to the pedestal and back, there should be TWO drip trails; there is only one. (2) If the assailant left the trail, the handprint orientation (facing the wall) is odd for someone walking away. (3) The victim's fractured wrist could explain why he collapsed before reaching the pedestal -- or it could have been fractured FROM the fall at the pedestal."
+    },
+    {
+      "id": "D4",
+      "title": "Prior Record and Bias in Investigation",
+      "description": "Tomasz has a 17-year-old assault conviction. Police initially focused heavily on him. His tools tested negative. His alibi timeline is tight but not impossible to fake. Meanwhile, Elena was never recorded entering the building, and the weapon is her sculpture.",
+      "sideA": "Tomasz is the most likely suspect. He was physically present in the exact location, has a history of violence, and his alibi relies on his wife's testimony. The light being off suggests he may have created conditions for the assault.",
+      "sideB": "Focusing on Tomasz because of his record is bias, not forensic reasoning. His tools are clean. His boots are clean. Elena had motive, knowledge of the sculpture, and access via the rear door. An old conviction should not outweigh physical evidence.",
+      "evidenceToAnalyze": ["E5"],
+      "teacherNotes": "This debate is intentionally designed to surface conversations about confirmation bias and the ethics of forensic investigation. The forensic evidence does NOT support Tomasz: no blood on his tools or boots. Students who argue for Tomasz based primarily on his record should be challenged to cite physical evidence. This aligns with real-world issues of wrongful conviction based on prior records. Use this as a teaching moment about evidence-based reasoning vs. assumptions."
+    }
+  ],
+  "teacherAnswerKey": {
+    "mostLikelyScenario": "The evidence most strongly supports the following reconstruction, though deliberate ambiguity is maintained to encourage debate:\n\n1. Daniel Ashworth was in the northwest corner of the gallery near the partition wall and Nadia Petrova's painting, likely around 7:15-7:30 PM after Tomasz left.\n2. An altercation or accident occurred. The impact spatter (E1) at 0.9-1.4m height suggests Daniel was not fully upright when the blood-producing event happened -- he may have been bending, sitting, or already falling.\n3. The bronze sculpture (E5) broke and the fragment contacted Daniel's temple, producing the laceration. Whether this was from a deliberate strike or an accidental fall is intentionally ambiguous.\n4. The cast-off (E2) is consistent with a single swing of a bloody object or the sculpture fragment being flung during a fall/break.\n5. After Daniel went down, someone (likely not Daniel, based on the single drip trail) walked from near his body to the pedestal, leaving the drip trail (E4) and handprint (E3).\n6. The painting was removed from the wall by someone with blood on their hands (blood on the back stretcher bar of E6) and placed in storage.\n7. The person exited via the rear door, which was found unlocked.\n\nThe strongest forensic case points toward Nadia Petrova (S2): her painting was physically present at the scene, she moved it with bloody hands, she lied about the timeline, she changed her exit story, and she had professional motive. However, the case is circumstantial and the physical evidence does not definitively prove intent.\n\nElena Ashworth (S4) remains a viable alternative: she had motive, rear access, knowledge of the sculpture, and an unverifiable alibi. The absence of direct physical evidence linking her is notable but not exculpatory.\n\nMarcus Reeves (S1) had motive and a time gap, but the missing shirt is the only suspicious physical element.\n\nTomasz Wozniak (S3) has the weakest forensic case against him. His tools and boots are clean. Focusing on him due to his record rather than evidence would be investigative bias.",
+    "evidenceAnalysisKey": {
+      "E1_impactSpatter": {
+        "patternType": "Impact spatter (medium velocity)",
+        "significance": "Indicates a forceful blow or impact at approximately 1.1m height. The victim is 1.78m tall, so the impact point being at ~1.1m means the victim was not standing fully upright. Angle of impact calculations should yield angles between 30-60 degrees, converging on a point 0.6m from the wall at 1.1m height.",
+        "expectedStudentCalculations": "sin(angle) = width/length for at least 5 droplets. Students should get convergence within a 15cm radius."
+      },
+      "E2_castOff": {
+        "patternType": "Cast-off pattern (single arc)",
+        "significance": "Single arc = single swing, not repeated blows. Direction NE to SW. Could be a deliberate backswing or a piece of sculpture traveling through the air. The absence of multiple arcs argues against a sustained beating.",
+        "commonMisconception": "Students often assume cast-off always means a weapon being swung repeatedly. Emphasize that a single arc tells a different story than multiple parallel arcs."
+      },
+      "E3_handprint": {
+        "patternType": "Transfer stain",
+        "significance": "Right hand, facing the wall. Smearing away from the victim. Could be victim reaching for support OR assailant steadying themselves. Not enough ridge detail for fingerprint ID.",
+        "commonMisconception": "Students may assume a bloody handprint automatically identifies the perpetrator. Emphasize that the victim also had blood on his hands from his wound."
+      },
+      "E4_passiveDrops": {
+        "patternType": "Passive drip pattern and blood pool",
+        "significance": "Circular drops = 90-degree impact = source directly above, moving slowly. Single trail (not round-trip) suggests the person did not return to the victim's location. This is more consistent with the assailant walking away than with the victim moving and returning.",
+        "commonMisconception": "Students may not consider that a single directional trail (without a return trail) eliminates the hypothesis that the victim walked to the pedestal and then walked back."
+      },
+      "E5_sculptureFragment": {
+        "patternType": "Contact/transfer stain on potential weapon",
+        "significance": "Minimal blood (thin contact stain, not saturation) is unusual for a weapon used to deliver a forceful blow. This could support the accident theory (incidental contact during a fall). However, a glancing blow could also produce minimal transfer. Students should consider both possibilities.",
+        "commonMisconception": "Students may assume any blood on an object means it was definitely used as a weapon. The AMOUNT and TYPE of blood staining matters."
+      },
+      "E6_voidPattern": {
+        "patternType": "Void/shadow pattern",
+        "significance": "Proves an object (painting) was present during the blood event. The painting was subsequently moved by someone with blood on their hands. This is the strongest evidence of post-event tampering/concealment.",
+        "commonMisconception": "Students may not realize that the blood on the BACK of the canvas (stretcher bar) is more incriminating than if blood were on the FRONT -- it means someone handled the canvas from behind (as you would when removing a painting from a wall) while they had blood on their hands."
+      }
+    },
+    "debateGuidance": {
+      "D1_accidentVsAssault": "Accept either conclusion if well-supported by evidence. The strongest argument for assault: impact spatter patterns are radial and forceful, inconsistent with a passive fall. The strongest argument for accident: minimal blood on the sculpture, single cast-off arc, and the convergence height being lower than standing head-height.",
+      "D2_movedPainting": "The key insight is that blood on the stretcher bar (back) proves the painting was handled by someone with bloody hands AFTER the blood event. This is the most damning evidence in the case. Students who recognize this should be credited.",
+      "D3_dripTrail": "The single-direction trail is the critical clue. If the victim made the trail going TO the pedestal, how did he get BACK to the blood pool? Students who catch this logical problem are demonstrating strong analytical thinking.",
+      "D4_biasAndRecord": "This is fundamentally about evidence-based reasoning. There is NO physical evidence linking Tomasz to the assault. Any argument based primarily on his record should be challenged. This mirrors real forensic science ethics discussions."
+    },
+    "rubric": {
+      "missing": {
+        "score": 0,
+        "label": "Missing",
+        "description": "No evidence of analysis. Student did not attempt to classify patterns, calculate angles, or construct a hypothesis."
+      },
+      "emerging": {
+        "score": 1,
+        "label": "Emerging",
+        "description": "Student identifies that blood is present but cannot correctly classify pattern types. Angle calculations are missing or entirely incorrect. Hypothesis is a guess without reference to evidence."
+      },
+      "approaching": {
+        "score": 2,
+        "label": "Approaching",
+        "description": "Student correctly classifies at least 3 of 6 evidence items. Angle of impact calculations are attempted but contain errors. Hypothesis references some evidence but has logical gaps or ignores contradictory evidence."
+      },
+      "developing": {
+        "score": 3,
+        "label": "Developing",
+        "description": "Student correctly classifies at least 5 of 6 evidence items. Angle of impact calculations are mostly correct (within 5 degrees). Hypothesis is coherent, references multiple pieces of evidence, and addresses at least one counterargument."
+      },
+      "refining": {
+        "score": 4,
+        "label": "Refining",
+        "description": "Student correctly classifies all evidence items with proper terminology. Angle of impact calculations are accurate. Hypothesis integrates all evidence into a coherent sequence of events, addresses the strongest counterargument, identifies limitations of the evidence, and acknowledges alternative explanations. Student demonstrates awareness of investigative bias."
+      }
+    }
+  }
+}

@@ -62,7 +62,19 @@ When you discover a defect, you MUST report it with ALL of the following:
 
 Do NOT silently fix any bugs. Do NOT rewrite code. Report and return to the responsible agent.
 
-### 6. Integration Sign-Off
+### 6. Pedagogical Verification Protocol
+
+When auditing generated educational content (assessments, lesson blocks, simulation configs, boss encounter questions):
+
+1. **ISLE Cycle Check**: Verify lessons follow Observation → Hypothesis → Testing → Application. Reject content that provides formulas upfront or skips the observational phase.
+2. **Question Quality Audit**: Reject questions that test pure recall ("What is Newton's 2nd law?"). Questions must require application, prediction, or multi-representation reasoning ("Given this position-time graph, predict the velocity at t=3s and explain your reasoning").
+3. **Rubric Alignment**: Verify the 5-level rubric (Missing/Emerging/Approaching/Developing/Refining) maps to specific scientific abilities from the ISLE SAAR scale (0=Missing, 1=Inadequate, 2=Needs improvement, 3=Adequate), not vague effort descriptors.
+4. **Growth Mindset Check**: Verify that failure states (wrong answers, failed experiments) are framed as hypothesis-disproving data, not punishments. Error messages should guide revision, not discourage.
+5. **Backward Design Validation**: When the orchestrator delegates Stage 2 assessment review, confirm the assessment measures the declared learning outcomes before granting sign-off. Content agents are blocked until this passes.
+
+If content fails pedagogical verification, reject with the same bug report format used for code defects, addressed to the content-strategist-ux-writer or the originating agent.
+
+### 7. Integration Sign-Off
 
 When all checks pass, produce a final sign-off in this exact format:
 

@@ -1,0 +1,356 @@
+{
+  "meta": {
+    "title": "The Bridgewater Bakery Fire",
+    "subject": "Forensic Science",
+    "gradeLevel": 9,
+    "topic": "Arson Investigation",
+    "estimatedDuration": "90 minutes (2 class periods)",
+    "learningObjectives": [
+      "Identify physical indicators of arson versus accidental fire origin",
+      "Analyze burn patterns, V-patterns, and char depth to determine point of origin",
+      "Evaluate accelerant evidence and interpret preliminary lab results",
+      "Construct an evidence-based argument identifying the most likely suspect",
+      "Distinguish between circumstantial and physical evidence in arson cases"
+    ],
+    "vocabularyTerms": [
+      "accelerant",
+      "point of origin",
+      "V-pattern",
+      "pour pattern",
+      "char depth",
+      "flashover",
+      "alligator charring",
+      "hydrocarbon residue",
+      "ignitable liquid residue (ILR)",
+      "fire triangle"
+    ]
+  },
+
+  "scene": {
+    "name": "Bridgewater Family Bakery",
+    "address": "412 Elm Street, Bridgewater",
+    "incidentDate": "Saturday, November 15, 2025, approximately 2:14 AM",
+    "responseTime": "Fire department arrived at 2:22 AM; fire contained by 3:45 AM",
+    "weather": "Clear skies, 38 degrees F, wind from the northwest at 5 mph",
+    "description": "A single-story commercial bakery (approximately 2,400 sq ft) with an attached office and storage room. The building has a flat roof, concrete block exterior walls, and a glass storefront facing Elm Street. The bakery has operated for 22 years and was closed at the time of the fire. No injuries were reported. The east wall and roof above the kitchen area suffered total collapse. The storefront windows blew outward.",
+
+    "spatialLayout": {
+      "units": "feet",
+      "overallDimensions": { "width": 60, "depth": 40 },
+      "rooms": [
+        {
+          "id": "main-bakery",
+          "name": "Main Bakery / Customer Area",
+          "position": { "x": 0, "y": 0 },
+          "dimensions": { "width": 30, "depth": 25 },
+          "description": "Front-facing customer area with display cases, register counter, and four small tables. Moderate smoke damage throughout. Display cases melted and deformed on the east side nearest the kitchen. Glass storefront windows blown outward onto the sidewalk.",
+          "damageLevel": "moderate",
+          "features": [
+            "Glass display case (east side melted)",
+            "Cash register on counter",
+            "Four cafe tables with chairs",
+            "Front door (glass, intact but cracked)",
+            "Tile flooring (soot-covered but intact)"
+          ]
+        },
+        {
+          "id": "kitchen",
+          "name": "Kitchen / Baking Area",
+          "position": { "x": 30, "y": 0 },
+          "dimensions": { "width": 30, "depth": 25 },
+          "description": "Primary baking area. Severe fire damage with roof collapse over eastern half. Two commercial ovens, stainless steel prep tables, a walk-in cooler, and a large mixer. Deep charring on floor with distinct pour patterns near the east wall. V-pattern visible on the south kitchen wall originating from the floor near the ingredient storage shelves.",
+          "damageLevel": "severe",
+          "features": [
+            "Two commercial gas ovens (east wall)",
+            "Stainless steel prep tables (warped)",
+            "Walk-in cooler (door open, contents destroyed)",
+            "Industrial stand mixer",
+            "Ingredient storage shelves (east wall, collapsed)",
+            "Floor drain (center of room)",
+            "Gas supply line to ovens"
+          ]
+        },
+        {
+          "id": "office",
+          "name": "Owner's Office",
+          "position": { "x": 0, "y": 25 },
+          "dimensions": { "width": 20, "depth": 15 },
+          "description": "Small office behind the customer area. Light smoke damage. A metal filing cabinet was found open with scattered papers on the floor. The desk drawers were pulled out. A laptop is missing from the docking station on the desk. The office door to the hallway was closed during the fire.",
+          "damageLevel": "light",
+          "features": [
+            "Wooden desk with docking station (laptop missing)",
+            "Metal filing cabinet (open, papers scattered)",
+            "Small safe (closed, locked)",
+            "Corkboard with permits and photos",
+            "Office door (closed during fire)"
+          ]
+        },
+        {
+          "id": "storage",
+          "name": "Dry Storage Room",
+          "position": { "x": 20, "y": 25 },
+          "dimensions": { "width": 20, "depth": 15 },
+          "description": "Stores bulk flour, sugar, and supplies. Moderate to heavy damage. Shelving collapsed. A second distinct char pattern is visible on the floor near the exterior door, separate from the kitchen fire damage. The exterior door's deadbolt was found in the unlocked position.",
+          "damageLevel": "heavy",
+          "features": [
+            "Metal shelving units (collapsed)",
+            "Bulk ingredient bins",
+            "Exterior door to rear parking lot (deadbolt unlocked)",
+            "Second char pattern on floor near exterior door",
+            "Mop and cleaning supply area"
+          ]
+        },
+        {
+          "id": "hallway",
+          "name": "Rear Hallway",
+          "position": { "x": 40, "y": 25 },
+          "dimensions": { "width": 20, "depth": 15 },
+          "description": "Connects the kitchen to the storage room and rear exit. Heavy smoke damage. Fire extinguisher mounted on the wall appears unused. A smoke detector on the ceiling has its battery compartment open and battery removed.",
+          "damageLevel": "moderate",
+          "features": [
+            "Fire extinguisher (unused, still mounted)",
+            "Smoke detector (battery removed)",
+            "Rear exit door to alley",
+            "Electrical panel on north wall"
+          ]
+        }
+      ],
+
+      "exteriorFeatures": [
+        {
+          "id": "parking-lot",
+          "name": "Rear Parking Lot",
+          "description": "Small 4-space lot behind the building. Security camera mounted on the neighboring building's wall covers most of the lot. A partially melted plastic gas can was found in the dumpster 15 feet from the rear storage door."
+        },
+        {
+          "id": "storefront",
+          "name": "Elm Street Storefront",
+          "description": "Glass windows blown outward, indicating internal pressure buildup. Awning partially burned. Neighboring businesses sustained minor exterior smoke damage."
+        },
+        {
+          "id": "alley",
+          "name": "Service Alley (North Side)",
+          "description": "Narrow alley between the bakery and adjacent building. Rear hallway exit door opens here. A shoe print was found in soot near the door."
+        }
+      ]
+    }
+  },
+
+  "evidence": [
+    {
+      "id": "EV-01",
+      "name": "Pour Patterns on Kitchen Floor",
+      "location": "kitchen",
+      "coordinates": { "x": 48, "y": 8 },
+      "type": "burn-pattern",
+      "description": "Irregular, low-burn char patterns on the kitchen's concrete floor near the east wall and ingredient shelves. The patterns show liquid flow lines inconsistent with melted cooking oils stored on the shelves above. The char is deepest along the base of the east wall and radiates outward in a pooling shape.",
+      "significance": "Pour patterns suggest an ignitable liquid was deliberately spread on the floor. The flow direction and pooling shape are inconsistent with accidental spills from shelf-height containers. This is a primary indicator of the fire's point of origin.",
+      "labResults": "Samples collected from the char pattern tested positive for medium petroleum distillate consistent with charcoal lighter fluid. Not a substance used or stored in the bakery.",
+      "studentPrompt": "Examine the burn pattern on the floor. How does the shape and depth of charring differ from what you would expect if cooking oil had simply spilled from the shelves above?",
+      "commonMisconception": "Students may assume any liquid burn pattern indicates arson. Emphasize that accidental grease or oil spills can also create pour-like patterns; the key is the type of accelerant and whether it belongs in the environment."
+    },
+    {
+      "id": "EV-02",
+      "name": "V-Pattern on South Kitchen Wall",
+      "location": "kitchen",
+      "coordinates": { "x": 45, "y": 0 },
+      "type": "burn-pattern",
+      "description": "A clear V-shaped burn pattern on the south wall of the kitchen, with the vertex (narrowest point) at floor level near the ingredient storage shelves. The V widens as it rises to the ceiling. Charring is deepest at the vertex.",
+      "significance": "V-patterns point downward toward the fire's point of origin. The vertex at floor level, combined with the pour patterns on the floor nearby, strongly indicates the fire started low on the east side of the kitchen -- inconsistent with an oven malfunction or electrical fire, which would originate at appliance or outlet height.",
+      "studentPrompt": "Trace the V-pattern from its widest point at the ceiling down to its narrowest point. What does the location of the vertex tell you about where the fire started? How high off the ground was the origin?",
+      "commonMisconception": "Students sometimes think V-patterns point toward the direction the fire traveled rather than back toward the origin. Reinforce that the narrow end of the V marks the origin point."
+    },
+    {
+      "id": "EV-03",
+      "name": "Disabled Smoke Detector",
+      "location": "hallway",
+      "coordinates": { "x": 50, "y": 32 },
+      "type": "physical-tampering",
+      "description": "The smoke detector in the rear hallway ceiling has its battery compartment open and the 9V battery removed. The battery was found on the floor directly below the detector. No other smoke detectors in the building were tampered with. The front customer area detector functioned normally and showed no fire damage.",
+      "significance": "Deliberate disabling of the smoke detector nearest to the suspected point of origin suggests premeditation. Someone with access to the building disabled the alarm to delay detection of the fire.",
+      "studentPrompt": "Why would only one smoke detector be disabled? What does its location relative to the point of origin tell you about planning?",
+      "commonMisconception": "Students may argue the battery could have fallen out from the heat or vibration of the fire. Note that the battery compartment was found open (spring-loaded, requires manual action) and the hallway sustained only moderate smoke damage, not enough to dislodge components."
+    },
+    {
+      "id": "EV-04",
+      "name": "Partially Melted Gas Can in Dumpster",
+      "location": "parking-lot",
+      "coordinates": { "x": 45, "y": 55 },
+      "type": "physical-object",
+      "description": "A red, 1-gallon plastic gas can was found inside the dumpster behind the bakery, approximately 15 feet from the storage room's exterior door. The can is partially melted on one side and retains a small amount of liquid residue. No fingerprints were recoverable due to the melting. The cap is missing.",
+      "significance": "The gas can is consistent with a container used to transport accelerant. Its disposal in the nearby dumpster rather than removal from the scene suggests haste. The melting indicates it was exposed to heat, possibly while being used to pour accelerant.",
+      "labResults": "Residue inside the can matches the medium petroleum distillate (charcoal lighter fluid) found in the kitchen pour patterns.",
+      "studentPrompt": "The gas can was found in the dumpster, not inside the building. What does this tell you about the sequence of events? Why might the arsonist have disposed of it here instead of taking it with them?",
+      "commonMisconception": "Students may assume the gas can definitively proves arson. Remind them that gas cans near commercial buildings are not inherently suspicious -- the matching accelerant residue is what links it to the crime."
+    },
+    {
+      "id": "EV-05",
+      "name": "Security Camera Footage",
+      "location": "parking-lot",
+      "coordinates": { "x": 60, "y": 50 },
+      "type": "digital-evidence",
+      "description": "Security camera on the neighboring building captured the rear parking lot between 1:30 AM and 2:30 AM. Footage shows: at 1:47 AM, a figure in dark clothing and a hoodie approaches the storage room exterior door, appears to use a key to enter, and enters the building carrying a bag. At 2:08 AM, the same figure exits quickly through the storage room door without the bag, jogs across the parking lot, and exits the camera frame heading east. At 2:11 AM, smoke is visible from the roofline. The figure's face is not visible due to the hoodie and camera angle, but their build is medium height and stocky.",
+      "significance": "The footage establishes a timeline: the suspect entered approximately 24 minutes before smoke appeared and exited 3 minutes before visible smoke. The use of a key indicates the suspect had authorized access. The bag carried in but not out may have contained the accelerant.",
+      "studentPrompt": "The figure used a key to enter. Who would have keys to this building? The figure was inside for about 21 minutes. What might they have been doing during that time?",
+      "commonMisconception": "Students may try to identify the suspect from build alone. Stress that physical build is circumstantial and multiple suspects could match the description."
+    },
+    {
+      "id": "EV-06",
+      "name": "Ransacked Office and Missing Laptop",
+      "location": "office",
+      "coordinates": { "x": 10, "y": 32 },
+      "type": "scene-staging",
+      "description": "The office sustained only light smoke damage, yet the filing cabinet drawers were open with papers strewn across the floor, and desk drawers were pulled out. A laptop that normally sat in a docking station on the desk is missing. The small safe in the corner is closed and locked, undisturbed. There are no signs of forced entry into the office itself -- the door was simply closed, not locked.",
+      "significance": "The ransacked appearance may be staged to suggest a burglary motive, diverting attention from the arson. However, an actual burglar would likely have attempted to open the safe. The missing laptop could contain financial records the arsonist wanted to destroy or conceal. The selective disturbance is suspicious.",
+      "studentPrompt": "If this were a real burglary, what would you expect the thief to do with the locked safe? What kind of information might be on the missing laptop that someone would want to disappear?",
+      "commonMisconception": "Students often accept staged scenes at face value. Challenge them: would a burglar ransack an office but ignore a safe? Would a burglar also commit arson, increasing their risk of detection?"
+    }
+  ],
+
+  "suspects": [
+    {
+      "id": "S-01",
+      "name": "Marcus Bridgewater",
+      "role": "Owner of Bridgewater Family Bakery",
+      "age": 52,
+      "build": "Medium height, stocky",
+      "hasKeys": true,
+      "backstory": "Marcus inherited the bakery from his parents and has run it for 22 years. In the past two years, business has declined sharply due to a new supermarket bakery opening nearby. Marcus took out a second mortgage on his home to keep the bakery afloat and is three months behind on both his business lease and mortgage payments. His insurance policy on the bakery was increased from $150,000 to $400,000 six weeks before the fire. Marcus claims he was home asleep at the time of the fire. His wife confirms this but appeared hesitant during her interview.",
+      "motive": "Financial desperation. Insurance payout of $400,000 would cover his debts and provide a fresh start. The recent policy increase is suspicious.",
+      "alibi": "Claims he was home asleep. Wife Linda Bridgewater corroborates, but detectives noted she hesitated and avoided eye contact during questioning.",
+      "evidenceLinks": ["EV-05 (has keys, matches stocky build)", "EV-06 (laptop contained financial records)", "EV-03 (knows building layout, could locate smoke detector)"],
+      "exculpatory": "Marcus has no criminal record. Neighbors describe him as hardworking and devoted to the family business. His fingerprints were found throughout the bakery, but that is expected as the owner. No accelerant residue was found on any clothing seized from his home."
+    },
+    {
+      "id": "S-02",
+      "name": "Derek Osei",
+      "role": "Former Head Baker (terminated 3 weeks prior)",
+      "age": 34,
+      "build": "Tall, athletic",
+      "hasKeys": true,
+      "backstory": "Derek worked at the bakery for 6 years and was considered Marcus's most trusted employee. Three weeks before the fire, Marcus discovered that Derek had been skimming cash from the register -- approximately $8,000 over several months. Marcus fired Derek immediately and threatened to press charges. Derek was furious and told multiple coworkers he felt 'betrayed' because Marcus had been underpaying him for years and he was just 'taking what he was owed.' Derek never returned his building keys despite Marcus requesting them twice.",
+      "motive": "Revenge against Marcus for the termination and threat of criminal charges. Destroying the bakery eliminates both Marcus's business and any paper records of the theft that could be used against Derek.",
+      "alibi": "Claims he was at a friend's apartment playing video games. The friend, Jamal Price, confirms Derek arrived around 11 PM and was there 'all night,' but Jamal admits he fell asleep around 1 AM and cannot confirm Derek's whereabouts after that.",
+      "evidenceLinks": ["EV-05 (has keys, but build does not match -- tall vs. stocky)", "EV-06 (motive to destroy theft records)", "EV-03 (knows building layout from 6 years of work)"],
+      "exculpatory": "Derek's build (tall, athletic) does not match the security footage figure (medium height, stocky). A gas station receipt places him purchasing fuel for his car at 11:42 PM, consistent with his claim of driving to his friend's apartment. However, the gas station is also where charcoal lighter fluid is sold."
+    },
+    {
+      "id": "S-03",
+      "name": "Sandra Voss",
+      "role": "Commercial Landlord of 412 Elm Street",
+      "age": 61,
+      "build": "Short, heavyset",
+      "hasKeys": true,
+      "backstory": "Sandra owns the building that houses the bakery and has been Marcus's landlord for 15 years. Marcus is three months behind on rent, owing Sandra approximately $12,000. Sandra has been trying to sell the building to a developer who wants to demolish it and build condominiums. The developer's offer is $1.2 million, but the sale is contingent on the building being vacant. Sandra issued a formal eviction notice to Marcus two weeks before the fire, but Marcus was contesting it through a lawyer. Sandra holds a master key to all units in the building. Her building insurance, separate from Marcus's business insurance, would pay $600,000 for a total loss.",
+      "motive": "Destroying the building clears the path for the $1.2M developer sale while also collecting $600,000 in building insurance. The eviction dispute with Marcus was becoming expensive and protracted.",
+      "alibi": "Claims she was at her daughter's home in a neighboring city, 45 minutes away. Her daughter confirms Sandra was there for dinner but says Sandra left around 10:30 PM to drive home. Sandra's cell phone records show her phone connected to a tower near her own home (20 minutes from the bakery) from 11:15 PM onward, but cell tower data has a margin of error.",
+      "evidenceLinks": ["EV-05 (has master key, build could be described as stocky/heavyset)", "EV-04 (could have accessed dumpster area)", "EV-03 (as landlord, knows building systems including alarm locations)"],
+      "exculpatory": "Sandra is 61 years old and has a documented knee injury that limits her mobility. The security footage shows the figure moving quickly, including jogging across the parking lot. Sandra also has no known experience with accelerants or fire-setting."
+    },
+    {
+      "id": "S-04",
+      "name": "Ryan Bridgewater",
+      "role": "Marcus's son, part-time bakery employee",
+      "age": 19,
+      "build": "Medium height, stocky",
+      "hasKeys": true,
+      "backstory": "Ryan works part-time at the bakery while attending community college. He has expressed resentment about being expected to take over the bakery, telling friends he wants to move out of state to pursue music production. Ryan recently discovered the severity of his father's financial situation and told his girlfriend he was 'terrified' his dad would lose their house. Ryan has a spare key to the bakery and frequently closes the shop alone on weekends. Two months ago, Ryan was cited for a small brush fire behind his apartment complex that he claimed was an accident from a fire pit. The citation was dropped.",
+      "motive": "Misguided attempt to help his father collect insurance money and escape financial ruin. Alternatively, destroying the bakery frees him from the expectation of taking over the business.",
+      "alibi": "Claims he was at his off-campus apartment studying. His roommate was away for the weekend and cannot verify. Ryan's car was captured on a traffic camera 6 blocks from the bakery at 1:23 AM, though he says he was driving to a convenience store.",
+      "evidenceLinks": ["EV-05 (has keys, matches medium/stocky build closely)", "EV-03 (closes shop alone, knows alarm system)", "EV-01 (previous brush fire citation)", "EV-04 (traffic camera places him nearby)"],
+      "exculpatory": "Ryan has no criminal record beyond the dropped brush fire citation. His phone GPS data shows his phone at his apartment from 12:00 AM to 6:00 AM, though he could have left his phone behind. There is a convenience store on the route captured by the traffic camera, supporting his explanation."
+    }
+  ],
+
+  "debateTriggers": [
+    {
+      "id": "DT-01",
+      "title": "The Security Footage Build Match",
+      "description": "The figure on camera is described as 'medium height and stocky.' Both Marcus (S-01) and Ryan (S-04) match this description. Sandra (S-03) is 'short and heavyset,' which could also be interpreted as stocky on grainy footage. Derek (S-02) is tall and athletic, which seems to eliminate him -- but could he have been hunching or wearing bulky clothing?",
+      "expectedDisagreement": "Students will split between Marcus and Ryan as the figure. Some will argue Sandra's build is close enough. A few will try to keep Derek in the running by suggesting disguise or camera distortion.",
+      "teacherGuidance": "Push students to articulate why body build alone is insufficient to identify a suspect. Have them consider: what additional evidence would you need to confirm identity? This reinforces the difference between circumstantial and physical evidence."
+    },
+    {
+      "id": "DT-02",
+      "title": "Staged Burglary or Real Burglary?",
+      "description": "The ransacked office with the missing laptop could be staging (to create a false motive for the fire) or a genuine secondary crime (someone used the arson to cover a theft). The untouched safe is a key detail -- does it prove staging, or did the thief simply not have time or tools for the safe?",
+      "expectedDisagreement": "Students who favor Marcus as the arsonist will argue he staged the office to misdirect investigators and took his own laptop to hide financial records. Students who favor Derek will argue Derek ransacked the office looking for evidence of his theft. Students who favor an outside theory may argue it was a real burglary of opportunity.",
+      "teacherGuidance": "This is an excellent moment to introduce the concept of 'crime scene staging' in arson investigations. Ask students: what would a real burglar's behavior look like versus someone trying to make it look like a burglary? Have each group defend their interpretation with specific evidence."
+    },
+    {
+      "id": "DT-03",
+      "title": "The Two Points of Origin",
+      "description": "There is a primary burn pattern in the kitchen (EV-01, EV-02) and a secondary char pattern near the storage room exterior door (storage room description). Two separate points of origin is a strong indicator of arson -- but could the storage room pattern have been caused by the fire spreading, or by the figure entering with an already-lit or leaking accelerant container?",
+      "expectedDisagreement": "Some students will insist two origins definitively proves arson with premeditated planning (set two fires to ensure total destruction). Others will argue the storage room char is simply where accelerant dripped as the arsonist entered, making it a single continuous act rather than two planned ignition points.",
+      "teacherGuidance": "Guide students to consider both interpretations and what additional evidence would distinguish between them. Ask: if accelerant dripped at the door, what pattern would you expect versus a deliberately set second fire? This teaches students that evidence interpretation requires reasoning, not just identification."
+    },
+    {
+      "id": "DT-04",
+      "title": "Ryan's Traffic Camera vs. Phone GPS",
+      "description": "Ryan's car was seen 6 blocks from the bakery at 1:23 AM, but his phone GPS shows him at his apartment all night. These are contradictory. Either the phone was left behind deliberately (suggesting premeditation and consciousness of guilt) or his convenience store explanation is true and the GPS has a technical error or lag.",
+      "expectedDisagreement": "Students will sharply divide. Those suspecting Ryan will argue he intentionally left his phone to create a false alibi -- a sophisticated move suggesting premeditation. Those defending Ryan will point out that GPS is not perfectly accurate, phones sometimes fail to update location, and the convenience store explanation is plausible. Some students may research or argue about how phone GPS actually works.",
+      "teacherGuidance": "Use this to teach about digital forensics reliability. GPS accuracy varies (especially indoors), and cell tower triangulation has known margins of error. Neither the traffic camera nor the phone GPS is 100% conclusive alone. Have students discuss what standard of evidence they would need to resolve this conflict."
+    }
+  ],
+
+  "teacherAnswerKey": {
+    "mostLikelySuspect": {
+      "primary": "S-04 (Ryan Bridgewater)",
+      "reasoning": "Ryan has the strongest combination of means, motive, and opportunity. He matches the physical description on the security footage (medium height, stocky). He possesses keys to the building and regularly closes alone, giving him detailed knowledge of the layout, alarm systems, and smoke detector locations. His car was captured on a traffic camera 6 blocks from the bakery at 1:23 AM -- 24 minutes before the suspect entered the building on the security footage at 1:47 AM. His phone GPS contradicts this, suggesting it was deliberately left at his apartment. He has a prior (though dropped) fire-related citation. His motive -- helping his father escape financial ruin or freeing himself from the obligation to inherit a failing business -- is emotionally compelling for a 19-year-old under pressure. The convenience store alibi is plausible but unverified."
+    },
+    "secondarySuspect": {
+      "suspect": "S-01 (Marcus Bridgewater)",
+      "reasoning": "Marcus has the strongest financial motive: $400,000 insurance payout, a recently increased policy, and crushing debt. He matches the physical description and has keys. However, the security footage figure's quick movements and jogging exit seem more consistent with a younger person. Marcus's wife provides an alibi, albeit a weak one. The missing laptop containing financial records could implicate him -- he may have wanted to destroy evidence of his financial situation or the insurance increase. A reasonable case can be made that Marcus is the arsonist, and this is a valid student conclusion if well-supported by evidence."
+    },
+    "evidenceSummary": {
+      "physicalEvidenceOfArson": [
+        "Pour patterns with charcoal lighter fluid (not a bakery substance) confirm accelerant use (EV-01)",
+        "V-pattern vertex at floor level confirms low point of origin inconsistent with accidental causes (EV-02)",
+        "Disabled smoke detector shows premeditation (EV-03)",
+        "Matching accelerant in discarded gas can links the container to the crime (EV-04)"
+      ],
+      "circumstantialEvidence": [
+        "Security footage shows a keyed entry by a medium/stocky figure (EV-05)",
+        "Possible staged burglary scene in office (EV-06)",
+        "Ryan's traffic camera appearance contradicts his phone GPS",
+        "Marcus's insurance increase 6 weeks prior",
+        "Derek's unresolved motive and unreturned keys",
+        "Sandra's building sale motive and master key access"
+      ],
+      "cannotBeDetermined": [
+        "Exact identity of the figure on security footage (face not visible)",
+        "Whether the office was staged or genuinely burglarized",
+        "Whether the storage room char is a second ignition point or accelerant spillage",
+        "Whether Ryan's phone GPS discrepancy is intentional or technical"
+      ]
+    },
+    "acceptableStudentConclusions": [
+      {
+        "conclusion": "Ryan Bridgewater committed arson to help his father or free himself from the bakery",
+        "requiredEvidence": ["Build match to footage", "Traffic camera placement", "Phone GPS discrepancy", "Knowledge of building", "Prior fire citation"],
+        "strengthRating": "Strong"
+      },
+      {
+        "conclusion": "Marcus Bridgewater committed insurance fraud arson",
+        "requiredEvidence": ["Insurance policy increase", "Financial desperation", "Build match", "Key access", "Missing laptop with financial records"],
+        "strengthRating": "Strong"
+      },
+      {
+        "conclusion": "Marcus and Ryan conspired together",
+        "requiredEvidence": ["Both have motive and access", "Ryan physically committed the act while Marcus provided planning", "Explains wife's hesitant alibi (she knows)", "Explains missing laptop (Marcus directed its removal)"],
+        "strengthRating": "Moderate -- requires inference beyond direct evidence"
+      },
+      {
+        "conclusion": "Sandra Voss committed arson for the building sale and insurance",
+        "requiredEvidence": ["Master key access", "Financial motive ($1.2M sale + $600K insurance)", "Unverified alibi after 10:30 PM", "Build could match footage"],
+        "strengthRating": "Moderate -- mobility issues and age weaken physical feasibility"
+      },
+      {
+        "conclusion": "Derek Osei committed revenge arson",
+        "requiredEvidence": ["Unreturned keys", "Revenge motive", "Alibi gap after 1 AM", "Wanted to destroy theft records"],
+        "strengthRating": "Weak -- build does not match footage, strongest physical evidence points away from him"
+      }
+    ],
+    "gradingNotes": "Award full credit for any conclusion supported by at least 3 pieces of specific evidence with logical reasoning. The goal is evidence-based argumentation, not arriving at the 'correct' answer. Students who identify ambiguities and acknowledge counterevidence should receive higher marks than those who present only one-sided arguments. Use the 5-level rubric: Missing (no evidence cited), Emerging (1 piece of evidence, weak reasoning), Approaching (2-3 pieces, some reasoning gaps), Developing (3+ pieces, logical chain, acknowledges limitations), Refining (comprehensive evidence analysis, addresses counterarguments, identifies what additional investigation is needed)."
+  }
+}

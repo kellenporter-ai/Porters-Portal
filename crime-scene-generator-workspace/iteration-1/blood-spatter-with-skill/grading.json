@@ -1,0 +1,42 @@
+{
+  "eval_id": 0,
+  "eval_name": "blood-spatter-analysis",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Output is valid JSON matching the skill's schema (all 5 components present)",
+      "passed": true,
+      "evidence": "JSON has scenario.scene, scenario.evidence, scenario.characters, scenario.debateTriggers, scenario.teacherKey, scenario.portalIntegration — all present and correctly structured."
+    },
+    {
+      "text": "Contains exactly 4-6 pieces of forensic evidence",
+      "passed": true,
+      "evidence": "5 evidence items (E1-E5): cast-off pattern, transfer stain on doorknob, void pattern, satellite spatter, bloody shoe impression."
+    },
+    {
+      "text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)",
+      "passed": true,
+      "evidence": "E1 (cast-off) points to Marcus (right-handed) OR Derek (left-handed backhand). E4 (satellite spatter) points to Derek (injured hand) OR Marcus (weapon dripping). E5 (shoe print) points to Marcus OR Claudia. Multiple contradictions present."
+    },
+    {
+      "text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)",
+      "passed": true,
+      "evidence": "All 5 characters (Helen, Marcus, Derek, Claudia, Janice) have explicit selflessAct and selfishAct fields with specific, detailed past instances."
+    },
+    {
+      "text": "Blood spatter terminology is scientifically accurate and 9th-grade appropriate",
+      "passed": true,
+      "evidence": "Uses correct BPA terms: cast-off, transfer stain, void pattern, satellite spatter, ABFO No. 2 scale, ridge detail, class vs. individual evidence, directionality. Terms are used in context with accessible explanations."
+    },
+    {
+      "text": "Teacher key explains all contradictory evidence with valid forensic science",
+      "passed": true,
+      "evidence": "Every evidence item (E1-E5) has a detailed explanation. Cast-off from second swing explained (weapon clean on first strike). Void from tablet explained with coagulation timing. Satellite spatter from mortar dripping. Shoe impression from exit. All scientifically sound."
+    },
+    {
+      "text": "Scene description is spatially precise enough to sketch a crime scene diagram",
+      "passed": true,
+      "evidence": "Room: 16ft x 22ft, L-shaped counter on west/south walls, center island 3ft x 5ft positioned 4ft from west counter, dining table with 8x6ft rug, sliding door centered on north wall, pantry in SW corner. Compass directions and measurements throughout."
+    }
+  ]
+}

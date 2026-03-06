@@ -14,27 +14,38 @@
 
 ## Known Baseline — Flux Shop Functions
 - `purchaseFluxItem`: active, no errors in logs; auth verification passes cleanly; sees real invocations
-- `equipFluxCosmetic`: active on revision `equipfluxcosmetic-00002-veg` (as of commit 1436d1d); auth verification passes cleanly
+- `equipFluxCosmetic`: active, per-slot equip logic deployed (commit d5d2481); auth verification passes cleanly; multiple real invocations seen post-deploy
 - Both functions see real invocations post-deploy with valid auth — shop is live and being used
 
 ## Firestore Indexes
 - Only 1 composite index deployed: `notifications` collection on `userId ASC + timestamp DESC`
 - No indexes required for the cosmetics/Flux Shop feature (cosmetics live on user documents, not queried as a collection)
+- Multi-equip slots (aura/particle/frame/trail) stored on user documents — no new indexes needed
 
 ## Hosting
 - Production URL: https://porters-portal.web.app (live channel, never expires)
-- Last verified deploy: 2026-03-05 12:31:27 UTC (commit 1436d1d, cosmetics overhaul + preview system)
+- Last verified deploy: 2026-03-05 12:59:09 UTC (commit d5d2481, multi-equip + ProfileFrame)
 
 ## App Check Baseline
 - All function logs show `"app":"MISSING"` in verifications — App Check is not enforced (expected for this environment)
 - Auth always shows `"auth":"VALID"` on real invocations — authentication is working correctly
+
+## Commit d5d2481 Deploy Summary (2026-03-05)
+- Deploy hash: `589dcccc3dde943c6b48e8720adb081394804483`
+- Multi-equip cosmetics: aura + particle + frame + trail simultaneously
+- Frames moved from agent avatar to profile picture (Path of Exile-style portrait frames)
+- New ProfileFrame component with 7 unique SVG frame designs
+- Cloud Functions updated for per-slot equip logic (equipFluxCosmetic)
+- Hosting released at 12:59:09 UTC
+- equipFluxCosmetic: multiple real invocations post-deploy, all auth VALID, zero errors
+- purchaseFluxItem: real invocations post-deploy, all auth VALID, zero errors
+- Result: HEALTHY — zero errors detected post-deploy
 
 ## Commit 1436d1d Deploy Summary (2026-03-05)
 - Deploy hash: `e3bd695d7454ee28c7d00c15a21ab836a660d8a5`
 - Unique aura/trail visuals (not recolors), larger aura sizing
 - Preview system added — try-before-you-buy cosmetics
 - Hosting released at 12:31:27 UTC
-- equipFluxCosmetic updated to revision 00002-veg
 - Result: HEALTHY — zero errors detected post-deploy
 
 ## Commit f825bb6 Deploy Summary (2026-03-05)

@@ -1,0 +1,42 @@
+{
+  "eval_id": 0,
+  "eval_name": "blood-spatter-analysis",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Output is valid JSON matching the skill's schema (all 5 components present)",
+      "passed": false,
+      "evidence": "Uses a different JSON structure: metadata, sceneDescription, evidence, suspects, debateTriggers, teacherAnswerKey. Does not match the skill's schema (scenario.scene, scenario.evidence, scenario.characters, etc.). Content is present but structure diverges."
+    },
+    {
+      "text": "Contains exactly 4-6 pieces of forensic evidence",
+      "passed": true,
+      "evidence": "6 evidence items (E1-E6): impact spatter, cast-off, handprint transfer, passive drops/pool, bronze sculpture fragment, void pattern."
+    },
+    {
+      "text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)",
+      "passed": true,
+      "evidence": "Multiple contradictions: cast-off direction vs. handedness of different suspects, void pattern could implicate Nadia or others, drip trail could be victim or assailant."
+    },
+    {
+      "text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)",
+      "passed": false,
+      "evidence": "Characters have detailed backstories with moral complexity, but no explicit selflessAct/selfishAct fields. The complexity is woven into the narrative rather than structured as discrete fields."
+    },
+    {
+      "text": "Blood spatter terminology is scientifically accurate and 9th-grade appropriate",
+      "passed": true,
+      "evidence": "Excellent BPA terminology: impact spatter, cast-off, transfer stain, passive drop, angle of impact, area of convergence/origin, satellite spatter, void pattern. Includes student calculation tasks (sin(angle) = width/length)."
+    },
+    {
+      "text": "Teacher key explains all contradictory evidence with valid forensic science",
+      "passed": true,
+      "evidence": "Detailed evidence analysis key with common misconceptions for each piece. Debate guidance for each trigger. Includes per-evidence explanations with expected student calculations."
+    },
+    {
+      "text": "Scene description is spatially precise enough to sketch a crime scene diagram",
+      "passed": true,
+      "evidence": "18m x 12m main hall, 4m x 4m area of interest near NW corner, specific distances (pedestal 1.5m from victim, sculpture 2.1m from victim). Good spatial detail."
+    }
+  ]
+}

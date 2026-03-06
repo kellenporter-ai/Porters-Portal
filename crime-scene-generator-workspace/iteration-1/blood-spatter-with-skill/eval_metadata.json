@@ -1,0 +1,42 @@
+{
+  "eval_id": 0,
+  "eval_name": "blood-spatter-analysis",
+  "prompt": "Generate a crime scene scenario focused on blood spatter analysis",
+  "assertions": [
+    {
+      "id": "A1",
+      "text": "Output is valid JSON matching the skill's schema (all 5 components present)",
+      "type": "structural"
+    },
+    {
+      "id": "A2",
+      "text": "Contains exactly 4-6 pieces of forensic evidence",
+      "type": "structural"
+    },
+    {
+      "id": "A3",
+      "text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)",
+      "type": "content"
+    },
+    {
+      "id": "A4",
+      "text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)",
+      "type": "content"
+    },
+    {
+      "id": "A5",
+      "text": "Blood spatter terminology is scientifically accurate and 9th-grade appropriate",
+      "type": "accuracy"
+    },
+    {
+      "id": "A6",
+      "text": "Teacher key explains all contradictory evidence with valid forensic science",
+      "type": "accuracy"
+    },
+    {
+      "id": "A7",
+      "text": "Scene description is spatially precise enough to sketch a crime scene diagram",
+      "type": "content"
+    }
+  ]
+}

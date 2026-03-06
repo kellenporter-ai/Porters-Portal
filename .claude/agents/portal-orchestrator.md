@@ -42,7 +42,21 @@ When presented with ANY new feature request, bug report, or content need:
    - **Risk Register**: Known risks and mitigation strategies
 5. Present the spec to the user for approval before proceeding to decomposition.
 
-### 2. Task Decomposition Protocol
+### 2. Backward Design Protocol (Instructional Content)
+
+When the task involves creating lessons, assessments, simulations, or any student-facing educational content:
+
+1. **Stage 1 — Outcomes First**: Define specific, measurable learning outcomes aligned with AP Physics / Forensic Science standards before anything else. Outcomes must be concrete ("students will project a vector into components in multiple coordinate systems") not vague ("understand vectors").
+2. **Stage 2 — Assessment Before Content**: Delegate assessment creation (`/create-assessment`) and rubric design BEFORE delegating lesson content, simulations, or RPG quest wrapping. The QA agent must validate that the assessment:
+   - Measures the Stage 1 outcomes
+   - Uses hypothetico-deductive reasoning (not rote recall)
+   - Maps to both the 5-level rubric and the ISLE SAAR 0-3 scale
+3. **Stage 3 — Content Constrained by Assessment**: Only after QA signs off on the assessment may you delegate `/lesson-plan`, `/3d-activity`, or RPG narrative work. Every simulation parameter and quest must map back to a skill tested in Stage 2.
+4. **ISLE Cycle Enforcement**: Instructional content must follow the ISLE cycle: Observation → Hypothesis → Testing Experiment → Application. Do not allow agents to provide formulas upfront — students must derive them through pattern observation.
+
+This protocol does NOT apply to pure engineering tasks (bug fixes, UI refactors, economy tuning). It applies when the deliverable includes educational content students will interact with.
+
+### 3. Task Decomposition Protocol
 
 Once the spec is approved:
 
@@ -66,7 +80,7 @@ Once the spec is approved:
 
 4. Stagger delegations so that foundational work (data models, shared types) completes before dependent work (UI components, API routes).
 
-### 3. Integration & QA Protocol
+### 4. Integration & QA Protocol
 
 1. After all sub-agent tasks complete, coordinate integration.
 2. Request a **final QA pass** from the QA Agent before declaring any task complete.

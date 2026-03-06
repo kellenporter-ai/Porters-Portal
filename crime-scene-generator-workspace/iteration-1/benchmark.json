@@ -1,0 +1,139 @@
+{
+  "metadata": {
+    "skill_name": "crime-scene-generator",
+    "skill_path": "/home/kp/Desktop/Porters-Portal/.claude/skills/crime-scene-generator",
+    "executor_model": "claude-opus-4-6",
+    "timestamp": "2026-03-05T00:00:00Z",
+    "evals_run": [0, 1],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "eval_name": "blood-spatter-analysis",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 245.7,
+        "tokens": 23206,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output is valid JSON matching the skill's schema (all 5 components present)", "passed": true, "evidence": "All components present: scenario.scene, scenario.evidence, scenario.characters, scenario.debateTriggers, scenario.teacherKey, scenario.portalIntegration."},
+        {"text": "Contains exactly 4-6 pieces of forensic evidence", "passed": true, "evidence": "5 evidence items (E1-E5)."},
+        {"text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)", "passed": true, "evidence": "E1 points to Marcus/Derek. E4 points to Derek/Marcus. E5 points to Marcus/Claudia."},
+        {"text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)", "passed": true, "evidence": "All 5 characters have selflessAct and selfishAct fields."},
+        {"text": "Blood spatter terminology is scientifically accurate and 9th-grade appropriate", "passed": true, "evidence": "Uses cast-off, transfer stain, void pattern, satellite spatter, ABFO No. 2, class vs. individual evidence."},
+        {"text": "Teacher key explains all contradictory evidence with valid forensic science", "passed": true, "evidence": "All 5 evidence items fully explained with scientific reasoning."},
+        {"text": "Scene description is spatially precise enough to sketch a crime scene diagram", "passed": true, "evidence": "16ft x 22ft room with compass directions, precise item placements, and measurements."}
+      ]
+    },
+    {
+      "eval_id": 0,
+      "eval_name": "blood-spatter-analysis",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.71,
+        "passed": 5,
+        "failed": 2,
+        "total": 7,
+        "time_seconds": 212.8,
+        "tokens": 17902,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output is valid JSON matching the skill's schema (all 5 components present)", "passed": false, "evidence": "Different structure: metadata, sceneDescription, evidence, suspects, debateTriggers, teacherAnswerKey."},
+        {"text": "Contains exactly 4-6 pieces of forensic evidence", "passed": true, "evidence": "6 evidence items (E1-E6)."},
+        {"text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)", "passed": true, "evidence": "Multiple contradictions present across evidence items."},
+        {"text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)", "passed": false, "evidence": "No selflessAct/selfishAct fields. Characters have backstory complexity but not structured moral duality."},
+        {"text": "Blood spatter terminology is scientifically accurate and 9th-grade appropriate", "passed": true, "evidence": "Excellent BPA terminology with student calculation tasks."},
+        {"text": "Teacher key explains all contradictory evidence with valid forensic science", "passed": true, "evidence": "Detailed analysis key with common misconceptions per evidence item."},
+        {"text": "Scene description is spatially precise enough to sketch a crime scene diagram", "passed": true, "evidence": "18m x 12m hall, 4m x 4m area of interest, specific distances between items."}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "arson-3d-simulation",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 296.1,
+        "tokens": 24396,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output is valid JSON matching the skill's schema (all 5 components present)", "passed": true, "evidence": "All components correctly structured."},
+        {"text": "Contains exactly 4-6 pieces of forensic evidence", "passed": true, "evidence": "6 evidence items (E1-E6)."},
+        {"text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)", "passed": true, "evidence": "E1 vs E2 (arson vs accidental), E3 vs E4 (Karen vs Daniel)."},
+        {"text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)", "passed": true, "evidence": "All 4 characters have explicit selflessAct and selfishAct."},
+        {"text": "Arson/fire investigation terminology is scientifically accurate and 9th-grade appropriate", "passed": true, "evidence": "GC-MS, ILR, V-pattern, arc bead, SEM, NFPA 921, cause/victim bead distinction."},
+        {"text": "Teacher key explains all contradictory evidence with valid forensic science", "passed": true, "evidence": "All 6 items explained, including real forensic controversies."},
+        {"text": "Scene has enhanced spatial detail suitable for 3D modeling", "passed": true, "evidence": "7.3m x 6.1m x 3.7m with 9 spatial markers, metric measurements, compass directions."},
+        {"text": "portalIntegration section is present with evidenceLockerItems, discoveryMilestones, and narrativeHooks", "passed": true, "evidence": "9 locker items, 7 milestones with XP values, 3 narrative hooks."}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "arson-3d-simulation",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.625,
+        "passed": 5,
+        "failed": 3,
+        "total": 8,
+        "time_seconds": 190.4,
+        "tokens": 17742,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output is valid JSON matching the skill's schema (all 5 components present)", "passed": false, "evidence": "Different structure: meta, scene, evidence, suspects, debateTriggers, teacherAnswerKey."},
+        {"text": "Contains exactly 4-6 pieces of forensic evidence", "passed": true, "evidence": "6 evidence items (EV-01 to EV-06)."},
+        {"text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)", "passed": true, "evidence": "Security footage eliminates Derek but fits others. Multiple suspects have competing evidence."},
+        {"text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)", "passed": false, "evidence": "No selflessAct/selfishAct fields. Characters described through crime relationship only."},
+        {"text": "Arson/fire investigation terminology is scientifically accurate and 9th-grade appropriate", "passed": true, "evidence": "Good terminology with vocabulary list and common misconceptions."},
+        {"text": "Teacher key explains all contradictory evidence with valid forensic science", "passed": true, "evidence": "Detailed answer key with 5 acceptable conclusions and strength ratings."},
+        {"text": "Scene has enhanced spatial detail suitable for 3D modeling", "passed": true, "evidence": "60x40ft with 5 rooms using x/y coordinates, 3 exterior features."},
+        {"text": "portalIntegration section is present with evidenceLockerItems, discoveryMilestones, and narrativeHooks", "passed": false, "evidence": "No portalIntegration section."}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 270.9, "stddev": 25.2, "min": 245.7, "max": 296.1},
+      "tokens": {"mean": 23801, "stddev": 595, "min": 23206, "max": 24396}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.67, "stddev": 0.04, "min": 0.625, "max": 0.71},
+      "time_seconds": {"mean": 201.6, "stddev": 11.2, "min": 190.4, "max": 212.8},
+      "tokens": {"mean": 17822, "stddev": 80, "min": 17742, "max": 17902}
+    },
+    "delta": {
+      "pass_rate": "+0.33",
+      "time_seconds": "+69.3",
+      "tokens": "+5979"
+    }
+  },
+  "notes": [
+    "Schema conformance and Moral Gray Rule are the primary differentiators — baselines fail both consistently.",
+    "Portal integration (gamification hooks) only appears with the skill, never in baselines.",
+    "Scientific accuracy passes in both configurations — the model has strong forensic knowledge regardless.",
+    "Spatial detail passes in both configurations — but with-skill outputs use metric measurements consistently.",
+    "With-skill runs use ~33% more tokens and ~34% more time, but achieve 100% pass rate vs 67%.",
+    "The baseline blood spatter output actually includes student calculation tasks (angle of impact) and a rubric — features the skill doesn't explicitly request but are pedagogically valuable."
+  ]
+}

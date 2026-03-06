@@ -1,0 +1,82 @@
+[
+  {
+    "query": "I need a crime scene for my forensic science class focused on blood spatter analysis. Students should have to figure out who did it based on the spatter patterns, and I want at least 3 suspects with alibis they can pick apart.",
+    "should_trigger": true
+  },
+  {
+    "query": "Create an arson investigation scenario for a 3D Babylon.js simulation — I need really detailed spatial layout so the students can walk through the scene virtually on their Chromebooks and find evidence like pour patterns and V-patterns.",
+    "should_trigger": true
+  },
+  {
+    "query": "I'm building a unit on trace evidence (hair and fiber analysis) and need a murder mystery case where students collect fiber samples from suspects' clothing and compare them to fibers found at the scene. Make it ambiguous enough that they'll argue about it.",
+    "should_trigger": true
+  },
+  {
+    "query": "Generate a forensic entomology scenario for an assessment — something where students have to estimate time of death based on insect succession patterns found on a body discovered in a wooded area behind a school.",
+    "should_trigger": true
+  },
+  {
+    "query": "I want a digital forensics crime scene where students analyze phone records, social media timestamps, and GPS data to figure out which suspect is lying about their alibi. Needs to work as a classroom debate activity.",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you make a toxicology-based mystery for my forensic science class? Something involving a suspicious death at a restaurant where multiple people had access to the victim's food, and the lab results are ambiguous between accidental and intentional poisoning.",
+    "should_trigger": true
+  },
+  {
+    "query": "I need a fingerprint analysis case for my 9th graders — a break-in at a school where latent prints are found on multiple surfaces but some are from staff who have legitimate access. Students should debate whose prints actually matter.",
+    "should_trigger": true
+  },
+  {
+    "query": "build me a ballistics investigation scenario where students analyze bullet trajectories, shell casings, and gunshot residue to figure out the shooter's position. There should be conflicting witness statements about where the shots came from.",
+    "should_trigger": true
+  },
+  {
+    "query": "Create a forensic scenario about document forgery — someone faked a will, and students need to analyze handwriting samples, ink composition, and paper aging to determine which version is authentic. For a lesson activity.",
+    "should_trigger": true
+  },
+  {
+    "query": "i need a crime scene for a quest in the portal — something involving a staged suicide that's actually a homicide, where students have to look at ligature marks, blood pooling, and scene staging indicators to figure out what really happened",
+    "should_trigger": true
+  },
+  {
+    "query": "Create a 3D simulation of projectile motion where students launch a ball at different angles and measure range vs. height. Should have sliders for initial velocity and angle.",
+    "should_trigger": false
+  },
+  {
+    "query": "I need an assessment for AP Physics 1 on energy conservation — free response questions about roller coasters and pendulums with the 5-level rubric.",
+    "should_trigger": false
+  },
+  {
+    "query": "Build a lesson plan on Newton's third law using the ISLE framework. Students should observe collisions between carts on a track and derive the relationship between forces.",
+    "should_trigger": false
+  },
+  {
+    "query": "Generate 200 multiple choice questions on wave properties for the question bank — frequency, wavelength, amplitude, wave speed, standing waves, resonance.",
+    "should_trigger": false
+  },
+  {
+    "query": "I want a study guide for the forensic science midterm covering units 1-4. Pull from the existing question banks and lesson content to make a review sheet with practice problems.",
+    "should_trigger": false
+  },
+  {
+    "query": "The leaderboard page is loading slowly — looks like the Firestore query needs a composite index. Can you check the dataService and add whatever index is missing?",
+    "should_trigger": false
+  },
+  {
+    "query": "Create a simulation where students can mix chemicals in virtual beakers and observe reactions — color changes, precipitates, gas production. For honors chemistry, not forensic science.",
+    "should_trigger": false
+  },
+  {
+    "query": "Add a new Legendary-rarity item to the loot pool called 'Forensic Analyst's Lens' that gives +15% XP bonus on forensic science assignments. Design the stats and flavor text.",
+    "should_trigger": false
+  },
+  {
+    "query": "I need to set up the early warning system to flag students who haven't submitted assignments in 2 weeks. Check the data-analyst agent and run a report on my Period 3 class.",
+    "should_trigger": false
+  },
+  {
+    "query": "Make a reading comprehension activity from this PDF chapter on the history of forensic science — key dates, famous cases, vocabulary. Just a study resource, not an investigation.",
+    "should_trigger": false
+  }
+]

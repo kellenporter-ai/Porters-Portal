@@ -67,8 +67,15 @@
 - Simulations live at `/home/kp/Desktop/Simulations/<class>/` (AP Physics, Honors Physics, Forensic Science)
 - `/3d-activity` skill has `disable-model-invocation: true` — must follow instructions manually, cannot use Skill tool
 - First Forensic Science sim: `dna-extraction-lab.html` (Activity 7-1, DNA Extraction)
-- Simulation reference files: `babylon-reference.md`, `example-sim.md`, `portal-bridge.md` in `.claude/skills/`
+- Second Forensic Science sim: `the-break-in-dna-profiling.html` (Activity 7-2, DNA Profiling + Debate Prep)
+  - Redesigned for ISLE: no auto-match, students record own observations, theory-building before feedback
+  - 6 phases: Engage -> Investigate -> Gel Lab -> Analysis Worksheet -> Theory Building -> Debate Prep
+  - Hybrid sim+debate format: sim prepares students for in-person class debate
+  - Evidence feedback: wrong forensic test selections get specific corrective feedback
+- Simulation reference files: `babylon-reference.md`, `example-sim.md` in `.claude/skills/3d-activity/`
+- `portal-bridge.md` does NOT exist in skills dir (checked 2026-03-05)
 - 3d-graphics-engineer agent owns visual quality; content-strategist owns instructional text (no code)
+- Agent tool is NOT available as a deferred tool — for standalone HTML sims, orchestrator implements directly
 
 ## User Preferences
 - Fully autonomous pipelines — no checkpoints during dev-pipeline

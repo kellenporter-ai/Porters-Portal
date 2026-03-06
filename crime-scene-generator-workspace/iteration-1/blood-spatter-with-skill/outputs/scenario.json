@@ -1,0 +1,249 @@
+{
+  "scenario": {
+    "title": "Case of the Crimson Kitchen",
+    "forensicTopic": "Blood Spatter Analysis (Bloodstain Pattern Analysis)",
+    "gradeLevel": "9th grade",
+    "estimatedDuration": "90 minutes",
+    "scene": {
+      "location": "Single-story ranch house, 742 Sycamore Lane, residential neighborhood",
+      "layout": "Open-concept kitchen and dining area, approximately 16 feet (north-south) by 22 feet (east-west). The kitchen occupies the western half with an L-shaped granite countertop along the west and south walls. A center island (3 ft x 5 ft) sits 4 feet from the west counter. The dining area occupies the eastern half with a rectangular oak table seating six. A sliding glass door is centered on the north wall, leading to a backyard patio. The main entry from the hallway is a swinging door on the southeast corner. A pantry closet is in the southwest corner. The floor is white ceramic tile throughout, with a woven area rug (8 ft x 6 ft) under the dining table.",
+      "environmentalConditions": {
+        "timeOfDay": "Approximately 9:45 PM (estimated time of incident); scene discovered at 6:20 AM the following morning",
+        "weather": "Clear night, no precipitation; overnight low 38 degrees Fahrenheit",
+        "temperature": "Interior thermostat set to 68 degrees F; kitchen measured at 64 degrees F upon arrival due to sliding glass door being open 3 inches",
+        "lighting": "Overhead kitchen pendant lights were off; under-cabinet LED strip lights were on (dim warm glow); dining area chandelier was off",
+        "season": "Late October"
+      },
+      "discoveryContext": "The victim's adult daughter, Claudia Marsh (age 27), arrived at 6:20 AM to pick up her mother for a scheduled doctor's appointment. She entered through the unlocked front door, called out, received no response, and found the victim unresponsive on the kitchen floor. She called 911 at 6:23 AM. Paramedics confirmed death at 6:41 AM. Claudia states she knelt beside the victim and touched her hand but did not move the body. She reported the sliding glass door was partially open when she arrived.",
+      "sensoryDetails": "Upon arrival, investigators noted a faint metallic smell consistent with oxidized blood. The under-cabinet LED lights cast an amber glow across extensive dark staining on the tile floor. A kitchen chair was overturned near the center island. A ceramic coffee mug lay shattered on the floor approximately 2 feet south of the victim's right hand. The house was notably quiet; no music, no television. A wall clock in the dining area had stopped at 9:47 PM (battery dead, unrelated to incident, confirmed later).",
+      "spatialMarkers": [
+        {
+          "item": "Victim's body",
+          "location": "Supine on the kitchen floor, head pointing northwest, feet pointing southeast, positioned between the center island and the south counter. Head approximately 2 feet east of the island's northeast corner.",
+          "significance": "Body position relative to blood patterns helps reconstruct whether victim fell in place or was moved."
+        },
+        {
+          "item": "Cast-off pattern on ceiling",
+          "location": "Linear cast-off pattern running east-to-west across the ceiling above the center island, approximately 14 inches long with 6 individual elongated stains.",
+          "significance": "Cast-off patterns indicate a weapon was swung overhead at least twice. Directionality reveals attacker position and swing arc."
+        },
+        {
+          "item": "Impact spatter on south wall",
+          "location": "Medium-velocity impact spatter concentrated on the south wall between the counter and the pantry door, extending from 18 inches to 48 inches above the floor. Roughly circular stains near center, increasingly elliptical toward edges.",
+          "significance": "Height and shape of spatter helps determine victim's position (standing, sitting, or on the ground) at the time of impact."
+        },
+        {
+          "item": "Overturned wooden kitchen chair",
+          "location": "Lying on its side, 1 foot south of the center island, seat facing east.",
+          "significance": "Suggests a struggle or that the victim fell against the chair."
+        },
+        {
+          "item": "Void pattern on tile floor",
+          "location": "An irregular rectangular void (approximately 12 inches x 8 inches) within the blood pooling, located 6 inches south of the victim's left hip.",
+          "significance": "Something was on the floor during blood flow and was later removed. Shape suggests a rectangular object like a book, tablet, or small box."
+        },
+        {
+          "item": "Sliding glass door",
+          "location": "North wall, center. Open approximately 3 inches. No visible damage to lock or frame.",
+          "significance": "Possible entry/exit point. The gap allowed cold air in, potentially affecting blood drying rate and time-of-death estimation."
+        },
+        {
+          "item": "Shattered ceramic mug",
+          "location": "Broken into 5 major pieces on the tile floor, approximately 2 feet south of the victim's right hand. Brown coffee residue on fragments and surrounding floor.",
+          "significance": "Suggests victim was holding the mug when attacked, or it was knocked from the counter during the struggle."
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "id": "E1",
+        "name": "Cast-off bloodstain pattern",
+        "type": "Bloodstain Pattern Analysis",
+        "description": "A linear cast-off pattern on the white ceiling above the center island, consisting of 6 elongated stains running from east to west. Each stain is approximately 8-12 mm long and 2-3 mm wide, with tails pointing westward. The pattern arcs slightly, consistent with an overhead swinging motion.",
+        "collectionMethod": "Photograph in place with a scale ruler (ABFO No. 2) using both overall and close-up shots. Document height from floor, compass orientation, and stain directionality. Do not swab until full pattern documentation is complete. Individual stains may be swabbed with sterile cotton-tipped applicators moistened with distilled water for DNA analysis.",
+        "analysis": "The westward-pointing tails indicate the weapon was moving from east to west during cast-off, placing the attacker east of the island swinging toward the west. The number of stains (6) in a single linear track suggests at least two blows were struck (cast-off occurs on the backswing after the first blow). The arc is consistent with a right-handed attacker swinging downward.",
+        "ambiguity": "The directionality suggests a right-handed attacker, but a left-handed person swinging backhand could produce a similar east-to-west pattern. Additionally, the pattern shows only one cast-off track, but the victim has two distinct head wounds, meaning one blow may not have produced cast-off (e.g., the weapon was clean on the first strike).",
+        "pointsToward": "Marcus Reeves (right-handed) or Derek Marsh (left-handed, but could swing backhand)"
+      },
+      {
+        "id": "E2",
+        "name": "Transfer bloodstain on pantry doorknob",
+        "type": "Bloodstain Pattern Analysis / Trace Evidence",
+        "description": "A partial transfer stain on the interior (kitchen-side) pantry doorknob. The pattern shows ridge detail consistent with a gloved hand gripping and turning the knob. The blood appears smeared, not dripped. A small secondary transfer stain is on the doorframe at approximately 40 inches height.",
+        "collectionMethod": "Photograph with oblique lighting to capture ridge detail. Swab the stain with sterile distilled water on cotton applicators for DNA typing. Do not attempt to lift as a fingerprint, as the substrate (brushed nickel) and the blood medium make traditional lifting unreliable. Collect the entire doorknob assembly by unscrewing if possible.",
+        "analysis": "The transfer stain indicates someone with blood on their hands opened the pantry door during or after the attack. The ridge pattern from gloves suggests premeditation (the attacker wore gloves). DNA analysis of the blood matches the victim. The height of the secondary transfer (40 inches) is consistent with an adult gripping the doorframe while opening the door.",
+        "ambiguity": "The glove impression tells us the attacker wore gloves but does not identify who. However, the fact that the pantry was opened raises the question: was the attacker looking for something? Or was the pantry used to retrieve the weapon? A heavy marble rolling pin was found in the pantry, consistent with the victim's wound shape, but it was clean. This could mean it was the weapon (wiped clean) or it was never used.",
+        "pointsToward": "Unknown (gloves prevent identification), but suggests premeditation and familiarity with the kitchen layout"
+      },
+      {
+        "id": "E3",
+        "name": "Void pattern in blood pool",
+        "type": "Bloodstain Pattern Analysis",
+        "description": "An irregular rectangular void approximately 12 inches by 8 inches within the passive blood pool near the victim's left hip. The void has sharp edges on three sides and a slightly feathered edge on the fourth (north) side, indicating the object was removed while blood was still partially liquid.",
+        "collectionMethod": "Photograph with a scale marker, documenting the sharp edges and the feathered edge. Measure the void dimensions precisely. Document the relationship between the void and the body position. The feathered edge indicates the direction of removal (object was pulled northward).",
+        "analysis": "Something flat and rectangular was on the floor when the victim bled. It was removed while the blood was still wet but beginning to coagulate (feathered edge indicates partial drying). Based on the 68 degree F temperature and the partially open door cooling the room, investigators estimate the object was removed between 30 minutes and 2 hours after blood flow began. The dimensions are consistent with a tablet computer, a hardcover book, or a small cutting board.",
+        "ambiguity": "The victim's tablet computer is missing from the home, and her daughter confirms she always kept it on the kitchen counter. If the attacker took the tablet, it could contain evidence (messages, browsing history). But the void could also be from a cutting board that was on the floor before the attack and moved by paramedics (they deny this). The timing of removal also overlaps with when Claudia arrived and knelt by the body, though she denies moving anything.",
+        "pointsToward": "Someone who returned to the scene after the attack (possibly Marcus Reeves, who has no alibi after 11 PM) or Claudia Marsh (who discovered the body and was alone with it for 17 minutes before paramedics arrived)"
+      },
+      {
+        "id": "E4",
+        "name": "Satellite spatter around blood pool",
+        "type": "Bloodstain Pattern Analysis",
+        "description": "Small satellite spatter stains (1-3 mm diameter) radiating outward from the main blood pool, concentrated on the north side. The satellite stains extend up to 16 inches from the pool edge. Several satellite stains overlay the victim's left forearm, which rests on the tile floor palm-up.",
+        "collectionMethod": "Photograph the full satellite pattern with an overhead shot. Mark individual satellite stains with numbered evidence markers. Document which stains overlay the victim's arm versus the floor. Swab select stains from both groups for DNA comparison.",
+        "analysis": "Satellite spatter forms when blood drips into an existing blood pool from a height, causing secondary droplets to splash outward. The concentration on the north side suggests blood was dripping from a source positioned north of the pool, such as a weapon being held or a person standing over the victim while bleeding themselves. Critically, several satellite stains are on top of the victim's forearm, meaning the arm was already in position (victim already down) when additional blood dripped into the pool.",
+        "ambiguity": "The satellite spatter could come from the weapon dripping as the attacker stood over the victim after the assault. But it could also come from the attacker's own injury. Derek Marsh had a fresh cut on his right palm (he claims from a broken glass at the bar earlier that evening, corroborated by a bartender). If Derek stood over the victim while his hand bled, it would produce satellite spatter. DNA testing of the satellite stains is pending and could resolve this, but results take weeks.",
+        "pointsToward": "Derek Marsh (injured hand) or Marcus Reeves (may have stood over victim holding the weapon)"
+      },
+      {
+        "id": "E5",
+        "name": "Bloody shoe impression on kitchen tile",
+        "type": "Bloodstain Pattern Analysis / Impression Evidence",
+        "description": "A partial bloody shoe impression on the kitchen tile, approximately 3 feet northeast of the victim's head, oriented toward the sliding glass door. The impression shows a herringbone-pattern sole, size approximately men's 10 or women's 12. Only the ball and toe area are visible; the heel did not make contact, suggesting the person was moving quickly (running or walking on toes).",
+        "collectionMethod": "Photograph with side lighting at multiple angles to capture the tread detail. Place an ABFO No. 2 scale beside the impression. Use electrostatic dust lifting (ESDL) to attempt to recover additional impressions not visible to the naked eye. Do not step on or near the impression. Cast comparison can be made with suspects' footwear.",
+        "analysis": "The herringbone pattern is common in athletic shoes (Nike, New Balance, and several other brands use this pattern). The partial impression (toe/ball only) suggests the person was moving away from the victim toward the sliding glass door quickly. The shoe size narrows the suspect pool. Marcus Reeves wears men's size 10 Nike running shoes. Derek Marsh wears men's size 11 work boots (different sole pattern). Janice Cole wears women's size 9 (too small).",
+        "ambiguity": "The herringbone pattern is extremely common and sold by dozens of manufacturers. Size 10 is one of the most common men's shoe sizes. Marcus Reeves owns shoes that could match, but so could thousands of other people. Furthermore, Claudia Marsh wears women's size 11 athletic shoes (close to men's 10), and she was at the scene for 17 minutes before paramedics arrived. She claims she did not walk through blood, but the impression could theoretically be hers.",
+        "pointsToward": "Marcus Reeves (matching shoe size and common sole pattern) or Claudia Marsh (similar size, present at scene)"
+      }
+    ],
+    "characters": {
+      "victim": {
+        "name": "Helen Marsh",
+        "age": 58,
+        "background": "Retired high school art teacher who spent 30 years at Westfield High. Known in the community for her annual free summer art camps for underprivileged kids. Recently divorced from her husband of 32 years, Gerald Marsh. Lives alone in the house she received in the divorce settlement. Active in a local book club and volunteers at the animal shelter on weekends.",
+        "selflessAct": "For fifteen years, Helen quietly paid the art supply fees for any student who couldn't afford them, spending thousands of her own dollars without ever telling the school administration or seeking reimbursement.",
+        "selfishAct": "During the divorce, Helen deliberately concealed a joint savings account containing $40,000 from the settlement proceedings. When Gerald's lawyer discovered it, the judge penalized Gerald instead due to a procedural technicality Helen's attorney exploited. Helen never corrected the record.",
+        "relationshipsToSuspects": "Mother to Claudia Marsh and Derek Marsh. Former romantic partner of Marcus Reeves (began dating 6 months after divorce). Former colleague of Janice Cole at Westfield High."
+      },
+      "suspects": [
+        {
+          "name": "Marcus Reeves",
+          "age": 52,
+          "relationshipToVictim": "Boyfriend of 8 months; met at a community fundraiser",
+          "background": "Owns a small landscaping business with 4 employees. Previously divorced with no children. Known as reliable and hardworking but has struggled with a gambling habit that caused significant debt. Recently moved into a smaller apartment after selling his house to cover debts. Right-handed.",
+          "selflessAct": "When one of his employees, a single father, was diagnosed with cancer, Marcus continued paying his full salary for six months while the man was in treatment and personally drove him to chemotherapy appointments.",
+          "selfishAct": "Marcus borrowed $15,000 from Helen two months ago, claiming it was to repair a client's property his crew had damaged. In reality, he used it to pay a gambling debt. He has not repaid any of it and has avoided the topic whenever Helen raised it.",
+          "motive": "Helen recently discovered the loan was used for gambling and demanded repayment within 30 days, threatening to end the relationship and pursue legal action. Marcus does not have the money. If Helen followed through, it could destroy his business reputation in the small community.",
+          "alibi": "Claims he was at home watching a football game alone. His phone GPS data places him at his apartment until 9:15 PM, then shows no data until 11:30 PM (he says his phone died). His apartment is a 12-minute drive from Helen's house.",
+          "alibiWeakness": "No corroborating witness for the entire evening. The 2-hour-15-minute phone gap (9:15 PM to 11:30 PM) perfectly brackets the estimated time of the attack (9:45 PM). He also has no explanation for why he didn't charge his phone sooner, given that he was supposedly home."
+        },
+        {
+          "name": "Derek Marsh",
+          "age": 31,
+          "relationshipToVictim": "Son; the elder of Helen's two children",
+          "background": "Works as a freight warehouse supervisor. Divorced, shares custody of his 6-year-old son. Has a strained relationship with Helen since the divorce, feeling she manipulated the settlement to hurt his father. Left-handed. Physically imposing at 6'2\", 210 lbs. Wears men's size 11 steel-toe work boots.",
+          "selflessAct": "When his coworker was being harassed by a supervisor, Derek was the only person who formally reported it to HR, knowing it would make his own work life harder. The supervisor was eventually fired.",
+          "selfishAct": "Derek intercepted a letter from his father Gerald's attorney to Helen about the hidden savings account. He read it, understood its implications, and destroyed it, delaying the discovery by three months. He did this not to help either parent but because he was angry at both of them and wanted to watch the conflict escalate.",
+          "motive": "Helen recently changed her will to leave the house (valued at $380,000) to a local arts nonprofit instead of splitting it between Derek and Claudia. Derek only learned about this last week from Claudia. He is in significant debt from his divorce and was counting on his eventual inheritance.",
+          "alibi": "Claims he was at Mulligan's Bar from 8 PM to 11:30 PM. The bartender confirms Derek was there until about 10:15 PM and that he cut his right hand on a broken pint glass around 9:30 PM. No one can confirm his whereabouts between 10:15 PM and when he arrived home at approximately 11:45 PM (his ex-wife confirms he picked up their son at 7 AM the next morning, but she did not see him the night before).",
+          "alibiWeakness": "The 90-minute gap between 10:15 PM and 11:45 PM is unaccounted for. Mulligan's Bar is 8 minutes from Helen's house. The cut on his hand occurred before the time of the attack and could explain satellite spatter if he was at the scene. However, his work boots (size 11, non-herringbone sole) do not match the bloody shoe impression."
+        },
+        {
+          "name": "Claudia Marsh",
+          "age": 27,
+          "relationshipToVictim": "Daughter; the younger of Helen's two children",
+          "background": "Graduate student in social work. Close relationship with Helen; they spoke daily. Has keys to the house and visits frequently. Financially stable through scholarships and a part-time counseling internship. Wears women's size 11 athletic shoes. Right-handed.",
+          "selflessAct": "Claudia has volunteered at a domestic violence shelter for three years, often staying overnight when staffing was short, and once personally drove a woman and her children 200 miles to a safe house at 3 AM on a work night.",
+          "selfishAct": "When Helen told Claudia about changing the will to benefit the arts nonprofit, Claudia pretended to be supportive to Helen's face but immediately told Derek, knowing it would enrage him, then used his anger as leverage to pressure Helen to reconsider. She wanted the inheritance too but let Derek be the visible antagonist.",
+          "motive": "Despite her outward support, Claudia was privately furious about the will change. Her student loans total $87,000, and she had been mentally budgeting her inheritance share ($190,000) as her exit plan. She also recently discovered that Marcus had borrowed money from Helen and was concerned her mother was being financially exploited, adding a protective-anger dimension.",
+          "alibi": "Claims she was at her apartment studying for a licensure exam with her roommate, Priya, until 11 PM, then went to bed. Priya confirms Claudia was home when she went to bed at 10:30 PM, but Priya is a heavy sleeper and would not have heard Claudia leave. Claudia's apartment is 20 minutes from Helen's house.",
+          "alibiWeakness": "Priya can only confirm Claudia's presence until 10:30 PM, not through the night. Claudia has keys to the house and intimate knowledge of the layout. Her shoe size (women's 11) is close to the bloody shoe impression (men's 10/women's 12), though not an exact match. She was alone with the body for 17 minutes before paramedics arrived, during which the void-causing object could have been removed."
+        },
+        {
+          "name": "Janice Cole",
+          "age": 55,
+          "relationshipToVictim": "Former colleague at Westfield High; taught chemistry for 22 years alongside Helen",
+          "background": "Still teaches at Westfield High. Was Helen's closest friend until a falling-out 4 months ago. Known for her meticulous, organized nature. Recently denied a department chair position she had campaigned for. Wears women's size 9 shoes. Right-handed.",
+          "selflessAct": "Janice anonymously funded a college scholarship for a former student who had been homeless during high school. She has continued the $5,000 annual scholarship for seven years without revealing her identity.",
+          "selfishAct": "Janice plagiarized a significant portion of a grant application that Helen had drafted for a joint STEM-art program. When the grant was awarded, Janice took sole credit and used the funds exclusively for her chemistry department, cutting Helen out entirely. This was the cause of their falling-out.",
+          "motive": "Helen had recently gathered documentation proving the grant plagiarism and informed Janice she intended to present it to the school board next month. This would likely result in Janice's termination and the end of her teaching career. Janice had already been warned about ethical violations once before.",
+          "alibi": "Claims she was at a school board budget meeting from 6 PM to 8:30 PM (confirmed by multiple witnesses), then drove directly home, arriving at approximately 9 PM. Her husband confirms she was home by 9 PM, but he went to bed at 9:30 PM. Janice says she graded papers until midnight.",
+          "alibiWeakness": "Her husband was asleep by 9:30 PM and cannot confirm her presence after that time. Her house is 18 minutes from Helen's. However, her shoe size (women's 9) does not match the impression, and she would need to have obtained gloves and a weapon in the 75-minute window between 9:30 PM and the estimated attack time. No physical evidence directly connects her to the scene."
+        }
+      ]
+    },
+    "debateTriggers": [
+      {
+        "id": "DT1",
+        "title": "The Handedness Paradox",
+        "evidenceForSuspectA": "The cast-off pattern (E1) moves east-to-west, consistent with a right-handed attacker swinging downward. Marcus Reeves is right-handed, had motive, and has an alibi gap during the attack window.",
+        "evidenceForSuspectB": "Derek Marsh is left-handed, but a left-handed person swinging backhand (which is natural when striking from the right side of a target) would also produce an east-to-west cast-off pattern. Derek also has an alibi gap starting at 10:15 PM and a pre-existing hand wound that could explain the satellite spatter (E4).",
+        "assumptionTrap": "Students must examine their assumption that cast-off directionality definitively indicates handedness. In reality, the position of the attacker relative to the victim, the type of swing (forehand vs. backhand), and even whether the attacker reached across their body all affect the cast-off direction. Handedness is suggestive, not conclusive.",
+        "forensicPrinciple": "Bloodstain pattern analysis can indicate the direction of a weapon's motion but cannot reliably determine an attacker's dominant hand without additional context (attacker position, weapon type, swing mechanics). Analysts must avoid confirmation bias when interpreting directional evidence."
+      },
+      {
+        "id": "DT2",
+        "title": "The Missing Object Mystery",
+        "evidenceForSuspectA": "The void pattern (E3) shows something rectangular was removed from the blood pool 30 minutes to 2 hours after the attack. Marcus Reeves has no alibi after 11:30 PM and could have returned to retrieve an incriminating object. Helen's tablet (which might contain messages about the loan dispute) is missing.",
+        "evidenceForSuspectB": "Claudia Marsh was alone with the body for 17 minutes (6:20 AM to 6:37 AM when paramedics arrived inside). She had the opportunity, and she could have removed the tablet to protect her mother's privacy, to hide evidence of the will change, or to conceal her own communications with Helen. The feathered edge on the void suggests removal toward the north (toward the door Claudia entered from).",
+        "assumptionTrap": "Students must confront the assumption that only the killer would remove evidence. In reality, a family member discovering the body might move objects for entirely non-criminal reasons (shock, privacy, instinct). The void proves an object was removed, but the timing window (30 min to 2 hours after bleeding, OR the next morning when blood was partially dry) is broad enough to include multiple suspects.",
+        "forensicPrinciple": "Void patterns prove the presence and removal of an object but cannot identify who removed it or their motive. The feathered edge indicates the direction of removal and the approximate stage of blood coagulation, but coagulation rate depends on temperature, humidity, and blood volume, making timing estimates ranges rather than precise moments."
+      },
+      {
+        "id": "DT3",
+        "title": "The Shoe Print Suspect Pool",
+        "evidenceForSuspectA": "The bloody shoe impression (E5) shows a herringbone-pattern sole, approximately size men's 10. Marcus Reeves wears Nike running shoes in men's size 10 with a herringbone pattern. The impression is oriented toward the sliding glass door, suggesting the person fled that way. Marcus's alibi has a gap and his apartment is 12 minutes away.",
+        "evidenceForSuspectB": "Claudia Marsh wears women's size 11 athletic shoes, which have a footbed nearly identical in length to men's size 10. She was present at the scene. Although she claims she did not walk through blood, the impression could have been made by her shoes during the 17 minutes she was alone with the body. The orientation toward the sliding glass door could indicate she checked whether the door was open (she reported it was) by walking through the blood pool area.",
+        "assumptionTrap": "Students must question whether shoe size and sole pattern are sufficient to identify a suspect. Herringbone patterns are manufactured by dozens of companies, and shoe sizes overlap across gender sizing systems. A 'match' in pattern and approximate size is class evidence (shared by many shoes), not individual evidence (unique to one shoe). Without the actual shoe for direct comparison of wear patterns and specific defects, the impression narrows the pool but does not identify the wearer.",
+        "forensicPrinciple": "Impression evidence exists on a spectrum from class characteristics (shared by all shoes of that make/model/size) to individual characteristics (unique wear patterns, cuts, embedded debris). A herringbone pattern and approximate size are class evidence only. Students should understand the difference between 'consistent with' (could be the source) and 'identified as' (is definitively the source)."
+      }
+    ],
+    "teacherKey": {
+      "trueSequence": "9:00 PM: Helen is in the kitchen making tea and reviewing messages on her tablet. She has recently texted Marcus an ultimatum about repaying the $15,000 by month's end. 9:20 PM: Marcus drives to Helen's house to plead his case in person, parking one street over. He wears athletic gloves (he keeps them in his truck for yard work). 9:30 PM: Marcus enters through the unlocked sliding glass door. Helen is standing at the south counter. An argument escalates. 9:42 PM: Marcus grabs a heavy stoneware mortar from the counter (not the rolling pin from the pantry). Helen turns to walk away. He strikes her from behind on the right side of her head. She staggers, drops her coffee mug, and collapses near the center island. 9:43 PM: Marcus strikes a second time while she is on the ground. The first swing (clean weapon) produces no cast-off. The second swing (now blood-coated) produces the east-to-west cast-off pattern on the ceiling. 9:45 PM: Marcus opens the pantry looking for a bag to conceal the weapon, leaving the transfer stain on the doorknob with his gloved, bloody hand. He finds a plastic grocery bag, wraps the mortar in it, and takes it with him. 9:50 PM: Marcus notices Helen's tablet on the floor near her body (it fell from the counter during the struggle). He picks it up, creating the void pattern. He takes it to destroy the text messages. 9:52 PM: Marcus exits through the sliding glass door, stepping in the blood pool's edge with his right foot (creating the partial shoe impression), and leaves the door slightly open in his haste. He drives home, arriving around 10:05 PM. He disposes of the mortar in a commercial dumpster behind a strip mall en route. He plugs in his phone at 11:30 PM after cleaning up at home. 6:20 AM next morning: Claudia arrives to an unlocked front door and finds Helen on the kitchen floor.",
+      "evidenceExplanations": [
+        {
+          "evidenceId": "E1",
+          "explanation": "The cast-off was produced by Marcus's second swing with the stoneware mortar. The east-to-west direction is consistent with his right-handed forehand swing while standing east of the island. The first strike produced no cast-off because the weapon was clean. This is standard cast-off mechanics: the weapon must be contaminated with blood before cast-off can occur on the backswing."
+        },
+        {
+          "evidenceId": "E2",
+          "explanation": "Marcus wore his athletic work gloves during the attack. After striking Helen, he opened the pantry with his bloody gloved hand, looking for a bag to conceal the weapon. The glove ridge pattern on the doorknob is from his glove, not a bare hand. The blood on the glove is Helen's (victim's DNA). The rolling pin in the pantry is a red herring; the actual weapon was a stoneware mortar from the counter."
+        },
+        {
+          "evidenceId": "E3",
+          "explanation": "Helen's tablet was knocked from the counter during the struggle and landed on the floor near her left hip. Blood pooled around it. Marcus noticed it approximately 8 minutes after the attack and removed it, pulling it northward toward himself (he was standing north of the pool at that point). The blood had begun to coagulate slightly in the October kitchen air (cooled further by the open sliding door), creating the feathered edge on the north side. Marcus took the tablet to destroy evidence of his text conversations with Helen about the $15,000 debt."
+        },
+        {
+          "evidenceId": "E4",
+          "explanation": "The satellite spatter was produced when blood dripped from the stoneware mortar as Marcus stood over Helen after the second blow. He paused north of the body, and blood from the mortar dripped into the existing pool, creating satellite spatter radiating outward. The stains on Helen's forearm confirm she was already down and her arm was in position before the dripping occurred. Derek Marsh's hand cut at the bar is genuinely unrelated but creates a plausible alternative explanation that students must evaluate."
+        },
+        {
+          "evidenceId": "E5",
+          "explanation": "Marcus stepped in the edge of the blood pool with his right foot while moving toward the sliding glass door to exit. The partial impression (toe and ball only) is because he was moving quickly and trying to avoid the blood. His Nike running shoes, men's size 10, with herringbone-pattern soles, made the impression. The orientation toward the sliding door confirms exit direction. Claudia's shoes are a similar size but were not at the scene during the attack; her potential as an alternative source is a red herring based on class-evidence similarity."
+        }
+      ],
+      "alibiResolution": "Marcus Reeves: His alibi fails. The 9:15 PM to 11:30 PM phone gap corresponds exactly to his travel time, the attack, cleanup, and disposal of evidence. His claim that his phone died is a cover for deliberately turning it off to avoid GPS tracking. Derek Marsh: His alibi is weak but holds. He was at the bar until 10:15 PM (after the attack), and his hand injury is legitimately from the broken glass. His 90-minute gap after leaving the bar is explained by him driving around processing his anger about the will (he admits this when pressed). His size 11 work boots do not match the shoe impression, and his boot sole pattern (lugged, not herringbone) is inconsistent with the print. Claudia Marsh: Her alibi holds. While she had opportunity the next morning to remove the tablet, she did not. The void was created the night before (coagulation timing confirms the object was removed while blood was still partially liquid, consistent with 9:50 PM, not 6:20 AM when the blood would have been fully dried after 8+ hours). Her shoe size is coincidentally similar but her shoes were at her apartment. Janice Cole: Her alibi is the weakest in terms of witness corroboration after 9:30 PM, but no physical evidence connects her to the scene. Her shoe size does not match, no fiber or DNA evidence links her, and the glove transfer on the pantry doorknob suggests someone familiar with the kitchen layout looking for specific items, which is more consistent with Marcus (who had visited many times) than Janice (who had not been to the house since the falling-out 4 months ago).",
+      "forensicLesson": "Blood spatter analysis is a powerful reconstruction tool, but it describes events, not identities. Cast-off patterns reveal weapon motion but not the wielder's identity or handedness with certainty. Void patterns prove an object was present and removed but not who removed it. Satellite spatter indicates secondary blood sources but requires DNA confirmation to distinguish between the victim's blood dripping from a weapon and a suspect's blood from an unrelated wound. Shoe impressions based on class characteristics (sole pattern and size) are suggestive but never conclusive without individual characteristic comparison. Students should understand that forensic evidence narrows possibilities and reconstructs sequences, but rarely points to a single suspect without corroborating evidence from other disciplines (DNA, digital forensics, witness testimony). The strength of forensic science is in the convergence of multiple evidence types, not in any single piece."
+    },
+    "portalIntegration": {
+      "evidenceLockerItems": [
+        "Cast-off pattern ceiling photograph with measurement overlay",
+        "Transfer stain on pantry doorknob (close-up with ridge detail)",
+        "Void pattern in blood pool (overhead photograph with scale)",
+        "Satellite spatter distribution map",
+        "Bloody shoe impression photograph with ABFO scale",
+        "Shattered ceramic mug fragments (location photo)",
+        "Sliding glass door position documentation",
+        "Suspect interview transcripts (4 documents)",
+        "Helen's phone records showing last text to Marcus",
+        "Crime scene sketch with compass orientation"
+      ],
+      "discoveryMilestones": [
+        "Correctly identified the cast-off direction and minimum number of blows",
+        "Recognized the void pattern and hypothesized what object was removed",
+        "Distinguished between class evidence and individual evidence in the shoe impression",
+        "Identified the contradiction between the cast-off direction and Derek's left-handedness",
+        "Connected the satellite spatter to either the weapon or Derek's hand wound with reasoning",
+        "Synthesized at least 3 pieces of evidence into a coherent suspect theory with stated assumptions",
+        "Identified at least one assumption trap and explained why the evidence is ambiguous"
+      ],
+      "narrativeHooks": [
+        "The missing tablet contains encrypted files that could unlock a side quest involving digital forensics",
+        "The stoneware mortar, if recovered from the dumpster, triggers a trace evidence analysis activity (hair, fiber, ceramic fragments)",
+        "Janice Cole's grant plagiarism scandal can spin off into a document forensics investigation",
+        "Derek's confession about driving around angry leads to a cell tower triangulation mini-lesson",
+        "The broken clock on the wall (battery dead, coincidental) can be used to teach students about red herrings and confirmation bias in forensic timelines"
+      ]
+    }
+  }
+}

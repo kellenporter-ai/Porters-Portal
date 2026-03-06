@@ -82,6 +82,19 @@ The goal is keeping students engaged with physics content. Every economy decisio
 - **Difficulty should challenge, not punish** — boss fights motivate learning, not frustrate
 - **Progression should be visible** — level ups, gear upgrades, and skill unlocks should feel meaningful
 
+### The ISLE Reward Hierarchy
+
+Reward value should scale with pedagogical depth, not just task completion:
+
+| Tier | Activity | Reward Level |
+|------|----------|-------------|
+| Lowest | Answering isolated MC questions (rote recall) | Base XP, common loot |
+| Medium | Completing observational experiments (pattern recognition) | 1.5x XP, uncommon loot eligible |
+| High | Completing testing experiments (hypothesis validation) | 2x XP, rare loot eligible |
+| Highest | Revising a failed hypothesis and succeeding on retry | 2.5x XP multiplier + bonus "Knowledge Gate" loot drop |
+
+When a student improves a rubric score from Emerging/Approaching to Developing/Refining, trigger a bonus loot drop. This directly incentivizes the ISLE revision cycle over "one-and-done" attempts. The economy should never punish students for needing multiple attempts — perseverance is the behavior we're rewarding.
+
 ### The XP-Content Coupling Rule
 XP must come from engaging with physics content (lessons, assessments, questions). Never create pure XP sources that bypass learning. Gamification features (dungeons, bosses) are wrappers around question-answering — the questions ARE the content.
 

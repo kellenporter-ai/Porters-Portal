@@ -1,0 +1,47 @@
+{
+  "eval_id": 1,
+  "eval_name": "arson-3d-simulation",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Output is valid JSON matching the skill's schema (all 5 components present)",
+      "passed": false,
+      "evidence": "Uses different structure: meta, scene (with spatialLayout), evidence, suspects, debateTriggers, teacherAnswerKey. Detailed but does not match the skill's expected schema."
+    },
+    {
+      "text": "Contains exactly 4-6 pieces of forensic evidence",
+      "passed": true,
+      "evidence": "6 evidence items (EV-01 to EV-06): pour patterns, V-pattern, disabled smoke detector, gas can, security footage, ransacked office."
+    },
+    {
+      "text": "At least 2 pieces of evidence point to different suspects (Contradiction Rule)",
+      "passed": true,
+      "evidence": "EV-05 (security footage build) eliminates Derek but fits Marcus/Ryan/Sandra. EV-04 (gas can) and EV-01 (pour patterns) point to arson. Evidence creates genuine disagreement about which suspect."
+    },
+    {
+      "text": "All characters have both a selfless act and a selfish act (Moral Gray Rule)",
+      "passed": false,
+      "evidence": "Characters have backstory, motive, alibi, and exculpatory fields but NO selflessAct or selfishAct. Characters are one-dimensional in moral complexity — described primarily through their relationship to the crime."
+    },
+    {
+      "text": "Arson/fire investigation terminology is scientifically accurate and 9th-grade appropriate",
+      "passed": true,
+      "evidence": "Uses accelerant, point of origin, V-pattern, pour pattern, char depth, ILR, medium petroleum distillate, hydrocarbon residue. Includes vocabulary list and common misconceptions."
+    },
+    {
+      "text": "Teacher key explains all contradictory evidence with valid forensic science",
+      "passed": true,
+      "evidence": "Detailed answer key with primary and secondary suspects, evidence summary categorized (physical, circumstantial, undetermined), and 5 acceptable student conclusions with strength ratings."
+    },
+    {
+      "text": "Scene has enhanced spatial detail suitable for 3D modeling (dimensions, object placement, entry points)",
+      "passed": true,
+      "evidence": "Excellent 3D detail: 60x40ft overall, 5 rooms with x/y coordinates and dimensions, 3 exterior features, individual room features listed. Coordinate system enables direct 3D scene construction."
+    },
+    {
+      "text": "portalIntegration section is present with evidenceLockerItems, discoveryMilestones, and narrativeHooks",
+      "passed": false,
+      "evidence": "No portalIntegration section exists. The scenario is standalone with no hooks for the gamification system."
+    }
+  ]
+}

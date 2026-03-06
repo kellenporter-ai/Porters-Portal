@@ -1,0 +1,259 @@
+{
+  "scenario": {
+    "title": "Case of the Hollow Ember",
+    "forensicTopic": "Arson Investigation",
+    "gradeLevel": "9th grade",
+    "estimatedDuration": "45-60 minutes",
+    "scene": {
+      "location": "Detached two-car garage workshop behind a residential home — 1847 Creekwood Lane",
+      "layout": "Rectangular structure, approximately 7.3 m (24 ft) wide by 6.1 m (20 ft) deep, with a peaked roof reaching 3.7 m (12 ft) at center. A single roll-up garage door faces south onto the driveway (currently warped open roughly 0.6 m at the bottom from heat deformation). A standard personnel door on the east wall leads to a short gravel path connecting to the main house. One window on the west wall (shattered outward — glass fragments on the exterior ground). One window on the north wall (intact but heavily soot-coated on the interior). Interior divided informally: the west half served as a woodworking shop (table saw, workbench, pegboard tool wall); the east half stored household overflow (shelving units, cardboard boxes, holiday decorations). A central support beam runs north-south, now charred but structurally standing. Concrete slab floor throughout. Overhead fluorescent light fixtures (melted housings). A 20-amp electrical sub-panel is mounted on the north interior wall near the northeast corner.",
+      "environmentalConditions": {
+        "timeOfDay": "Fire reported at 2:47 AM; investigator arrival at 6:15 AM after fire department clearance",
+        "weather": "Clear sky, no precipitation in 72+ hours; relative humidity 28%",
+        "temperature": "Exterior 4°C (39°F) at time of investigation; interior surfaces still warm to touch in west quadrant",
+        "lighting": "Early dawn light filtering through open garage door and shattered west window; investigator flashlights and portable halogen lamps set up at east and south entries",
+        "season": "Late October"
+      },
+      "discoveryContext": "A neighbor across the street, Marcus Webb (age 62), noticed an orange glow through the garage's west window at approximately 2:40 AM while letting his dog outside. He called 911 at 2:43 AM. Fire crews arrived at 2:51 AM and had the fire controlled by 3:25 AM. The homeowner, Daniel Reeves, was asleep in the main house and was awakened by firefighters. He stated the garage was locked when he went to bed at 11 PM. Firefighters forced the east personnel door (deadbolt was engaged from the inside). The roll-up garage door was closed but warped open at the base by heat. First responders did not enter beyond the east doorway once the fire was controlled, preserving most of the interior.",
+      "sensoryDetails": "Acrid smell of burned synthetic materials mixed with charred wood and a faint chemical sweetness near the west workbench area. Soot hangs in the air as fine particulate. The concrete floor in the west half is discolored in a distinct irregular pour pattern radiating from beneath the workbench — darkened streaks extending roughly 1.2 m south and 0.8 m east in branching tendrils. Popping and ticking sounds from cooling metal fixtures. Dripping from a partially melted plastic storage bin on the east shelving. The ceiling above the workbench is burned through to the roof decking, creating a chimney-like opening where cold dawn air now drafts downward.",
+      "spatialMarkers": [
+        {
+          "item": "V-pattern char on west wall",
+          "location": "West wall, centered behind the workbench, extending from floor level upward in a 60-degree spread reaching 2.4 m high. The apex of the V sits at approximately 0.3 m above floor level, directly beneath the workbench surface.",
+          "significance": "The V-pattern's low origin point indicates the fire started at or near floor level beneath the workbench — consistent with a liquid accelerant pooling and igniting on the concrete. The pattern narrows to a clear point of origin."
+        },
+        {
+          "item": "Pour pattern on concrete floor",
+          "location": "Beneath and extending south and east from the workbench. Irregular branching pattern roughly 1.8 m long by 1.2 m wide. Deepest discoloration directly under the center of the workbench.",
+          "significance": "Floor pour patterns with branching tendrils are characteristic of liquid accelerant (Class 3 ignitable liquid) flowing across a surface before ignition. However, melted polyurethane wood finish cans were stored under the workbench and can produce similar patterns when containers fail in heat."
+        },
+        {
+          "item": "Partially melted red plastic gasoline container",
+          "location": "Northeast corner of the garage, on the bottom shelf of a metal storage rack, approximately 4.5 m from the point of origin. The container is deformed but recognizable, cap missing.",
+          "significance": "A gasoline container in a garage is not inherently suspicious — many homeowners store fuel for lawnmowers. However, the missing cap and the distance from the fire's origin raise questions about whether fuel was removed and used as an accelerant."
+        },
+        {
+          "item": "Workbench with table-mounted vise and tool pegboard",
+          "location": "Against the west wall, 1.8 m long by 0.7 m deep. Pegboard above (tools mostly fallen, hanging hooks melted). Beneath the workbench: two collapsed cardboard boxes (contents burned), three cans of polyurethane wood finish (two burst open from heat, one intact but bulging), and a power strip connected to the sub-panel via an extension cord.",
+          "significance": "The area beneath the workbench is the fire's point of origin. The presence of both flammable finish products and an electrical power strip creates competing hypotheses: accelerant-based arson vs. electrical ignition of nearby flammable materials."
+        },
+        {
+          "item": "Extension cord and power strip",
+          "location": "A 4.6 m (15 ft) orange extension cord runs from the electrical sub-panel on the north wall along the base of the north wall, then turns south to the workbench. A 6-outlet power strip is connected at the workbench end. The cord shows thermal damage concentrated at the power strip connection point, with copper conductor exposed and beaded (melted) at that junction.",
+          "significance": "Copper beading at a connection point can indicate either the fire's cause (electrical arc fault igniting nearby combustibles) or a consequence (fire damaging the cord after ignition from another source). Distinguishing cause from effect requires metallurgical analysis of the bead structure."
+        },
+        {
+          "item": "Shattered west window (glass outward)",
+          "location": "West wall, centered, approximately 1.5 m above floor level. Glass fragments found on the exterior ground extending 1.2 m from the wall. Window frame charred.",
+          "significance": "Glass shattering outward indicates pressure buildup inside the structure, consistent with rapid combustion (possibly flash-over or accelerant ignition). However, thermal stress from a standard structure fire can also cause outward fracture if heat is concentrated on the interior surface."
+        },
+        {
+          "item": "Padlocked tool cabinet",
+          "location": "South wall, 0.9 m from the southeast corner. Metal cabinet, two doors, padlocked shut. Exterior shows soot coating and minor paint blistering but no structural damage. Lock intact.",
+          "significance": "Contents survived the fire. When opened by investigators: contains a Dewalt cordless drill, miscellaneous hand tools, and a small fireproof document box (locked, key not found at scene). The document box is relevant to motive investigation."
+        },
+        {
+          "item": "Cigarette butt (unburned)",
+          "location": "Exterior, east side of the garage, on the gravel path approximately 1 m from the personnel door. Partially sheltered under the roof overhang. Brand: Camel Blue.",
+          "significance": "Found outside the fire zone and unaffected by the blaze. Could indicate someone stood near the door before or during the fire. DNA and fingerprint recovery possible. Daniel Reeves is a non-smoker."
+        },
+        {
+          "item": "Shoe impression in soot",
+          "location": "Interior, on the concrete floor near the east personnel door, approximately 0.5 m inside the threshold. A single partial shoe impression in deposited soot, oriented toward the interior (toe pointing west). Tread pattern consistent with a work boot, approximately men's size 10.",
+          "significance": "The impression is in soot deposited by the fire, meaning someone stepped inside after soot had settled but potentially before investigators arrived. Could be a firefighter's boot, the homeowner checking damage, or someone else. Tread pattern needs comparison to all parties' footwear."
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "id": "E1",
+        "name": "Accelerant residue analysis",
+        "type": "Fire investigation / Chemistry",
+        "description": "Concrete samples collected from the pour pattern beneath the workbench using sterile gauze pads in sealed nylon evidence bags. Three samples taken: one from the deepest discoloration (center), one from a tendril 1 m south, and one control sample from undamaged concrete near the east wall.",
+        "collectionMethod": "Investigators used clean, unlined metal cans and nylon bags to collect concrete chip and gauze-swab samples. Each sample site was photographed with an evidence marker before collection. Samples sealed on-scene and sent to the state crime lab for Gas Chromatography-Mass Spectrometry (GC-MS) analysis.",
+        "analysis": "GC-MS results identify ignitable liquid residue (ILR) consistent with a medium petroleum distillate — matching the chemical profile of common charcoal lighter fluid, NOT gasoline. The gasoline container in the northeast corner appears unrelated to the accelerant. Students may initially assume the gas can is the source, but the chemistry doesn't match.",
+        "ambiguity": "Polyurethane wood finish contains petroleum-based solvents. When two cans burst in the fire, their contents spilled onto the concrete. The GC-MS profile of the accelerant overlaps significantly with the solvent profile of the polyurethane finish. The lab report notes 'ILR consistent with medium petroleum distillate; cannot definitively exclude contribution from polyurethane solvent degradation products.' This means the pour pattern could be from an arsonist's lighter fluid OR from the wood finish cans bursting and spilling in the fire's heat.",
+        "pointsToward": "If arson: any suspect with access. If accidental (polyurethane spill from heat): no suspect — accidental fire."
+      },
+      {
+        "id": "E2",
+        "name": "Electrical arc bead analysis",
+        "type": "Fire investigation / Electrical engineering",
+        "description": "The exposed copper beading at the power strip connection point of the extension cord, collected by cutting 15 cm of cord on either side of the bead and preserving in a sealed evidence container.",
+        "collectionMethod": "Wire cutters used to extract the cord segment. Photographed in situ with macro lens before removal. Sent to the state fire marshal's electrical forensics unit for cross-sectional metallurgical examination under scanning electron microscope (SEM).",
+        "analysis": "SEM analysis reveals the copper bead has a porous internal structure with distinct dendrite crystal patterns — characteristic of melting caused by an electrical arc (a 'cause bead') rather than melting from external fire exposure (a 'victim bead,' which would show smooth, round internal structure). This suggests the electrical connection arced before or independently of the main fire. A cause bead at the point of origin could mean the fire was electrical in nature — not arson.",
+        "ambiguity": "The power strip was overloaded: a table saw (15 amp draw), a shop light, and a battery charger were all plugged in. If Daniel left the table saw's switch in the 'on' position and power cycled (a brief outage followed by restoration), the sudden current draw could cause an arc at a degraded connection. However, the local power company reports no outages that night. Daniel could have simply left the overloaded strip energized. The question becomes: was this negligent electrical use, or was the arc bead planted/staged to make arson look accidental?",
+        "pointsToward": "Accidental cause (electrical) OR staged scene (sophisticated arsonist)"
+      },
+      {
+        "id": "E3",
+        "name": "Cigarette butt DNA and fingerprint",
+        "type": "DNA analysis / Fingerprinting",
+        "description": "Camel Blue cigarette butt recovered from the gravel path outside the east personnel door. Unburned, slightly damp from morning dew. Filter intact.",
+        "collectionMethod": "Collected with clean forceps into a paper evidence envelope (not plastic — moisture can degrade DNA). Transported to the crime lab at controlled temperature. The filter was swabbed for touch DNA and saliva, and the paper exterior was processed for latent fingerprints using cyanoacrylate fuming.",
+        "analysis": "DNA profile recovered from saliva on the filter. Run through CODIS — no match. Compared to reference samples: the DNA matches Karen Holt (Daniel's ex-wife). One partial latent fingerprint recovered from the paper — insufficient ridge detail for positive identification (only 4 minutiae points; court standard is typically 8-12). Karen is a known smoker of Camel Blues.",
+        "ambiguity": "Karen admits she visited Daniel two days before the fire to discuss their ongoing property dispute and smoked outside the garage during that visit. The cigarette could be from that visit, not the night of the fire. However, it rained lightly the day before the fire (the region had a dry spell of 72 hours before the fire, but light drizzle occurred 48 hours prior). If the cigarette predates the drizzle, it should show water damage — and it does show slight dampness, but that could be from morning dew on the night of the fire rather than the earlier rain.",
+        "pointsToward": "Karen Holt — but with significant timeline uncertainty"
+      },
+      {
+        "id": "E4",
+        "name": "Shoe impression in soot",
+        "type": "Impression evidence / Trace evidence",
+        "description": "Partial shoe impression found in soot layer on the concrete floor near the east personnel door, interior side. Oriented with the toe pointing west (into the garage). Men's size 10 work boot tread pattern.",
+        "collectionMethod": "Photographed with an L-shaped forensic scale ruler using oblique lighting to enhance the tread detail. An electrostatic dust lifter (EDL) was used to lift the impression onto a charged film for preservation. The impression was also digitally scanned at high resolution for tread pattern database comparison.",
+        "analysis": "Tread pattern is consistent with Wolverine DuraShocks work boots, a common brand. Daniel Reeves wears size 10 and owns Wolverine work boots (recovered from his mudroom). His boots were collected for comparison — tread pattern is a class match (same brand and size), but no individual characteristics (unique wear marks or embedded debris) could confirm or exclude his specific pair. Notably, firefighter boots are typically larger (size 12+) and have a different tread pattern. The neighbor Marcus Webb wears size 10 Timberland Pro boots — different tread pattern, excluded.",
+        "ambiguity": "Daniel says he opened the east door after firefighters left (around 4 AM) to look inside, then closed it and went back to the house. If true, the impression is his from that check. But Daniel also told the first responding officer he 'didn't go inside.' The statements conflict. Did Daniel enter and then lie about it, or is he misremembering a chaotic night? If the boot impression is NOT Daniel's, someone else with size 10 Wolverine boots entered the garage through a deadbolted door after the fire — which would require a key.",
+        "pointsToward": "Daniel Reeves — but his contradictory statements could reflect confusion or deception"
+      },
+      {
+        "id": "E5",
+        "name": "Fireproof document box contents",
+        "type": "Document examination / Motive evidence",
+        "description": "A small SentrySafe fireproof document box recovered from the padlocked metal cabinet on the south wall. The box was locked; no key was found at the scene. Opened under warrant at the crime lab.",
+        "collectionMethod": "The padlocked cabinet was photographed and the lock was cut by investigators. The document box was inventoried, sealed in an evidence bag, and transported to the crime lab. Opened under controlled conditions with a locksmith tool.",
+        "analysis": "Contents: (1) A term life insurance policy on the garage and its contents, valued at $85,000 — recently increased from $30,000 just six weeks ago. Policyholder: Daniel Reeves. (2) An unsigned divorce mediation agreement showing Daniel would owe Karen $40,000 in the property settlement. (3) Receipts for woodworking equipment totaling $23,000 over the past year. (4) A handwritten note reading 'Talk to Mitch about coverage — make sure contents are listed separately.' Mitch Calloway is Daniel's insurance agent.",
+        "ambiguity": "Increasing insurance coverage before a fire is a classic arson indicator, but Daniel recently purchased expensive woodworking equipment ($23,000 in receipts). Increasing coverage to match new equipment value is financially responsible, not inherently criminal. The note to his insurance agent is exactly what an innocent person upgrading coverage would write — or exactly what someone planning insurance fraud would need to do as a prerequisite. The divorce settlement pressure provides financial motive, but Daniel has a stable job as a machinist and could feasibly pay the $40,000 over time.",
+        "pointsToward": "Daniel Reeves (insurance fraud / divorce financial pressure) — but with an innocent explanation for every document"
+      },
+      {
+        "id": "E6",
+        "name": "Security camera footage from neighbor",
+        "type": "Digital forensics / Video analysis",
+        "description": "Marcus Webb's Ring doorbell camera faces southeast and captures a partial view of the Reeves driveway and the south-facing garage door. Footage reviewed from 10 PM to 3 AM.",
+        "collectionMethod": "Video downloaded from Ring cloud storage with Marcus Webb's consent. Original metadata preserved. Enhanced at the crime lab using frame-by-frame brightness adjustment for the low-light nighttime footage.",
+        "analysis": "At 11:14 PM, a figure is seen walking east along the driveway toward the garage's east side (personnel door side). The figure is wearing dark clothing and appears to be carrying a small bag or container. The figure passes out of frame toward the east side of the garage. No return trip is captured — meaning the person either left via a route outside the camera's field of view (north, through the backyard) or entered the garage and exited the same way after the camera's motion-detection window timed out (30-second clips with 3-minute cooldown). At 2:38 AM, the camera activates again showing the orange glow of fire through the garage windows.",
+        "ambiguity": "The figure's build and gait are indeterminate in the low-light footage — could be male or female, and height is difficult to estimate without a reference point. Daniel says he went to bed at 11 PM and this isn't him. Karen Holt is 5'8\" with an athletic build; Daniel's brother Ryan Reeves is 5'10\" with a similar build to Daniel. The bag or container could be a toolbox (innocent errand), a container of accelerant, or even a grocery bag. The 30-second clip limitation means the camera may have missed a return trip during its cooldown period.",
+        "pointsToward": "Unknown individual — potentially Karen Holt or Ryan Reeves based on timing and build"
+      }
+    ],
+    "characters": {
+      "victim": {
+        "name": "Daniel Reeves",
+        "age": 41,
+        "background": "Machinist at a local manufacturing plant, avid woodworker who spent evenings and weekends building custom furniture in his garage workshop. Going through a contentious divorce from Karen Holt after 14 years of marriage. No children. Quiet, methodical, keeps to himself. Known at work as reliable but emotionally closed off. The garage workshop was his refuge — he told coworkers it was 'the only place that makes sense anymore.'",
+        "selflessAct": "Last spring, Daniel spent three weekends building a free Little Library for the neighborhood park, donating materials and his time. He also quietly paid for a coworker's car repair when the coworker couldn't afford it, telling no one.",
+        "selfishAct": "During the divorce proceedings, Daniel hid $8,000 in cash from the asset disclosure by storing it at his brother Ryan's house. When Karen's attorney discovered the omission through bank records, Daniel lied under oath and claimed the withdrawal was for gambling losses. The court penalized him, increasing Karen's settlement share.",
+        "relationshipsToSuspects": "Ex-wife: Karen Holt (adversarial, property dispute). Brother: Ryan Reeves (close but strained — Ryan resents being pulled into the divorce). Insurance agent: Mitch Calloway (professional relationship, recent policy discussions)."
+      },
+      "suspects": [
+        {
+          "name": "Karen Holt",
+          "age": 39,
+          "relationshipToVictim": "Ex-wife, currently in mediation over property division",
+          "background": "Veterinary technician at a regional animal hospital. Athletic, organized, direct communicator. Filed for divorce after discovering Daniel had been emotionally distant for years and had hidden financial assets. She kept her maiden name throughout the marriage. Lives in an apartment 12 minutes from the Creekwood house. Smokes Camel Blue cigarettes.",
+          "selflessAct": "Volunteers weekly at the county animal shelter and personally fostered 14 dogs over the past three years, paying veterinary costs out of pocket for animals that would otherwise have been euthanized.",
+          "selfishAct": "After filing for divorce, Karen accessed Daniel's email without authorization and forwarded private messages between Daniel and his therapist to her attorney to use in the mediation. When confronted, she justified it as 'leveling the playing field' after Daniel hid the $8,000.",
+          "motive": "If the garage and its contents are destroyed, the insurance payout becomes a marital asset subject to division. Karen would receive a share of $85,000 instead of a share of depreciating used equipment worth maybe $15,000 at resale. The fire converts illiquid tools into liquid cash — a significant advantage in her settlement.",
+          "alibi": "Karen says she was home in her apartment all night. Her apartment building has no security cameras. She says she was video-calling her sister in Portland from 10:30 PM to 12:15 AM, then went to sleep. Her sister confirms the call duration, but there's no verification of Karen's whereabouts after 12:15 AM. Her apartment is a 12-minute drive from Daniel's house.",
+          "alibiWeakness": "The gap between 12:15 AM and 2:47 AM (fire report) is unaccounted for. The 11:14 PM figure on camera is earlier than her alibi gap, but if the call with her sister was conducted from her car or on the way to Daniel's, the timing could work. Her phone's location data was not subpoenaed at initial investigation."
+        },
+        {
+          "name": "Ryan Reeves",
+          "age": 37,
+          "relationshipToVictim": "Younger brother",
+          "background": "Electrician for a commercial contracting company. Knowledgeable about electrical systems, wiring, and fire hazards. Lives 20 minutes away. Has helped Daniel with wiring projects in the garage, including installing the sub-panel and running the extension cord to the workbench. Drinks socially, sometimes heavily. Currently under financial stress — his own small contracting side-business failed last year and he owes $12,000 on a business credit line.",
+          "selflessAct": "When their father was diagnosed with early-onset dementia two years ago, Ryan moved him into his own small house and became his primary caretaker, despite the financial and emotional strain. He drives their father to every medical appointment and has never asked Daniel to share the burden equally.",
+          "selfishAct": "Ryan agreed to hide Daniel's $8,000 cash during the divorce, then quietly borrowed $3,000 of it for his own debts without telling Daniel. When Daniel asked for the full amount back, Ryan claimed he'd only received $5,000. The brothers haven't fully reconciled over this.",
+          "motive": "Ryan still has Daniel's remaining $5,000 in cash. If Daniel faces a major financial crisis (like losing an uninsured workshop), Ryan can justify not returning the money — 'you need it now anyway' — and avoid the confrontation. Additionally, Ryan knows the garage wiring intimately and may have recognized the overloaded power strip as a fire risk. If the fire looks electrical, his installation work could be blamed, but if it looks like arson, he's in the clear as a concerned brother. There's also a darker possibility: Ryan may resent Daniel for being the 'successful' brother while Ryan struggles financially and shoulders the caretaking burden alone.",
+          "alibi": "Ryan says he was at O'Malley's Bar until 11:30 PM, then drove straight home. The bartender confirms Ryan was there until approximately 11:15-11:30 PM. Ryan's home is 20 minutes from the bar and 20 minutes from Daniel's house. If Ryan went to Daniel's instead of going home, he could have arrived around 11:35-11:45 PM — consistent with the 11:14 PM figure on camera if the camera's timestamp is off by 20-30 minutes (Ring cameras can drift).",
+          "alibiWeakness": "No one can confirm Ryan arrived home after leaving the bar. He lives alone (his father sleeps by 8 PM and wouldn't notice). The bartender's time estimate is approximate. As an electrician, Ryan has both the knowledge to stage an electrical fire and access to a key for the garage personnel door (Daniel gave him one for wiring projects)."
+        },
+        {
+          "name": "Mitch Calloway",
+          "age": 52,
+          "relationshipToVictim": "Insurance agent (State Farm), handled Daniel's home and auto policies for 8 years",
+          "background": "Independent insurance agent operating a small office in town. Affable, community-involved, coaches youth baseball. His agency has been struggling financially since a larger firm opened nearby, pulling away clients. Daniel's policy increase was one of the larger recent transactions for Mitch's book of business. Mitch is not a smoker. Wears dress shoes, not work boots.",
+          "selflessAct": "Mitch has coached the town's Little League team for 11 years without compensation and personally covers registration fees for families that can't afford them. Three years ago, he took out a personal loan to keep the league running when sponsorship fell through.",
+          "selfishAct": "Facing declining revenue, Mitch has been backdating policy amendments for two other clients to cover claims that technically occurred before coverage was in place. He hasn't been caught, but the pattern exists. If his agency were audited, he'd face license revocation and criminal fraud charges.",
+          "motive": "A large insurance payout on Daniel's claim would generate a substantial commission for Mitch. More importantly, if investigators discover Mitch has been backdating policies for other clients, a high-profile arson conviction against Daniel would redirect scrutiny away from the agent and toward the policyholder. Mitch may have encouraged Daniel to increase coverage knowing the divorce made Daniel look like a plausible arson suspect — creating a scenario where if the fire happened, Daniel takes the fall and Mitch collects the commission without suspicion.",
+          "alibi": "Mitch says he was home with his wife watching television. His wife confirms this. They live 25 minutes from Daniel's house.",
+          "alibiWeakness": "Mitch's wife is his only corroborating witness, and spousal alibis are inherently weak. Mitch's wife went to bed at 10:30 PM; Mitch says he stayed up until midnight watching a baseball replay. No independent verification exists for the 10:30 PM to midnight window. Mitch is not physically connected to the scene by any evidence, but his financial motive and opportunity to manipulate Daniel into increasing coverage are circumstantially strong."
+        }
+      ]
+    },
+    "debateTriggers": [
+      {
+        "id": "DT1",
+        "title": "Accelerant or Accident: The Pour Pattern Paradox",
+        "evidenceForSuspectA": "E1 (accelerant residue matching lighter fluid) and E6 (unidentified figure carrying a bag toward the garage at 11:14 PM) suggest someone brought an accelerant to the garage and intentionally set the fire. The pour pattern's branching tendrils are textbook indicators of poured liquid accelerant. This points toward Karen or Ryan as the arsonist.",
+        "evidenceForSuspectB": "E2 (electrical arc bead identified as a 'cause bead') and the presence of polyurethane finish cans beneath the workbench suggest the fire started from an electrical arc igniting spilled flammable finish in an overloaded power strip. The GC-MS lab report explicitly states it 'cannot definitively exclude contribution from polyurethane solvent degradation products.' This points toward accidental fire — or Daniel's negligence — with no arsonist at all.",
+        "assumptionTrap": "Students must recognize that they are assuming the pour pattern was created BEFORE the fire (poured accelerant) rather than DURING the fire (polyurethane cans bursting and spilling). The timing of the pour pattern's creation is not established by the pattern itself. Students who jump to arson are making an unsupported temporal assumption.",
+        "forensicPrinciple": "Correlation vs. causation in fire investigation. A pour pattern is consistent with accelerant use but is not proof of it. The National Fire Protection Association (NFPA 921) warns that pour patterns can be produced by melting and flowing of ordinary combustible liquids already present at a scene. Investigators must consider all possible fuel sources before concluding arson."
+      },
+      {
+        "id": "DT2",
+        "title": "The Boot Print and the Locked Door",
+        "evidenceForSuspectA": "E4 (shoe impression matching Daniel's boot type and size, found inside the door he claims he didn't enter) combined with E5 (insurance documents showing motive) suggest Daniel entered the garage after the fire — possibly to remove evidence or verify the damage to his insured equipment. His contradictory statements about entering the garage undermine his credibility. This points toward Daniel as the arsonist staging the scene.",
+        "evidenceForSuspectB": "E4 (the boot impression) could also belong to Ryan Reeves, who wears the same shoe size and owns work boots. Ryan has a key to the personnel door and could have entered after setting the fire. The deadbolt was locked from the inside — but someone exiting could lock it and leave through the roll-up garage door (pulling it down behind them) before the fire warped it. This points toward Ryan, who has electrical knowledge to stage the arc bead and a key to the locked door.",
+        "assumptionTrap": "Students must confront the locked-room problem: the deadbolt was engaged from inside. They tend to assume this means no one could have entered and left. But the roll-up garage door can be closed from outside by pulling a rope, and the deadbolt only locks the personnel door. Someone could enter through the personnel door with a key, start the fire, exit through the roll-up door, and pull it shut — the deadbolt on the personnel door remains locked because they never used it to exit.",
+        "forensicPrinciple": "Crime scene reconstruction requires testing physical mechanisms, not just interpreting evidence in isolation. The locked-door assumption is a cognitive bias — students must physically reason through how each entry and exit point works before concluding who could or couldn't have been inside."
+      },
+      {
+        "id": "DT3",
+        "title": "The Cigarette Butt Timeline",
+        "evidenceForSuspectA": "E3 (cigarette butt with Karen's DNA found outside the garage door) places Karen at the scene. Combined with E6 (figure on camera at 11:14 PM, within Karen's potential timeline), this suggests Karen was at the garage the night of the fire. Her motive (converting tools to cash in the settlement) is financially compelling. Points toward Karen as the arsonist.",
+        "evidenceForSuspectB": "Karen admits visiting two days earlier and smoking outside the garage. The cigarette's slight dampness could be from morning dew (night of the fire) or from the light drizzle 48 hours earlier. If the cigarette is from the earlier visit, it places Karen at the scene days before the fire — not during it. The figure on camera at 11:14 PM is indeterminate and could be anyone, including Ryan leaving the bar early. Points away from Karen.",
+        "assumptionTrap": "Students must grapple with the temporal uncertainty of biological evidence. DNA tells you WHO, not WHEN. The cigarette proves Karen was at the location at some point, but without additional analysis (nicotine degradation rate, moisture isotope analysis), the timestamp cannot be established. Students who treat DNA evidence as timestamped are overinterpreting the evidence.",
+        "forensicPrinciple": "Limitations of transfer evidence: DNA and fingerprints establish contact, not timing. Forensic evidence tells you what happened and sometimes who was involved, but establishing when requires independent corroboration (video timestamps, witness testimony, environmental degradation analysis). Students should learn to ask 'when was this deposited?' for every piece of trace evidence."
+      }
+    ],
+    "teacherKey": {
+      "trueSequence": "Ryan Reeves set the fire. Here is the true timeline: At approximately 11:20 PM, Ryan left O'Malley's Bar (the bartender's estimate of 11:15-11:30 is accurate). Instead of driving home, he drove to Daniel's house, arriving at approximately 11:40 PM. The figure on the Ring camera at 11:14 PM is NOT Ryan — the camera's timestamp is accurate. The 11:14 PM figure is Karen Holt, who drove to Daniel's house after her phone call with her sister ended early (the call actually ended at 10:55 PM, not 12:15 AM — Karen lied about the duration, and her sister, loyal to Karen, corroborated the lie). Karen walked to the garage, tried the personnel door (locked), looked through the west window, and left through the backyard (which is why no return trip appears on camera). She did NOT set the fire — she was checking whether Daniel was in the garage because she wanted to confront him about the hidden assets. She smoked a cigarette while debating whether to knock, decided against it, and left. The cigarette butt is from the night of the fire, not from two days prior. Ryan arrived 25 minutes later with a small bottle of charcoal lighter fluid in his jacket pocket. He used his key to enter through the personnel door, poured the lighter fluid beneath the workbench and across the floor, and used a long-reach lighter to ignite it. He then exited through the roll-up garage door, pulling it shut behind him with the exterior handle. The fire ignited the polyurethane cans, which burst and added fuel, creating the mixed GC-MS results. The extension cord's arc bead was caused by the fire's heat — it is a secondary effect, not the cause, but Ryan deliberately left the power strip overloaded to provide an alternative explanation. Ryan drove home, arriving at approximately 12:15 AM. The fire smoldered for over two hours before producing visible flames at 2:38 AM (the charcoal lighter fluid ignited the polyurethane, which burned slowly through the cardboard boxes and wooden workbench before flashing over). Ryan's motive was a combination of financial pressure (keeping the $3,000 he took from Daniel's cash) and deep resentment about shouldering their father's care alone while Daniel spent money on workshop equipment.",
+      "evidenceExplanations": [
+        {
+          "evidenceId": "E1",
+          "explanation": "The accelerant IS charcoal lighter fluid, brought by Ryan. The GC-MS ambiguity exists because the polyurethane cans burst in the fire and their solvents mixed with the lighter fluid residue on the concrete. Both substances are medium petroleum distillates, creating genuine analytical overlap. The lab's inability to exclude the polyurethane is scientifically accurate — this is a real limitation of GC-MS in fire debris analysis."
+        },
+        {
+          "evidenceId": "E2",
+          "explanation": "The arc bead is a 'victim bead' misidentified as a 'cause bead.' The SEM analysis showing porous dendrite structure is accurate, but the distinction between cause and victim beads is less definitive than the skill's analysis suggests — this is a known controversy in fire forensics. The overloaded power strip was a pre-existing hazard that Ryan exploited: he left it as-is knowing it would provide an alternative fire origin theory. The fire's heat caused the cord to arc after ignition, creating the bead. However, the SEM examiner's interpretation as a 'cause bead' is a reasonable professional disagreement — fire forensics experts genuinely disagree on bead analysis reliability."
+        },
+        {
+          "evidenceId": "E3",
+          "explanation": "The cigarette is Karen's from the night of the fire (her visit at 11:14 PM), not from two days prior. The slight dampness is morning dew, not rain. Karen lied about her alibi timeline to avoid being placed near the scene on the night of the fire. She didn't set the fire but knows her presence looks incriminating, so she fabricated the extended phone call with her sister."
+        },
+        {
+          "evidenceId": "E4",
+          "explanation": "The boot impression belongs to Daniel. He did enter the garage briefly at approximately 4 AM after firefighters departed, despite telling the first officer he hadn't gone inside. Daniel lied not because he set the fire but because he panicked — he entered to check whether the fireproof document box survived (he was worried about the insurance documents and the divorce mediation agreement being found). When he saw the box was in the locked cabinet and appeared safe, he left. He lied to officers because he realized entering the scene looked suspicious. The boot print is a red herring that makes Daniel look guilty but actually reflects a panicked innocent person making a bad decision."
+        },
+        {
+          "evidenceId": "E5",
+          "explanation": "The insurance increase was genuinely motivated by Daniel's new equipment purchases ($23,000 in tools). The note to Mitch is innocent. The divorce mediation agreement showing the $40,000 settlement creates circumstantial motive but Daniel had the income to handle the payment. The document box contents are genuine motive evidence — but for the wrong suspect. They create a compelling but incorrect case against Daniel."
+        },
+        {
+          "evidenceId": "E6",
+          "explanation": "The figure at 11:14 PM is Karen Holt, not Ryan Reeves. The 'bag or container' she carries is her purse. Ryan arrived later (approximately 11:40 PM) but parked on the street north of the house, outside the Ring camera's field of view, and approached the garage from the backyard side. He was not captured on camera. Karen's presence on camera is coincidental to the crime but devastating to her alibi — she was there, just not for the reason investigators assume."
+        }
+      ],
+      "alibiResolution": "Karen's alibi is a lie — she was at Daniel's house at 11:14 PM, but she left before 11:25 PM without setting the fire. Her sister corroborated a false call end-time out of loyalty. Ryan's alibi has no corroboration after 11:30 PM; he went directly to Daniel's house instead of home. His knowledge of the electrical system, possession of a garage key, and financial motive combine to make him the true arsonist. Daniel's alibi (asleep in the main house) is truthful for the time of the fire's ignition, but he lied about not entering the garage post-fire. Mitch Calloway is not involved in the fire; his backdating fraud is a separate crime that creates a misleading motive narrative.",
+      "forensicLesson": "Fire investigation requires distinguishing between evidence of what burned and evidence of why it burned. Students should learn three key principles: (1) Accelerant detection via GC-MS has real limitations — common household products can produce overlapping chemical signatures. (2) Electrical arc bead analysis (cause vs. victim beads) is a debated methodology in forensic science, not a settled one. (3) Circumstantial evidence (motive, opportunity, insurance) can construct a compelling but wrong narrative if physical evidence is ambiguous. The strongest forensic conclusion comes from integrating all evidence streams and acknowledging what remains uncertain."
+    },
+    "portalIntegration": {
+      "evidenceLockerItems": [
+        "GC-MS lab report showing accelerant analysis with polyurethane overlap notation",
+        "SEM cross-section photograph of copper arc bead",
+        "Cigarette butt evidence photo with DNA results summary",
+        "Electrostatic dust lift of boot impression with measurement scale",
+        "Fireproof document box contents (photographed inventory)",
+        "Ring camera video still frames (11:14 PM figure, 2:38 AM fire glow)",
+        "Fire scene diagram with pour pattern overlay",
+        "Insurance policy documents (highlighted changes)",
+        "Witness interview transcripts (Marcus Webb, Daniel Reeves initial statement, Karen Holt statement)"
+      ],
+      "discoveryMilestones": [
+        "Identify the V-pattern and locate the point of origin (+50 XP)",
+        "Recognize the pour pattern ambiguity — accelerant vs. polyurethane (+75 XP)",
+        "Discover the contradiction in Daniel's statements about entering the garage (+50 XP)",
+        "Correctly analyze the locked-door problem and determine exit route (+100 XP)",
+        "Challenge the arc bead interpretation — cause vs. victim bead (+75 XP)",
+        "Establish Karen's DNA timeline uncertainty (+50 XP)",
+        "Present a complete evidence-based theory identifying the arsonist (+150 XP)"
+      ],
+      "narrativeHooks": [
+        "A mysterious informant (quest NPC) tips off the investigator that one suspect has been lying about a phone call — but doesn't say which suspect or which call.",
+        "The Evidence Locker unlocks the Ring camera footage only after students have processed at least 3 physical evidence items — forcing them to build a theory before seeing the video.",
+        "A follow-up quest reveals Mitch Calloway's backdating fraud, challenging students to decide whether this new information changes their arson conclusion or is a separate crime."
+      ]
+    }
+  }
+}

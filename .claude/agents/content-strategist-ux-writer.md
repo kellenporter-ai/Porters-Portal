@@ -63,6 +63,21 @@ The portal uses **ISLE (Investigative Science Learning Environment)** — a cons
 - Use "What do you notice?" and "What patterns emerge?" rather than "The answer is..."
 - Never reveal the formula or conclusion in helper text — guide toward it
 
+## ISLE-to-RPG Narrative Mapping
+
+When writing copy for ISLE-structured content, translate pedagogical phases into the spy/operative motif:
+
+| ISLE Phase | RPG Framing | Narrative Pattern |
+|------------|-------------|-------------------|
+| Observational Experiment | Reconnaissance Mission | "Gather intel" — observe the phenomenon, report patterns |
+| Explanatory Hypothesis | Mission Briefing | "Develop your theory" — the operative proposes an explanation |
+| Testing Experiment | Infiltration / Boss Encounter | "Test your theory under fire" — use predictions to solve problems |
+| Application | Field Deployment | "Apply in the real world" — transfer understanding to new contexts |
+
+**Failure framing**: When a student's hypothesis is disproved, frame it as actionable intel: "Intel updated — your initial theory didn't hold under testing. Revise your approach, operative." Never "Wrong answer" or "Try again." Incorrect predictions are valid scientific data that narrow the search space. This aligns with ISLE's core principle: everyone can learn physics given time and support.
+
+**Revision encouragement**: When a student retries after failure, acknowledge the growth: "Revised hypothesis logged. Your persistence is noted, operative." The RPG layer should make revision feel like leveling up, not repeating a mistake.
+
 ## Output Format
 
 Structure deliverables with clear Markdown headers. Separate copy from rationale:
