@@ -23,10 +23,13 @@ export const CLASS_CONFIGS = {
   }
 };
 
+export type NavGroup = 'learning' | 'operations' | 'intel';
+
 export interface NavItem {
   name: string;
   icon: React.ReactNode;
   role: 'ADMIN' | 'STUDENT';
+  group?: NavGroup;
   children?: { name: string; icon: React.ReactNode }[];
 }
 
@@ -49,21 +52,24 @@ export const NAVIGATION: NavItem[] = [
     { name: 'Dungeon Ops', icon: <Compass className="w-4 h-4" /> },
     { name: 'Idle Missions', icon: <Rocket className="w-4 h-4" /> },
   ]},
-  // Student navigation
+  // Student navigation — ungrouped
   { name: 'Home', icon: <Home className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Resources', icon: <Layers className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Missions', icon: <Target className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Skills', icon: <GitBranch className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Flux Shop', icon: <Store className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Dungeons', icon: <Compass className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Arena', icon: <Swords className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Deploy', icon: <Rocket className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Intel Dossier', icon: <BarChart3 className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Progress', icon: <TrendingUp className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Calendar', icon: <Calendar className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT' },
-  { name: 'Tutoring', icon: <GraduationCap className="w-5 h-5" />, role: 'STUDENT' },
+  // Learning group
+  { name: 'Resources', icon: <Layers className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
+  { name: 'Calendar', icon: <Calendar className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
+  { name: 'Tutoring', icon: <GraduationCap className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
+  { name: 'Deploy', icon: <Rocket className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
+  // Operations group
+  { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Missions', icon: <Target className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Dungeons', icon: <Compass className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Arena', icon: <Swords className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Flux Shop', icon: <Store className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Skills', icon: <GitBranch className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  // Intel group
+  { name: 'Intel Dossier', icon: <BarChart3 className="w-5 h-5" />, role: 'STUDENT', group: 'intel' },
+  { name: 'Progress', icon: <TrendingUp className="w-5 h-5" />, role: 'STUDENT', group: 'intel' },
+  { name: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT', group: 'intel' },
 ];

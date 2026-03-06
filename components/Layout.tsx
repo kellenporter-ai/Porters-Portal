@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
-import { NAVIGATION, NavItem } from '../constants';
+import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { storage } from '../lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
 import SettingsModal from './SettingsModal';
@@ -71,12 +71,37 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     if (parent) setExpandedParent(parent.name);
   }, [activeTab]);
 
+  // Group labels for student nav sections
+  const NAV_GROUP_LABELS: Record<NavGroup, string> = {
+    learning: 'Learning',
+    operations: 'Operations',
+    intel: 'Intel',
+  };
+
+  // Persist collapsed groups in localStorage
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<NavGroup>>(() => {
+    try {
+      const stored = localStorage.getItem('nav-collapsed-groups');
+      return stored ? new Set(JSON.parse(stored) as NavGroup[]) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const toggleGroup = useCallback((group: NavGroup) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group); else next.add(group);
+      localStorage.setItem('nav-collapsed-groups', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
   const NavItems = () => {
     const { enabledFeatures } = useAppData();
 
     const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
       'Dungeons': 'dungeons',
       'Arena': 'pvpArena',
+      'Leaderboard': 'leaderboard',
     };
 
     const filteredItems = NAVIGATION.filter(item => {
@@ -88,77 +113,110 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
     const isChildActive = (item: NavItem) => item.children?.some(c => activeTab === `${item.name}:${c.name}`);
 
-    return (
-      <>
-        {filteredItems.map((item) => {
-          const isActive = activeTab === item.name || isChildActive(item);
-          return (
-          <div key={item.name}>
-            <button
-              data-nav-item
-              onClick={() => {
-                if (item.children) {
-                  // Toggle expand; select first child if collapsing to expanded
-                  if (expandedParent === item.name) {
-                    setExpandedParent(null);
-                  } else {
-                    setExpandedParent(item.name);
-                    // Select first child if no child is active
-                    if (!isChildActive(item)) {
-                      handleNavigate(`${item.name}:${item.children[0].name}`);
-                      setIsMobileMenuOpen(false);
-                    }
-                  }
+    // Render a single nav button (reused for both ungrouped and grouped items)
+    const renderNavButton = (item: NavItem) => {
+      const isActive = activeTab === item.name || isChildActive(item);
+      return (
+        <div key={item.name}>
+          <button
+            data-nav-item
+            onClick={() => {
+              if (item.children) {
+                if (expandedParent === item.name) {
+                  setExpandedParent(null);
                 } else {
-                  handleNavigate(item.name);
-                  setIsMobileMenuOpen(false);
+                  setExpandedParent(item.name);
+                  if (!isChildActive(item)) {
+                    handleNavigate(`${item.name}:${item.children[0].name}`);
+                    setIsMobileMenuOpen(false);
+                  }
                 }
-              }}
-              aria-current={isActive && !item.children ? 'page' : undefined}
-              aria-expanded={item.children ? expandedParent === item.name : undefined}
-              className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
-                isActive
-                  ? item.children ? 'bg-purple-500/10 text-white border border-purple-500/20' : 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
-              }`}
-            >
-              <span className={`${isActive ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
-                {item.icon}
-              </span>
-              <span className="font-medium text-sm flex-1 text-left">{item.name}</span>
-              {item.children && (
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-purple-400' : 'text-gray-600'}`} />
-              )}
-            </button>
-            {item.children && expandedParent === item.name && (
-              <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3" role="group" aria-label={`${item.name} sub-navigation`}>
-                {item.children.map(child => {
-                  const childTab = `${item.name}:${child.name}`;
-                  const childActive = activeTab === childTab;
-                  return (
-                    <button
-                      key={child.name}
-                      data-nav-item
-                      onClick={() => { handleNavigate(childTab); setIsMobileMenuOpen(false); }}
-                      aria-current={childActive ? 'page' : undefined}
-                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                        childActive
-                          ? 'bg-purple-600/60 text-white'
-                          : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
-                      }`}
-                    >
-                      <span className={childActive ? 'text-white' : 'text-gray-600'}>{child.icon}</span>
-                      {child.name}
-                    </button>
-                  );
-                })}
-              </div>
+              } else {
+                handleNavigate(item.name);
+                setIsMobileMenuOpen(false);
+              }
+            }}
+            aria-current={isActive && !item.children ? 'page' : undefined}
+            aria-expanded={item.children ? expandedParent === item.name : undefined}
+            className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
+              isActive
+                ? item.children ? 'bg-purple-500/10 text-white border border-purple-500/20' : 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
+            }`}
+          >
+            <span className={`${isActive ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
+              {item.icon}
+            </span>
+            <span className="font-medium text-sm flex-1 text-left">{item.name}</span>
+            {item.children && (
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-purple-400' : 'text-gray-600'}`} />
             )}
-          </div>
-          );
-        })}
-      </>
-    );
+          </button>
+          {item.children && expandedParent === item.name && (
+            <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3" role="group" aria-label={`${item.name} sub-navigation`}>
+              {item.children.map(child => {
+                const childTab = `${item.name}:${child.name}`;
+                const childActive = activeTab === childTab;
+                return (
+                  <button
+                    key={child.name}
+                    data-nav-item
+                    onClick={() => { handleNavigate(childTab); setIsMobileMenuOpen(false); }}
+                    aria-current={childActive ? 'page' : undefined}
+                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                      childActive
+                        ? 'bg-purple-600/60 text-white'
+                        : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                    }`}
+                  >
+                    <span className={childActive ? 'text-white' : 'text-gray-600'}>{child.icon}</span>
+                    {child.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // For student role: split items into ungrouped + grouped sections
+    if (user.role === UserRole.STUDENT) {
+      const ungrouped = filteredItems.filter(i => !i.group);
+      const groups: NavGroup[] = ['learning', 'operations', 'intel'];
+
+      return (
+        <>
+          {ungrouped.map(renderNavButton)}
+          {groups.map(group => {
+            const groupItems = filteredItems.filter(i => i.group === group);
+            if (groupItems.length === 0) return null;
+            const isCollapsed = collapsedGroups.has(group);
+            return (
+              <div key={group} className="mt-2">
+                <button
+                  onClick={() => toggleGroup(group)}
+                  aria-expanded={!isCollapsed}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                  {NAV_GROUP_LABELS[group]}
+                  <span className="flex-1 h-px bg-white/5 ml-1" />
+                </button>
+                {!isCollapsed && (
+                  <div className="space-y-1" role="group" aria-label={`${NAV_GROUP_LABELS[group]} navigation`}>
+                    {groupItems.map(renderNavButton)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </>
+      );
+    }
+
+    // Admin: render flat as before
+    return <>{filteredItems.map(renderNavButton)}</>;
   };
 
   // Arrow key navigation within sidebar nav items
