@@ -484,9 +484,32 @@ const DEFAULT_THRESHOLDS: TelemetryThresholds = {
 
 function calculateFeedbackServerSide(
   metrics: { pasteCount: number; engagementTime: number; keystrokes: number; tabSwitchCount?: number },
-  thresholds: Partial<TelemetryThresholds> = {}
+  thresholds: Partial<TelemetryThresholds> = {},
+  context?: { responseCount?: number; hasWrittenResponses?: boolean }
 ): { status: string; feedback: string } {
   const t = { ...DEFAULT_THRESHOLDS, ...thresholds };
+
+  // Impossibly fast submission: engagement < 30s but student submitted non-empty responses
+  // A student cannot meaningfully read questions and write answers in under 30 seconds.
+  // This catches pre-filled answers (via DevTools/Firestore writes) and direct API calls
+  // with fabricated responses but honest (or zero) metrics.
+  if (metrics.engagementTime < 30 && context?.hasWrittenResponses) {
+    return { status: "FLAGGED", feedback: "Impossibly fast submission: responses submitted with near-zero engagement time." };
+  }
+
+  // Implausible engagement-per-response: if student answered 3+ questions in under 5s each on average
+  if (context?.responseCount && context.responseCount > 0 && metrics.engagementTime > 0) {
+    const secondsPerResponse = metrics.engagementTime / context.responseCount;
+    if (secondsPerResponse < 5 && context.responseCount >= 2) {
+      return { status: "FLAGGED", feedback: "Implausible speed: average time per response too low for genuine work." };
+    }
+  }
+
+  // Ghost submission: zero keystrokes AND zero pastes but non-empty written responses
+  // This catches pre-filled answers where the student never typed or pasted anything in this session.
+  if (metrics.keystrokes === 0 && metrics.pasteCount === 0 && context?.hasWrittenResponses) {
+    return { status: "FLAGGED", feedback: "No input activity detected despite non-empty responses — possible pre-fill or API exploit." };
+  }
 
   // Assessment-specific: excessive tab switching
   if ((metrics.tabSwitchCount || 0) > 5) {
@@ -1776,12 +1799,50 @@ export const submitAssessment = onCall(async (request) => {
       assessmentThresholds = configSnap.docs[0].data().telemetryThresholds || {};
     }
   }
+  // 5a. Server-side elapsed time validation
+  // Compare client-reported startTime to server's current time to detect fabricated metrics.
+  // If client claims 30min of engagement but only 2min have elapsed since startTime, cap it.
+  const serverNow = Date.now();
+  const clientStartTime = metrics.startTime || serverNow;
+  const serverElapsedSec = Math.max(0, (serverNow - clientStartTime) / 1000);
+  // Use the lesser of client-reported engagement and server-computed elapsed time.
+  // This prevents students from fabricating high engagement times via direct API calls.
+  const validatedEngagement = metrics.engagementTime > 0
+    ? Math.min(metrics.engagementTime, serverElapsedSec + 5) // +5s grace for network latency
+    : 0;
+
+  // Count non-empty responses to assess plausibility
+  const responseKeys = Object.keys(responses || {});
+  const nonEmptyResponses = responseKeys.filter(key => {
+    const r = responses[key];
+    if (!r) return false;
+    if (typeof r === 'string') return r.trim().length > 0;
+    if (typeof r === 'object') {
+      // Check for common response shapes: { selected, answer, placements, order }
+      const obj = r as Record<string, unknown>;
+      return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0) ||
+        (obj.placements && Object.keys(obj.placements as Record<string, unknown>).length > 0) ||
+        (Array.isArray(obj.order) && obj.order.length > 0);
+    }
+    return true;
+  });
+
   const { status } = calculateFeedbackServerSide({
     pasteCount: metrics.pasteCount || 0,
-    engagementTime: metrics.engagementTime || 0,
+    engagementTime: validatedEngagement,
     keystrokes: metrics.keystrokes || 0,
     tabSwitchCount: metrics.tabSwitchCount || 0,
-  }, assessmentThresholds);
+  }, assessmentThresholds, {
+    responseCount: nonEmptyResponses.length,
+    hasWrittenResponses: nonEmptyResponses.length > 0,
+  });
+
+  if (status === "FLAGGED") {
+    logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
+      `clientEngagement=${metrics.engagementTime}s, serverElapsed=${Math.round(serverElapsedSec)}s, ` +
+      `validatedEngagement=${Math.round(validatedEngagement)}s, keystrokes=${metrics.keystrokes}, ` +
+      `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}`);
+  }
 
   // 5b. Look up student's section for this class
   let userSection: string | undefined;
@@ -1801,7 +1862,8 @@ export const submitAssessment = onCall(async (request) => {
     assignmentId,
     assignmentTitle: assignment.title || "",
     metrics: {
-      engagementTime: metrics.engagementTime || 0,
+      engagementTime: validatedEngagement,
+      clientReportedEngagement: metrics.engagementTime || 0,
       keystrokes: metrics.keystrokes || 0,
       pasteCount: metrics.pasteCount || 0,
       clickCount: metrics.clickCount || 0,
@@ -1810,6 +1872,7 @@ export const submitAssessment = onCall(async (request) => {
       tabSwitchCount: metrics.tabSwitchCount || 0,
       perBlockTiming: metrics.perBlockTiming || {},
       typingCadence: metrics.typingCadence || {},
+      serverElapsedSec: Math.round(serverElapsedSec),
     },
     submittedAt: new Date().toISOString(),
     status,

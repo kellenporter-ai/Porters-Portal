@@ -134,11 +134,22 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }, []);
 
   // Assessment submission handler
+  // Minimum engagement time (seconds) before assessment submission is allowed.
+  // Prevents instant-submit exploits. Server also validates independently.
+  const MIN_ASSESSMENT_ENGAGEMENT_SEC = 30;
+
   const handleAssessmentSubmit = useCallback(async () => {
     if (!activeAssignment || !getMetricsAndResponsesRef.current) return;
+    const { metrics, responses } = getMetricsAndResponsesRef.current();
+
+    // Client-side guard: require minimum engagement time
+    if (metrics.engagementTime < MIN_ASSESSMENT_ENGAGEMENT_SEC) {
+      toast.error(`Please spend at least ${MIN_ASSESSMENT_ENGAGEMENT_SEC} seconds reviewing the assessment before submitting.`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { metrics, responses } = getMetricsAndResponsesRef.current();
       const result = await dataService.submitAssessment(
         user.name,
         activeAssignment.id,

@@ -134,23 +134,44 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const keystrokeTimesRef = useRef<number[]>([]);
 
   // Load saved lesson block responses on mount
+  // For ASSESSMENTS: always start fresh — clear any pre-existing saved responses to prevent
+  // the exploit where students pre-fill answers via DevTools/Firestore before the timer starts.
+  // For non-assessments: load saved responses as before (resume where they left off).
   useEffect(() => {
     if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
     const docId = `${userId}_${assignmentId}_blocks`;
-    getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
-      if (snap.exists()) {
-        const data = snap.data();
-        const responses = data.responses || {};
-        blockResponsesRef.current = responses;
-        setSavedBlockResponses(responses);
-      } else {
+    if (isAssessment) {
+      // Clear any pre-existing responses for assessments — fresh start every time
+      setDoc(doc(db, 'lesson_block_responses', docId), {
+        userId,
+        assignmentId,
+        responses: {},
+        lastUpdated: new Date().toISOString(),
+      }).then(() => {
+        blockResponsesRef.current = {};
         setSavedBlockResponses({});
-      }
-    }).catch(err => {
-      console.error('Failed to load lesson block responses', err);
-      setSavedBlockResponses({});
-    });
-  }, [userId, assignmentId, lessonBlocks]);
+      }).catch(err => {
+        console.error('Failed to clear assessment block responses', err);
+        // Still start fresh in memory even if Firestore clear fails
+        blockResponsesRef.current = {};
+        setSavedBlockResponses({});
+      });
+    } else {
+      getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const responses = data.responses || {};
+          blockResponsesRef.current = responses;
+          setSavedBlockResponses(responses);
+        } else {
+          setSavedBlockResponses({});
+        }
+      }).catch(err => {
+        console.error('Failed to load lesson block responses', err);
+        setSavedBlockResponses({});
+      });
+    }
+  }, [userId, assignmentId, lessonBlocks, isAssessment]);
 
   // Debounced save of lesson block responses to Firestore
   const handleBlockResponseChange = useCallback((blockId: string, response: unknown) => {
