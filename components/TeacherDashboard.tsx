@@ -317,10 +317,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           ? filteredAssessmentSubmissions.filter(s => getSubmissionSection(s) === assessmentSectionFilter)
           : filteredAssessmentSubmissions;
 
-        // Summary stats (respects section filter)
-        const scorableSubs = sectionFilteredSubs.filter(s => s.status !== 'STARTED' && !s.flaggedAsAI);
+        // Score helper
         const getEffectiveScore = (s: Submission) => s.rubricGrade?.overallPercentage ?? s.assessmentScore?.percentage ?? s.score ?? 0;
-        const avgScore = scorableSubs.length > 0 ? Math.round(scorableSubs.reduce((acc, s) => acc + getEffectiveScore(s), 0) / scorableSubs.length) : 0;
         const flaggedCount = sectionFilteredSubs.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
         const aiFlaggedCount = sectionFilteredSubs.filter(s => s.flaggedAsAI).length;
 
@@ -333,24 +331,47 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           studentMap.set(s.userId, existing);
         });
 
+        // Helper: detect trivial/accidental submissions (very short time + 0% score)
+        const isTrivialAttempt = (s: Submission) => {
+          const engTime = s.metrics?.engagementTime || 0;
+          const score = getEffectiveScore(s);
+          return engTime < 30 && score === 0 && s.status !== 'FLAGGED';
+        };
+
         const allStudentGroups = Array.from(studentMap.entries()).map(([userId, subs]) => {
           const sorted = [...subs].sort((a, b) => (b.attemptNumber || 1) - (a.attemptNumber || 1));
           const latest = sorted[0];
+          // Best submission: prefer highest rubric grade, then highest assessment/auto score
+          // Exclude AI-flagged submissions from best score calculation
+          const nonFlaggedSubs = sorted.filter(s => !s.flaggedAsAI);
+          const best = nonFlaggedSubs.length > 0
+            ? nonFlaggedSubs.reduce((best, s) => getEffectiveScore(s) > getEffectiveScore(best) ? s : best, nonFlaggedSubs[0])
+            : latest;
+          // The graded submission is the one with a rubric grade and the highest rubric score
+          const gradedSubs = sorted.filter(s => !!s.rubricGrade);
+          const bestGraded = gradedSubs.length > 0
+            ? gradedSubs.reduce((best, s) => (s.rubricGrade!.overallPercentage > best.rubricGrade!.overallPercentage ? s : best), gradedSubs[0])
+            : null;
           return {
             userId,
             userName: latest.userName,
             userSection: getSubmissionSection(latest),
             submissions: sorted,
             latest,
+            best,
+            bestGraded,
             attemptCount: sorted.length,
             maxAttempts: selectedAssessment?.assessmentConfig?.maxAttempts || undefined,
-            hasRubricGrade: sorted.some(s => !!s.rubricGrade),
-            needsGrading: selectedAssessment?.rubric ? sorted.some(s => !s.rubricGrade) : false,
+            hasRubricGrade: gradedSubs.length > 0,
+            needsGrading: selectedAssessment?.rubric ? sorted.some(s => !s.rubricGrade && !isTrivialAttempt(s)) : false,
           };
         });
 
-        // Graded count for stats
+        // Graded count and average score (best-per-student, not per-submission)
         const gradedCount = allStudentGroups.filter(g => g.hasRubricGrade).length;
+        const avgScore = allStudentGroups.length > 0
+          ? Math.round(allStudentGroups.reduce((acc, g) => acc + getEffectiveScore(g.best), 0) / allStudentGroups.length)
+          : 0;
 
         // Apply search filter
         const searchFiltered = assessmentSearch
@@ -373,14 +394,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
         // Sort grouped rows
         const studentGroups = [...statusFiltered].sort((a, b) => {
-          const aL = a.latest, bL = b.latest;
           let av: number | string = 0, bv: number | string = 0;
           switch (assessmentSortKey) {
             case 'name': av = a.userName.toLowerCase(); bv = b.userName.toLowerCase(); return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
             case 'attempt': av = a.attemptCount; bv = b.attemptCount; break;
-            case 'score': av = getEffectiveScore(aL); bv = getEffectiveScore(bL); break;
-            case 'status': av = aL.status; bv = bL.status; return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
-            default: av = getEffectiveScore(aL); bv = getEffectiveScore(bL); break;
+            case 'score': av = getEffectiveScore(a.best); bv = getEffectiveScore(b.best); break;
+            case 'status': av = a.latest.status; bv = b.latest.status; return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
+            default: av = getEffectiveScore(a.best); bv = getEffectiveScore(b.best); break;
           }
           return assessmentSortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
         });
@@ -656,7 +676,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <thead className="sticky top-0 bg-gray-900/95 backdrop-blur z-10">
                       <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
                         <SortHeader label="Student" sortKey="name" />
-                        <SortHeader label="Score" sortKey="score" className="text-center" />
+                        <SortHeader label="Best Score" sortKey="score" className="text-center" />
                         <SortHeader label="Status" sortKey="status" className="text-center" />
                         <SortHeader label="Attempts" sortKey="attempt" className="text-center" />
                         {selectedAssessment?.rubric && <th className="p-3 text-center">Rubric</th>}
@@ -665,7 +685,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <tbody className="divide-y divide-white/5">
                       {studentGroups.map(group => {
                         const isStudentExpanded = expandedStudentIds.has(group.userId);
-                        const latestPct = group.latest.flaggedAsAI ? 0 : getEffectiveScore(group.latest);
+                        const bestPct = group.best.flaggedAsAI ? 0 : getEffectiveScore(group.best);
+                        const bestGradedPct = group.bestGraded ? group.bestGraded.rubricGrade!.overallPercentage : null;
 
                         return (
                           <React.Fragment key={group.userId}>
@@ -673,13 +694,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <tr
                               className={`hover:bg-white/5 transition cursor-pointer ${isStudentExpanded ? 'bg-white/5' : ''} ${group.latest.flaggedAsAI ? 'bg-purple-900/10' : group.latest.status === 'FLAGGED' ? 'bg-amber-900/5' : ''}`}
                               onClick={() => {
+                                const isCurrentlyExpanded = expandedStudentIds.has(group.userId);
                                 setExpandedStudentIds(prev => {
                                   const next = new Set(prev);
                                   if (next.has(group.userId)) next.delete(group.userId);
                                   else next.add(group.userId);
                                   return next;
                                 });
-                                setExpandedSubmissionId(null);
+                                if (isCurrentlyExpanded) {
+                                  setExpandedSubmissionId(null);
+                                } else {
+                                  // Auto-expand the best non-trivial attempt for quick grading
+                                  setExpandedSubmissionId(group.best.id);
+                                  setRubricDraft(group.best.rubricGrade?.grades || {});
+                                }
                               }}
                             >
                               <td className="p-3">
@@ -695,7 +723,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 </div>
                               </td>
                               <td className="p-3 text-center">
-                                <span className={`text-sm font-bold ${group.latest.flaggedAsAI ? 'text-purple-400 line-through' : getScoreColor(latestPct)}`}>{group.latest.flaggedAsAI ? '0%' : `${latestPct}%`}</span>
+                                <span className={`text-sm font-bold ${getScoreColor(bestPct)}`}>
+                                  {bestGradedPct != null ? `${bestGradedPct}%` : `${bestPct}%`}
+                                </span>
                               </td>
                               <td className="p-3 text-center">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(group.latest.status, group.latest.flaggedAsAI)}`}>
@@ -710,7 +740,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               {selectedAssessment?.rubric && (
                                 <td className="p-3 text-center">
                                   {group.hasRubricGrade ? (
-                                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30 font-bold">Graded</span>
+                                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30 font-bold">
+                                      Graded {bestGradedPct != null ? `(${bestGradedPct}%)` : ''}
+                                    </span>
                                   ) : (
                                     <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 font-bold">Pending</span>
                                   )}
@@ -726,11 +758,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               const totalTime = computeTotalTime(sub);
                               const inactiveTime = Math.max(0, totalTime - activeTime);
                               const isAttemptExpanded = expandedSubmissionId === sub.id;
+                              const isTrivial = isTrivialAttempt(sub);
+                              const isBest = sub.id === group.best.id;
 
                               return (
                                 <React.Fragment key={sub.id}>
                                   <tr
-                                    className={`hover:bg-purple-500/5 transition cursor-pointer ${isAttemptExpanded ? 'bg-purple-500/5' : 'bg-white/[0.02]'} ${sub.flaggedAsAI ? 'bg-purple-900/10' : ''}`}
+                                    className={`hover:bg-purple-500/5 transition cursor-pointer ${isAttemptExpanded ? 'bg-purple-500/5' : 'bg-white/[0.02]'} ${sub.flaggedAsAI ? 'bg-purple-900/10' : ''} ${isTrivial ? 'opacity-40' : ''}`}
                                     onClick={() => {
                                       setExpandedSubmissionId(isAttemptExpanded ? null : sub.id);
                                       if (!isAttemptExpanded) setRubricDraft(sub.rubricGrade?.grades || {});
@@ -740,6 +774,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       <div className="flex items-center gap-2">
                                         <ChevronRight className={`w-3 h-3 text-gray-600 transition-transform ${isAttemptExpanded ? 'rotate-90' : ''}`} />
                                         <span className="text-xs text-gray-400">Attempt #{sub.attemptNumber || 1}</span>
+                                        {isBest && !isTrivial && group.submissions.length > 1 && (
+                                          <span className="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full border border-blue-500/30 font-bold">Best</span>
+                                        )}
+                                        {isTrivial && (
+                                          <span className="text-[9px] bg-gray-500/20 text-gray-500 px-1.5 py-0.5 rounded-full font-bold" title="Very short attempt with 0% score - likely accidental">Trivial</span>
+                                        )}
                                         {sub.flaggedAsAI && <span title="AI Flagged"><Bot className="w-3 h-3 text-purple-400" /></span>}
                                       </div>
                                     </td>
