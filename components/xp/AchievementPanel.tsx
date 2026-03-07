@@ -3,6 +3,17 @@ import React, { useMemo } from 'react';
 import { ACHIEVEMENTS, getVisibleAchievements } from '../../lib/achievements';
 import { AchievementCategory } from '../../types';
 import { Lock, Trophy } from 'lucide-react';
+import { MEDALS } from '../../lib/kenneyAssets';
+
+/** Map achievement category to a medal number (1-9) for visual variety */
+const CATEGORY_MEDAL: Record<AchievementCategory, number> = {
+  PROGRESSION: 1,
+  COMBAT: 2,
+  SOCIAL: 3,
+  COLLECTION: 4,
+  DEDICATION: 5,
+  MASTERY: 6,
+};
 
 interface AchievementPanelProps {
   unlockedAchievements: string[];
@@ -68,9 +79,17 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                         : 'border-white/5 bg-white/3'
                     }`}
                   >
-                    <span className={`text-2xl ${isUnlocked ? '' : 'grayscale opacity-40'}`}>
-                      {achievement.icon}
-                    </span>
+                    {isUnlocked ? (
+                      <img
+                        src={MEDALS.get('shaded', CATEGORY_MEDAL[achievement.category] || 1)}
+                        alt=""
+                        className="w-8 h-8 object-contain drop-shadow-lg"
+                      />
+                    ) : (
+                      <span className="text-2xl grayscale opacity-40">
+                        {achievement.icon}
+                      </span>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-bold ${isUnlocked ? 'text-yellow-400' : 'text-gray-400'}`}>

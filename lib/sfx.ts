@@ -1,182 +1,260 @@
 
 // Sound Effects System for Porter's Portal
-// Uses Web Audio API to generate synthetic sounds — no audio files needed.
+// Uses Kenney asset pack .ogg files via HTMLAudioElement with
+// Web Audio API fallback for synthetic sounds when files aren't loaded.
 
-let audioCtx: AudioContext | null = null;
+import {
+  INTERFACE_SOUNDS,
+  RPG_SOUNDS,
+  JINGLES,
+  DIGITAL_SOUNDS,
+  CASINO_SOUNDS,
+  IMPACT_SOUNDS,
+} from './kenneyAssets';
+
+// ─── State ───
+
 let _enabled = true;
+let _volume = 0.5; // 0.0–1.0
+const _audioCache = new Map<string, HTMLAudioElement>();
 
-/** Call once when user settings load to enable/disable all sounds */
+// ─── Public API: Settings ───
+
+/** Enable or disable all sound effects globally */
 export function setSfxEnabled(enabled: boolean) {
   _enabled = enabled;
 }
 
-function getCtx(): AudioContext {
-  if (!audioCtx) {
-    const AudioCtxCtor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    audioCtx = new AudioCtxCtor();
-  }
-  return audioCtx;
+/** Set master volume (0.0–1.0) */
+export function setSfxVolume(volume: number) {
+  _volume = Math.max(0, Math.min(1, volume));
 }
 
-function playTone(freq: number, duration: number, type: OscillatorType = 'sine', volume = 0.15) {
-  if (!_enabled) return;
+/** Get current volume */
+export function getSfxVolume(): number {
+  return _volume;
+}
+
+// ─── Internal: Audio playback ───
+
+function playFile(path: string, volumeScale = 1.0): void {
+  if (!_enabled || _volume === 0) return;
   try {
-    const ctx = getCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + duration);
+    // Reuse cached element or create new one
+    let audio = _audioCache.get(path);
+    if (audio) {
+      // If still playing, clone it for overlapping sounds
+      if (!audio.paused) {
+        const clone = audio.cloneNode() as HTMLAudioElement;
+        clone.volume = _volume * volumeScale;
+        clone.play().catch(() => {});
+        return;
+      }
+      audio.currentTime = 0;
+      audio.volume = _volume * volumeScale;
+      audio.play().catch(() => {});
+    } else {
+      audio = new Audio(path);
+      audio.volume = _volume * volumeScale;
+      audio.preload = 'auto';
+      _audioCache.set(path, audio);
+      audio.play().catch(() => {});
+    }
   } catch {
-    // Silently fail if audio context not available
+    // Silent fail — audio not critical
   }
 }
+
+/** Play a random choice from an array of sound paths */
+function playRandom(paths: string[], volumeScale = 1.0): void {
+  const idx = Math.floor(Math.random() * paths.length);
+  playFile(paths[idx], volumeScale);
+}
+
+// Synthetic tone fallback removed — all sounds now use Kenney .ogg files.
+
+// ─── Preload critical sounds for instant playback ───
+
+const PRELOAD_PATHS = [
+  INTERFACE_SOUNDS.click1,
+  INTERFACE_SOUNDS.confirm1,
+  INTERFACE_SOUNDS.close1,
+  INTERFACE_SOUNDS.error1,
+  INTERFACE_SOUNDS.open1,
+  INTERFACE_SOUNDS.toggle1,
+  RPG_SOUNDS.coins1,
+  DIGITAL_SOUNDS.powerUp1,
+  DIGITAL_SOUNDS.highUp,
+];
+
+/** Call once on app mount to preload critical sounds */
+export function preloadSounds(): void {
+  for (const path of PRELOAD_PATHS) {
+    const audio = new Audio(path);
+    audio.preload = 'auto';
+    audio.volume = 0;
+    // Trigger browser to fetch without playing
+    audio.load();
+    _audioCache.set(path, audio);
+  }
+}
+
+// ─── Public API: Sound effects ───
 
 export const sfx = {
-  /** Small XP gain — quick ascending blip */
-  xpGain: () => {
-    playTone(600, 0.1, 'sine', 0.1);
-    setTimeout(() => playTone(900, 0.15, 'sine', 0.08), 80);
-  },
+  // ─── UI / Interface ───
 
-  /** Level up — triumphant ascending arpeggio */
-  levelUp: () => {
-    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-    notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 0.3, 'triangle', 0.12), i * 120);
-    });
-  },
+  /** Button click */
+  click: () => playRandom([INTERFACE_SOUNDS.click1, INTERFACE_SOUNDS.click2, INTERFACE_SOUNDS.click3], 0.7),
 
-  /** Loot drop — shimmering metallic sound */
+  /** Confirmation action (save, submit, accept) */
+  confirm: () => playRandom([INTERFACE_SOUNDS.confirm1, INTERFACE_SOUNDS.confirm2], 0.8),
+
+  /** Modal/panel open */
+  modalOpen: () => playFile(INTERFACE_SOUNDS.open1, 0.6),
+
+  /** Modal/panel close */
+  modalClose: () => playRandom([INTERFACE_SOUNDS.close1, INTERFACE_SOUNDS.close2], 0.6),
+
+  /** Error feedback */
+  error: () => playRandom([INTERFACE_SOUNDS.error1, INTERFACE_SOUNDS.error2], 0.7),
+
+  /** Toggle switch */
+  toggle: () => playRandom([INTERFACE_SOUNDS.toggle1, INTERFACE_SOUNDS.toggle2], 0.5),
+
+  /** Tab switch / navigation */
+  tabSwitch: () => playFile(INTERFACE_SOUNDS.pluck1, 0.5),
+
+  /** Back / cancel */
+  back: () => playFile(INTERFACE_SOUNDS.back1, 0.6),
+
+  /** Item drop (drag and drop) */
+  drop: () => playRandom([INTERFACE_SOUNDS.drop1, INTERFACE_SOUNDS.drop2], 0.6),
+
+  /** Hover / rollover (use sparingly) */
+  hover: () => playFile(INTERFACE_SOUNDS.scroll1, 0.3),
+
+  // ─── RPG / Gamification ───
+
+  /** XP gain — coin clink */
+  xpGain: () => playRandom([RPG_SOUNDS.coins1, RPG_SOUNDS.coins2], 0.6),
+
+  /** Level up — triumphant jingle */
+  levelUp: () => playRandom([JINGLES.levelUp1, JINGLES.levelUp2], 0.9),
+
+  /** Loot drop — metallic shimmer */
   lootDrop: () => {
-    playTone(1200, 0.15, 'sine', 0.08);
-    setTimeout(() => playTone(1500, 0.12, 'sine', 0.06), 100);
-    setTimeout(() => playTone(1800, 0.2, 'triangle', 0.05), 180);
+    playFile(RPG_SOUNDS.metalLatch, 0.7);
+    setTimeout(() => playFile(DIGITAL_SOUNDS.powerUp1, 0.5), 150);
   },
 
-  /** Quest accepted — confident two-tone confirmation */
+  /** Quest accepted — book open + confirmation */
   questAccept: () => {
-    playTone(440, 0.15, 'square', 0.06);
-    setTimeout(() => playTone(660, 0.2, 'square', 0.06), 120);
+    playFile(RPG_SOUNDS.bookOpen, 0.6);
+    setTimeout(() => playFile(INTERFACE_SOUNDS.confirm1, 0.5), 200);
   },
 
-  /** Quest deployed — descending urgent tone */
+  /** Quest deployed — metal click + descending tone */
   questDeploy: () => {
-    playTone(880, 0.12, 'sawtooth', 0.05);
-    setTimeout(() => playTone(660, 0.12, 'sawtooth', 0.05), 100);
-    setTimeout(() => playTone(550, 0.2, 'sawtooth', 0.04), 200);
+    playFile(RPG_SOUNDS.metalClick, 0.6);
+    setTimeout(() => playFile(DIGITAL_SOUNDS.highDown, 0.5), 100);
   },
 
-  /** Equip item — mechanical click */
+  /** Equip item — leather + metal */
   equip: () => {
-    playTone(200, 0.05, 'square', 0.1);
-    setTimeout(() => playTone(400, 0.08, 'sine', 0.08), 50);
+    playRandom([RPG_SOUNDS.leather1, RPG_SOUNDS.leather2], 0.7);
+    setTimeout(() => playFile(RPG_SOUNDS.metalClick, 0.5), 80);
   },
 
-  /** Salvage/disenchant — breaking/dissolving */
+  /** Salvage / disenchant */
   salvage: () => {
-    playTone(300, 0.15, 'sawtooth', 0.06);
-    setTimeout(() => playTone(200, 0.2, 'sawtooth', 0.04), 100);
-    setTimeout(() => playTone(100, 0.3, 'sawtooth', 0.03), 200);
+    playFile(RPG_SOUNDS.chop, 0.6);
+    setTimeout(() => playFile(IMPACT_SOUNDS.mining, 0.5), 100);
   },
 
-  /** Craft complete — forge hammer */
+  /** Craft complete */
   craft: () => {
-    playTone(150, 0.08, 'square', 0.1);
-    setTimeout(() => playTone(800, 0.2, 'triangle', 0.08), 60);
-  },
-
-  /** Error / insufficient funds */
-  error: () => {
-    playTone(200, 0.15, 'square', 0.08);
-    setTimeout(() => playTone(150, 0.2, 'square', 0.06), 120);
+    playFile(IMPACT_SOUNDS.metalHeavy, 0.6);
+    setTimeout(() => playFile(DIGITAL_SOUNDS.powerUp2, 0.5), 200);
   },
 
   /** Chat message sent */
-  messageSend: () => {
-    playTone(500, 0.06, 'sine', 0.05);
-  },
+  messageSend: () => playFile(INTERFACE_SOUNDS.pluck2, 0.4),
 
   /** Notification received */
   notification: () => {
-    playTone(800, 0.1, 'sine', 0.06);
-    setTimeout(() => playTone(1000, 0.12, 'sine', 0.04), 120);
+    playFile(DIGITAL_SOUNDS.twoTone1, 0.6);
   },
 
-  /** Achievement unlocked — triumphant fanfare */
-  achievement: () => {
-    const notes = [440, 554, 659, 880, 1047];
-    notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 0.25, 'triangle', 0.1), i * 100);
-    });
-  },
+  /** Achievement unlocked — fanfare jingle */
+  achievement: () => playFile(JINGLES.achievement, 1.0),
 
-  /** Daily login reward — warm ascending chime */
-  dailyReward: () => {
-    playTone(523, 0.12, 'sine', 0.08);
-    setTimeout(() => playTone(659, 0.12, 'sine', 0.07), 100);
-    setTimeout(() => playTone(784, 0.2, 'triangle', 0.06), 200);
-  },
+  /** Daily login reward */
+  dailyReward: () => playFile(JINGLES.reward1, 0.8),
 
-  /** Fortune wheel spin — escalating ticking */
+  /** Fortune wheel spin — casino chips */
   wheelSpin: () => {
-    for (let i = 0; i < 8; i++) {
-      setTimeout(() => playTone(400 + i * 50, 0.04, 'square', 0.04), i * 60);
-    }
+    playFile(CASINO_SOUNDS.dieThrow1, 0.7);
   },
 
-  /** Fortune wheel prize — big reveal */
+  /** Fortune wheel tick (per slot) */
+  wheelTick: () => playRandom([CASINO_SOUNDS.chipLay1, CASINO_SOUNDS.chipLay2], 0.4),
+
+  /** Fortune wheel prize reveal */
   wheelPrize: () => {
-    playTone(523, 0.15, 'triangle', 0.1);
-    setTimeout(() => playTone(784, 0.15, 'triangle', 0.1), 120);
-    setTimeout(() => playTone(1047, 0.3, 'sine', 0.12), 240);
+    playFile(CASINO_SOUNDS.chipsStack, 0.8);
+    setTimeout(() => playFile(JINGLES.reward2, 0.7), 200);
   },
 
-  /** Skill unlock — tech power-up */
+  /** Skill tree unlock */
   skillUnlock: () => {
-    playTone(300, 0.1, 'sawtooth', 0.06);
-    setTimeout(() => playTone(600, 0.1, 'sawtooth', 0.06), 80);
-    setTimeout(() => playTone(900, 0.15, 'sine', 0.08), 160);
+    playFile(DIGITAL_SOUNDS.powerUp3, 0.7);
+    setTimeout(() => playFile(DIGITAL_SOUNDS.threeTone1, 0.5), 200);
   },
 
-  /** Boss hit — impact sound */
-  bossHit: () => {
-    playTone(100, 0.1, 'square', 0.12);
-    setTimeout(() => playTone(80, 0.15, 'sawtooth', 0.08), 50);
-  },
+  /** Boss hit */
+  bossHit: () => playRandom([IMPACT_SOUNDS.punch, IMPACT_SOUNDS.metalLight], 0.7),
 
-  /** Boss defeated — epic victory */
-  bossDefeated: () => {
-    const notes = [262, 330, 392, 523, 659, 784, 1047];
-    notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 0.3, 'triangle', 0.08), i * 90);
-    });
-  },
+  /** Boss defeated — epic jingle */
+  bossDefeated: () => playRandom([JINGLES.bossDefeat1, JINGLES.bossDefeat2, JINGLES.bossDefeat3], 1.0),
 
   /** Gem socket — crystalline click */
   gemSocket: () => {
-    playTone(1200, 0.08, 'sine', 0.08);
-    setTimeout(() => playTone(1600, 0.1, 'sine', 0.06), 60);
-    setTimeout(() => playTone(2000, 0.15, 'triangle', 0.04), 120);
+    playFile(IMPACT_SOUNDS.glass, 0.5);
+    setTimeout(() => playFile(DIGITAL_SOUNDS.highUp, 0.4), 100);
   },
 
-  /** Party join — friendly chime */
-  partyJoin: () => {
-    playTone(440, 0.1, 'sine', 0.06);
-    setTimeout(() => playTone(554, 0.1, 'sine', 0.06), 80);
-    setTimeout(() => playTone(659, 0.15, 'sine', 0.05), 160);
-  },
+  /** Party join */
+  partyJoin: () => playFile(DIGITAL_SOUNDS.threeTone2, 0.6),
 
-  /** Chest opening — dramatic reveal */
+  /** Chest / loot box opening */
   chestOpen: () => {
-    playTone(200, 0.15, 'square', 0.06);
-    setTimeout(() => playTone(300, 0.1, 'square', 0.05), 100);
-    setTimeout(() => playTone(500, 0.1, 'triangle', 0.06), 200);
-    setTimeout(() => playTone(800, 0.2, 'sine', 0.08), 350);
+    playFile(RPG_SOUNDS.creak, 0.6);
+    setTimeout(() => playFile(RPG_SOUNDS.lockOpen, 0.5), 200);
+    setTimeout(() => playFile(DIGITAL_SOUNDS.powerUp1, 0.5), 450);
+  },
+
+  /** Lesson/resource opened — book open */
+  lessonOpen: () => playFile(RPG_SOUNDS.bookOpen, 0.5),
+
+  /** Lesson/resource closed — book close */
+  lessonClose: () => playFile(RPG_SOUNDS.bookClose, 0.5),
+
+  /** Dungeon entry — door creak + open */
+  dungeonEntry: () => {
+    playFile(RPG_SOUNDS.creak, 0.6);
+    setTimeout(() => playFile(RPG_SOUNDS.doorOpen, 0.6), 300);
+  },
+
+  /** Assignment submitted */
+  assignmentComplete: () => playRandom([JINGLES.questComplete1, JINGLES.questComplete2], 0.8),
+
+  /** Coin collection (flux/currency) */
+  coinCollect: () => playRandom([RPG_SOUNDS.coins1, RPG_SOUNDS.coins2], 0.5),
+
+  /** Purchase / spend currency */
+  purchase: () => {
+    playFile(CASINO_SOUNDS.chipsHandle1, 0.6);
+    setTimeout(() => playFile(INTERFACE_SOUNDS.confirm1, 0.4), 150);
   },
 };

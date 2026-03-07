@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Dungeon, DungeonRun, DungeonRoom, BossAppearance } from '../../types';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
+import { sfx } from '../../lib/sfx';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import {
@@ -898,6 +899,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
     setStarting(true);
     try {
       const result      = await dataService.startDungeonRun(dungeonId);
+      sfx.dungeonEntry();
       const dungeon     = dungeons.find(d => d.id === dungeonId) ?? null;
       setActiveDungeon(dungeon);
       setActiveRun(result);

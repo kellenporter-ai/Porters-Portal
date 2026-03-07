@@ -11,6 +11,7 @@ import { reportError } from '../lib/errorReporting';
 import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
+import { sfx } from '../lib/sfx';
 
 const Proctor = lazy(() => import('./Proctor'));
 const ReviewQuestions = lazy(() => import('./ReviewQuestions'));
@@ -88,6 +89,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }, [id, user.id, user.role, activeAssignment?.isAssessment]);
 
   // Probe supplemental tabs
+  // Play lesson-open sound when resource loads
+  useEffect(() => {
+    if (id && activeAssignment) sfx.lessonOpen();
+  }, [id, activeAssignment]);
+
   useEffect(() => {
     setHasQuestionBank(false);
     setHasStudyMaterial(false);

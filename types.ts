@@ -20,6 +20,7 @@ export interface UserSettings {
   privacyMode: boolean;
   compactView: boolean;
   soundEffects?: boolean;
+  soundVolume?: number; // 0.0–1.0 master volume (default 0.5)
   pushNotifications?: boolean; // Browser push notification permission granted
 }
 

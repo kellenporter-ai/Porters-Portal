@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../lib/useFocusTrap';
+import { sfx } from '../lib/sfx';
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,11 +11,22 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  /** Set false to suppress open/close sounds (default true) */
+  playSounds?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md', playSounds = true }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
   useFocusTrap(dialogRef, isOpen);
+
+  // Play open/close sounds
+  useEffect(() => {
+    if (!playSounds) { wasOpen.current = isOpen; return; }
+    if (isOpen && !wasOpen.current) sfx.modalOpen();
+    if (!isOpen && wasOpen.current) sfx.modalClose();
+    wasOpen.current = isOpen;
+  }, [isOpen, playSounds]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

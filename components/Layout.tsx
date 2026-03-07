@@ -5,6 +5,7 @@ import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
 import SpaceBackground from './SpaceBackground';
@@ -39,7 +40,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
   const handleNavigate = useCallback((tabName: string) => {
     const path = TAB_TO_PATH[tabName];
-    if (path) navigate(path);
+    if (path) {
+      sfx.tabSwitch();
+      navigate(path);
+    }
   }, [navigate]);
 
   const [expandedParent, setExpandedParent] = useState<string | null>(null);

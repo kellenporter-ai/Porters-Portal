@@ -14,7 +14,7 @@ import { ShieldAlert, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
 import ErrorBoundary, { FeatureErrorBoundary } from './components/ErrorBoundary';
 import { ConfirmProvider } from './components/ConfirmDialog';
-import { setSfxEnabled } from './lib/sfx';
+import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
@@ -265,10 +265,16 @@ const App: React.FC = () => {
     return () => unsub();
   }, [user?.id, user?.isWhitelisted, user?.role]);
 
-  // Sync sound effects setting
+  // Sync sound effects setting + volume
   useEffect(() => {
     setSfxEnabled(user?.settings?.soundEffects !== false);
-  }, [user?.settings?.soundEffects]);
+    setSfxVolume(user?.settings?.soundVolume ?? 0.5);
+  }, [user?.settings?.soundEffects, user?.settings?.soundVolume]);
+
+  // Preload critical sound files on mount
+  useEffect(() => {
+    preloadSounds();
+  }, []);
 
   // Browser push notifications
   usePushNotifications(user?.id || null, user?.settings?.pushNotifications === true);

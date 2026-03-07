@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { User, UserSettings } from '../types';
-import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, BellRing, KeyRound, CheckCircle } from 'lucide-react';
+import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './ToastProvider';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
@@ -213,12 +213,31 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               onToggle={() => handleToggle('compactView')} 
             />
             <SettingRow
-              icon={Volume2}
+              icon={localSettings.soundEffects === false ? VolumeX : Volume2}
               title="Sound Effects"
               description="Play audio feedback for XP gains, level ups, and actions."
               value={localSettings.soundEffects !== false}
               onToggle={() => setLocalSettings(prev => ({ ...prev, soundEffects: prev.soundEffects === false ? true : false }))}
             />
+            {localSettings.soundEffects !== false && (
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-gray-300 flex items-center gap-2">
+                    <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                    Master Volume
+                  </label>
+                  <span className="text-xs font-mono text-purple-400">{Math.round((localSettings.soundVolume ?? 0.5) * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round((localSettings.soundVolume ?? 0.5) * 100)}
+                  onChange={e => setLocalSettings(prev => ({ ...prev, soundVolume: parseInt(e.target.value) / 100 }))}
+                  className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-purple-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
+                />
+              </div>
+            )}
           </div>
         </div>
 

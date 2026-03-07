@@ -4,6 +4,7 @@ import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User
 import { FLUX_SHOP_ITEMS, AGENT_COSMETICS } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
+import { sfx } from '../../lib/sfx';
 import { ActiveBoost, FluxShopItem, CosmeticVisualType, ActiveCosmetics } from '../../types';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
 
@@ -94,10 +95,12 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
     try {
       const result = await dataService.purchaseFluxItem(item.id);
       if (result.success) {
+        sfx.purchase();
         toast.success(`Purchased ${item.name}!`);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Purchase failed';
+      sfx.error();
       toast.error(message.includes('Insufficient') ? 'Not enough Cyber-Flux!' :
                   message.includes('limit') ? 'Daily limit reached!' : message);
     } finally {
