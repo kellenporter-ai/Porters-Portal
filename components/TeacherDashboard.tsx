@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
@@ -41,15 +41,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'assessments'>('dashboard');
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
-  const [expandedSubmissionId, setExpandedSubmissionId] = useState<string | null>(null);
-  const [assessmentSortKey, setAssessmentSortKey] = useState<string>('score');
-  const [assessmentSortDesc, setAssessmentSortDesc] = useState(true);
+  const [assessmentSortKey] = useState<string>('score');
+  const [assessmentSortDesc] = useState(true);
   const [rubricDraft, setRubricDraft] = useState<Record<string, Record<string, RubricSkillGrade>>>({});
   const [isSavingRubric, setIsSavingRubric] = useState(false);
   const [assessmentSearch, setAssessmentSearch] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
   const [assessmentSectionFilter, setAssessmentSectionFilter] = useState('');
-  const [expandedStudentIds, setExpandedStudentIds] = useState<Set<string>>(new Set());
+  const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
+  const [gradingAttemptId, setGradingAttemptId] = useState<string | null>(null);
   const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
   const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
   const [expandedPairIdx, setExpandedPairIdx] = useState<number | null>(null);
@@ -405,23 +405,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           return assessmentSortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
         });
 
-        const handleAssessmentSort = (key: string) => {
-          if (assessmentSortKey === key) setAssessmentSortDesc(prev => !prev);
-          else { setAssessmentSortKey(key); setAssessmentSortDesc(true); }
-        };
-
-        const SortHeader = ({ label, sortKey, className = '' }: { label: string; sortKey: string; className?: string }) => (
-          <th className={`p-3 cursor-pointer select-none hover:text-gray-300 transition ${className}`} onClick={() => handleAssessmentSort(sortKey)}>
-            <div className="flex items-center gap-1">
-              <span>{label}</span>
-              <span className="flex flex-col gap-px">
-                <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${assessmentSortKey === sortKey && !assessmentSortDesc ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${assessmentSortKey === sortKey && assessmentSortDesc ? 'text-purple-400' : 'text-gray-600'} transition`} />
-              </span>
-            </div>
-          </th>
-        );
-
         const formatEngagementTime = (seconds: number) => {
           const m = Math.floor(seconds / 60);
           const s = seconds % 60;
@@ -429,20 +412,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         };
 
         const getScoreColor = (pct: number) => pct >= 80 ? 'text-green-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400';
-        const getStatusBadge = (status: string, flaggedAsAI?: boolean) => {
-          if (flaggedAsAI) return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-          switch (status) {
-            case 'FLAGGED': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-            case 'SUCCESS': return 'bg-green-500/20 text-green-400 border-green-500/30';
-            case 'SUPPORT_NEEDED': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-            default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-          }
-        };
-        const getStatusLabel = (status: string, flaggedAsAI?: boolean) => {
-          if (flaggedAsAI) return 'AI FLAGGED';
-          if (status === 'FLAGGED') return 'AUTO FLAGGED';
-          return status;
-        };
         const getTabSwitchColor = (count: number) => count > 5 ? 'text-red-400' : count >= 3 ? 'text-yellow-400' : 'text-green-400';
 
         return (
@@ -461,7 +430,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               <select
                 value={selectedAssessmentId || ''}
-                onChange={e => { setSelectedAssessmentId(e.target.value || null); setExpandedSubmissionId(null); setExpandedStudentIds(new Set()); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); }}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
@@ -659,7 +628,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               </div>
             )}
 
-            {/* Student-Grouped Submissions Table */}
+            {/* 3-Panel Grading View */}
             {selectedAssessmentId && studentGroups.length > 0 && (() => {
               const computeTotalTime = (sub: Submission) => {
                 if (sub.submittedAt && sub.metrics?.startTime) {
@@ -667,429 +636,437 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 }
                 return sub.metrics?.engagementTime || 0;
               };
-              const colCount = selectedAssessment?.rubric ? 5 : 4;
-              return (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-                <h4 className="text-lg font-bold text-white mb-4">Student Submissions</h4>
-                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                  <table className="w-full text-left">
-                    <thead className="sticky top-0 bg-gray-900/95 backdrop-blur z-10">
-                      <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
-                        <SortHeader label="Student" sortKey="name" />
-                        <SortHeader label="Best Score" sortKey="score" className="text-center" />
-                        <SortHeader label="Status" sortKey="status" className="text-center" />
-                        <SortHeader label="Attempts" sortKey="attempt" className="text-center" />
-                        {selectedAssessment?.rubric && <th className="p-3 text-center">Rubric</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {studentGroups.map(group => {
-                        const isStudentExpanded = expandedStudentIds.has(group.userId);
-                        const bestPct = group.best.flaggedAsAI ? 0 : getEffectiveScore(group.best);
-                        const bestGradedPct = group.bestGraded ? group.bestGraded.rubricGrade!.overallPercentage : null;
 
-                        return (
-                          <React.Fragment key={group.userId}>
-                            {/* Student-level row */}
-                            <tr
-                              className={`hover:bg-white/5 transition cursor-pointer ${isStudentExpanded ? 'bg-white/5' : ''} ${group.latest.flaggedAsAI ? 'bg-purple-900/10' : group.latest.status === 'FLAGGED' ? 'bg-amber-900/5' : ''}`}
-                              onClick={() => {
-                                const isCurrentlyExpanded = expandedStudentIds.has(group.userId);
-                                setExpandedStudentIds(prev => {
-                                  const next = new Set(prev);
-                                  if (next.has(group.userId)) next.delete(group.userId);
-                                  else next.add(group.userId);
-                                  return next;
-                                });
-                                if (isCurrentlyExpanded) {
-                                  setExpandedSubmissionId(null);
-                                } else {
-                                  // Auto-expand the best non-trivial attempt for quick grading
-                                  setExpandedSubmissionId(group.best.id);
-                                  setRubricDraft(group.best.rubricGrade?.grades || {});
+              // Resolve the selected student group and submission
+              const selectedGroup = studentGroups.find(g => g.userId === gradingStudentId) || null;
+              const selectedSub = selectedGroup
+                ? (selectedGroup.submissions.find(s => s.id === gradingAttemptId) || selectedGroup.best)
+                : null;
+              const currentStudentIndex = selectedGroup ? studentGroups.indexOf(selectedGroup) : -1;
+
+              const selectStudent = (userId: string) => {
+                const group = studentGroups.find(g => g.userId === userId);
+                if (!group) return;
+                setGradingStudentId(userId);
+                setGradingAttemptId(group.best.id);
+                setRubricDraft(group.best.rubricGrade?.grades || {});
+              };
+
+              const navigateStudent = (delta: number) => {
+                const nextIdx = currentStudentIndex + delta;
+                if (nextIdx >= 0 && nextIdx < studentGroups.length) {
+                  selectStudent(studentGroups[nextIdx].userId);
+                }
+              };
+
+              return (
+              <div
+                className="flex flex-col lg:flex-row gap-0 bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md"
+                onKeyDown={(e) => {
+                  // Keyboard navigation: arrow keys when not focused on input/select/textarea
+                  const tag = (e.target as HTMLElement).tagName;
+                  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); navigateStudent(-1); }
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); navigateStudent(1); }
+                }}
+                tabIndex={0}
+              >
+                {/* Left Panel: Student List Sidebar */}
+                <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col">
+                  <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Students</h4>
+                    <span className="text-[10px] text-gray-600">{studentGroups.length} result{studentGroups.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 420px)' }}>
+                    {studentGroups.map(group => {
+                      const isSelected = group.userId === gradingStudentId;
+                      const bestPct = group.best.flaggedAsAI ? 0 : getEffectiveScore(group.best);
+                      const bestGradedPct = group.bestGraded ? group.bestGraded.rubricGrade!.overallPercentage : null;
+                      const displayPct = bestGradedPct != null ? bestGradedPct : bestPct;
+
+                      return (
+                        <div
+                          key={group.userId}
+                          onClick={() => selectStudent(group.userId)}
+                          className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 ${
+                            isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-white/5 border-l-2 border-l-transparent'
+                          } ${group.latest.flaggedAsAI ? 'bg-purple-900/5' : ''}`}
+                        >
+                          {/* Graded indicator */}
+                          <div className="shrink-0">
+                            {group.hasRubricGrade ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                            ) : (
+                              <div className="w-3.5 h-3.5 rounded-full border border-gray-600 bg-transparent" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                {group.userName}
+                              </span>
+                              {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" />}
+                              {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
+                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                              )}
+                            </div>
+                            {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
+                              <span className="text-[9px] text-gray-600 block">{group.userSection}</span>
+                            )}
+                          </div>
+
+                          <span className={`text-[11px] font-bold tabular-nums shrink-0 ${getScoreColor(displayPct)}`}>
+                            {displayPct}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Center Panel: Student Work */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  {!selectedGroup || !selectedSub ? (
+                    <div className="flex-1 flex items-center justify-center p-12" style={{ minHeight: 'calc(100vh - 420px)' }}>
+                      <div className="text-center">
+                        <FileText className="w-16 h-16 mx-auto mb-4 text-gray-700 opacity-30" />
+                        <p className="text-gray-500 text-sm font-bold">Select a student to begin grading</p>
+                        <p className="text-gray-600 text-xs mt-1">Use the list on the left or arrow keys to navigate</p>
+                      </div>
+                    </div>
+                  ) : (() => {
+                    const sub = selectedSub;
+                    const tabSwitches = sub.metrics?.tabSwitchCount || 0;
+                    const activeTime = sub.metrics?.engagementTime || 0;
+                    const totalTime = computeTotalTime(sub);
+                    const inactiveTime = Math.max(0, totalTime - activeTime);
+
+                    return (
+                      <>
+                        {/* Center panel header */}
+                        <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02] flex items-center gap-3 flex-wrap">
+                          {/* Prev/Next navigation */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => navigateStudent(-1)}
+                              disabled={currentStudentIndex <= 0}
+                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              title="Previous student"
+                            >
+                              <ChevronLeft className="w-4 h-4 text-gray-400" />
+                            </button>
+                            <span className="text-[10px] text-gray-600 tabular-nums">{currentStudentIndex + 1}/{studentGroups.length}</span>
+                            <button
+                              onClick={() => navigateStudent(1)}
+                              disabled={currentStudentIndex >= studentGroups.length - 1}
+                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              title="Next student"
+                            >
+                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                            </button>
+                          </div>
+
+                          {/* Student name */}
+                          <h4 className="text-sm font-bold text-white">{selectedGroup.userName}</h4>
+                          {selectedGroup.userSection && (
+                            <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded">{selectedGroup.userSection}</span>
+                          )}
+
+                          {/* Attempt selector */}
+                          {selectedGroup.submissions.length > 1 && (
+                            <select
+                              value={gradingAttemptId || ''}
+                              onChange={e => {
+                                const newSub = selectedGroup.submissions.find(s => s.id === e.target.value);
+                                if (newSub) {
+                                  setGradingAttemptId(newSub.id);
+                                  setRubricDraft(newSub.rubricGrade?.grades || {});
                                 }
                               }}
+                              className="bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/50 transition"
                             >
-                              <td className="p-3">
-                                <div className="flex items-center gap-2">
-                                  <ChevronRight className={`w-3.5 h-3.5 text-gray-500 transition-transform ${isStudentExpanded ? 'rotate-90' : ''}`} />
-                                  <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                                    {group.userName}
-                                    {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                                      <span className="text-[9px] text-gray-500 font-normal">{group.userSection}</span>
-                                    )}
-                                    {group.latest.flaggedAsAI && <span title="AI Flagged"><Bot className="w-3.5 h-3.5 text-purple-400" /></span>}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className={`text-sm font-bold ${getScoreColor(bestPct)}`}>
-                                  {bestGradedPct != null ? `${bestGradedPct}%` : `${bestPct}%`}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(group.latest.status, group.latest.flaggedAsAI)}`}>
-                                  {getStatusLabel(group.latest.status, group.latest.flaggedAsAI)}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className="text-xs text-gray-300 font-mono">
-                                  {group.attemptCount}{group.maxAttempts ? `/${group.maxAttempts}` : ''}
-                                </span>
-                              </td>
-                              {selectedAssessment?.rubric && (
-                                <td className="p-3 text-center">
-                                  {group.hasRubricGrade ? (
-                                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30 font-bold">
-                                      Graded {bestGradedPct != null ? `(${bestGradedPct}%)` : ''}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 font-bold">Pending</span>
-                                  )}
-                                </td>
-                              )}
-                            </tr>
+                              {selectedGroup.submissions.map(s => (
+                                <option key={s.id} value={s.id}>
+                                  Attempt {s.attemptNumber || 1}{s.id === selectedGroup.best.id ? ' (Best)' : ''}{s.rubricGrade ? ` - ${s.rubricGrade.overallPercentage}%` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          )}
 
-                            {/* Expanded attempt sub-rows */}
-                            {isStudentExpanded && group.submissions.map(sub => {
-                              const pct = sub.flaggedAsAI ? 0 : getEffectiveScore(sub);
-                              const tabSwitches = sub.metrics?.tabSwitchCount || 0;
-                              const activeTime = sub.metrics?.engagementTime || 0;
-                              const totalTime = computeTotalTime(sub);
-                              const inactiveTime = Math.max(0, totalTime - activeTime);
-                              const isAttemptExpanded = expandedSubmissionId === sub.id;
-                              const isTrivial = isTrivialAttempt(sub);
-                              const isBest = sub.id === group.best.id;
+                          <div className="ml-auto flex items-center gap-2">
+                            {/* Metrics badges */}
+                            <div className="hidden md:flex items-center gap-2 text-[10px] text-gray-500">
+                              <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
+                              <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
+                              <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-gray-600'}>{formatEngagementTime(inactiveTime)} idle</span>
+                              <span>{sub.metrics?.pasteCount || 0} pastes</span>
+                            </div>
 
-                              return (
-                                <React.Fragment key={sub.id}>
-                                  <tr
-                                    className={`hover:bg-purple-500/5 transition cursor-pointer ${isAttemptExpanded ? 'bg-purple-500/5' : 'bg-white/[0.02]'} ${sub.flaggedAsAI ? 'bg-purple-900/10' : ''} ${isTrivial ? 'opacity-40' : ''}`}
-                                    onClick={() => {
-                                      setExpandedSubmissionId(isAttemptExpanded ? null : sub.id);
-                                      if (!isAttemptExpanded) setRubricDraft(sub.rubricGrade?.grades || {});
-                                    }}
-                                  >
-                                    <td className="p-3 pl-10">
-                                      <div className="flex items-center gap-2">
-                                        <ChevronRight className={`w-3 h-3 text-gray-600 transition-transform ${isAttemptExpanded ? 'rotate-90' : ''}`} />
-                                        <span className="text-xs text-gray-400">Attempt #{sub.attemptNumber || 1}</span>
-                                        {isBest && !isTrivial && group.submissions.length > 1 && (
-                                          <span className="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full border border-blue-500/30 font-bold">Best</span>
-                                        )}
-                                        {isTrivial && (
-                                          <span className="text-[9px] bg-gray-500/20 text-gray-500 px-1.5 py-0.5 rounded-full font-bold" title="Very short attempt with 0% score - likely accidental">Trivial</span>
-                                        )}
-                                        {sub.flaggedAsAI && <span title="AI Flagged"><Bot className="w-3 h-3 text-purple-400" /></span>}
+                            {/* AI Flag button */}
+                            {sub.flaggedAsAI ? (
+                              <button
+                                onClick={async () => {
+                                  if (await confirm({ title: 'Remove AI Flag', message: 'Remove AI suspected flag from this submission? The original score and status will be restored.', variant: 'warning' })) {
+                                    try {
+                                      await dataService.unflagSubmissionAsAI(sub.id);
+                                    } catch (err) {
+                                      reportError(err, { method: 'unflagSubmissionAsAI' });
+                                    }
+                                  }
+                                }}
+                                className="flex items-center gap-1 bg-gray-600 hover:bg-gray-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition"
+                              >
+                                <Undo2 className="w-3 h-3" />
+                                Remove AI Flag
+                              </button>
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  if (await confirm({ title: 'Flag AI Suspected', message: `Flag ${sub.userName}'s submission as AI suspected? This will set their score to 0% and notify the student.`, variant: 'danger', confirmLabel: 'Flag as AI' })) {
+                                    try {
+                                      await dataService.flagSubmissionAsAI(sub.id, 'Admin', sub.userId, selectedAssessment?.title);
+                                    } catch (err) {
+                                      reportError(err, { method: 'flagSubmissionAsAI' });
+                                    }
+                                  }
+                                }}
+                                className="flex items-center gap-1 bg-red-600/80 hover:bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition"
+                              >
+                                <Bot className="w-3 h-3" />
+                                Flag AI
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Center panel body: per-question breakdown */}
+                        <div className="overflow-y-auto custom-scrollbar p-4" style={{ maxHeight: 'calc(100vh - 470px)' }}>
+                          {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
+                            <div className="space-y-2">
+                              {selectedAssessment.lessonBlocks
+                                .filter((block: LessonBlock) => block.type === 'MC' || block.type === 'SHORT_ANSWER' || block.type === 'RANKING' || block.type === 'SORTING' || block.type === 'LINKED')
+                                .map((block: LessonBlock, qi: number) => {
+                                  const blockResult = sub.assessmentScore?.perBlock?.[block.id];
+                                  const rawAnswer = sub.blockResponses?.[block.id] as Record<string, unknown> | undefined;
+                                  const isPending = blockResult?.needsReview;
+
+                                  let displayAnswer = 'No answer';
+                                  if (rawAnswer != null) {
+                                    if (block.type === 'SHORT_ANSWER') {
+                                      displayAnswer = String((rawAnswer as { answer?: string }).answer || 'No answer');
+                                    } else if (block.type === 'MC') {
+                                      const selected = (rawAnswer as { selected?: number }).selected;
+                                      displayAnswer = selected != null && block.options ? String(block.options[selected]) : 'No selection';
+                                    } else if (block.type === 'RANKING') {
+                                      const order = (rawAnswer as { order?: { item: string }[] }).order || [];
+                                      displayAnswer = order.map(o => o.item).join(' \u2192 ') || 'No answer';
+                                    } else if (block.type === 'SORTING') {
+                                      const placements = (rawAnswer as { placements?: Record<string, string> }).placements || {};
+                                      displayAnswer = Object.values(placements).join(', ') || 'No answer';
+                                    } else {
+                                      displayAnswer = typeof rawAnswer === 'string' ? rawAnswer : JSON.stringify(rawAnswer);
+                                    }
+                                  }
+
+                                  const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
+                                    : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
+                                    : 'bg-red-900/10 border-red-500/20';
+                                  const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
+                                    : blockResult?.correct ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400';
+                                  const answerColor = isPending ? 'text-amber-400'
+                                    : blockResult?.correct ? 'text-green-400'
+                                    : 'text-red-400';
+
+                                  return (
+                                    <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${borderClass}`}>
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${iconClass}`}>
+                                        {isPending ? <Clock className="w-3.5 h-3.5" /> : blockResult?.correct ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
                                       </div>
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <span className={`text-xs font-bold ${sub.flaggedAsAI ? 'text-purple-400 line-through' : getScoreColor(pct)}`}>{sub.flaggedAsAI ? '0%' : `${pct}%`}</span>
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(sub.status, sub.flaggedAsAI)}`}>
-                                        {getStatusLabel(sub.status, sub.flaggedAsAI)}
-                                      </span>
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <div className="flex items-center justify-center gap-3 text-[10px] text-gray-400">
-                                        <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
-                                        <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
-                                        <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-gray-500'}>{formatEngagementTime(inactiveTime)} idle</span>
-                                        <span>{sub.metrics?.pasteCount || 0} pastes</span>
-                                      </div>
-                                    </td>
-                                    {selectedAssessment?.rubric && (
-                                      <td className="p-3 text-center">
-                                        {sub.rubricGrade ? (
-                                          <span className="text-[10px] text-green-400 font-mono">{sub.rubricGrade.overallPercentage}%</span>
-                                        ) : (
-                                          <span className="text-[10px] text-gray-600">&mdash;</span>
-                                        )}
-                                      </td>
-                                    )}
-                                  </tr>
-
-                                  {/* Expanded per-question detail */}
-                                  {isAttemptExpanded && (
-                                    <tr>
-                                      <td colSpan={colCount} className="p-0">
-                                        <div className="bg-black/20 border-t border-white/5 p-4 animate-in slide-in-from-top-2 duration-200">
-                                          {/* AI Suspected Flag — full width toolbar */}
-                                          <div className="flex items-center justify-between mb-4">
-                                            <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Per-Question Breakdown</h5>
-                                            {sub.flaggedAsAI ? (
-                                              <button
-                                                onClick={async (e) => {
-                                                  e.stopPropagation();
-                                                  if (await confirm({ title: 'Remove AI Flag', message: 'Remove AI suspected flag from this submission? The original score and status will be restored.', variant: 'warning' })) {
-                                                    try {
-                                                      await dataService.unflagSubmissionAsAI(sub.id);
-                                                    } catch (err) {
-                                                      reportError(err, { method: 'unflagSubmissionAsAI' });
-                                                    }
-                                                  }
-                                                }}
-                                                className="flex items-center gap-1.5 bg-gray-600 hover:bg-gray-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition uppercase tracking-wider"
-                                              >
-                                                <Undo2 className="w-3 h-3" />
-                                                Remove AI Flag
-                                              </button>
-                                            ) : (
-                                              <button
-                                                onClick={async (e) => {
-                                                  e.stopPropagation();
-                                                  if (await confirm({ title: 'Flag AI Suspected', message: `Flag ${sub.userName}'s submission as AI suspected? This will set their score to 0% and notify the student.`, variant: 'danger', confirmLabel: 'Flag as AI' })) {
-                                                    try {
-                                                      await dataService.flagSubmissionAsAI(sub.id, 'Admin', sub.userId, selectedAssessment?.title);
-                                                    } catch (err) {
-                                                      reportError(err, { method: 'flagSubmissionAsAI' });
-                                                    }
-                                                  }
-                                                }}
-                                                className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition uppercase tracking-wider"
-                                              >
-                                                <Bot className="w-3 h-3" />
-                                                Flag AI Suspected
-                                              </button>
-                                            )}
-                                          </div>
-
-                                          {/* Side-by-side layout: answers left, rubric right (when rubric exists) */}
-                                          <div className={selectedAssessment?.rubric ? 'flex flex-col lg:flex-row gap-4' : ''}>
-                                            {/* Left panel: Student answers (independent scroll) */}
-                                            <div className={selectedAssessment?.rubric ? 'lg:w-1/2 min-w-0 lg:max-h-[70vh] lg:overflow-y-auto custom-scrollbar' : ''}>
-                                          {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
-                                            <div className="space-y-2">
-                                              {selectedAssessment.lessonBlocks
-                                                .filter((block: LessonBlock) => block.type === 'MC' || block.type === 'SHORT_ANSWER' || block.type === 'RANKING' || block.type === 'SORTING' || block.type === 'LINKED')
-                                                .map((block: LessonBlock, qi: number) => {
-                                                  const blockResult = sub.assessmentScore?.perBlock?.[block.id];
-                                                  const rawAnswer = sub.blockResponses?.[block.id] as Record<string, unknown> | undefined;
-                                                  const isPending = blockResult?.needsReview;
-
-                                                  let displayAnswer = 'No answer';
-                                                  if (rawAnswer != null) {
-                                                    if (block.type === 'SHORT_ANSWER') {
-                                                      displayAnswer = String((rawAnswer as { answer?: string }).answer || 'No answer');
-                                                    } else if (block.type === 'MC') {
-                                                      const selected = (rawAnswer as { selected?: number }).selected;
-                                                      displayAnswer = selected != null && block.options ? String(block.options[selected]) : 'No selection';
-                                                    } else if (block.type === 'RANKING') {
-                                                      const order = (rawAnswer as { order?: { item: string }[] }).order || [];
-                                                      displayAnswer = order.map(o => o.item).join(' \u2192 ') || 'No answer';
-                                                    } else if (block.type === 'SORTING') {
-                                                      const placements = (rawAnswer as { placements?: Record<string, string> }).placements || {};
-                                                      displayAnswer = Object.values(placements).join(', ') || 'No answer';
-                                                    } else {
-                                                      displayAnswer = typeof rawAnswer === 'string' ? rawAnswer : JSON.stringify(rawAnswer);
-                                                    }
-                                                  }
-
-                                                  const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
-                                                    : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
-                                                    : 'bg-red-900/10 border-red-500/20';
-                                                  const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
-                                                    : blockResult?.correct ? 'bg-green-500/20 text-green-400'
-                                                    : 'bg-red-500/20 text-red-400';
-                                                  const answerColor = isPending ? 'text-amber-400'
-                                                    : blockResult?.correct ? 'text-green-400'
-                                                    : 'text-red-400';
-
-                                                  return (
-                                                    <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${borderClass}`}>
-                                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${iconClass}`}>
-                                                        {isPending ? <Clock className="w-3.5 h-3.5" /> : blockResult?.correct ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                                                      </div>
-                                                      <div className="flex-1 min-w-0">
-                                                        <div className="text-xs text-gray-300 mb-1">
-                                                          <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
-                                                        </div>
-                                                        <div className="text-[11px] text-gray-500">
-                                                          {isPending ? (
-                                                            <span className="text-amber-400 font-bold">Pending Review</span>
-                                                          ) : (
-                                                            <>
-                                                              <span className="font-bold">Answer:</span>{' '}
-                                                              <span className={answerColor}>{displayAnswer}</span>
-                                                              {!blockResult?.correct && block.type === 'MC' && block.correctAnswer !== undefined && block.options && (
-                                                                <span className="ml-2 text-green-400/60">
-                                                                  (Correct: {block.options[block.correctAnswer]})
-                                                                </span>
-                                                              )}
-                                                            </>
-                                                          )}
-                                                          {isPending && displayAnswer !== 'No answer' && (
-                                                            <div className="mt-1 text-gray-300 bg-white/5 rounded px-2 py-1.5 whitespace-pre-wrap">{displayAnswer}</div>
-                                                          )}
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  );
-                                                })
-                                              }
-                                            </div>
-                                          ) : sub.blockResponses ? (
-                                            <div className="space-y-2">
-                                              {Object.entries(sub.blockResponses).map(([blockId, answer]) => {
-                                                const blockResult = sub.assessmentScore?.perBlock?.[blockId];
-                                                const isPending = blockResult?.needsReview;
-                                                const ansObj = answer as Record<string, unknown> | null;
-                                                const answerText = ansObj != null
-                                                  ? (typeof ansObj === 'string' ? ansObj : (ansObj.answer as string) || (ansObj.selected != null ? `Option ${ansObj.selected}` : JSON.stringify(ansObj)))
-                                                  : 'No answer';
-                                                const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
-                                                  : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
-                                                  : blockResult ? 'bg-red-900/10 border-red-500/20'
-                                                  : 'bg-white/5 border-white/5';
-                                                const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
-                                                  : blockResult?.correct ? 'bg-green-500/20 text-green-400'
-                                                  : blockResult ? 'bg-red-500/20 text-red-400'
-                                                  : 'bg-gray-500/20 text-gray-400';
-                                                return (
-                                                  <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${borderClass}`}>
-                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${iconClass}`}>
-                                                      {isPending ? <Clock className="w-3 h-3" /> : blockResult?.correct ? <CheckCircle className="w-3 h-3" /> : blockResult ? <AlertTriangle className="w-3 h-3" /> : '?'}
-                                                    </div>
-                                                    <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
-                                                    <span className="text-xs text-gray-300 truncate flex-1">{answerText}</span>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          ) : (
-                                            <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
-                                          )}
-                                            </div>
-
-                                          {/* Right panel: Rubric Grading (sticky on desktop) */}
-                                          {selectedAssessment?.rubric && (() => {
-                                            const TIER_PERCENTAGES = [0, 55, 65, 85, 100];
-                                            const currentGrades = { ...(sub.rubricGrade?.grades || {}), ...rubricDraft };
-                                            const rubricPct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
-                                            const isAlreadyGraded = !!sub.rubricGrade;
-
-                                            return (
-                                              <div className="lg:w-1/2 min-w-0 lg:max-h-[70vh] lg:overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3">
-                                                <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                                                  <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
-                                                  {isAlreadyGraded && (
-                                                    <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
-                                                  )}
-                                                </h5>
-                                                {sub.flaggedAsAI && (
-                                                  <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
-                                                    <Bot className="w-4 h-4 text-purple-400 shrink-0" />
-                                                    <span className="text-[11px] text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
-                                                  </div>
-                                                )}
-                                                <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
-                                                  <RubricViewer
-                                                    rubric={selectedAssessment.rubric}
-                                                    mode="grade"
-                                                    compact
-                                                    rubricGrade={{
-                                                      grades: currentGrades,
-                                                      overallPercentage: rubricPct,
-                                                      gradedAt: sub.rubricGrade?.gradedAt || '',
-                                                      gradedBy: sub.rubricGrade?.gradedBy || '',
-                                                    }}
-                                                    onGradeChange={(questionId, skillId, tierIndex) => {
-                                                      setRubricDraft(prev => ({
-                                                        ...prev,
-                                                        [questionId]: {
-                                                          ...(prev[questionId] || {}),
-                                                          [skillId]: {
-                                                            selectedTier: tierIndex,
-                                                            percentage: TIER_PERCENTAGES[tierIndex],
-                                                          },
-                                                        },
-                                                      }));
-                                                    }}
-                                                  />
-                                                </React.Suspense>
-                                                {/* Save bar — sticky at bottom of rubric panel */}
-                                                <div className="flex items-center justify-between mt-3 bg-white/5 border border-white/10 rounded-xl p-3 sticky bottom-0">
-                                                  <div className="text-xs text-gray-400">
-                                                    Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
-                                                  </div>
-                                                  <button
-                                                    onClick={async (e) => {
-                                                      e.stopPropagation();
-                                                      setIsSavingRubric(true);
-                                                      try {
-                                                        const gradesToSave = { ...currentGrades, ...rubricDraft };
-                                                        // Validate that at least one skill has been graded
-                                                        const hasAnyGrade = Object.values(gradesToSave).some(
-                                                          q => Object.keys(q).length > 0
-                                                        );
-                                                        if (!hasAnyGrade) {
-                                                          toast.error('Select at least one rubric tier before saving.');
-                                                          return;
-                                                        }
-                                                        const pct = calculateRubricPercentage(gradesToSave, selectedAssessment.rubric!);
-                                                        const rubricGrade: RubricGrade = {
-                                                          grades: gradesToSave,
-                                                          overallPercentage: pct,
-                                                          gradedAt: new Date().toISOString(),
-                                                          gradedBy: 'Admin',
-                                                        };
-                                                        const result = await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
-                                                        // Optimistically update local state so grade displays instantly
-                                                        setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
-                                                          ...s,
-                                                          rubricGrade,
-                                                          score: pct,
-                                                          ...(result.clearedAIFlag ? { flaggedAsAI: false, flaggedAsAIBy: '', flaggedAsAIAt: '', status: 'NORMAL' as const } : {}),
-                                                        } : s));
-                                                        setRubricDraft({});
-                                                        if (result.clearedAIFlag) {
-                                                          toast.success(`Grade saved: ${pct}% -- AI flag automatically cleared`);
-                                                        } else {
-                                                          toast.success(`Grade saved: ${pct}%`);
-                                                        }
-                                                      } catch (err) {
-                                                        reportError(err, { method: 'saveRubricGrade' });
-                                                        toast.error('Failed to save grade. Check console for details.');
-                                                      } finally {
-                                                        setIsSavingRubric(false);
-                                                      }
-                                                    }}
-                                                    disabled={isSavingRubric}
-                                                    className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50"
-                                                  >
-                                                    {isSavingRubric ? (
-                                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                                    ) : (
-                                                      <Save className="w-3.5 h-3.5" />
-                                                    )}
-                                                    {isSavingRubric ? 'Saving...' : isAlreadyGraded ? 'Update Grade' : 'Save Grade'}
-                                                  </button>
-                                                </div>
-                                                {isAlreadyGraded && sub.rubricGrade && (
-                                                  <div className="text-[10px] text-gray-600 mt-1.5">
-                                                    Last graded by {sub.rubricGrade.gradedBy} on {new Date(sub.rubricGrade.gradedAt).toLocaleDateString()}
-                                                  </div>
-                                                )}
-                                                </div>
-                                              </div>
-                                            );
-                                          })()}
-                                          </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-xs text-gray-300 mb-1">
+                                          <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
                                         </div>
-                                      </td>
-                                    </tr>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                                        <div className="text-[11px] text-gray-500">
+                                          {isPending ? (
+                                            <span className="text-amber-400 font-bold">Pending Review</span>
+                                          ) : (
+                                            <>
+                                              <span className="font-bold">Answer:</span>{' '}
+                                              <span className={answerColor}>{displayAnswer}</span>
+                                              {!blockResult?.correct && block.type === 'MC' && block.correctAnswer !== undefined && block.options && (
+                                                <span className="ml-2 text-green-400/60">
+                                                  (Correct: {block.options[block.correctAnswer]})
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                          {isPending && displayAnswer !== 'No answer' && (
+                                            <div className="mt-1 text-gray-300 bg-white/5 rounded px-2 py-1.5 whitespace-pre-wrap">{displayAnswer}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              }
+                            </div>
+                          ) : sub.blockResponses ? (
+                            <div className="space-y-2">
+                              {Object.entries(sub.blockResponses).map(([blockId, answer]) => {
+                                const blockResult = sub.assessmentScore?.perBlock?.[blockId];
+                                const isPending = blockResult?.needsReview;
+                                const ansObj = answer as Record<string, unknown> | null;
+                                const answerText = ansObj != null
+                                  ? (typeof ansObj === 'string' ? ansObj : (ansObj.answer as string) || (ansObj.selected != null ? `Option ${ansObj.selected}` : JSON.stringify(ansObj)))
+                                  : 'No answer';
+                                const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
+                                  : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
+                                  : blockResult ? 'bg-red-900/10 border-red-500/20'
+                                  : 'bg-white/5 border-white/5';
+                                const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
+                                  : blockResult?.correct ? 'bg-green-500/20 text-green-400'
+                                  : blockResult ? 'bg-red-500/20 text-red-400'
+                                  : 'bg-gray-500/20 text-gray-400';
+                                return (
+                                  <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${borderClass}`}>
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${iconClass}`}>
+                                      {isPending ? <Clock className="w-3 h-3" /> : blockResult?.correct ? <CheckCircle className="w-3 h-3" /> : blockResult ? <AlertTriangle className="w-3 h-3" /> : '?'}
+                                    </div>
+                                    <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
+                                    <span className="text-xs text-gray-300 truncate flex-1">{answerText}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
+
+                {/* Right Panel: Rubric Grading */}
+                {selectedAssessment?.rubric && selectedGroup && selectedSub && (() => {
+                  const sub = selectedSub;
+                  const TIER_PERCENTAGES = [0, 55, 65, 85, 100];
+                  const currentGrades = { ...(sub.rubricGrade?.grades || {}), ...rubricDraft };
+                  const rubricPct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
+                  const isAlreadyGraded = !!sub.rubricGrade;
+
+                  return (
+                    <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
+                      <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                        <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
+                          {isAlreadyGraded && (
+                            <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
+                          )}
+                        </h5>
+                      </div>
+
+                      <div className="overflow-y-auto custom-scrollbar flex-1 p-3" style={{ maxHeight: 'calc(100vh - 470px)' }}>
+                        {sub.flaggedAsAI && (
+                          <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
+                            <Bot className="w-4 h-4 text-purple-400 shrink-0" />
+                            <span className="text-[11px] text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
+                          </div>
+                        )}
+                        <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
+                          <RubricViewer
+                            rubric={selectedAssessment.rubric}
+                            mode="grade"
+                            compact
+                            rubricGrade={{
+                              grades: currentGrades,
+                              overallPercentage: rubricPct,
+                              gradedAt: sub.rubricGrade?.gradedAt || '',
+                              gradedBy: sub.rubricGrade?.gradedBy || '',
+                            }}
+                            onGradeChange={(questionId, skillId, tierIndex) => {
+                              setRubricDraft(prev => ({
+                                ...prev,
+                                [questionId]: {
+                                  ...(prev[questionId] || {}),
+                                  [skillId]: {
+                                    selectedTier: tierIndex,
+                                    percentage: TIER_PERCENTAGES[tierIndex],
+                                  },
+                                },
+                              }));
+                            }}
+                          />
+                        </React.Suspense>
+                      </div>
+
+                      {/* Save bar — sticky at bottom */}
+                      <div className="border-t border-white/10 p-3 bg-white/[0.02]">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-400">
+                            Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              setIsSavingRubric(true);
+                              try {
+                                const gradesToSave = { ...currentGrades, ...rubricDraft };
+                                const hasAnyGrade = Object.values(gradesToSave).some(
+                                  q => Object.keys(q).length > 0
+                                );
+                                if (!hasAnyGrade) {
+                                  toast.error('Select at least one rubric tier before saving.');
+                                  return;
+                                }
+                                const pct = calculateRubricPercentage(gradesToSave, selectedAssessment.rubric!);
+                                const rubricGrade: RubricGrade = {
+                                  grades: gradesToSave,
+                                  overallPercentage: pct,
+                                  gradedAt: new Date().toISOString(),
+                                  gradedBy: 'Admin',
+                                };
+                                const result = await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
+                                setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
+                                  ...s,
+                                  rubricGrade,
+                                  score: pct,
+                                  ...(result.clearedAIFlag ? { flaggedAsAI: false, flaggedAsAIBy: '', flaggedAsAIAt: '', status: 'NORMAL' as const } : {}),
+                                } : s));
+                                setRubricDraft({});
+                                if (result.clearedAIFlag) {
+                                  toast.success(`Grade saved: ${pct}% -- AI flag automatically cleared`);
+                                } else {
+                                  toast.success(`Grade saved: ${pct}%`);
+                                }
+                              } catch (err) {
+                                reportError(err, { method: 'saveRubricGrade' });
+                                toast.error('Failed to save grade. Check console for details.');
+                              } finally {
+                                setIsSavingRubric(false);
+                              }
+                            }}
+                            disabled={isSavingRubric}
+                            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50"
+                          >
+                            {isSavingRubric ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Save className="w-3.5 h-3.5" />
+                            )}
+                            {isSavingRubric ? 'Saving...' : isAlreadyGraded ? 'Update Grade' : 'Save Grade'}
+                          </button>
+                        </div>
+                        {isAlreadyGraded && sub.rubricGrade && (
+                          <div className="text-[10px] text-gray-600 mt-1.5">
+                            Last graded by {sub.rubricGrade.gradedBy} on {new Date(sub.rubricGrade.gradedAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               );
             })()}
