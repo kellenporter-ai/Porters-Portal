@@ -278,7 +278,7 @@ export interface User {
       [classType: string]: {
         inventory: RPGItem[];
         equipped: Partial<Record<EquipmentSlot, RPGItem>>;
-        appearance?: { bodyType: 'A' | 'B' | 'C'; hue: number; skinTone?: number; hairStyle?: number; hairColor?: number };
+        appearance?: { bodyType: 'A' | 'B' | 'C'; hue: number; suitHue?: number; skinTone?: number; hairStyle?: number; hairColor?: number };
       };
     };
     // === LEGACY GLOBAL FIELDS (deprecated — kept for migration) ===
@@ -286,9 +286,10 @@ export interface User {
     equipped?: Partial<Record<EquipmentSlot, RPGItem>>;
     appearance?: {
         bodyType: 'A' | 'B' | 'C';
-        hue: number; // 0-360
+        hue: number; // 0-360 — energy color (eyes, core, effects)
+        suitHue?: number; // 0-360 — clothing/suit color (torso, arms, legs, feet)
         skinTone?: number; // 0-7 index into SKIN_TONES palette
-        hairStyle?: number; // 0-5 index into hair styles
+        hairStyle?: number; // 0-11 index into hair styles
         hairColor?: number; // 0-7 index into HAIR_COLORS palette
     };
     lastLevelSeen?: number; // To trigger level up modal

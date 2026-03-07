@@ -177,7 +177,7 @@ export const dataService = {
   },
 
   // Write only the appearance sub-field — all other gamification fields are Cloud-Function-only
-  updateUserAppearance: async (userId: string, appearance: { hue?: number; bodyType?: 'A' | 'B' | 'C'; skinTone?: number; hairStyle?: number; hairColor?: number }, classType?: string) => {
+  updateUserAppearance: async (userId: string, appearance: { hue?: number; suitHue?: number; bodyType?: 'A' | 'B' | 'C'; skinTone?: number; hairStyle?: number; hairColor?: number }, classType?: string) => {
       try {
           const userRef = doc(db, 'users', userId);
           if (classType) {

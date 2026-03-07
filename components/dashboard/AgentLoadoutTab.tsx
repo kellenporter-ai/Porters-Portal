@@ -207,7 +207,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     }
   };
 
-  const handleCustomizeSave = async (appearance: { hue: number; bodyType: 'A' | 'B' | 'C'; skinTone: number; hairStyle: number; hairColor: number }) => {
+  const handleCustomizeSave = async (appearance: { hue: number; suitHue: number; bodyType: 'A' | 'B' | 'C'; skinTone: number; hairStyle: number; hairColor: number }) => {
     try {
       await dataService.updateUserAppearance(user.id, appearance, activeClass);
       toast.success('Profile updated!');

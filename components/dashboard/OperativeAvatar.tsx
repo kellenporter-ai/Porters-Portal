@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useId, useMemo } from 'react';
 
 // === CUSTOMIZATION PALETTES (exported for customize modal) ===
 
@@ -15,6 +15,8 @@ export const HAIR_COLORS = [
 export const HAIR_STYLE_NAMES = [
     'Buzz Cut', 'Short Crop', 'Side Part',
     'Long Flow', 'Ponytail', 'Spiky',
+    'Afro', 'Curly Bob', 'Space Buns',
+    'Braids', 'Pixie Cut', 'Half Up',
 ];
 
 import { ActiveCosmetics, AgentCosmeticDef } from '../../types';
@@ -35,6 +37,7 @@ interface OperativeAvatarProps {
     appearance?: {
         bodyType?: 'A' | 'B' | 'C';
         hue?: number;
+        suitHue?: number;
         skinTone?: number;
         hairStyle?: number;
         hairColor?: number;
@@ -119,6 +122,39 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
                 main: `M${L} 44 Q${L - 1} 28 ${cx} 22 Q${R + 1} 28 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
                 accent: `M${cx - 12} 32 L${cx - 16} 12 L${cx - 6} 26 L${cx - 4} 8 L${cx + 2} 24 L${cx + 6} 6 L${cx + 8} 26 L${cx + 16} 10 L${cx + 12} 32`,
             };
+        case 6: // Afro — large rounded volume
+            return {
+                main: `M${L - 8} 52 Q${L - 12} 18 ${cx} 10 Q${R + 12} 18 ${R + 8} 52 Q${R + 10} 40 ${cx} 14 Q${L - 10} 40 ${L - 8} 52`,
+                accent: `M${L - 6} 55 Q${L - 10} 62 ${L - 4} 68 M${R + 6} 55 Q${R + 10} 62 ${R + 4} 68`,
+            };
+        case 7: // Curly Bob — chin-length curly volume
+            return {
+                back: `M${L - 4} 44 Q${L - 8} 55 ${L - 5} 72 Q${L - 2} 78 ${L + 4} 74 L${L + 2} 46 Z`,
+                main: `M${L} 46 Q${L - 3} 24 ${cx} 20 Q${R + 3} 24 ${R} 46 Q${R - 2} 30 ${cx} 26 Q${L + 2} 30 ${L} 46`,
+                accent: `M${R + 4} 44 Q${R + 8} 55 ${R + 5} 72 Q${R + 2} 78 ${R - 4} 74 L${R - 2} 46 Z`,
+            };
+        case 8: // Space Buns — two buns on top
+            return {
+                main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
+                accent: `M${cx - 14} 28 Q${cx - 22} 14 ${cx - 14} 10 Q${cx - 6} 6 ${cx - 6} 18 Q${cx - 6} 28 ${cx - 14} 28 Z M${cx + 14} 28 Q${cx + 22} 14 ${cx + 14} 10 Q${cx + 6} 6 ${cx + 6} 18 Q${cx + 6} 28 ${cx + 14} 28 Z`,
+            };
+        case 9: // Braids — two long braids down
+            return {
+                main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
+                back: `M${cx - 10} 40 Q${cx - 14} 50 ${cx - 12} 65 Q${cx - 10} 80 ${cx - 14} 92 Q${cx - 12} 96 ${cx - 8} 92 Q${cx - 6} 80 ${cx - 8} 65 Q${cx - 6} 50 ${cx - 10} 40 Z`,
+                accent: `M${cx + 10} 40 Q${cx + 14} 50 ${cx + 12} 65 Q${cx + 10} 80 ${cx + 14} 92 Q${cx + 12} 96 ${cx + 8} 92 Q${cx + 6} 80 ${cx + 8} 65 Q${cx + 6} 50 ${cx + 10} 40 Z`,
+            };
+        case 10: // Pixie Cut — short asymmetric
+            return {
+                main: `M${L} 44 Q${L - 2} 28 ${cx - 4} 22 Q${R + 2} 24 ${R} 42 Q${R - 2} 34 ${cx} 28 Q${L + 2} 32 ${L} 44`,
+                accent: `M${L - 2} 38 Q${L - 6} 32 ${L - 4} 48 Q${L - 2} 52 ${L} 46`,
+            };
+        case 11: // Half Up — top gathered, bottom flowing
+            return {
+                back: `M${L - 3} 44 Q${L - 6} 55 ${L - 4} 80 Q${L - 2} 88 ${L + 4} 84 L${L + 2} 46 Z`,
+                main: `M${L} 46 Q${L - 2} 24 ${cx} 18 Q${R + 2} 24 ${R} 46 Q${R - 2} 30 ${cx} 25 Q${L + 2} 30 ${L} 46`,
+                accent: `M${R + 3} 44 Q${R + 6} 55 ${R + 4} 80 Q${R + 2} 88 ${R - 4} 84 L${R - 2} 46 Z M${cx - 2} 24 Q${cx + 4} 16 ${cx + 2} 28`,
+            };
         default:
             return { main: `M${L} 44 Q${L - 1} 28 ${cx} 22 Q${R + 1} 28 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44` };
     }
@@ -175,7 +211,10 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
     const activeParticle = particleCosmetic || (legacyResolved?.type === 'PARTICLE' ? legacyResolved : null);
     const activeTrail = trailCosmetic || (legacyResolved?.type === 'TRAIL' ? legacyResolved : null);
 
+    const rawId = useId();
+    const uid = rawId.replace(/:/g, '_'); // sanitize for SVG id attrs
     const hue = appearance?.hue || 0;
+    const suitHue = appearance?.suitHue ?? hue; // backward compat: fallback to energy hue
     const bodyType = appearance?.bodyType || 'A';
     const isTypeB = bodyType === 'B';
     const isTypeC = bodyType === 'C';
@@ -200,41 +239,41 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
     return (
         <svg viewBox="0 0 200 340" className="w-full h-full" style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.25))' }}>
             <defs>
-                <filter id="av-glow" x="-30%" y="-30%" width="160%" height="160%">
+                <filter id={`${uid}-glow`} x="-30%" y="-30%" width="160%" height="160%">
                     <feGaussianBlur stdDeviation="3" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" />
                 </filter>
-                <filter id="av-soft" x="-10%" y="-10%" width="120%" height="120%">
+                <filter id={`${uid}-soft`} x="-10%" y="-10%" width="120%" height="120%">
                     <feGaussianBlur stdDeviation="1.5" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" />
                 </filter>
-                <filter id="av-bloom" x="-50%" y="-50%" width="200%" height="200%">
+                <filter id={`${uid}-bloom`} x="-50%" y="-50%" width="200%" height="200%">
                     <feGaussianBlur stdDeviation="6" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" />
                 </filter>
-                <linearGradient id="av-outfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={`hsl(${hue + 240}, 20%, 20%)`} />
-                    <stop offset="100%" stopColor={`hsl(${hue + 240}, 18%, 12%)`} />
+                <linearGradient id={`${uid}-outfit`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={`hsl(${suitHue}, 40%, 22%)`} />
+                    <stop offset="100%" stopColor={`hsl(${suitHue}, 35%, 14%)`} />
                 </linearGradient>
-                <linearGradient id="av-hl" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor={`hsla(${hue + 240}, 30%, 35%, 0.2)`} />
+                <linearGradient id={`${uid}-hl`} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={`hsla(${suitHue}, 45%, 35%, 0.2)`} />
                     <stop offset="100%" stopColor="transparent" />
                 </linearGradient>
-                <linearGradient id="av-pants" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={`hsl(${hue + 240}, 15%, 16%)`} />
-                    <stop offset="100%" stopColor={`hsl(${hue + 240}, 12%, 10%)`} />
+                <linearGradient id={`${uid}-pants`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={`hsl(${suitHue}, 35%, 18%)`} />
+                    <stop offset="100%" stopColor={`hsl(${suitHue}, 30%, 12%)`} />
                 </linearGradient>
-                <radialGradient id="av-face" cx="45%" cy="40%" r="55%">
+                <radialGradient id={`${uid}-face`} cx="45%" cy="40%" r="55%">
                     <stop offset="0%" stopColor={skin} /><stop offset="100%" stopColor={skinSh} />
                 </radialGradient>
-                <radialGradient id="av-energy" cx="50%" cy="50%" r="50%">
+                <radialGradient id={`${uid}-energy`} cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor={`hsl(${hue + 180}, 100%, 70%)`} stopOpacity={coreInt} />
                     <stop offset="60%" stopColor={`hsl(${hue + 200}, 80%, 50%)`} stopOpacity={coreInt * 0.3} />
                     <stop offset="100%" stopColor="transparent" stopOpacity="0" />
                 </radialGradient>
-                <linearGradient id="av-hair" x1="0" y1="0" x2="0.3" y2="1">
+                <linearGradient id={`${uid}-hair`} x1="0" y1="0" x2="0.3" y2="1">
                     <stop offset="0%" stopColor={hair} /><stop offset="100%" stopColor={hair + 'cc'} />
                 </linearGradient>
 
                 {/* Procedural fabric texture filter for base outfit */}
-                <filter id="av-fabric" x="0%" y="0%" width="100%" height="100%">
+                <filter id={`${uid}-fabric`} x="0%" y="0%" width="100%" height="100%">
                     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={4} seed={2} result="noise" />
                     <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
                     <feBlend in="SourceGraphic" in2="gray" mode="soft-light" result="blended" />
@@ -244,13 +283,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 </filter>
 
                 {/* Raster texture patterns for equipped armor */}
-                <pattern id="av-tex-carbon" patternUnits="userSpaceOnUse" width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H}>
+                <pattern id={`${uid}-tex-carbon`} patternUnits="userSpaceOnUse" width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H}>
                     <image href={TEXTURE_CARBON_FIBRE} width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H} />
                 </pattern>
-                <pattern id="av-tex-hexabump" patternUnits="userSpaceOnUse" width={TEXTURE_HEXABUMP_W} height={TEXTURE_HEXABUMP_H}>
+                <pattern id={`${uid}-tex-hexabump`} patternUnits="userSpaceOnUse" width={TEXTURE_HEXABUMP_W} height={TEXTURE_HEXABUMP_H}>
                     <image href={TEXTURE_HEXABUMP} width={TEXTURE_HEXABUMP_W} height={TEXTURE_HEXABUMP_H} />
                 </pattern>
-                <pattern id="av-tex-leather" patternUnits="userSpaceOnUse" width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H}>
+                <pattern id={`${uid}-tex-leather`} patternUnits="userSpaceOnUse" width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H}>
                     <image href={TEXTURE_DARK_LEATHER} width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H} />
                 </pattern>
             </defs>
@@ -266,7 +305,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                 {/* === WINGS (Level 150+) === */}
                 {evolutionLevel >= 150 && (
-                    <g filter="url(#av-bloom)">
+                    <g filter={`url(#${uid}-bloom)`}>
                         <path d={evolutionLevel >= 300
                             ? "M58 105 Q18 60 28 25 Q38 50 52 72 Q32 58 22 38 Q36 56 52 82 Z"
                             : "M60 115 Q32 82 40 55 Q47 72 56 88 Z"}
@@ -290,25 +329,25 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M80 198 L78 272 Q78 282 86 282 L94 282 Q98 282 97 276 L93 198"
                     : "M82 198 L79 270 Q79 282 86 282 L94 282 Q99 282 98 276 L94 198"}
-                      fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
+                      fill={`url(#${uid}-pants)`} stroke={`hsl(${suitHue},35%,24%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
                 <path d={isTypeC
                     ? "M106 200 L104 270 Q104 282 111 282 L118 282 Q122 282 121 276 L120 200"
                     : isTypeB
                     ? "M107 198 L105 272 Q105 282 112 282 L120 282 Q124 282 123 276 L121 198"
                     : "M106 198 L103 270 Q103 282 110 282 L118 282 Q123 282 122 276 L120 198"}
-                      fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
+                      fill={`url(#${uid}-pants)`} stroke={`hsl(${suitHue},35%,24%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
 
                 {/* === FEET === */}
                 {feet ? (() => {
                     const s = getRarityStyle(feet)!;
                     const texOp = getTextureOpacity(feet);
                     return (
-                        <g filter={s.intensity > 0.5 ? "url(#av-soft)" : undefined}>
+                        <g filter={s.intensity > 0.5 ? `url(#${uid}-soft)` : undefined}>
                             <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill={s.primary} stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
                             <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill={s.primary} stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
                             {/* Dark leather texture overlay on boots */}
-                            <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill="url(#av-tex-leather)" opacity={texOp} />
-                            <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill="url(#av-tex-leather)" opacity={texOp} />
+                            <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
+                            <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
                             <line x1="78" y1="276" x2="96" y2="276" stroke={s.particle} strokeWidth="1.5" strokeOpacity="0.5" />
                             <line x1="104" y1="276" x2="122" y2="276" stroke={s.particle} strokeWidth="1.5" strokeOpacity="0.5" />
                             {s.intensity >= 0.7 && <>
@@ -323,8 +362,8 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     );
                 })() : (
                     <g>
-                        <path d="M76 270 L74 282 Q72 290 82 290 L96 290 Q100 290 98 282 L96 270" fill={`hsl(${hue + 240},12%,14%)`} stroke={`hsl(${hue + 240},10%,20%)`} strokeWidth="0.5" />
-                        <path d="M102 270 L100 282 Q98 290 108 290 L122 290 Q126 290 124 282 L122 270" fill={`hsl(${hue + 240},12%,14%)`} stroke={`hsl(${hue + 240},10%,20%)`} strokeWidth="0.5" />
+                        <path d="M76 270 L74 282 Q72 290 82 290 L96 290 Q100 290 98 282 L96 270" fill={`hsl(${suitHue},30%,16%)`} stroke={`hsl(${suitHue},28%,22%)`} strokeWidth="0.5" />
+                        <path d="M102 270 L100 282 Q98 290 108 290 L122 290 Q126 290 124 282 L122 270" fill={`hsl(${suitHue},30%,16%)`} stroke={`hsl(${suitHue},28%,22%)`} strokeWidth="0.5" />
                     </g>
                 )}
 
@@ -334,16 +373,16 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M64 88 Q100 82 136 88 L128 200 Q100 206 72 200 Z"
                     : "M68 88 Q100 82 132 88 L126 200 Q100 206 74 200 Z"}
-                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="1" filter="url(#av-fabric)" />
+                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="1" filter={`url(#${uid}-fabric)`} />
                 <path d={isTypeC
                     ? "M70 88 Q100 82 100 88 L100 200 Q86 204 72 200 L78 140 Z"
                     : isTypeB
                     ? "M64 88 Q100 82 100 88 L100 200 Q86 203 72 200 Z"
                     : "M68 88 Q100 82 100 88 L100 200 Q86 204 74 200 Z"}
-                      fill="url(#av-hl)" />
+                      fill={`url(#${uid}-hl)`} />
                 {/* Collar V showing skin */}
                 <path d="M88 88 L100 105 L112 88" fill={skin} />
-                <path d="M86 87 L100 106 L114 87" fill="none" stroke={`hsl(${hue + 240},20%,28%)`} strokeWidth="1.2" />
+                <path d="M86 87 L100 106 L114 87" fill="none" stroke={`hsl(${suitHue},40%,30%)`} strokeWidth="1.2" />
                 <line x1="100" y1="106" x2="100" y2="195" stroke={`hsla(${hue + 180},30%,40%,0.08)`} strokeWidth="0.5" />
 
                 {/* === CHEST GEAR === */}
@@ -351,7 +390,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     const s = getRarityStyle(chest)!;
                     const texOp = getTextureOpacity(chest);
                     return (
-                        <g filter={s.intensity > 0.5 ? "url(#av-soft)" : undefined}>
+                        <g filter={s.intensity > 0.5 ? `url(#${uid}-soft)` : undefined}>
                             <path d={isTypeC
                                 ? "M72 92 Q100 86 128 92 L122 175 Q100 180 78 175 Z"
                                 : isTypeB
@@ -364,7 +403,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                 : isTypeB
                                 ? "M70 92 Q100 86 130 92 L126 175 Q100 180 74 175 Z"
                                 : "M72 92 Q100 86 128 92 L124 175 Q100 180 76 175 Z"}
-                                  fill="url(#av-tex-carbon)" opacity={texOp} />
+                                  fill={`url(#${uid}-tex-carbon)`} opacity={texOp} />
                             {/* Shoulder plates */}
                             <path d={`M${isTypeC ? 70 : isTypeB ? 64 : 68} 88 Q${isTypeC ? 62 : isTypeB ? 56 : 60} 86 ${isTypeC ? 62 : isTypeB ? 56 : 60} 96 L${isTypeC ? 72 : isTypeB ? 66 : 70} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
                             <path d={`M${isTypeC ? 130 : isTypeB ? 136 : 132} 88 Q${isTypeC ? 138 : isTypeB ? 144 : 140} 86 ${isTypeC ? 138 : isTypeB ? 144 : 140} 96 L${isTypeC ? 128 : isTypeB ? 134 : 130} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
@@ -394,13 +433,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                         <g>
                             <rect x="72" y="188" width="56" height="14" rx="3" fill={s.primary} fillOpacity="0.55" stroke={s.primary} strokeWidth="0.8" />
                             {/* Dark leather texture overlay on belt */}
-                            <rect x="72" y="188" width="56" height="14" rx="3" fill="url(#av-tex-leather)" opacity={texOp} />
+                            <rect x="72" y="188" width="56" height="14" rx="3" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
                             <rect x="94" y="189" width="12" height="12" rx="2" fill={s.particle} fillOpacity="0.4" />
                             <rect x="74" y="190" width="8" height="10" rx="2" fill={s.primary} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.3" />
                             <rect x="118" y="190" width="8" height="10" rx="2" fill={s.primary} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.3" />
                         </g>
                     );
-                })() : <line x1="74" y1="195" x2="126" y2="195" stroke={`hsl(${hue + 240},15%,25%)`} strokeWidth="1.5" />}
+                })() : <line x1="74" y1="195" x2="126" y2="195" stroke={`hsl(${suitHue},35%,27%)`} strokeWidth="1.5" />}
 
                 {/* === ARMS === */}
                 <path d={isTypeC
@@ -408,19 +447,19 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M64 90 L46 94 Q40 96 40 103 L40 155 Q40 160 44 160 L56 160 L64 155 Z"
                     : "M68 90 L50 94 Q44 96 43 103 L42 155 Q42 160 46 160 L58 160 L66 155 Z"}
-                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
+                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
                 <path d={isTypeC
                     ? "M130 90 L148 94 Q154 96 154 103 L155 155 Q155 160 151 160 L141 160 L134 155 Z"
                     : isTypeB
                     ? "M136 90 L154 94 Q160 96 160 103 L160 155 Q160 160 156 160 L144 160 L136 155 Z"
                     : "M132 90 L150 94 Q156 96 157 103 L158 155 Q158 160 154 160 L142 160 L134 155 Z"}
-                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
+                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
 
                 {/* === HANDS === */}
                 {hands ? (() => {
                     const s = getRarityStyle(hands)!;
                     return (
-                        <g filter={s.intensity > 0.5 ? "url(#av-soft)" : undefined}>
+                        <g filter={s.intensity > 0.5 ? `url(#${uid}-soft)` : undefined}>
                             <path d="M38 148 L38 172 Q38 178 44 178 L58 178 Q62 178 62 172 L62 148" fill={s.primary} fillOpacity="0.5" stroke={s.primary} strokeWidth="0.8" strokeOpacity="0.7" />
                             <path d="M138 148 L138 172 Q138 178 144 178 L158 178 Q162 178 162 172 L162 148" fill={s.primary} fillOpacity="0.5" stroke={s.primary} strokeWidth="0.8" strokeOpacity="0.7" />
                             <line x1="42" y1="170" x2="58" y2="170" stroke={s.particle} strokeWidth="1" strokeOpacity="0.5" />
@@ -440,8 +479,8 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                 {/* === ENERGY CORE === */}
                 {eqCount > 0 && <>
-                    <g filter="url(#av-bloom)">
-                        <circle cx="100" cy="130" r="6" fill="url(#av-energy)">
+                    <g filter={`url(#${uid}-bloom)`}>
+                        <circle cx="100" cy="130" r="6" fill={`url(#${uid}-energy)`}>
                             <animate attributeName="r" values="6;8;6" dur="3s" repeatCount="indefinite" />
                         </circle>
                     </g>
@@ -464,7 +503,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {amulet && (() => {
                     const s = getRarityStyle(amulet)!;
                     return (
-                        <g filter="url(#av-glow)">
+                        <g filter={`url(#${uid}-glow)`}>
                             <path d="M92 78 Q100 96 108 78" stroke={s.particle} strokeWidth="0.8" fill="none" strokeOpacity="0.5" />
                             <polygon points="100,90 95,97 100,104 105,97" fill={s.primary} stroke={s.particle} strokeWidth="0.8">
                                 <animate attributeName="opacity" values="1;0.7;1" dur="2.5s" repeatCount="indefinite" />
@@ -479,10 +518,10 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {/* === HEAD === */}
                 <g>
                     {/* Hair behind head */}
-                    {hairPaths.back && <path d={hairPaths.back} fill="url(#av-hair)" opacity="0.8" />}
+                    {hairPaths.back && <path d={hairPaths.back} fill={`url(#${uid}-hair)`} opacity="0.8" />}
 
                     {/* Head shape */}
-                    <ellipse cx="100" cy="50" rx={headW} ry="28" fill="url(#av-face)" stroke={skinSh} strokeWidth="0.5" />
+                    <ellipse cx="100" cy="50" rx={headW} ry="28" fill={`url(#${uid}-face)`} stroke={skinSh} strokeWidth="0.5" />
 
                     {/* Ears */}
                     <ellipse cx={100 - headW - 1} cy="52" rx="4" ry="6" fill={skin} stroke={skinSh} strokeWidth="0.3" />
@@ -519,8 +558,8 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     </g>
 
                     {/* === HAIR === */}
-                    <path d={hairPaths.main} fill="url(#av-hair)" />
-                    {hairPaths.accent && <path d={hairPaths.accent} fill="url(#av-hair)" opacity="0.9" />}
+                    <path d={hairPaths.main} fill={`url(#${uid}-hair)`} />
+                    {hairPaths.accent && <path d={hairPaths.accent} fill={`url(#${uid}-hair)`} opacity="0.9" />}
 
                     {/* === HEAD GEAR === */}
                     {head && (() => {
@@ -528,13 +567,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                         const vid = head.visualId || '';
                         const texOp = getTextureOpacity(head);
                         return (
-                            <g filter={s.intensity > 0.5 ? "url(#av-glow)" : "url(#av-soft)"}>
+                            <g filter={s.intensity > 0.5 ? `url(#${uid}-glow)` : `url(#${uid}-soft)`}>
                                 {vid.includes('helm') ? <>
                                     <path d={`M${100 - headW - 2} 28 Q100 10 ${100 + headW + 2} 28 L${100 + headW + 4} 62 Q100 72 ${100 - headW - 4} 62 Z`}
                                           fill={s.primary} fillOpacity="0.55" stroke={s.primary} strokeWidth="1.2" />
                                     {/* Hexabump texture overlay on full helmet */}
                                     <path d={`M${100 - headW - 2} 28 Q100 10 ${100 + headW + 2} 28 L${100 + headW + 4} 62 Q100 72 ${100 - headW - 4} 62 Z`}
-                                          fill="url(#av-tex-hexabump)" opacity={texOp} />
+                                          fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
                                     <rect x="80" y="44" width="40" height="8" rx="4" fill={`hsl(${hue + 180},90%,55%)`} fillOpacity="0.85">
                                         <animate attributeName="fillOpacity" values="0.85;0.5;0.85" dur="3s" repeatCount="indefinite" />
                                     </rect>
@@ -543,13 +582,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                         <animate attributeName="fillOpacity" values="0.7;0.4;0.7" dur="2.5s" repeatCount="indefinite" />
                                     </rect>
                                     {/* Hexabump texture overlay on visor */}
-                                    <rect x="80" y="42" width="40" height="12" rx="6" fill="url(#av-tex-hexabump)" opacity={texOp} />
+                                    <rect x="80" y="42" width="40" height="12" rx="6" fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
                                     <line x1="76" y1="48" x2="80" y2="48" stroke={s.primary} strokeWidth="1.5" />
                                     <line x1="120" y1="48" x2="124" y2="48" stroke={s.primary} strokeWidth="1.5" />
                                 </> : <>
                                     <rect x="78" y="36" width="44" height="6" rx="3" fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.5" />
                                     {/* Hexabump texture overlay on headband */}
-                                    <rect x="78" y="36" width="44" height="6" rx="3" fill="url(#av-tex-hexabump)" opacity={texOp} />
+                                    <rect x="78" y="36" width="44" height="6" rx="3" fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
                                     <circle cx="89" cy="47" r="8" fill="none" stroke={s.primary} strokeWidth="1.5" />
                                     <circle cx="111" cy="47" r="8" fill="none" stroke={s.primary} strokeWidth="1.5" />
                                     <circle cx="89" cy="47" r="5.5" fill={s.particle} fillOpacity="0.3">
@@ -567,7 +606,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                 {/* === CIRCLET / HALO (Level 50+) === */}
                 {evolutionLevel >= 50 && (
-                    <g filter="url(#av-glow)">
+                    <g filter={`url(#${uid}-glow)`}>
                         <ellipse cx="100" cy="22" rx="18" ry="4" fill="none"
                                  stroke={evolutionLevel >= 300 ? '#fbbf24' : evolutionLevel >= 100 ? '#a78bfa' : '#60a5fa'}
                                  strokeWidth="1.5" strokeOpacity="0.7">
@@ -590,7 +629,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                 {/* Unique item aura */}
                 {hasUnique && (
-                    <g filter="url(#av-bloom)">
+                    <g filter={`url(#${uid}-bloom)`}>
                         {[0, 60, 120, 180, 240, 300].map((angle, i) => {
                             const rad = (angle * Math.PI) / 180;
                             const cx = 100 + Math.cos(rad) * 50;
@@ -613,7 +652,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                 {/* Evolution particles (10+) */}
                 {evolutionLevel >= 10 && (
-                    <g filter="url(#av-soft)">
+                    <g filter={`url(#${uid}-soft)`}>
                         {Array.from({ length: Math.min(8, Math.floor(evolutionLevel / 50) + 1) }).map((_, i) => {
                             const count = Math.min(8, Math.floor(evolutionLevel / 50) + 1);
                             const a = (i * 360 / count) * (Math.PI / 180);
@@ -645,7 +684,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Ember Aura: flickering flame tongues rising from base
                     if (auraId === 'aura_ember') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Wide warm base glow */}
                             <ellipse cx="100" cy="165" rx="80" ry="110" fill="none" stroke={cosmeticColor} strokeWidth="22" strokeOpacity={(ci * 0.25).toFixed(2)} style={{ filter: 'blur(12px)' }}>
                                 <animate attributeName="strokeOpacity" values={`${(ci * 0.25).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.25).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
@@ -677,7 +716,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Frost Aura: crystalline shards radiating outward with icy mist
                     if (auraId === 'aura_frost') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Icy mist base */}
                             <ellipse cx="100" cy="160" rx="85" ry="115" fill="none" stroke={sc} strokeWidth="28" strokeOpacity={(ci * 0.15).toFixed(2)} style={{ filter: 'blur(16px)' }}>
                                 <animate attributeName="rx" values="85;90;85" dur="4s" repeatCount="indefinite" />
@@ -706,7 +745,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Void Aura: dark vortex with swirling rings and inward-pulling particles
                     if (auraId === 'aura_void') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Dark vortex background */}
                             <ellipse cx="100" cy="150" rx="78" ry="105" fill={sc} fillOpacity={(ci * 0.08).toFixed(2)}>
                                 <animate attributeName="rx" values="78;82;78" dur="5s" repeatCount="indefinite" />
@@ -739,7 +778,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Radiant Aura: brilliant starburst with pulsing concentric rings
                     if (auraId === 'aura_radiant') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Warm golden glow base */}
                             <ellipse cx="100" cy="145" rx="85" ry="115" fill="none" stroke={sc} strokeWidth="30" strokeOpacity={(ci * 0.18).toFixed(2)} style={{ filter: 'blur(14px)' }}>
                                 <animate attributeName="strokeOpacity" values={`${(ci * 0.18).toFixed(2)};${(ci * 0.08).toFixed(2)};${(ci * 0.18).toFixed(2)}`} dur="2.5s" repeatCount="indefinite" />
@@ -772,7 +811,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Toxic Aura: bubbling drips rising with toxic cloud
                     if (auraId === 'aura_toxic') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Toxic cloud */}
                             <ellipse cx="100" cy="170" rx="80" ry="100" fill="none" stroke={cosmeticColor} strokeWidth="20" strokeOpacity={(ci * 0.18).toFixed(2)} style={{ filter: 'blur(14px)' }}>
                                 <animate attributeName="ry" values="100;108;100" dur="3.5s" repeatCount="indefinite" />
@@ -802,7 +841,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Blood Moon Aura: pulsing crimson heartbeat with veiny tendrils
                     if (auraId === 'aura_bloodmoon') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Deep crimson pulse — fast heartbeat rhythm */}
                             <ellipse cx="100" cy="150" rx="80" ry="108" fill={cosmeticColor} fillOpacity={(ci * 0.06).toFixed(2)}>
                                 <animate attributeName="fillOpacity" values={`${(ci * 0.06).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.06).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.06).toFixed(2)}`} dur="1.2s" repeatCount="indefinite" />
@@ -834,7 +873,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Aurora Aura: horizontal shifting color bands like northern lights
                     if (auraId === 'aura_aurora') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Horizontal aurora bands at different heights */}
                             {[
                                 { y: 40, rx: 75, ry: 12, color: cosmeticColor, dur: '4s' },
@@ -866,7 +905,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Solar Flare Aura: explosive corona with erupting arcs
                     if (auraId === 'aura_solar') return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             {/* Intense core glow */}
                             <ellipse cx="100" cy="140" rx="45" ry="60" fill={sc} fillOpacity={(ci * 0.12).toFixed(2)}>
                                 <animate attributeName="fillOpacity" values={`${(ci * 0.12).toFixed(2)};${(ci * 0.06).toFixed(2)};${(ci * 0.12).toFixed(2)}`} dur="1.5s" repeatCount="indefinite" />
@@ -897,7 +936,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                     // Fallback: generic aura for any unrecognized ID
                     return (
-                        <g filter="url(#av-bloom)">
+                        <g filter={`url(#${uid}-bloom)`}>
                             <ellipse cx="100" cy="150" rx="80" ry="108" fill="none" stroke={cosmeticColor} strokeWidth="20" strokeOpacity={(ci * 0.3).toFixed(2)} style={{ filter: 'blur(10px)' }}>
                                 <animate attributeName="strokeOpacity" values={`${(ci * 0.3).toFixed(2)};${(ci * 0.1).toFixed(2)};${(ci * 0.3).toFixed(2)}`} dur="3s" repeatCount="indefinite" />
                             </ellipse>
@@ -917,7 +956,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     const pIntensity = activeParticle.intensity;
                     const pCount = activeParticle.particleCount;
                     return (
-                    <g filter="url(#av-soft)">
+                    <g filter={`url(#${uid}-soft)`}>
                         {Array.from({ length: pCount }).map((_, i) => {
                             const totalAngle = 360;
                             const angleDeg = (i * totalAngle) / pCount;
@@ -970,7 +1009,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Lightning Trail: jagged electric bolts crackling outward
                     if (trailId === 'trail_lightning') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 <path d="M75 195 L60 210 L72 220 L50 245 L68 250 L40 290" fill="none" stroke={cosmeticColor} strokeWidth="3" strokeLinecap="round" strokeOpacity={(ci * 0.6).toFixed(2)}>
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.6).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * 0.6).toFixed(2)}`} dur="0.8s" repeatCount="indefinite" />
                                 </path>
@@ -990,7 +1029,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                 </path>
                             </g>
                             {/* Electric sparkle flashes */}
-                            <g filter="url(#av-glow)">
+                            <g filter={`url(#${uid}-glow)`}>
                                 {[{cx:50,cy:245},{cx:160,cy:245},{cx:40,cy:290},{cx:160,cy:290},{cx:100,cy:255}].map((p, i) => (
                                     <circle key={`ls-${i}`} cx={p.cx} cy={p.cy} r="3" fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity="0">
                                         <animate attributeName="fillOpacity" values={`0;${(ci * 0.7).toFixed(2)};0`} dur={`${0.4 + i * 0.15}s`} repeatCount="indefinite" />
@@ -1004,7 +1043,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Shadow Trail: dark smoky tendrils creeping downward
                     if (trailId === 'trail_shadow') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 {/* Dark smoke clouds */}
                                 {[
                                     { cx: 70, cy: 220, rx: 25, ry: 15 },
@@ -1020,7 +1059,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     </ellipse>
                                 ))}
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 {/* Creeping shadow tendrils */}
                                 {[
                                     'M75 200 Q55 230 45 270 Q38 295 30 330',
@@ -1040,7 +1079,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Plasma Trail: superheated arcs with bright core streaks
                     if (trailId === 'trail_plasma') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 {/* Plasma glow */}
                                 <path d="M75 195 Q35 235 22 300" fill="none" stroke={cosmeticColor} strokeWidth="12" strokeLinecap="round" strokeOpacity={(ci * 0.15).toFixed(2)}>
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.15).toFixed(2)};${(ci * 0.05).toFixed(2)};${(ci * 0.15).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
@@ -1049,7 +1088,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.05).toFixed(2)};${(ci * 0.15).toFixed(2)};${(ci * 0.05).toFixed(2)}`} dur="2s" repeatCount="indefinite" />
                                 </path>
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 {/* Spiraling plasma arcs */}
                                 <path d="M80 195 Q55 210 65 235 Q75 260 55 280 Q40 295 30 320" fill="none" stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round" strokeOpacity={(ci * 0.55).toFixed(2)} strokeDasharray="10 6">
                                     <animate attributeName="strokeDashoffset" values="0;-48" dur="1.5s" repeatCount="indefinite" />
@@ -1066,7 +1105,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                 </path>
                             </g>
                             {/* Plasma orbs along trails */}
-                            <g filter="url(#av-glow)">
+                            <g filter={`url(#${uid}-glow)`}>
                                 {[{cx:55,cy:280},{cx:145,cy:280},{cx:30,cy:315},{cx:170,cy:315}].map((p, i) => (
                                     <circle key={`po-${i}`} cx={p.cx} cy={p.cy} r="3" fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity={(ci * 0.5).toFixed(2)}>
                                         <animate attributeName="r" values="2;4.5;2" dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
@@ -1080,12 +1119,12 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Venom Trail: dripping toxic drops with splatter at base
                     if (trailId === 'trail_venom') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 <ellipse cx="100" cy="310" rx="50" ry="10" fill={cosmeticColor} fillOpacity={(ci * 0.12).toFixed(2)}>
                                     <animate attributeName="rx" values="50;55;50" dur="3s" repeatCount="indefinite" />
                                 </ellipse>
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 {/* Dripping streams */}
                                 {[65, 80, 100, 120, 135].map((x, i) => {
                                     const h = 60 + (i % 3) * 25;
@@ -1117,7 +1156,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Inferno Trail: roaring flames with heat distortion
                     if (trailId === 'trail_inferno') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 {/* Wide flame glow at base */}
                                 <path d="M50 300 Q75 260 65 220 Q60 200 75 190" fill="none" stroke={cosmeticColor} strokeWidth="14" strokeLinecap="round" strokeOpacity={(ci * 0.12).toFixed(2)}>
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)}`} dur="1.5s" repeatCount="indefinite" />
@@ -1126,7 +1165,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)}`} dur="1.5s" repeatCount="indefinite" />
                                 </path>
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 {/* Flame shapes (irregular, organic curves) */}
                                 {[
                                     { d: 'M75 195 Q55 210 48 240 Q42 265 55 280 Q45 300 38 325', c: cosmeticColor, w: 3, dur: '1.3s' },
@@ -1144,7 +1183,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                 ))}
                             </g>
                             {/* Rising heat sparks */}
-                            <g filter="url(#av-glow)">
+                            <g filter={`url(#${uid}-glow)`}>
                                 {[0,1,2,3,4,5].map(i => {
                                     const cx = 50 + i * 20;
                                     const cy = 290 - (i % 3) * 15;
@@ -1160,13 +1199,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Frost Wake Trail: crystalline ice forming and shattering
                     if (trailId === 'trail_ice') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 {/* Frosty mist at base */}
                                 <ellipse cx="100" cy="300" rx="60" ry="12" fill={sc} fillOpacity={(ci * 0.15).toFixed(2)} style={{ filter: 'blur(8px)' }}>
                                     <animate attributeName="rx" values="60;68;60" dur="3s" repeatCount="indefinite" />
                                 </ellipse>
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 {/* Ice crystal shards growing downward */}
                                 {[
                                     { points: '70,200 62,230 70,225 58,260 68,255 55,290', dur: '2.5s' },
@@ -1202,7 +1241,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Spectral Trail: ghostly after-images with wispy echoes
                     if (trailId === 'trail_spectral') return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 {/* Ghostly silhouette echoes at offset positions */}
                                 {[
                                     { x: -12, y: 15, opacity: 0.08, scale: 0.95 },
@@ -1223,7 +1262,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     </ellipse>
                                 ))}
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 {/* Wispy spectral tendrils */}
                                 {[
                                     'M78 200 Q60 225 55 260 Q52 285 58 310 Q50 320 45 340',
@@ -1242,7 +1281,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                 ))}
                             </g>
                             {/* Ghostly orbs fading in and out */}
-                            <g filter="url(#av-glow)">
+                            <g filter={`url(#${uid}-glow)`}>
                                 {[{cx:48,cy:270},{cx:152,cy:275},{cx:55,cy:310},{cx:145,cy:315},{cx:100,cy:330}].map((p, i) => (
                                     <circle key={`go-${i}`} cx={p.cx} cy={p.cy} r={2.5} fill={i % 2 === 0 ? cosmeticColor : sc} fillOpacity="0">
                                         <animate attributeName="fillOpacity" values={`0;${(ci * 0.45).toFixed(2)};0`} dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite" />
@@ -1256,7 +1295,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     // Fallback: generic wisp trail
                     return (
                         <g>
-                            <g filter="url(#av-bloom)">
+                            <g filter={`url(#${uid}-bloom)`}>
                                 <path d="M75 195 Q35 235 22 300" fill="none" stroke={cosmeticColor} strokeWidth="10" strokeLinecap="round" strokeOpacity={(ci * 0.12).toFixed(2)}>
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)}`} dur="3s" repeatCount="indefinite" />
                                 </path>
@@ -1264,7 +1303,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     <animate attributeName="strokeOpacity" values={`${(ci * 0.04).toFixed(2)};${(ci * 0.12).toFixed(2)};${(ci * 0.04).toFixed(2)}`} dur="3s" repeatCount="indefinite" />
                                 </path>
                             </g>
-                            <g filter="url(#av-soft)">
+                            <g filter={`url(#${uid}-soft)`}>
                                 <path d="M78 200 Q48 225 38 260 Q30 280 25 310" fill="none" stroke={cosmeticColor} strokeWidth="2.5" strokeLinecap="round" strokeOpacity={(ci * 0.55).toFixed(2)} strokeDasharray="8 12">
                                     <animate attributeName="strokeDashoffset" values="0;-40" dur="1.8s" repeatCount="indefinite" />
                                 </path>
