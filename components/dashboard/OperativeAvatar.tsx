@@ -273,13 +273,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 </linearGradient>
 
                 {/* Procedural fabric texture filter for base outfit */}
-                <filter id={`${uid}-fabric`} x="0%" y="0%" width="100%" height="100%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={4} seed={2} result="noise" />
+                <filter id={`${uid}-fabric`} x="-5%" y="-5%" width="110%" height="110%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.12" numOctaves={3} seed={2} result="noise" />
                     <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
-                    <feBlend in="SourceGraphic" in2="gray" mode="soft-light" result="blended" />
-                    <feComponentTransfer in="blended">
-                        <feFuncA type="linear" slope={1} />
+                    <feComponentTransfer in="gray" result="faded">
+                        <feFuncA type="linear" slope="0.3" />
                     </feComponentTransfer>
+                    <feBlend in="SourceGraphic" in2="faded" mode="soft-light" />
                 </filter>
 
                 {/* Raster texture patterns for equipped armor */}
