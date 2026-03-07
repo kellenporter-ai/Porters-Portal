@@ -272,16 +272,6 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     <stop offset="0%" stopColor={hair} /><stop offset="100%" stopColor={hair + 'cc'} />
                 </linearGradient>
 
-                {/* Procedural fabric texture filter for base outfit */}
-                <filter id={`${uid}-fabric`} x="-5%" y="-5%" width="110%" height="110%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.12" numOctaves={3} seed={2} result="noise" />
-                    <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
-                    <feComponentTransfer in="gray" result="faded">
-                        <feFuncA type="linear" slope="0.3" />
-                    </feComponentTransfer>
-                    <feBlend in="SourceGraphic" in2="faded" mode="soft-light" />
-                </filter>
-
                 {/* Raster texture patterns for equipped armor */}
                 <pattern id={`${uid}-tex-carbon`} patternUnits="userSpaceOnUse" width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H}>
                     <image href={TEXTURE_CARBON_FIBRE} width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H} />
@@ -329,13 +319,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M80 198 L78 272 Q78 282 86 282 L94 282 Q98 282 97 276 L93 198"
                     : "M82 198 L79 270 Q79 282 86 282 L94 282 Q99 282 98 276 L94 198"}
-                      fill={`url(#${uid}-pants)`} stroke={`hsl(${suitHue},35%,24%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
+                      fill={`url(#${uid}-pants)`} stroke={`hsl(${suitHue},35%,24%)`} strokeWidth="0.8" />
                 <path d={isTypeC
                     ? "M106 200 L104 270 Q104 282 111 282 L118 282 Q122 282 121 276 L120 200"
                     : isTypeB
                     ? "M107 198 L105 272 Q105 282 112 282 L120 282 Q124 282 123 276 L121 198"
                     : "M106 198 L103 270 Q103 282 110 282 L118 282 Q123 282 122 276 L120 198"}
-                      fill={`url(#${uid}-pants)`} stroke={`hsl(${suitHue},35%,24%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
+                      fill={`url(#${uid}-pants)`} stroke={`hsl(${suitHue},35%,24%)`} strokeWidth="0.8" />
 
                 {/* === FEET === */}
                 {feet ? (() => {
@@ -373,7 +363,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M64 88 Q100 82 136 88 L128 200 Q100 206 72 200 Z"
                     : "M68 88 Q100 82 132 88 L126 200 Q100 206 74 200 Z"}
-                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="1" filter={`url(#${uid}-fabric)`} />
+                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="1" />
                 <path d={isTypeC
                     ? "M70 88 Q100 82 100 88 L100 200 Q86 204 72 200 L78 140 Z"
                     : isTypeB
@@ -447,13 +437,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M64 90 L46 94 Q40 96 40 103 L40 155 Q40 160 44 160 L56 160 L64 155 Z"
                     : "M68 90 L50 94 Q44 96 43 103 L42 155 Q42 160 46 160 L58 160 L66 155 Z"}
-                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
+                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="0.8" />
                 <path d={isTypeC
                     ? "M130 90 L148 94 Q154 96 154 103 L155 155 Q155 160 151 160 L141 160 L134 155 Z"
                     : isTypeB
                     ? "M136 90 L154 94 Q160 96 160 103 L160 155 Q160 160 156 160 L144 160 L136 155 Z"
                     : "M132 90 L150 94 Q156 96 157 103 L158 155 Q158 160 154 160 L142 160 L134 155 Z"}
-                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="0.8" filter={`url(#${uid}-fabric)`} />
+                      fill={`url(#${uid}-outfit)`} stroke={`hsl(${suitHue},38%,27%)`} strokeWidth="0.8" />
 
                 {/* === HANDS === */}
                 {hands ? (() => {
