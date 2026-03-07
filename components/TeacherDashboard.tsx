@@ -857,8 +857,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                                           {/* Side-by-side layout: answers left, rubric right (when rubric exists) */}
                                           <div className={selectedAssessment?.rubric ? 'flex flex-col lg:flex-row gap-4' : ''}>
-                                            {/* Left panel: Student answers */}
-                                            <div className={selectedAssessment?.rubric ? 'lg:w-1/2 min-w-0' : ''}>
+                                            {/* Left panel: Student answers (independent scroll) */}
+                                            <div className={selectedAssessment?.rubric ? 'lg:w-1/2 min-w-0 lg:max-h-[70vh] lg:overflow-y-auto custom-scrollbar' : ''}>
                                           {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
                                             <div className="space-y-2">
                                               {selectedAssessment.lessonBlocks
@@ -970,7 +970,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                             const isAlreadyGraded = !!sub.rubricGrade;
 
                                             return (
-                                              <div className="lg:w-1/2 min-w-0 lg:sticky lg:top-0 lg:self-start lg:max-h-[80vh] lg:overflow-y-auto" onClick={e => e.stopPropagation()}>
+                                              <div className="lg:w-1/2 min-w-0 lg:max-h-[70vh] lg:overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
                                                 <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3">
                                                 <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                                                   <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
