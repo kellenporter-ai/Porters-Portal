@@ -621,7 +621,8 @@ export const dataService = {
 
   /** Assignment-scoped submissions — fetches ALL submissions for a specific assignment (no global limit). */
   subscribeToAssignmentSubmissions: (assignmentId: string, callback: (submissions: Submission[]) => void) => {
-    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), orderBy('submittedAt', 'desc'));
+    // Single-field where() avoids composite index requirement — sort client-side
+    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId));
     return onSnapshot(q, (snapshot) => {
       const submissions = snapshot.docs.map(d => {
         const data = d.data();
@@ -653,6 +654,8 @@ export const dataService = {
           flaggedAsAIAt: data.flaggedAsAIAt || '',
         } as Submission;
       });
+      // Sort by submittedAt descending (client-side since we dropped orderBy to avoid index dep)
+      submissions.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
       callback(submissions);
     }, (error: unknown) => reportError(error, { subscription: 'assignmentSubmissions', assignmentId }));
   },
