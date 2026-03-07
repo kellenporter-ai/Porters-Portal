@@ -63,6 +63,33 @@ const getRarityStyle = (item: { rarity?: string } | null | undefined) => {
     return RARITY_COLORS[item.rarity as string] || RARITY_COLORS.COMMON;
 };
 
+// === TEXTURE OVERLAY SYSTEM ===
+// Rarity-driven opacity for raster texture overlays on equipped armor
+const RARITY_TEXTURE_OPACITY: Record<string, number> = {
+    COMMON:   0.12,
+    UNCOMMON: 0.20,
+    RARE:     0.30,
+    UNIQUE:   0.42,
+};
+
+const getTextureOpacity = (item: { rarity?: string } | null | undefined): number => {
+    if (!item) return 0;
+    return RARITY_TEXTURE_OPACITY[item.rarity as string] ?? RARITY_TEXTURE_OPACITY.COMMON;
+};
+
+// Base64-encoded tileable texture PNGs (embedded to avoid extra network requests)
+const TEXTURE_CARBON_FIBRE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAWCAYAAADafVyIAAAAV0lEQVR4AWPg5uaexcDI8B9Ec3JyFhDCpKpnACmGYWI0kKqe9j4AAi0gBtPEaCBZPYggF1NsAYXBR9gCShPAwPuAkgRA30imJR4tKkaLitGiYrSoIAIDAKy7LKCTTHSAAAAAAElFTkSuQmCC';
+const TEXTURE_CARBON_W = 24;
+const TEXTURE_CARBON_H = 22;
+
+const TEXTURE_HEXABUMP = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAhCAQAAACR61jhAAAArUlEQVR4AY3SQQrCQBBE0b6icxJhFkIWc3Z7SuOnU0iav9PHNISKcTxWLX95XUu26zF1w+iWUZNtNKYzI9kTCKNNxNS8Mt6BCSaFQWBQMYgzaIfNccQ+abSezE8uBq1M/6wfy0QLmyeBkWglzr7nQc6oz3Y9ploMGo5gwGAFxmgGgyEbqpiNsJIBg8IEnHGed4wBIX+ZDjIrZ0znXKAxVvphbKUwCKzSYILOWPUb+kvq4+prG70AAAAASUVORK5CYII=';
+const TEXTURE_HEXABUMP_W = 19;
+const TEXTURE_HEXABUMP_H = 33;
+
+const TEXTURE_DARK_LEATHER = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoBAMAAAB+0KVeAAAAMFBMVEUqKiosLCwuLi4xMTErKystLS0qKiopKSkpKSkzMzMpKSkoKCg3NzcoKCgrKysnJydKwFaoAAAAEHRSTlNcQDIqTjlVanEjY3gcf0eVx2e4NwAAAJNJREFUeAHt0SEKwmAAQOEHDrVYdEmTgwXBoCzZ9l9h8HeT2Wa1CUY9gc3qFTyBJ/EKij+DF7yAwfbVx+Nc5kBoVoUi5mugG2Kh+Ci5UtRJkFWKcctLpVi07ERFeUy6Nk/FaLIH+rflRhHmgwO7xz1XkA1Pvdd2Nq2VMQpjlDHqK0YZo4xRxihjFMYoMEb9/qP/ozcE1oO5SZysbgAAAABJRU5ErkJggg==';;
+const TEXTURE_LEATHER_W = 40;
+const TEXTURE_LEATHER_H = 40;
+
 const getHairPaths = (style: number, hw: number): { main: string; back?: string; accent?: string } => {
     const cx = 100;
     const L = cx - hw, R = cx + hw;
@@ -205,6 +232,27 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 <linearGradient id="av-hair" x1="0" y1="0" x2="0.3" y2="1">
                     <stop offset="0%" stopColor={hair} /><stop offset="100%" stopColor={hair + 'cc'} />
                 </linearGradient>
+
+                {/* Procedural fabric texture filter for base outfit */}
+                <filter id="av-fabric" x="0%" y="0%" width="100%" height="100%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={4} seed={2} result="noise" />
+                    <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
+                    <feBlend in="SourceGraphic" in2="gray" mode="soft-light" result="blended" />
+                    <feComponentTransfer in="blended">
+                        <feFuncA type="linear" slope={1} />
+                    </feComponentTransfer>
+                </filter>
+
+                {/* Raster texture patterns for equipped armor */}
+                <pattern id="av-tex-carbon" patternUnits="userSpaceOnUse" width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H}>
+                    <image href={TEXTURE_CARBON_FIBRE} width={TEXTURE_CARBON_W} height={TEXTURE_CARBON_H} />
+                </pattern>
+                <pattern id="av-tex-hexabump" patternUnits="userSpaceOnUse" width={TEXTURE_HEXABUMP_W} height={TEXTURE_HEXABUMP_H}>
+                    <image href={TEXTURE_HEXABUMP} width={TEXTURE_HEXABUMP_W} height={TEXTURE_HEXABUMP_H} />
+                </pattern>
+                <pattern id="av-tex-leather" patternUnits="userSpaceOnUse" width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H}>
+                    <image href={TEXTURE_DARK_LEATHER} width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H} />
+                </pattern>
             </defs>
 
             {/* Platform shadow */}
@@ -242,21 +290,25 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M80 198 L78 272 Q78 282 86 282 L94 282 Q98 282 97 276 L93 198"
                     : "M82 198 L79 270 Q79 282 86 282 L94 282 Q99 282 98 276 L94 198"}
-                      fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" />
+                      fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
                 <path d={isTypeC
                     ? "M106 200 L104 270 Q104 282 111 282 L118 282 Q122 282 121 276 L120 200"
                     : isTypeB
                     ? "M107 198 L105 272 Q105 282 112 282 L120 282 Q124 282 123 276 L121 198"
                     : "M106 198 L103 270 Q103 282 110 282 L118 282 Q123 282 122 276 L120 198"}
-                      fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" />
+                      fill="url(#av-pants)" stroke={`hsl(${hue + 240},15%,22%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
 
                 {/* === FEET === */}
                 {feet ? (() => {
                     const s = getRarityStyle(feet)!;
+                    const texOp = getTextureOpacity(feet);
                     return (
                         <g filter={s.intensity > 0.5 ? "url(#av-soft)" : undefined}>
                             <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill={s.primary} stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
                             <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill={s.primary} stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
+                            {/* Dark leather texture overlay on boots */}
+                            <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill="url(#av-tex-leather)" opacity={texOp} />
+                            <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill="url(#av-tex-leather)" opacity={texOp} />
                             <line x1="78" y1="276" x2="96" y2="276" stroke={s.particle} strokeWidth="1.5" strokeOpacity="0.5" />
                             <line x1="104" y1="276" x2="122" y2="276" stroke={s.particle} strokeWidth="1.5" strokeOpacity="0.5" />
                             {s.intensity >= 0.7 && <>
@@ -282,7 +334,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M64 88 Q100 82 136 88 L128 200 Q100 206 72 200 Z"
                     : "M68 88 Q100 82 132 88 L126 200 Q100 206 74 200 Z"}
-                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="1" />
+                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="1" filter="url(#av-fabric)" />
                 <path d={isTypeC
                     ? "M70 88 Q100 82 100 88 L100 200 Q86 204 72 200 L78 140 Z"
                     : isTypeB
@@ -297,6 +349,7 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {/* === CHEST GEAR === */}
                 {chest && (() => {
                     const s = getRarityStyle(chest)!;
+                    const texOp = getTextureOpacity(chest);
                     return (
                         <g filter={s.intensity > 0.5 ? "url(#av-soft)" : undefined}>
                             <path d={isTypeC
@@ -305,6 +358,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                 ? "M70 92 Q100 86 130 92 L126 175 Q100 180 74 175 Z"
                                 : "M72 92 Q100 86 128 92 L124 175 Q100 180 76 175 Z"}
                                   fill={s.primary} fillOpacity="0.3" stroke={s.primary} strokeWidth="1" strokeOpacity="0.6" />
+                            {/* Carbon-fibre texture overlay on chest armor */}
+                            <path d={isTypeC
+                                ? "M72 92 Q100 86 128 92 L122 175 Q100 180 78 175 Z"
+                                : isTypeB
+                                ? "M70 92 Q100 86 130 92 L126 175 Q100 180 74 175 Z"
+                                : "M72 92 Q100 86 128 92 L124 175 Q100 180 76 175 Z"}
+                                  fill="url(#av-tex-carbon)" opacity={texOp} />
                             {/* Shoulder plates */}
                             <path d={`M${isTypeC ? 70 : isTypeB ? 64 : 68} 88 Q${isTypeC ? 62 : isTypeB ? 56 : 60} 86 ${isTypeC ? 62 : isTypeB ? 56 : 60} 96 L${isTypeC ? 72 : isTypeB ? 66 : 70} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
                             <path d={`M${isTypeC ? 130 : isTypeB ? 136 : 132} 88 Q${isTypeC ? 138 : isTypeB ? 144 : 140} 86 ${isTypeC ? 138 : isTypeB ? 144 : 140} 96 L${isTypeC ? 128 : isTypeB ? 134 : 130} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
@@ -329,9 +389,12 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {/* === BELT === */}
                 {belt ? (() => {
                     const s = getRarityStyle(belt)!;
+                    const texOp = getTextureOpacity(belt);
                     return (
                         <g>
                             <rect x="72" y="188" width="56" height="14" rx="3" fill={s.primary} fillOpacity="0.55" stroke={s.primary} strokeWidth="0.8" />
+                            {/* Dark leather texture overlay on belt */}
+                            <rect x="72" y="188" width="56" height="14" rx="3" fill="url(#av-tex-leather)" opacity={texOp} />
                             <rect x="94" y="189" width="12" height="12" rx="2" fill={s.particle} fillOpacity="0.4" />
                             <rect x="74" y="190" width="8" height="10" rx="2" fill={s.primary} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.3" />
                             <rect x="118" y="190" width="8" height="10" rx="2" fill={s.primary} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.3" />
@@ -345,13 +408,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     : isTypeB
                     ? "M64 90 L46 94 Q40 96 40 103 L40 155 Q40 160 44 160 L56 160 L64 155 Z"
                     : "M68 90 L50 94 Q44 96 43 103 L42 155 Q42 160 46 160 L58 160 L66 155 Z"}
-                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" />
+                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
                 <path d={isTypeC
                     ? "M130 90 L148 94 Q154 96 154 103 L155 155 Q155 160 151 160 L141 160 L134 155 Z"
                     : isTypeB
                     ? "M136 90 L154 94 Q160 96 160 103 L160 155 Q160 160 156 160 L144 160 L136 155 Z"
                     : "M132 90 L150 94 Q156 96 157 103 L158 155 Q158 160 154 160 L142 160 L134 155 Z"}
-                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" />
+                      fill="url(#av-outfit)" stroke={`hsl(${hue + 240},18%,25%)`} strokeWidth="0.8" filter="url(#av-fabric)" />
 
                 {/* === HANDS === */}
                 {hands ? (() => {
@@ -463,11 +526,15 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     {head && (() => {
                         const s = getRarityStyle(head)!;
                         const vid = head.visualId || '';
+                        const texOp = getTextureOpacity(head);
                         return (
                             <g filter={s.intensity > 0.5 ? "url(#av-glow)" : "url(#av-soft)"}>
                                 {vid.includes('helm') ? <>
                                     <path d={`M${100 - headW - 2} 28 Q100 10 ${100 + headW + 2} 28 L${100 + headW + 4} 62 Q100 72 ${100 - headW - 4} 62 Z`}
                                           fill={s.primary} fillOpacity="0.55" stroke={s.primary} strokeWidth="1.2" />
+                                    {/* Hexabump texture overlay on full helmet */}
+                                    <path d={`M${100 - headW - 2} 28 Q100 10 ${100 + headW + 2} 28 L${100 + headW + 4} 62 Q100 72 ${100 - headW - 4} 62 Z`}
+                                          fill="url(#av-tex-hexabump)" opacity={texOp} />
                                     <rect x="80" y="44" width="40" height="8" rx="4" fill={`hsl(${hue + 180},90%,55%)`} fillOpacity="0.85">
                                         <animate attributeName="fillOpacity" values="0.85;0.5;0.85" dur="3s" repeatCount="indefinite" />
                                     </rect>
@@ -475,10 +542,14 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                                     <rect x="80" y="42" width="40" height="12" rx="6" fill={`hsla(${hue + 180},80%,50%,0.7)`} stroke={s.primary} strokeWidth="1">
                                         <animate attributeName="fillOpacity" values="0.7;0.4;0.7" dur="2.5s" repeatCount="indefinite" />
                                     </rect>
+                                    {/* Hexabump texture overlay on visor */}
+                                    <rect x="80" y="42" width="40" height="12" rx="6" fill="url(#av-tex-hexabump)" opacity={texOp} />
                                     <line x1="76" y1="48" x2="80" y2="48" stroke={s.primary} strokeWidth="1.5" />
                                     <line x1="120" y1="48" x2="124" y2="48" stroke={s.primary} strokeWidth="1.5" />
                                 </> : <>
                                     <rect x="78" y="36" width="44" height="6" rx="3" fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.5" />
+                                    {/* Hexabump texture overlay on headband */}
+                                    <rect x="78" y="36" width="44" height="6" rx="3" fill="url(#av-tex-hexabump)" opacity={texOp} />
                                     <circle cx="89" cy="47" r="8" fill="none" stroke={s.primary} strokeWidth="1.5" />
                                     <circle cx="111" cy="47" r="8" fill="none" stroke={s.primary} strokeWidth="1.5" />
                                     <circle cx="89" cy="47" r="5.5" fill={s.particle} fillOpacity="0.3">
