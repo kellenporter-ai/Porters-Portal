@@ -124,8 +124,8 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
             };
         case 6: // Afro — large rounded volume
             return {
-                main: `M${L - 8} 52 Q${L - 14} 14 ${cx} 8 Q${R + 14} 14 ${R + 8} 52 Q${R + 4} 32 ${cx} 12 Q${L - 4} 32 ${L - 8} 52`,
-                accent: `M${L - 10} 38 Q${L - 16} 30 ${L - 10} 24 M${R + 10} 38 Q${R + 16} 30 ${R + 10} 24 M${cx - 6} 12 Q${cx} 6 ${cx + 6} 12`,
+                main: `M${L - 8} 62 Q${L - 14} 14 ${cx} 6 Q${R + 14} 14 ${R + 8} 62 Q${R + 4} 38 ${cx} 12 Q${L - 4} 38 ${L - 8} 62`,
+                accent: `M${L - 10} 48 Q${L - 14} 40 ${L - 10} 32 M${R + 10} 48 Q${R + 14} 40 ${R + 10} 32 M${cx - 8} 10 Q${cx} 2 ${cx + 8} 10`,
             };
         case 7: // Curly Bob — chin-length curly volume
             return {
@@ -138,16 +138,15 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
                 main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
                 accent: `M${cx - 14} 28 Q${cx - 22} 14 ${cx - 14} 10 Q${cx - 6} 6 ${cx - 6} 18 Q${cx - 6} 28 ${cx - 14} 28 Z M${cx + 14} 28 Q${cx + 22} 14 ${cx + 14} 10 Q${cx + 6} 6 ${cx + 6} 18 Q${cx + 6} 28 ${cx + 14} 28 Z`,
             };
-        case 9: // Braids — two long braids down
+        case 9: // Braids — two long braids down (both in back so they render behind the head)
             return {
                 main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
-                back: `M${cx - 8} 42 Q${cx - 14} 52 ${cx - 11} 70 Q${cx - 9} 86 ${cx - 13} 102 Q${cx - 11} 108 ${cx - 7} 104 Q${cx - 5} 88 ${cx - 7} 72 Q${cx - 5} 54 ${cx - 8} 42 Z`,
-                accent: `M${cx + 8} 42 Q${cx + 14} 52 ${cx + 11} 70 Q${cx + 9} 86 ${cx + 13} 102 Q${cx + 11} 108 ${cx + 7} 104 Q${cx + 5} 88 ${cx + 7} 72 Q${cx + 5} 54 ${cx + 8} 42 Z`,
+                back: `M${L - 2} 52 Q${L - 6} 64 ${L - 4} 80 Q${L - 2} 96 ${L - 6} 108 Q${L - 4} 112 ${L} 108 Q${L + 2} 96 ${L} 80 Q${L + 2} 64 ${L - 2} 52 Z M${R + 2} 52 Q${R + 6} 64 ${R + 4} 80 Q${R + 2} 96 ${R + 6} 108 Q${R + 4} 112 ${R} 108 Q${R - 2} 96 ${R} 80 Q${R - 2} 64 ${R + 2} 52 Z`,
             };
         case 10: // Pixie Cut — short asymmetric
             return {
-                main: `M${L} 46 Q${L - 2} 24 ${cx - 8} 20 Q${cx + 6} 20 ${R + 2} 38 Q${R} 32 ${cx + 2} 26 Q${cx - 6} 28 ${L + 2} 42 Z`,
-                accent: `M${L - 2} 36 Q${L - 8} 28 ${L - 4} 48 Q${L - 2} 54 ${L + 2} 48 Q${L - 2} 40 ${L - 2} 36 Z`,
+                main: `M${L} 46 Q${L - 2} 24 ${cx - 8} 20 Q${cx + 6} 20 ${R + 2} 44 Q${R} 36 ${cx + 2} 26 Q${cx - 6} 28 ${L + 2} 42 Z`,
+                accent: `M${L - 2} 36 Q${L - 6} 30 ${L - 4} 48 Q${L - 2} 54 ${L + 2} 48 Z`,
             };
         case 11: // Half Up — top gathered, bottom flowing
             return {
