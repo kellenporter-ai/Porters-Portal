@@ -124,8 +124,8 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
             };
         case 6: // Afro — large rounded volume
             return {
-                main: `M${L - 8} 52 Q${L - 12} 18 ${cx} 10 Q${R + 12} 18 ${R + 8} 52 Q${R + 10} 40 ${cx} 14 Q${L - 10} 40 ${L - 8} 52`,
-                accent: `M${L - 6} 55 Q${L - 10} 62 ${L - 4} 68 M${R + 6} 55 Q${R + 10} 62 ${R + 4} 68`,
+                main: `M${L - 8} 52 Q${L - 14} 14 ${cx} 8 Q${R + 14} 14 ${R + 8} 52 Q${R + 4} 32 ${cx} 12 Q${L - 4} 32 ${L - 8} 52`,
+                accent: `M${L - 10} 38 Q${L - 16} 30 ${L - 10} 24 M${R + 10} 38 Q${R + 16} 30 ${R + 10} 24 M${cx - 6} 12 Q${cx} 6 ${cx + 6} 12`,
             };
         case 7: // Curly Bob — chin-length curly volume
             return {
@@ -141,13 +141,13 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
         case 9: // Braids — two long braids down
             return {
                 main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
-                back: `M${cx - 10} 40 Q${cx - 14} 50 ${cx - 12} 65 Q${cx - 10} 80 ${cx - 14} 92 Q${cx - 12} 96 ${cx - 8} 92 Q${cx - 6} 80 ${cx - 8} 65 Q${cx - 6} 50 ${cx - 10} 40 Z`,
-                accent: `M${cx + 10} 40 Q${cx + 14} 50 ${cx + 12} 65 Q${cx + 10} 80 ${cx + 14} 92 Q${cx + 12} 96 ${cx + 8} 92 Q${cx + 6} 80 ${cx + 8} 65 Q${cx + 6} 50 ${cx + 10} 40 Z`,
+                back: `M${cx - 8} 42 Q${cx - 14} 52 ${cx - 11} 70 Q${cx - 9} 86 ${cx - 13} 102 Q${cx - 11} 108 ${cx - 7} 104 Q${cx - 5} 88 ${cx - 7} 72 Q${cx - 5} 54 ${cx - 8} 42 Z`,
+                accent: `M${cx + 8} 42 Q${cx + 14} 52 ${cx + 11} 70 Q${cx + 9} 86 ${cx + 13} 102 Q${cx + 11} 108 ${cx + 7} 104 Q${cx + 5} 88 ${cx + 7} 72 Q${cx + 5} 54 ${cx + 8} 42 Z`,
             };
         case 10: // Pixie Cut — short asymmetric
             return {
-                main: `M${L} 44 Q${L - 2} 28 ${cx - 4} 22 Q${R + 2} 24 ${R} 42 Q${R - 2} 34 ${cx} 28 Q${L + 2} 32 ${L} 44`,
-                accent: `M${L - 2} 38 Q${L - 6} 32 ${L - 4} 48 Q${L - 2} 52 ${L} 46`,
+                main: `M${L} 46 Q${L - 2} 24 ${cx - 8} 20 Q${cx + 6} 20 ${R + 2} 38 Q${R} 32 ${cx + 2} 26 Q${cx - 6} 28 ${L + 2} 42 Z`,
+                accent: `M${L - 2} 36 Q${L - 8} 28 ${L - 4} 48 Q${L - 2} 54 ${L + 2} 48 Q${L - 2} 40 ${L - 2} 36 Z`,
             };
         case 11: // Half Up — top gathered, bottom flowing
             return {

@@ -61,9 +61,9 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({ isOpen, onClose, equipp
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Customize Your Agent" maxWidth="max-w-lg">
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4">
         {/* Live preview */}
-        <div className="flex justify-center">
+        <div className="sticky top-0 z-10 flex justify-center bg-[#0f0720]/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-1 rounded-b-2xl">
           <div className="w-44 h-64 bg-black/40 rounded-3xl p-3 border border-purple-500/20 shadow-inner loadout-hex-bg">
             <OperativeAvatar equipped={equipped} appearance={{
               ...appearance,
@@ -149,13 +149,13 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({ isOpen, onClose, equipp
                 return (
                   <button key={h} onClick={() => setPreviewSuitHue(h)}
                     className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 mx-auto ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
-                    style={{ backgroundColor: `hsl(${h}, 40%, 25%)` }} />
+                    style={{ backgroundColor: `hsl(${h}, 55%, 40%)` }} />
                 );
               })}
             </div>
           </div>
           <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Energy Color</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Eye Color</label>
             <div className="grid grid-cols-4 gap-1.5">
               {ENERGY_HUE_OPTIONS.map(h => {
                 const isActive = (previewHue ?? appearance?.hue ?? 0) === h;
