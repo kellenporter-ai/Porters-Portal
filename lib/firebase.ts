@@ -81,6 +81,7 @@ export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment')
 
 // One-time admin utilities
 export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');
+export const callBackfillWordCount = httpsCallable(functions, 'backfillWordCount');
 export const callScaleBossHp = httpsCallable(functions, 'scaleBossHp');
 
 // Dungeon Expedition Cloud Functions

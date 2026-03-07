@@ -4344,6 +4344,67 @@ export const backfillAssignmentDates = onCall(async (request) => {
   return { updated, skipped };
 });
 
+/**
+ * Backfills wordCount and wordsPerSecond for existing assessment submissions.
+ * Counts words from blockResponses string answers and computes WPS from engagementTime.
+ * Admin-only. Safe to call multiple times (skips docs that already have wordCount).
+ */
+export const backfillWordCount = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+
+  const db = admin.firestore();
+  const snap = await db.collection("submissions").where("isAssessment", "==", true).get();
+
+  let updated = 0;
+  let skipped = 0;
+  // Firestore batches max 500 writes
+  let batch = db.batch();
+  let batchCount = 0;
+
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    if (data.metrics?.wordCount != null) {
+      skipped++;
+      continue;
+    }
+
+    const responses = data.blockResponses || {};
+    let totalWordCount = 0;
+    for (const blockId of Object.keys(responses)) {
+      const answer = responses[blockId]?.answer;
+      if (typeof answer === "string") {
+        const trimmed = answer.trim();
+        if (trimmed.length > 0) {
+          totalWordCount += trimmed.split(/\s+/).length;
+        }
+      }
+    }
+
+    const engagementTime = data.metrics?.engagementTime || 0;
+    const wordsPerSecond = engagementTime > 0 ? Math.round((totalWordCount / engagementTime) * 100) / 100 : 0;
+
+    batch.update(doc.ref, {
+      "metrics.wordCount": totalWordCount,
+      "metrics.wordsPerSecond": wordsPerSecond,
+    });
+    updated++;
+    batchCount++;
+
+    if (batchCount >= 490) {
+      await batch.commit();
+      batch = db.batch();
+      batchCount = 0;
+    }
+  }
+
+  if (batchCount > 0) {
+    await batch.commit();
+  }
+
+  logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}`);
+  return { updated, skipped };
+});
+
 // ==========================================
 // DUNGEON EXPEDITION FUNCTIONS
 // ==========================================
