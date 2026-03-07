@@ -98,9 +98,9 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
     const L = cx - hw, R = cx + hw;
     switch (style) {
         case 0: // Buzz cut
-            return { main: `M${L + 2} 38 Q${L} 28 ${cx} 22 Q${R} 28 ${R - 2} 38 Q${R - 4} 32 ${cx} 26 Q${L + 4} 32 ${L + 2} 38` };
+            return { main: `M${L + 2} 38 Q${L} 28 ${cx} 20 Q${R} 28 ${R - 2} 38 Q${R - 4} 32 ${cx} 24 Q${L + 4} 32 ${L + 2} 38` };
         case 1: // Short crop
-            return { main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 36 ${cx} 28 Q${L + 2} 36 ${L} 44` };
+            return { main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 36 ${cx} 26 Q${L + 2} 36 ${L} 44` };
         case 2: // Side part
             return {
                 main: `M${L} 46 Q${L - 2} 26 ${cx - 5} 20 Q${R + 3} 22 ${R + 1} 46 Q${R - 1} 30 ${cx} 26 Q${L + 2} 28 ${L} 46`,
@@ -112,14 +112,14 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
                 main: `M${L} 46 Q${L - 2} 24 ${cx} 18 Q${R + 2} 24 ${R} 46 Q${R - 2} 30 ${cx} 25 Q${L + 2} 30 ${L} 46`,
                 accent: `M${R + 3} 44 Q${R + 6} 55 ${R + 4} 85 Q${R + 2} 92 ${R - 4} 88 L${R - 2} 46 Z`,
             };
-        case 4: // Ponytail
+        case 4: // High Ponytail — gathered at crown, arcs up then cascades down
             return {
-                main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
-                back: `M${cx + 4} 32 Q${cx + 8} 30 ${cx + 10} 38 Q${cx + 14} 60 ${cx + 8} 82 Q${cx + 4} 86 ${cx + 2} 78 Q${cx + 6} 62 ${cx + 6} 42 Z`,
+                main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
+                back: `M${cx} 24 Q${cx + 8} 6 ${cx + 14} 10 Q${cx + 18} 24 ${cx + 12} 52 Q${cx + 8} 76 ${cx + 4} 80 Q${cx + 2} 74 ${cx + 6} 52 Q${cx + 10} 28 ${cx + 6} 14 Z`,
             };
         case 5: // Spiky
             return {
-                main: `M${L} 44 Q${L - 1} 28 ${cx} 22 Q${R + 1} 28 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
+                main: `M${L} 44 Q${L - 1} 28 ${cx} 20 Q${R + 1} 28 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
                 accent: `M${cx - 12} 32 L${cx - 16} 12 L${cx - 6} 26 L${cx - 4} 8 L${cx + 2} 24 L${cx + 6} 6 L${cx + 8} 26 L${cx + 16} 10 L${cx + 12} 32`,
             };
         case 6: // Afro — large rounded volume (back = big oval behind head, main = crown cap on top)
@@ -136,12 +136,12 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
             };
         case 8: // Space Buns — two buns on top
             return {
-                main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
+                main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
                 accent: `M${cx - 14} 28 Q${cx - 22} 14 ${cx - 14} 10 Q${cx - 6} 6 ${cx - 6} 18 Q${cx - 6} 28 ${cx - 14} 28 Z M${cx + 14} 28 Q${cx + 22} 14 ${cx + 14} 10 Q${cx + 6} 6 ${cx + 6} 18 Q${cx + 6} 28 ${cx + 14} 28 Z`,
             };
         case 9: // Braids — two long braids down (both in back so they render behind the head)
             return {
-                main: `M${L} 44 Q${L - 1} 26 ${cx} 22 Q${R + 1} 26 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44`,
+                main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
                 back: `M${L - 2} 52 Q${L - 6} 64 ${L - 4} 80 Q${L - 2} 96 ${L - 6} 108 Q${L - 4} 112 ${L} 108 Q${L + 2} 96 ${L} 80 Q${L + 2} 64 ${L - 2} 52 Z M${R + 2} 52 Q${R + 6} 64 ${R + 4} 80 Q${R + 2} 96 ${R + 6} 108 Q${R + 4} 112 ${R} 108 Q${R - 2} 96 ${R} 80 Q${R - 2} 64 ${R + 2} 52 Z`,
             };
         case 10: // Pixie Cut — short asymmetric (left side longer, right short)
