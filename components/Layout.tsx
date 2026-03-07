@@ -5,10 +5,9 @@ import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { storage } from '../lib/firebase';
-import { ref, getDownloadURL } from 'firebase/storage';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
+import SpaceBackground from './SpaceBackground';
 import { dataService } from '../services/dataService';
 import { useAppData } from '../lib/AppDataContext';
 
@@ -20,7 +19,6 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [bgUrl, setBgUrl] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -34,25 +32,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     privacyMode: false,
     compactView: false
   };
-
-  useEffect(() => {
-    if (!settings.liveBackground) {
-        setBgUrl('');
-        return;
-    }
-
-    const fetchBg = async () => {
-      try {
-        const videoRef = ref(storage, 'public/background.mp4');
-        const url = await getDownloadURL(videoRef);
-        setBgUrl(url);
-      } catch (err) {
-        console.warn("Firebase background not found, using local fallback.");
-        setBgUrl('/background.mp4');
-      }
-    };
-    fetchBg();
-  }, [settings.liveBackground]);
 
   const handleUpdateSettings = async (newSettings: UserSettings) => {
     await dataService.updateUserSettings(user.id, newSettings);
@@ -241,24 +220,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       {/* 1. Static Purple Background (Base Layer) */}
       <div className="fixed inset-0 z-[-3] bg-[#0f0720] static-purple-bg"></div>
 
-      {/* 2. Live Video Background (Conditional) */}
-      {settings.liveBackground && bgUrl && (
-        <div className="fixed inset-0 pointer-events-none z-[-2] overflow-hidden">
-            <video
-              key={bgUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover scale-105"
-            >
-              <source src={bgUrl} type="video/mp4" />
-            </video>
-        </div>
-      )}
+      {/* 2. Animated Space Background (Canvas — conditional on liveBackground and not perf-mode) */}
+      {settings.liveBackground && !settings.performanceMode && <SpaceBackground />}
 
       {/* 3. Dark Glass Overlay */}
-      <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[#0f0720]/70' : 'bg-[#0f0720]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
+      <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[#0f0720]/55' : 'bg-[#0f0720]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
 
       {/* Mobile/Tablet Header — visible below lg breakpoint */}
       <header className="lg:hidden flex items-center justify-between p-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-30">
