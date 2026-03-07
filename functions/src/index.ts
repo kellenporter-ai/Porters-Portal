@@ -1948,6 +1948,19 @@ export const submitAssessment = onCall(async (request) => {
     }
   }
 
+  // 5c. Calculate word count from short-answer responses
+  let totalWordCount = 0;
+  for (const block of blocks) {
+    if (block.type === "SHORT_ANSWER") {
+      const resp = responses[block.id];
+      const answerText = typeof resp?.answer === "string" ? resp.answer.trim() : "";
+      if (answerText.length > 0) {
+        totalWordCount += answerText.split(/\s+/).length;
+      }
+    }
+  }
+  const wordsPerSecond = validatedEngagement > 0 ? Math.round((totalWordCount / validatedEngagement) * 100) / 100 : 0;
+
   // 6. Create submission doc
   const assessmentSubmission = {
     userId: uid,
@@ -1966,6 +1979,8 @@ export const submitAssessment = onCall(async (request) => {
       perBlockTiming: metrics.perBlockTiming || {},
       typingCadence: metrics.typingCadence || {},
       serverElapsedSec: Math.round(serverElapsedSec),
+      wordCount: totalWordCount,
+      wordsPerSecond,
     },
     submittedAt: new Date().toISOString(),
     status,

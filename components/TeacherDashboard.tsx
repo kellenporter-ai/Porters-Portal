@@ -801,6 +801,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
                               <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-gray-600'}>{formatEngagementTime(inactiveTime)} idle</span>
                               <span>{sub.metrics?.pasteCount || 0} pastes</span>
+                              {(sub.metrics?.wordCount != null && sub.metrics.wordCount > 0) && (
+                                <span className="text-blue-400">{sub.metrics.wordCount} words</span>
+                              )}
+                              {(sub.metrics?.wordsPerSecond != null && sub.metrics.wordsPerSecond > 0) && (
+                                <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-400' : 'text-green-400'}>{sub.metrics.wordsPerSecond} w/s</span>
+                              )}
                             </div>
 
                             {/* AI Flag button */}

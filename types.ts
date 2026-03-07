@@ -143,6 +143,8 @@ export interface TelemetryMetrics {
     avgIntervalMs?: number;
     burstCount?: number;
   };
+  wordCount?: number;
+  wordsPerSecond?: number;
 }
 
 // RPG TYPES
