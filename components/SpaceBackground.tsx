@@ -65,9 +65,9 @@ const SpaceBackground: React.FC = () => {
       radius: rand() * 1.4 + 0.3,
       baseOpacity: rand() * 0.5 + 0.3,
       opacity: rand() * 0.5 + 0.3,
-      twinkleSpeed: rand() * 0.006 + 0.002,
+      twinkleSpeed: rand() * 0.02 + 0.008,
       twinkleOffset: rand() * Math.PI * 2,
-      drift: (rand() - 0.5) * 0.06,
+      drift: (rand() - 0.5) * 0.3,
       driftOffset: rand() * Math.PI * 2,
     }));
 
@@ -87,8 +87,8 @@ const SpaceBackground: React.FC = () => {
       ry: rand() * 220 + 120,
       color: NEBULA_COLORS[i % NEBULA_COLORS.length],
       opacity: rand() * 0.5 + 0.5,
-      driftX: (rand() - 0.5) * 0.025,
-      driftY: (rand() - 0.5) * 0.015,
+      driftX: (rand() - 0.5) * 0.15,
+      driftY: (rand() - 0.5) * 0.08,
     }));
 
     const draw = (timestamp: number) => {
@@ -140,7 +140,7 @@ const SpaceBackground: React.FC = () => {
         star.opacity = Math.max(0.05, Math.min(1, star.opacity));
 
         // Subtle horizontal drift
-        const driftX = Math.sin(t * star.drift + star.driftOffset) * 0.3;
+        const driftX = Math.sin(t * star.drift + star.driftOffset) * 1.5;
         const px = star.x + driftX;
 
         ctx.save();
