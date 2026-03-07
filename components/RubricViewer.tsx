@@ -33,21 +33,35 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
       {rubric.questions.map((question) => {
         const isQuestionExpanded = expandedQuestion === question.id;
 
+        // Determine the grade color for the question header based on selected tiers
+        const selectedTiers = question.skills
+          .map(s => getSelectedTier(question.id, s.id))
+          .filter((t): t is number => t !== null);
+        const hasGrade = selectedTiers.length > 0;
+        // Use the lowest tier (most conservative) to represent the question's grade level
+        const representativeTier = hasGrade ? Math.min(...selectedTiers) : null;
+        const tierLabel = representativeTier !== null ? question.skills[0]?.tiers[representativeTier]?.label : null;
+        const headerColors = tierLabel ? RUBRIC_TIER_COLORS[tierLabel] : null;
+
         return (
-          <div key={question.id} className="border border-white/10 rounded-xl overflow-hidden">
+          <div key={question.id} className={`border rounded-xl overflow-hidden transition-colors ${headerColors ? headerColors.border : 'border-white/10'}`}>
             {/* Question header */}
             <button
               type="button"
               onClick={() => setExpandedQuestion(isQuestionExpanded ? null : question.id)}
-              className={`w-full flex items-center gap-2 ${compact ? 'px-3 py-2' : 'px-4 py-3'} bg-white/5 hover:bg-white/10 transition text-left`}
+              className={`w-full flex items-center gap-2 ${compact ? 'px-3 py-2' : 'px-4 py-3'} transition text-left ${
+                headerColors
+                  ? `${headerColors.bg} hover:brightness-125`
+                  : 'bg-white/5 hover:bg-white/10'
+              }`}
             >
               {isQuestionExpanded ? (
-                <ChevronDown className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 ${headerColors ? headerColors.text : 'text-gray-500'}`} />
               ) : (
-                <ChevronRight className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${headerColors ? headerColors.text : 'text-gray-500'}`} />
               )}
-              <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold text-white`}>{question.questionLabel}</span>
-              <span className="text-[10px] text-gray-500 ml-auto shrink-0">
+              <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold ${headerColors ? headerColors.text : 'text-white'}`}>{question.questionLabel}</span>
+              <span className={`text-[10px] ml-auto shrink-0 ${headerColors ? headerColors.text + ' opacity-70' : 'text-gray-500'}`}>
                 {question.skills.length} skill{question.skills.length !== 1 ? 's' : ''}
               </span>
             </button>
