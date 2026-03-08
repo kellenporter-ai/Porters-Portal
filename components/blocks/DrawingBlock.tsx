@@ -1053,6 +1053,64 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   }, [selectedIndices]);
 
   // ──────────────────────────────────────────
+  // Apply color/fill changes to selected elements
+  // ──────────────────────────────────────────
+
+  const applyStrokeColorToSelected = useCallback((color: string) => {
+    if (selectedIndices.size === 0) return;
+    pendingCommitRef.current = true;
+    setElements(prev => {
+      const next = [...prev];
+      selectedIndices.forEach(idx => {
+        const el = next[idx];
+        if (el.type === 'stroke' || el.type === 'shape' || el.type === 'text') {
+          next[idx] = { ...el, color };
+        }
+        // Arrows use their own fixed color, but let users override
+        if (el.type === 'arrow') {
+          next[idx] = { ...el, color };
+        }
+      });
+      return next;
+    });
+  }, [selectedIndices]);
+
+  const applyFillToSelected = useCallback((fill: string | undefined, opacity: number | undefined) => {
+    if (selectedIndices.size === 0) return;
+    pendingCommitRef.current = true;
+    setElements(prev => {
+      const next = [...prev];
+      selectedIndices.forEach(idx => {
+        const el = next[idx];
+        if (el.type === 'shape' && el.shape !== 'line') {
+          next[idx] = {
+            ...el,
+            fill: fill ?? el.fill,
+            fillOpacity: opacity ?? el.fillOpacity,
+          } as typeof el;
+        }
+      });
+      return next;
+    });
+  }, [selectedIndices]);
+
+  const removeFillFromSelected = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    pendingCommitRef.current = true;
+    setElements(prev => {
+      const next = [...prev];
+      selectedIndices.forEach(idx => {
+        const el = next[idx];
+        if (el.type === 'shape') {
+          const { fill: _f, fillOpacity: _fo, ...rest } = el as typeof el & { fill?: string; fillOpacity?: number };
+          next[idx] = rest as typeof el;
+        }
+      });
+      return next;
+    });
+  }, [selectedIndices]);
+
+  // ──────────────────────────────────────────
   // Actions
   // ──────────────────────────────────────────
 
@@ -1363,7 +1421,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                 <input
                   type="color"
                   value={penColor}
-                  onChange={e => setPenColor(e.target.value)}
+                  onChange={e => { setPenColor(e.target.value); applyStrokeColorToSelected(e.target.value); }}
                   style={{ width: '100%', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: 0 }}
                   title="Pick any color"
                 />
@@ -1371,7 +1429,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   {['#000000', '#FF3B30', '#007aff', '#34C759', '#FF9500', '#AF52DE', '#8B4513', '#ffffff'].map(c => (
                     <button
                       key={c}
-                      onClick={() => { setPenColor(c); setShowColorPicker(false); }}
+                      onClick={() => { setPenColor(c); applyStrokeColorToSelected(c); setShowColorPicker(false); }}
                       style={{
                         width: '22px', height: '22px', borderRadius: '50%',
                         border: penColor === c ? '2px solid #007aff' : c === '#ffffff' ? '2px solid #ddd' : '2px solid transparent',
@@ -1417,7 +1475,16 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   <input
                     type="checkbox"
                     checked={fillEnabled}
-                    onChange={e => setFillEnabled(e.target.checked)}
+                    onChange={e => {
+                      setFillEnabled(e.target.checked);
+                      if (selectedIndices.size > 0) {
+                        if (e.target.checked) {
+                          applyFillToSelected(fillColor, fillOpacity);
+                        } else {
+                          removeFillFromSelected();
+                        }
+                      }
+                    }}
                     style={{ accentColor: '#007aff' }}
                   />
                   Enable fill
@@ -1428,14 +1495,14 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                     <input
                       type="color"
                       value={fillColor}
-                      onChange={e => setFillColor(e.target.value)}
+                      onChange={e => { setFillColor(e.target.value); applyFillToSelected(e.target.value, undefined); }}
                       style={{ width: '100%', height: '28px', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: 0 }}
                     />
                     <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
                       {['#007aff', '#FF3B30', '#34C759', '#FF9500', '#AF52DE', '#FFD60A', '#f5f5f5', '#000000'].map(c => (
                         <button
                           key={c}
-                          onClick={() => setFillColor(c)}
+                          onClick={() => { setFillColor(c); applyFillToSelected(c, undefined); }}
                           style={{
                             width: '20px', height: '20px', borderRadius: '50%',
                             border: fillColor === c ? '2px solid #007aff' : '2px solid transparent',
@@ -1454,7 +1521,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                         min={0}
                         max={100}
                         value={Math.round(fillOpacity * 100)}
-                        onChange={e => setFillOpacity(Number(e.target.value) / 100)}
+                        onChange={e => { const v = Number(e.target.value) / 100; setFillOpacity(v); applyFillToSelected(undefined, v); }}
                         style={{ width: '100%', accentColor: '#007aff' }}
                       />
                       {/* Preview */}
