@@ -10,9 +10,31 @@ import { LessonBlock } from '../../types';
 // Data types
 // ──────────────────────────────────────────────
 
+type VectorType = 'force' | 'displacement' | 'velocity' | 'delta_v' | 'acceleration' | 'momentum' | 'angular_momentum' | 'custom';
+
+interface VectorTypeConfig {
+  symbol: string;
+  color: string;
+  labelFormat: 'subscript_pair' | 'subscript_single';
+  subscriptPlaceholders: string[];
+}
+
+const VECTOR_TYPES: Record<VectorType, VectorTypeConfig> = {
+  force:            { symbol: 'F',  color: '#557A45', labelFormat: 'subscript_pair',   subscriptPlaceholders: ['by', 'on'] },
+  displacement:     { symbol: 'Δx', color: '#007aff', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+  velocity:         { symbol: 'v',  color: '#AF52DE', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+  delta_v:          { symbol: 'Δv', color: '#FF9500', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+  acceleration:     { symbol: 'a',  color: '#FF3B30', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+  momentum:         { symbol: 'p',  color: '#5856D6', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+  angular_momentum: { symbol: 'L',  color: '#30B0C7', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+  custom:           { symbol: '?',  color: '#8B4513', labelFormat: 'subscript_single', subscriptPlaceholders: ['label'] },
+};
+
+const VECTOR_TYPE_LIST: VectorType[] = ['force', 'displacement', 'velocity', 'delta_v', 'acceleration', 'momentum', 'angular_momentum', 'custom'];
+
 type DrawingElement =
   | { type: 'stroke'; points: { x: number; y: number }[]; color: string; width: number }
-  | { type: 'arrow'; start: { x: number; y: number }; end: { x: number; y: number }; label1: string; label2: string; color: string; isComponent: boolean }
+  | { type: 'arrow'; start: { x: number; y: number }; end: { x: number; y: number }; label1: string; label2: string; color: string; isComponent: boolean; vectorType?: VectorType; customSymbol?: string }
   | { type: 'shape'; shape: 'circle' | 'rectangle' | 'line'; start: { x: number; y: number }; end: { x: number; y: number }; color: string; width: number; fill?: string; fillOpacity?: number }
   | { type: 'text'; position: { x: number; y: number }; text: string; color: string; fontSize: number };
 
@@ -33,7 +55,6 @@ type ShapeType = 'circle' | 'rectangle' | 'line';
 
 const PEN_WIDTHS = [2, 4, 6];
 
-const ARROW_COLOR = '#557A45';
 
 // ──────────────────────────────────────────────
 // Geometry helpers
@@ -124,6 +145,116 @@ function cloneElement(el: DrawingElement, dx: number, dy: number): DrawingElemen
     case 'text':
       return { ...el, position: { x: el.position.x + dx, y: el.position.y + dy } };
   }
+}
+
+// ──────────────────────────────────────────────
+// Snap guide helpers
+// ──────────────────────────────────────────────
+
+const SNAP_THRESHOLD = 6;
+
+interface SnapGuide { axis: 'x' | 'y'; position: number }
+
+function computeSnapGuides(
+  movingBounds: { x: number; y: number; w: number; h: number },
+  otherBounds: { x: number; y: number; w: number; h: number }[],
+): { dx: number; dy: number; guides: SnapGuide[] } {
+  const guides: SnapGuide[] = [];
+  let snapDx = 0;
+  let snapDy = 0;
+  let snappedX = false;
+  let snappedY = false;
+
+  // Alignment points for the moving element
+  const mLeft = movingBounds.x;
+  const mRight = movingBounds.x + movingBounds.w;
+  const mCx = movingBounds.x + movingBounds.w / 2;
+  const mTop = movingBounds.y;
+  const mBottom = movingBounds.y + movingBounds.h;
+  const mCy = movingBounds.y + movingBounds.h / 2;
+
+  const mXPoints = [mLeft, mCx, mRight];
+  const mYPoints = [mTop, mCy, mBottom];
+
+  for (const ob of otherBounds) {
+    const oXPoints = [ob.x, ob.x + ob.w / 2, ob.x + ob.w];
+    const oYPoints = [ob.y, ob.y + ob.h / 2, ob.y + ob.h];
+
+    if (!snappedX) {
+      for (const mx of mXPoints) {
+        for (const ox of oXPoints) {
+          if (Math.abs(mx - ox) < SNAP_THRESHOLD) {
+            snapDx = ox - mx;
+            guides.push({ axis: 'x', position: ox });
+            snappedX = true;
+            break;
+          }
+        }
+        if (snappedX) break;
+      }
+    }
+
+    if (!snappedY) {
+      for (const my of mYPoints) {
+        for (const oy of oYPoints) {
+          if (Math.abs(my - oy) < SNAP_THRESHOLD) {
+            snapDy = oy - my;
+            guides.push({ axis: 'y', position: oy });
+            snappedY = true;
+            break;
+          }
+        }
+        if (snappedY) break;
+      }
+    }
+
+    if (snappedX && snappedY) break;
+  }
+
+  return { dx: snapDx, dy: snapDy, guides };
+}
+
+/** Compute snap for a single point against other elements' edges/centers */
+function computePointSnap(
+  point: { x: number; y: number },
+  otherBounds: { x: number; y: number; w: number; h: number }[],
+): { x: number; y: number; guides: SnapGuide[] } {
+  const guides: SnapGuide[] = [];
+  let sx = point.x;
+  let sy = point.y;
+  let snappedX = false;
+  let snappedY = false;
+
+  for (const ob of otherBounds) {
+    const oXPoints = [ob.x, ob.x + ob.w / 2, ob.x + ob.w];
+    const oYPoints = [ob.y, ob.y + ob.h / 2, ob.y + ob.h];
+
+    if (!snappedX) {
+      for (const ox of oXPoints) {
+        if (Math.abs(point.x - ox) < SNAP_THRESHOLD) {
+          sx = ox;
+          guides.push({ axis: 'x', position: ox });
+          snappedX = true;
+          break;
+        }
+      }
+    }
+
+    if (!snappedY) {
+      for (const oy of oYPoints) {
+        if (Math.abs(point.y - oy) < SNAP_THRESHOLD) {
+          sy = oy;
+          guides.push({ axis: 'y', position: oy });
+          snappedY = true;
+          break;
+        }
+      }
+    }
+
+    if (snappedX && snappedY) break;
+  }
+
+  return { x: sx, y: sy, guides };
 }
 
 // ──────────────────────────────────────────────
@@ -242,6 +373,9 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   const [penColor, setPenColor] = useState('#000000');
   const [penWidth, setPenWidth] = useState(4);
   const [activeShape, setActiveShape] = useState<ShapeType>('line');
+  const [activeVectorType, setActiveVectorType] = useState<VectorType>('force');
+  const [customSymbol, setCustomSymbol] = useState('');
+  const [showVectorPicker, setShowVectorPicker] = useState(false);
 
   // Fill state
   const [fillEnabled, setFillEnabled] = useState(false);
@@ -299,6 +433,9 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   const shiftHeld = useRef(false);
   const bgImageRef = useRef<HTMLImageElement | null>(null);
+
+  // Snap guides
+  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([]);
 
   /** Push a snapshot to the undo history, clearing any redo stack ahead */
   const commitToHistory = useCallback((snapshot: DrawingElement[]) => {
@@ -478,7 +615,8 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     // Draw active shape/arrow preview
     if ((activeTool === 'arrow' || activeTool === 'shape') && dragStart && dragEnd) {
       if (activeTool === 'arrow') {
-        ctx.strokeStyle = ARROW_COLOR;
+        const previewColor = VECTOR_TYPES[activeVectorType].color;
+        ctx.strokeStyle = previewColor;
         ctx.lineWidth = 4;
         ctx.lineCap = 'round';
         ctx.setLineDash([]);
@@ -486,7 +624,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         ctx.moveTo(dragStart.x, dragStart.y);
         ctx.lineTo(dragEnd.x, dragEnd.y);
         ctx.stroke();
-        drawArrowhead(ctx, dragStart, dragEnd, ARROW_COLOR);
+        drawArrowhead(ctx, dragStart, dragEnd, previewColor);
       } else {
         // Fill preview
         if (fillEnabled && activeShape !== 'line') {
@@ -545,7 +683,27 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [elements, currentStroke, dragStart, dragEnd, activeTool, penColor, penWidth, activeShape, drawingMode, selectedIndices, selectionBox, fillEnabled, fillColor, fillOpacity]);
+
+    // Draw snap guides
+    if (snapGuides.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#FF00FF';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([3, 3]);
+      snapGuides.forEach(guide => {
+        ctx.beginPath();
+        if (guide.axis === 'x') {
+          ctx.moveTo(guide.position, 0);
+          ctx.lineTo(guide.position, canvas.height);
+        } else {
+          ctx.moveTo(0, guide.position);
+          ctx.lineTo(canvas.width, guide.position);
+        }
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+  }, [elements, currentStroke, dragStart, dragEnd, activeTool, penColor, penWidth, activeShape, drawingMode, selectedIndices, selectionBox, fillEnabled, fillColor, fillOpacity, snapGuides, activeVectorType]);
 
   useEffect(() => { redraw(); }, [redraw]);
 
@@ -658,6 +816,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     setShowFillPicker(false);
     setShowWidthPicker(false);
     setShowShapePicker(false);
+    setShowVectorPicker(false);
 
     if (activeTool === 'select') {
       // Check if clicking near a shape's corner handle for resize
@@ -788,20 +947,33 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     if (!isDrawing) return;
 
     if (activeTool === 'select' && dragMode === 'move' && selectedIndices.size > 0) {
-      const dx = pos.x - dragOffset.x;
-      const dy = pos.y - dragOffset.y;
-      moveElements(selectedIndices, dx, dy);
-      setDragOffset(pos);
+      const rawDx = pos.x - dragOffset.x;
+      const rawDy = pos.y - dragOffset.y;
+      // Compute bounds of selected elements after tentative move
+      const selBoundsArr = Array.from(selectedIndices).map(i => getElementBounds(elements[i]));
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      selBoundsArr.forEach(b => { minX = Math.min(minX, b.x); minY = Math.min(minY, b.y); maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h); });
+      const tentative = { x: minX + rawDx, y: minY + rawDy, w: maxX - minX, h: maxY - minY };
+      const otherBounds = elements.filter((_, i) => !selectedIndices.has(i)).map(el => getElementBounds(el));
+      const snap = computeSnapGuides(tentative, otherBounds);
+      moveElements(selectedIndices, rawDx + snap.dx, rawDy + snap.dy);
+      setDragOffset({ x: pos.x + snap.dx, y: pos.y + snap.dy });
+      setSnapGuides(snap.guides);
     } else if (activeTool === 'select' && dragMode === 'resize' && resizeTargetRef.current !== null) {
       const el = elements[resizeTargetRef.current];
+      const otherBounds = elements.filter((_, i) => i !== resizeTargetRef.current).map(e => getElementBounds(e));
       if (el.type === 'arrow') {
         let end = pos;
         if (shiftHeld.current) {
           end = snapAngle(el.start.x, el.start.y, pos.x, pos.y);
         }
-        resizeArrow(resizeTargetRef.current, end);
+        const snapped = computePointSnap(end, otherBounds);
+        resizeArrow(resizeTargetRef.current, { x: snapped.x, y: snapped.y });
+        setSnapGuides(snapped.guides);
       } else if (el.type === 'shape' && resizeCornerRef.current) {
-        resizeShape(resizeTargetRef.current, resizeCornerRef.current, pos);
+        const snapped = computePointSnap(pos, otherBounds);
+        resizeShape(resizeTargetRef.current, resizeCornerRef.current, { x: snapped.x, y: snapped.y });
+        setSnapGuides(snapped.guides);
       }
     } else if (activeTool === 'select' && dragMode === 'select-box') {
       setSelectionBox(prev => prev ? { ...prev, end: pos } : null);
@@ -873,6 +1045,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         setElements(prev => [...prev]);
       }
       setDragMode(null);
+      setSnapGuides([]);
       resizeTargetRef.current = null;
       resizeCornerRef.current = null;
     } else if (activeTool === 'pen' && currentStroke.length > 1) {
@@ -889,8 +1062,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           end: dragEnd,
           label1: '',
           label2: '',
-          color: ARROW_COLOR,
+          color: VECTOR_TYPES[activeVectorType].color,
           isComponent: false,
+          vectorType: activeVectorType,
+          customSymbol: activeVectorType === 'custom' ? (customSymbol || '?') : undefined,
         }]);
       }
     } else if (activeTool === 'shape' && dragStart && dragEnd) {
@@ -914,7 +1089,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     setIsDrawing(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [isDrawing, submitted, activeTool, currentStroke, dragStart, dragEnd, penColor, penWidth, activeShape, selectionBox, dragMode, elements, fillEnabled, fillColor, fillOpacity, commitToHistory]);
+  }, [isDrawing, submitted, activeTool, currentStroke, dragStart, dragEnd, penColor, penWidth, activeShape, selectionBox, dragMode, elements, fillEnabled, fillColor, fillOpacity, commitToHistory, activeVectorType, customSymbol]);
 
   // ──────────────────────────────────────────
   // Text confirm
@@ -1275,6 +1450,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         setShowFillPicker(false);
         setShowWidthPicker(false);
         setShowShapePicker(false);
+        setShowVectorPicker(false);
       }}
       style={{
         padding: '6px 8px',
@@ -1302,9 +1478,9 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // ──────────────────────────────────────────
 
   const modeHint = drawingMode === 'point_model'
-    ? 'Draw forces acting on the point object'
+    ? 'Draw vectors acting on the point object'
     : drawingMode === 'extended_body'
-      ? 'Draw your object using shapes, then add force arrows at their points of application'
+      ? 'Draw your object using shapes, then add vector arrows at their points of application'
       : null;
 
   // ──────────────────────────────────────────
@@ -1342,13 +1518,91 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           }}
         >
           <ToolBtn tool="select" icon={<MousePointer2 size={16} />} label="Select" shortcut="V" />
-          <ToolBtn tool="arrow" icon={<ArrowUpRight size={16} />} label="Arrow" shortcut="A" />
+
+          {/* Vector/Arrow tool with type picker */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => { setActiveTool('arrow'); setShowVectorPicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowWidthPicker(false); setShowShapePicker(false); }}
+              style={{
+                padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+                transition: 'all 0.15s',
+                background: activeTool === 'arrow' ? '#007aff' : 'transparent',
+                color: activeTool === 'arrow' ? '#ffffff' : '#555',
+              }}
+              aria-label="Vector/Arrow"
+              title="Vector/Arrow (A)"
+            >
+              <ArrowUpRight size={16} />
+              <span style={{
+                fontSize: '11px', fontWeight: 700, fontStyle: 'italic',
+                color: activeTool === 'arrow' ? '#fff' : VECTOR_TYPES[activeVectorType].color,
+                minWidth: '16px', textAlign: 'center',
+              }}>
+                {VECTOR_TYPES[activeVectorType].symbol}
+              </span>
+            </button>
+            {showVectorPicker && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: '4px',
+                background: '#fff', border: '1px solid #ddd', borderRadius: '10px',
+                padding: '8px', zIndex: 20, width: '200px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}>
+                <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px', fontWeight: 500 }}>Vector Type</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  {VECTOR_TYPE_LIST.map(vt => {
+                    const cfg = VECTOR_TYPES[vt];
+                    const label = vt === 'delta_v' ? 'Change in Velocity' : vt === 'angular_momentum' ? 'Angular Momentum' : vt.charAt(0).toUpperCase() + vt.slice(1);
+                    return (
+                      <button
+                        key={vt}
+                        onClick={() => { setActiveVectorType(vt); setShowVectorPicker(false); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '5px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                          background: activeVectorType === vt ? '#f0f0ff' : 'transparent',
+                          transition: 'background 0.1s',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={e => { if (activeVectorType !== vt) e.currentTarget.style.background = '#f8f8f8'; }}
+                        onMouseLeave={e => { if (activeVectorType !== vt) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span style={{
+                          fontWeight: 700, fontStyle: 'italic', fontSize: '14px',
+                          color: cfg.color, minWidth: '24px', textAlign: 'center',
+                        }}>{cfg.symbol}</span>
+                        <span style={{ fontSize: '12px', color: '#444' }}>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {activeVectorType === 'custom' && (
+                  <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Custom symbol</div>
+                    <input
+                      type="text"
+                      value={customSymbol}
+                      onChange={e => setCustomSymbol(e.target.value)}
+                      placeholder="e.g. τ, ω, J"
+                      maxLength={4}
+                      style={{
+                        width: '100%', padding: '4px 8px', border: '1px solid #ddd', borderRadius: '4px',
+                        fontSize: '14px', fontStyle: 'italic', fontWeight: 700, boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <ToolBtn tool="pen" icon={<Pencil size={16} />} label="Pen" shortcut="P" />
 
           {/* Shape tool with sub-picker */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setActiveTool('shape'); setShowShapePicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowWidthPicker(false); }}
+              onClick={() => { setActiveTool('shape'); setShowShapePicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowWidthPicker(false); setShowVectorPicker(false); }}
               style={{
                 padding: '6px 8px',
                 borderRadius: '6px',
@@ -1400,7 +1654,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           {/* Stroke color: color wheel + quick presets */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowColorPicker(v => !v); setShowFillPicker(false); setShowWidthPicker(false); setShowShapePicker(false); }}
+              onClick={() => { setShowColorPicker(v => !v); setShowFillPicker(false); setShowWidthPicker(false); setShowShapePicker(false); setShowVectorPicker(false); }}
               style={{
                 padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent',
@@ -1447,7 +1701,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           {/* Fill color + opacity */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowFillPicker(v => !v); setShowColorPicker(false); setShowWidthPicker(false); setShowShapePicker(false); }}
+              onClick={() => { setShowFillPicker(v => !v); setShowColorPicker(false); setShowWidthPicker(false); setShowShapePicker(false); setShowVectorPicker(false); }}
               style={{
                 padding: '4px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '3px', background: 'transparent',
@@ -1552,7 +1806,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           {/* Width picker */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowWidthPicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowShapePicker(false); }}
+              onClick={() => { setShowWidthPicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowShapePicker(false); setShowVectorPicker(false); }}
               style={{
                 padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                 fontSize: '11px', fontFamily: 'monospace', color: '#555', background: 'transparent',
@@ -1823,11 +2077,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             </>
           )}
 
-          {/* Arrow force labels (HTML overlays with subscript inputs) */}
+          {/* Vector labels (HTML overlays) */}
           {elements.map((el, idx) => {
             if (el.type !== 'arrow') return null;
 
-            // Position label near arrowhead
             const canvas = canvasRef.current;
             if (!canvas) return null;
             const scaleX = 100 / canvas.width;
@@ -1836,9 +2089,12 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             const labelX = el.end.x * scaleX;
             const labelY = el.end.y * scaleY;
 
-            // Offset the label away from the arrow direction
             const isPointingDown = (el.end.y - el.start.y) > 0;
             const offsetY = isPointingDown ? 1.5 : -5;
+
+            const vt = el.vectorType ?? 'force';
+            const cfg = VECTOR_TYPES[vt];
+            const symbol = vt === 'custom' && el.customSymbol ? el.customSymbol : cfg.symbol;
 
             return (
               <div
@@ -1870,23 +2126,12 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   <button
                     onClick={() => deleteElement(idx)}
                     style={{
-                      position: 'absolute',
-                      top: '-7px',
-                      right: '-7px',
-                      width: '18px',
-                      height: '18px',
-                      backgroundColor: '#FF3B30',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      fontSize: '13px',
-                      lineHeight: '16px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      display: 'none',
-                      zIndex: 10,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                      padding: 0,
+                      position: 'absolute', top: '-7px', right: '-7px',
+                      width: '18px', height: '18px',
+                      backgroundColor: '#FF3B30', color: 'white', border: 'none', borderRadius: '50%',
+                      fontSize: '13px', lineHeight: '16px', textAlign: 'center', cursor: 'pointer',
+                      display: 'none', zIndex: 10,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)', padding: 0,
                     }}
                     className="force-delete-btn"
                     aria-label="Delete arrow"
@@ -1894,46 +2139,52 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                     &times;
                   </button>
                 )}
-                <span style={{ color: '#557A45', fontWeight: 'bold' }}>F</span>
-                <input
-                  value={el.label1}
-                  onChange={(e) => updateArrowLabel(idx, 'label1', e.target.value)}
-                  disabled={submitted}
-                  placeholder="_"
-                  style={{
-                    width: '35px',
-                    border: 'none',
-                    borderBottom: '2px solid #007aff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '15px',
-                    background: 'transparent',
-                    outline: 'none',
-                    padding: '2px 0',
-                    margin: '0 2px',
-                    color: '#007aff',
-                  }}
-                />
-                <span style={{ fontSize: '13px', color: '#666', fontWeight: 'normal' }}>on</span>
-                <input
-                  value={el.label2}
-                  onChange={(e) => updateArrowLabel(idx, 'label2', e.target.value)}
-                  disabled={submitted}
-                  placeholder="_"
-                  style={{
-                    width: '35px',
-                    border: 'none',
-                    borderBottom: '2px solid #FF3B30',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '15px',
-                    background: 'transparent',
-                    outline: 'none',
-                    padding: '2px 0',
-                    margin: '0 2px',
-                    color: '#FF3B30',
-                  }}
-                />
+
+                {/* Vector symbol */}
+                <span style={{ color: cfg.color, fontWeight: 'bold', fontStyle: 'italic' }}>{symbol}</span>
+
+                {cfg.labelFormat === 'subscript_pair' ? (
+                  <>
+                    <input
+                      value={el.label1}
+                      onChange={(e) => updateArrowLabel(idx, 'label1', e.target.value)}
+                      disabled={submitted}
+                      placeholder="by"
+                      style={{
+                        width: '35px', border: 'none', borderBottom: `2px solid #007aff`,
+                        textAlign: 'center', fontWeight: 'bold', fontSize: '15px',
+                        background: 'transparent', outline: 'none', padding: '2px 0', margin: '0 2px',
+                        color: '#007aff',
+                      }}
+                    />
+                    <span style={{ fontSize: '13px', color: '#666', fontWeight: 'normal' }}>on</span>
+                    <input
+                      value={el.label2}
+                      onChange={(e) => updateArrowLabel(idx, 'label2', e.target.value)}
+                      disabled={submitted}
+                      placeholder="on"
+                      style={{
+                        width: '35px', border: 'none', borderBottom: `2px solid #FF3B30`,
+                        textAlign: 'center', fontWeight: 'bold', fontSize: '15px',
+                        background: 'transparent', outline: 'none', padding: '2px 0', margin: '0 2px',
+                        color: '#FF3B30',
+                      }}
+                    />
+                  </>
+                ) : (
+                  <input
+                    value={el.label1}
+                    onChange={(e) => updateArrowLabel(idx, 'label1', e.target.value)}
+                    disabled={submitted}
+                    placeholder="label"
+                    style={{
+                      width: '40px', border: 'none', borderBottom: `2px solid ${cfg.color}`,
+                      textAlign: 'center', fontWeight: 'bold', fontSize: '15px',
+                      background: 'transparent', outline: 'none', padding: '2px 0', margin: '0 2px',
+                      color: cfg.color,
+                    }}
+                  />
+                )}
               </div>
             );
           })}
