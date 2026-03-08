@@ -255,7 +255,7 @@ const STRUCTURE_KEYS: StructureType[] = ['fraction', 'sqrt', 'power', 'subscript
 
 const TEMPLATES: { display: string; insert: string; title: string; category: string }[] = [
   // Kinematics
-  { display: 'v = d/t', insert: 'v = d/t', title: 'Average Velocity', category: 'Kinematics' },
+  { display: 'v = \u0394x/\u0394t', insert: 'v = (x_f - x_i)/(t_f - t_i)', title: 'Average Velocity', category: 'Kinematics' },
   { display: 'a = \u0394v/\u0394t', insert: 'a = (v_f - v_i)/(t_f - t_i)', title: 'Average Acceleration', category: 'Kinematics' },
   { display: 'x = x\u2080 + v\u2080t + \u00BDat\u00B2', insert: 'x = x_0 + v_0 \u00D7 t + (1)/(2) \u00D7 a \u00D7 t^2', title: 'Position (constant accel)', category: 'Kinematics' },
   { display: 'v = v\u2080 + at', insert: 'v = v_0 + a \u00D7 t', title: 'Velocity (constant accel)', category: 'Kinematics' },
@@ -272,17 +272,18 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   { display: 'PE\u0067 = mgh', insert: 'PE_g = m \u00D7 g \u00D7 h', title: 'Gravitational PE', category: 'Energy' },
   { display: 'PE\u209B = \u00BDkx\u00B2', insert: 'PE_s = (1)/(2) \u00D7 k \u00D7 x^2', title: 'Spring PE', category: 'Energy' },
   { display: 'W = Fd cos\u03B8', insert: 'W = F \u00D7 d \u00D7 cos(\u03B8)', title: 'Work', category: 'Energy' },
-  { display: 'P = W/t', insert: 'P = W/t', title: 'Power', category: 'Energy' },
+  { display: 'P = W/\u0394t', insert: 'P = W/\u0394t', title: 'Power', category: 'Energy' },
 
   // Momentum
   { display: 'p = mv', insert: 'p = m \u00D7 v', title: 'Momentum', category: 'Momentum' },
-  { display: 'J = F\u0394t', insert: 'J = F \u00D7 \u0394t', title: 'Impulse', category: 'Momentum' },
+  { display: 'J = \u03A3F\u0394t', insert: 'J = \u03A3F \u00D7 \u0394t', title: 'Impulse', category: 'Momentum' },
   { display: '\u03A3p\u1d62 = \u03A3p\u0066', insert: '\u03A3p_i = \u03A3p_f', title: 'Conservation of Momentum', category: 'Momentum' },
 
   // Rotation
   { display: '\u03C4 = rF sin\u03B8', insert: '\u03C4 = r \u00D7 F \u00D7 sin(\u03B8)', title: 'Torque', category: 'Rotation' },
   { display: 'v = r\u03C9', insert: 'v = r \u00D7 \u03C9', title: 'Tangential Velocity', category: 'Rotation' },
   { display: 'a\u2099 = v\u00B2/r', insert: 'a_c = v^2/r', title: 'Centripetal Acceleration', category: 'Rotation' },
+  { display: 'a = \u03B1r', insert: 'a = \u03B1 \u00D7 r', title: 'Tangential Acceleration', category: 'Rotation' },
 
   // Waves & Sound
   { display: 'v = f\u03BB', insert: 'v = f \u00D7 \u03BB', title: 'Wave Speed', category: 'Waves' },
@@ -422,19 +423,36 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
 
   // ── Step mutations ──
 
+  // Check if a step label indicates a list-mode input (Given/Find)
+  const isListStep = useCallback((label: string) => {
+    const l = label.toLowerCase().replace(/[:\s]/g, '');
+    return l === 'given' || l === 'find';
+  }, []);
+
   const updateStepInput = useCallback(
     (index: number, value: string) => {
       setSteps(prev => {
+        const step = prev[index];
+        // For list-mode steps, convert each line separately
+        let latex: string;
+        if (isListStep(step.label)) {
+          latex = value
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => naturalToLatex(line))
+            .join(' \\\\ ');
+        } else {
+          latex = naturalToLatex(value);
+        }
         const next = prev.map((s, i) =>
-          i === index
-            ? { ...s, input: value, latex: naturalToLatex(value) }
-            : s
+          i === index ? { ...s, input: value, latex } : s
         );
         emitChange(next, false);
         return next;
       });
     },
-    [emitChange]
+    [emitChange, isListStep]
   );
 
   const updateStepLabel = useCallback(
@@ -605,38 +623,69 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                 </datalist>
               </div>
 
-              {/* Natural math input */}
+              {/* Natural math input — textarea for list steps (Given/Find), input for others */}
               <div className="flex-1 min-w-0">
                 <label className="sr-only" htmlFor={`step-input-${index}`}>
                   Step {index + 1} math input
                 </label>
-                <input
-                  id={`step-input-${index}`}
-                  ref={el => {
-                    inputRefs.current[index] = el;
-                  }}
-                  type="text"
-                  value={step.input ?? step.latex}
-                  onChange={e => updateStepInput(index, e.target.value)}
-                  onFocus={e => {
-                    focusedInputRef.current = {
-                      index,
-                      el: e.currentTarget,
-                    };
-                  }}
-                  onKeyDown={e => {
-                    if (
-                      (e.ctrlKey || e.metaKey) &&
-                      e.key === 'Enter'
-                    ) {
-                      e.preventDefault();
-                      handleSubmit();
+                {isListStep(step.label) ? (
+                  <textarea
+                    id={`step-input-${index}`}
+                    value={step.input ?? step.latex}
+                    onChange={e => updateStepInput(index, e.target.value)}
+                    onFocus={e => {
+                      focusedInputRef.current = {
+                        index,
+                        el: e.currentTarget as unknown as HTMLInputElement,
+                      };
+                    }}
+                    onKeyDown={e => {
+                      if (
+                        (e.ctrlKey || e.metaKey) &&
+                        e.key === 'Enter'
+                      ) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    disabled={submitted}
+                    rows={3}
+                    placeholder={
+                      step.label.toLowerCase().includes('given')
+                        ? 'List known values, one per line:\nv_i = 10 m/s\na = 2 m/s^2\nt = 5 s'
+                        : 'List what you need to find, one per line:\nv_f = ?\nd = ?'
                     }
-                  }}
-                  disabled={submitted}
-                  placeholder="Type math naturally \u2014 e.g. v = d/t, F = m \u00D7 a"
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
-                />
+                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y"
+                  />
+                ) : (
+                  <input
+                    id={`step-input-${index}`}
+                    ref={el => {
+                      inputRefs.current[index] = el;
+                    }}
+                    type="text"
+                    value={step.input ?? step.latex}
+                    onChange={e => updateStepInput(index, e.target.value)}
+                    onFocus={e => {
+                      focusedInputRef.current = {
+                        index,
+                        el: e.currentTarget,
+                      };
+                    }}
+                    onKeyDown={e => {
+                      if (
+                        (e.ctrlKey || e.metaKey) &&
+                        e.key === 'Enter'
+                      ) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    disabled={submitted}
+                    placeholder="Type math naturally \u2014 e.g. v = d/t, F = m \u00D7 a"
+                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
+                  />
+                )}
               </div>
 
               {/* Delete button */}
@@ -661,16 +710,36 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   aria-live="polite"
                   aria-label={`Preview for step ${index + 1}`}
                 >
-                  <div
-                    className="text-white katex-preview"
-                    dangerouslySetInnerHTML={{
-                      __html: renderLatex(step.latex),
-                    }}
-                  />
+                  {isListStep(step.label) ? (
+                    <div className="space-y-1">
+                      {step.latex.split(' \\\\ ').map((line, li) => (
+                        <div
+                          key={li}
+                          className="text-white katex-preview flex items-center gap-2"
+                        >
+                          <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: renderLatex(line.trim()),
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="text-white katex-preview"
+                      dangerouslySetInnerHTML={{
+                        __html: renderLatex(step.latex),
+                      }}
+                    />
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-600 text-xs italic px-3 py-1">
-                  Preview appears here as you type
+                  {isListStep(step.label)
+                    ? 'List items will preview here as you type'
+                    : 'Preview appears here as you type'}
                 </p>
               )}
             </div>
