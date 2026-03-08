@@ -388,14 +388,37 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
 
                         if (disposed || scene.isDisposed) return;
 
-                        // Parent hair to character root and match scale
+                        // The hair GLBs are from Universal Base Characters (different
+                        // proportions than our character models). We need to:
+                        // 1. Measure the hair's own bounding box
+                        // 2. Scale it to match the character's head width
+                        // 3. Position it at the character's head height
                         const hairRoot = hairResult.meshes[0];
                         if (hairRoot) {
-                            hairRoot.parent = rootMesh;
-                            // Hair GLBs are origin-at-0, same as character — no offset needed
-                            // But we need to undo the character scaling since the parent applies it
-                            hairRoot.scaling = new BABYLON.Vector3(1, 1, 1);
-                            hairRoot.position = new BABYLON.Vector3(0, 0, 0);
+                            // Get character head position (top ~10% of bounding box)
+                            const charBounds = rootMesh.getHierarchyBoundingVectors();
+                            const charHeight = charBounds.max.y - charBounds.min.y;
+                            const charHeadY = charBounds.max.y - charHeight * 0.12; // ~eye level
+
+                            // Get hair bounding box in its own space
+                            const hairBounds = hairRoot.getHierarchyBoundingVectors();
+                            const hairHeight = hairBounds.max.y - hairBounds.min.y;
+                            const hairWidth = hairBounds.max.x - hairBounds.min.x;
+
+                            // Target: hair should span roughly 30% of character height
+                            // (head + hair together is about 1/5 of body, hair alone ~30% of head region)
+                            const charHeadSize = charHeight * 0.15;
+                            const hairScale = hairHeight > 0 ? charHeadSize / hairHeight : 1;
+
+                            // Position hair at head level, centered
+                            // Hair GLBs have their center roughly at mid-head, so offset up
+                            const hairCenterY = (hairBounds.min.y + hairBounds.max.y) / 2;
+                            hairRoot.scaling = new BABYLON.Vector3(hairScale, hairScale, hairScale);
+                            hairRoot.position = new BABYLON.Vector3(
+                                0,
+                                charHeadY - hairCenterY * hairScale,
+                                0
+                            );
                         }
 
                         // Convert hair PBR → StandardMaterial and add to tint data
@@ -411,7 +434,13 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                             stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
                             stdMat.ambientColor = new BABYLON.Color3(color.r * 0.3, color.g * 0.3, color.b * 0.3);
                             stdMat.alpha = 1;
-                            stdMat.backFaceCulling = false; // Hair needs double-sided rendering
+                            stdMat.backFaceCulling = false;
+                            // Force opaque rendering (fix Quaternius alpha=0 bug)
+                            stdMat.transparencyMode = 0; // OPAQUE
+
+                            // Ensure mesh is visible
+                            mesh.isVisible = true;
+                            mesh.visibility = 1;
 
                             tintData.push({ material: stdMat, category: 'hair', originalColor: color });
 
@@ -420,9 +449,12 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                         });
 
                         hairMeshesRef.current = hairResult.meshes;
-                        // Re-apply tinting so hair gets colored
                         meshTintDataRef.current = tintData;
                         applyTinting(tintData, appearanceRef.current);
+
+                        console.log('[Avatar3D] Hair overlay loaded:', hairDef.modelPath,
+                            'meshes:', hairResult.meshes.length,
+                            'hairRoot scaling:', hairRoot?.scaling?.toString());
                     } catch (hairErr) {
                         console.warn('[Avatar3D] Hair overlay failed to load:', hairErr);
                     }
