@@ -56,19 +56,6 @@ export const CHARACTER_MODELS: CharacterModelDef[] = [
         thumbnailColor: '#d94a7b',
         tag: 'Free',
     },
-    {
-        id: 'char_kenney_scout',
-        name: 'Scout',
-        description: 'Compact tactical scout — low-profile infiltration specialist',
-        modelPath: '/assets/models/characters/Kenney_Scout.glb',
-        fileSizeKB: 96,
-        cost: 0,
-        category: 'starter',
-        sortOrder: 3,
-        thumbnailColor: '#5bb85b',
-        tag: 'Free',
-    },
-
     // === STANDARD (200 Flux) ===
     {
         id: 'char_male_shirt',
@@ -106,19 +93,6 @@ export const CHARACTER_MODELS: CharacterModelDef[] = [
         thumbnailColor: '#d97a4a',
         tag: '200',
     },
-    {
-        id: 'char_kenney_agent',
-        name: 'Deep Cover Agent',
-        description: 'Stylized undercover operative — blends into any crowd',
-        modelPath: '/assets/models/characters/Kenney_Agent.glb',
-        fileSizeKB: 96,
-        cost: 200,
-        category: 'standard',
-        sortOrder: 13,
-        thumbnailColor: '#4a4ad9',
-        tag: '200',
-    },
-
     // === PREMIUM (400 Flux) ===
     {
         id: 'char_male_suit',
@@ -154,18 +128,6 @@ export const CHARACTER_MODELS: CharacterModelDef[] = [
         category: 'premium',
         sortOrder: 22,
         thumbnailColor: '#2e1a4a',
-        tag: '400',
-    },
-    {
-        id: 'char_kenney_operative',
-        name: 'Elite Operative',
-        description: 'Stylized elite field operative — unmistakable silhouette',
-        modelPath: '/assets/models/characters/Kenney_Operative.glb',
-        fileSizeKB: 96,
-        cost: 400,
-        category: 'premium',
-        sortOrder: 23,
-        thumbnailColor: '#d9d94a',
         tag: '400',
     },
 ];

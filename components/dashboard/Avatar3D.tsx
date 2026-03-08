@@ -150,8 +150,8 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 const scene = new BABYLON.Scene(engine);
                 if (disposed) { scene.dispose(); engine.dispose(); return; }
                 sceneRef.current = scene;
-                scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
-                scene.ambientColor = new BABYLON.Color3(0.3, 0.3, 0.35);
+                scene.clearColor = new BABYLON.Color4(0.04, 0.02, 0.06, 1);
+                scene.ambientColor = new BABYLON.Color3(0.35, 0.35, 0.35);
 
                 // Disable features we don't need
                 scene.skipPointerMovePicking = true;
@@ -161,7 +161,7 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 // Camera — fixed arc rotate for avatar display
                 const camera = new BABYLON.ArcRotateCamera(
                     'avatarCam',
-                    Math.PI / 2,
+                    -Math.PI / 2,
                     Math.PI / 2.4,
                     compact ? 3.5 : 3,
                     new BABYLON.Vector3(0, 0.8, 0),
@@ -180,13 +180,15 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 const hemiLight = new BABYLON.HemisphericLight(
                     'hemi', new BABYLON.Vector3(0, 1, 0), scene
                 );
-                hemiLight.intensity = 0.7;
-                hemiLight.groundColor = new BABYLON.Color3(0.15, 0.1, 0.2);
+                hemiLight.intensity = 1.4;
+                hemiLight.diffuse = new BABYLON.Color3(1, 0.97, 0.95);
+                hemiLight.groundColor = new BABYLON.Color3(0.4, 0.4, 0.45);
 
                 const dirLight = new BABYLON.DirectionalLight(
                     'dir', new BABYLON.Vector3(-0.5, -1, 0.5), scene
                 );
-                dirLight.intensity = 0.5;
+                dirLight.intensity = 1.0;
+                dirLight.diffuse = new BABYLON.Color3(1, 0.98, 0.95);
 
                 // Load character model — split path into rootUrl + filename for Babylon
                 const lastSlash = modelDef.modelPath.lastIndexOf('/');
@@ -205,23 +207,34 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
 
                 if (disposed || scene.isDisposed) return;
 
-                console.log('[Avatar3D] Loaded', fileName, '— meshes:', result.meshes.length, 'animations:', result.animationGroups.length);
-
                 // Find root mesh and normalize scale
                 const rootMesh = result.meshes[0];
                 if (rootMesh) {
                     const bounds = rootMesh.getHierarchyBoundingVectors();
-                    console.log('[Avatar3D] Pre-scale bounds:', JSON.stringify({ min: bounds.min, max: bounds.max }));
                     const height = bounds.max.y - bounds.min.y;
                     const targetHeight = 1.8;
                     const scaleFactor = targetHeight / Math.max(height, 0.01);
                     rootMesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
                     const newBounds = rootMesh.getHierarchyBoundingVectors();
                     rootMesh.position.y = -newBounds.min.y;
-                    console.log('[Avatar3D] Post-scale — height:', height.toFixed(2), 'factor:', scaleFactor.toFixed(2), 'posY:', rootMesh.position.y.toFixed(2));
-                } else {
-                    console.warn('[Avatar3D] No root mesh found!');
                 }
+
+                // Convert PBR → StandardMaterial. GLB PBR materials need IBL
+                // (environment texture) to look correct, which is expensive on
+                // Chromebooks. StandardMaterial uses Blinn-Phong and works well
+                // with just directional + hemispheric lights.
+                result.meshes.forEach(mesh => {
+                    if (!mesh.material) return;
+                    const pbr = mesh.material as any;
+                    const ac = pbr.albedoColor;
+                    if (!ac) return;
+                    const stdMat = new BABYLON.StandardMaterial(pbr.name + '_std', scene);
+                    stdMat.diffuseColor = ac.clone();
+                    stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
+                    stdMat.alpha = 1;
+                    mesh.material = stdMat;
+                    pbr.dispose();
+                });
 
                 // Play idle animation if available
                 if (result.animationGroups.length > 0) {
@@ -291,10 +304,6 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 requestAnimationFrame(() => {
                     if (!engine.isDisposed) engine.resize();
                 });
-
-                console.log('[Avatar3D] Canvas size:', canvas.width, 'x', canvas.height,
-                    'clientSize:', canvas.clientWidth, 'x', canvas.clientHeight,
-                    'engine:', engine.getRenderWidth(), 'x', engine.getRenderHeight());
 
                 // Render loop
                 engine.runRenderLoop(() => {

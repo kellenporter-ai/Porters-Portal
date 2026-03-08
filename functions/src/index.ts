@@ -5231,12 +5231,10 @@ const FLUX_SHOP_CATALOG: Record<string, {
   char_male_shirt: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
   char_male_longsleeve: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
   char_female_tanktop: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
-  char_kenney_agent: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
   // Character Models — Premium (400 Flux)
   char_male_suit: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
   char_female_dress: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
   char_female_alt: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
-  char_kenney_operative: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
 };
 
 export const purchaseFluxItem = onCall(async (request) => {
