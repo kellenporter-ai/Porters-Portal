@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Pencil, Eraser, ArrowUpRight, Square, Type, Undo2, Trash2,
-  Circle, Minus, Check, Edit3, MousePointer2
+  Pencil, Eraser, ArrowUpRight, Square, Type, Undo2, Redo2, Trash2,
+  Circle, Minus, Check, Edit3, MousePointer2, Keyboard, GripHorizontal,
+  Copy, ClipboardPaste, ArrowUpToLine, ArrowDownToLine, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { LessonBlock } from '../../types';
 
@@ -12,7 +13,7 @@ import { LessonBlock } from '../../types';
 type DrawingElement =
   | { type: 'stroke'; points: { x: number; y: number }[]; color: string; width: number }
   | { type: 'arrow'; start: { x: number; y: number }; end: { x: number; y: number }; label1: string; label2: string; color: string; isComponent: boolean }
-  | { type: 'shape'; shape: 'circle' | 'rectangle' | 'line'; start: { x: number; y: number }; end: { x: number; y: number }; color: string; width: number }
+  | { type: 'shape'; shape: 'circle' | 'rectangle' | 'line'; start: { x: number; y: number }; end: { x: number; y: number }; color: string; width: number; fill?: string; fillOpacity?: number }
   | { type: 'text'; position: { x: number; y: number }; text: string; color: string; fontSize: number };
 
 interface DrawingResponse {
@@ -29,15 +30,6 @@ interface DrawingBlockProps {
 
 type Tool = 'select' | 'arrow' | 'pen' | 'shape' | 'text' | 'eraser';
 type ShapeType = 'circle' | 'rectangle' | 'line';
-
-const PEN_COLORS = [
-  { value: '#FF3B30', label: 'Red' },
-  { value: '#007aff', label: 'Blue' },
-  { value: '#34C759', label: 'Green' },
-  { value: '#000000', label: 'Black' },
-  { value: '#FF9500', label: 'Orange' },
-  { value: '#AF52DE', label: 'Purple' },
-];
 
 const PEN_WIDTHS = [2, 4, 6];
 
@@ -110,6 +102,30 @@ function getElementBounds(el: DrawingElement): { x: number; y: number; w: number
   }
 }
 
+/** Check if an element's bounding box intersects a selection rectangle */
+function elementInRect(el: DrawingElement, rect: { x: number; y: number; w: number; h: number }): boolean {
+  const b = getElementBounds(el);
+  const rx = Math.min(rect.x, rect.x + rect.w);
+  const ry = Math.min(rect.y, rect.y + rect.h);
+  const rw = Math.abs(rect.w);
+  const rh = Math.abs(rect.h);
+  return !(b.x + b.w < rx || b.x > rx + rw || b.y + b.h < ry || b.y > ry + rh);
+}
+
+/** Deep-clone an element with an offset */
+function cloneElement(el: DrawingElement, dx: number, dy: number): DrawingElement {
+  switch (el.type) {
+    case 'stroke':
+      return { ...el, points: el.points.map(p => ({ x: p.x + dx, y: p.y + dy })) };
+    case 'arrow':
+      return { ...el, start: { x: el.start.x + dx, y: el.start.y + dy }, end: { x: el.end.x + dx, y: el.end.y + dy } };
+    case 'shape':
+      return { ...el, start: { x: el.start.x + dx, y: el.start.y + dy }, end: { x: el.end.x + dx, y: el.end.y + dy } };
+    case 'text':
+      return { ...el, position: { x: el.position.x + dx, y: el.position.y + dy } };
+  }
+}
+
 // ──────────────────────────────────────────────
 // Canvas rendering helpers
 // ──────────────────────────────────────────────
@@ -165,6 +181,27 @@ function renderElementToCanvas(ctx: CanvasRenderingContext2D, el: DrawingElement
       ctx.lineWidth = el.width;
       ctx.lineCap = 'round';
       ctx.setLineDash([]);
+
+      // Fill first if set
+      if (el.fill && el.shape !== 'line') {
+        ctx.save();
+        ctx.globalAlpha = el.fillOpacity ?? 0.3;
+        ctx.fillStyle = el.fill;
+        if (el.shape === 'rectangle') {
+          ctx.fillRect(el.start.x, el.start.y, el.end.x - el.start.x, el.end.y - el.start.y);
+        } else if (el.shape === 'circle') {
+          const rx = Math.abs(el.end.x - el.start.x) / 2;
+          const ry = Math.abs(el.end.y - el.start.y) / 2;
+          const cx = (el.start.x + el.end.x) / 2;
+          const cy = (el.start.y + el.end.y) / 2;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Stroke
       if (el.shape === 'line') {
         ctx.beginPath();
         ctx.moveTo(el.start.x, el.start.y);
@@ -206,15 +243,28 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   const [penWidth, setPenWidth] = useState(4);
   const [activeShape, setActiveShape] = useState<ShapeType>('line');
 
+  // Fill state
+  const [fillEnabled, setFillEnabled] = useState(false);
+  const [fillColor, setFillColor] = useState('#007aff');
+  const [fillOpacity, setFillOpacity] = useState(0.3);
+
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentStroke, setCurrentStroke] = useState<{ x: number; y: number }[]>([]);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
 
-  // Selection & dragging
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [dragMode, setDragMode] = useState<'move' | 'resize' | null>(null);
+  // Multi-selection & dragging
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [dragMode, setDragMode] = useState<'move' | 'resize' | 'select-box' | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Which arrow index is being resized (only one at a time)
+  const resizeTargetRef = useRef<number | null>(null);
+
+  // Selection box (rubber band)
+  const [selectionBox, setSelectionBox] = useState<{ start: { x: number; y: number }; end: { x: number; y: number } } | null>(null);
+
+  // Clipboard
+  const clipboardRef = useRef<DrawingElement[]>([]);
 
   // Text placement popup
   const [textPlacement, setTextPlacement] = useState<{ x: number; y: number } | null>(null);
@@ -225,15 +275,47 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showFillPicker, setShowFillPicker] = useState(false);
   const [showWidthPicker, setShowWidthPicker] = useState(false);
   const [showShapePicker, setShowShapePicker] = useState(false);
 
   const [canvasWidth, setCanvasWidth] = useState(800);
-  const canvasHeight = block.canvasHeight ?? 400;
+  const [userHeight, setUserHeight] = useState<number | null>(null);
+  const canvasHeight = userHeight ?? (block.canvasHeight ?? 400);
   const drawingMode = block.drawingMode ?? 'free';
+
+  // Resize handle state
+  const resizeRef = useRef<{ startY: number; startH: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Undo/Redo history
+  const historyRef = useRef<DrawingElement[][]>([savedResponse?.elements ?? []]);
+  const historyIdxRef = useRef(0);
+
+  // Shape resize corner tracking: which corner of a shape is being dragged
+  // 'tl' = top-left, 'tr' = top-right, 'bl' = bottom-left, 'br' = bottom-right
+  const resizeCornerRef = useRef<'tl' | 'tr' | 'bl' | 'br' | null>(null);
 
   const shiftHeld = useRef(false);
   const bgImageRef = useRef<HTMLImageElement | null>(null);
+
+  /** Push a snapshot to the undo history, clearing any redo stack ahead */
+  const commitToHistory = useCallback((snapshot: DrawingElement[]) => {
+    const idx = historyIdxRef.current + 1;
+    historyRef.current = historyRef.current.slice(0, idx);
+    historyRef.current.push(JSON.parse(JSON.stringify(snapshot)));
+    historyIdxRef.current = idx;
+  }, []);
+
+  // Pending commit flag — set true before setElements for permanent actions
+  const pendingCommitRef = useRef(false);
+  useEffect(() => {
+    if (pendingCommitRef.current) {
+      pendingCommitRef.current = false;
+      commitToHistory(elements);
+    }
+  }, [elements, commitToHistory]);
 
   // Load background image
   useEffect(() => {
@@ -329,22 +411,24 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       ctx.arc(cx, cy, 15, 0, Math.PI * 2);
       ctx.fill();
     } else if (drawingMode === 'extended_body') {
-      // Centered rectangle
-      const w = 120;
-      const h = 80;
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
-      ctx.fillStyle = '#f5f5f5';
-      ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
-      ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+      // Light crosshair guides only — no preset shape.
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#ddd';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, cy);
+      ctx.lineTo(canvas.width, cy);
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     // Draw all elements
     elements.forEach((el, idx) => {
       renderElementToCanvas(ctx, el);
-      // Selection highlight
-      if (idx === selectedIndex) {
+      // Selection highlight for multi-select
+      if (selectedIndices.has(idx)) {
         const bounds = getElementBounds(el);
         ctx.save();
         ctx.strokeStyle = '#007aff';
@@ -353,6 +437,26 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         ctx.strokeRect(bounds.x - 4, bounds.y - 4, bounds.w + 8, bounds.h + 8);
         ctx.setLineDash([]);
         ctx.restore();
+
+        // Draw resize handles for shapes
+        if (el.type === 'shape') {
+          const hs = 5; // handle half-size
+          const corners = [
+            { x: el.start.x, y: el.start.y },
+            { x: el.end.x, y: el.start.y },
+            { x: el.start.x, y: el.end.y },
+            { x: el.end.x, y: el.end.y },
+          ];
+          ctx.save();
+          corners.forEach(c => {
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#007aff';
+            ctx.lineWidth = 1.5;
+            ctx.fillRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+            ctx.strokeRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+          });
+          ctx.restore();
+        }
       }
     });
 
@@ -384,6 +488,24 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         ctx.stroke();
         drawArrowhead(ctx, dragStart, dragEnd, ARROW_COLOR);
       } else {
+        // Fill preview
+        if (fillEnabled && activeShape !== 'line') {
+          ctx.save();
+          ctx.globalAlpha = fillOpacity;
+          ctx.fillStyle = fillColor;
+          if (activeShape === 'rectangle') {
+            ctx.fillRect(dragStart.x, dragStart.y, dragEnd.x - dragStart.x, dragEnd.y - dragStart.y);
+          } else if (activeShape === 'circle') {
+            const rx = Math.abs(dragEnd.x - dragStart.x) / 2;
+            const ry = Math.abs(dragEnd.y - dragStart.y) / 2;
+            const ecx = (dragStart.x + dragEnd.x) / 2;
+            const ecy = (dragStart.y + dragEnd.y) / 2;
+            ctx.beginPath();
+            ctx.ellipse(ecx, ecy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
         ctx.strokeStyle = penColor;
         ctx.lineWidth = penWidth;
         ctx.lineCap = 'round';
@@ -406,7 +528,24 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         }
       }
     }
-  }, [elements, currentStroke, dragStart, dragEnd, activeTool, penColor, penWidth, activeShape, drawingMode, selectedIndex]);
+
+    // Draw selection box (rubber band)
+    if (selectionBox) {
+      ctx.save();
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.fillStyle = 'rgba(0, 122, 255, 0.08)';
+      const sx = selectionBox.start.x;
+      const sy = selectionBox.start.y;
+      const sw = selectionBox.end.x - sx;
+      const sh = selectionBox.end.y - sy;
+      ctx.fillRect(sx, sy, sw, sh);
+      ctx.strokeRect(sx, sy, sw, sh);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }, [elements, currentStroke, dragStart, dragEnd, activeTool, penColor, penWidth, activeShape, drawingMode, selectedIndices, selectionBox, fillEnabled, fillColor, fillOpacity]);
 
   useEffect(() => { redraw(); }, [redraw]);
 
@@ -447,27 +586,29 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // Element mutation helpers
   // ──────────────────────────────────────────
 
-  const moveElement = useCallback((index: number, dx: number, dy: number) => {
+  const moveElements = useCallback((indices: Set<number>, dx: number, dy: number) => {
     setElements(prev => {
       const next = [...prev];
-      const el = { ...next[index] };
-      switch (el.type) {
-        case 'stroke':
-          el.points = el.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
-          break;
-        case 'arrow':
-          el.start = { x: el.start.x + dx, y: el.start.y + dy };
-          el.end = { x: el.end.x + dx, y: el.end.y + dy };
-          break;
-        case 'shape':
-          el.start = { x: el.start.x + dx, y: el.start.y + dy };
-          el.end = { x: el.end.x + dx, y: el.end.y + dy };
-          break;
-        case 'text':
-          el.position = { x: el.position.x + dx, y: el.position.y + dy };
-          break;
-      }
-      next[index] = el as DrawingElement;
+      indices.forEach(index => {
+        const el = { ...next[index] };
+        switch (el.type) {
+          case 'stroke':
+            el.points = el.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+            break;
+          case 'arrow':
+            el.start = { x: el.start.x + dx, y: el.start.y + dy };
+            el.end = { x: el.end.x + dx, y: el.end.y + dy };
+            break;
+          case 'shape':
+            el.start = { x: el.start.x + dx, y: el.start.y + dy };
+            el.end = { x: el.end.x + dx, y: el.end.y + dy };
+            break;
+          case 'text':
+            el.position = { x: el.position.x + dx, y: el.position.y + dy };
+            break;
+        }
+        next[index] = el as DrawingElement;
+      });
       return next;
     });
   }, []);
@@ -483,6 +624,25 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     });
   }, []);
 
+  /** Resize a shape by updating one corner while keeping the opposite fixed */
+  const resizeShape = useCallback((index: number, corner: 'tl' | 'tr' | 'bl' | 'br', pos: { x: number; y: number }) => {
+    setElements(prev => {
+      const next = [...prev];
+      const el = next[index];
+      if (el.type !== 'shape') return prev;
+      const s = { ...el.start };
+      const e = { ...el.end };
+      switch (corner) {
+        case 'tl': s.x = pos.x; s.y = pos.y; break;
+        case 'tr': e.x = pos.x; s.y = pos.y; break;
+        case 'bl': s.x = pos.x; e.y = pos.y; break;
+        case 'br': e.x = pos.x; e.y = pos.y; break;
+      }
+      next[index] = { ...el, start: s, end: e };
+      return next;
+    });
+  }, []);
+
   // ──────────────────────────────────────────
   // Pointer handlers
   // ──────────────────────────────────────────
@@ -491,18 +651,43 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     if (submitted) return;
     e.preventDefault();
     const pos = getCanvasCoords(e as React.MouseEvent);
+    const isShift = shiftHeld.current;
 
     // Close any open pickers
     setShowColorPicker(false);
+    setShowFillPicker(false);
     setShowWidthPicker(false);
     setShowShapePicker(false);
 
     if (activeTool === 'select') {
-      // Check if clicking near arrowhead for resize
+      // Check if clicking near a shape's corner handle for resize
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const el = elements[i];
+        if (el.type === 'shape' && selectedIndices.has(i)) {
+          const corners: { corner: 'tl' | 'tr' | 'bl' | 'br'; x: number; y: number }[] = [
+            { corner: 'tl', x: el.start.x, y: el.start.y },
+            { corner: 'tr', x: el.end.x, y: el.start.y },
+            { corner: 'bl', x: el.start.x, y: el.end.y },
+            { corner: 'br', x: el.end.x, y: el.end.y },
+          ];
+          for (const c of corners) {
+            if (Math.hypot(pos.x - c.x, pos.y - c.y) < 12) {
+              resizeTargetRef.current = i;
+              resizeCornerRef.current = c.corner;
+              setDragMode('resize');
+              setIsDrawing(true);
+              return;
+            }
+          }
+        }
+      }
+      // Check if clicking near arrowhead for resize (single arrow only)
       for (let i = elements.length - 1; i >= 0; i--) {
         const el = elements[i];
         if (el.type === 'arrow' && Math.hypot(pos.x - el.end.x, pos.y - el.end.y) < 18) {
-          setSelectedIndex(i);
+          resizeTargetRef.current = i;
+          resizeCornerRef.current = null;
+          setSelectedIndices(new Set([i]));
           setDragMode('resize');
           setIsDrawing(true);
           return;
@@ -511,24 +696,48 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       // Check if clicking on any element for move
       for (let i = elements.length - 1; i >= 0; i--) {
         if (hitTestElement(pos, elements[i])) {
-          setSelectedIndex(i);
+          if (isShift) {
+            // Shift-click: toggle element in/out of selection
+            setSelectedIndices(prev => {
+              const next = new Set(prev);
+              if (next.has(i)) next.delete(i); else next.add(i);
+              return next;
+            });
+          } else if (!selectedIndices.has(i)) {
+            // Click on unselected element: select only it
+            setSelectedIndices(new Set([i]));
+          }
+          // Start move for all selected
           setDragMode('move');
           setDragOffset(pos);
           setIsDrawing(true);
           return;
         }
       }
-      // Clicked empty space — deselect
-      setSelectedIndex(null);
-      setDragMode(null);
+      // Clicked empty space — start selection box or deselect
+      if (!isShift) {
+        setSelectedIndices(new Set());
+      }
+      // Start rubber band selection
+      setDragMode('select-box');
+      setSelectionBox({ start: pos, end: pos });
+      setIsDrawing(true);
     } else if (activeTool === 'pen') {
       setIsDrawing(true);
       setCurrentStroke([pos]);
     } else if (activeTool === 'eraser') {
       for (let i = elements.length - 1; i >= 0; i--) {
         if (hitTestElement(pos, elements[i], 20)) {
+          pendingCommitRef.current = true;
           setElements(prev => prev.filter((_, idx) => idx !== i));
-          if (selectedIndex === i) setSelectedIndex(null);
+          setSelectedIndices(prev => {
+            const next = new Set<number>();
+            prev.forEach(idx => {
+              if (idx < i) next.add(idx);
+              else if (idx > i) next.add(idx - 1);
+            });
+            return next;
+          });
           break;
         }
       }
@@ -549,7 +758,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       setTextPlacement(pos);
       setTextInput('');
     }
-  }, [submitted, activeTool, getCanvasCoords, elements, selectedIndex, drawingMode]);
+  }, [submitted, activeTool, getCanvasCoords, elements, selectedIndices, drawingMode]);
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (submitted) return;
@@ -578,20 +787,24 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
     if (!isDrawing) return;
 
-    if (activeTool === 'select' && dragMode === 'move' && selectedIndex !== null) {
+    if (activeTool === 'select' && dragMode === 'move' && selectedIndices.size > 0) {
       const dx = pos.x - dragOffset.x;
       const dy = pos.y - dragOffset.y;
-      moveElement(selectedIndex, dx, dy);
+      moveElements(selectedIndices, dx, dy);
       setDragOffset(pos);
-    } else if (activeTool === 'select' && dragMode === 'resize' && selectedIndex !== null) {
-      let end = pos;
-      if (shiftHeld.current) {
-        const el = elements[selectedIndex];
-        if (el.type === 'arrow') {
+    } else if (activeTool === 'select' && dragMode === 'resize' && resizeTargetRef.current !== null) {
+      const el = elements[resizeTargetRef.current];
+      if (el.type === 'arrow') {
+        let end = pos;
+        if (shiftHeld.current) {
           end = snapAngle(el.start.x, el.start.y, pos.x, pos.y);
         }
+        resizeArrow(resizeTargetRef.current, end);
+      } else if (el.type === 'shape' && resizeCornerRef.current) {
+        resizeShape(resizeTargetRef.current, resizeCornerRef.current, pos);
       }
-      resizeArrow(selectedIndex, end);
+    } else if (activeTool === 'select' && dragMode === 'select-box') {
+      setSelectionBox(prev => prev ? { ...prev, end: pos } : null);
     } else if (activeTool === 'pen') {
       setCurrentStroke(prev => [...prev, pos]);
     } else if (activeTool === 'arrow') {
@@ -601,22 +814,75 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       }
       setDragEnd(end);
     } else if (activeTool === 'shape') {
-      setDragEnd(pos);
+      if (shiftHeld.current && dragStart) {
+        if (activeShape === 'line') {
+          // Snap line to 0°/45°/90° etc.
+          setDragEnd(snapAngle(dragStart.x, dragStart.y, pos.x, pos.y));
+        } else {
+          // Constrain to regular shape (square / circle)
+          const dx = pos.x - dragStart.x;
+          const dy = pos.y - dragStart.y;
+          const size = Math.max(Math.abs(dx), Math.abs(dy));
+          setDragEnd({
+            x: dragStart.x + size * Math.sign(dx || 1),
+            y: dragStart.y + size * Math.sign(dy || 1),
+          });
+        }
+      } else {
+        setDragEnd(pos);
+      }
     }
-  }, [isDrawing, submitted, activeTool, getCanvasCoords, elements, selectedIndex, dragMode, dragOffset, moveElement, resizeArrow, dragStart]);
+  }, [isDrawing, submitted, activeTool, getCanvasCoords, elements, selectedIndices, dragMode, dragOffset, moveElements, resizeArrow, resizeShape, dragStart]);
 
   const handlePointerUp = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || submitted) return;
     e.preventDefault();
 
     if (activeTool === 'select') {
+      if (dragMode === 'select-box' && selectionBox) {
+        // Complete rubber band selection
+        const rect = {
+          x: selectionBox.start.x,
+          y: selectionBox.start.y,
+          w: selectionBox.end.x - selectionBox.start.x,
+          h: selectionBox.end.y - selectionBox.start.y,
+        };
+        // Only select if box is meaningful size
+        if (Math.abs(rect.w) > 5 || Math.abs(rect.h) > 5) {
+          const newSel = new Set<number>();
+          elements.forEach((el, idx) => {
+            if (elementInRect(el, rect)) newSel.add(idx);
+          });
+          if (shiftHeld.current) {
+            // Add to existing selection
+            setSelectedIndices(prev => {
+              const merged = new Set(prev);
+              newSel.forEach(i => merged.add(i));
+              return merged;
+            });
+          } else {
+            setSelectedIndices(newSel);
+          }
+        }
+        setSelectionBox(null);
+      }
+      // Commit move/resize to history if elements were modified
+      if (dragMode === 'move' || dragMode === 'resize') {
+        pendingCommitRef.current = true;
+        // Force a re-snapshot by touching elements
+        setElements(prev => [...prev]);
+      }
       setDragMode(null);
+      resizeTargetRef.current = null;
+      resizeCornerRef.current = null;
     } else if (activeTool === 'pen' && currentStroke.length > 1) {
+      pendingCommitRef.current = true;
       setElements(prev => [...prev, { type: 'stroke', points: currentStroke, color: penColor, width: penWidth }]);
       setCurrentStroke([]);
     } else if (activeTool === 'arrow' && dragStart && dragEnd) {
       const dist = Math.hypot(dragEnd.x - dragStart.x, dragEnd.y - dragStart.y);
       if (dist > 10) {
+        pendingCommitRef.current = true;
         setElements(prev => [...prev, {
           type: 'arrow',
           start: dragStart,
@@ -630,18 +896,25 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     } else if (activeTool === 'shape' && dragStart && dragEnd) {
       const dist = Math.hypot(dragEnd.x - dragStart.x, dragEnd.y - dragStart.y);
       if (dist > 5) {
-        setElements(prev => [...prev, {
+        pendingCommitRef.current = true;
+        const newShape: DrawingElement = {
           type: 'shape', shape: activeShape,
           start: dragStart, end: dragEnd,
           color: penColor, width: penWidth,
-        }]);
+        };
+        // Apply fill if enabled and shape supports it
+        if (fillEnabled && activeShape !== 'line') {
+          (newShape as { fill?: string; fillOpacity?: number }).fill = fillColor;
+          (newShape as { fill?: string; fillOpacity?: number }).fillOpacity = fillOpacity;
+        }
+        setElements(prev => [...prev, newShape]);
       }
     }
 
     setIsDrawing(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [isDrawing, submitted, activeTool, currentStroke, dragStart, dragEnd, penColor, penWidth, activeShape]);
+  }, [isDrawing, submitted, activeTool, currentStroke, dragStart, dragEnd, penColor, penWidth, activeShape, selectionBox, dragMode, elements, fillEnabled, fillColor, fillOpacity, commitToHistory]);
 
   // ──────────────────────────────────────────
   // Text confirm
@@ -649,6 +922,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   const confirmText = useCallback(() => {
     if (!textPlacement || !textInput.trim()) { setTextPlacement(null); return; }
+    pendingCommitRef.current = true;
     setElements(prev => [...prev, {
       type: 'text',
       position: textPlacement,
@@ -676,22 +950,132 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   }, []);
 
   const deleteElement = useCallback((index: number) => {
+    pendingCommitRef.current = true;
     setElements(prev => prev.filter((_, i) => i !== index));
-    if (selectedIndex === index) setSelectedIndex(null);
-  }, [selectedIndex]);
+    setSelectedIndices(prev => {
+      const next = new Set<number>();
+      prev.forEach(idx => {
+        if (idx < index) next.add(idx);
+        else if (idx > index) next.add(idx - 1);
+      });
+      return next;
+    });
+  }, []);
+
+  const deleteSelected = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    pendingCommitRef.current = true;
+    setElements(prev => prev.filter((_, i) => !selectedIndices.has(i)));
+    setSelectedIndices(new Set());
+  }, [selectedIndices]);
+
+  // ──────────────────────────────────────────
+  // Layer ordering
+  // ──────────────────────────────────────────
+
+  const bringToFront = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    pendingCommitRef.current = true;
+    setElements(prev => {
+      const sorted = Array.from(selectedIndices).sort((a, b) => a - b);
+      const selected = sorted.map(i => prev[i]);
+      const rest = prev.filter((_, i) => !selectedIndices.has(i));
+      const combined = [...rest, ...selected];
+      // Update selection indices to point to new positions
+      const newSel = new Set<number>();
+      for (let i = 0; i < selected.length; i++) newSel.add(rest.length + i);
+      setTimeout(() => setSelectedIndices(newSel), 0);
+      return combined;
+    });
+  }, [selectedIndices]);
+
+  const sendToBack = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    pendingCommitRef.current = true;
+    setElements(prev => {
+      const sorted = Array.from(selectedIndices).sort((a, b) => a - b);
+      const selected = sorted.map(i => prev[i]);
+      const rest = prev.filter((_, i) => !selectedIndices.has(i));
+      const combined = [...selected, ...rest];
+      const newSel = new Set<number>();
+      for (let i = 0; i < selected.length; i++) newSel.add(i);
+      setTimeout(() => setSelectedIndices(newSel), 0);
+      return combined;
+    });
+  }, [selectedIndices]);
+
+  const moveUp = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    const sorted = Array.from(selectedIndices).sort((a, b) => a - b);
+    // If the topmost selected is already at the end, can't move up
+    setElements(prev => {
+      if (sorted[sorted.length - 1] >= prev.length - 1) return prev;
+      pendingCommitRef.current = true;
+      const next = [...prev];
+      const newSel = new Set<number>();
+      // Move from top to bottom to avoid overlap
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        const idx = sorted[i];
+        if (idx < next.length - 1 && !selectedIndices.has(idx + 1)) {
+          [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+          newSel.add(idx + 1);
+        } else {
+          newSel.add(idx);
+        }
+      }
+      setTimeout(() => setSelectedIndices(newSel), 0);
+      return next;
+    });
+  }, [selectedIndices]);
+
+  const moveDown = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    const sorted = Array.from(selectedIndices).sort((a, b) => a - b);
+    // If the bottommost selected is already at 0, can't move down
+    setElements(prev => {
+      if (sorted[0] <= 0) return prev;
+      pendingCommitRef.current = true;
+      const next = [...prev];
+      const newSel = new Set<number>();
+      // Move from bottom to top to avoid overlap
+      for (let i = 0; i < sorted.length; i++) {
+        const idx = sorted[i];
+        if (idx > 0 && !selectedIndices.has(idx - 1)) {
+          [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
+          newSel.add(idx - 1);
+        } else {
+          newSel.add(idx);
+        }
+      }
+      setTimeout(() => setSelectedIndices(newSel), 0);
+      return next;
+    });
+  }, [selectedIndices]);
 
   // ──────────────────────────────────────────
   // Actions
   // ──────────────────────────────────────────
 
   const handleUndo = useCallback(() => {
-    setElements(prev => prev.slice(0, -1));
-    setSelectedIndex(null);
+    if (historyIdxRef.current <= 0) return;
+    historyIdxRef.current -= 1;
+    const snapshot = historyRef.current[historyIdxRef.current];
+    setElements(JSON.parse(JSON.stringify(snapshot)));
+    setSelectedIndices(new Set());
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    if (historyIdxRef.current >= historyRef.current.length - 1) return;
+    historyIdxRef.current += 1;
+    const snapshot = historyRef.current[historyIdxRef.current];
+    setElements(JSON.parse(JSON.stringify(snapshot)));
+    setSelectedIndices(new Set());
   }, []);
 
   const handleClear = useCallback(() => {
+    pendingCommitRef.current = true;
     setElements([]);
-    setSelectedIndex(null);
+    setSelectedIndices(new Set());
     setShowClearConfirm(false);
   }, []);
 
@@ -707,8 +1091,50 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   }, [elements, onResponseChange]);
 
   // ──────────────────────────────────────────
+  // Copy / Paste
+  // ──────────────────────────────────────────
+
+  const handleCopy = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    clipboardRef.current = Array.from(selectedIndices)
+      .sort((a, b) => a - b)
+      .map(i => elements[i]);
+  }, [elements, selectedIndices]);
+
+  const handlePaste = useCallback(() => {
+    if (clipboardRef.current.length === 0) return;
+    pendingCommitRef.current = true;
+    const offset = 20;
+    const pasted = clipboardRef.current.map(el => cloneElement(el, offset, offset));
+    setElements(prev => {
+      const newElements = [...prev, ...pasted];
+      // Select the pasted elements
+      const newIndices = new Set<number>();
+      for (let i = prev.length; i < newElements.length; i++) newIndices.add(i);
+      // Have to set outside to avoid stale closure
+      setTimeout(() => setSelectedIndices(newIndices), 0);
+      return newElements;
+    });
+  }, []);
+
+  // ──────────────────────────────────────────
   // Keyboard shortcuts
   // ──────────────────────────────────────────
+
+  // Toggle component/dashed for all selected arrows
+  const toggleComponent = useCallback(() => {
+    if (selectedIndices.size === 0) return;
+    setElements(prev => {
+      const next = [...prev];
+      selectedIndices.forEach(idx => {
+        const el = next[idx];
+        if (el.type === 'arrow') {
+          next[idx] = { ...el, isComponent: !el.isComponent };
+        }
+      });
+      return next;
+    });
+  }, [selectedIndices]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -718,21 +1144,49 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
-      switch (e.key.toLowerCase()) {
-        case 'v': setActiveTool('select'); break;
-        case 'a': setActiveTool('arrow'); break;
+      const key = e.key.toLowerCase();
+      const mod = e.ctrlKey || e.metaKey;
+
+      if (mod) {
+        switch (key) {
+          case 'z':
+            e.preventDefault();
+            if (e.shiftKey) handleRedo(); else handleUndo();
+            return;
+          case 'y': e.preventDefault(); handleRedo(); return;
+          case 'c': e.preventDefault(); handleCopy(); return;
+          case 'v': e.preventDefault(); handlePaste(); return;
+          case 'a':
+            e.preventDefault();
+            setSelectedIndices(new Set(elements.map((_, i) => i)));
+            setActiveTool('select');
+            return;
+        }
+      }
+
+      switch (key) {
+        case 'v': if (!mod) setActiveTool('select'); break;
+        case 'a': if (!mod) setActiveTool('arrow'); break;
         case 'p': setActiveTool('pen'); break;
         case 's': setActiveTool('shape'); break;
         case 't': setActiveTool('text'); break;
         case 'e': setActiveTool('eraser'); break;
-        case 'z':
-          if (e.ctrlKey || e.metaKey) { e.preventDefault(); handleUndo(); }
+        case 'c': if (!mod) toggleComponent(); break;
+        case '?': setShowShortcuts(v => !v); break;
+        case ']': if (e.shiftKey) bringToFront(); else moveUp(); break;
+        case '[': if (e.shiftKey) sendToBack(); else moveDown(); break;
+        case 'delete':
+        case 'backspace':
+          if (selectedIndices.size > 0) {
+            e.preventDefault();
+            deleteSelected();
+          }
           break;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [submitted, textPlacement, handleUndo]);
+  }, [submitted, textPlacement, handleUndo, handleRedo, handleCopy, handlePaste, selectedIndices, deleteSelected, toggleComponent, elements, bringToFront, sendToBack, moveUp, moveDown]);
 
   // ──────────────────────────────────────────
   // Cursor style
@@ -760,6 +1214,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       onClick={() => {
         setActiveTool(tool);
         setShowColorPicker(false);
+        setShowFillPicker(false);
         setShowWidthPicker(false);
         setShowShapePicker(false);
       }}
@@ -791,7 +1246,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   const modeHint = drawingMode === 'point_model'
     ? 'Draw forces acting on the point object'
     : drawingMode === 'extended_body'
-      ? 'Draw forces at their points of application'
+      ? 'Draw your object using shapes, then add force arrows at their points of application'
       : null;
 
   // ──────────────────────────────────────────
@@ -835,7 +1290,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           {/* Shape tool with sub-picker */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setActiveTool('shape'); setShowShapePicker(v => !v); setShowColorPicker(false); setShowWidthPicker(false); }}
+              onClick={() => { setActiveTool('shape'); setShowShapePicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowWidthPicker(false); }}
               style={{
                 padding: '6px 8px',
                 borderRadius: '6px',
@@ -884,40 +1339,145 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
           <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
 
-          {/* Color picker */}
+          {/* Stroke color: color wheel + quick presets */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowColorPicker(v => !v); setShowWidthPicker(false); setShowShapePicker(false); }}
+              onClick={() => { setShowColorPicker(v => !v); setShowFillPicker(false); setShowWidthPicker(false); setShowShapePicker(false); }}
               style={{
                 padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent',
               }}
-              aria-label="Pick color"
-              title="Color"
+              aria-label="Stroke color"
+              title="Stroke Color"
             >
               <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #bbb', backgroundColor: penColor }} />
             </button>
             {showColorPicker && (
               <div style={{
                 position: 'absolute', top: '100%', left: 0, marginTop: '4px',
-                background: '#fff', border: '1px solid #ddd', borderRadius: '8px',
-                padding: '6px', display: 'flex', gap: '4px', zIndex: 20,
+                background: '#fff', border: '1px solid #ddd', borderRadius: '10px',
+                padding: '10px', zIndex: 20, width: '180px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               }}>
-                {PEN_COLORS.map(c => (
-                  <button
-                    key={c.value}
-                    onClick={() => { setPenColor(c.value); setShowColorPicker(false); }}
-                    style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      border: penColor === c.value ? '2px solid #007aff' : '2px solid #ddd',
-                      backgroundColor: c.value, cursor: 'pointer', transform: penColor === c.value ? 'scale(1.15)' : 'scale(1)',
-                      transition: 'all 0.15s',
-                    }}
-                    aria-label={c.label}
-                    title={c.label}
+                <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px', fontWeight: 500 }}>Stroke Color</div>
+                <input
+                  type="color"
+                  value={penColor}
+                  onChange={e => setPenColor(e.target.value)}
+                  style={{ width: '100%', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: 0 }}
+                  title="Pick any color"
+                />
+                <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
+                  {['#000000', '#FF3B30', '#007aff', '#34C759', '#FF9500', '#AF52DE', '#8B4513', '#ffffff'].map(c => (
+                    <button
+                      key={c}
+                      onClick={() => { setPenColor(c); setShowColorPicker(false); }}
+                      style={{
+                        width: '22px', height: '22px', borderRadius: '50%',
+                        border: penColor === c ? '2px solid #007aff' : c === '#ffffff' ? '2px solid #ddd' : '2px solid transparent',
+                        backgroundColor: c, cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Fill color + opacity */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => { setShowFillPicker(v => !v); setShowColorPicker(false); setShowWidthPicker(false); setShowShapePicker(false); }}
+              style={{
+                padding: '4px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '3px', background: 'transparent',
+              }}
+              aria-label="Fill color"
+              title="Fill Color & Opacity"
+            >
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '3px',
+                border: fillEnabled ? '2px solid #007aff' : '2px solid #bbb',
+                backgroundColor: fillEnabled ? fillColor : 'transparent',
+                opacity: fillEnabled ? fillOpacity : 0.4,
+              }} />
+              <span style={{ fontSize: '10px', color: fillEnabled ? '#007aff' : '#999', fontWeight: 600 }}>Fill</span>
+            </button>
+            {showFillPicker && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: '4px',
+                background: '#fff', border: '1px solid #ddd', borderRadius: '10px',
+                padding: '10px', zIndex: 20, width: '200px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}>
+                {/* Enable/disable toggle */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer', fontSize: '12px', color: '#555' }}>
+                  <input
+                    type="checkbox"
+                    checked={fillEnabled}
+                    onChange={e => setFillEnabled(e.target.checked)}
+                    style={{ accentColor: '#007aff' }}
                   />
-                ))}
+                  Enable fill
+                </label>
+                {fillEnabled && (
+                  <>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px', fontWeight: 500 }}>Fill Color</div>
+                    <input
+                      type="color"
+                      value={fillColor}
+                      onChange={e => setFillColor(e.target.value)}
+                      style={{ width: '100%', height: '28px', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: 0 }}
+                    />
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+                      {['#007aff', '#FF3B30', '#34C759', '#FF9500', '#AF52DE', '#FFD60A', '#f5f5f5', '#000000'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setFillColor(c)}
+                          style={{
+                            width: '20px', height: '20px', borderRadius: '50%',
+                            border: fillColor === c ? '2px solid #007aff' : '2px solid transparent',
+                            backgroundColor: c, cursor: 'pointer',
+                          }}
+                          aria-label={c}
+                        />
+                      ))}
+                    </div>
+                    <div style={{ marginTop: '10px' }}>
+                      <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px', fontWeight: 500 }}>
+                        Opacity: {Math.round(fillOpacity * 100)}%
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(fillOpacity * 100)}
+                        onChange={e => setFillOpacity(Number(e.target.value) / 100)}
+                        style={{ width: '100%', accentColor: '#007aff' }}
+                      />
+                      {/* Preview */}
+                      <div style={{
+                        marginTop: '6px', height: '24px', borderRadius: '4px',
+                        border: '1px solid #ddd', position: 'relative', overflow: 'hidden',
+                      }}>
+                        {/* Checkerboard background for transparency */}
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                          backgroundSize: '8px 8px',
+                          backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+                        }} />
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          backgroundColor: fillColor,
+                          opacity: fillOpacity,
+                        }} />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -925,7 +1485,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           {/* Width picker */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => { setShowWidthPicker(v => !v); setShowColorPicker(false); setShowShapePicker(false); }}
+              onClick={() => { setShowWidthPicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowShapePicker(false); }}
               style={{
                 padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                 fontSize: '11px', fontFamily: 'monospace', color: '#555', background: 'transparent',
@@ -963,19 +1523,129 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
           <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
 
+          {/* Copy / Paste */}
+          <button
+            onClick={handleCopy}
+            disabled={selectedIndices.size === 0}
+            style={{
+              padding: '6px 8px', borderRadius: '6px', border: 'none',
+              cursor: selectedIndices.size === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555', opacity: selectedIndices.size === 0 ? 0.3 : 1,
+            }}
+            aria-label="Copy"
+            title="Copy (Ctrl+C)"
+          >
+            <Copy size={16} />
+          </button>
+          <button
+            onClick={handlePaste}
+            disabled={clipboardRef.current.length === 0}
+            style={{
+              padding: '6px 8px', borderRadius: '6px', border: 'none',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555',
+            }}
+            aria-label="Paste"
+            title="Paste (Ctrl+V)"
+          >
+            <ClipboardPaste size={16} />
+          </button>
+
+          {/* Layer controls */}
+          <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
+          <button
+            onClick={bringToFront}
+            disabled={selectedIndices.size === 0}
+            style={{
+              padding: '6px 4px', borderRadius: '6px', border: 'none',
+              cursor: selectedIndices.size === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555', opacity: selectedIndices.size === 0 ? 0.3 : 1,
+            }}
+            aria-label="Bring to front"
+            title="Bring to Front"
+          >
+            <ArrowUpToLine size={14} />
+          </button>
+          <button
+            onClick={moveUp}
+            disabled={selectedIndices.size === 0}
+            style={{
+              padding: '6px 4px', borderRadius: '6px', border: 'none',
+              cursor: selectedIndices.size === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555', opacity: selectedIndices.size === 0 ? 0.3 : 1,
+            }}
+            aria-label="Move up one layer"
+            title="Move Up"
+          >
+            <ArrowUp size={14} />
+          </button>
+          <button
+            onClick={moveDown}
+            disabled={selectedIndices.size === 0}
+            style={{
+              padding: '6px 4px', borderRadius: '6px', border: 'none',
+              cursor: selectedIndices.size === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555', opacity: selectedIndices.size === 0 ? 0.3 : 1,
+            }}
+            aria-label="Move down one layer"
+            title="Move Down"
+          >
+            <ArrowDown size={14} />
+          </button>
+          <button
+            onClick={sendToBack}
+            disabled={selectedIndices.size === 0}
+            style={{
+              padding: '6px 4px', borderRadius: '6px', border: 'none',
+              cursor: selectedIndices.size === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555', opacity: selectedIndices.size === 0 ? 0.3 : 1,
+            }}
+            aria-label="Send to back"
+            title="Send to Back"
+          >
+            <ArrowDownToLine size={14} />
+          </button>
+
+          <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
+
           {/* Undo */}
           <button
             onClick={handleUndo}
-            disabled={elements.length === 0}
+            disabled={historyIdxRef.current <= 0}
             style={{
-              padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: elements.length === 0 ? 'not-allowed' : 'pointer',
+              padding: '6px 8px', borderRadius: '6px', border: 'none',
+              cursor: historyIdxRef.current <= 0 ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', color: '#555', opacity: elements.length === 0 ? 0.3 : 1,
+              background: 'transparent', color: '#555',
+              opacity: historyIdxRef.current <= 0 ? 0.3 : 1,
             }}
             aria-label="Undo"
             title="Undo (Ctrl+Z)"
           >
             <Undo2 size={16} />
+          </button>
+
+          {/* Redo */}
+          <button
+            onClick={handleRedo}
+            disabled={historyIdxRef.current >= historyRef.current.length - 1}
+            style={{
+              padding: '6px 8px', borderRadius: '6px', border: 'none',
+              cursor: historyIdxRef.current >= historyRef.current.length - 1 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#555',
+              opacity: historyIdxRef.current >= historyRef.current.length - 1 ? 0.3 : 1,
+            }}
+            aria-label="Redo"
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 size={16} />
           </button>
 
           {/* Clear */}
@@ -1014,6 +1684,25 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                 </div>
               </div>
             )}
+          </div>
+
+          <div style={{ marginLeft: 'auto' }}>
+            <button
+              onClick={() => setShowShortcuts(v => !v)}
+              style={{
+                padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: showShortcuts ? '#007aff' : 'transparent',
+                color: showShortcuts ? '#ffffff' : '#999',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { if (!showShortcuts) e.currentTarget.style.background = '#e8e8e8'; }}
+              onMouseLeave={(e) => { if (!showShortcuts) e.currentTarget.style.background = 'transparent'; }}
+              aria-label="Keyboard shortcuts"
+              title="Shortcuts (?)"
+            >
+              <Keyboard size={16} />
+            </button>
           </div>
         </div>
       )}
@@ -1072,7 +1761,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             if (el.type !== 'arrow') return null;
 
             // Position label near arrowhead
-            // Convert from canvas coords to percentage-based positioning
             const canvas = canvasRef.current;
             if (!canvas) return null;
             const scaleX = 100 / canvas.width;
@@ -1103,7 +1791,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   whiteSpace: 'nowrap',
                   zIndex: 5,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  border: '1px solid rgba(0,0,0,0.05)',
+                  border: selectedIndices.has(idx) ? '1.5px solid #007aff' : '1px solid rgba(0,0,0,0.05)',
                   pointerEvents: submitted ? 'none' : 'auto',
                   display: 'flex',
                   alignItems: 'center',
@@ -1242,6 +1930,48 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           })()}
         </div>
 
+        {/* Shortcuts help overlay */}
+        {showShortcuts && (
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            background: 'rgba(255,255,255,0.97)', border: '1px solid #ddd', borderRadius: '12px',
+            padding: '20px 24px', zIndex: 40, width: '280px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: '#222' }}>Keyboard Shortcuts</span>
+              <button onClick={() => setShowShortcuts(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', fontSize: '18px' }}>&times;</button>
+            </div>
+            {[
+              ['V', 'Select tool'],
+              ['A', 'Arrow / Force'],
+              ['P', 'Pen'],
+              ['S', 'Shape'],
+              ['T', 'Text'],
+              ['E', 'Eraser'],
+              ['C', 'Toggle component (dashed)'],
+              ['Del', 'Delete selected'],
+              ['Ctrl+C', 'Copy selected'],
+              ['Ctrl+V', 'Paste'],
+              ['Ctrl+A', 'Select all'],
+              ['Ctrl+Z', 'Undo'],
+              ['Ctrl+Shift+Z', 'Redo'],
+              ['Shift', 'Snap angles / regular shapes'],
+              ['Shift+Click', 'Add to selection'],
+              [']', 'Move up one layer'],
+              ['[', 'Move down one layer'],
+              ['}', 'Bring to front'],
+              ['{', 'Send to back'],
+              ['?', 'Toggle this panel'],
+            ].map(([key, desc]) => (
+              <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '13px' }}>
+                <kbd style={{ background: '#f0f0f0', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 6px', fontFamily: 'monospace', fontSize: '12px', color: '#333' }}>{key}</kbd>
+                <span style={{ color: '#666' }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Text input popup */}
         {textPlacement && (
           <div
@@ -1290,6 +2020,43 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           </div>
         )}
       </div>
+
+      {/* Resize handle */}
+      {!submitted && (
+        <div
+          style={{
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            height: '16px', cursor: 'row-resize', userSelect: 'none',
+            borderRadius: '0 0 8px 8px', background: isResizing ? '#e8e8e8' : '#f5f5f5',
+            border: '1px solid #ddd', borderTop: 'none',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => { if (!isResizing) e.currentTarget.style.background = '#e8e8e8'; }}
+          onMouseLeave={e => { if (!isResizing) e.currentTarget.style.background = '#f5f5f5'; }}
+          onMouseDown={e => {
+            e.preventDefault();
+            resizeRef.current = { startY: e.clientY, startH: canvasHeight };
+            setIsResizing(true);
+
+            const onMove = (ev: MouseEvent) => {
+              if (!resizeRef.current) return;
+              const newH = Math.max(200, Math.min(1000, resizeRef.current.startH + (ev.clientY - resizeRef.current.startY)));
+              setUserHeight(newH);
+            };
+            const onUp = () => {
+              resizeRef.current = null;
+              setIsResizing(false);
+              window.removeEventListener('mousemove', onMove);
+              window.removeEventListener('mouseup', onUp);
+            };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+          }}
+          title="Drag to resize canvas"
+        >
+          <GripHorizontal size={14} color="#999" />
+        </div>
+      )}
 
       {/* Submit / Submitted state */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
