@@ -10,6 +10,7 @@ import { LessonBlock } from '../../types';
 interface MathStep {
   label: string;
   latex: string;
+  input?: string; // natural math input (what student typed)
 }
 
 interface MathResponse {
@@ -25,59 +26,101 @@ interface MathResponseBlockProps {
 }
 
 // ──────────────────────────────────────────────
-// Symbol toolbar definitions
+// Natural Math → LaTeX Converter
 // ──────────────────────────────────────────────
 
-interface SymbolEntry {
-  display: string;
-  latex: string;
-  title: string;
-}
+function naturalToLatex(input: string): string {
+  if (!input.trim()) return '';
 
-const SYMBOL_GROUPS: { label: string; symbols: SymbolEntry[] }[] = [
-  {
-    label: 'Greek',
-    symbols: [
-      { display: 'Σ', latex: '\\Sigma', title: 'Sigma (summation)' },
-      { display: 'Δ', latex: '\\Delta', title: 'Delta (change)' },
-      { display: 'θ', latex: '\\theta', title: 'Theta (angle)' },
-      { display: 'α', latex: '\\alpha', title: 'Alpha' },
-      { display: 'μ', latex: '\\mu', title: 'Mu (micro/mean)' },
-      { display: 'ω', latex: '\\omega', title: 'Omega (angular velocity)' },
-    ],
-  },
-  {
-    label: 'Operators',
-    symbols: [
-      { display: '×', latex: '\\times', title: 'Multiplication' },
-      { display: '÷', latex: '\\div', title: 'Division' },
-      { display: '±', latex: '\\pm', title: 'Plus-minus' },
-      { display: '→', latex: '\\rightarrow', title: 'Right arrow' },
-      { display: '≈', latex: '\\approx', title: 'Approximately equal' },
-      { display: '≠', latex: '\\neq', title: 'Not equal' },
-    ],
-  },
-  {
-    label: 'Structures',
-    symbols: [
-      { display: 'a/b', latex: '\\frac{}{}', title: 'Fraction' },
-      { display: '√', latex: '\\sqrt{}', title: 'Square root' },
-      { display: 'x₁', latex: '_{}', title: 'Subscript' },
-      { display: 'x²', latex: '^{}', title: 'Superscript' },
-      { display: 'x̄', latex: '\\overline{}', title: 'Overline (mean)' },
-    ],
-  },
-  {
-    label: 'Units',
-    symbols: [
-      { display: 'm/s', latex: '\\text{ m/s}', title: 'Meters per second' },
-      { display: 'm/s²', latex: '\\text{ m/s}^2', title: 'Meters per second squared' },
-      { display: 'N', latex: '\\text{ N}', title: 'Newtons' },
-      { display: 'kg', latex: '\\text{ kg}', title: 'Kilograms' },
-      { display: 'J', latex: '\\text{ J}', title: 'Joules' },
-    ],
-  },
-];
+  // If input already contains LaTeX commands, pass through
+  if (input.includes('\\')) return input;
+
+  let s = input;
+
+  // 1. Unicode Greek → LaTeX
+  const greekMap: [string, string][] = [
+    ['\u03B8', '\\theta'], ['\u0398', '\\Theta'],
+    ['\u03B1', '\\alpha'], ['\u03B2', '\\beta'], ['\u03B3', '\\gamma'],
+    ['\u0394', '\\Delta'], ['\u03B4', '\\delta'],
+    ['\u03BC', '\\mu'], ['\u03C9', '\\omega'], ['\u03A9', '\\Omega'],
+    ['\u03C0', '\\pi'], ['\u03C3', '\\sigma'], ['\u03A3', '\\Sigma'],
+    ['\u03BB', '\\lambda'], ['\u03C1', '\\rho'], ['\u03C4', '\\tau'], ['\u03C6', '\\phi'],
+    ['\u221E', '\\infty'],
+  ];
+  for (const [char, latex] of greekMap) {
+    s = s.split(char).join(latex);
+  }
+
+  // 2. Unicode operators → LaTeX
+  s = s.split('\u00D7').join('\\times ');
+  s = s.split('\u00F7').join('\\div ');
+  s = s.split('\u00B7').join('\\cdot ');
+  s = s.split('\u00B1').join('\\pm ');
+  s = s.split('\u2248').join('\\approx ');
+  s = s.split('\u2260').join('\\neq ');
+  s = s.split('\u2265').join('\\geq ');
+  s = s.split('\u2264').join('\\leq ');
+  s = s.split('\u2192').join('\\rightarrow ');
+  s = s.split('\u00B2').join('^{2}');
+  s = s.split('\u00B3').join('^{3}');
+
+  // 3. Text operator shortcuts
+  s = s.replace(/>=/g, '\\geq ');
+  s = s.replace(/<=/g, '\\leq ');
+  s = s.replace(/!=/g, '\\neq ');
+  s = s.replace(/->/g, '\\rightarrow ');
+
+  // 4. Trig/log functions
+  s = s.replace(/\b(sin|cos|tan|log|ln)\b/g, '\\$1');
+
+  // 5. sqrt(expr)
+  s = s.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}');
+
+  // 6. Units BEFORE fractions (protect m/s etc. from becoming fractions)
+  const unitPatterns: [RegExp, string][] = [
+    [/([\d.]+)\s*m\/s\^2/g, '$1\\text{ m/s}^{2}'],
+    [/([\d.]+)\s*m\/s(?!\^)/g, '$1\\text{ m/s}'],
+    [/([\d.]+)\s*rad\/s\^2/g, '$1\\text{ rad/s}^{2}'],
+    [/([\d.]+)\s*rad\/s(?!\^)/g, '$1\\text{ rad/s}'],
+    [/([\d.]+)\s*km\/h/g, '$1\\text{ km/h}'],
+    [/([\d.]+)\s*kg\b/g, '$1\\text{ kg}'],
+    [/([\d.]+)\s*N\b/g, '$1\\text{ N}'],
+    [/([\d.]+)\s*J\b/g, '$1\\text{ J}'],
+    [/([\d.]+)\s*W\b(?![a-z])/g, '$1\\text{ W}'],
+    [/([\d.]+)\s*Hz\b/g, '$1\\text{ Hz}'],
+    [/([\d.]+)\s*Pa\b/g, '$1\\text{ Pa}'],
+    [/([\d.]+)\s*m\b(?![\w/])/g, '$1\\text{ m}'],
+    [/([\d.]+)\s*s\b(?![\w/])/g, '$1\\text{ s}'],
+  ];
+  for (const [re, repl] of unitPatterns) {
+    s = s.replace(re, repl);
+  }
+
+  // 7. Fractions
+  // Parenthesized: (expr)/(expr)
+  s = s.replace(/\(([^)]+)\)\/\(([^)]+)\)/g, '\\frac{$1}{$2}');
+  // Simple: token/token (not inside \text{})
+  s = s.replace(/(?<![\\{])([\w.]+)\/([\w.]+)(?![^{]*\})/g, (_match, a, b) => {
+    // Don't convert unit-like patterns that weren't caught above
+    if (/^(m|km|rad)$/.test(a) && /^(s|h)$/.test(b)) return _match;
+    return `\\frac{${a}}{${b}}`;
+  });
+
+  // 8. Exponents
+  s = s.replace(/\^\(([^)]+)\)/g, '^{$1}');
+  s = s.replace(/\^([\d.]+)/g, '^{$1}');
+  s = s.replace(/\^([a-zA-Z])/g, '^{$1}');
+
+  // 9. Subscripts
+  s = s.replace(/_\(([^)]+)\)/g, '_{$1}');
+  s = s.replace(/_(\d+)/g, '_{$1}');
+  s = s.replace(/_([a-zA-Z])/g, '_{$1}');
+
+  // 10. Multiplication: * → \cdot
+  s = s.replace(/\*/g, '\\cdot ');
+
+  return s;
+}
 
 // ──────────────────────────────────────────────
 // KaTeX preview helper
@@ -88,12 +131,217 @@ function renderLatex(latex: string): string {
   try {
     return katex.renderToString(latex, { throwOnError: false, displayMode: true });
   } catch {
-    return '<span class="text-red-400 text-xs">Invalid LaTeX</span>';
+    return '<span class="text-red-400 text-xs">Could not render — check your expression</span>';
   }
 }
 
 // ──────────────────────────────────────────────
-// Component
+// Toolbar definitions
+// ──────────────────────────────────────────────
+
+interface ToolbarButton {
+  display: string;
+  insert: string;
+  title: string;
+}
+
+const TOOLBAR_GROUPS: { label: string; buttons: ToolbarButton[] }[] = [
+  {
+    label: 'Operations',
+    buttons: [
+      { display: '+', insert: ' + ', title: 'Addition' },
+      { display: '\u2212', insert: ' - ', title: 'Subtraction' },
+      { display: '\u00D7', insert: ' \u00D7 ', title: 'Multiplication' },
+      { display: '\u00F7', insert: ' \u00F7 ', title: 'Division' },
+      { display: '=', insert: ' = ', title: 'Equals' },
+      { display: '\u00B1', insert: '\u00B1', title: 'Plus-minus' },
+      { display: '\u2248', insert: ' \u2248 ', title: 'Approximately' },
+      { display: '\u2260', insert: ' \u2260 ', title: 'Not equal' },
+      { display: '\u2265', insert: ' \u2265 ', title: 'Greater or equal' },
+      { display: '\u2264', insert: ' \u2264 ', title: 'Less or equal' },
+      { display: '\u2192', insert: ' \u2192 ', title: 'Arrow' },
+    ],
+  },
+  {
+    label: 'Greek',
+    buttons: [
+      { display: '\u03B8', insert: '\u03B8', title: 'Theta (angle)' },
+      { display: '\u0394', insert: '\u0394', title: 'Delta (change)' },
+      { display: '\u03BC', insert: '\u03BC', title: 'Mu' },
+      { display: '\u03C9', insert: '\u03C9', title: 'Omega' },
+      { display: '\u03B1', insert: '\u03B1', title: 'Alpha' },
+      { display: '\u03A3', insert: '\u03A3', title: 'Sigma (sum)' },
+      { display: '\u03C0', insert: '\u03C0', title: 'Pi' },
+      { display: '\u03BB', insert: '\u03BB', title: 'Lambda' },
+    ],
+  },
+  {
+    label: 'Units',
+    buttons: [
+      { display: 'm/s', insert: ' m/s', title: 'Meters per second' },
+      { display: 'm/s\u00B2', insert: ' m/s^2', title: 'Meters per second squared' },
+      { display: 'N', insert: ' N', title: 'Newtons' },
+      { display: 'kg', insert: ' kg', title: 'Kilograms' },
+      { display: 'J', insert: ' J', title: 'Joules' },
+      { display: 'W', insert: ' W', title: 'Watts' },
+      { display: 'm', insert: ' m', title: 'Meters' },
+      { display: 's', insert: ' s', title: 'Seconds' },
+      { display: 'Hz', insert: ' Hz', title: 'Hertz' },
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────
+// Structure definitions (open inline forms)
+// ──────────────────────────────────────────────
+
+type StructureType = 'fraction' | 'sqrt' | 'power' | 'subscript';
+
+interface StructureConfig {
+  label: string;
+  display: string;
+  title: string;
+  fields: { key: string; label: string; placeholder: string }[];
+  build: (values: Record<string, string>) => string;
+}
+
+const STRUCTURES: Record<StructureType, StructureConfig> = {
+  fraction: {
+    label: 'Fraction',
+    display: 'a/b',
+    title: 'Insert a fraction',
+    fields: [
+      { key: 'top', label: 'Top', placeholder: 'numerator' },
+      { key: 'bottom', label: 'Bottom', placeholder: 'denominator' },
+    ],
+    build: v => `(${v.top || '?'})/(${v.bottom || '?'})`,
+  },
+  sqrt: {
+    label: 'Root',
+    display: '\u221Ax',
+    title: 'Insert a square root',
+    fields: [
+      { key: 'value', label: 'Value', placeholder: 'expression' },
+    ],
+    build: v => `sqrt(${v.value || '?'})`,
+  },
+  power: {
+    label: 'Exponent',
+    display: 'x\u00B2',
+    title: 'Insert an exponent',
+    fields: [
+      { key: 'base', label: 'Base', placeholder: 'x' },
+      { key: 'exp', label: 'Power', placeholder: '2' },
+    ],
+    build: v => `${v.base || '?'}^(${v.exp || '?'})`,
+  },
+  subscript: {
+    label: 'Subscript',
+    display: 'x\u2081',
+    title: 'Insert a subscript',
+    fields: [
+      { key: 'variable', label: 'Variable', placeholder: 'v' },
+      { key: 'sub', label: 'Subscript', placeholder: 'i' },
+    ],
+    build: v => `${v.variable || '?'}_(${v.sub || '?'})`,
+  },
+};
+
+const STRUCTURE_KEYS: StructureType[] = ['fraction', 'sqrt', 'power', 'subscript'];
+
+// ──────────────────────────────────────────────
+// Physics formula templates
+// ──────────────────────────────────────────────
+
+const TEMPLATES: { display: string; insert: string; title: string }[] = [
+  { display: 'F = ma', insert: 'F = m \u00D7 a', title: "Newton's Second Law" },
+  { display: 'v = d/t', insert: 'v = d/t', title: 'Velocity' },
+  { display: 'a = \u0394v/\u0394t', insert: 'a = (v_f - v_i)/(t)', title: 'Acceleration' },
+  { display: 'KE = \u00BDmv\u00B2', insert: 'KE = (1)/(2) \u00D7 m \u00D7 v^2', title: 'Kinetic Energy' },
+  { display: 'p = mv', insert: 'p = m \u00D7 v', title: 'Momentum' },
+  { display: 'W = Fd', insert: 'W = F \u00D7 d', title: 'Work' },
+  { display: 'PE = mgh', insert: 'PE = m \u00D7 g \u00D7 h', title: 'Gravitational PE' },
+  { display: 'v\u00B2 = v\u2080\u00B2 + 2ad', insert: 'v_f^2 = v_i^2 + 2 \u00D7 a \u00D7 d', title: 'Kinematics (no time)' },
+];
+
+// ──────────────────────────────────────────────
+// Structure Form (inline mini-form for fractions, etc.)
+// ──────────────────────────────────────────────
+
+const StructureForm: React.FC<{
+  type: StructureType;
+  onInsert: (text: string) => void;
+  onClose: () => void;
+}> = ({ type, onInsert, onClose }) => {
+  const config = STRUCTURES[type];
+  const [values, setValues] = useState<Record<string, string>>({});
+  const firstRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    firstRef.current?.focus();
+  }, []);
+
+  const handleInsert = () => {
+    onInsert(config.build(values));
+    onClose();
+  };
+
+  return (
+    <div className="flex items-center gap-2 bg-black/40 border border-purple-500/30 rounded-lg px-3 py-2">
+      <span className="text-xs text-purple-300 font-medium shrink-0">
+        {config.label}:
+      </span>
+      {config.fields.map((field, i) => (
+        <React.Fragment key={field.key}>
+          {i > 0 && type === 'fraction' && (
+            <span className="text-gray-500 text-sm font-bold">/</span>
+          )}
+          <div className="flex flex-col gap-0.5">
+            <label
+              className="text-[9px] text-gray-500 uppercase tracking-wider"
+              htmlFor={`struct-${type}-${field.key}`}
+            >
+              {field.label}
+            </label>
+            <input
+              id={`struct-${type}-${field.key}`}
+              ref={i === 0 ? firstRef : null}
+              type="text"
+              placeholder={field.placeholder}
+              value={values[field.key] || ''}
+              onChange={e =>
+                setValues(prev => ({ ...prev, [field.key]: e.target.value }))
+              }
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleInsert();
+                if (e.key === 'Escape') onClose();
+              }}
+              className="w-24 bg-black/30 border border-white/10 rounded px-2 py-1 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
+            />
+          </div>
+        </React.Fragment>
+      ))}
+      <button
+        type="button"
+        onClick={handleInsert}
+        className="ml-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition"
+      >
+        Insert
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        className="p-1 text-gray-500 hover:text-gray-300 transition"
+        aria-label="Close structure form"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────
+// Main Component
 // ──────────────────────────────────────────────
 
 const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
@@ -103,23 +351,30 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
   onResponseChange,
 }) => {
   const maxSteps = block.maxSteps ?? 10;
-  const stepLabels = block.stepLabels ?? ['Given:', 'Find:', 'Solve:', 'Step 1:', 'Step 2:', 'Step 3:'];
+  const stepLabels =
+    block.stepLabels ?? ['Given:', 'Find:', 'Solve:', 'Step 1:', 'Step 2:', 'Step 3:'];
 
+  // Initialize steps — use 'input' if available, fall back to 'latex' for old data
   const [steps, setSteps] = useState<MathStep[]>(
     savedResponse?.steps?.length
-      ? savedResponse.steps
-      : [{ label: stepLabels[0] || 'Step 1:', latex: '' }]
+      ? savedResponse.steps.map(s => ({
+          label: s.label,
+          latex: s.latex,
+          input: s.input ?? s.latex,
+        }))
+      : [{ label: stepLabels[0] || 'Step 1:', latex: '', input: '' }]
   );
   const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
+  const [activeStructure, setActiveStructure] = useState<StructureType | null>(
+    null
+  );
 
-  // Track which input is focused
-  const focusedInputRef = useRef<{ index: number; el: HTMLInputElement | null }>({
-    index: 0,
-    el: null,
-  });
+  // Track which input is focused for symbol insertion
+  const focusedInputRef = useRef<{ index: number; el: HTMLInputElement | null }>(
+    { index: 0, el: null }
+  );
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Sync inputRefs array length
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, steps.length);
   }, [steps.length]);
@@ -134,10 +389,27 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
 
   // ── Step mutations ──
 
-  const updateStep = useCallback(
-    (index: number, field: keyof MathStep, value: string) => {
+  const updateStepInput = useCallback(
+    (index: number, value: string) => {
       setSteps(prev => {
-        const next = prev.map((s, i) => (i === index ? { ...s, [field]: value } : s));
+        const next = prev.map((s, i) =>
+          i === index
+            ? { ...s, input: value, latex: naturalToLatex(value) }
+            : s
+        );
+        emitChange(next, false);
+        return next;
+      });
+    },
+    [emitChange]
+  );
+
+  const updateStepLabel = useCallback(
+    (index: number, value: string) => {
+      setSteps(prev => {
+        const next = prev.map((s, i) =>
+          i === index ? { ...s, label: value } : s
+        );
         emitChange(next, false);
         return next;
       });
@@ -150,11 +422,10 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
     const nextLabel =
       stepLabels[steps.length] || `Step ${steps.length + 1}:`;
     setSteps(prev => {
-      const next = [...prev, { label: nextLabel, latex: '' }];
+      const next = [...prev, { label: nextLabel, latex: '', input: '' }];
       emitChange(next, false);
       return next;
     });
-    // Focus the new input after render
     setTimeout(() => {
       inputRefs.current[steps.length]?.focus();
     }, 50);
@@ -186,15 +457,16 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
     [steps.length, emitChange]
   );
 
-  // ── Symbol insertion ──
+  // ── Insert text at cursor position ──
 
-  const insertSymbol = useCallback(
-    (latex: string) => {
+  const insertAtCursor = useCallback(
+    (text: string) => {
       const idx = focusedInputRef.current.index;
-      const el = focusedInputRef.current.el ?? inputRefs.current[steps.length - 1];
+      const el =
+        focusedInputRef.current.el ?? inputRefs.current[steps.length - 1];
       if (!el) {
-        // Fallback: append to last step
-        updateStep(steps.length - 1, 'latex', steps[steps.length - 1].latex + latex);
+        const lastIdx = steps.length - 1;
+        updateStepInput(lastIdx, (steps[lastIdx].input || '') + text);
         return;
       }
 
@@ -202,34 +474,29 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       const end = el.selectionEnd ?? el.value.length;
       const before = el.value.slice(0, start);
       const after = el.value.slice(end);
-      const newValue = before + latex + after;
+      const newValue = before + text + after;
 
-      // Update step state
       const stepIndex = inputRefs.current.indexOf(el);
       const actualIndex = stepIndex >= 0 ? stepIndex : idx;
-      updateStep(actualIndex, 'latex', newValue);
+      updateStepInput(actualIndex, newValue);
 
-      // Position cursor inside first {} if present
-      const bracePos = latex.indexOf('{}');
-      const cursorPos = bracePos >= 0 ? start + bracePos + 1 : start + latex.length;
-
-      // Restore focus and cursor after React re-render
+      const cursorPos = start + text.length;
       setTimeout(() => {
         el.focus();
         el.setSelectionRange(cursorPos, cursorPos);
       }, 0);
     },
-    [steps, updateStep]
+    [steps, updateStepInput]
   );
 
   // ── Submit / Edit ──
 
   const handleSubmit = useCallback(() => {
-    const hasContent = steps.some(s => s.latex.trim());
+    const hasContent = steps.some(s => (s.input || s.latex).trim());
     if (!hasContent) return;
     setSubmitted(true);
     emitChange(steps, true);
-    onComplete(true); // Math responses are self-assessed; always mark complete
+    onComplete(true); // Math responses are self-assessed
   }, [steps, emitChange, onComplete]);
 
   const handleEdit = useCallback(() => {
@@ -257,116 +524,123 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       {/* Steps */}
       <div className="space-y-3">
         {steps.map((step, index) => (
-          <div
-            key={index}
-            className="group flex flex-col md:flex-row gap-2 items-start"
-          >
-            {/* Reorder buttons */}
-            <div className="flex flex-col gap-0.5 pt-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => moveStep(index, -1)}
-                disabled={index === 0 || submitted}
-                className="p-0.5 text-gray-500 hover:text-purple-400 disabled:opacity-20 transition"
-                title="Move step up"
-                aria-label={`Move step ${index + 1} up`}
-              >
-                <ChevronUp className="w-3 h-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => moveStep(index, 1)}
-                disabled={index === steps.length - 1 || submitted}
-                className="p-0.5 text-gray-500 hover:text-purple-400 disabled:opacity-20 transition"
-                title="Move step down"
-                aria-label={`Move step ${index + 1} down`}
-              >
-                <ChevronDown className="w-3 h-3" />
-              </button>
-            </div>
+          <div key={index} className="group space-y-1">
+            {/* Input row */}
+            <div className="flex gap-2 items-start">
+              {/* Reorder buttons */}
+              <div className="flex flex-col gap-0.5 pt-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => moveStep(index, -1)}
+                  disabled={index === 0 || submitted}
+                  className="p-0.5 text-gray-500 hover:text-purple-400 disabled:opacity-20 transition"
+                  title="Move step up"
+                  aria-label={`Move step ${index + 1} up`}
+                >
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveStep(index, 1)}
+                  disabled={index === steps.length - 1 || submitted}
+                  className="p-0.5 text-gray-500 hover:text-purple-400 disabled:opacity-20 transition"
+                  title="Move step down"
+                  aria-label={`Move step ${index + 1} down`}
+                >
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </div>
 
-            {/* Label input (combobox-style) */}
-            <div className="shrink-0 w-28">
-              <label className="sr-only" htmlFor={`step-label-${index}`}>
-                Step {index + 1} label
-              </label>
-              <input
-                id={`step-label-${index}`}
-                list={`step-labels-${index}`}
-                value={step.label}
-                onChange={e => updateStep(index, 'label', e.target.value)}
-                disabled={submitted}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-purple-300 font-medium placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
-                placeholder="Label"
-              />
-              <datalist id={`step-labels-${index}`}>
-                {stepLabels.map((lbl, i) => (
-                  <option key={i} value={lbl} />
-                ))}
-              </datalist>
-            </div>
-
-            {/* LaTeX input */}
-            <div className="flex-1 min-w-0">
-              <label className="sr-only" htmlFor={`step-latex-${index}`}>
-                Step {index + 1} LaTeX input
-              </label>
-              <input
-                id={`step-latex-${index}`}
-                ref={el => {
-                  inputRefs.current[index] = el;
-                }}
-                type="text"
-                value={step.latex}
-                onChange={e => updateStep(index, 'latex', e.target.value)}
-                onFocus={e => {
-                  focusedInputRef.current = { index, el: e.currentTarget };
-                }}
-                onKeyDown={e => {
-                  if (e.key === 'Tab' && !e.shiftKey && index < steps.length - 1) {
-                    // Natural tab will move to next input — no need to prevent
-                  }
-                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                disabled={submitted}
-                placeholder="Enter LaTeX (e.g. F = ma)"
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
-              />
-            </div>
-
-            {/* KaTeX preview */}
-            <div
-              className="flex-1 min-w-0 bg-white/5 rounded-lg p-2 min-h-[36px] flex items-center overflow-x-auto"
-              aria-live="polite"
-              aria-label={`Preview for step ${index + 1}`}
-            >
-              {step.latex.trim() ? (
-                <div
-                  className="text-white w-full katex-preview"
-                  dangerouslySetInnerHTML={{ __html: renderLatex(step.latex) }}
+              {/* Label input */}
+              <div className="shrink-0 w-28">
+                <label className="sr-only" htmlFor={`step-label-${index}`}>
+                  Step {index + 1} label
+                </label>
+                <input
+                  id={`step-label-${index}`}
+                  list={`step-labels-${index}`}
+                  value={step.label}
+                  onChange={e => updateStepLabel(index, e.target.value)}
+                  disabled={submitted}
+                  className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-purple-300 font-medium placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
+                  placeholder="Label"
                 />
-              ) : (
-                <span className="text-gray-600 text-xs italic">
-                  Preview will appear here
-                </span>
+                <datalist id={`step-labels-${index}`}>
+                  {stepLabels.map((lbl, i) => (
+                    <option key={i} value={lbl} />
+                  ))}
+                </datalist>
+              </div>
+
+              {/* Natural math input */}
+              <div className="flex-1 min-w-0">
+                <label className="sr-only" htmlFor={`step-input-${index}`}>
+                  Step {index + 1} math input
+                </label>
+                <input
+                  id={`step-input-${index}`}
+                  ref={el => {
+                    inputRefs.current[index] = el;
+                  }}
+                  type="text"
+                  value={step.input ?? step.latex}
+                  onChange={e => updateStepInput(index, e.target.value)}
+                  onFocus={e => {
+                    focusedInputRef.current = {
+                      index,
+                      el: e.currentTarget,
+                    };
+                  }}
+                  onKeyDown={e => {
+                    if (
+                      (e.ctrlKey || e.metaKey) &&
+                      e.key === 'Enter'
+                    ) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  disabled={submitted}
+                  placeholder="Type math naturally \u2014 e.g. v = d/t, F = m \u00D7 a"
+                  className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
+                />
+              </div>
+
+              {/* Delete button */}
+              {!submitted && steps.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeStep(index)}
+                  className="p-1.5 text-gray-500 hover:text-red-400 transition shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  title="Remove this step"
+                  aria-label={`Remove step ${index + 1}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
               )}
             </div>
 
-            {/* Delete button */}
-            {!submitted && steps.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeStep(index)}
-                className="p-1.5 text-gray-500 hover:text-red-400 transition shrink-0 opacity-0 group-hover:opacity-100"
-                title="Remove this step"
-                aria-label={`Remove step ${index + 1}`}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            {/* KaTeX preview (below input, indented to align) */}
+            <div className="ml-10">
+              {step.latex.trim() ? (
+                <div
+                  className="bg-white/5 rounded-lg px-3 py-2 overflow-x-auto"
+                  aria-live="polite"
+                  aria-label={`Preview for step ${index + 1}`}
+                >
+                  <div
+                    className="text-white katex-preview"
+                    dangerouslySetInnerHTML={{
+                      __html: renderLatex(step.latex),
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="text-gray-600 text-xs italic px-3 py-1">
+                  Preview appears here as you type
+                </p>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -383,30 +657,86 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
         </button>
       )}
 
-      {/* Symbol Toolbar */}
-      {block.showLatexHelp && !submitted && (
-        <div className="space-y-1.5">
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">
-            Insert Symbol
-          </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2 overflow-x-auto pb-1">
-            {SYMBOL_GROUPS.map(group => (
+      {/* Math Keyboard */}
+      {block.showLatexHelp !== false && !submitted && (
+        <div className="space-y-2.5 border-t border-white/5 pt-3">
+          {/* Structure buttons */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider mr-1 shrink-0">
+              Build
+            </span>
+            {STRUCTURE_KEYS.map(type => {
+              const config = STRUCTURES[type];
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() =>
+                    setActiveStructure(
+                      activeStructure === type ? null : type
+                    )
+                  }
+                  className={`px-2.5 py-1.5 text-xs rounded-lg border transition font-medium ${
+                    activeStructure === type
+                      ? 'bg-purple-600/30 border-purple-500/50 text-purple-300'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-purple-500/20 hover:text-white'
+                  }`}
+                  title={config.title}
+                >
+                  {config.display}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Structure form (appears when a structure button is active) */}
+          {activeStructure && (
+            <StructureForm
+              type={activeStructure}
+              onInsert={insertAtCursor}
+              onClose={() => setActiveStructure(null)}
+            />
+          )}
+
+          {/* Symbol groups */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {TOOLBAR_GROUPS.map(group => (
               <div key={group.label} className="flex items-center gap-1">
-                <span className="text-[10px] text-gray-500 mr-1 shrink-0">
+                <span className="text-[10px] text-gray-500 mr-1 shrink-0 uppercase tracking-wider">
                   {group.label}
                 </span>
-                {group.symbols.map(sym => (
-                  <button
-                    key={sym.latex}
-                    type="button"
-                    onClick={() => insertSymbol(sym.latex)}
-                    title={`${sym.title} — inserts ${sym.latex}`}
-                    className="px-1.5 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded-full transition whitespace-nowrap"
-                  >
-                    {sym.display}
-                  </button>
-                ))}
+                <div className="flex flex-wrap gap-0.5">
+                  {group.buttons.map((btn, i) => (
+                    <button
+                      key={`${btn.display}-${i}`}
+                      type="button"
+                      onClick={() => insertAtCursor(btn.insert)}
+                      title={btn.title}
+                      className="px-1.5 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded transition whitespace-nowrap"
+                    >
+                      {btn.display}
+                    </button>
+                  ))}
+                </div>
               </div>
+            ))}
+          </div>
+
+          {/* Templates */}
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-[10px] text-gray-500 mr-1 shrink-0 uppercase tracking-wider">
+              Templates
+            </span>
+            {TEMPLATES.map((tmpl, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => insertAtCursor(tmpl.insert)}
+                title={tmpl.title}
+                className="px-2 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded-lg border border-white/5 transition whitespace-nowrap"
+              >
+                {tmpl.display}
+              </button>
             ))}
           </div>
         </div>
@@ -418,14 +748,16 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!steps.some(s => s.latex.trim())}
+            disabled={!steps.some(s => (s.input || s.latex).trim())}
             className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0"
           >
             Submit
           </button>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="text-xs text-green-400 font-bold">Submitted</span>
+            <span className="text-xs text-green-400 font-bold">
+              Submitted
+            </span>
             <button
               type="button"
               onClick={handleEdit}
