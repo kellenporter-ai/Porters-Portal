@@ -5,6 +5,7 @@ import Modal from '../Modal';
 import OperativeAvatar, { SKIN_TONES, HAIR_COLORS, HAIR_STYLE_NAMES } from './OperativeAvatar';
 import Avatar3D from './Avatar3D';
 import { CHARACTER_MODELS, getStarterModels, DEFAULT_CHARACTER_MODEL } from '../../lib/characterModels';
+import { HAIR_MODELS } from '../../lib/hairModels';
 
 interface Appearance {
   hue?: number;
@@ -122,7 +123,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                     suitHue: previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0,
                     bodyType: previewBodyType ?? appearance?.bodyType ?? 'A',
                     skinTone: previewSkinTone ?? appearance?.skinTone ?? 0,
-                    hairStyle: previewHairStyle ?? appearance?.hairStyle ?? 1,
+                    hairStyle: previewHairStyle ?? appearance?.hairStyle ?? 0,
                     hairColor: previewHairColor ?? appearance?.hairColor ?? 0,
                   }}
                   activeCosmetics={activeCosmetics}
@@ -227,6 +228,23 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                     }}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Hair Style (3D) — button grid */}
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Style</label>
+              <div className="grid grid-cols-3 gap-2">
+                {/* Index 0 = Default (use model's built-in hair) */}
+                {['Default', ...HAIR_MODELS.map(h => h.name)].map((name, i) => {
+                  const isActive = (previewHairStyle ?? appearance?.hairStyle ?? 0) === i;
+                  return (
+                    <button key={i} onClick={() => setPreviewHairStyle(i)}
+                      className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500/30 border-purple-500 text-white border-2' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}>
+                      {name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

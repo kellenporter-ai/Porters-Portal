@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { ActiveCosmetics } from '../../types';
 import { AGENT_COSMETICS } from '../../lib/gamification';
 import { DEFAULT_CHARACTER_MODEL, getCharacterModel } from '../../lib/characterModels';
+import { getHairModel } from '../../lib/hairModels';
 import { SKIN_TONES, HAIR_COLORS } from './OperativeAvatar';
 
 // Lazy-load Babylon to avoid blocking initial bundle
@@ -204,6 +205,9 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     const mountedRef = useRef(true);
     // Store per-mesh tinting data so appearance changes don't rebuild the scene
     const meshTintDataRef = useRef<Array<{ material: any; category: MeshCategory; originalColor: { r: number; g: number; b: number } }>>([]);
+    // Track loaded hair overlay meshes for cleanup and tinting
+    const hairMeshesRef = useRef<any[]>([]);
+    const currentHairStyleRef = useRef<number | undefined>(undefined);
 
     const modelId = characterModelId || DEFAULT_CHARACTER_MODEL;
     const modelDef = getCharacterModel(modelId);
@@ -361,6 +365,69 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 // Apply initial tinting
                 applyTinting(tintData, appearanceRef.current);
 
+                // Load hair overlay if hairStyle > 0
+                const hairStyleIdx = appearanceRef.current?.hairStyle;
+                currentHairStyleRef.current = hairStyleIdx;
+                const hairDef = hairStyleIdx != null ? getHairModel(hairStyleIdx) : undefined;
+                if (hairDef && rootMesh) {
+                    // Hide built-in hair meshes on the character
+                    result.meshes.forEach(mesh => {
+                        if (mesh.material && HAIR_MAT_PATTERNS.test((mesh.material as any).name || '')) {
+                            mesh.isVisible = false;
+                        }
+                    });
+
+                    try {
+                        const hairLastSlash = hairDef.modelPath.lastIndexOf('/');
+                        const hairRootUrl = hairDef.modelPath.substring(0, hairLastSlash + 1);
+                        const hairFileName = hairDef.modelPath.substring(hairLastSlash + 1);
+
+                        const hairResult = await BABYLON.SceneLoader.ImportMeshAsync(
+                            '', hairRootUrl, hairFileName, scene
+                        );
+
+                        if (disposed || scene.isDisposed) return;
+
+                        // Parent hair to character root and match scale
+                        const hairRoot = hairResult.meshes[0];
+                        if (hairRoot) {
+                            hairRoot.parent = rootMesh;
+                            // Hair GLBs are origin-at-0, same as character — no offset needed
+                            // But we need to undo the character scaling since the parent applies it
+                            hairRoot.scaling = new BABYLON.Vector3(1, 1, 1);
+                            hairRoot.position = new BABYLON.Vector3(0, 0, 0);
+                        }
+
+                        // Convert hair PBR → StandardMaterial and add to tint data
+                        hairResult.meshes.forEach(mesh => {
+                            if (!mesh.material) return;
+                            const pbr = mesh.material as any;
+                            const ac = pbr.albedoColor || pbr.baseColor;
+                            const fallbackColor = { r: 0.5, g: 0.5, b: 0.5 };
+                            const color = ac ? { r: ac.r, g: ac.g, b: ac.b } : fallbackColor;
+
+                            const stdMat = new BABYLON.StandardMaterial(pbr.name + '_hair_std', scene);
+                            stdMat.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
+                            stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
+                            stdMat.ambientColor = new BABYLON.Color3(color.r * 0.3, color.g * 0.3, color.b * 0.3);
+                            stdMat.alpha = 1;
+                            stdMat.backFaceCulling = false; // Hair needs double-sided rendering
+
+                            tintData.push({ material: stdMat, category: 'hair', originalColor: color });
+
+                            mesh.material = stdMat;
+                            pbr.dispose();
+                        });
+
+                        hairMeshesRef.current = hairResult.meshes;
+                        // Re-apply tinting so hair gets colored
+                        meshTintDataRef.current = tintData;
+                        applyTinting(tintData, appearanceRef.current);
+                    } catch (hairErr) {
+                        console.warn('[Avatar3D] Hair overlay failed to load:', hairErr);
+                    }
+                }
+
                 // Play idle animation if available
                 if (result.animationGroups.length > 0) {
                     const idleAnim = result.animationGroups.find(
@@ -473,7 +540,7 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modelId, compact]);
+    }, [modelId, compact, appearance?.hairStyle]);
 
     // Update material tints in-place when appearance changes (no scene rebuild)
     useEffect(() => {
