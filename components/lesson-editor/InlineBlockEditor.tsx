@@ -340,7 +340,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       );
     }
     case 'MATH_RESPONSE': {
-      const labels = block.stepLabels || ['Given:', 'Find:', 'Solve:'];
+      const labels = block.stepLabels || ['Given:', 'Find:', 'Step 1:', 'Step 2:', 'Step 3:'];
       return (
         <div className="space-y-2">
           <div><label className={labelClass}>Prompt / Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="e.g. Show your work for..." className={inputClass} /></div>
@@ -351,7 +351,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
           </div>
           <div>
             <label className={labelClass}>Step Label Suggestions (comma-separated)</label>
-            <input type="text" value={labels.join(', ')} onChange={e => onUpdate({ ...block, stepLabels: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="Given:, Find:, Solve:" className={inputClass} />
+            <input type="text" value={labels.join(', ')} onChange={e => onUpdate({ ...block, stepLabels: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="Given:, Find:, Step 1:, Step 2:" className={inputClass} />
           </div>
         </div>
       );

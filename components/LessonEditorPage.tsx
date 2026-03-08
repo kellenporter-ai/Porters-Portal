@@ -82,7 +82,7 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
     case 'RANKING': return { ...base, items: [''] };
     case 'LINKED': return { ...base, linkedBlockId: '', acceptedAnswers: [''] };
     case 'DRAWING': return { ...base, title: '', instructions: '', drawingMode: 'free', canvasHeight: 400 };
-    case 'MATH_RESPONSE': return { ...base, title: '', maxSteps: 10, stepLabels: ['Given:', 'Find:', 'Solve:'], showLatexHelp: true };
+    case 'MATH_RESPONSE': return { ...base, title: '', maxSteps: 10, stepLabels: ['Given:', 'Find:', 'Step 1:', 'Step 2:', 'Step 3:'], showLatexHelp: true };
     default: return base;
   }
 };
@@ -692,19 +692,9 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <div>
                     <label className={labelClass}>Target Classes</label>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {availableClasses.map(c => {
-                        const isDefault = Object.values(DefaultClassTypes).includes(c);
-                        return (
-                          <div key={c} className="flex items-center gap-0.5">
-                            <button type="button" onClick={() => { const s = new Set(resClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setResClasses(s); setResSections([]); setHasUnsavedChanges(true); }} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${resClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
-                            {!isDefault && (
-                              <button type="button" title={`Delete "${c}" class config`} onClick={async () => { if (confirm(`Delete class config "${c}"? This only removes the config — no student data is affected.`)) { try { await dataService.deleteClassConfig(c); toast.success(`Deleted class config: ${c}`); } catch { toast.error('Failed to delete class config'); } } }} className="p-0.5 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition">
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                      {availableClasses.map(c => (
+                        <button key={c} type="button" onClick={() => { const s = new Set(resClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setResClasses(s); setResSections([]); setHasUnsavedChanges(true); }} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${resClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
+                      ))}
                     </div>
                   </div>
 

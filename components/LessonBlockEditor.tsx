@@ -91,7 +91,7 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
     case 'DRAWING':
       return { ...base, title: '', instructions: '', drawingMode: 'free', canvasHeight: 400 };
     case 'MATH_RESPONSE':
-      return { ...base, title: '', maxSteps: 10, stepLabels: ['Given:', 'Find:', 'Solve:'], showLatexHelp: true };
+      return { ...base, title: '', maxSteps: 10, stepLabels: ['Given:', 'Find:', 'Step 1:', 'Step 2:', 'Step 3:'], showLatexHelp: true };
     default:
       return base;
   }

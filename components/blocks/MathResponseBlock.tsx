@@ -253,15 +253,48 @@ const STRUCTURE_KEYS: StructureType[] = ['fraction', 'sqrt', 'power', 'subscript
 // Physics formula templates
 // ──────────────────────────────────────────────
 
-const TEMPLATES: { display: string; insert: string; title: string }[] = [
-  { display: 'F = ma', insert: 'F = m \u00D7 a', title: "Newton's Second Law" },
-  { display: 'v = d/t', insert: 'v = d/t', title: 'Velocity' },
-  { display: 'a = \u0394v/\u0394t', insert: 'a = (v_f - v_i)/(t)', title: 'Acceleration' },
-  { display: 'KE = \u00BDmv\u00B2', insert: 'KE = (1)/(2) \u00D7 m \u00D7 v^2', title: 'Kinetic Energy' },
-  { display: 'p = mv', insert: 'p = m \u00D7 v', title: 'Momentum' },
-  { display: 'W = Fd', insert: 'W = F \u00D7 d', title: 'Work' },
-  { display: 'PE = mgh', insert: 'PE = m \u00D7 g \u00D7 h', title: 'Gravitational PE' },
-  { display: 'v\u00B2 = v\u2080\u00B2 + 2ad', insert: 'v_f^2 = v_i^2 + 2 \u00D7 a \u00D7 d', title: 'Kinematics (no time)' },
+const TEMPLATES: { display: string; insert: string; title: string; category: string }[] = [
+  // Kinematics
+  { display: 'v = d/t', insert: 'v = d/t', title: 'Average Velocity', category: 'Kinematics' },
+  { display: 'a = \u0394v/\u0394t', insert: 'a = (v_f - v_i)/(t_f - t_i)', title: 'Average Acceleration', category: 'Kinematics' },
+  { display: 'x = x\u2080 + v\u2080t + \u00BDat\u00B2', insert: 'x = x_0 + v_0 \u00D7 t + (1)/(2) \u00D7 a \u00D7 t^2', title: 'Position (constant accel)', category: 'Kinematics' },
+  { display: 'v = v\u2080 + at', insert: 'v = v_0 + a \u00D7 t', title: 'Velocity (constant accel)', category: 'Kinematics' },
+  { display: 'v\u00B2 = v\u2080\u00B2 + 2a\u0394x', insert: 'v^2 = v_0^2 + 2 \u00D7 a \u00D7 \u0394x', title: 'Velocity squared (no time)', category: 'Kinematics' },
+
+  // Forces
+  { display: '\u03A3F = ma', insert: '\u03A3F = m \u00D7 a', title: "Newton's Second Law", category: 'Forces' },
+  { display: 'F\u0066 = \u03BCF\u2099', insert: 'F_f = \u03BC \u00D7 F_N', title: 'Friction', category: 'Forces' },
+  { display: 'F\u0067 = mg', insert: 'F_g = m \u00D7 g', title: 'Weight', category: 'Forces' },
+  { display: 'F\u209B = -kx', insert: 'F_s = -k \u00D7 x', title: "Hooke's Law", category: 'Forces' },
+
+  // Energy
+  { display: 'KE = \u00BDmv\u00B2', insert: 'KE = (1)/(2) \u00D7 m \u00D7 v^2', title: 'Kinetic Energy', category: 'Energy' },
+  { display: 'PE\u0067 = mgh', insert: 'PE_g = m \u00D7 g \u00D7 h', title: 'Gravitational PE', category: 'Energy' },
+  { display: 'PE\u209B = \u00BDkx\u00B2', insert: 'PE_s = (1)/(2) \u00D7 k \u00D7 x^2', title: 'Spring PE', category: 'Energy' },
+  { display: 'W = Fd cos\u03B8', insert: 'W = F \u00D7 d \u00D7 cos(\u03B8)', title: 'Work', category: 'Energy' },
+  { display: 'P = W/t', insert: 'P = W/t', title: 'Power', category: 'Energy' },
+
+  // Momentum
+  { display: 'p = mv', insert: 'p = m \u00D7 v', title: 'Momentum', category: 'Momentum' },
+  { display: 'J = F\u0394t', insert: 'J = F \u00D7 \u0394t', title: 'Impulse', category: 'Momentum' },
+  { display: '\u03A3p\u1d62 = \u03A3p\u0066', insert: '\u03A3p_i = \u03A3p_f', title: 'Conservation of Momentum', category: 'Momentum' },
+
+  // Rotation
+  { display: '\u03C4 = rF sin\u03B8', insert: '\u03C4 = r \u00D7 F \u00D7 sin(\u03B8)', title: 'Torque', category: 'Rotation' },
+  { display: 'v = r\u03C9', insert: 'v = r \u00D7 \u03C9', title: 'Tangential Velocity', category: 'Rotation' },
+  { display: 'a\u2099 = v\u00B2/r', insert: 'a_c = v^2/r', title: 'Centripetal Acceleration', category: 'Rotation' },
+
+  // Waves & Sound
+  { display: 'v = f\u03BB', insert: 'v = f \u00D7 \u03BB', title: 'Wave Speed', category: 'Waves' },
+  { display: 'T = 1/f', insert: 'T = 1/f', title: 'Period', category: 'Waves' },
+
+  // Gravity
+  { display: 'F\u0067 = Gm\u2081m\u2082/r\u00B2', insert: 'F_g = G \u00D7 (m_1 \u00D7 m_2)/(r^2)', title: 'Universal Gravitation', category: 'Gravity' },
+
+  // Electricity
+  { display: 'F\u2091 = kq\u2081q\u2082/r\u00B2', insert: 'F_e = k \u00D7 (q_1 \u00D7 q_2)/(r^2)', title: "Coulomb's Law", category: 'Electricity' },
+  { display: 'V = IR', insert: 'V = I \u00D7 R', title: "Ohm's Law", category: 'Electricity' },
+  { display: 'P = IV', insert: 'P = I \u00D7 V', title: 'Electrical Power', category: 'Electricity' },
 ];
 
 // ──────────────────────────────────────────────
@@ -352,7 +385,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
 }) => {
   const maxSteps = block.maxSteps ?? 10;
   const stepLabels =
-    block.stepLabels ?? ['Given:', 'Find:', 'Solve:', 'Step 1:', 'Step 2:', 'Step 3:'];
+    block.stepLabels ?? ['Given:', 'Find:', 'Step 1:', 'Step 2:', 'Step 3:', 'Step 4:'];
 
   // Initialize steps — use 'input' if available, fall back to 'latex' for old data
   const [steps, setSteps] = useState<MathStep[]>(
@@ -722,21 +755,25 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
             ))}
           </div>
 
-          {/* Templates */}
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[10px] text-gray-500 mr-1 shrink-0 uppercase tracking-wider">
-              Templates
-            </span>
-            {TEMPLATES.map((tmpl, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => insertAtCursor(tmpl.insert)}
-                title={tmpl.title}
-                className="px-2 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded-lg border border-white/5 transition whitespace-nowrap"
-              >
-                {tmpl.display}
-              </button>
+          {/* Templates (grouped by category) */}
+          <div className="space-y-1.5">
+            {Array.from(new Set(TEMPLATES.map(t => t.category))).map(cat => (
+              <div key={cat} className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] text-gray-500 mr-1 shrink-0 uppercase tracking-wider w-20">
+                  {cat}
+                </span>
+                {TEMPLATES.filter(t => t.category === cat).map((tmpl, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => insertAtCursor(tmpl.insert)}
+                    title={tmpl.title}
+                    className="px-2 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded-lg border border-white/5 transition whitespace-nowrap"
+                  >
+                    {tmpl.display}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </div>
