@@ -113,6 +113,44 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
     return [hue2rgb(p, q, h + 1 / 3), hue2rgb(p, q, h), hue2rgb(p, q, h - 1 / 3)];
 };
 
+/** Apply color tinting to pre-classified materials without rebuilding the scene */
+const applyTinting = (
+    tintData: Array<{ material: any; category: MeshCategory; originalColor: { r: number; g: number; b: number } }>,
+    app: AppearanceProps | undefined,
+) => {
+    for (const { material, category, originalColor: ac } of tintData) {
+        if (category === 'skin' && app?.skinTone != null) {
+            const tone = hexToRgb(SKIN_TONES[app.skinTone] || SKIN_TONES[0]);
+            material.diffuseColor.r = ac.r * 0.1 + tone.r * 0.9;
+            material.diffuseColor.g = ac.g * 0.1 + tone.g * 0.9;
+            material.diffuseColor.b = ac.b * 0.1 + tone.b * 0.9;
+        } else if (category === 'hair' && app?.hairColor != null) {
+            const hc = hexToRgb(HAIR_COLORS[app.hairColor] || HAIR_COLORS[0]);
+            material.diffuseColor.r = hc.r;
+            material.diffuseColor.g = hc.g;
+            material.diffuseColor.b = hc.b;
+            material.ambientColor.r = hc.r * 0.3;
+            material.ambientColor.g = hc.g * 0.3;
+            material.ambientColor.b = hc.b * 0.3;
+        } else if (category === 'clothing' && app?.suitHue != null) {
+            const [, s, l] = rgbToHsl(ac.r, ac.g, ac.b);
+            // Enforce minimum saturation so white/gray/dark clothing still tints
+            const effectiveS = Math.max(s, 0.45);
+            // Clamp lightness to a visible range so very dark clothing shows color
+            const effectiveL = Math.max(Math.min(l, 0.55), 0.2);
+            const [nr, ng, nb] = hslToRgb(app.suitHue / 360, effectiveS, effectiveL);
+            material.diffuseColor.r = nr;
+            material.diffuseColor.g = ng;
+            material.diffuseColor.b = nb;
+        } else if (category === 'skin' || category === 'hair' || category === 'clothing') {
+            // Reset to original if no appearance value set
+            material.diffuseColor.r = ac.r;
+            material.diffuseColor.g = ac.g;
+            material.diffuseColor.b = ac.b;
+        }
+    }
+};
+
 // ---- Appearance type ----
 interface AppearanceProps {
     bodyType?: 'A' | 'B' | 'C';
@@ -164,6 +202,8 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const mountedRef = useRef(true);
+    // Store per-mesh tinting data so appearance changes don't rebuild the scene
+    const meshTintDataRef = useRef<Array<{ material: any; category: MeshCategory; originalColor: { r: number; g: number; b: number } }>>([]);
 
     const modelId = characterModelId || DEFAULT_CHARACTER_MODEL;
     const modelDef = getCharacterModel(modelId);
@@ -185,12 +225,6 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     evolutionRef.current = evolutionLevel;
     const appearanceRef = useRef(appearance);
     appearanceRef.current = appearance;
-
-    // Serialize appearance values that affect 3D tinting for useEffect deps
-    const appearanceKey = useMemo(() =>
-        `${appearance?.skinTone ?? ''}-${appearance?.hairColor ?? ''}-${appearance?.suitHue ?? ''}`,
-        [appearance?.skinTone, appearance?.hairColor, appearance?.suitHue]
-    );
 
     // Only re-run the 3D setup when the model or compact mode changes
     useEffect(() => {
@@ -300,11 +334,12 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     rootMesh.position.y = -newBounds.min.y;
                 }
 
-                // Convert PBR → StandardMaterial with color tinting. GLB PBR
-                // materials need IBL (environment texture) to look correct,
-                // which is expensive on Chromebooks. StandardMaterial uses
-                // Blinn-Phong and works well with directional + hemispheric lights.
-                const app = appearanceRef.current;
+                // Convert PBR → StandardMaterial. GLB PBR materials need IBL
+                // (environment texture) to look correct, which is expensive on
+                // Chromebooks. StandardMaterial uses Blinn-Phong and works well
+                // with directional + hemispheric lights.
+                // Store tinting metadata so appearance updates don't rebuild the scene.
+                const tintData: typeof meshTintDataRef.current = [];
                 result.meshes.forEach(mesh => {
                     if (!mesh.material) return;
                     const pbr = mesh.material as any;
@@ -315,32 +350,16 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
                     stdMat.alpha = 1;
 
-                    // Classify by material name (Skin, Hair, Shirt, Pants, etc.)
                     const category = classifyByMaterial(pbr.name || '');
-
-                    if (category === 'skin' && app?.skinTone != null) {
-                        const tone = hexToRgb(SKIN_TONES[app.skinTone] || SKIN_TONES[0]);
-                        // 90% skin tone, 10% original — strong tint so dark tones read correctly
-                        stdMat.diffuseColor = new BABYLON.Color3(
-                            ac.r * 0.1 + tone.r * 0.9,
-                            ac.g * 0.1 + tone.g * 0.9,
-                            ac.b * 0.1 + tone.b * 0.9,
-                        );
-                    } else if (category === 'hair' && app?.hairColor != null) {
-                        const hc = hexToRgb(HAIR_COLORS[app.hairColor] || HAIR_COLORS[0]);
-                        stdMat.diffuseColor = new BABYLON.Color3(hc.r, hc.g, hc.b);
-                        // Reduce ambient contribution so dark hair stays dark
-                        stdMat.ambientColor = new BABYLON.Color3(hc.r * 0.3, hc.g * 0.3, hc.b * 0.3);
-                    } else if (category === 'clothing' && app?.suitHue != null) {
-                        // Hue-rotate the original color
-                        const [, s, l] = rgbToHsl(ac.r, ac.g, ac.b);
-                        const [nr, ng, nb] = hslToRgb(app.suitHue / 360, s, l);
-                        stdMat.diffuseColor = new BABYLON.Color3(nr, ng, nb);
-                    }
+                    tintData.push({ material: stdMat, category, originalColor: { r: ac.r, g: ac.g, b: ac.b } });
 
                     mesh.material = stdMat;
                     pbr.dispose();
                 });
+                meshTintDataRef.current = tintData;
+
+                // Apply initial tinting
+                applyTinting(tintData, appearanceRef.current);
 
                 // Play idle animation if available
                 if (result.animationGroups.length > 0) {
@@ -454,7 +473,14 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modelId, compact, appearanceKey]);
+    }, [modelId, compact]);
+
+    // Update material tints in-place when appearance changes (no scene rebuild)
+    useEffect(() => {
+        if (meshTintDataRef.current.length > 0) {
+            applyTinting(meshTintDataRef.current, appearance);
+        }
+    }, [appearance?.skinTone, appearance?.hairColor, appearance?.suitHue]);
 
     // === COMPACT FALLBACK ===
     // For tiny display contexts (leaderboard rows, chat), render a colored silhouette

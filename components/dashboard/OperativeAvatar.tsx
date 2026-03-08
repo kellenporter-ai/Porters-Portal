@@ -10,8 +10,10 @@ export const SKIN_TONES = [
 ];
 
 export const HAIR_COLORS = [
-    '#0a0a12', '#4a3728', '#8B6914', '#D4A017',
-    '#C0392B', '#D5D5D5', '#3498DB', '#8E44AD',
+    '#0a0a12', '#1c1710', '#2e2418', '#4a3728',
+    '#6B4C2A', '#8B6914', '#B88A18', '#D4A017',
+    '#C0392B', '#A83232', '#888888', '#B8B8B8',
+    '#D5D5D5', '#3498DB', '#6B5BDB', '#8E44AD',
 ];
 
 export const HAIR_STYLE_NAMES = [
