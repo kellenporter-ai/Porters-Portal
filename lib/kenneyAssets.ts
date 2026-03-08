@@ -168,30 +168,86 @@ export const BORDERS = {
 // 3D MODEL PATHS
 // ========================================
 
-const MDL = '/assets/kenney/models';
+const MDL = '/assets/models';
 
-/** Modular dungeon kit GLB models */
+/**
+ * KayKit Dungeon Remastered GLB models (CC0).
+ *
+ * Categories: walls, floors, stairs, props (barrels, chests, tables, etc.),
+ * banners, bottles, candles, columns, furniture, and more.
+ * All served from /assets/models/dungeon/.
+ */
 export const DUNGEON_MODELS = {
   basePath: `${MDL}/dungeon`,
-  corridor: `${MDL}/dungeon/corridor.glb`,
-  corridorCorner: `${MDL}/dungeon/corridor-corner.glb`,
-  corridorEnd: `${MDL}/dungeon/corridor-end.glb`,
-  corridorIntersection: `${MDL}/dungeon/corridor-intersection.glb`,
-  corridorJunction: `${MDL}/dungeon/corridor-junction.glb`,
-  corridorTransition: `${MDL}/dungeon/corridor-transition.glb`,
-  corridorWide: `${MDL}/dungeon/corridor-wide.glb`,
-  corridorWideCorner: `${MDL}/dungeon/corridor-wide-corner.glb`,
-  corridorWideEnd: `${MDL}/dungeon/corridor-wide-end.glb`,
-  corridorWideIntersection: `${MDL}/dungeon/corridor-wide-intersection.glb`,
-  corridorWideJunction: `${MDL}/dungeon/corridor-wide-junction.glb`,
-  gateDoor: `${MDL}/dungeon/gate-door.glb`,
-  gateDoorWindow: `${MDL}/dungeon/gate-door-window.glb`,
-  gate: `${MDL}/dungeon/gate.glb`,
-  gateMetalBars: `${MDL}/dungeon/gate-metal-bars.glb`,
-  roomCorner: `${MDL}/dungeon/room-corner.glb`,
-  roomLarge: `${MDL}/dungeon/room-large.glb`,
-  roomLargeVariation: `${MDL}/dungeon/room-large-variation.glb`,
-  roomSmall: `${MDL}/dungeon/room-small.glb`,
-  roomSmallVariation: `${MDL}/dungeon/room-small-variation.glb`,
+
+  // --- Structural ---
+  wall: `${MDL}/dungeon/wall.glb`,
+  wallArched: `${MDL}/dungeon/wall_arched.glb`,
+  wallBroken: `${MDL}/dungeon/wall_broken.glb`,
+  wallCorner: `${MDL}/dungeon/wall_corner.glb`,
+  wallCornerSmall: `${MDL}/dungeon/wall_corner_small.glb`,
+  wallCracked: `${MDL}/dungeon/wall_cracked.glb`,
+  wallCrossing: `${MDL}/dungeon/wall_crossing.glb`,
+  wallDoorway: `${MDL}/dungeon/wall_doorway.glb`,
+  wallDoorwaySides: `${MDL}/dungeon/wall_doorway_sides.glb`,
+  wallDoorwayTsplit: `${MDL}/dungeon/wall_doorway_Tsplit.glb`,
+  wallGated: `${MDL}/dungeon/wall_gated.glb`,
+  wallHalf: `${MDL}/dungeon/wall_half.glb`,
+  wallPillar: `${MDL}/dungeon/wall_pillar.glb`,
+  wallShelves: `${MDL}/dungeon/wall_shelves.glb`,
+  wallSloped: `${MDL}/dungeon/wall_sloped.glb`,
+  wallTsplit: `${MDL}/dungeon/wall_Tsplit.glb`,
+  wallWindowClosed: `${MDL}/dungeon/wall_window_closed.glb`,
+  wallWindowOpen: `${MDL}/dungeon/wall_window_open.glb`,
+
+  // --- Floors ---
+  floorTileLarge: `${MDL}/dungeon/floor_tile_large.glb`,
+  floorTileSmall: `${MDL}/dungeon/floor_tile_small.glb`,
+  floorTileDecorated: `${MDL}/dungeon/floor_tile_small_decorated.glb`,
+  floorDirtLarge: `${MDL}/dungeon/floor_dirt_large.glb`,
+  floorDirtSmallA: `${MDL}/dungeon/floor_dirt_small_A.glb`,
+  floorWoodLarge: `${MDL}/dungeon/floor_wood_large.glb`,
+  floorWoodSmall: `${MDL}/dungeon/floor_wood_small.glb`,
+  ceilingTile: `${MDL}/dungeon/ceiling_tile.glb`,
+
+  // --- Stairs ---
+  stairs: `${MDL}/dungeon/stairs.glb`,
+  stairsLong: `${MDL}/dungeon/stairs_long.glb`,
+  stairsNarrow: `${MDL}/dungeon/stairs_narrow.glb`,
+  stairsWide: `${MDL}/dungeon/stairs_wide.glb`,
+  stairsWood: `${MDL}/dungeon/stairs_wood.glb`,
+
+  // --- Props ---
+  barrelLarge: `${MDL}/dungeon/barrel_large.glb`,
+  barrelSmall: `${MDL}/dungeon/barrel_small.glb`,
+  chest: `${MDL}/dungeon/chest.glb`,
+  chestGold: `${MDL}/dungeon/chest_gold.glb`,
+  column: `${MDL}/dungeon/column.glb`,
+  pillar: `${MDL}/dungeon/pillar.glb`,
+  pillarDecorated: `${MDL}/dungeon/pillar_decorated.glb`,
+  torchLit: `${MDL}/dungeon/torch_lit.glb`,
+  torchMounted: `${MDL}/dungeon/torch_mounted.glb`,
+  candleLit: `${MDL}/dungeon/candle_lit.glb`,
+  coin: `${MDL}/dungeon/coin.glb`,
+  coinStackLarge: `${MDL}/dungeon/coin_stack_large.glb`,
+  key: `${MDL}/dungeon/key.glb`,
+  swordShield: `${MDL}/dungeon/sword_shield.glb`,
+
+  // --- Furniture ---
+  bed: `${MDL}/dungeon/bed_frame.glb`,
+  chair: `${MDL}/dungeon/chair.glb`,
+  stool: `${MDL}/dungeon/stool.glb`,
+  tableLong: `${MDL}/dungeon/table_long.glb`,
+  tableMedium: `${MDL}/dungeon/table_medium.glb`,
+  tableSmall: `${MDL}/dungeon/table_small.glb`,
+  shelfLarge: `${MDL}/dungeon/shelf_large.glb`,
+  shelfSmall: `${MDL}/dungeon/shelf_small.glb`,
+
+  // --- Barriers ---
+  barrier: `${MDL}/dungeon/barrier.glb`,
+  barrierCorner: `${MDL}/dungeon/barrier_corner.glb`,
+  barrierColumn: `${MDL}/dungeon/barrier_column.glb`,
+
+  /** Dynamic lookup — any model by filename (without extension) */
   get: (name: string) => `${MDL}/dungeon/${name}.glb`,
 } as const;

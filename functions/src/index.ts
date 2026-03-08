@@ -5459,14 +5459,12 @@ const FLUX_SHOP_CATALOG: Record<string, {
   trail_inferno: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
   trail_ice: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
   trail_spectral: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
-  // Character Models — Standard (200 Flux)
-  char_male_shirt: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
-  char_male_longsleeve: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
-  char_female_tanktop: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  // Character Models — Standard (200 Flux) — KayKit Adventurers
+  char_mage: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  char_ranger: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  char_rogue: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
   // Character Models — Premium (400 Flux)
-  char_male_suit: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
-  char_female_dress: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
-  char_female_alt: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
+  char_rogue_hooded: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
 };
 
 export const purchaseFluxItem = onCall(async (request) => {

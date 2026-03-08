@@ -5,7 +5,6 @@ import Modal from '../Modal';
 import OperativeAvatar, { SKIN_TONES, HAIR_COLORS, HAIR_STYLE_NAMES } from './OperativeAvatar';
 import Avatar3D from './Avatar3D';
 import { CHARACTER_MODELS, getStarterModels, DEFAULT_CHARACTER_MODEL } from '../../lib/characterModels';
-import { HAIR_MODELS } from '../../lib/hairModels';
 
 interface Appearance {
   hue?: number;
@@ -34,6 +33,9 @@ interface CustomizeModalProps {
 
 type Tab = '2d' | '3d';
 
+// Flip to true to re-enable the 3D model tab for students
+const ENABLE_3D_TAB = false;
+
 const CustomizeModal: React.FC<CustomizeModalProps> = ({
   isOpen, onClose, equipped, appearance, onSave,
   selectedCharacterModel, ownedCharacterModels = [], onSelectCharacterModel, activeCosmetics,
@@ -44,7 +46,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
   const [previewSkinTone, setPreviewSkinTone] = useState<number | null>(null);
   const [previewHairStyle, setPreviewHairStyle] = useState<number | null>(null);
   const [previewHairColor, setPreviewHairColor] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>('3d');
+  const [activeTab, setActiveTab] = useState<Tab>(ENABLE_3D_TAB ? '3d' : '2d');
   const [preview3DModel, setPreview3DModel] = useState<string | null>(null);
 
   // Free starters are always available
@@ -90,7 +92,8 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Customize Your Agent" maxWidth="max-w-lg">
       <div className="p-4 space-y-4">
-        {/* Tab switcher */}
+        {/* Tab switcher — hidden when 3D tab is disabled */}
+        {ENABLE_3D_TAB && (
         <div className="flex gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
           <button
             onClick={() => setActiveTab('3d')}
@@ -109,6 +112,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             2D Classic
           </button>
         </div>
+        )}
 
         {activeTab === '3d' ? (
           <>
@@ -123,8 +127,6 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                     suitHue: previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0,
                     bodyType: previewBodyType ?? appearance?.bodyType ?? 'A',
                     skinTone: previewSkinTone ?? appearance?.skinTone ?? 0,
-                    hairStyle: previewHairStyle ?? appearance?.hairStyle ?? 0,
-                    hairColor: previewHairColor ?? appearance?.hairColor ?? 0,
                   }}
                   activeCosmetics={activeCosmetics}
                 />
@@ -202,49 +204,6 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                     }}
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Hair Color (3D) — gradient slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
-              <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
-                  style={{ background: `linear-gradient(to right, ${HAIR_COLORS.join(', ')})` }}>
-                  <input
-                    type="range"
-                    min={0}
-                    max={HAIR_COLORS.length - 1}
-                    step={1}
-                    value={previewHairColor ?? appearance?.hairColor ?? 0}
-                    onChange={e => setPreviewHairColor(Number(e.target.value))}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
-                    style={{
-                      left: `calc(${((previewHairColor ?? appearance?.hairColor ?? 0) / (HAIR_COLORS.length - 1)) * 100}% - 10px)`,
-                      backgroundColor: HAIR_COLORS[previewHairColor ?? appearance?.hairColor ?? 0],
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Hair Style (3D) — button grid */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Style</label>
-              <div className="grid grid-cols-3 gap-2">
-                {/* Index 0 = Default (use model's built-in hair) */}
-                {['Default', ...HAIR_MODELS.map(h => h.name)].map((name, i) => {
-                  const isActive = (previewHairStyle ?? appearance?.hairStyle ?? 0) === i;
-                  return (
-                    <button key={i} onClick={() => setPreviewHairStyle(i)}
-                      className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500/30 border-purple-500 text-white border-2' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}>
-                      {name}
-                    </button>
-                  );
-                })}
               </div>
             </div>
 

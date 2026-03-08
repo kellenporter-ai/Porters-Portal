@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { ActiveCosmetics } from '../../types';
 import { AGENT_COSMETICS } from '../../lib/gamification';
 import { DEFAULT_CHARACTER_MODEL, getCharacterModel } from '../../lib/characterModels';
-import { getHairModel } from '../../lib/hairModels';
-import { SKIN_TONES, HAIR_COLORS } from './OperativeAvatar';
+import { SKIN_TONES } from './OperativeAvatar';
 
 // Lazy-load Babylon to avoid blocking initial bundle
 let babylonCore: typeof import('@babylonjs/core') | null = null;
@@ -55,22 +54,21 @@ const resolveCosmetics = (activeCosmetics?: ActiveCosmetics): ResolvedCosmetic3D
     return resolved;
 };
 
-// ---- Material classification for color tinting ----
-// Quaternius GLB models use a single mesh with multiple primitives.
-// Babylon splits primitives into sub-meshes, each with its own material.
-// Material names (Skin, Hair, Shirt, Pants, etc.) are the reliable classifier.
-type MeshCategory = 'skin' | 'hair' | 'clothing' | 'unknown';
+// ---- Mesh classification for color tinting ----
+// KayKit GLB models use texture atlases with a single material per character.
+// Each body part is a separate mesh (e.g. Knight_Body, Knight_Head, Knight_ArmLeft).
+// We classify by MESH NAME to determine which tint category applies.
+// Tinting works via diffuseColor multiplication on top of the existing texture.
+type MeshCategory = 'skin' | 'clothing' | 'unknown';
 
-const SKIN_MAT_PATTERNS = /^skin$/i;
-const HAIR_MAT_PATTERNS = /hair/i;
-const CLOTHING_MAT_PATTERNS = /shirt|pants|suit|dress|shoe|boot|sock|top|sleeve|jacket|skirt|tank|collar|tie|belt|vest|coat|shorts|details/i;
-const EYES_MAT_PATTERN = /^eyes$/i;
+const SKIN_MESH_PATTERNS = /_Head$|_ArmLeft$|_ArmRight$/i;
+const CLOTHING_MESH_PATTERNS = /_Body$|_LegLeft$|_LegRight$|_Cape$|_Helmet$|_HelmetVisor$|_Hat$|_Cloak$|_Mask$|_BearHat$|_Quiver$|_Hood$/i;
+const EYES_MESH_PATTERN = /_Eyes$/i;
 
-const classifyByMaterial = (materialName: string): MeshCategory => {
-    if (EYES_MAT_PATTERN.test(materialName)) return 'unknown'; // Don't tint eyes
-    if (HAIR_MAT_PATTERNS.test(materialName)) return 'hair';
-    if (CLOTHING_MAT_PATTERNS.test(materialName)) return 'clothing';
-    if (SKIN_MAT_PATTERNS.test(materialName)) return 'skin';
+const classifyByMeshName = (meshName: string): MeshCategory => {
+    if (EYES_MESH_PATTERN.test(meshName)) return 'unknown'; // Don't tint eyes
+    if (SKIN_MESH_PATTERNS.test(meshName)) return 'skin';
+    if (CLOTHING_MESH_PATTERNS.test(meshName)) return 'clothing';
     return 'unknown';
 };
 
@@ -82,20 +80,6 @@ const hexToRgb = (hex: string) => {
         g: parseInt(h.substring(2, 4), 16) / 255,
         b: parseInt(h.substring(4, 6), 16) / 255,
     };
-};
-
-/** Convert RGB (0-1) to HSL */
-const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    const l = (max + min) / 2;
-    if (max === min) return [0, 0, l];
-    const d = max - min;
-    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    let h = 0;
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-    else if (max === g) h = ((b - r) / d + 2) / 6;
-    else h = ((r - g) / d + 4) / 6;
-    return [h, s, l];
 };
 
 /** Convert HSL to RGB (0-1) */
@@ -114,40 +98,39 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
     return [hue2rgb(p, q, h + 1 / 3), hue2rgb(p, q, h), hue2rgb(p, q, h - 1 / 3)];
 };
 
-/** Apply color tinting to pre-classified materials without rebuilding the scene */
+/**
+ * Apply color tinting to pre-classified materials without rebuilding the scene.
+ *
+ * KayKit models use texture atlases, so diffuseColor acts as a multiplier:
+ *   finalColor = diffuseTexture * diffuseColor
+ * White (1,1,1) = no tint. Setting a color tints the texture.
+ *
+ * For skin meshes, we blend towards the chosen skin tone.
+ * For clothing meshes, we apply a hue-shifted tint color.
+ */
 const applyTinting = (
-    tintData: Array<{ material: any; category: MeshCategory; originalColor: { r: number; g: number; b: number } }>,
+    tintData: Array<{ material: any; category: MeshCategory }>,
     app: AppearanceProps | undefined,
 ) => {
-    for (const { material, category, originalColor: ac } of tintData) {
+    for (const { material, category } of tintData) {
         if (category === 'skin' && app?.skinTone != null) {
+            // Blend skin tone into the texture via diffuseColor multiply.
+            // Use a light blend so the texture details show through.
             const tone = hexToRgb(SKIN_TONES[app.skinTone] || SKIN_TONES[0]);
-            material.diffuseColor.r = ac.r * 0.1 + tone.r * 0.9;
-            material.diffuseColor.g = ac.g * 0.1 + tone.g * 0.9;
-            material.diffuseColor.b = ac.b * 0.1 + tone.b * 0.9;
-        } else if (category === 'hair' && app?.hairColor != null) {
-            const hc = hexToRgb(HAIR_COLORS[app.hairColor] || HAIR_COLORS[0]);
-            material.diffuseColor.r = hc.r;
-            material.diffuseColor.g = hc.g;
-            material.diffuseColor.b = hc.b;
-            material.ambientColor.r = hc.r * 0.3;
-            material.ambientColor.g = hc.g * 0.3;
-            material.ambientColor.b = hc.b * 0.3;
+            material.diffuseColor.r = 0.4 + tone.r * 0.6;
+            material.diffuseColor.g = 0.4 + tone.g * 0.6;
+            material.diffuseColor.b = 0.4 + tone.b * 0.6;
         } else if (category === 'clothing' && app?.suitHue != null) {
-            const [, s, l] = rgbToHsl(ac.r, ac.g, ac.b);
-            // Enforce minimum saturation so white/gray/dark clothing still tints
-            const effectiveS = Math.max(s, 0.45);
-            // Clamp lightness to a visible range so very dark clothing shows color
-            const effectiveL = Math.max(Math.min(l, 0.55), 0.2);
-            const [nr, ng, nb] = hslToRgb(app.suitHue / 360, effectiveS, effectiveL);
+            // Hue-shift clothing via a saturated tint multiplied onto the texture
+            const [nr, ng, nb] = hslToRgb(app.suitHue / 360, 0.5, 0.65);
             material.diffuseColor.r = nr;
             material.diffuseColor.g = ng;
             material.diffuseColor.b = nb;
-        } else if (category === 'skin' || category === 'hair' || category === 'clothing') {
-            // Reset to original if no appearance value set
-            material.diffuseColor.r = ac.r;
-            material.diffuseColor.g = ac.g;
-            material.diffuseColor.b = ac.b;
+        } else if (category === 'skin' || category === 'clothing') {
+            // Reset to white (no tint) if no appearance value set
+            material.diffuseColor.r = 1;
+            material.diffuseColor.g = 1;
+            material.diffuseColor.b = 1;
         }
     }
 };
@@ -158,8 +141,6 @@ interface AppearanceProps {
     hue?: number;
     suitHue?: number;
     skinTone?: number;
-    hairStyle?: number;
-    hairColor?: number;
 }
 
 // ---- Props ----
@@ -204,10 +185,7 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     const [error, setError] = useState(false);
     const mountedRef = useRef(true);
     // Store per-mesh tinting data so appearance changes don't rebuild the scene
-    const meshTintDataRef = useRef<Array<{ material: any; category: MeshCategory; originalColor: { r: number; g: number; b: number } }>>([]);
-    // Track loaded hair overlay meshes for cleanup and tinting
-    const hairMeshesRef = useRef<any[]>([]);
-    const currentHairStyleRef = useRef<number | undefined>(undefined);
+    const meshTintDataRef = useRef<Array<{ material: any; category: MeshCategory }>>([]);
 
     const modelId = characterModelId || DEFAULT_CHARACTER_MODEL;
     const modelDef = getCharacterModel(modelId);
@@ -338,26 +316,33 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     rootMesh.position.y = -newBounds.min.y;
                 }
 
-                // Convert PBR → StandardMaterial. GLB PBR materials need IBL
-                // (environment texture) to look correct, which is expensive on
-                // Chromebooks. StandardMaterial uses Blinn-Phong and works well
-                // with directional + hemispheric lights.
-                // Store tinting metadata so appearance updates don't rebuild the scene.
+                // Convert PBR → StandardMaterial. KayKit GLBs use texture
+                // atlases with PBR materials. IBL is too expensive for
+                // Chromebooks, so we convert to Blinn-Phong (StandardMaterial).
+                // The texture is preserved; diffuseColor acts as a tint multiplier.
+                // Each mesh gets its own material clone so body parts can be tinted independently.
                 const tintData: typeof meshTintDataRef.current = [];
                 result.meshes.forEach(mesh => {
                     if (!mesh.material) return;
                     const pbr = mesh.material as any;
-                    const ac = pbr.albedoColor;
-                    if (!ac) return;
-                    const stdMat = new BABYLON.StandardMaterial(pbr.name + '_std', scene);
-                    stdMat.diffuseColor = ac.clone();
+                    const stdMat = new BABYLON.StandardMaterial(mesh.name + '_std', scene);
+
+                    // Transfer texture if present
+                    if (pbr.albedoTexture || pbr._albedoTexture) {
+                        stdMat.diffuseTexture = pbr.albedoTexture || pbr._albedoTexture;
+                    }
+                    // Start with white diffuseColor (no tint — full texture colors)
+                    stdMat.diffuseColor = new BABYLON.Color3(1, 1, 1);
                     stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
                     stdMat.alpha = 1;
 
-                    const category = classifyByMaterial(pbr.name || '');
-                    tintData.push({ material: stdMat, category, originalColor: { r: ac.r, g: ac.g, b: ac.b } });
+                    const category = classifyByMeshName(mesh.name || '');
+                    tintData.push({ material: stdMat, category });
 
                     mesh.material = stdMat;
+                    // Don't dispose PBR yet if its texture is shared
+                    pbr.albedoTexture = null;
+                    pbr._albedoTexture = null;
                     pbr.dispose();
                 });
                 meshTintDataRef.current = tintData;
@@ -365,99 +350,8 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 // Apply initial tinting
                 applyTinting(tintData, appearanceRef.current);
 
-                // Load hair overlay if hairStyle > 0
-                const hairStyleIdx = appearanceRef.current?.hairStyle;
-                currentHairStyleRef.current = hairStyleIdx;
-                const hairDef = hairStyleIdx != null ? getHairModel(hairStyleIdx) : undefined;
-                if (hairDef && rootMesh) {
-                    // Hide built-in hair meshes on the character
-                    result.meshes.forEach(mesh => {
-                        if (mesh.material && HAIR_MAT_PATTERNS.test((mesh.material as any).name || '')) {
-                            mesh.isVisible = false;
-                        }
-                    });
-
-                    try {
-                        const hairLastSlash = hairDef.modelPath.lastIndexOf('/');
-                        const hairRootUrl = hairDef.modelPath.substring(0, hairLastSlash + 1);
-                        const hairFileName = hairDef.modelPath.substring(hairLastSlash + 1);
-
-                        const hairResult = await BABYLON.SceneLoader.ImportMeshAsync(
-                            '', hairRootUrl, hairFileName, scene
-                        );
-
-                        if (disposed || scene.isDisposed) return;
-
-                        // Hair GLBs are in ~1.84m UBC space. Our characters are
-                        // normalized to 1.8m. The UBC head is narrower than ours,
-                        // so scale hair up ~24% to match character head width.
-                        // Character head X-width (scaled): 0.514 * 0.372 = 0.191
-                        // Hair X-width (raw): ~0.154  →  ratio: 0.191/0.154 ≈ 1.24
-                        const hairRoot = hairResult.meshes[0];
-                        const HAIR_SCALE = 1.24;
-                        if (hairRoot) {
-                            // Get character's head center in world space
-                            const charBounds = rootMesh.getHierarchyBoundingVectors();
-                            const charTopY = charBounds.max.y; // ~1.80
-
-                            // Hair raw top is ~1.82, scaled becomes 1.82 * 1.24 = 2.26
-                            // Need to offset down so hair top aligns with character top
-                            // Offset = charTopY - (hairRawTopY * HAIR_SCALE)
-                            const hairBounds = hairRoot.getHierarchyBoundingVectors();
-                            const hairTopY = hairBounds.max.y;
-                            const yOffset = charTopY - (hairTopY * HAIR_SCALE);
-
-                            hairRoot.scaling = new BABYLON.Vector3(HAIR_SCALE, HAIR_SCALE, HAIR_SCALE);
-                            hairRoot.position = new BABYLON.Vector3(0, yOffset, 0);
-                        }
-
-                        // Convert hair PBR → StandardMaterial and add to tint data
-                        hairResult.meshes.forEach(mesh => {
-                            if (!mesh.material) return;
-                            const pbr = mesh.material as any;
-                            const ac = pbr.albedoColor || pbr.baseColor;
-                            const fallbackColor = { r: 0.5, g: 0.5, b: 0.5 };
-                            const color = ac ? { r: ac.r, g: ac.g, b: ac.b } : fallbackColor;
-
-                            const stdMat = new BABYLON.StandardMaterial(pbr.name + '_hair_std', scene);
-                            stdMat.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
-                            stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
-                            stdMat.ambientColor = new BABYLON.Color3(color.r * 0.3, color.g * 0.3, color.b * 0.3);
-                            stdMat.alpha = 1;
-                            stdMat.backFaceCulling = false;
-                            // Force opaque rendering (fix Quaternius alpha=0 bug)
-                            stdMat.transparencyMode = 0; // OPAQUE
-
-                            // Ensure mesh is visible
-                            mesh.isVisible = true;
-                            mesh.visibility = 1;
-
-                            tintData.push({ material: stdMat, category: 'hair', originalColor: color });
-
-                            mesh.material = stdMat;
-                            pbr.dispose();
-                        });
-
-                        hairMeshesRef.current = hairResult.meshes;
-                        meshTintDataRef.current = tintData;
-                        applyTinting(tintData, appearanceRef.current);
-
-                        // Debug: log transforms for alignment verification
-                        const hb = hairRoot?.getHierarchyBoundingVectors();
-                        const cb = rootMesh.getHierarchyBoundingVectors();
-                        console.log('[Avatar3D] Hair overlay loaded:', hairDef.modelPath);
-                        console.log('  charRoot scaling:', rootMesh.scaling.toString(),
-                            'pos:', rootMesh.position.toString());
-                        console.log('  charBounds Y:', cb?.min.y.toFixed(2), 'to', cb?.max.y.toFixed(2));
-                        console.log('  hairRoot scaling:', hairRoot?.scaling?.toString(),
-                            'pos:', hairRoot?.position?.toString());
-                        console.log('  hairBounds Y:', hb?.min.y.toFixed(2), 'to', hb?.max.y.toFixed(2));
-                    } catch (hairErr) {
-                        console.warn('[Avatar3D] Hair overlay failed to load:', hairErr);
-                    }
-                }
-
-                // Play idle animation if available
+                // Play idle animation if available (KayKit characters may
+                // not have embedded animations — they'll render in bind pose)
                 if (result.animationGroups.length > 0) {
                     const idleAnim = result.animationGroups.find(
                         ag => ag.name.toLowerCase().includes('idle')
@@ -569,14 +463,14 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modelId, compact, appearance?.hairStyle]);
+    }, [modelId, compact]);
 
     // Update material tints in-place when appearance changes (no scene rebuild)
     useEffect(() => {
         if (meshTintDataRef.current.length > 0) {
             applyTinting(meshTintDataRef.current, appearance);
         }
-    }, [appearance?.skinTone, appearance?.hairColor, appearance?.suitHue]);
+    }, [appearance?.skinTone, appearance?.suitHue]);
 
     // === COMPACT FALLBACK ===
     // For tiny display contexts (leaderboard rows, chat), render a colored silhouette
