@@ -388,37 +388,12 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
 
                         if (disposed || scene.isDisposed) return;
 
-                        // The hair GLBs are from Universal Base Characters (different
-                        // proportions than our character models). We need to:
-                        // 1. Measure the hair's own bounding box
-                        // 2. Scale it to match the character's head width
-                        // 3. Position it at the character's head height
+                        // Both our character models and the hair GLBs are Quaternius
+                        // origin-at-0 models. Apply the same world transform so they align.
                         const hairRoot = hairResult.meshes[0];
                         if (hairRoot) {
-                            // Get character head position (top ~10% of bounding box)
-                            const charBounds = rootMesh.getHierarchyBoundingVectors();
-                            const charHeight = charBounds.max.y - charBounds.min.y;
-                            const charHeadY = charBounds.max.y - charHeight * 0.12; // ~eye level
-
-                            // Get hair bounding box in its own space
-                            const hairBounds = hairRoot.getHierarchyBoundingVectors();
-                            const hairHeight = hairBounds.max.y - hairBounds.min.y;
-                            const hairWidth = hairBounds.max.x - hairBounds.min.x;
-
-                            // Target: hair should span roughly 30% of character height
-                            // (head + hair together is about 1/5 of body, hair alone ~30% of head region)
-                            const charHeadSize = charHeight * 0.15;
-                            const hairScale = hairHeight > 0 ? charHeadSize / hairHeight : 1;
-
-                            // Position hair at head level, centered
-                            // Hair GLBs have their center roughly at mid-head, so offset up
-                            const hairCenterY = (hairBounds.min.y + hairBounds.max.y) / 2;
-                            hairRoot.scaling = new BABYLON.Vector3(hairScale, hairScale, hairScale);
-                            hairRoot.position = new BABYLON.Vector3(
-                                0,
-                                charHeadY - hairCenterY * hairScale,
-                                0
-                            );
+                            hairRoot.scaling = rootMesh.scaling.clone();
+                            hairRoot.position = rootMesh.position.clone();
                         }
 
                         // Convert hair PBR → StandardMaterial and add to tint data
