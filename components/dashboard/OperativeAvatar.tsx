@@ -3,8 +3,10 @@ import React, { useId, useMemo } from 'react';
 // === CUSTOMIZATION PALETTES (exported for customize modal) ===
 
 export const SKIN_TONES = [
-    '#FDDCB5', '#F1C27D', '#E0A370', '#C68642',
-    '#A0785A', '#8D5524', '#6B3A2A', '#2C1608',
+    '#FDDCB5', '#F5D0A9', '#F1C27D', '#EBAF6A',
+    '#E0A370', '#D49555', '#C68642', '#B3774E',
+    '#A0785A', '#96683E', '#8D5524', '#7A471F',
+    '#6B3A2A', '#573020', '#3E2214', '#2C1608',
 ];
 
 export const HAIR_COLORS = [

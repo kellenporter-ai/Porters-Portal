@@ -180,18 +180,30 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
               </p>
             </div>
 
-            {/* Skin Tone (3D) */}
+            {/* Skin Tone (3D) — gradient slider */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
-              <div className="flex justify-center gap-2">
-                {SKIN_TONES.map((tone, i) => {
-                  const isActive = (previewSkinTone ?? appearance?.skinTone ?? 0) === i;
-                  return (
-                    <button key={i} onClick={() => setPreviewSkinTone(i)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
-                      style={{ backgroundColor: tone }} />
-                  );
-                })}
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: `linear-gradient(to right, ${SKIN_TONES.join(', ')})` }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={SKIN_TONES.length - 1}
+                    step={1}
+                    value={previewSkinTone ?? appearance?.skinTone ?? 0}
+                    onChange={e => setPreviewSkinTone(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {/* Thumb indicator */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewSkinTone ?? appearance?.skinTone ?? 0) / (SKIN_TONES.length - 1)) * 100}% - 10px)`,
+                      backgroundColor: SKIN_TONES[previewSkinTone ?? appearance?.skinTone ?? 0],
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -242,18 +254,29 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
               </div>
             </div>
 
-            {/* Skin Tone */}
+            {/* Skin Tone — gradient slider */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
-              <div className="flex justify-center gap-2">
-                {SKIN_TONES.map((tone, i) => {
-                  const isActive = (previewSkinTone ?? appearance?.skinTone ?? 0) === i;
-                  return (
-                    <button key={i} onClick={() => setPreviewSkinTone(i)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
-                      style={{ backgroundColor: tone }} />
-                  );
-                })}
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: `linear-gradient(to right, ${SKIN_TONES.join(', ')})` }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={SKIN_TONES.length - 1}
+                    step={1}
+                    value={previewSkinTone ?? appearance?.skinTone ?? 0}
+                    onChange={e => setPreviewSkinTone(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewSkinTone ?? appearance?.skinTone ?? 0) / (SKIN_TONES.length - 1)) * 100}% - 10px)`,
+                      backgroundColor: SKIN_TONES[previewSkinTone ?? appearance?.skinTone ?? 0],
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
