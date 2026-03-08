@@ -1099,7 +1099,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
   const getBlockTypeInfo = (type: BlockType) => BLOCK_TYPES.find(bt => bt.type === type);
 
   // Group block types by category for the add menu
-  const categories = ['Content', 'Interactive', 'Questions'];
+  const categories = ['Content', 'Interactive', 'Questions', 'Tools'];
 
   const draggedBlock = activeDragId ? blocks.find(b => b.id === activeDragId) : null;
   const draggedTypeInfo = draggedBlock ? getBlockTypeInfo(draggedBlock.type) : null;
