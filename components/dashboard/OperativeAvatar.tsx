@@ -4,11 +4,11 @@ import React, { useId, useMemo } from 'react';
 
 export const SKIN_TONES = [
     '#FDDCB5', '#F1C27D', '#E0A370', '#C68642',
-    '#A0785A', '#8D5524', '#6B3A2A', '#4A2511',
+    '#A0785A', '#8D5524', '#6B3A2A', '#2C1608',
 ];
 
 export const HAIR_COLORS = [
-    '#1a1a2e', '#4a3728', '#8B6914', '#D4A017',
+    '#0a0a12', '#4a3728', '#8B6914', '#D4A017',
     '#C0392B', '#D5D5D5', '#3498DB', '#8E44AD',
 ];
 

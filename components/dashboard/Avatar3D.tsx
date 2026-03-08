@@ -320,15 +320,17 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
 
                     if (category === 'skin' && app?.skinTone != null) {
                         const tone = hexToRgb(SKIN_TONES[app.skinTone] || SKIN_TONES[0]);
-                        // Lerp 70% toward skin tone, 30% original
+                        // 90% skin tone, 10% original — strong tint so dark tones read correctly
                         stdMat.diffuseColor = new BABYLON.Color3(
-                            ac.r * 0.3 + tone.r * 0.7,
-                            ac.g * 0.3 + tone.g * 0.7,
-                            ac.b * 0.3 + tone.b * 0.7,
+                            ac.r * 0.1 + tone.r * 0.9,
+                            ac.g * 0.1 + tone.g * 0.9,
+                            ac.b * 0.1 + tone.b * 0.9,
                         );
                     } else if (category === 'hair' && app?.hairColor != null) {
                         const hc = hexToRgb(HAIR_COLORS[app.hairColor] || HAIR_COLORS[0]);
                         stdMat.diffuseColor = new BABYLON.Color3(hc.r, hc.g, hc.b);
+                        // Reduce ambient contribution so dark hair stays dark
+                        stdMat.ambientColor = new BABYLON.Color3(hc.r * 0.3, hc.g * 0.3, hc.b * 0.3);
                     } else if (category === 'clothing' && app?.suitHue != null) {
                         // Hue-rotate the original color
                         const [, s, l] = rgbToHsl(ac.r, ac.g, ac.b);
