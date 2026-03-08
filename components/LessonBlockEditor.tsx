@@ -4,7 +4,7 @@ import {
   Plus, Trash2, ChevronUp, ChevronDown, Type, HelpCircle, MessageSquare,
   BookOpen, ListChecks, Info, Eye, Edit2, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
-  ArrowUpDown, Table, BarChart3, Link, Upload, X
+  ArrowUpDown, Table, BarChart3, Link, Upload, X, PenTool, Calculator
 } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { LessonBlock, BlockType } from '../types';
@@ -40,6 +40,9 @@ const BLOCK_TYPES: { type: BlockType; label: string; icon: React.ReactNode; desc
   { type: 'SHORT_ANSWER', label: 'Short Answer', icon: <MessageSquare className="w-4 h-4" />, description: 'Free-text question', category: 'Questions' },
   { type: 'RANKING', label: 'Ranking', icon: <GripVertical className="w-4 h-4" />, description: 'Drag to reorder items', category: 'Questions' },
   { type: 'LINKED', label: 'Linked Question', icon: <Link className="w-4 h-4" />, description: 'Follow-up referencing prior block', category: 'Questions' },
+  // Tools
+  { type: 'DRAWING', label: 'Drawing', icon: <PenTool className="w-4 h-4" />, description: 'Sketch & label diagrams', category: 'Tools' },
+  { type: 'MATH_RESPONSE', label: 'Math Response', icon: <Calculator className="w-4 h-4" />, description: 'Step-by-step math work', category: 'Tools' },
 ];
 
 const generateId = () => `block_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -85,6 +88,10 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
       return { ...base, items: [''] };
     case 'LINKED':
       return { ...base, linkedBlockId: '' };
+    case 'DRAWING':
+      return { ...base, title: '', instructions: '', drawingMode: 'free', canvasHeight: 400 };
+    case 'MATH_RESPONSE':
+      return { ...base, title: '', maxSteps: 10, stepLabels: ['Given:', 'Find:', 'Solve:'], showLatexHelp: true };
     default:
       return base;
   }

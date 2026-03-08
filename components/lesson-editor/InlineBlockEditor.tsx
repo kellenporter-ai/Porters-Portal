@@ -319,6 +319,43 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
         </div>
       );
     }
+    case 'DRAWING': {
+      return (
+        <div className="space-y-2">
+          <div><label className={labelClass}>Prompt / Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="e.g. Draw a free body diagram..." className={inputClass} /></div>
+          <div><label className={labelClass}>Instructions</label><textarea value={block.instructions || ''} onChange={e => onUpdate({ ...block, instructions: e.target.value })} placeholder="Additional instructions..." className={textareaClass} rows={2} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Drawing Mode</label>
+              <select value={block.drawingMode || 'free'} onChange={e => onUpdate({ ...block, drawingMode: e.target.value as 'free' | 'point_model' | 'extended_body' })} className={inputClass}>
+                <option value="free">Free Draw</option>
+                <option value="point_model">Point Model (forces from center)</option>
+                <option value="extended_body">Extended Rigid Body</option>
+              </select>
+            </div>
+            <div><label className={labelClass}>Canvas Height (px)</label><input type="number" value={block.canvasHeight || 400} onChange={e => onUpdate({ ...block, canvasHeight: parseInt(e.target.value) || 400 })} className={inputClass} /></div>
+          </div>
+          <div><label className={labelClass}>Background Image URL (optional)</label><input type="text" value={block.backgroundImage || ''} onChange={e => onUpdate({ ...block, backgroundImage: e.target.value })} placeholder="https://..." className={inputClass} /></div>
+        </div>
+      );
+    }
+    case 'MATH_RESPONSE': {
+      const labels = block.stepLabels || ['Given:', 'Find:', 'Solve:'];
+      return (
+        <div className="space-y-2">
+          <div><label className={labelClass}>Prompt / Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="e.g. Show your work for..." className={inputClass} /></div>
+          <div><label className={labelClass}>Question</label><textarea value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question text..." className={textareaClass} rows={2} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className={labelClass}>Max Steps</label><input type="number" value={block.maxSteps || 10} onChange={e => onUpdate({ ...block, maxSteps: parseInt(e.target.value) || 10 })} className={inputClass} /></div>
+            <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={block.showLatexHelp ?? true} onChange={e => onUpdate({ ...block, showLatexHelp: e.target.checked })} /> Show symbol toolbar</label></div>
+          </div>
+          <div>
+            <label className={labelClass}>Step Label Suggestions (comma-separated)</label>
+            <input type="text" value={labels.join(', ')} onChange={e => onUpdate({ ...block, stepLabels: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="Given:, Find:, Solve:" className={inputClass} />
+          </div>
+        </div>
+      );
+    }
     default:
       return <div className="text-xs text-gray-500 italic">Unknown block type: {block.type}</div>;
   }

@@ -63,7 +63,8 @@ export type BlockType =
   | 'TEXT' | 'MC' | 'SHORT_ANSWER' | 'VOCABULARY' | 'CHECKLIST' | 'INFO_BOX'
   | 'SECTION_HEADER' | 'IMAGE' | 'VIDEO' | 'OBJECTIVES' | 'DIVIDER'
   | 'EXTERNAL_LINK' | 'EMBED' | 'VOCAB_LIST' | 'ACTIVITY'
-  | 'SORTING' | 'DATA_TABLE' | 'BAR_CHART' | 'RANKING' | 'LINKED';
+  | 'SORTING' | 'DATA_TABLE' | 'BAR_CHART' | 'RANKING' | 'LINKED'
+  | 'DRAWING' | 'MATH_RESPONSE';
 
 export interface LessonBlock {
   id: string;
@@ -112,6 +113,14 @@ export interface LessonBlock {
   deltaLabel?: string;
   // Linked
   linkedBlockId?: string;
+  // Drawing
+  drawingMode?: 'free' | 'point_model' | 'extended_body';
+  canvasHeight?: number;
+  backgroundImage?: string;
+  // Math Response
+  stepLabels?: string[];
+  maxSteps?: number;
+  showLatexHelp?: boolean;
 }
 
 export interface Resource {

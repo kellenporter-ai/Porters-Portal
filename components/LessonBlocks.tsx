@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
+import DrawingBlock from './blocks/DrawingBlock';
+import MathResponseBlock from './blocks/MathResponseBlock';
 
 export type { LessonBlock } from '../types';
 
@@ -28,7 +30,7 @@ interface LessonBlocksProps {
 // ──────────────────────────────────────────────
 // Interactive block types (require completion)
 // ──────────────────────────────────────────────
-const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'];
+const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
 
 // ──────────────────────────────────────────────
 // Original block renderers
@@ -971,6 +973,8 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={onRespChange} />;
       case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
       case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'DRAWING': return <DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'MATH_RESPONSE': return <MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
       default: return <div className="text-sm text-gray-500 italic">Unknown block type: {block.type}</div>;
     }
   };
