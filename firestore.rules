@@ -418,6 +418,15 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // ADMIN DAILY DIGEST
+    // ==========================================
+    match /daily_digests/{digestId} {
+      allow read: if isAdmin();
+      // Only Cloud Functions create digests
+      allow write: if false;
+    }
+
+    // ==========================================
     // STUDENT GROUPS (Group Chat)
     // ==========================================
     match /student_groups/{groupId} {

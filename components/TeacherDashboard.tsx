@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint } from 'lucide-react';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass, DailyDigest } from '../types';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
@@ -39,7 +39,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'assessments'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'assessments' | 'digest'>('dashboard');
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
   const [assessmentSortKey] = useState<string>('score');
   const [assessmentSortDesc] = useState(true);
@@ -55,6 +55,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [expandedPairIdx, setExpandedPairIdx] = useState<number | null>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState<Submission[]>([]);
+  const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -69,12 +70,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       const unsubAnnouncements = dataService.subscribeToAnnouncements(setAnnouncements);
       const unsubAlerts = dataService.subscribeToStudentAlerts(setAlerts);
       const unsubBuckets = dataService.subscribeToStudentBuckets(setBucketProfiles);
+      const unsubDigests = dataService.subscribeToDailyDigests(setDailyDigests);
       const interval = setInterval(() => setNow(Date.now()), 60000); // Update 'expires in' every minute
       return () => {
           unsub();
           unsubAnnouncements();
           unsubAlerts();
           unsubBuckets();
+          unsubDigests();
           clearInterval(interval);
       };
   }, []);
@@ -281,6 +284,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <button onClick={() => setAdminTab('assessments')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'assessments' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
             <Shield className="w-3.5 h-3.5" /> Assessments
           </button>
+          <button onClick={() => setAdminTab('digest')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'digest' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <Newspaper className="w-3.5 h-3.5" /> Daily Digest
+          </button>
         </div>
       </div>
 
@@ -364,11 +370,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             maxAttempts: selectedAssessment?.assessmentConfig?.maxAttempts || undefined,
             hasRubricGrade: gradedSubs.length > 0,
             needsGrading: selectedAssessment?.rubric ? sorted.some(s => !s.rubricGrade && !isTrivialAttempt(s)) : false,
+            hasAISuggestion: sorted.some(s => s.aiSuggestedGrade?.status === 'pending_review'),
           };
         });
 
         // Graded count and average score (best-per-student, not per-submission)
         const gradedCount = allStudentGroups.filter(g => g.hasRubricGrade).length;
+        const aiSuggestedCount = allStudentGroups.filter(g => g.hasAISuggestion && !g.hasRubricGrade).length;
         const avgScore = allStudentGroups.length > 0
           ? Math.round(allStudentGroups.reduce((acc, g) => acc + getEffectiveScore(g.best), 0) / allStudentGroups.length)
           : 0;
@@ -384,6 +392,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               switch (assessmentStatusFilter) {
                 case 'flagged': return g.latest.status === 'FLAGGED' && !g.latest.flaggedAsAI;
                 case 'ai_flagged': return !!g.latest.flaggedAsAI;
+                case 'ai_suggested': return g.hasAISuggestion && !g.hasRubricGrade;
                 case 'needs_grading': return g.needsGrading;
                 case 'graded': return g.hasRubricGrade;
                 case 'normal': return g.latest.status !== 'FLAGGED' && !g.latest.flaggedAsAI && !g.needsGrading;
@@ -449,7 +458,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {/* Summary Stats */}
             {selectedAssessmentId && (
-              <div className={`grid grid-cols-2 ${selectedAssessment?.rubric ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
+              <div className={`grid grid-cols-2 ${selectedAssessment?.rubric ? (aiSuggestedCount > 0 ? 'md:grid-cols-6' : 'md:grid-cols-5') : 'md:grid-cols-4'} gap-4`}>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                   <div className="text-3xl font-bold text-white">{avgScore}%</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
@@ -470,6 +479,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <div className={`border rounded-2xl p-5 ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'bg-green-900/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
                     <div className={`text-3xl font-bold ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'text-green-400' : 'text-white'}`}>{gradedCount}/{allStudentGroups.length}</div>
                     <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Graded</div>
+                  </div>
+                )}
+                {selectedAssessment?.rubric && aiSuggestedCount > 0 && (
+                  <div className="border rounded-2xl p-5 bg-amber-900/10 border-amber-500/30">
+                    <div className="text-3xl font-bold text-amber-400 flex items-center gap-2">
+                      <Sparkles className="w-6 h-6" />{aiSuggestedCount}
+                    </div>
+                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Suggested</div>
                   </div>
                 )}
               </div>
@@ -496,6 +513,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <option value="">All Statuses</option>
                   <option value="flagged">Auto Flagged</option>
                   <option value="ai_flagged">AI Flagged</option>
+                  {selectedAssessment?.rubric && <option value="ai_suggested">AI Suggested</option>}
                   {selectedAssessment?.rubric && <option value="needs_grading">Needs Grading</option>}
                   {selectedAssessment?.rubric && <option value="graded">Graded</option>}
                   <option value="normal">Normal</option>
@@ -649,7 +667,25 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 if (!group) return;
                 setGradingStudentId(userId);
                 setGradingAttemptId(group.best.id);
-                setRubricDraft(group.best.rubricGrade?.grades || {});
+                // Pre-populate from existing rubric grade, or from AI suggestion if available
+                if (group.best.rubricGrade?.grades) {
+                  setRubricDraft(group.best.rubricGrade.grades);
+                } else if (group.best.aiSuggestedGrade?.status === 'pending_review') {
+                  // Convert AI suggestions to rubric draft format
+                  const aiDraft: Record<string, Record<string, RubricSkillGrade>> = {};
+                  for (const [qId, skills] of Object.entries(group.best.aiSuggestedGrade.grades)) {
+                    aiDraft[qId] = {};
+                    for (const [sId, sg] of Object.entries(skills)) {
+                      aiDraft[qId][sId] = {
+                        selectedTier: sg.suggestedTier,
+                        percentage: sg.percentage,
+                      };
+                    }
+                  }
+                  setRubricDraft(aiDraft);
+                } else {
+                  setRubricDraft({});
+                }
               };
 
               const navigateStudent = (delta: number) => {
@@ -707,8 +743,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 {group.userName}
                               </span>
                               {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" />}
+                              {group.hasAISuggestion && !group.hasRubricGrade && (
+                                <Sparkles className="w-3 h-3 text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
+                              )}
                               {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
                                 <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                              )}
+                              {group.attemptCount > 1 && (
+                                <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
+                                  ×{group.attemptCount}
+                                </span>
                               )}
                             </div>
                             {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
@@ -981,6 +1025,38 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <span className="text-[11px] text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
                           </div>
                         )}
+                        {sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade && (
+                          <div className="mb-3 p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                              <span className="text-[11px] font-bold text-amber-300">AI Suggested — Needs Review</span>
+                              <span className="text-[9px] text-amber-400/60 ml-auto">{sub.aiSuggestedGrade.model}</span>
+                            </div>
+                            <p className="text-[10px] text-amber-400/70 leading-relaxed">
+                              Suggested {sub.aiSuggestedGrade.overallPercentage}% by local LLM. Tiers are pre-filled below — review and adjust before saving.
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await dataService.dismissAISuggestedGrade(sub.id);
+                                    setRubricDraft({});
+                                    setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
+                                      ...s,
+                                      aiSuggestedGrade: { ...s.aiSuggestedGrade!, status: 'rejected' as const },
+                                    } : s));
+                                    toast.info('AI suggestion dismissed');
+                                  } catch (err) {
+                                    reportError(err, { method: 'dismissAISuggestedGrade' });
+                                  }
+                                }}
+                                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition"
+                              >
+                                <X className="w-3 h-3" /> Dismiss
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
                           <RubricViewer
                             rubric={selectedAssessment.rubric}
@@ -992,6 +1068,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               gradedAt: sub.rubricGrade?.gradedAt || '',
                               gradedBy: sub.rubricGrade?.gradedBy || '',
                             }}
+                            aiSuggestedGrade={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? sub.aiSuggestedGrade : undefined}
                             onGradeChange={(questionId, skillId, tierIndex) => {
                               setRubricDraft(prev => ({
                                 ...prev,
@@ -1033,13 +1110,55 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   gradedAt: new Date().toISOString(),
                                   gradedBy: 'Admin',
                                 };
-                                const result = await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
+                                // Use acceptAISuggestedGrade if this was an AI pre-fill
+                                const hadAISuggestion = sub.aiSuggestedGrade?.status === 'pending_review';
+                                const result = hadAISuggestion
+                                  ? await dataService.acceptAISuggestedGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title)
+                                  : await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
                                 setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
                                   ...s,
                                   rubricGrade,
                                   score: pct,
+                                  ...(hadAISuggestion ? { aiSuggestedGrade: { ...s.aiSuggestedGrade!, status: 'accepted' as const } } : {}),
                                   ...(result.clearedAIFlag ? { flaggedAsAI: false, flaggedAsAIBy: '', flaggedAsAIAt: '', status: 'NORMAL' as const } : {}),
                                 } : s));
+
+                                // Record corrections for the feedback loop (fire-and-forget)
+                                if (hadAISuggestion && sub.aiSuggestedGrade) {
+                                  const corrections: Array<{
+                                    assignmentId: string; assignmentTitle: string; submissionId: string;
+                                    rubricQuestionId: string; skillId: string; skillText: string;
+                                    aiSuggestedTier: number; teacherSelectedTier: number;
+                                    aiRationale: string; studentAnswer: string; correctedAt: string; model: string;
+                                  }> = [];
+                                  for (const q of selectedAssessment.rubric!.questions) {
+                                    for (const skill of q.skills) {
+                                      const aiGrade = sub.aiSuggestedGrade.grades[q.id]?.[skill.id];
+                                      const teacherGrade = gradesToSave[q.id]?.[skill.id];
+                                      if (aiGrade && teacherGrade && aiGrade.suggestedTier !== teacherGrade.selectedTier) {
+                                        const blockAnswer = sub.blockResponses ? JSON.stringify(sub.blockResponses).slice(0, 200) : '';
+                                        corrections.push({
+                                          assignmentId: sub.assignmentId,
+                                          assignmentTitle: sub.assignmentTitle,
+                                          submissionId: sub.id,
+                                          rubricQuestionId: q.id,
+                                          skillId: skill.id,
+                                          skillText: skill.skillText,
+                                          aiSuggestedTier: aiGrade.suggestedTier,
+                                          teacherSelectedTier: teacherGrade.selectedTier,
+                                          aiRationale: aiGrade.rationale,
+                                          studentAnswer: blockAnswer,
+                                          correctedAt: new Date().toISOString(),
+                                          model: sub.aiSuggestedGrade.model,
+                                        });
+                                      }
+                                    }
+                                  }
+                                  if (corrections.length > 0) {
+                                    dataService.saveGradingCorrections(corrections);
+                                  }
+                                }
+
                                 setRubricDraft({});
                                 if (result.clearedAIFlag) {
                                   toast.success(`Grade saved: ${pct}% -- AI flag automatically cleared`);
@@ -1095,6 +1214,152 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
         );
       })()}
+
+      {adminTab === 'digest' && (
+        <div className="space-y-6">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+              <Newspaper className="w-5 h-5 text-blue-400" />
+              Daily Activity Digest
+            </h3>
+
+            {dailyDigests.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-bold">No digest reports yet</p>
+                <p className="text-xs mt-1">Daily digests are generated automatically each morning at 6:30 AM.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {dailyDigests.map(digest => (
+                  <div key={digest.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+                    {/* Date Header */}
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-white">
+                        {new Date(digest.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                      </h4>
+                      <span className="text-[10px] text-gray-500">Generated {new Date(digest.generatedAt).toLocaleTimeString()}</span>
+                    </div>
+
+                    {/* Summary Stats Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
+                        <div className="text-2xl font-bold text-green-400">{digest.summary.totalSubmissions}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wider">Submissions</div>
+                      </div>
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+                        <div className="text-2xl font-bold text-blue-400">{digest.summary.totalResubmissions}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wider">Resubmissions</div>
+                      </div>
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                        <div className="text-2xl font-bold text-emerald-400">{digest.summary.totalGraded}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wider">Graded</div>
+                      </div>
+                      {digest.summary.totalAutoFlagged > 0 && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-amber-400">{digest.summary.totalAutoFlagged}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Auto Flagged</div>
+                        </div>
+                      )}
+                      {digest.summary.totalAIFlagged > 0 && (
+                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-purple-400">{digest.summary.totalAIFlagged}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">AI Flagged</div>
+                        </div>
+                      )}
+                      {digest.summary.totalEWSAlerts > 0 && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-red-400">{digest.summary.totalEWSAlerts}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">EWS Alerts</div>
+                        </div>
+                      )}
+                      {digest.summary.totalLevelUps > 0 && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-yellow-400">{digest.summary.totalLevelUps}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Level Ups</div>
+                        </div>
+                      )}
+                      {digest.summary.totalQuestsCompleted > 0 && (
+                        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-cyan-400">{digest.summary.totalQuestsCompleted}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Quests Done</div>
+                        </div>
+                      )}
+                      {digest.summary.totalBossDefeated > 0 && (
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-orange-400">{digest.summary.totalBossDefeated}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Bosses Defeated</div>
+                        </div>
+                      )}
+                      {digest.summary.totalNewEnrollments > 0 && (
+                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-indigo-400">{digest.summary.totalNewEnrollments}</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">New Students</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Event Feed */}
+                    {digest.events.length > 0 && (
+                      <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Activity Feed</div>
+                        {digest.events.map((event, idx) => {
+                          const eventColors: Record<string, string> = {
+                            SUBMISSION: 'text-green-400',
+                            RESUBMISSION: 'text-blue-400',
+                            AUTO_FLAGGED: 'text-amber-400',
+                            AI_FLAGGED: 'text-purple-400',
+                            GRADED: 'text-emerald-400',
+                            EWS_ALERT: 'text-red-400',
+                            LEVEL_UP: 'text-yellow-400',
+                            QUEST_COMPLETED: 'text-cyan-400',
+                            BOSS_DEFEATED: 'text-orange-400',
+                            NEW_ENROLLMENT: 'text-indigo-400',
+                          };
+                          const eventLabels: Record<string, string> = {
+                            SUBMISSION: 'Submitted',
+                            RESUBMISSION: 'Resubmitted',
+                            AUTO_FLAGGED: 'Auto Flagged',
+                            AI_FLAGGED: 'AI Flagged',
+                            GRADED: 'Graded',
+                            EWS_ALERT: 'EWS Alert',
+                            LEVEL_UP: 'Level Up',
+                            QUEST_COMPLETED: 'Quest Done',
+                            BOSS_DEFEATED: 'Boss Defeated',
+                            NEW_ENROLLMENT: 'Enrolled',
+                          };
+                          return (
+                            <div key={idx} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white/5 transition text-xs">
+                              <span className={`font-bold text-[10px] uppercase tracking-wider w-24 shrink-0 ${eventColors[event.type] || 'text-gray-400'}`}>
+                                {eventLabels[event.type] || event.type}
+                              </span>
+                              <span className="text-gray-300 font-medium truncate">{event.studentName || 'System'}</span>
+                              {event.assignmentTitle && (
+                                <span className="text-gray-500 truncate">{event.assignmentTitle}</span>
+                              )}
+                              {event.detail && (
+                                <span className="text-gray-600 text-[10px] shrink-0">{event.detail}</span>
+                              )}
+                              <span className="text-gray-600 text-[10px] ml-auto shrink-0">
+                                {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Empty day message */}
+                    {digest.events.length === 0 && (
+                      <div className="text-center py-4 text-gray-600 text-xs italic">No activity recorded for this day.</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className={adminTab === 'dashboard' ? '' : 'hidden'}>
 

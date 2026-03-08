@@ -1,5 +1,5 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, ActiveBoost, StreakData } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -609,6 +609,7 @@ export const dataService = {
           assessmentScore: data.assessmentScore,
           blockResponses: data.blockResponses,
           rubricGrade: data.rubricGrade || undefined,
+          aiSuggestedGrade: data.aiSuggestedGrade || undefined,
           userSection: data.userSection || undefined,
           flaggedAsAI: data.flaggedAsAI || false,
           flaggedAsAIBy: data.flaggedAsAIBy || '',
@@ -648,6 +649,7 @@ export const dataService = {
           assessmentScore: data.assessmentScore,
           blockResponses: data.blockResponses,
           rubricGrade: data.rubricGrade || undefined,
+          aiSuggestedGrade: data.aiSuggestedGrade || undefined,
           userSection: data.userSection || undefined,
           flaggedAsAI: data.flaggedAsAI || false,
           flaggedAsAIBy: data.flaggedAsAIBy || '',
@@ -689,6 +691,7 @@ export const dataService = {
           assessmentScore: data.assessmentScore,
           blockResponses: data.blockResponses,
           rubricGrade: data.rubricGrade || undefined,
+          aiSuggestedGrade: data.aiSuggestedGrade || undefined,
           userSection: data.userSection || undefined,
           flaggedAsAI: data.flaggedAsAI || false,
           flaggedAsAIBy: data.flaggedAsAIBy || '',
@@ -1127,6 +1130,54 @@ export const dataService = {
     } catch (error) {
       reportError(error, { method: 'unflagSubmissionAsAI' });
       throw error;
+    }
+  },
+
+  // --- AI GRADING ASSISTANT ---
+
+  saveAISuggestedGrade: async (submissionId: string, aiGrade: AISuggestedGrade) => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        aiSuggestedGrade: aiGrade,
+      });
+    } catch (error) {
+      reportError(error, { method: 'saveAISuggestedGrade' });
+      throw error;
+    }
+  },
+
+  acceptAISuggestedGrade: async (submissionId: string, rubricGrade: RubricGrade, studentUserId?: string, assessmentTitle?: string): Promise<{ clearedAIFlag: boolean }> => {
+    // Mark the AI suggestion as accepted and save the final rubric grade
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        'aiSuggestedGrade.status': 'accepted',
+      });
+    } catch (error) {
+      reportError(error, { method: 'acceptAISuggestedGrade:status' });
+    }
+    return dataService.saveRubricGrade(submissionId, rubricGrade, studentUserId, assessmentTitle);
+  },
+
+  dismissAISuggestedGrade: async (submissionId: string) => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        'aiSuggestedGrade.status': 'rejected',
+      });
+    } catch (error) {
+      reportError(error, { method: 'dismissAISuggestedGrade' });
+      throw error;
+    }
+  },
+
+  /** Save per-skill corrections when teacher modifies AI suggestions — used as few-shot examples */
+  saveGradingCorrections: async (corrections: Omit<GradingCorrection, 'id'>[]) => {
+    try {
+      for (const correction of corrections) {
+        await addDoc(collection(db, 'grading_corrections'), stripUndefined(correction));
+      }
+    } catch (error) {
+      reportError(error, { method: 'saveGradingCorrections' });
+      // Non-critical — don't throw, just log
     }
   },
 
@@ -1706,6 +1757,17 @@ export const dataService = {
     return guardedSnapshot('student_buckets', collection(db, 'student_buckets'), (snapshot: any) => {
       const profiles = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as StudentBucketProfile));
       callback(profiles);
+    });
+  },
+
+  // --- DAILY DIGESTS ---
+
+  subscribeToDailyDigests: (callback: (digests: DailyDigest[]) => void) => {
+    const q = query(collection(db, 'daily_digests'), orderBy('date', 'desc'), limit(7));
+    return guardedSnapshot('daily_digests', q, (snapshot: any) => {
+      const digests = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as DailyDigest));
+      digests.sort((a: DailyDigest, b: DailyDigest) => b.date.localeCompare(a.date));
+      callback(digests);
     });
   },
 

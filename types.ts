@@ -397,6 +397,39 @@ export interface RubricGrade {
   gradedBy: string;
 }
 
+// AI Grading Assistant types
+export interface AISuggestedSkillGrade {
+  suggestedTier: number;
+  percentage: number;
+  confidence: number; // 0-1
+  rationale: string;
+}
+
+export interface AISuggestedGrade {
+  grades: Record<string, Record<string, AISuggestedSkillGrade>>;
+  overallPercentage: number;
+  suggestedAt: string;
+  model: string;
+  status: 'pending_review' | 'accepted' | 'partially_accepted' | 'rejected';
+}
+
+// AI Grading feedback loop — stores teacher corrections to improve future suggestions
+export interface GradingCorrection {
+  id: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  submissionId: string;
+  rubricQuestionId: string;
+  skillId: string;
+  skillText: string;
+  aiSuggestedTier: number;
+  teacherSelectedTier: number;
+  aiRationale: string;
+  studentAnswer: string; // truncated context for the few-shot example
+  correctedAt: string;
+  model: string;
+}
+
 export const RUBRIC_TIER_COLORS: Record<RubricTierLabel, { bg: string; text: string; border: string; solid: string }> = {
   Missing:     { bg: 'bg-red-500/20',    text: 'text-red-400',    border: 'border-red-500/40',    solid: 'bg-red-600' },
   Emerging:    { bg: 'bg-orange-500/20',  text: 'text-orange-400', border: 'border-orange-500/40', solid: 'bg-orange-600' },
@@ -460,6 +493,7 @@ export interface Submission {
   };
   blockResponses?: Record<string, unknown>;
   rubricGrade?: RubricGrade;
+  aiSuggestedGrade?: AISuggestedGrade;
   userSection?: string;
   flaggedAsAI?: boolean;
   flaggedAsAIBy?: string;
@@ -1454,6 +1488,52 @@ export interface StreakData {
   maxFreezeTokens: number;
   streakHistory: string[];   // Last 30 active dates
   milestones: number[];       // Days reached (3, 7, 14, 21, 30)
+}
+
+// ========================================
+// ADMIN DAILY DIGEST
+// ========================================
+
+export type DigestEventType =
+  | 'SUBMISSION'           // New first-time submission
+  | 'RESUBMISSION'         // Student resubmitted (attemptNumber > 1)
+  | 'AUTO_FLAGGED'         // Submission auto-flagged for suspicious behavior
+  | 'AI_FLAGGED'           // Submission flagged as AI-generated
+  | 'GRADED'               // Teacher graded a submission
+  | 'EWS_ALERT'            // New EWS alert generated
+  | 'LEVEL_UP'             // Student leveled up
+  | 'QUEST_COMPLETED'      // Student completed a quest/mission
+  | 'BOSS_DEFEATED'        // Boss quiz defeated
+  | 'NEW_ENROLLMENT';      // New student enrolled
+
+export interface DigestEvent {
+  type: DigestEventType;
+  studentId?: string;
+  studentName?: string;
+  assignmentId?: string;
+  assignmentTitle?: string;
+  classType?: string;
+  detail?: string;          // Human-readable detail (e.g., "Attempt #3", "Level 12 → 13")
+  timestamp: string;        // ISO timestamp of the original event
+}
+
+export interface DailyDigest {
+  id: string;
+  date: string;             // YYYY-MM-DD
+  generatedAt: string;      // ISO timestamp
+  summary: {
+    totalSubmissions: number;
+    totalResubmissions: number;
+    totalGraded: number;
+    totalAutoFlagged: number;
+    totalAIFlagged: number;
+    totalEWSAlerts: number;
+    totalLevelUps: number;
+    totalQuestsCompleted: number;
+    totalBossDefeated: number;
+    totalNewEnrollments: number;
+  };
+  events: DigestEvent[];
 }
 
 // ========================================
