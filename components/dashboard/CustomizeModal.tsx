@@ -31,9 +31,6 @@ interface CustomizeModalProps {
   activeCosmetics?: ActiveCosmetics;
 }
 
-const SUIT_HUE_OPTIONS = [0, 30, 60, 120, 180, 210, 240, 270, 300, 330];
-const ENERGY_HUE_OPTIONS = [0, 30, 60, 90, 120, 180, 240, 300];
-
 type Tab = '2d' | '3d';
 
 const CustomizeModal: React.FC<CustomizeModalProps> = ({
@@ -207,33 +204,55 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
               </div>
             </div>
 
-            {/* Hair Color (3D) */}
+            {/* Hair Color (3D) — gradient slider */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
-              <div className="flex justify-center gap-2">
-                {HAIR_COLORS.map((color, i) => {
-                  const isActive = (previewHairColor ?? appearance?.hairColor ?? 0) === i;
-                  return (
-                    <button key={i} onClick={() => setPreviewHairColor(i)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
-                      style={{ backgroundColor: color }} />
-                  );
-                })}
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: `linear-gradient(to right, ${HAIR_COLORS.join(', ')})` }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={HAIR_COLORS.length - 1}
+                    step={1}
+                    value={previewHairColor ?? appearance?.hairColor ?? 0}
+                    onChange={e => setPreviewHairColor(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewHairColor ?? appearance?.hairColor ?? 0) / (HAIR_COLORS.length - 1)) * 100}% - 10px)`,
+                      backgroundColor: HAIR_COLORS[previewHairColor ?? appearance?.hairColor ?? 0],
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Suit Color (3D) */}
+            {/* Suit Color (3D) — hue slider */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Suit Color</label>
-              <div className="flex justify-center gap-3">
-                {SUIT_HUE_OPTIONS.map(h => {
-                  const isActive = (previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0) === h;
-                  return (
-                    <button key={h} onClick={() => setPreviewSuitHue(h)}
-                      className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
-                      style={{ backgroundColor: `hsl(${h}, 55%, 40%)` }} />
-                  );
-                })}
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: 'linear-gradient(to right, hsl(0,55%,40%), hsl(30,55%,40%), hsl(60,55%,40%), hsl(120,55%,40%), hsl(180,55%,40%), hsl(240,55%,40%), hsl(300,55%,40%), hsl(360,55%,40%))' }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={360}
+                    step={1}
+                    value={previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0}
+                    onChange={e => setPreviewSuitHue(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0) / 360) * 100}% - 10px)`,
+                      backgroundColor: `hsl(${previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0}, 55%, 40%)`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </>
@@ -296,18 +315,29 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
               </div>
             </div>
 
-            {/* Hair Color */}
+            {/* Hair Color — gradient slider */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
-              <div className="flex justify-center gap-2">
-                {HAIR_COLORS.map((color, i) => {
-                  const isActive = (previewHairColor ?? appearance?.hairColor ?? 0) === i;
-                  return (
-                    <button key={i} onClick={() => setPreviewHairColor(i)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
-                      style={{ backgroundColor: color }} />
-                  );
-                })}
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: `linear-gradient(to right, ${HAIR_COLORS.join(', ')})` }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={HAIR_COLORS.length - 1}
+                    step={1}
+                    value={previewHairColor ?? appearance?.hairColor ?? 0}
+                    onChange={e => setPreviewHairColor(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewHairColor ?? appearance?.hairColor ?? 0) / (HAIR_COLORS.length - 1)) * 100}% - 10px)`,
+                      backgroundColor: HAIR_COLORS[previewHairColor ?? appearance?.hairColor ?? 0],
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -327,32 +357,54 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
               </div>
             </div>
 
-            {/* Suit Color + Energy Color row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Suit Color</label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {SUIT_HUE_OPTIONS.map(h => {
-                    const isActive = (previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0) === h;
-                    return (
-                      <button key={h} onClick={() => setPreviewSuitHue(h)}
-                        className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 mx-auto ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
-                        style={{ backgroundColor: `hsl(${h}, 55%, 40%)` }} />
-                    );
-                  })}
+            {/* Suit Color — hue slider */}
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Suit Color</label>
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: 'linear-gradient(to right, hsl(0,55%,40%), hsl(30,55%,40%), hsl(60,55%,40%), hsl(120,55%,40%), hsl(180,55%,40%), hsl(240,55%,40%), hsl(300,55%,40%), hsl(360,55%,40%))' }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={360}
+                    step={1}
+                    value={previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0}
+                    onChange={e => setPreviewSuitHue(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0) / 360) * 100}% - 10px)`,
+                      backgroundColor: `hsl(${previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0}, 55%, 40%)`,
+                    }}
+                  />
                 </div>
               </div>
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Eye Color</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {ENERGY_HUE_OPTIONS.map(h => {
-                    const isActive = (previewHue ?? appearance?.hue ?? 0) === h;
-                    return (
-                      <button key={h} onClick={() => setPreviewHue(h)}
-                        className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 mx-auto ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
-                        style={{ backgroundColor: `hsl(${(h + 180) % 360}, 70%, 50%)` }} />
-                    );
-                  })}
+            </div>
+
+            {/* Eye Color — hue slider */}
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Eye Color</label>
+              <div className="px-2">
+                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                  style={{ background: 'linear-gradient(to right, hsl(180,70%,50%), hsl(210,70%,50%), hsl(240,70%,50%), hsl(270,70%,50%), hsl(300,70%,50%), hsl(330,70%,50%), hsl(0,70%,50%), hsl(30,70%,50%), hsl(60,70%,50%), hsl(90,70%,50%), hsl(120,70%,50%), hsl(150,70%,50%), hsl(180,70%,50%))' }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={360}
+                    step={1}
+                    value={previewHue ?? appearance?.hue ?? 0}
+                    onChange={e => setPreviewHue(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg pointer-events-none transition-all"
+                    style={{
+                      left: `calc(${((previewHue ?? appearance?.hue ?? 0) / 360) * 100}% - 10px)`,
+                      backgroundColor: `hsl(${((previewHue ?? appearance?.hue ?? 0) + 180) % 360}, 70%, 50%)`,
+                    }}
+                  />
                 </div>
               </div>
             </div>
