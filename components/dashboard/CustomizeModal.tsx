@@ -179,6 +179,51 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                 Locked models can be purchased in the Flux Shop
               </p>
             </div>
+
+            {/* Skin Tone (3D) */}
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
+              <div className="flex justify-center gap-2">
+                {SKIN_TONES.map((tone, i) => {
+                  const isActive = (previewSkinTone ?? appearance?.skinTone ?? 0) === i;
+                  return (
+                    <button key={i} onClick={() => setPreviewSkinTone(i)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
+                      style={{ backgroundColor: tone }} />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Hair Color (3D) */}
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
+              <div className="flex justify-center gap-2">
+                {HAIR_COLORS.map((color, i) => {
+                  const isActive = (previewHairColor ?? appearance?.hairColor ?? 0) === i;
+                  return (
+                    <button key={i} onClick={() => setPreviewHairColor(i)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-2 ring-white/30' : 'border-white/10'}`}
+                      style={{ backgroundColor: color }} />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Suit Color (3D) */}
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Suit Color</label>
+              <div className="flex justify-center gap-3">
+                {SUIT_HUE_OPTIONS.map(h => {
+                  const isActive = (previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0) === h;
+                  return (
+                    <button key={h} onClick={() => setPreviewSuitHue(h)}
+                      className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${isActive ? 'border-white scale-110 ring-1 ring-white/30' : 'border-transparent'}`}
+                      style={{ backgroundColor: `hsl(${h}, 55%, 40%)` }} />
+                  );
+                })}
+              </div>
+            </div>
           </>
         ) : (
           <>
