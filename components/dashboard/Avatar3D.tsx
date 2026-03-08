@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { ActiveCosmetics } from '../../types';
 import { AGENT_COSMETICS } from '../../lib/gamification';
 import { DEFAULT_CHARACTER_MODEL, getCharacterModel } from '../../lib/characterModels';
+import { SKIN_TONES, HAIR_COLORS } from './OperativeAvatar';
 
 // Lazy-load Babylon to avoid blocking initial bundle
 let babylonCore: typeof import('@babylonjs/core') | null = null;
@@ -53,10 +54,76 @@ const resolveCosmetics = (activeCosmetics?: ActiveCosmetics): ResolvedCosmetic3D
     return resolved;
 };
 
+// ---- Mesh classification for color tinting ----
+type MeshCategory = 'skin' | 'hair' | 'clothing' | 'unknown';
+
+const SKIN_PATTERNS = /head|hand|arm|face|body|skin|neck|leg|foot|feet/i;
+const HAIR_PATTERNS = /hair|ponytail|braid/i;
+const CLOTHING_PATTERNS = /shirt|pants|suit|dress|shoe|boot|cloth|top|bottom|sleeve|jacket|skirt|tank|collar|tie|belt|glove|hat|cap|hoodie|vest|coat|shorts/i;
+
+const classifyMesh = (meshName: string): MeshCategory => {
+    if (HAIR_PATTERNS.test(meshName)) return 'hair';
+    if (CLOTHING_PATTERNS.test(meshName)) return 'clothing';
+    if (SKIN_PATTERNS.test(meshName)) return 'skin';
+    return 'unknown';
+};
+
+/** Convert hex color string to {r,g,b} in 0-1 range */
+const hexToRgb = (hex: string) => {
+    const h = hex.replace('#', '');
+    return {
+        r: parseInt(h.substring(0, 2), 16) / 255,
+        g: parseInt(h.substring(2, 4), 16) / 255,
+        b: parseInt(h.substring(4, 6), 16) / 255,
+    };
+};
+
+/** Convert RGB (0-1) to HSL */
+const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+    if (max === min) return [0, 0, l];
+    const d = max - min;
+    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    let h = 0;
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+    return [h, s, l];
+};
+
+/** Convert HSL to RGB (0-1) */
+const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+    if (s === 0) return [l, l, l];
+    const hue2rgb = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    return [hue2rgb(p, q, h + 1 / 3), hue2rgb(p, q, h), hue2rgb(p, q, h - 1 / 3)];
+};
+
+// ---- Appearance type ----
+interface AppearanceProps {
+    bodyType?: 'A' | 'B' | 'C';
+    hue?: number;
+    suitHue?: number;
+    skinTone?: number;
+    hairStyle?: number;
+    hairColor?: number;
+}
+
 // ---- Props ----
 interface Avatar3DProps {
     /** Character model ID from characterModels.ts */
     characterModelId?: string;
+    /** Appearance settings for color tinting */
+    appearance?: AppearanceProps;
     /** Active cosmetics for visual effects */
     activeCosmetics?: ActiveCosmetics;
     /** Evolution level for glow intensity */
@@ -79,6 +146,7 @@ interface Avatar3DProps {
  */
 const Avatar3D: React.FC<Avatar3DProps> = ({
     characterModelId,
+    appearance,
     activeCosmetics,
     evolutionLevel = 0,
     compact = false,
@@ -110,6 +178,14 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     particleCosmeticRef.current = particleCosmetic;
     const evolutionRef = useRef(evolutionLevel);
     evolutionRef.current = evolutionLevel;
+    const appearanceRef = useRef(appearance);
+    appearanceRef.current = appearance;
+
+    // Serialize appearance values that affect 3D tinting for useEffect deps
+    const appearanceKey = useMemo(() =>
+        `${appearance?.skinTone ?? ''}-${appearance?.hairColor ?? ''}-${appearance?.suitHue ?? ''}`,
+        [appearance?.skinTone, appearance?.hairColor, appearance?.suitHue]
+    );
 
     // Only re-run the 3D setup when the model or compact mode changes
     useEffect(() => {
@@ -219,10 +295,11 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     rootMesh.position.y = -newBounds.min.y;
                 }
 
-                // Convert PBR → StandardMaterial. GLB PBR materials need IBL
-                // (environment texture) to look correct, which is expensive on
-                // Chromebooks. StandardMaterial uses Blinn-Phong and works well
-                // with just directional + hemispheric lights.
+                // Convert PBR → StandardMaterial with color tinting. GLB PBR
+                // materials need IBL (environment texture) to look correct,
+                // which is expensive on Chromebooks. StandardMaterial uses
+                // Blinn-Phong and works well with directional + hemispheric lights.
+                const app = appearanceRef.current;
                 result.meshes.forEach(mesh => {
                     if (!mesh.material) return;
                     const pbr = mesh.material as any;
@@ -232,6 +309,28 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     stdMat.diffuseColor = ac.clone();
                     stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
                     stdMat.alpha = 1;
+
+                    // Classify mesh by name and apply color tinting
+                    const category = classifyMesh(mesh.name);
+
+                    if (category === 'skin' && app?.skinTone != null) {
+                        const tone = hexToRgb(SKIN_TONES[app.skinTone] || SKIN_TONES[0]);
+                        // Lerp 70% toward skin tone, 30% original
+                        stdMat.diffuseColor = new BABYLON.Color3(
+                            ac.r * 0.3 + tone.r * 0.7,
+                            ac.g * 0.3 + tone.g * 0.7,
+                            ac.b * 0.3 + tone.b * 0.7,
+                        );
+                    } else if (category === 'hair' && app?.hairColor != null) {
+                        const hc = hexToRgb(HAIR_COLORS[app.hairColor] || HAIR_COLORS[0]);
+                        stdMat.diffuseColor = new BABYLON.Color3(hc.r, hc.g, hc.b);
+                    } else if (category === 'clothing' && app?.suitHue != null) {
+                        // Hue-rotate the original color
+                        const [, s, l] = rgbToHsl(ac.r, ac.g, ac.b);
+                        const [nr, ng, nb] = hslToRgb(app.suitHue / 360, s, l);
+                        stdMat.diffuseColor = new BABYLON.Color3(nr, ng, nb);
+                    }
+
                     mesh.material = stdMat;
                     pbr.dispose();
                 });
@@ -348,7 +447,7 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modelId, compact]);
+    }, [modelId, compact, appearanceKey]);
 
     // === COMPACT FALLBACK ===
     // For tiny display contexts (leaderboard rows, chat), render a colored silhouette

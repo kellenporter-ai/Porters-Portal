@@ -50,6 +50,7 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
         return (
             <Avatar3D
                 characterModelId={characterModelId}
+                appearance={appearance}
                 activeCosmetics={activeCosmetics}
                 evolutionLevel={evolutionLevel}
                 compact={compact}

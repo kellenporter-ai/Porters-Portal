@@ -119,6 +119,15 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
               <div className="w-44 h-64 bg-black/40 rounded-3xl p-2 border border-purple-500/20 shadow-inner loadout-hex-bg">
                 <Avatar3D
                   characterModelId={current3DModel}
+                  appearance={{
+                    ...appearance,
+                    hue: previewHue ?? appearance?.hue ?? 0,
+                    suitHue: previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0,
+                    bodyType: previewBodyType ?? appearance?.bodyType ?? 'A',
+                    skinTone: previewSkinTone ?? appearance?.skinTone ?? 0,
+                    hairStyle: previewHairStyle ?? appearance?.hairStyle ?? 1,
+                    hairColor: previewHairColor ?? appearance?.hairColor ?? 0,
+                  }}
                   activeCosmetics={activeCosmetics}
                 />
               </div>
