@@ -5,7 +5,8 @@ import {
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
-  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield, Brain
+  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield, Brain,
+  PenTool, Calculator
 } from 'lucide-react';
 import { useDebounce } from '../lib/rateLimiting';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass } from '../types';
@@ -51,6 +52,9 @@ const BLOCK_TYPES: { type: BlockType; label: string; icon: React.ReactNode; desc
   { type: 'SHORT_ANSWER', label: 'Short Answer', icon: <MessageSquare className="w-4 h-4" />, description: 'Free-text question', category: 'Questions' },
   { type: 'RANKING', label: 'Ranking', icon: <GripVertical className="w-4 h-4" />, description: 'Reorder items', category: 'Questions' },
   { type: 'LINKED', label: 'Linked Question', icon: <Link className="w-4 h-4" />, description: 'Follow-up question', category: 'Questions' },
+  // Tools
+  { type: 'DRAWING', label: 'Drawing', icon: <PenTool className="w-4 h-4" />, description: 'Sketch & label diagrams', category: 'Tools' },
+  { type: 'MATH_RESPONSE', label: 'Math Response', icon: <Calculator className="w-4 h-4" />, description: 'Step-by-step math work', category: 'Tools' },
 ];
 
 const generateId = () => `block_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -77,6 +81,8 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
     case 'BAR_CHART': return { ...base, title: '', barCount: 3, initialLabel: 'Initial', finalLabel: 'Final', deltaLabel: 'Change', height: 300 };
     case 'RANKING': return { ...base, items: [''] };
     case 'LINKED': return { ...base, linkedBlockId: '', acceptedAnswers: [''] };
+    case 'DRAWING': return { ...base, title: '', instructions: '', drawingMode: 'free', canvasHeight: 400 };
+    case 'MATH_RESPONSE': return { ...base, title: '', maxSteps: 10, stepLabels: ['Given:', 'Find:', 'Solve:'], showLatexHelp: true };
     default: return base;
   }
 };
@@ -85,7 +91,7 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
 // Inline block type palette (for "+" buttons)
 // ──────────────────────────────────────────────
 const BlockTypePalette: React.FC<{ onSelect: (type: BlockType) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
-  const categories = ['Content', 'Interactive', 'Questions'];
+  const categories = ['Content', 'Interactive', 'Questions', 'Tools'];
   return (
     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl p-3 z-50 w-[480px] max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
       {categories.map(cat => (
@@ -686,9 +692,19 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <div>
                     <label className={labelClass}>Target Classes</label>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {availableClasses.map(c => (
-                        <button key={c} type="button" onClick={() => { const s = new Set(resClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setResClasses(s); setResSections([]); setHasUnsavedChanges(true); }} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${resClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
-                      ))}
+                      {availableClasses.map(c => {
+                        const isDefault = Object.values(DefaultClassTypes).includes(c);
+                        return (
+                          <div key={c} className="flex items-center gap-0.5">
+                            <button type="button" onClick={() => { const s = new Set(resClasses); s.has(c) ? (s.size > 1 && s.delete(c)) : s.add(c); setResClasses(s); setResSections([]); setHasUnsavedChanges(true); }} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${resClasses.has(c) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-black/30 border-white/10 text-gray-400'}`}>{c}</button>
+                            {!isDefault && (
+                              <button type="button" title={`Delete "${c}" class config`} onClick={async () => { if (confirm(`Delete class config "${c}"? This only removes the config — no student data is affected.`)) { try { await dataService.deleteClassConfig(c); toast.success(`Deleted class config: ${c}`); } catch { toast.error('Failed to delete class config'); } } }} className="p-0.5 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
