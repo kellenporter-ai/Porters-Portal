@@ -35,7 +35,7 @@ const VECTOR_TYPE_LIST: VectorType[] = ['force', 'displacement', 'velocity', 'de
 type DrawingElement =
   | { type: 'stroke'; points: { x: number; y: number }[]; color: string; width: number }
   | { type: 'arrow'; start: { x: number; y: number }; end: { x: number; y: number }; label1: string; label2: string; color: string; isComponent: boolean; vectorType?: VectorType; customSymbol?: string }
-  | { type: 'shape'; shape: 'circle' | 'rectangle' | 'line'; start: { x: number; y: number }; end: { x: number; y: number }; color: string; width: number; fill?: string; fillOpacity?: number }
+  | { type: 'shape'; shape: 'circle' | 'rectangle' | 'line'; start: { x: number; y: number }; end: { x: number; y: number }; color: string; width: number; fill?: string; fillOpacity?: number; rotation?: number }
   | { type: 'text'; position: { x: number; y: number }; text: string; color: string; fontSize: number };
 
 interface DrawingResponse {
@@ -91,14 +91,26 @@ function hitTestElement(pos: { x: number; y: number }, el: DrawingElement, toler
       return distToSegment(pos, el.start, el.end) < tolerance;
     }
     case 'shape': {
+      // Inverse-rotate the test point if shape has rotation
+      let tp = pos;
+      if (el.rotation) {
+        const scx = (el.start.x + el.end.x) / 2;
+        const scy = (el.start.y + el.end.y) / 2;
+        const cos = Math.cos(-el.rotation);
+        const sin = Math.sin(-el.rotation);
+        tp = {
+          x: scx + (pos.x - scx) * cos - (pos.y - scy) * sin,
+          y: scy + (pos.x - scx) * sin + (pos.y - scy) * cos,
+        };
+      }
       if (el.shape === 'line') {
-        return distToSegment(pos, el.start, el.end) < tolerance;
+        return distToSegment(tp, el.start, el.end) < tolerance;
       }
       const cx = (el.start.x + el.end.x) / 2;
       const cy = (el.start.y + el.end.y) / 2;
       const hw = Math.abs(el.end.x - el.start.x) / 2 + tolerance;
       const hh = Math.abs(el.end.y - el.start.y) / 2 + tolerance;
-      return Math.abs(pos.x - cx) < hw && Math.abs(pos.y - cy) < hh;
+      return Math.abs(tp.x - cx) < hw && Math.abs(tp.y - cy) < hh;
     }
     case 'text': {
       return Math.abs(pos.x - el.position.x) < 60 && Math.abs(pos.y - el.position.y) < 20;
@@ -116,8 +128,29 @@ function getElementBounds(el: DrawingElement): { x: number; y: number; w: number
     }
     case 'arrow':
       return { x: Math.min(el.start.x, el.end.x), y: Math.min(el.start.y, el.end.y), w: Math.abs(el.end.x - el.start.x), h: Math.abs(el.end.y - el.start.y) };
-    case 'shape':
+    case 'shape': {
+      if (el.rotation) {
+        // Compute AABB of the 4 rotated corners
+        const scx = (el.start.x + el.end.x) / 2;
+        const scy = (el.start.y + el.end.y) / 2;
+        const cos = Math.cos(el.rotation);
+        const sin = Math.sin(el.rotation);
+        const rotPt = (px: number, py: number) => ({
+          x: scx + (px - scx) * cos - (py - scy) * sin,
+          y: scy + (px - scx) * sin + (py - scy) * cos,
+        });
+        const corners = [
+          rotPt(el.start.x, el.start.y),
+          rotPt(el.end.x, el.start.y),
+          rotPt(el.start.x, el.end.y),
+          rotPt(el.end.x, el.end.y),
+        ];
+        let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
+        corners.forEach(c => { bMinX = Math.min(bMinX, c.x); bMinY = Math.min(bMinY, c.y); bMaxX = Math.max(bMaxX, c.x); bMaxY = Math.max(bMaxY, c.y); });
+        return { x: bMinX, y: bMinY, w: bMaxX - bMinX, h: bMaxY - bMinY };
+      }
       return { x: Math.min(el.start.x, el.end.x), y: Math.min(el.start.y, el.end.y), w: Math.abs(el.end.x - el.start.x), h: Math.abs(el.end.y - el.start.y) };
+    }
     case 'text':
       return { x: el.position.x, y: el.position.y, w: 80, h: 20 };
   }
@@ -308,14 +341,25 @@ function renderElementToCanvas(ctx: CanvasRenderingContext2D, el: DrawingElement
       break;
     }
     case 'shape': {
+      const rot = el.rotation ?? 0;
+      const scx = (el.start.x + el.end.x) / 2;
+      const scy = (el.start.y + el.end.y) / 2;
+
+      ctx.save();
       ctx.strokeStyle = el.color;
       ctx.lineWidth = el.width;
       ctx.lineCap = 'round';
       ctx.setLineDash([]);
 
+      // Apply rotation around shape center
+      if (rot !== 0) {
+        ctx.translate(scx, scy);
+        ctx.rotate(rot);
+        ctx.translate(-scx, -scy);
+      }
+
       // Fill first if set
       if (el.fill && el.shape !== 'line') {
-        ctx.save();
         ctx.globalAlpha = el.fillOpacity ?? 0.3;
         ctx.fillStyle = el.fill;
         if (el.shape === 'rectangle') {
@@ -323,13 +367,11 @@ function renderElementToCanvas(ctx: CanvasRenderingContext2D, el: DrawingElement
         } else if (el.shape === 'circle') {
           const rx = Math.abs(el.end.x - el.start.x) / 2;
           const ry = Math.abs(el.end.y - el.start.y) / 2;
-          const cx = (el.start.x + el.end.x) / 2;
-          const cy = (el.start.y + el.end.y) / 2;
           ctx.beginPath();
-          ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+          ctx.ellipse(scx, scy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.restore();
+        ctx.globalAlpha = 1;
       }
 
       // Stroke
@@ -343,12 +385,11 @@ function renderElementToCanvas(ctx: CanvasRenderingContext2D, el: DrawingElement
       } else if (el.shape === 'circle') {
         const rx = Math.abs(el.end.x - el.start.x) / 2;
         const ry = Math.abs(el.end.y - el.start.y) / 2;
-        const cx = (el.start.x + el.end.x) / 2;
-        const cy = (el.start.y + el.end.y) / 2;
         ctx.beginPath();
-        ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+        ctx.ellipse(scx, scy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
         ctx.stroke();
       }
+      ctx.restore();
       break;
     }
     // text elements are rendered as HTML overlays, not on canvas
@@ -389,7 +430,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   // Multi-selection & dragging
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
-  const [dragMode, setDragMode] = useState<'move' | 'resize' | 'select-box' | null>(null);
+  const [dragMode, setDragMode] = useState<'move' | 'resize' | 'rotate' | 'select-box' | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   // Which arrow index is being resized (only one at a time)
   const resizeTargetRef = useRef<number | null>(null);
@@ -406,6 +447,15 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   // Tooltip
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+
+  // Precision editor
+  const [precisionEditor, setPrecisionEditor] = useState<{
+    elementIdx: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [precisionLength, setPrecisionLength] = useState('');
+  const [precisionAngle, setPrecisionAngle] = useState('');
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -430,6 +480,21 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // Shape resize corner tracking: which corner of a shape is being dragged
   // 'tl' = top-left, 'tr' = top-right, 'bl' = bottom-left, 'br' = bottom-right
   const resizeCornerRef = useRef<'tl' | 'tr' | 'bl' | 'br' | null>(null);
+
+  // Multi-selection resize: tracks initial bounding box and snapshot for proportional scaling
+  const multiResizeRef = useRef<{
+    corner: 'tl' | 'tr' | 'bl' | 'br';
+    initBounds: { x: number; y: number; w: number; h: number };
+    anchor: { x: number; y: number };
+    snapshot: DrawingElement[];
+  } | null>(null);
+
+  // Multi-selection rotation: tracks center, initial angle, and snapshot
+  const rotateRef = useRef<{
+    center: { x: number; y: number };
+    initAngle: number;
+    snapshot: DrawingElement[];
+  } | null>(null);
 
   const shiftHeld = useRef(false);
   const bgImageRef = useRef<HTMLImageElement | null>(null);
@@ -562,40 +627,64 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     }
 
     // Draw all elements
-    elements.forEach((el, idx) => {
+    elements.forEach((el) => {
       renderElementToCanvas(ctx, el);
-      // Selection highlight for multi-select
-      if (selectedIndices.has(idx)) {
-        const bounds = getElementBounds(el);
-        ctx.save();
+    });
+
+    // Draw merged selection bounding box
+    if (selectedIndices.size > 0) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      selectedIndices.forEach(idx => {
+        const b = getElementBounds(elements[idx]);
+        minX = Math.min(minX, b.x);
+        minY = Math.min(minY, b.y);
+        maxX = Math.max(maxX, b.x + b.w);
+        maxY = Math.max(maxY, b.y + b.h);
+      });
+      const pad = 6;
+      ctx.save();
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(minX - pad, minY - pad, (maxX - minX) + pad * 2, (maxY - minY) + pad * 2);
+      ctx.setLineDash([]);
+
+      // Draw resize handles on merged box corners
+      const hs = 5;
+      const corners = [
+        { x: minX - pad, y: minY - pad },
+        { x: maxX + pad, y: minY - pad },
+        { x: minX - pad, y: maxY + pad },
+        { x: maxX + pad, y: maxY + pad },
+      ];
+      corners.forEach(c => {
+        ctx.fillStyle = '#ffffff';
         ctx.strokeStyle = '#007aff';
         ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 3]);
-        ctx.strokeRect(bounds.x - 4, bounds.y - 4, bounds.w + 8, bounds.h + 8);
-        ctx.setLineDash([]);
-        ctx.restore();
+        ctx.fillRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+        ctx.strokeRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+      });
 
-        // Draw resize handles for shapes
-        if (el.type === 'shape') {
-          const hs = 5; // handle half-size
-          const corners = [
-            { x: el.start.x, y: el.start.y },
-            { x: el.end.x, y: el.start.y },
-            { x: el.start.x, y: el.end.y },
-            { x: el.end.x, y: el.end.y },
-          ];
-          ctx.save();
-          corners.forEach(c => {
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#007aff';
-            ctx.lineWidth = 1.5;
-            ctx.fillRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
-            ctx.strokeRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
-          });
-          ctx.restore();
-        }
-      }
-    });
+      // Draw rotation handle above top-center
+      const rotHandleY = minY - pad - 25;
+      const rotHandleX = (minX + maxX) / 2;
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(rotHandleX, minY - pad);
+      ctx.lineTo(rotHandleX, rotHandleY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(rotHandleX, rotHandleY, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = '#007aff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
 
     // Draw active stroke preview
     if (activeTool === 'pen' && currentStroke.length > 1) {
@@ -740,6 +829,31 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     redraw();
   }, [canvasWidth, canvasHeight]);
 
+  // Apply precision editor changes in real-time
+  useEffect(() => {
+    if (!precisionEditor) return;
+    const len = parseFloat(precisionLength);
+    const angle = parseFloat(precisionAngle);
+    if (isNaN(len) || isNaN(angle) || len < 1) return;
+
+    const radians = -angle * (Math.PI / 180);
+
+    setElements(prev => {
+      const next = [...prev];
+      const el = next[precisionEditor.elementIdx];
+      if (el?.type === 'arrow') {
+        next[precisionEditor.elementIdx] = {
+          ...el,
+          end: {
+            x: el.start.x + len * Math.cos(radians),
+            y: el.start.y + len * Math.sin(radians),
+          },
+        };
+      }
+      return next;
+    });
+  }, [precisionLength, precisionAngle, precisionEditor]);
+
   // ──────────────────────────────────────────
   // Element mutation helpers
   // ──────────────────────────────────────────
@@ -782,25 +896,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     });
   }, []);
 
-  /** Resize a shape by updating one corner while keeping the opposite fixed */
-  const resizeShape = useCallback((index: number, corner: 'tl' | 'tr' | 'bl' | 'br', pos: { x: number; y: number }) => {
-    setElements(prev => {
-      const next = [...prev];
-      const el = next[index];
-      if (el.type !== 'shape') return prev;
-      const s = { ...el.start };
-      const e = { ...el.end };
-      switch (corner) {
-        case 'tl': s.x = pos.x; s.y = pos.y; break;
-        case 'tr': e.x = pos.x; s.y = pos.y; break;
-        case 'bl': s.x = pos.x; e.y = pos.y; break;
-        case 'br': e.x = pos.x; e.y = pos.y; break;
-      }
-      next[index] = { ...el, start: s, end: e };
-      return next;
-    });
-  }, []);
-
   // ──────────────────────────────────────────
   // Pointer handlers
   // ──────────────────────────────────────────
@@ -817,36 +912,92 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     setShowWidthPicker(false);
     setShowShapePicker(false);
     setShowVectorPicker(false);
+    setPrecisionEditor(null);
 
     if (activeTool === 'select') {
-      // Check if clicking near a shape's corner handle for resize
-      for (let i = elements.length - 1; i >= 0; i--) {
-        const el = elements[i];
-        if (el.type === 'shape' && selectedIndices.has(i)) {
-          const corners: { corner: 'tl' | 'tr' | 'bl' | 'br'; x: number; y: number }[] = [
-            { corner: 'tl', x: el.start.x, y: el.start.y },
-            { corner: 'tr', x: el.end.x, y: el.start.y },
-            { corner: 'bl', x: el.start.x, y: el.end.y },
-            { corner: 'br', x: el.end.x, y: el.end.y },
-          ];
-          for (const c of corners) {
-            if (Math.hypot(pos.x - c.x, pos.y - c.y) < 12) {
-              resizeTargetRef.current = i;
-              resizeCornerRef.current = c.corner;
-              setDragMode('resize');
-              setIsDrawing(true);
-              return;
-            }
+      // Check if clicking near merged bounding box corner handles for multi-resize
+      if (selectedIndices.size > 0) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        selectedIndices.forEach(idx => {
+          const b = getElementBounds(elements[idx]);
+          minX = Math.min(minX, b.x); minY = Math.min(minY, b.y);
+          maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h);
+        });
+        const pad = 6;
+        const boxCorners: { corner: 'tl' | 'tr' | 'bl' | 'br'; x: number; y: number }[] = [
+          { corner: 'tl', x: minX - pad, y: minY - pad },
+          { corner: 'tr', x: maxX + pad, y: minY - pad },
+          { corner: 'bl', x: minX - pad, y: maxY + pad },
+          { corner: 'br', x: maxX + pad, y: maxY + pad },
+        ];
+        for (const c of boxCorners) {
+          if (Math.hypot(pos.x - c.x, pos.y - c.y) < 12) {
+            // Anchor is the opposite corner (without padding)
+            const anchor = {
+              x: (c.corner === 'tl' || c.corner === 'bl') ? maxX : minX,
+              y: (c.corner === 'tl' || c.corner === 'tr') ? maxY : minY,
+            };
+            multiResizeRef.current = {
+              corner: c.corner,
+              initBounds: { x: minX, y: minY, w: maxX - minX, h: maxY - minY },
+              anchor,
+              snapshot: JSON.parse(JSON.stringify(elements)),
+            };
+            setDragMode('resize');
+            setIsDrawing(true);
+            return;
+          }
+        }
+        // Check if clicking on rotation handle
+        const rotHandleX = (minX + maxX) / 2;
+        const rotHandleY = minY - pad - 25;
+        if (Math.hypot(pos.x - rotHandleX, pos.y - rotHandleY) < 12) {
+          const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+          const initAngle = Math.atan2(pos.y - center.y, pos.x - center.x);
+          rotateRef.current = {
+            center,
+            initAngle,
+            snapshot: JSON.parse(JSON.stringify(elements)),
+          };
+          setDragMode('rotate');
+          setIsDrawing(true);
+          return;
+        }
+      }
+      // Ctrl+click on arrow endpoint opens precision editor
+      if ((e as React.MouseEvent).ctrlKey || (e as React.MouseEvent).metaKey) {
+        for (let i = elements.length - 1; i >= 0; i--) {
+          const el = elements[i];
+          if (el.type === 'arrow' && Math.hypot(pos.x - el.end.x, pos.y - el.end.y) < 20) {
+            const canvas = canvasRef.current;
+            if (!canvas) break;
+            // Calculate length and angle
+            const len = Math.round(Math.hypot(el.end.x - el.start.x, el.end.y - el.start.y));
+            const dx = el.end.x - el.start.x;
+            const dy = -(el.end.y - el.start.y); // flip y for physics convention
+            let theta = Math.atan2(dy, dx) * (180 / Math.PI);
+            if (theta < 0) theta += 360;
+            theta = Math.round(theta * 10) / 10;
+            setPrecisionLength(String(len));
+            setPrecisionAngle(String(theta));
+            setPrecisionEditor({
+              elementIdx: i,
+              x: el.end.x,
+              y: el.end.y,
+            });
+            // Select this arrow too
+            setSelectedIndices(new Set([i]));
+            return;
           }
         }
       }
       // Check if clicking near arrowhead for resize (single arrow only)
       for (let i = elements.length - 1; i >= 0; i--) {
         const el = elements[i];
-        if (el.type === 'arrow' && Math.hypot(pos.x - el.end.x, pos.y - el.end.y) < 18) {
+        if (el.type === 'arrow' && selectedIndices.has(i) && Math.hypot(pos.x - el.end.x, pos.y - el.end.y) < 18) {
           resizeTargetRef.current = i;
           resizeCornerRef.current = null;
-          setSelectedIndices(new Set([i]));
+          multiResizeRef.current = null;
           setDragMode('resize');
           setIsDrawing(true);
           return;
@@ -959,6 +1110,103 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       moveElements(selectedIndices, rawDx + snap.dx, rawDy + snap.dy);
       setDragOffset({ x: pos.x + snap.dx, y: pos.y + snap.dy });
       setSnapGuides(snap.guides);
+    } else if (activeTool === 'select' && dragMode === 'resize' && multiResizeRef.current) {
+      // Multi-selection scaling via merged bounding box handles
+      const mr = multiResizeRef.current;
+      const { anchor, initBounds, corner } = mr;
+      // Compute scale factors from anchor to current pos vs anchor to initial corner
+      const initCornerX = (corner === 'tl' || corner === 'bl') ? initBounds.x : initBounds.x + initBounds.w;
+      const initCornerY = (corner === 'tl' || corner === 'tr') ? initBounds.y : initBounds.y + initBounds.h;
+      const origDx = initCornerX - anchor.x;
+      const origDy = initCornerY - anchor.y;
+      let sx = origDx !== 0 ? (pos.x - anchor.x) / origDx : 1;
+      let sy = origDy !== 0 ? (pos.y - anchor.y) / origDy : 1;
+      // Shift = uniform scale (maintain aspect ratio)
+      if (shiftHeld.current) {
+        const uniform = Math.max(Math.abs(sx), Math.abs(sy));
+        sx = uniform * Math.sign(sx || 1);
+        sy = uniform * Math.sign(sy || 1);
+      }
+      // Prevent collapsing to zero
+      if (Math.abs(sx) < 0.01) sx = 0.01 * Math.sign(sx || 1);
+      if (Math.abs(sy) < 0.01) sy = 0.01 * Math.sign(sy || 1);
+      // Apply scale from snapshot
+      const transformPt = (p: { x: number; y: number }) => ({
+        x: anchor.x + (p.x - anchor.x) * sx,
+        y: anchor.y + (p.y - anchor.y) * sy,
+      });
+      setElements(prev => {
+        const next = [...prev];
+        selectedIndices.forEach(idx => {
+          const orig = mr.snapshot[idx];
+          if (!orig) return;
+          switch (orig.type) {
+            case 'stroke':
+              next[idx] = { ...orig, points: orig.points.map(p => transformPt(p)) };
+              break;
+            case 'arrow':
+              next[idx] = { ...orig, start: transformPt(orig.start), end: transformPt(orig.end) };
+              break;
+            case 'shape':
+              next[idx] = { ...orig, start: transformPt(orig.start), end: transformPt(orig.end) };
+              break;
+            case 'text':
+              next[idx] = { ...orig, position: transformPt(orig.position) };
+              break;
+          }
+        });
+        return next;
+      });
+    } else if (activeTool === 'select' && dragMode === 'rotate' && rotateRef.current) {
+      const rr = rotateRef.current;
+      const currentAngle = Math.atan2(pos.y - rr.center.y, pos.x - rr.center.x);
+      let delta = currentAngle - rr.initAngle;
+      // Shift snaps to 15° increments
+      if (shiftHeld.current) {
+        const snap15 = Math.PI / 12;
+        delta = Math.round(delta / snap15) * snap15;
+      }
+      const cos = Math.cos(delta);
+      const sin = Math.sin(delta);
+      const rotatePt = (p: { x: number; y: number }) => ({
+        x: rr.center.x + (p.x - rr.center.x) * cos - (p.y - rr.center.y) * sin,
+        y: rr.center.y + (p.x - rr.center.x) * sin + (p.y - rr.center.y) * cos,
+      });
+      setElements(prev => {
+        const next = [...prev];
+        selectedIndices.forEach(idx => {
+          const orig = rr.snapshot[idx];
+          if (!orig) return;
+          switch (orig.type) {
+            case 'stroke':
+              next[idx] = { ...orig, points: orig.points.map(p => rotatePt(p)) };
+              break;
+            case 'arrow':
+              next[idx] = { ...orig, start: rotatePt(orig.start), end: rotatePt(orig.end) };
+              break;
+            case 'shape': {
+              // Translate the shape's center to its rotated position, set rotation property
+              const origCx = (orig.start.x + orig.end.x) / 2;
+              const origCy = (orig.start.y + orig.end.y) / 2;
+              const newCenter = rotatePt({ x: origCx, y: origCy });
+              const tdx = newCenter.x - origCx;
+              const tdy = newCenter.y - origCy;
+              const origRot = (orig as typeof orig & { rotation?: number }).rotation ?? 0;
+              next[idx] = {
+                ...orig,
+                start: { x: orig.start.x + tdx, y: orig.start.y + tdy },
+                end: { x: orig.end.x + tdx, y: orig.end.y + tdy },
+                rotation: origRot + delta,
+              };
+              break;
+            }
+            case 'text':
+              next[idx] = { ...orig, position: rotatePt(orig.position) };
+              break;
+          }
+        });
+        return next;
+      });
     } else if (activeTool === 'select' && dragMode === 'resize' && resizeTargetRef.current !== null) {
       const el = elements[resizeTargetRef.current];
       const otherBounds = elements.filter((_, i) => i !== resizeTargetRef.current).map(e => getElementBounds(e));
@@ -969,10 +1217,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         }
         const snapped = computePointSnap(end, otherBounds);
         resizeArrow(resizeTargetRef.current, { x: snapped.x, y: snapped.y });
-        setSnapGuides(snapped.guides);
-      } else if (el.type === 'shape' && resizeCornerRef.current) {
-        const snapped = computePointSnap(pos, otherBounds);
-        resizeShape(resizeTargetRef.current, resizeCornerRef.current, { x: snapped.x, y: snapped.y });
         setSnapGuides(snapped.guides);
       }
     } else if (activeTool === 'select' && dragMode === 'select-box') {
@@ -1004,7 +1248,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         setDragEnd(pos);
       }
     }
-  }, [isDrawing, submitted, activeTool, getCanvasCoords, elements, selectedIndices, dragMode, dragOffset, moveElements, resizeArrow, resizeShape, dragStart]);
+  }, [isDrawing, submitted, activeTool, getCanvasCoords, elements, selectedIndices, dragMode, dragOffset, moveElements, resizeArrow, dragStart]);
 
   const handlePointerUp = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || submitted) return;
@@ -1038,8 +1282,8 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         }
         setSelectionBox(null);
       }
-      // Commit move/resize to history if elements were modified
-      if (dragMode === 'move' || dragMode === 'resize') {
+      // Commit move/resize/rotate to history if elements were modified
+      if (dragMode === 'move' || dragMode === 'resize' || dragMode === 'rotate') {
         pendingCommitRef.current = true;
         // Force a re-snapshot by touching elements
         setElements(prev => [...prev]);
@@ -1048,6 +1292,8 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       setSnapGuides([]);
       resizeTargetRef.current = null;
       resizeCornerRef.current = null;
+      multiResizeRef.current = null;
+      rotateRef.current = null;
     } else if (activeTool === 'pen' && currentStroke.length > 1) {
       pendingCommitRef.current = true;
       setElements(prev => [...prev, { type: 'stroke', points: currentStroke, color: penColor, width: penWidth }]);
@@ -1398,6 +1644,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       }
 
       switch (key) {
+        case 'escape':
+          setPrecisionEditor(null);
+          setShowShortcuts(false);
+          break;
         case 'v': if (!mod) setActiveTool('select'); break;
         case 'a': if (!mod) setActiveTool('arrow'); break;
         case 'p': setActiveTool('pen'); break;
@@ -1408,6 +1658,19 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         case '?': setShowShortcuts(v => !v); break;
         case ']': if (e.shiftKey) bringToFront(); else moveUp(); break;
         case '[': if (e.shiftKey) sendToBack(); else moveDown(); break;
+        case 'arrowup':
+        case 'arrowdown':
+        case 'arrowleft':
+        case 'arrowright': {
+          if (selectedIndices.size === 0) break;
+          e.preventDefault();
+          const step = e.shiftKey ? 20 : 4;
+          const adx = key === 'arrowleft' ? -step : key === 'arrowright' ? step : 0;
+          const ady = key === 'arrowup' ? -step : key === 'arrowdown' ? step : 0;
+          pendingCommitRef.current = true;
+          moveElements(selectedIndices, adx, ady);
+          break;
+        }
         case 'delete':
         case 'backspace':
           if (selectedIndices.size > 0) {
@@ -1419,7 +1682,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [submitted, textPlacement, handleUndo, handleRedo, handleCopy, handlePaste, selectedIndices, deleteSelected, toggleComponent, elements, bringToFront, sendToBack, moveUp, moveDown]);
+  }, [submitted, textPlacement, handleUndo, handleRedo, handleCopy, handlePaste, selectedIndices, deleteSelected, toggleComponent, elements, bringToFront, sendToBack, moveUp, moveDown, moveElements, precisionEditor]);
 
   // ──────────────────────────────────────────
   // Cursor style
@@ -2276,6 +2539,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
               ['Ctrl+Shift+Z', 'Redo'],
               ['Shift', 'Snap angles / regular shapes'],
               ['Shift+Click', 'Add to selection'],
+              ['Ctrl+Click', 'Precision editor (on arrow tip)'],
               [']', 'Move up one layer'],
               ['[', 'Move down one layer'],
               ['}', 'Bring to front'],
@@ -2337,6 +2601,100 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             </div>
           </div>
         )}
+
+        {/* Precision Editor */}
+        {precisionEditor && (() => {
+          const canvas = canvasRef.current;
+          if (!canvas) return null;
+          const scaleX = 100 / canvas.width;
+          const scaleY = 100 / canvas.height;
+          const el = elements[precisionEditor.elementIdx];
+          if (!el || el.type !== 'arrow') return null;
+          const editorX = el.end.x * scaleX;
+          const editorY = el.end.y * scaleY;
+          return (
+            <div
+              style={{
+                position: 'absolute',
+                left: `${editorX}%`,
+                top: `${editorY}%`,
+                transform: 'translate(15px, 15px)',
+                background: 'rgba(230, 242, 255, 0.95)',
+                backdropFilter: 'blur(15px)',
+                border: '1px solid rgba(0, 122, 255, 0.3)',
+                padding: '12px',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0, 122, 255, 0.15)',
+                width: '190px',
+                zIndex: 30,
+                pointerEvents: 'auto',
+                fontFamily: 'Arial, sans-serif',
+              }}
+              onClick={e => e.stopPropagation()}
+              onMouseDown={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => { setPrecisionEditor(null); commitToHistory(elements); }}
+                style={{
+                  position: 'absolute', top: '5px', right: '8px',
+                  cursor: 'pointer', color: '#007aff', fontSize: '18px',
+                  background: 'none', border: 'none', padding: 0, lineHeight: 1,
+                }}
+              >&times;</button>
+              <div style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 600, color: '#007aff', textAlign: 'center' }}>
+                Precision Editor
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
+                <span>Length (px):</span>
+                <input
+                  type="number"
+                  value={precisionLength}
+                  onChange={e => setPrecisionLength(e.target.value)}
+                  min="10"
+                  step="1"
+                  style={{
+                    width: '70px', border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.7)', borderRadius: '6px',
+                    padding: '4px 8px', fontSize: '13px', textAlign: 'right',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
+                <span>Angle ({'\u03B8'}{'\u00B0'}):</span>
+                <input
+                  type="number"
+                  value={precisionAngle}
+                  onChange={e => setPrecisionAngle(e.target.value)}
+                  step="1"
+                  style={{
+                    width: '70px', border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.7)', borderRadius: '6px',
+                    padding: '4px 8px', fontSize: '13px', textAlign: 'right',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 500 }}>
+                <span>Component:</span>
+                <input
+                  type="checkbox"
+                  checked={el.isComponent}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setElements(prev => {
+                      const next = [...prev];
+                      const arrow = next[precisionEditor.elementIdx];
+                      if (arrow.type === 'arrow') {
+                        next[precisionEditor.elementIdx] = { ...arrow, isComponent: checked };
+                      }
+                      return next;
+                    });
+                  }}
+                  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                />
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Resize handle */}

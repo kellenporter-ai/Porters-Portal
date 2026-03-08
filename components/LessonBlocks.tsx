@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   CheckCircle2, XCircle, ChevronRight, BookOpen, MessageSquare, HelpCircle, ListChecks,
-  ExternalLink, GripVertical, Target, Link, Play, FileDown, Trash2, MoreVertical, Pencil
+  ExternalLink, GripVertical, GripHorizontal, Target, Link, Play, FileDown, Trash2, MoreVertical, Pencil
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
@@ -601,8 +601,11 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
 
 const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; delta: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; final: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}> }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const chartHeight = block.height || 450;
+  const [userHeight, setUserHeight] = useState<number | null>(null);
+  const chartHeight = userHeight ?? (block.height || 450);
   const savedStateRef = useRef(savedResponse);
+  const resizeRef = useRef<{ startY: number; startH: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
@@ -624,9 +627,43 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
         ref={iframeRef}
         src="/tools/bar-chart.html?embedded=true"
         className="w-full rounded-lg border border-white/10"
-        style={{ height: chartHeight, background: 'transparent' }}
+        style={{ height: chartHeight, background: 'transparent', pointerEvents: isResizing ? 'none' : 'auto' }}
         title="Bar Chart Tool"
       />
+      <div
+        style={{
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          height: '16px', cursor: 'row-resize', userSelect: 'none',
+          borderRadius: '0 0 8px 8px',
+          background: isResizing ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)', borderTop: 'none',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => { if (!isResizing) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+        onMouseLeave={e => { if (!isResizing) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+        onMouseDown={e => {
+          e.preventDefault();
+          resizeRef.current = { startY: e.clientY, startH: chartHeight };
+          setIsResizing(true);
+
+          const onMove = (ev: MouseEvent) => {
+            if (!resizeRef.current) return;
+            const newH = Math.max(200, Math.min(1000, resizeRef.current.startH + (ev.clientY - resizeRef.current.startY)));
+            setUserHeight(newH);
+          };
+          const onUp = () => {
+            resizeRef.current = null;
+            setIsResizing(false);
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+          };
+          window.addEventListener('mousemove', onMove);
+          window.addEventListener('mouseup', onUp);
+        }}
+        title="Drag to resize chart"
+      >
+        <GripHorizontal size={14} color="rgba(255,255,255,0.4)" />
+      </div>
     </div>
   );
 };
