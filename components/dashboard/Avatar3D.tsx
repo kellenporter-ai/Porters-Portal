@@ -285,6 +285,17 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     rimLight.diffuse = new BABYLON.Color3(0.5, 0.3, 1.0);
                 }
 
+                // Force engine to pick up actual canvas dimensions after layout
+                // (modal may still be animating when useEffect fires)
+                engine.resize();
+                requestAnimationFrame(() => {
+                    if (!engine.isDisposed) engine.resize();
+                });
+
+                console.log('[Avatar3D] Canvas size:', canvas.width, 'x', canvas.height,
+                    'clientSize:', canvas.clientWidth, 'x', canvas.clientHeight,
+                    'engine:', engine.getRenderWidth(), 'x', engine.getRenderHeight());
+
                 // Render loop
                 engine.runRenderLoop(() => {
                     if (scene && !scene.isDisposed) {
