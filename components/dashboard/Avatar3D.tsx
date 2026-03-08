@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { ActiveCosmetics } from '../../types';
 import { AGENT_COSMETICS } from '../../lib/gamification';
-import { DEFAULT_CHARACTER_MODEL, getCharacterModel } from '../../lib/characterModels';
+import { DEFAULT_CHARACTER_MODEL, getCharacterModel, ENABLE_3D_AVATAR } from '../../lib/characterModels';
 import { SKIN_TONES } from './OperativeAvatar';
+import OperativeAvatar from './OperativeAvatar';
 
 // Lazy-load Babylon to avoid blocking initial bundle
 let babylonCore: typeof import('@babylonjs/core') | null = null;
@@ -169,7 +170,15 @@ interface Avatar3DProps {
  * - Idle animation only
  * - Cosmetic effects rendered as simple glow/particle overlays
  */
-const Avatar3D: React.FC<Avatar3DProps> = ({
+const Avatar3D: React.FC<Avatar3DProps> = (props) => {
+    // When 3D is disabled globally, fall back to 2D avatar for all users
+    if (!ENABLE_3D_AVATAR) {
+        return <OperativeAvatar equipped={{}} appearance={props.appearance} activeCosmetics={props.activeCosmetics} evolutionLevel={props.evolutionLevel} />;
+    }
+    return <Avatar3DInner {...props} />;
+};
+
+const Avatar3DInner: React.FC<Avatar3DProps> = ({
     characterModelId,
     appearance,
     activeCosmetics,

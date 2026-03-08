@@ -4,7 +4,7 @@ import { RPGItem, EquipmentSlot, ActiveCosmetics } from '../../types';
 import Modal from '../Modal';
 import OperativeAvatar, { SKIN_TONES, HAIR_COLORS, HAIR_STYLE_NAMES } from './OperativeAvatar';
 import Avatar3D from './Avatar3D';
-import { CHARACTER_MODELS, getStarterModels, DEFAULT_CHARACTER_MODEL } from '../../lib/characterModels';
+import { CHARACTER_MODELS, getStarterModels, DEFAULT_CHARACTER_MODEL, ENABLE_3D_AVATAR } from '../../lib/characterModels';
 
 interface Appearance {
   hue?: number;
@@ -33,8 +33,8 @@ interface CustomizeModalProps {
 
 type Tab = '2d' | '3d';
 
-// Flip to true to re-enable the 3D model tab for students
-const ENABLE_3D_TAB = false;
+// Uses the shared flag from characterModels.ts
+const ENABLE_3D_TAB = ENABLE_3D_AVATAR;
 
 const CustomizeModal: React.FC<CustomizeModalProps> = ({
   isOpen, onClose, equipped, appearance, onSave,

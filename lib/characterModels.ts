@@ -12,6 +12,9 @@
  *   - Premium (400 Flux): Rogue Hooded
  */
 
+/** Master kill-switch for all 3D avatar rendering. Set to false to force 2D for everyone. */
+export const ENABLE_3D_AVATAR = false;
+
 export interface CharacterModelDef {
     id: string;
     name: string;

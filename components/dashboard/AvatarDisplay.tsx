@@ -9,6 +9,7 @@ import React from 'react';
 import { ActiveCosmetics } from '../../types';
 import OperativeAvatar from './OperativeAvatar';
 import Avatar3D from './Avatar3D';
+import { ENABLE_3D_AVATAR } from '../../lib/characterModels';
 
 interface AvatarDisplayProps {
     /** 3D character model ID — if set, renders Avatar3D; otherwise falls back to 2D */
@@ -46,7 +47,7 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
     className = '',
     activeCosmetic,
 }) => {
-    if (characterModelId) {
+    if (ENABLE_3D_AVATAR && characterModelId) {
         return (
             <Avatar3D
                 characterModelId={characterModelId}
