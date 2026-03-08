@@ -388,12 +388,13 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
 
                         if (disposed || scene.isDisposed) return;
 
-                        // Both our character models and the hair GLBs are Quaternius
-                        // origin-at-0 models. Apply the same world transform so they align.
+                        // Hair GLBs are in ~1.8m UBC coordinate space (head at Y≈1.7).
+                        // Our character is normalized to 1.8m world space.
+                        // Don't apply the character's scale — hair is already the right size.
                         const hairRoot = hairResult.meshes[0];
                         if (hairRoot) {
-                            hairRoot.scaling = rootMesh.scaling.clone();
-                            hairRoot.position = rootMesh.position.clone();
+                            hairRoot.scaling = new BABYLON.Vector3(1, 1, 1);
+                            hairRoot.position = new BABYLON.Vector3(0, 0, 0);
                         }
 
                         // Convert hair PBR → StandardMaterial and add to tint data
