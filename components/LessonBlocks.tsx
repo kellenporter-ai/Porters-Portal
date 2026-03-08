@@ -599,52 +599,34 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
   );
 };
 
-const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { values: number[] }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
-  const barCount = block.barCount || 3;
-  const chartHeight = block.height || 300;
-  const [values, setValues] = useState<number[]>(() => savedResponse?.values ?? Array(barCount).fill(0));
-  const maxVal = Math.max(...values.map(Math.abs), 1);
-  const colors = ['#a855f7', '#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316'];
+const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; delta: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; final: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}> }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const chartHeight = block.height || 450;
+  const savedStateRef = useRef(savedResponse);
 
-  const handleBarClick = (idx: number, e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const normalizedVal = Math.round(((rect.height / 2 - clickY) / (rect.height / 2)) * 10);
-    setValues(prev => { const next = [...prev]; next[idx] = normalizedVal; onResponseChange?.({ values: next }); return next; });
-  };
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'barChartReady' && savedStateRef.current && iframeRef.current) {
+        iframeRef.current.contentWindow?.postMessage({ type: 'loadBarChartState', state: savedStateRef.current }, '*');
+      }
+      if (e.data?.type === 'barChartState') {
+        onResponseChange?.(e.data.state);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onResponseChange]);
 
   return (
     <div className="space-y-2">
       {block.title && <p className="text-sm text-white font-medium text-center">{block.title}</p>}
-      <div className="flex items-end justify-center gap-4 px-4" style={{ height: chartHeight }}>
-        {values.map((val, idx) => {
-          const barHeight = Math.abs(val) / Math.max(maxVal, 10) * (chartHeight / 2 - 20);
-          return (
-            <div key={idx} className="flex flex-col items-center gap-1 flex-1 h-full justify-center cursor-pointer" onClick={(e) => handleBarClick(idx, e)}>
-              <div className="relative w-full max-w-[60px] h-full flex items-center">
-                <div className="absolute inset-0 border-b border-white/10" style={{ top: '50%' }} />
-                <div
-                  className="absolute left-0 right-0 rounded-t-lg transition-all duration-200"
-                  style={{
-                    height: barHeight,
-                    bottom: val >= 0 ? '50%' : undefined,
-                    top: val < 0 ? '50%' : undefined,
-                    backgroundColor: colors[idx % colors.length],
-                    opacity: 0.8,
-                  }}
-                />
-              </div>
-              <div className="text-[10px] text-gray-400 font-mono">{val}</div>
-              <div className="text-[10px] text-gray-500">Bar {idx + 1}</div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-between text-[10px] text-gray-500 px-4">
-        <span>{block.initialLabel}</span>
-        <span>{block.deltaLabel}</span>
-        <span>{block.finalLabel}</span>
-      </div>
+      <iframe
+        ref={iframeRef}
+        src="/tools/bar-chart.html?embedded=true"
+        className="w-full rounded-lg border border-white/10"
+        style={{ height: chartHeight, background: 'transparent' }}
+        title="Bar Chart Tool"
+      />
     </div>
   );
 };

@@ -426,6 +426,17 @@
     </div>
 
 <script>
+    // --- EMBEDDED MODE ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const isEmbedded = urlParams.get('embedded') === 'true';
+
+    if (isEmbedded) {
+        document.querySelector('.controls-container').style.display = 'none';
+        document.getElementById('help-btn').style.display = 'none';
+        document.getElementById('file-input').style.display = 'none';
+        document.body.style.padding = '10px';
+    }
+
     let state = { initial: 0, delta: 0, final: 0 };
     const LIMITS = { initial: 10, delta: 1, final: 10 };
 
@@ -898,6 +909,80 @@
     helpBtn.addEventListener('click', () => helpModal.style.display = 'flex');
     document.querySelector('.modal-close').addEventListener('click', () => helpModal.style.display = 'none');
     helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
+
+    // --- EMBEDDED MODE: STATE SYNC ---
+    if (isEmbedded) {
+        // Send state to parent on every change
+        function sendStateToParent() {
+            const stateData = {
+                initial: getSectionData('initial'),
+                delta: getSectionData('delta'),
+                final: getSectionData('final')
+            };
+            window.parent.postMessage({ type: 'barChartState', state: stateData }, '*');
+        }
+
+        // Debounce state sends
+        let sendTimeout;
+        const debouncedSend = () => {
+            clearTimeout(sendTimeout);
+            sendTimeout = setTimeout(sendStateToParent, 200);
+        };
+
+        // Patch setBarHeight to trigger state sync
+        const _origSetBarHeight = setBarHeight;
+        setBarHeight = function(col, val) {
+            _origSetBarHeight(col, val);
+            debouncedSend();
+        };
+
+        // Patch addBar to trigger state sync
+        const _origAddBar = addBar;
+        addBar = function(type) {
+            const col = _origAddBar(type);
+            debouncedSend();
+            return col;
+        };
+
+        // Patch closeMenu for embedded state sync
+        const _origCloseMenu = closeMenu;
+        closeMenu = function() {
+            _origCloseMenu();
+            debouncedSend();
+        };
+
+        // Also sync state when bars are added/removed
+        ['initial-bars', 'delta-bars', 'final-bars'].forEach(id => {
+            new MutationObserver(debouncedSend).observe(
+                document.getElementById(id), { childList: true }
+            );
+        });
+
+        // Listen for state restoration from parent
+        window.addEventListener('message', (e) => {
+            if (e.data?.type === 'loadBarChartState' && e.data.state) {
+                const data = e.data.state;
+                resetChart();
+                ['initial', 'delta', 'final'].forEach(section => {
+                    if (data[section]) {
+                        data[section].forEach(item => {
+                            const col = _origAddBar(section);
+                            _origSetBarHeight(col, item.value);
+                            const btn = col.querySelector('.label-select-btn');
+                            btn.innerHTML = item.labelHTML;
+                            if (item.labelType) col.dataset.labelType = item.labelType;
+                            if (item.labelTemplate) col.dataset.labelTemplate = item.labelTemplate;
+                        });
+                    }
+                });
+                updateSectionLabels('initial');
+                updateSectionLabels('final');
+            }
+        });
+
+        // Notify parent that iframe is ready
+        window.parent.postMessage({ type: 'barChartReady' }, '*');
+    }
 
 </script>
 </body>

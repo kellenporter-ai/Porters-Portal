@@ -359,9 +359,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           }
           break;
         case 'BAR_CHART':
-          questionHtml = `<p><strong>Bar Chart:</strong> ${escapeHtml(block.content)}</p>`;
-          if (resp?.values) {
-            answerHtml = `<p>Values: ${(resp.values as number[]).join(', ')}</p>`;
+          questionHtml = `<p><strong>Bar Chart:</strong> ${escapeHtml(block.title || block.content || '')}</p>`;
+          if (resp?.initial || resp?.delta || resp?.final) {
+            const sections = ['initial', 'delta', 'final'];
+            const sectionBars = sections.map(s => {
+              const bars = (resp as Record<string, Array<{value: number; labelHTML: string}>>)[s];
+              if (!bars?.length) return '';
+              return `<div><strong>${s}:</strong> ${bars.map(b => `${b.labelHTML || '?'}=${b.value}`).join(', ')}</div>`;
+            }).filter(Boolean).join('');
+            answerHtml = sectionBars || '<p style="color:#999"><em>No data entered</em></p>';
           } else {
             answerHtml = '<p style="color:#999"><em>No data entered</em></p>';
           }

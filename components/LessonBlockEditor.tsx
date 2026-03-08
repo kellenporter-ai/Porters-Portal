@@ -728,30 +728,11 @@ const BarChartEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) 
       <label className={labelClass}>Title</label>
       <input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="Chart title..." className={inputClass} />
     </div>
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className={labelClass}>Number of Bars</label>
-        <input type="number" value={block.barCount || 3} onChange={e => onUpdate({ ...block, barCount: parseInt(e.target.value) || 3 })} min={1} max={10} className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Chart Height (px)</label>
-        <input type="number" value={block.height || 300} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 300 })} className={inputClass} />
-      </div>
+    <div>
+      <label className={labelClass}>Chart Height (px)</label>
+      <input type="number" value={block.height || 450} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 450 })} className={inputClass} />
     </div>
-    <div className="grid grid-cols-3 gap-3">
-      <div>
-        <label className={labelClass}>Initial Label</label>
-        <input type="text" value={block.initialLabel || ''} onChange={e => onUpdate({ ...block, initialLabel: e.target.value })} placeholder="Initial" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Delta Label</label>
-        <input type="text" value={block.deltaLabel || ''} onChange={e => onUpdate({ ...block, deltaLabel: e.target.value })} placeholder="Change" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Final Label</label>
-        <input type="text" value={block.finalLabel || ''} onChange={e => onUpdate({ ...block, finalLabel: e.target.value })} placeholder="Final" className={inputClass} />
-      </div>
-    </div>
+    <p className="text-xs text-gray-500 italic">Students use the full bar chart tool with draggable bars, physics labels, and Initial/Δ/Final sections.</p>
   </div>
 );
 

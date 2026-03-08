@@ -273,15 +273,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       return (
         <div className="space-y-2">
           <div><label className={labelClass}>Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Bars</label><input type="number" value={block.barCount || 3} onChange={e => onUpdate({ ...block, barCount: parseInt(e.target.value) || 3 })} className={inputClass} /></div>
-            <div><label className={labelClass}>Height (px)</label><input type="number" value={block.height || 300} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 300 })} className={inputClass} /></div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelClass}>Initial</label><input type="text" value={block.initialLabel || ''} onChange={e => onUpdate({ ...block, initialLabel: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Delta</label><input type="text" value={block.deltaLabel || ''} onChange={e => onUpdate({ ...block, deltaLabel: e.target.value })} className={inputClass} /></div>
-            <div><label className={labelClass}>Final</label><input type="text" value={block.finalLabel || ''} onChange={e => onUpdate({ ...block, finalLabel: e.target.value })} className={inputClass} /></div>
-          </div>
+          <div><label className={labelClass}>Height (px)</label><input type="number" value={block.height || 450} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 450 })} className={inputClass} /></div>
         </div>
       );
     case 'RANKING': {

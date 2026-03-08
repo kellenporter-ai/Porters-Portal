@@ -78,7 +78,7 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
     case 'ACTIVITY': return { ...base, icon: '⚡', title: '', instructions: '' };
     case 'SORTING': return { ...base, title: '', instructions: '', leftLabel: 'Category A', rightLabel: 'Category B', sortItems: [{ text: '', correct: 'left' }] };
     case 'DATA_TABLE': return { ...base, title: '', columns: [{ key: 'col1', label: 'Column 1', editable: true }], trials: 3 };
-    case 'BAR_CHART': return { ...base, title: '', barCount: 3, initialLabel: 'Initial', finalLabel: 'Final', deltaLabel: 'Change', height: 300 };
+    case 'BAR_CHART': return { ...base, title: '', height: 450 };
     case 'RANKING': return { ...base, items: [''] };
     case 'LINKED': return { ...base, linkedBlockId: '', acceptedAnswers: [''] };
     case 'DRAWING': return { ...base, title: '', instructions: '', drawingMode: 'free', canvasHeight: 400 };
