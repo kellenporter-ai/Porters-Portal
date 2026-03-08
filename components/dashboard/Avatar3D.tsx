@@ -427,9 +427,16 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                         meshTintDataRef.current = tintData;
                         applyTinting(tintData, appearanceRef.current);
 
-                        console.log('[Avatar3D] Hair overlay loaded:', hairDef.modelPath,
-                            'meshes:', hairResult.meshes.length,
-                            'hairRoot scaling:', hairRoot?.scaling?.toString());
+                        // Debug: log transforms for alignment verification
+                        const hb = hairRoot?.getHierarchyBoundingVectors();
+                        const cb = rootMesh.getHierarchyBoundingVectors();
+                        console.log('[Avatar3D] Hair overlay loaded:', hairDef.modelPath);
+                        console.log('  charRoot scaling:', rootMesh.scaling.toString(),
+                            'pos:', rootMesh.position.toString());
+                        console.log('  charBounds Y:', cb?.min.y.toFixed(2), 'to', cb?.max.y.toFixed(2));
+                        console.log('  hairRoot scaling:', hairRoot?.scaling?.toString(),
+                            'pos:', hairRoot?.position?.toString());
+                        console.log('  hairBounds Y:', hb?.min.y.toFixed(2), 'to', hb?.max.y.toFixed(2));
                     } catch (hairErr) {
                         console.warn('[Avatar3D] Hair overlay failed to load:', hairErr);
                     }

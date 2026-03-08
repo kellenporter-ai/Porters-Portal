@@ -18,10 +18,8 @@ export interface HairModelDef {
 
 export const HAIR_MODELS: HairModelDef[] = [
     { id: 'hair_buzzed', name: 'Buzzed', modelPath: '/assets/models/characters/hair/Hair_Buzzed.glb' },
-    { id: 'hair_buzzed_f', name: 'Buzzed (Short)', modelPath: '/assets/models/characters/hair/Hair_BuzzedFemale.glb' },
     { id: 'hair_simple', name: 'Simple Part', modelPath: '/assets/models/characters/hair/Hair_SimpleParted.glb' },
     { id: 'hair_long', name: 'Long', modelPath: '/assets/models/characters/hair/Hair_Long.glb' },
-    { id: 'hair_buns', name: 'Buns', modelPath: '/assets/models/characters/hair/Hair_Buns.glb' },
     { id: 'hair_beard', name: 'Beard', modelPath: '/assets/models/characters/hair/Hair_Beard.glb' },
 ];
 
