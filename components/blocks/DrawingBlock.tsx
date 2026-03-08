@@ -466,7 +466,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [userHeight, setUserHeight] = useState<number | null>(null);
   const canvasHeight = userHeight ?? (block.canvasHeight ?? 400);
-  const drawingMode = block.drawingMode ?? 'free';
 
   // Resize handle state
   const resizeRef = useRef<{ startY: number; startH: number } | null>(null);
@@ -588,42 +587,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       ctx.globalAlpha = 0.3;
       ctx.drawImage(bgImageRef.current, 0, 0, canvas.width, canvas.height);
       ctx.globalAlpha = 1;
-    }
-
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-
-    // Mode-specific background elements
-    if (drawingMode === 'point_model') {
-      // Dashed crosshair axes
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = '#ccc';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, cy);
-      ctx.lineTo(canvas.width, cy);
-      ctx.moveTo(cx, 0);
-      ctx.lineTo(cx, canvas.height);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Center black dot
-      ctx.fillStyle = '#000000';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 15, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (drawingMode === 'extended_body') {
-      // Light crosshair guides only — no preset shape.
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = '#ddd';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, cy);
-      ctx.lineTo(canvas.width, cy);
-      ctx.moveTo(cx, 0);
-      ctx.lineTo(cx, canvas.height);
-      ctx.stroke();
-      ctx.setLineDash([]);
     }
 
     // Draw all elements
@@ -792,7 +755,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       });
       ctx.restore();
     }
-  }, [elements, currentStroke, dragStart, dragEnd, activeTool, penColor, penWidth, activeShape, drawingMode, selectedIndices, selectionBox, fillEnabled, fillColor, fillOpacity, snapGuides, activeVectorType]);
+  }, [elements, currentStroke, dragStart, dragEnd, activeTool, penColor, penWidth, activeShape, selectedIndices, selectionBox, fillEnabled, fillColor, fillOpacity, snapGuides, activeVectorType]);
 
   useEffect(() => { redraw(); }, [redraw]);
 
@@ -1052,13 +1015,8 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         }
       }
     } else if (activeTool === 'arrow') {
-      let start = pos;
-      if (drawingMode === 'point_model') {
-        const canvas = canvasRef.current;
-        if (canvas) start = { x: canvas.width / 2, y: canvas.height / 2 };
-      }
       setIsDrawing(true);
-      setDragStart(start);
+      setDragStart(pos);
       setDragEnd(pos);
     } else if (activeTool === 'shape') {
       setIsDrawing(true);
@@ -1068,7 +1026,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       setTextPlacement(pos);
       setTextInput('');
     }
-  }, [submitted, activeTool, getCanvasCoords, elements, selectedIndices, drawingMode]);
+  }, [submitted, activeTool, getCanvasCoords, elements, selectedIndices]);
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (submitted) return;
@@ -1737,14 +1695,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   );
 
   // ──────────────────────────────────────────
-  // Mode hint & axis labels for point_model
-  // ──────────────────────────────────────────
-
-  const modeHint = drawingMode === 'point_model'
-    ? 'Draw vectors acting on the point object'
-    : drawingMode === 'extended_body'
-      ? 'Draw your object using shapes, then add vector arrows at their points of application'
-      : null;
 
   // ──────────────────────────────────────────
   // Render
@@ -1761,9 +1711,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       )}
       {block.instructions && (
         <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', margin: '0 0 4px 0' }}>{block.instructions}</p>
-      )}
-      {modeHint && (
-        <p style={{ fontSize: '12px', color: '#007aff', fontStyle: 'italic', margin: '0 0 4px 0' }}>{modeHint}</p>
       )}
 
       {/* Toolbar */}
@@ -2330,16 +2277,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             overflow: 'hidden',
           }}
         >
-          {/* Axis labels for point_model */}
-          {drawingMode === 'point_model' && (
-            <>
-              <span style={{ position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', color: '#999', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '13px' }}>+y</span>
-              <span style={{ position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', color: '#999', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '13px' }}>-y</span>
-              <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#999', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '13px' }}>+x</span>
-              <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#999', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '13px' }}>-x</span>
-            </>
-          )}
-
           {/* Vector labels (HTML overlays) */}
           {elements.map((el, idx) => {
             if (el.type !== 'arrow') return null;
@@ -2644,7 +2581,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
               <div style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 600, color: '#007aff', textAlign: 'center' }}>
                 Precision Editor
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: '#333' }}>
                 <span>Length (px):</span>
                 <input
                   type="number"
@@ -2659,7 +2596,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px', fontWeight: 500, color: '#333' }}>
                 <span>Angle ({'\u03B8'}{'\u00B0'}):</span>
                 <input
                   type="number"
@@ -2673,7 +2610,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 500 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 500, color: '#333' }}>
                 <span>Component:</span>
                 <input
                   type="checkbox"

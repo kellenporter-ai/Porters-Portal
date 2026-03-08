@@ -316,17 +316,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
         <div className="space-y-2">
           <div><label className={labelClass}>Prompt / Title</label><input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="e.g. Draw a free body diagram..." className={inputClass} /></div>
           <div><label className={labelClass}>Instructions</label><textarea value={block.instructions || ''} onChange={e => onUpdate({ ...block, instructions: e.target.value })} placeholder="Additional instructions..." className={textareaClass} rows={2} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Drawing Mode</label>
-              <select value={block.drawingMode || 'free'} onChange={e => onUpdate({ ...block, drawingMode: e.target.value as 'free' | 'point_model' | 'extended_body' })} className={inputClass}>
-                <option value="free">Free Draw</option>
-                <option value="point_model">Point Model (forces from center)</option>
-                <option value="extended_body">Extended Rigid Body</option>
-              </select>
-            </div>
-            <div><label className={labelClass}>Canvas Height (px)</label><input type="number" value={block.canvasHeight || 400} onChange={e => onUpdate({ ...block, canvasHeight: parseInt(e.target.value) || 400 })} className={inputClass} /></div>
-          </div>
+          <div><label className={labelClass}>Canvas Height (px)</label><input type="number" value={block.canvasHeight || 400} onChange={e => onUpdate({ ...block, canvasHeight: parseInt(e.target.value) || 400 })} className={inputClass} /></div>
           <div><label className={labelClass}>Background Image URL (optional)</label><input type="text" value={block.backgroundImage || ''} onChange={e => onUpdate({ ...block, backgroundImage: e.target.value })} placeholder="https://..." className={inputClass} /></div>
         </div>
       );
