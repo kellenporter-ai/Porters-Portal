@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { ActiveCosmetics } from '../../types';
 import { AGENT_COSMETICS } from '../../lib/gamification';
 import { DEFAULT_CHARACTER_MODEL, getCharacterModel } from '../../lib/characterModels';
@@ -87,6 +87,7 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<any>(null);
     const sceneRef = useRef<any>(null);
+    const cleanupRef = useRef<(() => void) | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const mountedRef = useRef(true);
@@ -94,216 +95,32 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
     const modelId = characterModelId || DEFAULT_CHARACTER_MODEL;
     const modelDef = getCharacterModel(modelId);
 
-    // Resolve cosmetic effects
-    const cosmetics = resolveCosmetics(activeCosmetics);
-    const auraCosmetic = cosmetics.find(c => c.type === 'AURA');
-    const particleCosmetic = cosmetics.find(c => c.type === 'PARTICLE');
+    // Resolve cosmetic effects — memoize to keep stable references
+    const cosmetics = useMemo(() => resolveCosmetics(activeCosmetics), [
+        activeCosmetics?.aura, activeCosmetics?.particle,
+        activeCosmetics?.frame, activeCosmetics?.trail,
+    ]);
+    const auraCosmetic = useMemo(() => cosmetics.find(c => c.type === 'AURA'), [cosmetics]);
+    const particleCosmetic = useMemo(() => cosmetics.find(c => c.type === 'PARTICLE'), [cosmetics]);
 
-    const setupScene = useCallback(async () => {
-        const canvas = canvasRef.current;
-        if (!canvas || !modelDef) return;
+    // Stable ref for cosmetics so the setup callback doesn't depend on them
+    const auraCosmeticRef = useRef(auraCosmetic);
+    auraCosmeticRef.current = auraCosmetic;
+    const particleCosmeticRef = useRef(particleCosmetic);
+    particleCosmeticRef.current = particleCosmetic;
+    const evolutionRef = useRef(evolutionLevel);
+    evolutionRef.current = evolutionLevel;
 
-        try {
-            const BABYLON = await ensureBabylon();
-
-            // Chromebook-optimized engine settings
-            const engine = new BABYLON.Engine(canvas, true, {
-                preserveDrawingBuffer: false,
-                stencil: false,
-                antialias: !compact, // Skip AA in compact mode
-                powerPreference: 'low-power',
-                failIfMajorPerformanceCaveat: false,
-                adaptToDeviceRatio: false, // Don't scale to device pixel ratio — saves GPU
-            });
-
-            engineRef.current = engine;
-
-            const scene = new BABYLON.Scene(engine);
-            sceneRef.current = scene;
-            scene.clearColor = new BABYLON.Color4(0, 0, 0, 0); // Transparent background
-            scene.ambientColor = new BABYLON.Color3(0.3, 0.3, 0.35);
-
-            // Disable features we don't need
-            scene.skipPointerMovePicking = true;
-            scene.autoClear = true;
-            scene.autoClearDepthAndStencil = true;
-
-            // Camera — fixed arc rotate for avatar display
-            const camera = new BABYLON.ArcRotateCamera(
-                'avatarCam',
-                Math.PI / 2,    // alpha — front view
-                Math.PI / 2.4,  // beta — slightly above eye level
-                compact ? 3.5 : 3,
-                new BABYLON.Vector3(0, 0.8, 0), // Target slightly above ground
-                scene
-            );
-            camera.lowerRadiusLimit = camera.radius;
-            camera.upperRadiusLimit = camera.radius;
-            // Allow horizontal rotation for interactivity (non-compact only)
-            if (!compact) {
-                camera.attachControl(canvas, false);
-                camera.lowerBetaLimit = Math.PI / 3;
-                camera.upperBetaLimit = Math.PI / 2;
-            }
-            camera.minZ = 0.1;
-
-            // Lighting — lightweight setup
-            const hemiLight = new BABYLON.HemisphericLight(
-                'hemi',
-                new BABYLON.Vector3(0, 1, 0),
-                scene
-            );
-            hemiLight.intensity = 0.7;
-            hemiLight.groundColor = new BABYLON.Color3(0.15, 0.1, 0.2);
-
-            const dirLight = new BABYLON.DirectionalLight(
-                'dir',
-                new BABYLON.Vector3(-0.5, -1, 0.5),
-                scene
-            );
-            dirLight.intensity = 0.5;
-
-            // Load character model
-            const result = await BABYLON.SceneLoader.ImportMeshAsync(
-                '',
-                '',
-                modelDef.modelPath,
-                scene
-            );
-
-            if (!mountedRef.current) {
-                engine.dispose();
-                return;
-            }
-
-            // Find root mesh and normalize scale
-            const rootMesh = result.meshes[0];
-            if (rootMesh) {
-                // Auto-scale to fit viewport
-                const bounds = rootMesh.getHierarchyBoundingVectors();
-                const height = bounds.max.y - bounds.min.y;
-                const targetHeight = 1.8;
-                const scaleFactor = targetHeight / Math.max(height, 0.01);
-                rootMesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-
-                // Center vertically
-                const newBounds = rootMesh.getHierarchyBoundingVectors();
-                rootMesh.position.y = -newBounds.min.y;
-            }
-
-            // Play idle animation if available
-            if (result.animationGroups.length > 0) {
-                // Prefer idle, fallback to first animation
-                const idleAnim = result.animationGroups.find(
-                    ag => ag.name.toLowerCase().includes('idle')
-                ) || result.animationGroups[0];
-                // Stop all others
-                result.animationGroups.forEach(ag => ag.stop());
-                idleAnim.start(true, 1.0);
-            }
-
-            // === COSMETIC EFFECTS ===
-
-            // Aura: glow layer on the model
-            if (auraCosmetic && !compact) {
-                const glowLayer = new BABYLON.GlowLayer('auraGlow', scene, {
-                    mainTextureSamples: 2,
-                    blurKernelSize: 32,
-                });
-                const color = BABYLON.Color3.FromHexString(auraCosmetic.color);
-                glowLayer.intensity = auraCosmetic.intensity * 0.8;
-                glowLayer.customEmissiveColorSelector = (
-                    _mesh: any,
-                    _subMesh: any,
-                    _material: any,
-                    result: any
-                ) => {
-                    result.set(
-                        color.r * auraCosmetic.intensity,
-                        color.g * auraCosmetic.intensity,
-                        color.b * auraCosmetic.intensity,
-                        1
-                    );
-                };
-            }
-
-            // Particles: floating particles around the character
-            if (particleCosmetic && !compact) {
-                const particleSystem = new BABYLON.ParticleSystem(
-                    'cosmeticParticles',
-                    30, // Low count for performance
-                    scene
-                );
-                particleSystem.createPointEmitter(
-                    new BABYLON.Vector3(-0.5, 0, -0.5),
-                    new BABYLON.Vector3(0.5, 2, 0.5)
-                );
-                particleSystem.emitter = new BABYLON.Vector3(0, 1, 0);
-                particleSystem.minLifeTime = 1.5;
-                particleSystem.maxLifeTime = 3;
-                particleSystem.emitRate = 5;
-                particleSystem.minSize = 0.02;
-                particleSystem.maxSize = 0.06;
-                particleSystem.gravity = new BABYLON.Vector3(0, 0.1, 0);
-                const pColor = BABYLON.Color4.FromHexString(particleCosmetic.color + 'ff');
-                const sColor = BABYLON.Color4.FromHexString(particleCosmetic.secondaryColor + 'ff');
-                particleSystem.color1 = pColor;
-                particleSystem.color2 = sColor;
-                particleSystem.colorDead = new BABYLON.Color4(
-                    pColor.r, pColor.g, pColor.b, 0
-                );
-                particleSystem.start();
-            }
-
-            // Evolution glow — subtle rim light that increases with level
-            if (evolutionLevel > 0 && !compact) {
-                const rimLight = new BABYLON.PointLight(
-                    'evoGlow',
-                    new BABYLON.Vector3(0, 1.2, -1),
-                    scene
-                );
-                rimLight.intensity = Math.min(evolutionLevel * 0.15, 1.5);
-                rimLight.diffuse = new BABYLON.Color3(0.5, 0.3, 1.0);
-            }
-
-            // Render loop
-            engine.runRenderLoop(() => {
-                if (scene && !scene.isDisposed) {
-                    scene.render();
-                }
-            });
-
-            // Handle resize
-            const handleResize = () => engine.resize();
-            window.addEventListener('resize', handleResize);
-
-            if (mountedRef.current) {
-                setLoading(false);
-            }
-
-            // Cleanup function stored for unmount
-            (canvas as any).__avatar3dCleanup = () => {
-                window.removeEventListener('resize', handleResize);
-            };
-        } catch (err) {
-            console.error('[Avatar3D] Failed to setup scene:', err);
-            if (mountedRef.current) {
-                setError(true);
-                setLoading(false);
-            }
-        }
-    }, [modelId, modelDef, compact, auraCosmetic, particleCosmetic, evolutionLevel]);
-
+    // Only re-run the 3D setup when the model or compact mode changes
     useEffect(() => {
         mountedRef.current = true;
-        setupScene();
+        let disposed = false;
 
-        return () => {
-            mountedRef.current = false;
+        const setup = async () => {
             const canvas = canvasRef.current;
-            if (canvas && (canvas as any).__avatar3dCleanup) {
-                (canvas as any).__avatar3dCleanup();
-            }
+            if (!canvas || !modelDef) return;
+
+            // Dispose previous scene/engine if any
             if (sceneRef.current && !sceneRef.current.isDisposed) {
                 sceneRef.current.dispose();
                 sceneRef.current = null;
@@ -312,8 +129,190 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 engineRef.current.dispose();
                 engineRef.current = null;
             }
+
+            try {
+                const BABYLON = await ensureBabylon();
+                if (disposed) return;
+
+                // Chromebook-optimized engine settings
+                const engine = new BABYLON.Engine(canvas, true, {
+                    preserveDrawingBuffer: false,
+                    stencil: false,
+                    antialias: !compact,
+                    powerPreference: 'low-power',
+                    failIfMajorPerformanceCaveat: false,
+                    adaptToDeviceRatio: false,
+                });
+
+                if (disposed) { engine.dispose(); return; }
+                engineRef.current = engine;
+
+                const scene = new BABYLON.Scene(engine);
+                if (disposed) { scene.dispose(); engine.dispose(); return; }
+                sceneRef.current = scene;
+                scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+                scene.ambientColor = new BABYLON.Color3(0.3, 0.3, 0.35);
+
+                // Disable features we don't need
+                scene.skipPointerMovePicking = true;
+                scene.autoClear = true;
+                scene.autoClearDepthAndStencil = true;
+
+                // Camera — fixed arc rotate for avatar display
+                const camera = new BABYLON.ArcRotateCamera(
+                    'avatarCam',
+                    Math.PI / 2,
+                    Math.PI / 2.4,
+                    compact ? 3.5 : 3,
+                    new BABYLON.Vector3(0, 0.8, 0),
+                    scene
+                );
+                camera.lowerRadiusLimit = camera.radius;
+                camera.upperRadiusLimit = camera.radius;
+                if (!compact) {
+                    camera.attachControl(canvas, false);
+                    camera.lowerBetaLimit = Math.PI / 3;
+                    camera.upperBetaLimit = Math.PI / 2;
+                }
+                camera.minZ = 0.1;
+
+                // Lighting — lightweight setup
+                const hemiLight = new BABYLON.HemisphericLight(
+                    'hemi', new BABYLON.Vector3(0, 1, 0), scene
+                );
+                hemiLight.intensity = 0.7;
+                hemiLight.groundColor = new BABYLON.Color3(0.15, 0.1, 0.2);
+
+                const dirLight = new BABYLON.DirectionalLight(
+                    'dir', new BABYLON.Vector3(-0.5, -1, 0.5), scene
+                );
+                dirLight.intensity = 0.5;
+
+                // Load character model
+                const result = await BABYLON.SceneLoader.ImportMeshAsync(
+                    '', '', modelDef.modelPath, scene
+                );
+
+                if (disposed || scene.isDisposed) return;
+
+                // Find root mesh and normalize scale
+                const rootMesh = result.meshes[0];
+                if (rootMesh) {
+                    const bounds = rootMesh.getHierarchyBoundingVectors();
+                    const height = bounds.max.y - bounds.min.y;
+                    const targetHeight = 1.8;
+                    const scaleFactor = targetHeight / Math.max(height, 0.01);
+                    rootMesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                    const newBounds = rootMesh.getHierarchyBoundingVectors();
+                    rootMesh.position.y = -newBounds.min.y;
+                }
+
+                // Play idle animation if available
+                if (result.animationGroups.length > 0) {
+                    const idleAnim = result.animationGroups.find(
+                        ag => ag.name.toLowerCase().includes('idle')
+                    ) || result.animationGroups[0];
+                    result.animationGroups.forEach(ag => ag.stop());
+                    idleAnim.start(true, 1.0);
+                }
+
+                // === COSMETIC EFFECTS (read from refs for current values) ===
+                const aura = auraCosmeticRef.current;
+                const particles = particleCosmeticRef.current;
+                const evoLevel = evolutionRef.current;
+
+                // Aura: glow layer on the model — skip GlowLayer (causes postProcessManager
+                // null errors on dispose race). Use a simple emissive color boost instead.
+                if (aura && !compact) {
+                    const color = BABYLON.Color3.FromHexString(aura.color);
+                    result.meshes.forEach(mesh => {
+                        if (mesh.material && 'emissiveColor' in mesh.material) {
+                            (mesh.material as any).emissiveColor = new BABYLON.Color3(
+                                color.r * aura.intensity * 0.4,
+                                color.g * aura.intensity * 0.4,
+                                color.b * aura.intensity * 0.4,
+                            );
+                        }
+                    });
+                }
+
+                // Particles: floating particles around the character
+                if (particles && !compact) {
+                    const particleSystem = new BABYLON.ParticleSystem(
+                        'cosmeticParticles', 30, scene
+                    );
+                    particleSystem.createPointEmitter(
+                        new BABYLON.Vector3(-0.5, 0, -0.5),
+                        new BABYLON.Vector3(0.5, 2, 0.5)
+                    );
+                    particleSystem.emitter = new BABYLON.Vector3(0, 1, 0);
+                    particleSystem.minLifeTime = 1.5;
+                    particleSystem.maxLifeTime = 3;
+                    particleSystem.emitRate = 5;
+                    particleSystem.minSize = 0.02;
+                    particleSystem.maxSize = 0.06;
+                    particleSystem.gravity = new BABYLON.Vector3(0, 0.1, 0);
+                    const pColor = BABYLON.Color4.FromHexString(particles.color + 'ff');
+                    const sColor = BABYLON.Color4.FromHexString(particles.secondaryColor + 'ff');
+                    particleSystem.color1 = pColor;
+                    particleSystem.color2 = sColor;
+                    particleSystem.colorDead = new BABYLON.Color4(pColor.r, pColor.g, pColor.b, 0);
+                    particleSystem.start();
+                }
+
+                // Evolution glow — subtle rim light that increases with level
+                if (evoLevel > 0 && !compact) {
+                    const rimLight = new BABYLON.PointLight(
+                        'evoGlow', new BABYLON.Vector3(0, 1.2, -1), scene
+                    );
+                    rimLight.intensity = Math.min(evoLevel * 0.15, 1.5);
+                    rimLight.diffuse = new BABYLON.Color3(0.5, 0.3, 1.0);
+                }
+
+                // Render loop
+                engine.runRenderLoop(() => {
+                    if (scene && !scene.isDisposed) {
+                        scene.render();
+                    }
+                });
+
+                // Handle resize
+                const handleResize = () => { if (!engine.isDisposed) engine.resize(); };
+                window.addEventListener('resize', handleResize);
+                cleanupRef.current = () => window.removeEventListener('resize', handleResize);
+
+                if (mountedRef.current && !disposed) {
+                    setLoading(false);
+                    setError(false);
+                }
+            } catch (err) {
+                console.error('[Avatar3D] Failed to setup scene:', err);
+                if (mountedRef.current && !disposed) {
+                    setError(true);
+                    setLoading(false);
+                }
+            }
         };
-    }, [setupScene]);
+
+        setLoading(true);
+        setup();
+
+        return () => {
+            disposed = true;
+            mountedRef.current = false;
+            cleanupRef.current?.();
+            cleanupRef.current = null;
+            if (sceneRef.current && !sceneRef.current.isDisposed) {
+                sceneRef.current.dispose();
+                sceneRef.current = null;
+            }
+            if (engineRef.current && !engineRef.current.isDisposed) {
+                engineRef.current.dispose();
+                engineRef.current = null;
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modelId, compact]);
 
     // === COMPACT FALLBACK ===
     // For tiny display contexts (leaderboard rows, chat), render a colored silhouette
