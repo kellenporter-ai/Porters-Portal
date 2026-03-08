@@ -14,6 +14,9 @@ import { useToast } from './ToastProvider';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
 import BehaviorQuickAward from './BehaviorQuickAward';
+import ClassroomLinkPanel from './ClassroomLinkPanel';
+import { requestClassroomAccess, pushGrade } from '../lib/classroomApi';
+import { auth } from '../lib/firebase';
 
 const RubricViewer = React.lazy(() => import('./RubricViewer'));
 
@@ -56,6 +59,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState<Submission[]>([]);
   const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
+  const [classroomToken, setClassroomToken] = useState<string | null>(null);
+
+  const handleRequestClassroomToken = useCallback(async () => {
+    try {
+      const token = await requestClassroomAccess();
+      setClassroomToken(token);
+      toast.success('Google Classroom connected');
+    } catch (err) {
+      toast.error('Failed to connect Google Classroom. Check popup blocker.');
+      reportError(err, { method: 'requestClassroomAccess' });
+    }
+  }, [toast]);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -447,6 +462,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <option key={a.id} value={a.id}>{a.title} ({a.classType})</option>
                 ))}
               </select>
+
+              {selectedAssessment && (
+                <ClassroomLinkPanel
+                  assignment={selectedAssessment}
+                  classroomToken={classroomToken}
+                  linkedByName={auth.currentUser?.displayName || 'Admin'}
+                  onRequestToken={handleRequestClassroomToken}
+                  onLinkUpdated={() => {
+                    // Assignment data refreshes via Firestore subscription
+                  }}
+                />
+              )}
 
               {assessmentAssignments.length === 0 && (
                 <div className="text-center py-8 text-gray-500 italic mt-4">
@@ -1156,6 +1183,32 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   }
                                   if (corrections.length > 0) {
                                     dataService.saveGradingCorrections(corrections);
+                                  }
+                                }
+
+                                // Sync grade to Google Classroom if linked
+                                if (selectedAssessment?.classroomLink && classroomToken) {
+                                  const link = selectedAssessment.classroomLink;
+                                  const studentUser = users.find(u => u.id === sub.userId);
+                                  if (studentUser?.email) {
+                                    const points = Math.round((pct / 100) * link.maxPoints * 100) / 100;
+                                    pushGrade(classroomToken, link.courseId, link.courseWorkId, studentUser.email, points, link.maxPoints)
+                                      .then(syncResult => {
+                                        if (syncResult.success) {
+                                          toast.success(`Grade synced to Google Classroom (${points}/${link.maxPoints})`);
+                                        } else if (syncResult.error?.includes('401')) {
+                                          setClassroomToken(null);
+                                          toast.error('Classroom session expired — reconnect to sync grades');
+                                        } else {
+                                          toast.error(`Classroom sync failed: ${syncResult.error}`);
+                                        }
+                                      })
+                                      .catch(err => {
+                                        reportError(err, { method: 'classroomGradeSync' });
+                                        toast.error('Failed to sync grade to Google Classroom');
+                                      });
+                                  } else {
+                                    toast.error('Classroom sync skipped — student email not found');
                                   }
                                 }
 

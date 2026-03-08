@@ -465,6 +465,18 @@ export interface Assignment {
     lockNavigation?: boolean;       // default true for assessments
   };
   rubric?: Rubric;
+  // Google Classroom grade sync
+  classroomLink?: ClassroomLink;
+}
+
+export interface ClassroomLink {
+  courseId: string;
+  courseName: string;
+  courseWorkId: string;
+  courseWorkTitle: string;
+  maxPoints: number;
+  linkedAt: string;
+  linkedBy: string;
 }
 
 export interface Submission {

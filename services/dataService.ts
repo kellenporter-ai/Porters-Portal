@@ -1,7 +1,7 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic } from '../lib/firebase';
-import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { TEACHER_DISPLAY_NAME } from '../constants';
@@ -776,6 +776,19 @@ export const dataService = {
       await deleteDoc(doc(db, 'assignments', id));
     } catch (error) {
       reportError(error, { method: 'deleteAssignment' });
+    }
+  },
+
+  updateAssignmentClassroomLink: async (assignmentId: string, link: ClassroomLink | null) => {
+    try {
+      if (link) {
+        await updateDoc(doc(db, 'assignments', assignmentId), { classroomLink: link });
+      } else {
+        await updateDoc(doc(db, 'assignments', assignmentId), { classroomLink: deleteField() });
+      }
+    } catch (error) {
+      reportError(error, { method: 'updateAssignmentClassroomLink' });
+      throw error;
     }
   },
 
