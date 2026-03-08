@@ -319,7 +319,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           damageBonus: (q.damageBonus as number) || 0,
         })),
         targetSections: [],
-        bossType: (['BRUTE', 'PHANTOM', 'SERPENT'].includes(boss.bossType as string) ? boss.bossType : 'BRUTE') as BossType,
+        bossType: (['BRUTE', 'PHANTOM', 'SERPENT', 'SKELETON', 'GOLEM', 'SLIME', 'ORC'].includes(boss.bossType as string) ? boss.bossType : 'BRUTE') as BossType,
         bossHue: (boss.bossHue as number) ?? 0,
         difficultyTier: (['NORMAL', 'HARD', 'NIGHTMARE', 'APOCALYPSE'].includes(boss.difficultyTier as string) ? boss.difficultyTier : 'NORMAL') as DifficultyTier,
         autoScale: { enabled: false, factors: [] },
@@ -522,7 +522,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               <div>
                 <label className="block text-[9px] text-gray-500 mb-1">Boss Type</label>
                 <div className="flex gap-2">
-                  {(['BRUTE', 'PHANTOM', 'SERPENT'] as BossType[]).map(type => (
+                  {(['BRUTE', 'PHANTOM', 'SERPENT', 'SKELETON', 'GOLEM', 'SLIME', 'ORC'] as BossType[]).map(type => (
                     <button key={type} type="button" onClick={() => setQuizBossForm({ ...quizBossForm, bossType: type })}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
                         quizBossForm.bossType === type
@@ -737,6 +737,10 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
                   <option value="BRUTE">Brute</option>
                   <option value="PHANTOM">Phantom</option>
                   <option value="SERPENT">Serpent</option>
+                  <option value="SKELETON">Skeleton</option>
+                  <option value="GOLEM">Golem</option>
+                  <option value="SLIME">Slime</option>
+                  <option value="ORC">Orc</option>
                 </select>
                 {phase.bossAppearance && (
                   <input type="range" min="0" max="360" value={phase.bossAppearance.hue ?? 0} onChange={e => {

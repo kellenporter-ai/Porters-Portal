@@ -736,7 +736,7 @@ export interface BossEncounter {
 // BOSS QUIZ EVENTS
 // ========================================
 
-export type BossType = 'BRUTE' | 'PHANTOM' | 'SERPENT';
+export type BossType = 'BRUTE' | 'PHANTOM' | 'SERPENT' | 'SKELETON' | 'GOLEM' | 'SLIME' | 'ORC';
 
 export interface BossAppearance {
   bossType: BossType;
