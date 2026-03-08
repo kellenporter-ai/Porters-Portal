@@ -78,6 +78,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                 {gam.selectedCharacterModel ? (
                   <Avatar3D
                     characterModelId={gam.selectedCharacterModel}
+                    appearance={appearance}
                     activeCosmetics={gam.activeCosmetics}
                     evolutionLevel={gam.level}
                   />

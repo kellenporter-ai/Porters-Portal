@@ -334,6 +334,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
             <div className="w-28 h-44 flex-shrink-0 bg-black/40 rounded-xl border border-white/10 overflow-hidden relative">
               <Avatar3D
                 characterModelId={selectedCharacterModel}
+                appearance={playerAppearance}
                 activeCosmetics={displayedCosmetics}
                 evolutionLevel={playerEvolutionLevel}
               />

@@ -98,6 +98,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
                 {gam.selectedCharacterModel ? (
                   <Avatar3D
                     characterModelId={gam.selectedCharacterModel}
+                    appearance={appearance}
                     activeCosmetics={gam.activeCosmetics}
                     evolutionLevel={gam.level}
                     compact

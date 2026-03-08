@@ -316,6 +316,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   {user.gamification?.selectedCharacterModel ? (
                     <Avatar3D
                       characterModelId={user.gamification.selectedCharacterModel}
+                      appearance={classProfile.appearance}
                       activeCosmetics={user.gamification?.activeCosmetics}
                       evolutionLevel={level}
                     />

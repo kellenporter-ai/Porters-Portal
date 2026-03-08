@@ -133,6 +133,7 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                 {user.gamification?.selectedCharacterModel ? (
                                     <Avatar3D
                                         characterModelId={user.gamification.selectedCharacterModel}
+                                        appearance={profile.appearance}
                                         activeCosmetics={user.gamification?.activeCosmetics}
                                         evolutionLevel={level}
                                     />

@@ -149,7 +149,7 @@ const AgentStatusBar: React.FC<AgentStatusBarProps> = ({
       {/* Tiny avatar — decorative complement to the text stats */}
       <div className="w-8 h-8 flex-shrink-0" aria-hidden="true">
         {selectedCharacterModel ? (
-          <Avatar3D characterModelId={selectedCharacterModel} evolutionLevel={playerEvolutionLevel ?? 1} compact />
+          <Avatar3D characterModelId={selectedCharacterModel} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} compact />
         ) : (
           <OperativeAvatar equipped={equipped} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} />
         )}
@@ -489,7 +489,7 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
             aria-hidden="true"
           >
             {selectedCharacterModel ? (
-              <Avatar3D characterModelId={selectedCharacterModel} evolutionLevel={playerEvolutionLevel ?? 1} compact />
+              <Avatar3D characterModelId={selectedCharacterModel} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} compact />
             ) : (
               <OperativeAvatar equipped={equipped} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} />
             )}
@@ -521,7 +521,7 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
             aria-hidden="true"
           >
             {selectedCharacterModel ? (
-              <Avatar3D characterModelId={selectedCharacterModel} evolutionLevel={playerEvolutionLevel ?? 1} compact />
+              <Avatar3D characterModelId={selectedCharacterModel} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} compact />
             ) : (
               <OperativeAvatar equipped={equipped} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} />
             )}

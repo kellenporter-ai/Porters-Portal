@@ -219,6 +219,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 {selectedCharacterModel ? (
                     <Avatar3D
                         characterModelId={selectedCharacterModel}
+                        appearance={playerAppearance}
                         evolutionLevel={playerEvolutionLevel}
                         compact
                     />
