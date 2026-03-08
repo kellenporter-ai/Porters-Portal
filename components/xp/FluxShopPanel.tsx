@@ -8,7 +8,7 @@ import { sfx } from '../../lib/sfx';
 import { ActiveBoost, FluxShopItem, CosmeticVisualType, ActiveCosmetics } from '../../types';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
 import Avatar3D from '../dashboard/Avatar3D';
-import { CHARACTER_MODELS, getStarterModels } from '../../lib/characterModels';
+import { CHARACTER_MODELS, getStarterModels, ENABLE_3D_AVATAR } from '../../lib/characterModels';
 
 /** Helper: derive the cosmetic slot from its ID prefix */
 const getCosmeticSlot = (id: string): keyof ActiveCosmetics | null =>
@@ -474,8 +474,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
         );
       })}
 
-      {/* 3D Character Models */}
-      {characterModelItems.length > 0 && (
+      {/* 3D Character Models — hidden when 3D avatars are disabled */}
+      {ENABLE_3D_AVATAR && characterModelItems.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
             <CuboidIcon className="w-5 h-5 text-violet-400" aria-hidden="true" />
