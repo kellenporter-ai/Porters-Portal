@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+import Avatar3D from '../dashboard/Avatar3D';
 import BossAvatar from './BossAvatar';
 import { BossAppearance } from '../../types';
 
@@ -13,6 +14,7 @@ interface BattleSceneProps {
     };
     playerEquipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
     playerEvolutionLevel?: number;
+    selectedCharacterModel?: string;
     bossAppearance?: BossAppearance;
     /** Set briefly to trigger an attack animation */
     attackState: 'idle' | 'player-attack' | 'boss-attack';
@@ -31,6 +33,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     playerAppearance,
     playerEquipped,
     playerEvolutionLevel = 1,
+    selectedCharacterModel,
     bossAppearance,
     attackState,
     damage,
@@ -213,11 +216,19 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 } ${showImpact ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}
                 style={{ transform: attackState === 'player-attack' ? 'translateX(2.5rem) scale(1.1)' : undefined }}
             >
-                <OperativeAvatar
-                    equipped={playerEquipped}
-                    appearance={playerAppearance}
-                    evolutionLevel={playerEvolutionLevel}
-                />
+                {selectedCharacterModel ? (
+                    <Avatar3D
+                        characterModelId={selectedCharacterModel}
+                        evolutionLevel={playerEvolutionLevel}
+                        compact
+                    />
+                ) : (
+                    <OperativeAvatar
+                        equipped={playerEquipped}
+                        appearance={playerAppearance}
+                        evolutionLevel={playerEvolutionLevel}
+                    />
+                )}
                 {/* Player HP micro-bar */}
                 <div className="absolute -bottom-1 left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden">
                     <div

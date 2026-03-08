@@ -4,7 +4,9 @@ import { Plus, X, Trash2, Edit3, Package, Sparkles, Copy, Wand2, Save } from 'lu
 import { getAssetColors, calculatePlayerStats, calculateGearScore, getRankDetails, getLevelProgress } from '../../lib/gamification';
 import { getClassProfile } from '../../lib/classProfile';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+import Avatar3D from '../dashboard/Avatar3D';
 import Modal from '../Modal';
+import ItemIcon from '../ItemIcon';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -128,11 +130,19 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                     <div className="w-40 shrink-0">
                         <div className="bg-gradient-to-b from-purple-900/20 to-black/40 rounded-2xl border border-white/5 p-3 flex flex-col items-center">
                             <div className="w-28 h-36">
-                                <OperativeAvatar
-                                    equipped={profile.equipped as Record<string, { rarity?: string; visualId?: string }>}
-                                    appearance={profile.appearance}
-                                    evolutionLevel={level}
-                                />
+                                {user.gamification?.selectedCharacterModel ? (
+                                    <Avatar3D
+                                        characterModelId={user.gamification.selectedCharacterModel}
+                                        activeCosmetics={user.gamification?.activeCosmetics}
+                                        evolutionLevel={level}
+                                    />
+                                ) : (
+                                    <OperativeAvatar
+                                        equipped={profile.equipped as Record<string, { rarity?: string; visualId?: string }>}
+                                        appearance={profile.appearance}
+                                        evolutionLevel={level}
+                                    />
+                                )}
                             </div>
                             <div className="text-center mt-2">
                                 <div className="text-xs font-black text-white truncate max-w-[140px]">{user.name}</div>
@@ -231,8 +241,8 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                 >
                                     {item ? (
                                         <>
+                                            <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
                                             <div className={`text-[7px] text-center px-1 font-bold truncate w-full ${colors!.text}`}>{item.name}</div>
-                                            <div className="text-[7px] text-gray-500 mt-0.5">{item.rarity}</div>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onUnequipItem(user, slot, classTypeForApi); }}
                                                 className="absolute top-[-4px] right-[-4px] bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition shadow-md cursor-pointer"
@@ -277,8 +287,8 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                         isSelected ? 'ring-2 ring-purple-400 ring-offset-1 ring-offset-[#0f0720]' : 'hover:bg-white/10'
                                     }`}
                                 >
+                                    <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-7 h-7" />
                                     <div className={`text-[7px] font-bold ${colors.text} text-center truncate w-full leading-tight`}>{item.name}</div>
-                                    <div className="text-[7px] text-gray-500">{item.slot}</div>
                                 </button>
                             );
                         })}
@@ -367,10 +377,13 @@ const ItemDetailPanel: React.FC<{
     return (
         <div className={`rounded-xl border-2 ${colors.border} ${colors.bg} p-4 space-y-3`}>
             <div className="flex items-start justify-between">
-                <div>
-                    <div className={`text-sm font-black ${colors.text}`}>{item.name}</div>
-                    <div className="text-[10px] text-gray-500">{item.rarity} {item.slot} &middot; {item.baseName}</div>
-                    {item.description && <div className="text-[10px] text-gray-400 italic mt-1">{item.description}</div>}
+                <div className="flex items-start gap-3">
+                    <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-10 h-10" />
+                    <div>
+                        <div className={`text-sm font-black ${colors.text}`}>{item.name}</div>
+                        <div className="text-[10px] text-gray-500">{item.rarity} {item.slot} &middot; {item.baseName}</div>
+                        {item.description && <div className="text-[10px] text-gray-400 italic mt-1">{item.description}</div>}
+                    </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
                     {onDuplicate && (
@@ -638,8 +651,9 @@ const CustomItemLibraryPanel: React.FC<{
                 {filtered.map(item => {
                     const colors = getAssetColors(item.rarity);
                     return (
-                        <div key={item.id} className={`rounded-lg border ${colors.border} ${colors.bg} p-2 flex flex-col gap-1`}>
-                            <div className={`text-[9px] font-bold ${colors.text} truncate`}>{item.name}</div>
+                        <div key={item.id} className={`rounded-lg border ${colors.border} ${colors.bg} p-2 flex flex-col gap-1 items-center`}>
+                            <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
+                            <div className={`text-[9px] font-bold ${colors.text} truncate w-full text-center`}>{item.name}</div>
                             <div className="text-[8px] text-gray-500">{item.rarity} {item.slot}</div>
                             {Object.entries(item.stats).filter(([, v]) => v).map(([k, v]) => (
                                 <div key={k} className={`text-[8px] ${STAT_COLORS[k]?.text || 'text-gray-400'}`}>+{v} {k}</div>

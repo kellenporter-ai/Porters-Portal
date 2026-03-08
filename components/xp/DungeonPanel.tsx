@@ -13,6 +13,7 @@ import { calculateGearScore } from '../../lib/gamification';
 import BattleScene from './BattleScene';
 import BossAvatar from './BossAvatar';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+import Avatar3D from '../dashboard/Avatar3D';
 
 // -------------------------------------------------------
 // Props interface — extended with player visual data
@@ -29,6 +30,7 @@ interface DungeonPanelProps {
   };
   playerEquipped?: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
   playerEvolutionLevel?: number;
+  selectedCharacterModel?: string;
 }
 
 // Reset timer label from resetsAt field
@@ -113,6 +115,7 @@ interface AgentStatusBarProps {
   playerAppearance?: DungeonPanelProps['playerAppearance'];
   playerEquipped:    DungeonPanelProps['playerEquipped'];
   playerEvolutionLevel?: number;
+  selectedCharacterModel?: string;
   run: DungeonRun;
 }
 
@@ -120,6 +123,7 @@ const AgentStatusBar: React.FC<AgentStatusBarProps> = ({
   playerAppearance,
   playerEquipped,
   playerEvolutionLevel,
+  selectedCharacterModel,
   run,
 }) => {
   // Derive display stats from the run's recorded combat stats (atk = totalDamageDealt
@@ -144,11 +148,11 @@ const AgentStatusBar: React.FC<AgentStatusBarProps> = ({
     >
       {/* Tiny avatar — decorative complement to the text stats */}
       <div className="w-8 h-8 flex-shrink-0" aria-hidden="true">
-        <OperativeAvatar
-          equipped={equipped}
-          appearance={playerAppearance}
-          evolutionLevel={playerEvolutionLevel ?? 1}
-        />
+        {selectedCharacterModel ? (
+          <Avatar3D characterModelId={selectedCharacterModel} evolutionLevel={playerEvolutionLevel ?? 1} compact />
+        ) : (
+          <OperativeAvatar equipped={equipped} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} />
+        )}
       </div>
 
       {/* HP bar */}
@@ -334,11 +338,12 @@ interface ActiveRoomViewProps {
   playerAppearance?: DungeonPanelProps['playerAppearance'];
   playerEquipped:    DungeonPanelProps['playerEquipped'];
   playerEvolutionLevel?: number;
+  selectedCharacterModel?: string;
 }
 
 const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
   run, room, onAnswer, submitting, lastResult,
-  playerAppearance, playerEquipped, playerEvolutionLevel,
+  playerAppearance, playerEquipped, playerEvolutionLevel, selectedCharacterModel,
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   // attackState drives the BattleScene animation — resets after 600ms
@@ -446,6 +451,7 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
               playerAppearance={playerAppearance}
               playerEquipped={equipped}
               playerEvolutionLevel={playerEvolutionLevel ?? 1}
+              selectedCharacterModel={selectedCharacterModel}
               bossAppearance={bossAppearance}
               attackState={attackState}
               damage={animDamage}
@@ -482,11 +488,11 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
             className="relative mx-auto w-16 h-24 z-10"
             aria-hidden="true"
           >
-            <OperativeAvatar
-              equipped={equipped}
-              appearance={playerAppearance}
-              evolutionLevel={playerEvolutionLevel ?? 1}
-            />
+            {selectedCharacterModel ? (
+              <Avatar3D characterModelId={selectedCharacterModel} evolutionLevel={playerEvolutionLevel ?? 1} compact />
+            ) : (
+              <OperativeAvatar equipped={equipped} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} />
+            )}
           </div>
 
           <p className="relative z-10 text-sm font-bold text-emerald-400 mt-2">Rest Area</p>
@@ -514,11 +520,11 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
             className="relative mx-auto w-16 h-24 z-10"
             aria-hidden="true"
           >
-            <OperativeAvatar
-              equipped={equipped}
-              appearance={playerAppearance}
-              evolutionLevel={playerEvolutionLevel ?? 1}
-            />
+            {selectedCharacterModel ? (
+              <Avatar3D characterModelId={selectedCharacterModel} evolutionLevel={playerEvolutionLevel ?? 1} compact />
+            ) : (
+              <OperativeAvatar equipped={equipped} appearance={playerAppearance} evolutionLevel={playerEvolutionLevel ?? 1} />
+            )}
           </div>
 
           <p className="relative z-10 text-sm font-bold text-yellow-400 mt-2">Treasure Room</p>
@@ -842,6 +848,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
   playerAppearance,
   playerEquipped,
   playerEvolutionLevel,
+  selectedCharacterModel,
 }) => {
   const [dungeons,      setDungeons]      = useState<Dungeon[]>([]);
   const [activeRun,     setActiveRun]     = useState<DungeonRun | null>(null);
@@ -993,6 +1000,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
             playerAppearance={playerAppearance}
             playerEquipped={playerEquipped}
             playerEvolutionLevel={playerEvolutionLevel}
+            selectedCharacterModel={selectedCharacterModel}
             run={activeRun}
           />
         )}
@@ -1019,6 +1027,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
               playerAppearance={playerAppearance}
               playerEquipped={playerEquipped}
               playerEvolutionLevel={playerEvolutionLevel}
+              selectedCharacterModel={selectedCharacterModel}
             />
           ) : (
             <div className="text-center py-8 text-gray-500 text-sm" aria-live="polite">

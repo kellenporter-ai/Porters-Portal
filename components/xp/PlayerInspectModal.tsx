@@ -7,7 +7,9 @@ import { getEvolutionTier, getActiveSetBonuses } from '../../lib/achievements';
 import { getClassProfile } from '../../lib/classProfile';
 import { useFocusTrap } from '../../lib/useFocusTrap';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+import Avatar3D from '../dashboard/Avatar3D';
 import ProfileFrame from '../dashboard/ProfileFrame';
+import ItemIcon from '../ItemIcon';
 import { X, Shield, Zap, Trophy, Star, Target } from 'lucide-react';
 
 interface PlayerInspectModalProps {
@@ -93,7 +95,16 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
             {/* Avatar + Profile Frame */}
             <div className="flex flex-col items-center gap-2 shrink-0">
               <div className="w-24 h-32">
-                <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
+                {gam.selectedCharacterModel ? (
+                  <Avatar3D
+                    characterModelId={gam.selectedCharacterModel}
+                    activeCosmetics={gam.activeCosmetics}
+                    evolutionLevel={gam.level}
+                    compact
+                  />
+                ) : (
+                  <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
+                )}
               </div>
               <ProfileFrame
                 photoUrl={player?.avatarUrl}
@@ -163,10 +174,12 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               }
               const colors = getAssetColors(item.rarity);
               return (
-                <div key={slot} className={`p-2 rounded-lg border ${colors.border} ${colors.bg}`}>
-                  <div className="text-[10px] text-gray-500 font-mono">{slot}</div>
-                  <div className={`text-xs font-bold truncate ${colors.text}`}>{item.name}</div>
-                  <div className="text-[9px] text-gray-500">{item.rarity}</div>
+                <div key={slot} className={`p-2 rounded-lg border ${colors.border} ${colors.bg} flex items-center gap-2`}>
+                  <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-6 h-6" />
+                  <div className="min-w-0">
+                    <div className={`text-xs font-bold truncate ${colors.text}`}>{item.name}</div>
+                    <div className="text-[9px] text-gray-500">{item.rarity}</div>
+                  </div>
                 </div>
               );
             })}

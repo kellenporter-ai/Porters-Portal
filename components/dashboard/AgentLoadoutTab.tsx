@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot, ItemSlot } from '../../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { Briefcase, User as UserIcon, GripVertical } from 'lucide-react';
+import { User as UserIcon, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
@@ -11,8 +11,10 @@ import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
 import OperativeAvatar from './OperativeAvatar';
+import Avatar3D from './Avatar3D';
 import CustomizeModal from './CustomizeModal';
 import InspectItemModal from './InspectItemModal';
+import ItemIcon from '../ItemIcon';
 
 // Inline modifier: snaps the drag overlay center to the cursor position.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -248,30 +250,6 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     }
   };
 
-  // Slot icon helper
-  const getSlotIcon = (slot: string, colorClass: string, size = 'w-5 h-5') => {
-    const cn = `${size} ${colorClass}`;
-    const svgProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-    switch (slot) {
-      case 'HEAD':
-        return <svg className={cn} {...svgProps}><path d="M12 2C8 2 5 5 5 9v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9c0-4-3-7-7-7z"/><path d="M5 11v2h14v-2"/><path d="M8 6h8" strokeWidth={1.5} opacity={0.6}/></svg>;
-      case 'CHEST':
-        return <svg className={cn} {...svgProps}><path d="M6 4l-2 3v5a2 2 0 0 0 2 2h2l1 3h6l1-3h2a2 2 0 0 0 2-2V7l-2-3"/><path d="M6 4h12"/><path d="M12 4v5"/><path d="M9 9h6"/></svg>;
-      case 'HANDS':
-        return <svg className={cn} {...svgProps}><path d="M7 14V8a2 2 0 0 1 4 0v1"/><path d="M11 9V7a2 2 0 0 1 4 0v3"/><path d="M15 10V9a2 2 0 0 1 3 1v4c0 3-2 6-5 7H9c-3-1-5-4-5-7v-2a2 2 0 0 1 3-1"/></svg>;
-      case 'FEET':
-        return <svg className={cn} {...svgProps}><path d="M7 3v10l-3 4v2h16v-2l-2-2V7a4 4 0 0 0-4-4H7z"/><path d="M4 19h16"/><path d="M11 3v4"/></svg>;
-      case 'BELT':
-        return <svg className={cn} {...svgProps}><rect x="2" y="9" width="20" height="6" rx="1"/><rect x="9" y="8" width="6" height="8" rx="1" strokeWidth={1.5}/><line x1="9" y1="12" x2="15" y2="12"/></svg>;
-      case 'AMULET':
-        return <svg className={cn} {...svgProps}><path d="M6 3a14 14 0 0 0 12 0"/><path d="M12 7v3"/><path d="M12 10l-3 3 3 5 3-5-3-3z" fill="currentColor" fillOpacity={0.2}/></svg>;
-      case 'RING':
-        return <svg className={cn} {...svgProps}><ellipse cx="12" cy="14" rx="6" ry="5"/><path d="M12 9V6"/><path d="M10 6h4l-2-3-2 3z" fill="currentColor" fillOpacity={0.3}/></svg>;
-      default:
-        return <Briefcase className={cn} />;
-    }
-  };
-
   // --- Droppable Equipment Slot ---
   const SlotRender: React.FC<{ slot: EquipmentSlot }> = ({ slot }) => {
     const item = equipped[slot];
@@ -300,7 +278,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
         >
           {item ? (
             <>
-              {getSlotIcon(slot.replace(/\d/, ''), colors.text)}
+              <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
               <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
               {!isDragging && (
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
@@ -335,12 +313,20 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   {LEFT_SLOTS.map(slot => <SlotRender key={slot} slot={slot} />)}
                 </div>
                 <div className="w-40 h-full relative">
-                  <OperativeAvatar
-                    equipped={equipped}
-                    appearance={classProfile.appearance}
-                    evolutionLevel={level}
-                    activeCosmetics={user.gamification?.activeCosmetics}
-                  />
+                  {user.gamification?.selectedCharacterModel ? (
+                    <Avatar3D
+                      characterModelId={user.gamification.selectedCharacterModel}
+                      activeCosmetics={user.gamification?.activeCosmetics}
+                      evolutionLevel={level}
+                    />
+                  ) : (
+                    <OperativeAvatar
+                      equipped={equipped}
+                      appearance={classProfile.appearance}
+                      evolutionLevel={level}
+                      activeCosmetics={user.gamification?.activeCosmetics}
+                    />
+                  )}
                 </div>
                 <div className="flex flex-col gap-4">
                   {RIGHT_SLOTS.map(slot => <SlotRender key={slot} slot={slot} />)}
@@ -438,7 +424,6 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
             equipped={equipped}
             draggedItem={draggedItem}
             onInspect={setInspectItem}
-            getSlotIcon={getSlotIcon}
           />
         </div>
 
@@ -452,7 +437,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   className={`w-[68px] h-[68px] rounded-xl border-2 flex flex-col items-center justify-center backdrop-blur-sm ${colors.bg} ${colors.border} ${colors.glow}`}
                   style={{ filter: 'brightness(1.3) saturate(1.2)' }}
                 >
-                  {getSlotIcon(draggedItem.slot, colors.text, 'w-7 h-7')}
+                  <ItemIcon visualId={draggedItem.visualId} slot={draggedItem.slot} rarity={draggedItem.rarity} size="w-9 h-9" />
                   <span className={`text-[8px] font-bold mt-0.5 ${colors.text} drop-shadow-lg`}>{draggedItem.baseName || draggedItem.name.split(' ').slice(-1)[0]}</span>
                 </div>
               </div>
@@ -468,6 +453,14 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
         equipped={equipped}
         appearance={classProfile.appearance}
         onSave={handleCustomizeSave}
+        selectedCharacterModel={user.gamification?.selectedCharacterModel}
+        ownedCharacterModels={user.gamification?.ownedCharacterModels}
+        onSelectCharacterModel={async (modelId) => {
+          try {
+            await dataService.selectCharacterModel(user.id, modelId);
+          } catch { /* toast handled by dataService */ }
+        }}
+        activeCosmetics={user.gamification?.activeCosmetics}
       />
 
       <InspectItemModal
@@ -498,10 +491,9 @@ interface InventoryGridProps {
   equipped: Partial<Record<EquipmentSlot, RPGItem>>;
   draggedItem: RPGItem | null;
   onInspect: (item: RPGItem) => void;
-  getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
 }
 
-const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect, getSlotIcon }) => {
+const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
   const isDroppingEquipped = draggedItem && Object.values(equipped).some(e => (e as RPGItem | null)?.id === draggedItem.id);
 
@@ -525,7 +517,6 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             item={item}
             equipped={equipped}
             onInspect={onInspect}
-            getSlotIcon={getSlotIcon}
           />
         ))}
         {Array.from({ length: Math.max(0, 16 - inventory.length) }).map((_, i) => (
@@ -556,10 +547,9 @@ interface DraggableInventoryItemProps {
   item: RPGItem;
   equipped: Partial<Record<EquipmentSlot, RPGItem>>;
   onInspect: (item: RPGItem) => void;
-  getSlotIcon: (slot: string, colorClass: string, size?: string) => React.ReactNode;
 }
 
-const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect, getSlotIcon }) => {
+const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
   const colors = getAssetColors(item.rarity);
@@ -574,7 +564,7 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
         isDragging ? 'opacity-30 scale-90 border-dashed' : 'cursor-grab active:cursor-grabbing opacity-80 hover:opacity-100 hover:scale-105'
       } ${isEquipped ? 'ring-2 ring-white/50 opacity-100' : ''} ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
     >
-      {getSlotIcon(item.slot, colors.text, 'w-6 h-6')}
+      <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
       {isEquipped && (
         <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg"></div>
       )}

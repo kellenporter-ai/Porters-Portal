@@ -328,6 +328,10 @@ export interface User {
     activeCosmetic?: string; // DEPRECATED: single cosmetic (kept for backward compat migration)
     activeCosmetics?: ActiveCosmetics; // Per-slot equipped cosmetics (aura, particle, frame, trail)
 
+    // === 3D CHARACTER MODELS ===
+    selectedCharacterModel?: string; // Currently selected character model ID
+    ownedCharacterModels?: string[]; // Character model IDs the student owns
+
     // === FLUX SHOP ===
     activeBoosts?: ActiveBoost[]; // Currently active temporary boosts
     nameColor?: string; // Hex color for codename display
@@ -1211,7 +1215,7 @@ export interface SeasonalCosmetic {
 // FLUX SHOP CONSUMABLES
 // ========================================
 
-export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC';
+export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC' | 'CHARACTER_MODEL';
 
 export type CosmeticVisualType = 'AURA' | 'PARTICLE' | 'FRAME' | 'TRAIL';
 

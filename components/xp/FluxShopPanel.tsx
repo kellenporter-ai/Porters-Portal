@@ -1,12 +1,14 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind, Eye, EyeOff } from 'lucide-react';
+import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind, Eye, EyeOff, CuboidIcon } from 'lucide-react';
 import { FLUX_SHOP_ITEMS, AGENT_COSMETICS } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
 import { sfx } from '../../lib/sfx';
 import { ActiveBoost, FluxShopItem, CosmeticVisualType, ActiveCosmetics } from '../../types';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
+import Avatar3D from '../dashboard/Avatar3D';
+import { CHARACTER_MODELS, getStarterModels } from '../../lib/characterModels';
 
 /** Helper: derive the cosmetic slot from its ID prefix */
 const getCosmeticSlot = (id: string): keyof ActiveCosmetics | null =>
@@ -28,6 +30,10 @@ interface FluxShopPanelProps {
   playerEquipped?: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
   playerAppearance?: { bodyType?: 'A' | 'B' | 'C'; hue?: number; skinTone?: number; hairStyle?: number; hairColor?: number };
   playerEvolutionLevel?: number;
+  // 3D character model props
+  selectedCharacterModel?: string;
+  ownedCharacterModels?: string[];
+  onSelectCharacterModel?: (modelId: string) => void;
 }
 
 const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
@@ -42,6 +48,9 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   playerEquipped,
   playerAppearance,
   playerEvolutionLevel,
+  selectedCharacterModel,
+  ownedCharacterModels = [],
+  onSelectCharacterModel,
 }) => {
   const toast = useToast();
   const [purchasing, setPurchasing] = useState<string | null>(null);
@@ -145,6 +154,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
       case 'REROLL_TOKEN': return <RotateCcw className="w-5 h-5" />;
       case 'NAME_COLOR': return <Palette className="w-5 h-5" />;
       case 'AGENT_COSMETIC': return <User className="w-5 h-5" />;
+      case 'CHARACTER_MODEL': return <CuboidIcon className="w-5 h-5" />;
       default: return <ShoppingCart className="w-5 h-5" />;
     }
   };
@@ -196,14 +206,24 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
     }
   };
 
-  // Group non-cosmetic items by type; cosmetics go into subcategories
+  // Group non-cosmetic items by type; cosmetics and character models go into their own sections
   const grouped = useMemo(() => {
     const groups: Record<string, FluxShopItem[]> = {};
-    for (const item of FLUX_SHOP_ITEMS.filter(i => i.isAvailable && i.type !== 'AGENT_COSMETIC')) {
+    for (const item of FLUX_SHOP_ITEMS.filter(i => i.isAvailable && i.type !== 'AGENT_COSMETIC' && i.type !== 'CHARACTER_MODEL')) {
       (groups[item.type] ??= []).push(item);
     }
     return groups;
   }, []);
+
+  // Character model shop items
+  const characterModelItems = useMemo(() =>
+    FLUX_SHOP_ITEMS.filter(i => i.isAvailable && i.type === 'CHARACTER_MODEL'),
+    []
+  );
+
+  // All models available to the player (free starters + owned)
+  const starterIds = useMemo(() => getStarterModels().map(m => m.id), []);
+  const availableModelIds = useMemo(() => new Set([...starterIds, ...ownedCharacterModels]), [starterIds, ownedCharacterModels]);
 
   // Group agent cosmetics by visual type (AURA, PARTICLE, FRAME, TRAIL)
   const cosmeticSubGroups = useMemo(() => {
@@ -310,7 +330,17 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
             )}
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-28 h-44 flex-shrink-0 bg-black/40 rounded-xl border border-white/10 overflow-hidden relative"
+            {/* 3D Avatar Preview */}
+            <div className="w-28 h-44 flex-shrink-0 bg-black/40 rounded-xl border border-white/10 overflow-hidden relative">
+              <Avatar3D
+                characterModelId={selectedCharacterModel}
+                activeCosmetics={displayedCosmetics}
+                evolutionLevel={playerEvolutionLevel}
+              />
+            </div>
+            {/* 2D Avatar fallback (smaller) */}
+            <div className="w-16 h-24 flex-shrink-0 bg-black/30 rounded-lg border border-white/5 overflow-hidden relative opacity-60"
+                 title="Classic 2D avatar"
                  style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(playerAppearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, rgba(0,0,0,0.4) 70%)` }}>
               <OperativeAvatar
                 equipped={playerEquipped}
@@ -442,6 +472,111 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           </div>
         );
       })}
+
+      {/* 3D Character Models */}
+      {characterModelItems.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <CuboidIcon className="w-5 h-5 text-violet-400" aria-hidden="true" />
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">3D Character Models</h3>
+          </div>
+          <p className="text-xs text-gray-500 px-1">Upgrade your operative with a new 3D character model. Free starters are always available.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {CHARACTER_MODELS.map(model => {
+              const isOwned = availableModelIds.has(model.id);
+              const isSelected = selectedCharacterModel === model.id;
+              const affordable = currency >= model.cost;
+              const isPurchasing = purchasing === model.id;
+              const shopItem = characterModelItems.find(i => i.id === model.id);
+
+              return (
+                <div
+                  key={model.id}
+                  className={`relative bg-violet-500/10 border rounded-xl p-4 transition-all ${
+                    isSelected
+                      ? 'border-violet-500/50 shadow-lg shadow-violet-500/10'
+                      : 'border-violet-500/20 hover:scale-[1.02]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Color indicator */}
+                    <div
+                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-white/10"
+                      style={{ backgroundColor: model.thumbnailColor }}
+                      aria-hidden="true"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-white text-sm">{model.name}</h4>
+                        {model.cost === 0 && (
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                            Free
+                          </span>
+                        )}
+                        {isOwned && model.cost > 0 && (
+                          <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded">
+                            Owned
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{model.description}</p>
+                      <p className="text-[10px] text-gray-500 mt-1">{model.fileSizeKB}KB</p>
+                    </div>
+                  </div>
+
+                  {/* Action button */}
+                  {isOwned ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectCharacterModel?.(model.id)}
+                      disabled={isSelected}
+                      aria-label={isSelected ? `${model.name} is currently selected` : `Select ${model.name}`}
+                      className={`mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-violet-400 ${
+                        isSelected
+                          ? 'bg-violet-500/30 text-violet-200'
+                          : 'bg-violet-500/15 hover:bg-violet-500/30 text-violet-300 hover:text-white active:scale-95'
+                      }`}
+                    >
+                      {isSelected ? (
+                        <>
+                          <Check className="w-4 h-4" aria-hidden="true" />
+                          Selected
+                        </>
+                      ) : (
+                        'Select'
+                      )}
+                    </button>
+                  ) : shopItem ? (
+                    <button
+                      type="button"
+                      onClick={() => handlePurchase(shopItem)}
+                      disabled={!affordable || isPurchasing}
+                      aria-label={`Purchase ${model.name} for ${model.cost} Flux`}
+                      className={`mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+                        !affordable
+                          ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
+                          : isPurchasing
+                          ? 'bg-cyan-500/20 text-cyan-300 cursor-wait'
+                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 hover:text-white active:scale-95'
+                      }`}
+                    >
+                      {isPurchasing ? (
+                        <span className="animate-pulse">Processing...</span>
+                      ) : (
+                        <>
+                          <Hexagon className="w-4 h-4" aria-hidden="true" />
+                          {model.cost} Flux
+                        </>
+                      )}
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Agent Cosmetics — organized by subcategory */}
       <div className="space-y-2">

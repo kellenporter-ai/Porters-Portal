@@ -3,8 +3,10 @@ import React, { useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../types';
 import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColors } from '../lib/gamification';
 import { getEvolutionTier, getActiveSetBonuses, ACHIEVEMENTS } from '../lib/achievements';
+import ItemIcon from './ItemIcon';
 import { getClassProfile } from '../lib/classProfile';
 import OperativeAvatar from './dashboard/OperativeAvatar';
+import Avatar3D from './dashboard/Avatar3D';
 import ProfileFrame from './dashboard/ProfileFrame';
 import { Shield, Zap, Trophy, Star, Target, Flame, Swords, GraduationCap, Copy, Check } from 'lucide-react';
 
@@ -73,7 +75,15 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
             {/* Avatar + Profile Frame */}
             <div className="flex flex-col items-center gap-2 shrink-0">
               <div className="w-32 h-44">
-                <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
+                {gam.selectedCharacterModel ? (
+                  <Avatar3D
+                    characterModelId={gam.selectedCharacterModel}
+                    activeCosmetics={gam.activeCosmetics}
+                    evolutionLevel={gam.level}
+                  />
+                ) : (
+                  <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
+                )}
               </div>
               {/* Profile picture with frame cosmetic */}
               <ProfileFrame
@@ -178,7 +188,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   const c = getAssetColors(item.rarity);
                   return (
                     <div key={slot} className={`flex items-center gap-2 p-1.5 rounded border ${c.border} ${c.bg}`}>
-                      <span className="font-mono w-12 text-[10px] text-gray-500">{slot}</span>
+                      <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-5 h-5" />
                       <span className={`text-xs font-bold truncate ${c.text}`}>{item.name}</span>
                     </div>
                   );

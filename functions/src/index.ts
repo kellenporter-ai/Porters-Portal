@@ -5180,7 +5180,7 @@ export const cancelArenaQueue = onCall(async (request) => {
 
 /** Server-side item catalog — must mirror client FLUX_SHOP_ITEMS */
 const FLUX_SHOP_CATALOG: Record<string, {
-  type: 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC';
+  type: 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC' | 'CHARACTER_MODEL';
   cost: number;
   value?: number;
   duration?: number; // hours
@@ -5227,6 +5227,16 @@ const FLUX_SHOP_CATALOG: Record<string, {
   trail_inferno: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
   trail_ice: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
   trail_spectral: { type: 'AGENT_COSMETIC', cost: 300, dailyLimit: 0 },
+  // Character Models — Standard (200 Flux)
+  char_male_shirt: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  char_male_longsleeve: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  char_female_tanktop: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  char_kenney_agent: { type: 'CHARACTER_MODEL', cost: 200, dailyLimit: 0 },
+  // Character Models — Premium (400 Flux)
+  char_male_suit: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
+  char_female_dress: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
+  char_female_alt: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
+  char_kenney_operative: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
 };
 
 export const purchaseFluxItem = onCall(async (request) => {
@@ -5313,6 +5323,16 @@ export const purchaseFluxItem = onCall(async (request) => {
         updates[`gamification.activeCosmetics.${slot}`] = itemId;
       }
       result.cosmeticId = itemId;
+    } else if (item.type === 'CHARACTER_MODEL') {
+      const ownedModels: string[] = gam.ownedCharacterModels || [];
+      if (ownedModels.includes(itemId)) {
+        throw new HttpsError("already-exists", "You already own this character model.");
+      }
+      ownedModels.push(itemId);
+      updates["gamification.ownedCharacterModels"] = ownedModels;
+      // Auto-select the purchased model
+      updates["gamification.selectedCharacterModel"] = itemId;
+      result.characterModelId = itemId;
     }
 
     transaction.update(userRef, updates);

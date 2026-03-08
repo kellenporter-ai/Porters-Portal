@@ -132,6 +132,7 @@ export const getRankDetails = (level: number) => {
 // Consumable items students can purchase with Cyber-Flux.
 // IDs must match server-side validation in purchaseFluxItem Cloud Function.
 import { FluxShopItem, AgentCosmeticDef } from '../types';
+import { CHARACTER_MODELS } from './characterModels';
 
 // --- AGENT COSMETIC DEFINITIONS ---
 // Visual cosmetics for operative avatars. Each cosmetic has a unique visual effect.
@@ -297,6 +298,18 @@ export const FLUX_SHOP_ITEMS: FluxShopItem[] = [
         type: 'AGENT_COSMETIC' as const,
         cost: 300,
         icon: '💫',
+        dailyLimit: 0,
+        isAvailable: true,
+    })),
+    // --- CHARACTER MODELS ---
+    // 3D character models — free starters excluded (cost = 0)
+    ...CHARACTER_MODELS.filter(m => m.cost > 0).map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        type: 'CHARACTER_MODEL' as const,
+        cost: m.cost,
+        icon: '🧑‍💻',
         dailyLimit: 0,
         isAvailable: true,
     })),

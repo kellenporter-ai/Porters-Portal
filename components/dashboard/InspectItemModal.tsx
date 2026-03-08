@@ -1,34 +1,11 @@
 
 import React from 'react';
 import { RPGItem, EquipmentSlot, ItemGem } from '../../types';
-import { Trash2, Hexagon, Briefcase } from 'lucide-react';
+import { Trash2, Hexagon } from 'lucide-react';
 import { getAssetColors, getRunewordForItem, getUnsocketCost, getDisenchantValue, FLUX_COSTS } from '../../lib/gamification';
 import { RUNEWORD_DEFINITIONS } from '../../lib/runewords';
 import Modal from '../Modal';
-
-// Slot icon helper — mirrors the one in StudentDashboard to keep visual parity
-const getSlotIcon = (slot: string, colorClass: string, size = 'w-5 h-5') => {
-  const cn = `${size} ${colorClass}`;
-  const svgProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  switch (slot) {
-    case 'HEAD':
-      return <svg className={cn} {...svgProps}><path d="M12 2C8 2 5 5 5 9v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9c0-4-3-7-7-7z"/><path d="M5 11v2h14v-2"/><path d="M8 6h8" strokeWidth={1.5} opacity={0.6}/></svg>;
-    case 'CHEST':
-      return <svg className={cn} {...svgProps}><path d="M6 4l-2 3v5a2 2 0 0 0 2 2h2l1 3h6l1-3h2a2 2 0 0 0 2-2V7l-2-3"/><path d="M6 4h12"/><path d="M12 4v5"/><path d="M9 9h6"/></svg>;
-    case 'HANDS':
-      return <svg className={cn} {...svgProps}><path d="M7 14V8a2 2 0 0 1 4 0v1"/><path d="M11 9V7a2 2 0 0 1 4 0v3"/><path d="M15 10V9a2 2 0 0 1 3 1v4c0 3-2 6-5 7H9c-3-1-5-4-5-7v-2a2 2 0 0 1 3-1"/></svg>;
-    case 'FEET':
-      return <svg className={cn} {...svgProps}><path d="M7 3v10l-3 4v2h16v-2l-2-2V7a4 4 0 0 0-4-4H7z"/><path d="M4 19h16"/><path d="M11 3v4"/></svg>;
-    case 'BELT':
-      return <svg className={cn} {...svgProps}><rect x="2" y="9" width="20" height="6" rx="1"/><rect x="9" y="8" width="6" height="8" rx="1" strokeWidth={1.5}/><line x1="9" y1="12" x2="15" y2="12"/></svg>;
-    case 'AMULET':
-      return <svg className={cn} {...svgProps}><path d="M6 3a14 14 0 0 0 12 0"/><path d="M12 7v3"/><path d="M12 10l-3 3 3 5 3-5-3-3z" fill="currentColor" fillOpacity={0.2}/></svg>;
-    case 'RING':
-      return <svg className={cn} {...svgProps}><ellipse cx="12" cy="14" rx="6" ry="5"/><path d="M12 9V6"/><path d="M10 6h4l-2-3-2 3z" fill="currentColor" fillOpacity={0.3}/></svg>;
-    default:
-      return <Briefcase className={cn} />;
-  }
-};
+import ItemIcon from '../ItemIcon';
 
 interface InspectItemModalProps {
   inspectItem: RPGItem | null;
@@ -62,7 +39,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
         <div className={`p-5 rounded-xl border ${inspectItem.runewordActive ? 'border-amber-500/40 runeword-active' : colors.border} ${colors.bg} ${colors.shimmer} relative overflow-hidden`}>
           <div className="flex items-start gap-4 relative z-10">
             <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border ${inspectItem.runewordActive ? 'border-amber-500/50' : colors.border} ${colors.bg}`} style={{ boxShadow: inspectItem.runewordActive ? '0 0 20px rgba(245,158,11,0.3)' : inspectItem.rarity === 'UNIQUE' ? '0 0 20px rgba(249,115,22,0.3)' : inspectItem.rarity === 'RARE' ? '0 0 15px rgba(234,179,8,0.2)' : 'none' }}>
-              {getSlotIcon(inspectItem.slot, inspectItem.runewordActive ? 'text-amber-400' : colors.text, 'w-7 h-7')}
+              <ItemIcon visualId={inspectItem.visualId} slot={inspectItem.slot} rarity={inspectItem.rarity} size="w-9 h-9" />
             </div>
             <div className="flex-1">
               <div className={`text-lg font-bold ${inspectItem.runewordActive ? 'text-amber-300' : colors.text}`}>{inspectItem.name}</div>

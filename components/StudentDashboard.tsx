@@ -590,6 +590,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            playerEquipped={equipped}
                            playerAppearance={classProfile.appearance}
                            playerEvolutionLevel={level}
+                           selectedCharacterModel={user.gamification?.selectedCharacterModel}
+                           ownedCharacterModels={user.gamification?.ownedCharacterModels || []}
+                           onSelectCharacterModel={async (modelId) => {
+                             try { await dataService.selectCharacterModel(user.id, modelId); } catch { /* handled */ }
+                           }}
                        />
                      </FeatureErrorBoundary>
                  </div>
@@ -638,7 +643,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
                  <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Dungeons">
-                       <DungeonPanel userId={user.id} classType={activeClass} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+                       <DungeonPanel userId={user.id} classType={activeClass} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} selectedCharacterModel={user.gamification?.selectedCharacterModel} />
                      </FeatureErrorBoundary>
                  </div>
              )}

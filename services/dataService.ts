@@ -1610,6 +1610,28 @@ export const dataService = {
     return result.data as { success: boolean; slot: string; cosmeticId: string | null };
   },
 
+  // --- CHARACTER MODELS ---
+
+  /** Select a character model the player already owns (or a free starter) */
+  selectCharacterModel: async (userId: string, modelId: string) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        'gamification.selectedCharacterModel': modelId,
+      });
+    } catch (error) {
+      reportError(error, { method: 'selectCharacterModel' });
+      throw error;
+    }
+  },
+
+  /** Purchase a character model through the Flux Shop pipeline */
+  purchaseCharacterModel: async (modelId: string) => {
+    // CHARACTER_MODEL items are handled by the existing purchaseFluxItem Cloud Function
+    const result = await callPurchaseFluxItem({ itemId: modelId });
+    return result.data as { success: boolean };
+  },
+
   // --- FLUX SHOP ---
 
   purchaseFluxItem: async (itemId: string) => {

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { RPGItem } from '../../types';
 import { getAssetColors } from '../../lib/gamification';
 import { sfx } from '../../lib/sfx';
+import ItemIcon from '../ItemIcon';
 
 interface LootDropAnimationProps {
   item: RPGItem;
@@ -101,8 +102,13 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
               <div className={`text-[10px] font-mono uppercase tracking-widest ${colors.text} mb-2`}>
                 {item.rarity}
               </div>
-              <h3 className={`text-lg font-black ${colors.text}`}>{item.name}</h3>
-              <p className="text-xs text-gray-500 mt-1">{item.slot}</p>
+              <div className="flex items-center gap-3">
+                <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-12 h-12" />
+                <div>
+                  <h3 className={`text-lg font-black ${colors.text}`}>{item.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">{item.slot}</p>
+                </div>
+              </div>
 
               {/* Stats */}
               <div className="mt-3 space-y-1">
