@@ -388,13 +388,27 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
 
                         if (disposed || scene.isDisposed) return;
 
-                        // Hair GLBs are in ~1.8m UBC coordinate space (head at Y≈1.7).
-                        // Our character is normalized to 1.8m world space.
-                        // Don't apply the character's scale — hair is already the right size.
+                        // Hair GLBs are in ~1.84m UBC space. Our characters are
+                        // normalized to 1.8m. The UBC head is narrower than ours,
+                        // so scale hair up ~24% to match character head width.
+                        // Character head X-width (scaled): 0.514 * 0.372 = 0.191
+                        // Hair X-width (raw): ~0.154  →  ratio: 0.191/0.154 ≈ 1.24
                         const hairRoot = hairResult.meshes[0];
+                        const HAIR_SCALE = 1.24;
                         if (hairRoot) {
-                            hairRoot.scaling = new BABYLON.Vector3(1, 1, 1);
-                            hairRoot.position = new BABYLON.Vector3(0, 0, 0);
+                            // Get character's head center in world space
+                            const charBounds = rootMesh.getHierarchyBoundingVectors();
+                            const charTopY = charBounds.max.y; // ~1.80
+
+                            // Hair raw top is ~1.82, scaled becomes 1.82 * 1.24 = 2.26
+                            // Need to offset down so hair top aligns with character top
+                            // Offset = charTopY - (hairRawTopY * HAIR_SCALE)
+                            const hairBounds = hairRoot.getHierarchyBoundingVectors();
+                            const hairTopY = hairBounds.max.y;
+                            const yOffset = charTopY - (hairTopY * HAIR_SCALE);
+
+                            hairRoot.scaling = new BABYLON.Vector3(HAIR_SCALE, HAIR_SCALE, HAIR_SCALE);
+                            hairRoot.position = new BABYLON.Vector3(0, yOffset, 0);
                         }
 
                         // Convert hair PBR → StandardMaterial and add to tint data
