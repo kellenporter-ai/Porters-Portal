@@ -6,15 +6,15 @@ Reference files containing modern techniques and best practices. Agents should c
 
 | Agent | Primary References | Secondary References |
 |-------|-------------------|---------------------|
-| **portal-orchestrator** | All files (architectural decisions) | — |
-| **ui-accessibility-engineer** | `frontend-reference.md` | `3d-graphics-reference.md` (CSS effects section) |
-| **backend-integration-engineer** | `backend-reference.md` | `edm-privacy-reference.md` |
-| **qa-bug-resolution** | `testing-reference.md` | `frontend-reference.md` (WCAG section) |
-| **content-strategist-ux-writer** | `content-strategy-reference.md` | — |
+| **EA (orchestration handled directly)** | All files (architectural decisions) | — |
+| **ui-engineer** | `frontend-reference.md` | `3d-graphics-reference.md` (CSS effects section) |
+| **backend-engineer** | `backend-reference.md` | `edm-privacy-reference.md` |
+| **qa-engineer** | `testing-reference.md` | `frontend-reference.md` (WCAG section) |
+| **content-writer** | `content-strategy-reference.md` | — |
 | **data-analyst** | `edm-privacy-reference.md` | `backend-reference.md` (Firestore optimization) |
 | **economy-designer** | `economy-balancing-reference.md` | `backend-reference.md` (idempotency) |
 | **deployment-monitor** | `monitoring-reference.md` | `backend-reference.md` (Cloud Functions) |
-| **3d-graphics-engineer** | `3d-graphics-reference.md` | `frontend-reference.md` (WCAG 2.5.7, 2.5.8) |
+| **graphics-engineer** | `3d-graphics-reference.md` | `frontend-reference.md` (WCAG 2.5.7, 2.5.8) |
 
 ## File Summaries
 

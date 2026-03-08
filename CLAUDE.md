@@ -4,7 +4,7 @@
 
 All skills, agents, and agent memory for this project are managed by the Executive Assistant at `/home/kp/Desktop/Executive Assistant/`. Do not look for `.claude/skills/`, `.claude/agents/`, or `.claude/agent-memory/` in this repo — they have been centralized.
 
-- **Skills:** `/home/kp/Desktop/Executive Assistant/skills/`
+- **Skills:** `/home/kp/Desktop/Executive Assistant/.claude/skills/`
 - **Agents:** `/home/kp/Desktop/Executive Assistant/agents/`
 - **Agent Memory:** `/home/kp/Desktop/Executive Assistant/agents/memory/`
 
