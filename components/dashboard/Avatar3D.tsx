@@ -188,23 +188,39 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                 );
                 dirLight.intensity = 0.5;
 
-                // Load character model
-                const result = await BABYLON.SceneLoader.ImportMeshAsync(
-                    '', '', modelDef.modelPath, scene
-                );
+                // Load character model — split path into rootUrl + filename for Babylon
+                const lastSlash = modelDef.modelPath.lastIndexOf('/');
+                const rootUrl = modelDef.modelPath.substring(0, lastSlash + 1);
+                const fileName = modelDef.modelPath.substring(lastSlash + 1);
+
+                let result;
+                try {
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        '', rootUrl, fileName, scene
+                    );
+                } catch (loadErr) {
+                    console.error('[Avatar3D] Model load failed:', modelDef.modelPath, loadErr);
+                    throw loadErr;
+                }
 
                 if (disposed || scene.isDisposed) return;
+
+                console.log('[Avatar3D] Loaded', fileName, '— meshes:', result.meshes.length, 'animations:', result.animationGroups.length);
 
                 // Find root mesh and normalize scale
                 const rootMesh = result.meshes[0];
                 if (rootMesh) {
                     const bounds = rootMesh.getHierarchyBoundingVectors();
+                    console.log('[Avatar3D] Pre-scale bounds:', JSON.stringify({ min: bounds.min, max: bounds.max }));
                     const height = bounds.max.y - bounds.min.y;
                     const targetHeight = 1.8;
                     const scaleFactor = targetHeight / Math.max(height, 0.01);
                     rootMesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
                     const newBounds = rootMesh.getHierarchyBoundingVectors();
                     rootMesh.position.y = -newBounds.min.y;
+                    console.log('[Avatar3D] Post-scale — height:', height.toFixed(2), 'factor:', scaleFactor.toFixed(2), 'posY:', rootMesh.position.y.toFixed(2));
+                } else {
+                    console.warn('[Avatar3D] No root mesh found!');
                 }
 
                 // Play idle animation if available
