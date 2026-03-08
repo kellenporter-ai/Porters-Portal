@@ -54,17 +54,22 @@ const resolveCosmetics = (activeCosmetics?: ActiveCosmetics): ResolvedCosmetic3D
     return resolved;
 };
 
-// ---- Mesh classification for color tinting ----
+// ---- Material classification for color tinting ----
+// Quaternius GLB models use a single mesh with multiple primitives.
+// Babylon splits primitives into sub-meshes, each with its own material.
+// Material names (Skin, Hair, Shirt, Pants, etc.) are the reliable classifier.
 type MeshCategory = 'skin' | 'hair' | 'clothing' | 'unknown';
 
-const SKIN_PATTERNS = /head|hand|arm|face|body|skin|neck|leg|foot|feet/i;
-const HAIR_PATTERNS = /hair|ponytail|braid/i;
-const CLOTHING_PATTERNS = /shirt|pants|suit|dress|shoe|boot|cloth|top|bottom|sleeve|jacket|skirt|tank|collar|tie|belt|glove|hat|cap|hoodie|vest|coat|shorts/i;
+const SKIN_MAT_PATTERNS = /^skin$/i;
+const HAIR_MAT_PATTERNS = /hair/i;
+const CLOTHING_MAT_PATTERNS = /shirt|pants|suit|dress|shoe|boot|sock|top|sleeve|jacket|skirt|tank|collar|tie|belt|vest|coat|shorts|details/i;
+const EYES_MAT_PATTERN = /^eyes$/i;
 
-const classifyMesh = (meshName: string): MeshCategory => {
-    if (HAIR_PATTERNS.test(meshName)) return 'hair';
-    if (CLOTHING_PATTERNS.test(meshName)) return 'clothing';
-    if (SKIN_PATTERNS.test(meshName)) return 'skin';
+const classifyByMaterial = (materialName: string): MeshCategory => {
+    if (EYES_MAT_PATTERN.test(materialName)) return 'unknown'; // Don't tint eyes
+    if (HAIR_MAT_PATTERNS.test(materialName)) return 'hair';
+    if (CLOTHING_MAT_PATTERNS.test(materialName)) return 'clothing';
+    if (SKIN_MAT_PATTERNS.test(materialName)) return 'skin';
     return 'unknown';
 };
 
@@ -310,8 +315,8 @@ const Avatar3D: React.FC<Avatar3DProps> = ({
                     stdMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
                     stdMat.alpha = 1;
 
-                    // Classify mesh by name and apply color tinting
-                    const category = classifyMesh(mesh.name);
+                    // Classify by material name (Skin, Hair, Shirt, Pants, etc.)
+                    const category = classifyByMaterial(pbr.name || '');
 
                     if (category === 'skin' && app?.skinTone != null) {
                         const tone = hexToRgb(SKIN_TONES[app.skinTone] || SKIN_TONES[0]);
