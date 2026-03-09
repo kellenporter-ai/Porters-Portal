@@ -59,12 +59,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (
         <ToastContext.Provider value={value}>
             {children}
-            {/* Toast container — fixed bottom-right, above most UI */}
-            <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm" role="status" aria-live="polite">
+            {/* Toast container — fixed top-center, above most UI */}
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4" role="status" aria-live="polite">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
-                        className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl animate-in slide-in-from-left-5 fade-in duration-300 ${STYLES[toast.type]}`}
+                        className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl animate-in slide-in-from-top-3 fade-in duration-300 ${STYLES[toast.type]}`}
                     >
                         {ICONS[toast.type]}
                         <span className="text-sm text-white font-medium leading-snug flex-1">{toast.message}</span>

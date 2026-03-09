@@ -545,11 +545,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
 
              {activeTab === 'LOADOUT' && (
-               <AgentLoadoutTab user={user} activeClass={activeClass} level={level} />
+               <FeatureErrorBoundary feature="Agent Loadout">
+                 <AgentLoadoutTab user={user} activeClass={activeClass} level={level} />
+               </FeatureErrorBoundary>
              )}
 
              {activeTab === 'ACHIEVEMENTS' && (
-               <BadgesTab user={user} activeClass={activeClass} />
+               <FeatureErrorBoundary feature="Badges">
+                 <BadgesTab user={user} activeClass={activeClass} />
+               </FeatureErrorBoundary>
              )}
 
              {activeTab === 'SKILLS' && (
@@ -615,12 +619,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
              {activeTab === 'INTEL' && (
                  <div key="intel" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <IntelDossier
-                         user={user}
-                         submissions={submissions}
-                         assignments={assignments}
-                         activeClass={activeClass}
-                     />
+                     <FeatureErrorBoundary feature="Intel Dossier">
+                       <IntelDossier
+                           user={user}
+                           submissions={submissions}
+                           assignments={assignments}
+                           activeClass={activeClass}
+                       />
+                     </FeatureErrorBoundary>
                  </div>
              )}
 

@@ -37,7 +37,7 @@ const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKIN
 // ──────────────────────────────────────────────
 
 const TextBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
-  <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+  <div className="text-base text-gray-200 leading-relaxed whitespace-pre-line">
     {block.content}
   </div>
 );
@@ -50,11 +50,11 @@ const InfoBoxBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   };
   const style = variantStyles[block.variant || 'note'];
   return (
-    <div className={`border rounded-xl p-4 text-sm ${style}`}>
+    <div className={`border rounded-xl p-4 text-base ${style}`}>
       <div className="font-bold text-xs uppercase tracking-widest mb-1">
         {block.variant === 'tip' ? 'Tip' : block.variant === 'warning' ? 'Warning' : 'Note'}
       </div>
-      <div className="text-gray-300">{block.content}</div>
+      <div className="text-gray-200">{block.content}</div>
     </div>
   );
 };
@@ -79,7 +79,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2">
         <HelpCircle className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
@@ -102,7 +102,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-gray-600 w-5">{String.fromCharCode(65 + idx)}.</span>
+              <span className="text-xs font-mono text-gray-500 w-5">{String.fromCharCode(65 + idx)}.</span>
               <span>{opt}</span>
               {answered && idx === block.correctAnswer && <CheckCircle2 className="w-4 h-4 text-green-400 ml-auto" />}
               {answered && idx === selected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 ml-auto" />}
@@ -116,20 +116,27 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
         </button>
       )}
       {answered && (
-        <div className="flex items-center gap-3">
-          <div className={`text-xs font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-            {isCorrect ? 'Correct!' : 'Incorrect — review the material above.'}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className={`text-xs font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+              {isCorrect ? 'Correct!' : 'Incorrect — review the material above.'}
+            </div>
+            <button
+              onClick={() => {
+                setAnswered(false);
+                setSelected(null);
+                onResponseChange?.({ selected: null, answered: false });
+              }}
+              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+            >
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
           </div>
-          <button
-            onClick={() => {
-              setAnswered(false);
-              setSelected(null);
-              onResponseChange?.({ selected: null, answered: false });
-            }}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
-          >
-            <Pencil className="w-3 h-3" /> Edit
-          </button>
+          {block.explanation && (
+            <div className="text-sm text-gray-300 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              {block.explanation}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -153,7 +160,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2">
         <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0" />
         {block.content}
       </p>
@@ -168,7 +175,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
           disabled={answered}
           placeholder="Type your answer... (Ctrl+Enter to submit)"
           aria-label={block.content || 'Short answer'}
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y min-h-[38px]"
+          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
           rows={2}
           onKeyDown={e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -216,9 +223,9 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
         <div>
           <div className="text-sm font-bold text-white">{block.term}</div>
           {flipped ? (
-            <div className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200">{block.definition}</div>
+            <div className="text-base text-gray-200 mt-1 animate-in fade-in duration-200">{block.definition}</div>
           ) : (
-            <div className="text-xs text-gray-600 mt-1">Tap to reveal definition</div>
+            <div className="text-xs text-gray-500 mt-1">Tap to reveal definition</div>
           )}
         </div>
       </div>
@@ -243,7 +250,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2">
         <ListChecks className="w-4 h-4 text-green-400 shrink-0" />
         {block.content}
       </p>
@@ -413,7 +420,7 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
               {revealed.has(idx) ? (
                 <div className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200">{t.definition}</div>
               ) : (
-                <div className="text-xs text-gray-600 mt-1">Tap to reveal</div>
+                <div className="text-xs text-gray-500 mt-1">Tap to reveal</div>
               )}
             </div>
           </div>
@@ -473,7 +480,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3">
-      {block.title && <p className="text-sm text-white font-medium">{block.title}</p>}
+      {block.title && <p className="text-base text-white font-medium">{block.title}</p>}
       {block.instructions && <p className="text-xs text-gray-400">{block.instructions}</p>}
 
       {/* Unplaced items */}
@@ -565,7 +572,7 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
 
   return (
     <div className="space-y-2">
-      {block.title && <p className="text-sm text-white font-medium">{block.title}</p>}
+      {block.title && <p className="text-base text-white font-medium">{block.title}</p>}
       <div className="overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-sm">
           <thead>
@@ -630,7 +637,7 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
 
   return (
     <div className="space-y-2">
-      {block.title && <p className="text-sm text-white font-medium text-center">{block.title}</p>}
+      {block.title && <p className="text-base text-white font-medium text-center">{block.title}</p>}
       <iframe
         ref={iframeRef}
         src="/tools/bar-chart.html?embedded=true"
@@ -716,7 +723,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2">
         <GripVertical className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
@@ -739,7 +746,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             }`}
           >
             <GripVertical className="w-4 h-4 text-gray-600 shrink-0" />
-            <span className="text-xs font-mono text-gray-600 w-5">{idx + 1}.</span>
+            <span className="text-xs font-mono text-gray-500 w-5">{idx + 1}.</span>
             <span className="flex-1">{item.item}</span>
             {submitted && item.origIdx === idx && <CheckCircle2 className="w-4 h-4 text-green-400" />}
             {submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-400" />}
@@ -803,7 +810,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
           <p className="text-xs text-gray-400">{linkedBlock.content}</p>
         </div>
       )}
-      <p className="text-sm text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2">
         <Link className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
@@ -818,7 +825,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
           disabled={answered}
           placeholder="Type your answer... (Ctrl+Enter to submit)"
           aria-label={block.content || 'Linked question answer'}
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y min-h-[38px]"
+          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
           rows={2}
           onKeyDown={e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -964,6 +971,31 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [blocks]);
+
+  // Keyboard shortcuts: j/k to navigate between blocks, ? for help
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+
+      if (e.key === 'j') {
+        e.preventDefault();
+        const next = Math.min(visibleBlockIndex + 1, blocks.length - 1);
+        navigateToBlock(next);
+      } else if (e.key === 'k') {
+        e.preventDefault();
+        const prev = Math.max(visibleBlockIndex - 1, 0);
+        navigateToBlock(prev);
+      } else if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShowShortcutsHelp(p => !p);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [visibleBlockIndex, blocks.length, navigateToBlock]);
 
   if (blocks.length === 0) return null;
 
@@ -1125,6 +1157,23 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     </div>
   );
 
+  const shortcutsOverlay = showShortcutsHelp ? (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" onClick={() => setShowShortcutsHelp(false)}>
+      <div className="bg-[#1a1b26] border border-white/10 rounded-2xl p-6 max-w-xs w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-sm font-bold text-white mb-4">Keyboard Shortcuts</h3>
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between text-gray-300"><span>Next block</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">j</kbd></div>
+          <div className="flex justify-between text-gray-300"><span>Previous block</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">k</kbd></div>
+          <div className="flex justify-between text-gray-300"><span>Submit answer</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">Ctrl+Enter</kbd></div>
+          <div className="flex justify-between text-gray-300"><span>Toggle this help</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">?</kbd></div>
+        </div>
+        <button onClick={() => setShowShortcutsHelp(false)} className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold text-white transition">
+          Got it
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   if (showSidebar && blocks.length >= 3) {
     return (
       <div className="flex gap-4 h-full">
@@ -1137,11 +1186,12 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           engagementTime={engagementTime}
           xpEarned={xpEarned}
         />
+        {shortcutsOverlay}
       </div>
     );
   }
 
-  return contentArea;
+  return <>{contentArea}{shortcutsOverlay}</>;
 };
 
 export default LessonBlocks;

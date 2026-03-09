@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap } from 'lucide-react';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
@@ -22,6 +22,45 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebar-collapsed');
+      if (stored !== null) return JSON.parse(stored) as boolean;
+      return typeof window !== 'undefined' && window.innerWidth < 1440;
+    } catch { return false; }
+  });
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // ChromeOS performance mode suggestion (one-time)
+  const [showCrosBanner, setShowCrosBanner] = useState(false);
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const isCrOS = /CrOS/.test(navigator.userAgent);
+    const alreadySuggested = localStorage.getItem('perfModeSuggested');
+    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false };
+    if (isCrOS && !alreadySuggested && !currentSettings.performanceMode) {
+      setShowCrosBanner(true);
+    }
+  }, [user.settings]);
+
+  const dismissCrosBanner = useCallback(() => {
+    localStorage.setItem('perfModeSuggested', 'true');
+    setShowCrosBanner(false);
+  }, []);
+
+  const enablePerfMode = useCallback(async () => {
+    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false };
+    await dataService.updateUserSettings(user.id, { ...currentSettings, performanceMode: true });
+    dismissCrosBanner();
+  }, [user.id, user.settings, dismissCrosBanner]);
 
   // Derive activeTab from URL for nav highlighting
   const activeTab = PATH_TO_TAB[location.pathname] || '';
@@ -79,7 +118,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   const NavItems = () => {
-    const { enabledFeatures } = useAppData();
+    const { enabledFeatures, assignments } = useAppData();
+
+    // Urgency dot: count overdue or due-today assignments for students
+    const hasUrgentAssignments = user.role === UserRole.STUDENT && assignments.some(a => {
+      if (!a.dueDate || a.status === 'DRAFT' || a.status === 'ARCHIVED') return false;
+      const diff = new Date(a.dueDate).getTime() - Date.now();
+      return diff < 86400000; // due within 24h or overdue
+    });
 
     const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
       'Dungeons': 'dungeons',
@@ -97,8 +143,44 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     const isChildActive = (item: NavItem) => item.children?.some(c => activeTab === `${item.name}:${c.name}`);
 
     // Render a single nav button (reused for both ungrouped and grouped items)
-    const renderNavButton = (item: NavItem) => {
+    const renderNavButton = (item: NavItem, collapsed = false) => {
       const isActive = activeTab === item.name || isChildActive(item);
+
+      const showUrgencyDot = item.name === 'Resources' && hasUrgentAssignments;
+
+      // Collapsed sidebar: icon-only buttons with tooltips
+      if (collapsed) {
+        return (
+          <div key={item.name} className="flex justify-center">
+            <button
+              data-nav-item
+              onClick={() => {
+                if (item.children) {
+                  if (!isChildActive(item)) {
+                    handleNavigate(`${item.name}:${item.children[0].name}`);
+                  }
+                } else {
+                  handleNavigate(item.name);
+                }
+              }}
+              title={item.name}
+              aria-label={item.name}
+              aria-current={isActive && !item.children ? 'page' : undefined}
+              className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+                isActive
+                  ? 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className={isActive ? 'text-white' : 'text-gray-500 hover:text-purple-400'}>
+                {item.icon}
+              </span>
+              {showUrgencyDot && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
+            </button>
+          </div>
+        );
+      }
+
       return (
         <div key={item.name}>
           <button
@@ -130,7 +212,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             <span className={`${isActive ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
               {item.icon}
             </span>
-            <span className="font-medium text-sm flex-1 text-left">{item.name}</span>
+            <span className="font-medium text-sm flex-1 text-left flex items-center gap-2">
+              {item.name}
+              {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
+            </span>
             {item.children && (
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-purple-400' : 'text-gray-600'}`} />
             )}
@@ -168,9 +253,28 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       const ungrouped = filteredItems.filter(i => !i.group);
       const groups: NavGroup[] = ['learning', 'operations', 'intel'];
 
+      // Collapsed sidebar: icon-only, no group headers
+      if (sidebarCollapsed) {
+        return (
+          <>
+            {ungrouped.map(i => renderNavButton(i, true))}
+            {groups.map(group => {
+              const groupItems = filteredItems.filter(i => i.group === group);
+              if (groupItems.length === 0) return null;
+              return (
+                <React.Fragment key={group}>
+                  <div className="h-px bg-white/5 my-2" />
+                  {groupItems.map(i => renderNavButton(i, true))}
+                </React.Fragment>
+              );
+            })}
+          </>
+        );
+      }
+
       return (
         <>
-          {ungrouped.map(renderNavButton)}
+          {ungrouped.map(i => renderNavButton(i))}
           {groups.map(group => {
             const groupItems = filteredItems.filter(i => i.group === group);
             if (groupItems.length === 0) return null;
@@ -188,7 +292,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 </button>
                 {!isCollapsed && (
                   <div className="space-y-1" role="group" aria-label={`${NAV_GROUP_LABELS[group]} navigation`}>
-                    {groupItems.map(renderNavButton)}
+                    {groupItems.map(i => renderNavButton(i))}
                   </div>
                 )}
               </div>
@@ -199,7 +303,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     }
 
     // Admin: render flat as before
-    return <>{filteredItems.map(renderNavButton)}</>;
+    return <>{filteredItems.map(i => renderNavButton(i))}</>;
   };
 
   // Arrow key navigation within sidebar nav items
@@ -229,6 +333,20 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 3. Dark Glass Overlay */}
       <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[#0f0720]/55' : 'bg-[#0f0720]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
+
+      {/* ChromeOS performance mode suggestion banner */}
+      {showCrosBanner && (
+        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-3 bg-purple-900/95 border-b border-purple-500/30 backdrop-blur-md text-sm text-white animate-in slide-in-from-top duration-300">
+          <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="text-purple-100">On a Chromebook? Enable <strong>Performance Mode</strong> for smoother scrolling.</span>
+          <button onClick={enablePerfMode} className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold transition">
+            Enable
+          </button>
+          <button onClick={dismissCrosBanner} className="text-gray-400 hover:text-white transition" aria-label="Dismiss">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Mobile/Tablet Header — visible below lg breakpoint */}
       <header className="lg:hidden flex items-center justify-between p-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-30">
@@ -298,66 +416,133 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       )}
 
       {/* Desktop Sidebar — visible at lg breakpoint and above */}
-      <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all ${settings.compactView ? 'w-60' : 'w-72'}`}>
+      <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-60' : 'w-72'}`}>
         <div className={`h-full bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl animate-glass-turn ${settings.performanceMode ? '' : 'backdrop-blur-2xl'}`}>
-          <div className="p-8 flex items-center gap-4 border-b border-white/5">
-            <div className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] p-3 rounded-xl">
-              <GraduationCap className="w-6 h-6 text-white" />
+          {/* Header */}
+          <div className={`flex items-center border-b border-white/5 ${sidebarCollapsed ? 'p-4 justify-center' : 'p-8 gap-4'}`}>
+            <div className={`bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl ${sidebarCollapsed ? 'p-2' : 'p-3'}`}>
+              <GraduationCap className={sidebarCollapsed ? 'w-5 h-5 text-white' : 'w-6 h-6 text-white'} />
             </div>
-            <div>
-              <h1 className="font-bold text-lg tracking-tight text-white">Porter Portal</h1>
-              <p className="text-xs text-purple-300 font-medium tracking-widest uppercase">
-                {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
-              </p>
-            </div>
+            {!sidebarCollapsed && (
+              <div>
+                <h1 className="font-bold text-lg tracking-tight text-white">Porter Portal</h1>
+                <p className="text-xs text-purple-300 font-medium tracking-widest uppercase">
+                  {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
+                </p>
+              </div>
+            )}
           </div>
 
-          <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar" aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
+          {/* Collapse toggle */}
+          <div className={`flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} px-3 pt-3`}>
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition"
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </button>
+          </div>
+
+          <nav className={`flex-1 space-y-2 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? 'p-2' : 'p-4'}`} aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
             <NavItems />
           </nav>
 
-          <div className="p-6 border-t border-white/5 bg-black/10 rounded-b-3xl">
-            <div className="flex items-center justify-between mb-4">
-               <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-inner border border-white/20">
-                    {user.name.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate text-white">
-                        {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
-                    </p>
-                    <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
-                  </div>
-               </div>
-               <div className="flex items-center gap-1">
-                 <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
-                 <button
-                   onClick={() => setIsSettingsOpen(true)}
-                   className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
-                   aria-label="Open settings"
-                 >
-                   <Settings className="w-4 h-4" />
-                 </button>
-               </div>
+          {/* Profile / Footer */}
+          {sidebarCollapsed ? (
+            <div className="p-3 border-t border-white/5 bg-black/10 rounded-b-3xl flex flex-col items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold shadow-inner border border-white/20" title={settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}>
+                {user.name.charAt(0)}
+              </div>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                aria-label="Open settings"
+                title="Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onLogout}
+                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                aria-label="Sign out"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
+          ) : (
+            <div className="p-6 border-t border-white/5 bg-black/10 rounded-b-3xl">
+              <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-inner border border-white/20">
+                      {user.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate text-white">
+                          {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-1">
+                   <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
+                   <button
+                     onClick={() => setIsSettingsOpen(true)}
+                     className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                     aria-label="Open settings"
+                   >
+                     <Settings className="w-4 h-4" />
+                   </button>
+                 </div>
+              </div>
 
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all text-sm font-medium"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          </div>
+              <button
+                onClick={onLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main id="main-content" className={`flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
+      <main id="main-content" className={`flex-1 overflow-y-auto p-4 pb-20 md:p-6 lg:p-8 lg:pb-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
         <div className="h-full">
           <Outlet />
         </div>
       </main>
+
+      {/* Mobile bottom nav — quick access to key pages (below lg breakpoint) */}
+      {user.role === UserRole.STUDENT && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-around px-2" aria-label="Quick navigation">
+          {([
+            { name: 'Home', icon: <Home className="w-5 h-5" />, tab: 'Home' },
+            { name: 'Resources', icon: <Layers className="w-5 h-5" />, tab: 'Resources' },
+            { name: 'Missions', icon: <Target className="w-5 h-5" />, tab: 'Missions' },
+            { name: 'Progress', icon: <TrendingUp className="w-5 h-5" />, tab: 'Progress' },
+          ] as const).map(item => {
+            const isActive = activeTab === item.tab;
+            return (
+              <button
+                key={item.tab}
+                onClick={() => handleNavigate(item.tab)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
+                  isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {item.icon}
+                <span className="text-[9px] font-bold">{item.name}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       <SettingsModal
         isOpen={isSettingsOpen}

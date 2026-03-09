@@ -116,7 +116,7 @@ export function getItemIconPath(
   }
 
   // Check unique items (visualId starts with "unique_")
-  if (visualId.startsWith('unique_')) {
+  if (visualId && visualId.startsWith('unique_')) {
     // For unique items, use the slot fallback with golden variant
     const fallback = SLOT_FALLBACK_ICONS[slot];
     if (fallback) {

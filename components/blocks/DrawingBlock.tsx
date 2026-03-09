@@ -54,6 +54,8 @@ type Tool = 'select' | 'arrow' | 'pen' | 'shape' | 'text' | 'eraser';
 type ShapeType = 'circle' | 'rectangle' | 'line';
 
 const PEN_WIDTHS = [2, 4, 6];
+const TEXT_SIZES = [12, 16, 24] as const;
+const TEXT_SIZE_LABELS: Record<number, string> = { 12: 'S', 16: 'M', 24: 'L' };
 
 
 // ──────────────────────────────────────────────
@@ -113,7 +115,10 @@ function hitTestElement(pos: { x: number; y: number }, el: DrawingElement, toler
       return Math.abs(tp.x - cx) < hw && Math.abs(tp.y - cy) < hh;
     }
     case 'text': {
-      return Math.abs(pos.x - el.position.x) < 60 && Math.abs(pos.y - el.position.y) < 20;
+      const approxW = el.text.length * el.fontSize * 0.6;
+      const approxH = el.fontSize * 1.3;
+      return pos.x >= el.position.x - 5 && pos.x <= el.position.x + approxW + 5
+          && pos.y >= el.position.y - 5 && pos.y <= el.position.y + approxH + 5;
     }
   }
 }
@@ -151,8 +156,11 @@ function getElementBounds(el: DrawingElement): { x: number; y: number; w: number
       }
       return { x: Math.min(el.start.x, el.end.x), y: Math.min(el.start.y, el.end.y), w: Math.abs(el.end.x - el.start.x), h: Math.abs(el.end.y - el.start.y) };
     }
-    case 'text':
-      return { x: el.position.x, y: el.position.y, w: 80, h: 20 };
+    case 'text': {
+      const approxW = el.text.length * el.fontSize * 0.6;
+      const approxH = el.fontSize * 1.3;
+      return { x: el.position.x, y: el.position.y, w: approxW, h: approxH };
+    }
   }
 }
 
@@ -444,6 +452,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // Text placement popup
   const [textPlacement, setTextPlacement] = useState<{ x: number; y: number } | null>(null);
   const [textInput, setTextInput] = useState('');
+  const [textFontSize, setTextFontSize] = useState(16);
 
   // Tooltip
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -1307,11 +1316,11 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       position: textPlacement,
       text: textInput,
       color: penColor,
-      fontSize: 16,
+      fontSize: textFontSize,
     }]);
     setTextPlacement(null);
     setTextInput('');
-  }, [textPlacement, textInput, penColor]);
+  }, [textPlacement, textInput, penColor, textFontSize]);
 
   // ──────────────────────────────────────────
   // Arrow label updates
@@ -2526,6 +2535,29 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') confirmText(); if (e.key === 'Escape') setTextPlacement(null); }}
             />
+            <div style={{ display: 'flex', gap: '2px', marginBottom: '8px' }}>
+              {TEXT_SIZES.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setTextFontSize(s)}
+                  style={{
+                    flex: 1,
+                    padding: '4px 0',
+                    borderRadius: '4px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontFamily: 'monospace',
+                    fontWeight: textFontSize === s ? 700 : 400,
+                    background: textFontSize === s ? '#e0ecff' : '#f5f5f5',
+                    color: textFontSize === s ? '#007aff' : '#555',
+                  }}
+                  aria-label={`${TEXT_SIZE_LABELS[s]} text size (${s}px)`}
+                >
+                  {TEXT_SIZE_LABELS[s]}
+                </button>
+              ))}
+            </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               <button onClick={confirmText} style={{
                 flex: 1, padding: '4px 8px', background: '#e0ecff', color: '#007aff',

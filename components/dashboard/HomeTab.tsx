@@ -190,8 +190,38 @@ const HomeTab: React.FC<HomeTabProps> = ({
 
   const acceptedQuestCount = activeQuests.filter(q => q.status === 'ACCEPTED' || q.status === 'DEPLOYED').length;
 
+  // "Up Next" — the single most urgent incomplete assignment
+  const upNextAssignment = useMemo(() => {
+    return upcomingDue.find(a => !a.isCompleted) || null;
+  }, [upcomingDue]);
+
   return (
     <div key="home" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+
+      {/* Up Next — most urgent incomplete assignment */}
+      {upNextAssignment && (
+        <button
+          onClick={() => onStartAssignment?.(upNextAssignment.id)}
+          className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-600/15 to-blue-600/15 border border-purple-500/30 hover:border-purple-500/50 transition-all hover:scale-[1.005] active:scale-[0.995] text-left group"
+        >
+          <div className="w-12 h-12 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center shrink-0">
+            <Target className="w-6 h-6 text-purple-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-0.5">Up Next</div>
+            <div className="text-base font-bold text-white truncate">{upNextAssignment.title}</div>
+            <div className={`text-xs font-bold mt-0.5 ${
+              new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 0 ? 'text-red-400' :
+              new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 86400000 ? 'text-amber-400' :
+              'text-gray-400'
+            }`}>
+              {relativeDate(upNextAssignment.dueDate!)}
+              {upNextAssignment.unit && <span className="text-gray-500 ml-2 font-normal">{upNextAssignment.unit}</span>}
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-purple-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      )}
 
       {/* Active XP Event (compact inline) */}
       {activeEvent && (
@@ -268,7 +298,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                     <div className="text-sm font-medium text-white truncate">{a.title}</div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] font-bold">{relativeDate(a.dueDate!)}</span>
-                      {a.unit && <span className="text-[10px] text-gray-600">{a.unit}</span>}
+                      {a.unit && <span className="text-[10px] text-gray-500">{a.unit}</span>}
                     </div>
                   </div>
                   {a.isCompleted ? (
@@ -294,7 +324,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-white">{stats.started}</div>
                 <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-1">Completed</div>
-                <div className="text-[9px] text-gray-600">of {stats.total}</div>
+                <div className="text-[9px] text-gray-500">of {stats.total}</div>
               </div>
               <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-white">
@@ -326,7 +356,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   </span>
                 )}
                 {newQuestCount > 0 && acceptedQuestCount > 0 && (
-                  <span className="text-gray-600">&middot;</span>
+                  <span className="text-gray-500">&middot;</span>
                 )}
                 {acceptedQuestCount > 0 && (
                   <span className="text-xs text-purple-400 font-bold">
@@ -368,7 +398,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                     {s.score > 0 && <span className="ml-2 text-yellow-400">{s.score}%</span>}
                   </div>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-gray-500 shrink-0" />
               </button>
             ))}
           </div>

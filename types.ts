@@ -72,6 +72,7 @@ export interface LessonBlock {
   // MC-specific
   options?: string[];
   correctAnswer?: number;
+  explanation?: string;
   // Short answer
   acceptedAnswers?: string[];
   // Vocabulary

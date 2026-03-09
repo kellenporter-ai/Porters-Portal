@@ -284,7 +284,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
                   <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
                   <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
-                  <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+                  <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
                 </div>
               )}
@@ -573,7 +573,7 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
         <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
           <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
           <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
-          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
         </div>
       )}

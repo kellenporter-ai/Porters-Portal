@@ -3842,17 +3842,22 @@ export const answerBossQuiz = onCall(async (request) => {
 
           if (Math.random() * 100 < entry.dropChance) {
             if (!lootDrops[c.id]) lootDrops[c.id] = [];
+            const bossBase = (BASE_ITEMS[entry.slot] || BASE_ITEMS["HEAD"])[0];
             lootDrops[c.id].push({
               id: Math.random().toString(36).substring(2, 12),
               name: entry.itemName,
+              baseName: entry.itemName,
               slot: entry.slot,
               rarity: entry.rarity,
+              visualId: bossBase.vid,
               stats: entry.stats || {},
               affixes: [],
               gems: [],
               sockets: 0,
               isBossLoot: true,
               bossName: quiz.bossName,
+              description: `Boss loot from ${quiz.bossName}.`,
+              obtainedAt: new Date().toISOString(),
             });
             drops++;
           }

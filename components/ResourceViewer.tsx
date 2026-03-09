@@ -8,7 +8,7 @@ import { doc, getDoc, setDoc, collection, query, where, limit, onSnapshot, order
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, ChevronRight } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -41,6 +41,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [hasQuestionBank, setHasQuestionBank] = useState(false);
   const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
+
+  // Block progress for header progress bar (0–1)
+  const [blockProgress, setBlockProgress] = useState(0);
 
   // Assessment state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -528,8 +531,41 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Breadcrumbs — hidden during assessment lockdown */}
+      {!isAssessment && (
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] text-gray-500 px-1 py-1.5">
+          <button onClick={() => navigate('/home')} className="hover:text-gray-300 transition flex items-center gap-1">
+            <Home className="w-3 h-3" /> Home
+          </button>
+          <ChevronRight className="w-3 h-3 text-gray-600" />
+          <button onClick={() => navigate('/resources')} className="hover:text-gray-300 transition">
+            Resources
+          </button>
+          {activeAssignment.unit && (
+            <>
+              <ChevronRight className="w-3 h-3 text-gray-600" />
+              <span className="text-gray-400">{activeAssignment.unit}</span>
+            </>
+          )}
+          <ChevronRight className="w-3 h-3 text-gray-600" />
+          <span className="text-gray-300 truncate max-w-[200px]">{activeAssignment.title}</span>
+        </nav>
+      )}
+
       {/* Header bar */}
-      <div className={`flex items-center justify-between text-white ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-white/5 border-white/10'} px-4 py-2 ${isAssessment ? '' : 'rounded-xl'} border backdrop-blur-md`}>
+      <div className={`relative flex items-center justify-between text-white ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-white/5 border-white/10'} px-4 py-2 ${isAssessment ? '' : 'rounded-xl'} border backdrop-blur-md overflow-hidden`}>
+        {/* Progress bar — thin gradient at bottom of header */}
+        {activeAssignment.lessonBlocks && activeAssignment.lessonBlocks.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5">
+            <div
+              className="h-full transition-all duration-500 ease-out rounded-r-full"
+              style={{
+                width: `${blockProgress * 100}%`,
+                background: `linear-gradient(90deg, #9333ea ${Math.max(0, 100 - blockProgress * 100)}%, #22c55e 100%)`,
+              }}
+            />
+          </div>
+        )}
         <div className="flex items-center gap-4 min-w-0">
           <h2 className="text-sm font-bold truncate flex items-center gap-2">
             {isAssessment && <Shield className="w-4 h-4 text-red-400 shrink-0" />}
@@ -607,6 +643,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <div className="flex-1">
                 <Proctor
                   onComplete={handleEngagementComplete}
+                  onBlockProgress={(completed) => {
+                    const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
+                    const total = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
+                    setBlockProgress(total > 0 ? completed / total : 0);
+                  }}
                   contentUrl={activeAssignment.contentUrl}
                   htmlContent={activeAssignment.htmlContent}
                   userId={user.id}

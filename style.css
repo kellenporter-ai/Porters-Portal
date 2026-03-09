@@ -3,6 +3,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Respect OS-level reduced motion preference (mirrors .perf-mode behavior) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   background-color: #0f0720;
   color: #e9d5ff;

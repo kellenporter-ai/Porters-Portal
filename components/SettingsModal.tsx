@@ -58,7 +58,7 @@ const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
             onChange={e => handleCodeChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
             placeholder="XXXX-XXXX"
-            className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-400 tracking-widest placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 transition"
+            className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-400 tracking-widest placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
             maxLength={9}
             disabled={isRedeeming}
           />
@@ -145,7 +145,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
       </div>
       <button
         onClick={onToggle}
-        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${value ? 'bg-purple-600' : 'bg-white/20'}`}
+        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0f0720] ${value ? 'bg-purple-600' : 'bg-white/20'}`}
       >
         <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
@@ -193,7 +193,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                   value={codename}
                   onChange={(e) => setCodename(e.target.value.slice(0, 24))}
                   placeholder="Enter codename..."
-                  className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
                   maxLength={24}
                 />
                 <p className="text-[10px] text-gray-500 mt-1">{codename.length}/24 characters</p>
@@ -274,7 +274,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                     }
                   }}
                   disabled={getPushPermission() === 'denied'}
-                  className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
+                  className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0f0720] ${
                     getPushPermission() === 'denied' ? 'bg-white/10 opacity-50 cursor-not-allowed' :
                     localSettings.pushNotifications ? 'bg-purple-600' : 'bg-white/20'
                   }`}
