@@ -21,6 +21,19 @@ function formatCompactDate(isoString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function formatDueCompact(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'overdue';
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'tmrw';
+  if (diffDays <= 7) return `${diffDays}d`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Textbook': <BookOpen className="w-3 h-3" />,
   'Simulation': <PlayCircle className="w-3 h-3" />,
@@ -265,6 +278,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
                               const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
                               const compactDate = a.createdAt ? formatCompactDate(a.createdAt) : null;
+                              const wasEdited = a.updatedAt && a.createdAt &&
+                                Math.abs(new Date(a.updatedAt).getTime() - new Date(a.createdAt).getTime()) > 60000;
                               const isNew = a.createdAt ? (Date.now() - new Date(a.createdAt).getTime()) < 48 * 60 * 60 * 1000 : false;
                               return (
                                 <div
@@ -284,9 +299,19 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                     {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                                     <span className="truncate flex-1">{a.title}</span>
                                     <div className="flex items-center gap-1 shrink-0">
+                                      {a.dueDate && (
+                                        <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-gray-500'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                                          due {formatDueCompact(a.dueDate)}
+                                        </span>
+                                      )}
                                       {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
                                       {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
-                                      {compactDate && <span className="text-[8px] text-gray-600 font-mono">{compactDate}</span>}
+                                      {compactDate && <span className="text-[8px] text-gray-600 font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
+                                      {wasEdited && (
+                                        <span className="text-[7px] text-gray-600 font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+                                          edited
+                                        </span>
+                                      )}
                                       {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
                                       {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
                                       {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
@@ -343,6 +368,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                   const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
                   const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
                   const compactDate = a.createdAt ? formatCompactDate(a.createdAt) : null;
+                  const wasEdited = a.updatedAt && a.createdAt &&
+                    Math.abs(new Date(a.updatedAt).getTime() - new Date(a.createdAt).getTime()) > 60000;
                   const isNew = a.createdAt ? (Date.now() - new Date(a.createdAt).getTime()) < 48 * 60 * 60 * 1000 : false;
                   return (
                     <div
@@ -362,9 +389,19 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                         {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate flex-1">{a.title}</span>
                         <div className="flex items-center gap-1 shrink-0">
+                          {a.dueDate && (
+                            <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-gray-500'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                              due {formatDueCompact(a.dueDate)}
+                            </span>
+                          )}
                           {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
                           {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
-                          {compactDate && <span className="text-[8px] text-gray-600 font-mono">{compactDate}</span>}
+                          {compactDate && <span className="text-[8px] text-gray-600 font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
+                          {wasEdited && (
+                            <span className="text-[7px] text-gray-600 font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+                              edited
+                            </span>
+                          )}
                           {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
                           {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
                           {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}

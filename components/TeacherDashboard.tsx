@@ -59,6 +59,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [assessmentSubmissions, setAssessmentSubmissions] = useState<Submission[]>([]);
   const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
   const [csvMaxPoints, setCsvMaxPoints] = useState(100);
+  const [showNotStarted, setShowNotStarted] = useState(false);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -332,7 +333,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         const aiFlaggedCount = sectionFilteredSubs.filter(s => s.flaggedAsAI).length;
 
         // Group submissions by student
-        const completedSubs = sectionFilteredSubs.filter(s => s.status !== 'STARTED');
+        const completedSubs = sectionFilteredSubs;
         const studentMap = new Map<string, Submission[]>();
         completedSubs.forEach(s => {
           const existing = studentMap.get(s.userId) || [];
@@ -371,11 +372,27 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             bestGraded,
             attemptCount: sorted.length,
             maxAttempts: selectedAssessment?.assessmentConfig?.maxAttempts || undefined,
+            isInProgress: sorted.every(s => s.status === 'STARTED'),
             hasRubricGrade: gradedSubs.length > 0,
             needsGrading: selectedAssessment?.rubric ? sorted.some(s => !s.rubricGrade && !isTrivialAttempt(s)) : false,
             hasAISuggestion: sorted.some(s => s.aiSuggestedGrade?.status === 'pending_review'),
           };
         });
+
+        // Cross-reference enrolled students to find those who haven't started
+        const enrolledInClass = students.filter(s => {
+          const ct = selectedAssessment?.classType;
+          if (!ct) return false;
+          return s.classType === ct || s.enrolledClasses?.includes(ct);
+        });
+        const enrolledFiltered = assessmentSectionFilter
+          ? enrolledInClass.filter(s => {
+              const sec = getUserSectionForClass(s, selectedAssessment!.classType);
+              return sec === assessmentSectionFilter;
+            })
+          : enrolledInClass;
+        const submittedUserIds = new Set(sectionFilteredSubs.map(s => s.userId));
+        const notStartedStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id));
 
         // Graded count and average score (best-per-student, not per-submission)
         const gradedCount = allStudentGroups.filter(g => g.hasRubricGrade).length;
@@ -398,6 +415,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 case 'ai_suggested': return g.hasAISuggestion && !g.hasRubricGrade;
                 case 'needs_grading': return g.needsGrading;
                 case 'graded': return g.hasRubricGrade;
+                case 'in_progress': return g.isInProgress;
                 case 'normal': return g.latest.status !== 'FLAGGED' && !g.latest.flaggedAsAI && !g.needsGrading;
                 default: return true;
               }
@@ -442,14 +460,40 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               <select
                 value={selectedAssessmentId || ''}
-                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); }}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setShowNotStarted(false); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
-                {assessmentAssignments.map(a => (
-                  <option key={a.id} value={a.id}>{a.title} ({a.classType})</option>
+                {[...assessmentAssignments].sort((a, b) => {
+                  const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                  const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                  return dateB - dateA;
+                }).map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.title} ({a.classType}){a.dueDate ? ` — due ${new Date(a.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  </option>
                 ))}
               </select>
+
+              {selectedAssessment && (
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                  {selectedAssessment.createdAt && (
+                    <span title={new Date(selectedAssessment.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                      Posted {new Date(selectedAssessment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                  {selectedAssessment.dueDate && (
+                    <span className={new Date(selectedAssessment.dueDate) < new Date() ? 'text-red-400' : 'text-yellow-400'}
+                      title={new Date(selectedAssessment.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                      Due {new Date(selectedAssessment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(selectedAssessment.dueDate) < new Date() ? ' (past due)' : ''}
+                    </span>
+                  )}
+                  {selectedAssessment.targetSections && selectedAssessment.targetSections.length > 0 && (
+                    <span>Sections: {selectedAssessment.targetSections.join(', ')}</span>
+                  )}
+                </div>
+              )}
 
               {selectedAssessment && gradedCount > 0 && (
                 <div className="mt-3 flex items-center gap-2">
@@ -499,7 +543,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {/* Summary Stats */}
             {selectedAssessmentId && (
-              <div className={`grid grid-cols-2 ${selectedAssessment?.rubric ? (aiSuggestedCount > 0 ? 'md:grid-cols-6' : 'md:grid-cols-5') : 'md:grid-cols-4'} gap-4`}>
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                   <div className="text-3xl font-bold text-white">{avgScore}%</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
@@ -530,11 +574,26 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Suggested</div>
                   </div>
                 )}
+                {/* In Progress stat */}
+                {(() => {
+                  const inProgressCount = allStudentGroups.filter(g => g.isInProgress).length;
+                  return inProgressCount > 0 ? (
+                    <div className="border rounded-2xl p-5 bg-blue-900/10 border-blue-500/30">
+                      <div className="text-3xl font-bold text-blue-400">{inProgressCount}</div>
+                      <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">In Progress</div>
+                    </div>
+                  ) : null;
+                })()}
+                {/* Not Started stat */}
+                <div className={`border rounded-2xl p-5 ${notStartedStudents.length > 0 ? 'bg-orange-900/10 border-orange-500/30' : 'bg-white/5 border-white/10'}`}>
+                  <div className={`text-3xl font-bold ${notStartedStudents.length > 0 ? 'text-orange-400' : 'text-white'}`}>{notStartedStudents.length}</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Not Started</div>
+                </div>
               </div>
             )}
 
             {/* Search & Filter Bar */}
-            {selectedAssessmentId && completedSubs.length > 0 && (
+            {selectedAssessmentId && (sectionFilteredSubs.length > 0 || notStartedStudents.length > 0) && (
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -557,6 +616,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   {selectedAssessment?.rubric && <option value="ai_suggested">AI Suggested</option>}
                   {selectedAssessment?.rubric && <option value="needs_grading">Needs Grading</option>}
                   {selectedAssessment?.rubric && <option value="graded">Graded</option>}
+                  <option value="in_progress">In Progress</option>
+                  <option value="not_started">Not Started</option>
                   <option value="normal">Normal</option>
                 </select>
                 {availableSections.length > 1 && (
@@ -687,6 +748,81 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               </div>
             )}
 
+            {/* Not Started Students Panel */}
+            {selectedAssessmentId && notStartedStudents.length > 0 && (
+              <div className="bg-orange-900/10 border border-orange-500/20 rounded-2xl p-4">
+                <button
+                  onClick={() => setShowNotStarted(!showNotStarted)}
+                  className="w-full flex items-center justify-between text-left"
+                >
+                  <h4 className="text-sm font-bold text-orange-400 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Not Started ({notStartedStudents.length})
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await dataService.createAnnouncement({
+                            title: 'Assessment Reminder',
+                            content: `Reminder: "${selectedAssessment!.title}" hasn't been started yet. Please begin working on it.`,
+                            classType: selectedAssessment!.classType,
+                            priority: 'WARNING',
+                            createdAt: new Date().toISOString(),
+                            createdBy: 'Admin',
+                          });
+                          toast.success(`Reminder sent to ${selectedAssessment!.classType}`);
+                        } catch {
+                          toast.error('Failed to send reminder');
+                        }
+                      }}
+                      className="text-[10px] text-orange-400 hover:text-orange-300 font-bold px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition flex items-center gap-1"
+                    >
+                      <Zap className="w-3 h-3" /> Nudge All
+                    </button>
+                    {showNotStarted ? <ChevronUp className="w-4 h-4 text-orange-400" /> : <ChevronDown className="w-4 h-4 text-orange-400" />}
+                  </div>
+                </button>
+                {showNotStarted && (
+                  <div className="mt-3 space-y-1">
+                    {notStartedStudents.map(student => (
+                      <div key={student.id} className="flex items-center justify-between px-3 py-2 bg-black/20 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-300 font-bold">{student.name}</span>
+                          {(() => {
+                            const sec = getUserSectionForClass(student, selectedAssessment!.classType);
+                            return sec && !assessmentSectionFilter ? <span className="text-[9px] text-gray-600">{sec}</span> : null;
+                          })()}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await dataService.createAnnouncement({
+                                title: 'Assessment Reminder',
+                                content: `Reminder: "${selectedAssessment!.title}" is waiting for you. Please complete it soon.`,
+                                classType: selectedAssessment!.classType,
+                                priority: 'INFO',
+                                createdAt: new Date().toISOString(),
+                                createdBy: 'Admin',
+                                targetSections: student.classSections?.[selectedAssessment!.classType] ? [student.classSections[selectedAssessment!.classType]] : undefined,
+                              });
+                              toast.success(`Reminder sent for ${student.name}`);
+                            } catch {
+                              toast.error('Failed to send reminder');
+                            }
+                          }}
+                          className="text-[10px] text-orange-400 hover:text-orange-300 font-bold px-2 py-1 rounded bg-orange-500/10 hover:bg-orange-500/20 transition"
+                        >
+                          Nudge
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 3-Panel Grading View */}
             {selectedAssessmentId && studentGroups.length > 0 && (() => {
               const computeTotalTime = (sub: Submission) => {
@@ -795,14 +931,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   ×{group.attemptCount}
                                 </span>
                               )}
+                              {group.isInProgress && (
+                                <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0">
+                                  IN PROGRESS
+                                </span>
+                              )}
                             </div>
                             {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
                               <span className="text-[9px] text-gray-600 block">{group.userSection}</span>
                             )}
                           </div>
 
-                          <span className={`text-[11px] font-bold tabular-nums shrink-0 ${getScoreColor(displayPct)}`}>
-                            {displayPct}%
+                          <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-400' : getScoreColor(displayPct)}`}>
+                            {group.isInProgress ? '\u2014' : `${displayPct}%`}
                           </span>
                         </div>
                       );

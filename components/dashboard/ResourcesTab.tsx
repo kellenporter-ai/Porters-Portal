@@ -254,7 +254,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           )}
           <div className="flex items-center gap-3 mt-1">
             {resource.createdAt && (
-              <span className="text-[9px] text-gray-500 font-bold flex items-center gap-0.5">
+              <span className="text-[9px] text-gray-500 font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                 <Calendar size={10} /> Posted {formatRelativeDate(resource.createdAt)}
               </span>
             )}
@@ -270,9 +270,9 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
               </span>
             )}
             {hasDue && (
-              <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`}>
+              <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`} title={dueDate!.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                 <Clock className="w-3 h-3" />
-                {daysUntilDue <= 0 ? 'Overdue' : daysUntilDue === 1 ? 'Due tomorrow' : `Due in ${daysUntilDue}d`}
+                {daysUntilDue <= 0 ? `Overdue (${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : daysUntilDue === 1 ? `Due tomorrow (${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : `Due ${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (in ${daysUntilDue}d)`}
               </span>
             )}
           </div>
@@ -329,7 +329,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
 
       {Object.entries(filteredUnitGroups).length === 0 ? (
         <div className="text-center py-20 text-gray-500 italic">
-          {searchQuery ? `No resources matching "${searchQuery}".` : 'No resources released for this class node.'}
+          {searchQuery ? `No resources matching "${searchQuery}".` : 'No resources have been posted yet. Check back soon!'}
         </div>
       ) : (
         <div className="space-y-4">
