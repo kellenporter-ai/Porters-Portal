@@ -173,6 +173,7 @@ const TOOLBAR_GROUPS: { label: string; buttons: ToolbarButton[] }[] = [
       { display: '\u03A3', insert: '\u03A3', title: 'Sigma (sum)' },
       { display: '\u03C0', insert: '\u03C0', title: 'Pi' },
       { display: '\u03BB', insert: '\u03BB', title: 'Lambda' },
+      { display: '\u03C4', insert: '\u03C4', title: 'Tau (torque)' },
     ],
   },
   {
@@ -283,6 +284,7 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   { display: '\u03C4 = rF sin\u03B8', insert: '\u03C4 = r \u00D7 F \u00D7 sin(\u03B8)', title: 'Torque', category: 'Rotation' },
   { display: 'v = r\u03C9', insert: 'v = r \u00D7 \u03C9', title: 'Tangential Velocity', category: 'Rotation' },
   { display: 'a\u2099 = v\u00B2/r', insert: 'a_c = v^2/r', title: 'Centripetal Acceleration', category: 'Rotation' },
+  { display: '\u03A3\u03C4 = I\u03B1', insert: '\u03A3\u03C4 = I \u00D7 \u03B1', title: "Newton's Second Law (Rotation)", category: 'Rotation' },
   { display: 'a = \u03B1r', insert: 'a = \u03B1 \u00D7 r', title: 'Tangential Acceleration', category: 'Rotation' },
 
   // Waves & Sound

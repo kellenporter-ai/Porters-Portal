@@ -10,7 +10,6 @@ export const DefaultClassTypes = {
   AP_PHYSICS: 'AP Physics',
   HONORS_PHYSICS: 'Honors Physics',
   FORENSICS: 'Forensic Science',
-  SANDBOX: 'Sandbox',
   UNCATEGORIZED: 'Uncategorized'
 };
 

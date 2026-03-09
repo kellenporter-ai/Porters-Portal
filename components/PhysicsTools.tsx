@@ -1,33 +1,15 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, PenTool, Maximize2, Minimize2, BarChart2, TrendingUp, MessageSquare, GripHorizontal } from 'lucide-react';
+import { X, Maximize2, Minimize2, TrendingUp, MessageSquare, GripHorizontal } from 'lucide-react';
 
 interface PhysicsToolsProps {
     onToggleChat?: () => void;
     hasUnreadChat?: boolean;
 }
 
-type ToolType = 'FORCE' | 'BAR' | 'GRAPHER';
+type ToolType = 'GRAPHER';
 
 const TOOL_CONFIG: Record<ToolType, { src: string; label: string; icon: React.ReactNode; color: string; hoverBg: string; iconBg: string; iconText: string }> = {
-    FORCE: {
-        src: '/tools/force-diagram.html',
-        label: 'Free Body Diagram Builder',
-        icon: <PenTool className="w-4 h-4" />,
-        color: 'green',
-        hoverBg: 'hover:bg-green-600',
-        iconBg: 'bg-green-600/20',
-        iconText: 'text-green-400',
-    },
-    BAR: {
-        src: '/tools/bar-chart.html',
-        label: 'Conservation of Energy (LOL) Chart',
-        icon: <BarChart2 className="w-4 h-4" />,
-        color: 'blue',
-        hoverBg: 'hover:bg-blue-600',
-        iconBg: 'bg-blue-600/20',
-        iconText: 'text-blue-400',
-    },
     GRAPHER: {
         src: '/tools/grapher.html',
         label: 'AP Physics Grapher Pro',
@@ -196,32 +178,6 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
                     {!isDragging && (
                         <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
                             Grapher Pro
-                        </span>
-                    )}
-                </button>
-
-                <button
-                    onClick={guard(() => toggleTool('BAR'))}
-                    className={btnBase('hover:bg-blue-600 hover:scale-110')}
-                    title="LOL Diagrams"
-                >
-                    <BarChart2 className="w-6 h-6" />
-                    {!isDragging && (
-                        <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
-                            LOL Charts
-                        </span>
-                    )}
-                </button>
-
-                <button
-                    onClick={guard(() => toggleTool('FORCE'))}
-                    className={btnBase('hover:bg-green-600 hover:scale-110')}
-                    title="Force Diagrams"
-                >
-                    <PenTool className="w-6 h-6" />
-                    {!isDragging && (
-                        <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
-                            Force Diagram
                         </span>
                     )}
                 </button>
