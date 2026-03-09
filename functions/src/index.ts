@@ -1116,43 +1116,76 @@ export const adminEditItem = onCall(async (request) => {
 // SCHEDULED FUNCTIONS
 // ==========================================
 
-// Weekly reset — Archives THEN deletes, chunked for >500 doc safety
+// Weekly reset — Archives THEN deletes non-assessment submissions, chunked for >500 doc safety.
+// Assessment submissions (isAssessment: true) are NEVER reset — they contain rubric grades,
+// grading history, and integrity data that must persist across marking periods.
 export const sundayReset = onSchedule(
   { schedule: "59 23 * * 0", timeZone: "America/New_York" },
   async () => {
     const db = admin.firestore();
-    const collectionsToReset = ["submissions", "evidence"];
     const archiveTimestamp = new Date().toISOString();
 
     logger.info("Starting weekly reset...");
 
-    for (const collectionName of collectionsToReset) {
-      const snapshot = await db.collection(collectionName).get();
-      if (snapshot.empty) { logger.info(`No documents in ${collectionName}, skipping.`); continue; }
+    // --- Submissions: only reset non-assessment submissions ---
+    const allSubs = await db.collection("submissions").get();
+    const nonAssessmentDocs = allSubs.docs.filter(d => !d.data().isAssessment);
+    const assessmentSkipped = allSubs.size - nonAssessmentDocs.length;
 
+    if (nonAssessmentDocs.length > 0) {
       // Archive in chunks of 499
       let chunk = db.batch();
       let count = 0;
-      for (const docSnap of snapshot.docs) {
-        chunk.set(db.collection(`archived_${collectionName}`).doc(docSnap.id), {
-          ...docSnap.data(), archivedAt: archiveTimestamp, originalCollection: collectionName,
+      for (const docSnap of nonAssessmentDocs) {
+        chunk.set(db.collection("archived_submissions").doc(docSnap.id), {
+          ...docSnap.data(), archivedAt: archiveTimestamp, originalCollection: "submissions",
         });
         count++;
         if (count % 499 === 0) { await chunk.commit(); chunk = db.batch(); }
       }
       if (count % 499 !== 0) await chunk.commit();
-      logger.info(`Archived ${count} docs from ${collectionName}.`);
+      logger.info(`Archived ${count} non-assessment submissions (skipped ${assessmentSkipped} assessment submissions).`);
 
       // Delete in chunks of 499
       chunk = db.batch();
       count = 0;
-      for (const docSnap of snapshot.docs) {
+      for (const docSnap of nonAssessmentDocs) {
         chunk.delete(docSnap.ref);
         count++;
         if (count % 499 === 0) { await chunk.commit(); chunk = db.batch(); }
       }
       if (count % 499 !== 0) await chunk.commit();
-      logger.info(`Deleted ${count} docs from ${collectionName}.`);
+      logger.info(`Deleted ${count} non-assessment submissions.`);
+    } else {
+      logger.info(`No non-assessment submissions to reset (${assessmentSkipped} assessment submissions preserved).`);
+    }
+
+    // --- Evidence: reset all (no assessment distinction) ---
+    const evidenceSnap = await db.collection("evidence").get();
+    if (!evidenceSnap.empty) {
+      let chunk = db.batch();
+      let count = 0;
+      for (const docSnap of evidenceSnap.docs) {
+        chunk.set(db.collection("archived_evidence").doc(docSnap.id), {
+          ...docSnap.data(), archivedAt: archiveTimestamp, originalCollection: "evidence",
+        });
+        count++;
+        if (count % 499 === 0) { await chunk.commit(); chunk = db.batch(); }
+      }
+      if (count % 499 !== 0) await chunk.commit();
+      logger.info(`Archived ${count} docs from evidence.`);
+
+      chunk = db.batch();
+      count = 0;
+      for (const docSnap of evidenceSnap.docs) {
+        chunk.delete(docSnap.ref);
+        count++;
+        if (count % 499 === 0) { await chunk.commit(); chunk = db.batch(); }
+      }
+      if (count % 499 !== 0) await chunk.commit();
+      logger.info(`Deleted ${count} docs from evidence.`);
+    } else {
+      logger.info("No documents in evidence, skipping.");
     }
   }
 );
