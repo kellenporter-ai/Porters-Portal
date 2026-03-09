@@ -2063,7 +2063,7 @@ export const submitAssessment = onCall(async (request) => {
   const perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }> = {};
 
   for (const block of blocks) {
-    if (["MC", "SHORT_ANSWER", "SORTING", "RANKING"].includes(block.type)) {
+    if (["MC", "SHORT_ANSWER", "SORTING", "RANKING", "LINKED"].includes(block.type)) {
       const resp = responses[block.id];
       let isCorrect = false;
       let needsReview = false;
@@ -2071,7 +2071,7 @@ export const submitAssessment = onCall(async (request) => {
       if (block.type === "MC" && resp?.selected === block.correctAnswer) {
         isCorrect = true;
       }
-      if (block.type === "SHORT_ANSWER") {
+      if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
         const accepted = (block.acceptedAnswers || []).map((a: string) => a.toLowerCase().trim()).filter(Boolean);
         if (accepted.length === 0) {
           // No accepted answers — requires manual/rubric review
@@ -2104,7 +2104,7 @@ export const submitAssessment = onCall(async (request) => {
     }
 
     // Non-auto-gradable interactive blocks — always require manual/rubric review
-    if (["DRAWING", "MATH_RESPONSE", "BAR_CHART"].includes(block.type)) {
+    if (["DRAWING", "MATH_RESPONSE", "BAR_CHART", "DATA_TABLE", "CHECKLIST"].includes(block.type)) {
       const resp = responses[block.id];
       perBlock[block.id] = { correct: false, answer: resp, needsReview: true };
     }
@@ -2192,7 +2192,7 @@ export const submitAssessment = onCall(async (request) => {
   // 5c. Calculate word count from short-answer responses
   let totalWordCount = 0;
   for (const block of blocks) {
-    if (block.type === "SHORT_ANSWER") {
+    if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
       const resp = responses[block.id];
       const answerText = typeof resp?.answer === "string" ? resp.answer.trim() : "";
       if (answerText.length > 0) {

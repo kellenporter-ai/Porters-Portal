@@ -193,21 +193,43 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
     const docId = `${userId}_${assignmentId}_blocks`;
     if (isAssessment) {
-      // Clear any pre-existing responses for assessments — fresh start every time
-      setDoc(doc(db, 'lesson_block_responses', docId), {
-        userId,
-        assignmentId,
-        responses: {},
-        lastUpdated: new Date().toISOString(),
-      }).then(() => {
-        blockResponsesRef.current = {};
-        setSavedBlockResponses({});
-      }).catch(err => {
-        console.error('Failed to clear assessment block responses', err);
-        // Still start fresh in memory even if Firestore clear fails
-        blockResponsesRef.current = {};
-        setSavedBlockResponses({});
-      });
+      // Check if student already has an active session (e.g. page refresh mid-assessment).
+      // If so, restore their in-progress work instead of wiping it.
+      const storageKey = `assessment_session_${assignmentId}`;
+      const hasActiveSession = !!sessionStorage.getItem(storageKey);
+
+      if (hasActiveSession) {
+        // Mid-assessment refresh — restore saved responses
+        getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
+          if (snap.exists()) {
+            const data = snap.data();
+            const responses = data.responses || {};
+            blockResponsesRef.current = responses;
+            setSavedBlockResponses(responses);
+          } else {
+            setSavedBlockResponses({});
+          }
+        }).catch(err => {
+          console.error('Failed to load assessment block responses after refresh', err);
+          setSavedBlockResponses({});
+        });
+      } else {
+        // Fresh assessment start — clear any pre-existing responses to prevent
+        // the exploit where students pre-fill answers via DevTools/Firestore before the timer starts.
+        setDoc(doc(db, 'lesson_block_responses', docId), {
+          userId,
+          assignmentId,
+          responses: {},
+          lastUpdated: new Date().toISOString(),
+        }).then(() => {
+          blockResponsesRef.current = {};
+          setSavedBlockResponses({});
+        }).catch(err => {
+          console.error('Failed to clear assessment block responses', err);
+          blockResponsesRef.current = {};
+          setSavedBlockResponses({});
+        });
+      }
     } else {
       getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
         if (snap.exists()) {
@@ -255,23 +277,41 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     }, 1500);
   }, [userId, assignmentId]);
 
+  // Flush pending saves immediately (shared by unmount, beforeunload, and visibilitychange)
+  const flushPendingSaves = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    if (userId && assignmentId && Object.keys(blockResponsesRef.current).length > 0) {
+      const docId = `${userId}_${assignmentId}_blocks`;
+      setDoc(doc(db, 'lesson_block_responses', docId), {
+        userId,
+        assignmentId,
+        responses: blockResponsesRef.current,
+        lastUpdated: new Date().toISOString(),
+      }, { merge: true }).catch(() => {});
+    }
+  }, [userId, assignmentId]);
+
   // Flush pending saves on unmount
   useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        if (userId && assignmentId && Object.keys(blockResponsesRef.current).length > 0) {
-          const docId = `${userId}_${assignmentId}_blocks`;
-          setDoc(doc(db, 'lesson_block_responses', docId), {
-            userId,
-            assignmentId,
-            responses: blockResponsesRef.current,
-            lastUpdated: new Date().toISOString(),
-          }, { merge: true }).catch(() => {});
-        }
-      }
+    return () => flushPendingSaves();
+  }, [flushPendingSaves]);
+
+  // Flush pending saves when tab is hidden or page is closing
+  useEffect(() => {
+    const handleVisibilityFlush = () => {
+      if (document.visibilityState === 'hidden') flushPendingSaves();
     };
-  }, [userId, assignmentId]);
+    const handleBeforeUnload = () => flushPendingSaves();
+    document.addEventListener('visibilitychange', handleVisibilityFlush);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityFlush);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [flushPendingSaves]);
 
   // Clear saved lesson block responses (Firestore + local state)
   const handleClearBlockResponses = useCallback(async () => {

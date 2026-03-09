@@ -64,6 +64,12 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
   const isCorrect = selected === block.correctAnswer;
 
+  const handleSelect = (idx: number) => {
+    if (answered) return;
+    setSelected(idx);
+    onResponseChange?.({ selected: idx, answered: false });
+  };
+
   const handleSubmit = () => {
     if (selected === null) return;
     setAnswered(true);
@@ -83,7 +89,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             key={idx}
             role="radio"
             aria-checked={selected === idx}
-            onClick={() => !answered && setSelected(idx)}
+            onClick={() => handleSelect(idx)}
             disabled={answered}
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
               answered && idx === block.correctAnswer
@@ -603,16 +609,18 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [userHeight, setUserHeight] = useState<number | null>(null);
   const chartHeight = userHeight ?? (block.height || 450);
-  const savedStateRef = useRef(savedResponse);
+  // Track latest state so iframe remounts restore current work, not just initial Firestore state
+  const latestStateRef = useRef(savedResponse);
   const resizeRef = useRef<{ startY: number; startH: number } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'barChartReady' && savedStateRef.current && iframeRef.current) {
-        iframeRef.current.contentWindow?.postMessage({ type: 'loadBarChartState', state: savedStateRef.current }, '*');
+      if (e.data?.type === 'barChartReady' && latestStateRef.current && iframeRef.current) {
+        iframeRef.current.contentWindow?.postMessage({ type: 'loadBarChartState', state: latestStateRef.current }, '*');
       }
       if (e.data?.type === 'barChartState') {
+        latestStateRef.current = e.data.state;
         onResponseChange?.(e.data.state);
       }
     };
