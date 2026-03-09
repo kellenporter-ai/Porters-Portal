@@ -2102,6 +2102,12 @@ export const submitAssessment = onCall(async (request) => {
         perBlock[block.id] = { correct: isCorrect, answer: resp };
       }
     }
+
+    // Non-auto-gradable interactive blocks — always require manual/rubric review
+    if (["DRAWING", "MATH_RESPONSE", "BAR_CHART"].includes(block.type)) {
+      const resp = responses[block.id];
+      perBlock[block.id] = { correct: false, answer: resp, needsReview: true };
+    }
   }
 
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -2143,11 +2149,14 @@ export const submitAssessment = onCall(async (request) => {
     if (!r) return false;
     if (typeof r === 'string') return r.trim().length > 0;
     if (typeof r === 'object') {
-      // Check for common response shapes: { selected, answer, placements, order }
+      // Check for common response shapes: { selected, answer, placements, order, elements, steps, initial }
       const obj = r as Record<string, unknown>;
       return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0) ||
         (obj.placements && Object.keys(obj.placements as Record<string, unknown>).length > 0) ||
-        (Array.isArray(obj.order) && obj.order.length > 0);
+        (Array.isArray(obj.order) && obj.order.length > 0) ||
+        (Array.isArray(obj.elements) && obj.elements.length > 0) || // DRAWING
+        (Array.isArray(obj.steps) && obj.steps.length > 0) || // MATH_RESPONSE
+        (Array.isArray(obj.initial)); // BAR_CHART
     }
     return true;
   });
