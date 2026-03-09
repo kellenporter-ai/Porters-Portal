@@ -92,7 +92,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
                     <div className="text-sm font-bold text-white">{a.title}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{a.content}</div>
                     <div className="text-[10px] text-gray-500 mt-1">
-                      {a.classType === 'GLOBAL' ? 'All Classes' : a.classType}{a.targetSections?.length ? ` · ${a.targetSections.join(', ')}` : ''} · {new Date(a.createdAt).toLocaleDateString()}
+                      {a.classType === 'GLOBAL' ? 'All Classes' : a.classType}{a.targetSections?.length ? ` · ${a.targetSections.join(', ')}` : ''}{a.targetStudentIds?.length ? ` · ${a.targetStudentIds.length} student${a.targetStudentIds.length !== 1 ? 's' : ''}` : ''} · {new Date(a.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>

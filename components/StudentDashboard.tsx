@@ -204,9 +204,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         const sec = user.classSections?.[annClass] || user.classSections?.[activeClass] || user.section || '';
         if (!a.targetSections.includes(sec)) return false;
       }
+      if (a.targetStudentIds?.length && !a.targetStudentIds.includes(user.id)) return false;
       return true;
     });
-  }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.classSections, user.section]);
+  }, [announcements, user.gamification?.dismissedAnnouncements, activeClass, user.classSections, user.section, user.id]);
 
   const handleDismissAnnouncement = useCallback(async (id: string) => {
     await dataService.dismissAnnouncement(user.id, id);

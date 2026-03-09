@@ -771,8 +771,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             priority: 'WARNING',
                             createdAt: new Date().toISOString(),
                             createdBy: 'Admin',
+                            targetStudentIds: notStartedStudents.map(s => s.id),
                           });
-                          toast.success(`Reminder sent to ${selectedAssessment!.classType}`);
+                          toast.success(`Reminder sent to ${notStartedStudents.length} student${notStartedStudents.length !== 1 ? 's' : ''}`);
                         } catch {
                           toast.error('Failed to send reminder');
                         }
@@ -805,7 +806,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 priority: 'INFO',
                                 createdAt: new Date().toISOString(),
                                 createdBy: 'Admin',
-                                targetSections: student.classSections?.[selectedAssessment!.classType] ? [student.classSections[selectedAssessment!.classType]] : undefined,
+                                targetStudentIds: [student.id],
                               });
                               toast.success(`Reminder sent for ${student.name}`);
                             } catch {

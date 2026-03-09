@@ -643,6 +643,7 @@ export interface Announcement {
   expiresAt?: string | null;
   createdBy: string;
   targetSections?: string[];
+  targetStudentIds?: string[];
 }
 
 export type NotificationType =
