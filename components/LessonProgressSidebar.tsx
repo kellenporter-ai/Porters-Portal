@@ -4,7 +4,8 @@ import { LessonBlock } from '../types';
 import {
   CheckCircle2, HelpCircle, MessageSquare, ListChecks, BookOpen, FileText,
   Heading, Play, Target, Zap,
-  ArrowUpDown, Table, BarChart3, GripVertical, Link, ChevronLeft, ChevronRight, Clock, Star
+  ArrowUpDown, Table, BarChart3, GripVertical, Link, ChevronLeft, ChevronRight, Clock, Star,
+  Pencil, Calculator
 } from 'lucide-react';
 
 interface LessonProgressSidebarProps {
@@ -21,12 +22,12 @@ interface LessonProgressSidebarProps {
 const VISIBLE_TYPES = new Set([
   'TEXT', 'MC', 'SHORT_ANSWER', 'CHECKLIST', 'VOCABULARY', 'SECTION_HEADER',
   'VIDEO', 'OBJECTIVES', 'VOCAB_LIST', 'ACTIVITY', 'SORTING', 'DATA_TABLE',
-  'BAR_CHART', 'RANKING', 'LINKED',
+  'BAR_CHART', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE',
 ]);
 
 // Block types that award XP when completed
 const XP_TYPES = new Set([
-  'MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED',
+  'MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE',
 ]);
 
 const BLOCK_TYPE_ICON: Record<string, React.ReactNode> = {
@@ -45,6 +46,8 @@ const BLOCK_TYPE_ICON: Record<string, React.ReactNode> = {
   BAR_CHART: <BarChart3 className="w-3 h-3" />,
   RANKING: <GripVertical className="w-3 h-3" />,
   LINKED: <Link className="w-3 h-3" />,
+  DRAWING: <Pencil className="w-3 h-3" />,
+  MATH_RESPONSE: <Calculator className="w-3 h-3" />,
 };
 
 const BLOCK_TYPE_LABEL: Record<string, string> = {
@@ -63,6 +66,8 @@ const BLOCK_TYPE_LABEL: Record<string, string> = {
   BAR_CHART: 'Bar Chart',
   RANKING: 'Ranking',
   LINKED: 'Follow-up',
+  DRAWING: 'Drawing',
+  MATH_RESPONSE: 'Math Work',
 };
 
 const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
@@ -75,7 +80,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(false);
 
-  const interactiveBlocks = blocks.filter(b => ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED'].includes(b.type));
+  const interactiveBlocks = blocks.filter(b => ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'].includes(b.type));
   const completedInteractive = interactiveBlocks.filter(b => completedBlocks.has(b.id)).length;
   const totalInteractive = interactiveBlocks.length;
   const completionPercent = totalInteractive > 0
