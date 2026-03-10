@@ -11,10 +11,16 @@ interface ChatState {
 
 const ChatContext = createContext<ChatState | null>(null);
 
+const EMPTY_CHAT: ChatState = {
+  unreadChannels: new Set(),
+  markChannelRead: () => {},
+  isCommOpen: false,
+  setIsCommOpen: () => {},
+};
+
 export const useChat = (): ChatState => {
   const ctx = useContext(ChatContext);
-  if (!ctx) throw new Error('useChat must be used within ChatProvider');
-  return ctx;
+  return ctx ?? EMPTY_CHAT;
 };
 
 export const ChatProvider: React.FC<{ user: User; children: React.ReactNode }> = ({ user, children }) => {

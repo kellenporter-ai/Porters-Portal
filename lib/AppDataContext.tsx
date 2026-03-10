@@ -9,14 +9,22 @@ interface AppData {
   xpEvents: XPEvent[];
   quests: Quest[];
   enabledFeatures: { evidenceLocker: boolean; leaderboard: boolean; physicsTools: boolean; communications: boolean; dungeons: boolean; pvpArena: boolean; bossFights: boolean };
+  loading: boolean;
 }
+
+const DEFAULT_FEATURES = { evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true, dungeons: true, pvpArena: true, bossFights: true };
+
+const EMPTY_APP_DATA: AppData = {
+  assignments: [], classConfigs: [], xpEvents: [], quests: [],
+  enabledFeatures: DEFAULT_FEATURES,
+  loading: true,
+};
 
 const AppDataContext = createContext<AppData | null>(null);
 
 export const useAppData = (): AppData => {
   const ctx = useContext(AppDataContext);
-  if (!ctx) throw new Error('useAppData must be used within AppDataProvider');
-  return ctx;
+  return ctx ?? EMPTY_APP_DATA;
 };
 
 export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }> = ({ user, children }) => {
@@ -24,11 +32,12 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
   const [classConfigs, setClassConfigs] = useState<ClassConfig[]>([]);
   const [xpEvents, setXpEvents] = useState<XPEvent[]>([]);
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user.isWhitelisted && user.role !== UserRole.ADMIN) return;
     const unsubs = [
-      dataService.subscribeToAssignments(setAssignments),
+      dataService.subscribeToAssignments((a) => { setAssignments(a); setLoading(false); }),
       dataService.subscribeToClassConfigs(setClassConfigs),
     ];
 
@@ -45,15 +54,14 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
   }, [user.id, user.isWhitelisted, user.role]);
 
   const enabledFeatures = useMemo(() => {
-    const defaults = { evidenceLocker: true, leaderboard: true, physicsTools: true, communications: true, dungeons: true, pvpArena: true, bossFights: true };
     if (user.role === 'STUDENT' && user.classType) {
       const config = classConfigs.find(c => c.className === user.classType);
       if (config) return config.features;
     }
-    return defaults;
+    return DEFAULT_FEATURES;
   }, [user.role, user.classType, classConfigs]);
 
-  const value = useMemo(() => ({ assignments, classConfigs, xpEvents, quests, enabledFeatures }), [assignments, classConfigs, xpEvents, quests, enabledFeatures]);
+  const value = useMemo(() => ({ assignments, classConfigs, xpEvents, quests, enabledFeatures, loading }), [assignments, classConfigs, xpEvents, quests, enabledFeatures, loading]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 };

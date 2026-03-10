@@ -12,10 +12,13 @@ interface AdminData {
 
 const AdminDataContext = createContext<AdminData | null>(null);
 
+const EMPTY_ADMIN_DATA: AdminData = {
+  rawUsers: [], users: [], submissions: [], whitelistedEmails: [], availableSections: [],
+};
+
 export const useAdminData = (): AdminData => {
   const ctx = useContext(AdminDataContext);
-  if (!ctx) throw new Error('useAdminData must be used within AdminDataProvider');
-  return ctx;
+  return ctx ?? EMPTY_ADMIN_DATA;
 };
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

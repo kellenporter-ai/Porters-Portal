@@ -38,6 +38,7 @@ const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
 const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
 const ResourceViewer = lazy(() => import('./components/ResourceViewer'));
+const StudentReports = lazy(() => import('./components/StudentReports'));
 
 const LazyFallback = () => <RouteSkeleton />;
 
@@ -219,6 +220,12 @@ const EditorRoute: React.FC = () => {
   );
 };
 
+const StudentReportsRoute: React.FC = () => {
+  const { users, submissions } = useAdminData();
+  const { assignments } = useAppData();
+  return <StudentReports users={users} assignments={assignments} submissions={submissions} />;
+};
+
 const XPRoute: React.FC = () => {
   const { tab } = useParams<{ tab: string }>();
   const { rawUsers } = useAdminData();
@@ -365,6 +372,7 @@ const App: React.FC = () => {
               <Route path="/users" element={<Suspense fallback={<LazyFallback />}><UserManagementRoute /></Suspense>} />
               <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><GroupsRoute /></Suspense>} />
               <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><EnrollmentRoute /></Suspense>} />
+              <Route path="/reports" element={<Suspense fallback={<LazyFallback />}><StudentReportsRoute /></Suspense>} />
               <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><XPRoute /></Suspense>} />
             </Route>
           </Route>
@@ -484,8 +492,10 @@ const StudentRouteWrapper: React.FC<{
   submissions: Submission[];
   tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
 }> = ({ user, submissions, tab }) => {
-  const { assignments, classConfigs, enabledFeatures } = useAppData();
+  const { assignments, classConfigs, enabledFeatures, loading } = useAppData();
   const navigate = useNavigate();
+
+  if (loading) return <RouteSkeleton />;
 
   return (
     <StudentDashboard

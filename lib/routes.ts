@@ -12,6 +12,7 @@ export const ADMIN_ROUTES = {
   STUDENT_GROUPS: '/groups',
   ENROLLMENT_CODES: '/enrollment',
   XP_COMMAND: '/xp',
+  STUDENT_REPORTS: '/reports',
 } as const;
 
 // Student routes
@@ -60,6 +61,7 @@ export const TAB_TO_PATH: Record<string, string> = {
   'User Management': ADMIN_ROUTES.USER_MANAGEMENT,
   'Student Groups': ADMIN_ROUTES.STUDENT_GROUPS,
   'Enrollment Codes': ADMIN_ROUTES.ENROLLMENT_CODES,
+  'Student Reports': ADMIN_ROUTES.STUDENT_REPORTS,
   // XP Command children — stored as "XP Command:Operatives" in the old system
   'XP Command:Operatives': '/xp/operatives',
   'XP Command:XP Protocols': '/xp/protocols',
