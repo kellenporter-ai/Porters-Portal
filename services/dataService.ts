@@ -370,14 +370,39 @@ export const dataService = {
         limit(maxResults)
     );
 
-    return onSnapshot(q, (snapshot) => {
+    let cancelled = false;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    let unsub: (() => void) | null = null;
+
+    const subscribe = () => {
+      unsub = onSnapshot(q, (snapshot) => {
+        retryCount = 0; // Reset on successful snapshot
         const messages = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
         // Reverse to chronological order (query fetches newest-first for correct limit)
         messages.reverse();
         callback(messages);
-    }, (error) => {
-        reportError(error, { subscription: 'channelMessages' });
-    });
+      }, (error) => {
+        reportError(error, { subscription: 'channelMessages', retryCount });
+        // Tear down the failed listener before scheduling a retry
+        if (unsub) { unsub(); unsub = null; }
+        if (!cancelled) {
+          const delay = Math.min(3000 * Math.pow(2, retryCount), 12000);
+          retryCount = Math.min(retryCount + 1, 3);
+          retryTimeout = setTimeout(() => {
+            if (!cancelled) subscribe();
+          }, delay);
+        }
+      });
+    };
+
+    subscribe();
+
+    return () => {
+      cancelled = true;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (unsub) unsub();
+    };
   },
 
   // Lightweight subscription for unread badge: recent messages across all channels

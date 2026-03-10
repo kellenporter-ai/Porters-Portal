@@ -44,6 +44,8 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   const [isLoading, setIsLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMessageEmojiPickerId, setShowMessageEmojiPickerId] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const sendErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [myGroups, setMyGroups] = useState<StudentGroup[]>([]);
@@ -202,6 +204,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
     setIsLoading(true);
     const unsubMessages = dataService.subscribeToChannelMessages(channelToSubscribe, (msgs) => {
+        console.debug(`[Chat] ${channelToSubscribe}: received ${msgs.length} messages`);
         setMessages(msgs);
         setIsLoading(false);
     });
@@ -240,6 +243,11 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Clean up send error timer on unmount
+  useEffect(() => {
+    return () => { if (sendErrorTimer.current) clearTimeout(sendErrorTimer.current); };
+  }, []);
+
   // Keyboard navigation: Escape cascades through open popups, then closes panel
   useEffect(() => {
       if (!isOpen) return;
@@ -257,11 +265,15 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
   const sendMessageImpl = useCallback(async () => {
     try {
+        setSendError(null);
         await dataService.sendMessage(user, inputText, activeChannelId, selectedClass);
         setInputText('');
         setShowEmojiPicker(false);
-    } catch (err) {
+    } catch (err: any) {
         reportError(err, { method: 'sendMessage' });
+        setSendError('Failed to send — check your connection and try again');
+        if (sendErrorTimer.current) clearTimeout(sendErrorTimer.current);
+        sendErrorTimer.current = setTimeout(() => setSendError(null), 5000);
     }
   }, [inputText, activeChannelId, user, selectedClass]);
 
@@ -615,6 +627,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
                     {/* INPUT AREA */}
                     <div className="p-4 bg-black/20 backdrop-blur-md border-t border-white/5">
+                        {sendError && (
+                            <p className="text-red-400 text-xs mb-2 px-1" role="alert">{sendError}</p>
+                        )}
                         <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
                             {showEmojiPicker && (
                                 <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-4 bg-[#1a1b1e] border border-white/10 rounded-2xl p-3 shadow-2xl grid grid-cols-6 gap-2 w-64 animate-in slide-in-from-bottom-2 z-50">
