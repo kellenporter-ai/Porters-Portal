@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP, callStartAssessmentSession } from '../lib/firebase';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, addDoc, collection } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import AnnotationOverlay from './AnnotationOverlay';
@@ -143,10 +143,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   useEffect(() => {
     if (!isAssessment || !assignmentId) return;
 
-    // Check sessionStorage first (handles page refresh)
+    // Check for existing session token (localStorage survives tab close; sessionStorage is backup)
     const storageKey = `assessment_session_${assignmentId}`;
-    const cached = sessionStorage.getItem(storageKey);
+    const cached = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
     if (cached) {
+      // Keep both in sync
+      localStorage.setItem(storageKey, cached);
+      sessionStorage.setItem(storageKey, cached);
       onSessionToken?.(cached);
       return;
     }
@@ -159,6 +162,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           const result = await callStartAssessmentSession({ assignmentId });
           const data = result.data as { sessionToken: string; startedAt: number };
           if (cancelled) return;
+          localStorage.setItem(storageKey, data.sessionToken);
           sessionStorage.setItem(storageKey, data.sessionToken);
           onSessionToken?.(data.sessionToken);
           setSessionTokenError(null);
@@ -198,10 +202,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     let cancelled = false;
     const docId = `${userId}_${assignmentId}_blocks`;
     if (isAssessment) {
-      // Check if student already has an active session (e.g. page refresh mid-assessment).
+      // Check if student already has an active session (e.g. page refresh or tab re-open).
       // If so, restore their in-progress work instead of wiping it.
+      // localStorage survives tab closure; sessionStorage is same-tab only.
       const storageKey = `assessment_session_${assignmentId}`;
-      const hasActiveSession = !!sessionStorage.getItem(storageKey);
+      const hasActiveSession = !!(localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey));
 
       if (hasActiveSession) {
         // Mid-assessment refresh — restore saved responses
@@ -221,14 +226,36 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           setSavedBlockResponses({});
         });
       } else {
-        // Fresh assessment start — clear any pre-existing responses to prevent
-        // the exploit where students pre-fill answers via DevTools/Firestore before the timer starts.
-        setDoc(doc(db, 'lesson_block_responses', docId), {
-          userId,
-          assignmentId,
-          responses: {},
-          lastUpdated: new Date().toISOString(),
-        }).then(() => {
+        // Fresh assessment start — archive then clear any pre-existing responses.
+        // Soft-delete: move old responses to an archive collection before wiping,
+        // so student work can be recovered if the wipe was unintended.
+        const archiveThenClear = async () => {
+          try {
+            const snap = await getDoc(doc(db, 'lesson_block_responses', docId));
+            if (snap.exists()) {
+              const existing = snap.data();
+              const responses = existing.responses || {};
+              // Only archive if there were actual responses
+              if (Object.keys(responses).length > 0) {
+                await addDoc(collection(db, 'lesson_block_responses_archive'), {
+                  ...existing,
+                  archivedAt: new Date().toISOString(),
+                  reason: 'fresh_assessment_start',
+                });
+              }
+            }
+          } catch {
+            // Archive is best-effort — don't block the assessment start
+          }
+          // Clear responses for the fresh start (anti-cheat)
+          await setDoc(doc(db, 'lesson_block_responses', docId), {
+            userId,
+            assignmentId,
+            responses: {},
+            lastUpdated: new Date().toISOString(),
+          });
+        };
+        archiveThenClear().then(() => {
           if (cancelled) return;
           blockResponsesRef.current = {};
           setSavedBlockResponses({});

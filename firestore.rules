@@ -21,6 +21,26 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // ─── Data shape validators ───
+    function validEvidence() {
+      let d = request.resource.data;
+      return d.title is string && d.title.size() <= 500
+        && d.studentId is string
+        && d.keys().hasAll(['title', 'studentId', 'createdAt']);
+    }
+
+    function validLabReport() {
+      let d = request.resource.data;
+      return d.studentId is string
+        && d.keys().hasAll(['studentId', 'createdAt']);
+    }
+
+    function validDMMessage() {
+      let d = request.resource.data;
+      return d.senderId is string
+        && d.text is string && d.text.size() <= 5000;
+    }
+
     // ==========================================
     // USER PROFILES
     // ==========================================
@@ -185,6 +205,7 @@ service cloud.firestore {
           (isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds);
         // Authenticated participants can create messages with their own senderId
         allow create: if isAuthenticated()
+          && validDMMessage()
           && request.resource.data.senderId == request.auth.uid
           && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds;
       }
@@ -197,9 +218,9 @@ service cloud.firestore {
       // Students can read/write their own evidence, admin reads all
       allow read: if isAdmin() || 
         (isAuthenticated() && resource.data.studentId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid;
-      allow delete: if isAdmin() || 
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid && validEvidence();
+      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid && validEvidence();
+      allow delete: if isAdmin() ||
         (isAuthenticated() && resource.data.studentId == request.auth.uid);
     }
 
@@ -209,8 +230,8 @@ service cloud.firestore {
     match /lab_reports/{reportId} {
       allow read: if isAdmin() || 
         (isAuthenticated() && resource.data.studentId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid && validLabReport();
+      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid && validLabReport();
       allow delete: if isAdmin();
     }
 
@@ -273,6 +294,17 @@ service cloud.firestore {
       allow read: if isAuthenticated() &&
         (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
       allow create, update: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // ==========================================
+    // LESSON BLOCK RESPONSES ARCHIVE (soft-delete recovery)
+    // ==========================================
+    // Auto-archived when fresh-start anti-cheat clears a student's saved responses.
+    // Students can create (archive their own), only admins can read (for recovery).
+    match /lesson_block_responses_archive/{docId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow create: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid;
     }
 
@@ -525,11 +557,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Only admin can create codes
       allow create: if isAdmin();
-      // TODO: Consider moving usedCount increment to Cloud Function for atomic enforcement
-      // Admin can update any field; students can ONLY increment usedCount
-      allow update: if isAdmin()
-        || (isAuthenticated()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']));
+      // Redemption now handled by Cloud Function (atomic transaction) — admin-only direct updates
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 

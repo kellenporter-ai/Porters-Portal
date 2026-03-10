@@ -201,7 +201,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       });
       // Clear cached session token so retakes get a fresh one
       if (activeAssignment.id) {
-        sessionStorage.removeItem(`assessment_session_${activeAssignment.id}`);
+        const key = `assessment_session_${activeAssignment.id}`;
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
         sessionTokenRef.current = null;
       }
       toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
@@ -246,7 +248,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       });
     } catch { /* ignore if doc doesn't exist yet */ }
     // Clear cached session token so retake gets a fresh one
-    sessionStorage.removeItem(`assessment_session_${activeAssignment.id}`);
+    const retakeKey = `assessment_session_${activeAssignment.id}`;
+    localStorage.removeItem(retakeKey);
+    sessionStorage.removeItem(retakeKey);
     sessionTokenRef.current = null;
     setAssessmentResult(null);
   }, [activeAssignment, user.id, assessmentResult, confirm]);
