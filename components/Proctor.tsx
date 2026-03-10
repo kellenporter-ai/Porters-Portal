@@ -921,6 +921,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           completionHistory: existingDoc?.completionHistory || [],
         };
         await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+        if (!mountedRef.current) return;
         progressDocRef.current = saveData as unknown as PracticeProgressDoc;
         setShowReplayPrompt(false);
 

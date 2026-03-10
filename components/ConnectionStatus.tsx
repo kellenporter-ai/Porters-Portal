@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WifiOff, Wifi } from 'lucide-react';
 
 const ConnectionStatus: React.FC = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [showReconnected, setShowReconnected] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         const handleOnline = () => {
             setIsOnline(true);
             setShowReconnected(true);
-            setTimeout(() => setShowReconnected(false), 3000);
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => setShowReconnected(false), 3000);
         };
         const handleOffline = () => {
             setIsOnline(false);
             setShowReconnected(false);
+            if (timerRef.current) clearTimeout(timerRef.current);
         };
 
         window.addEventListener('online', handleOnline);
@@ -21,6 +24,7 @@ const ConnectionStatus: React.FC = () => {
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
+            if (timerRef.current) clearTimeout(timerRef.current);
         };
     }, []);
 

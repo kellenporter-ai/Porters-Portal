@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { User } from '../../types';
 import { useAppData } from '../../lib/AppDataContext';
 import { Search, ChevronDown, Filter, Users } from 'lucide-react';
@@ -18,6 +18,8 @@ const QUICK_AMOUNTS = [+10, +50, +100, -10, -50, -100];
 const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, allStudents }) => {
     const toast = useToast();
     const { classConfigs } = useAppData();
+    const mountedRef = useRef(true);
+    useEffect(() => () => { mountedRef.current = false; }, []);
     const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
     const [adjustAmount, setAdjustAmount] = useState(50);
     const [bulkMode, setBulkMode] = useState(false);
@@ -63,6 +65,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
             targets.map(student => Promise.resolve(onAdjust(student, adjustAmount)))
         );
         const failures = results.filter(r => r.status === 'rejected');
+        if (!mountedRef.current) return;
         if (failures.length > 0) {
             toast.error(`${failures.length} of ${targets.length} adjustments failed.`);
         }
