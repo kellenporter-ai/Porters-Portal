@@ -1607,22 +1607,17 @@ export const dismissAlert = onCall(async (request) => {
 });
 
 /**
- * generateDailyDigest — Runs every day at 6:30 AM EST.
- * Compiles the past 24 hours of portal activity into a single digest document
- * for the teacher dashboard. Runs 30 min after dailyAnalysis so EWS alerts
- * are already generated.
+ * Shared digest logic — used by both the scheduled and callable functions.
  */
-export const generateDailyDigest = onSchedule(
-  { schedule: "30 6 * * *", timeZone: "America/New_York" },
-  async () => {
-    const db = admin.firestore();
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayISO = yesterday.toISOString();
-    const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
+async function buildDailyDigest() {
+  const db = admin.firestore();
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayISO = yesterday.toISOString();
+  const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
-    logger.info(`generateDailyDigest: Compiling activity since ${yesterdayISO}`);
+  logger.info(`buildDailyDigest: Compiling activity since ${yesterdayISO}`);
 
     interface DigestEvent {
       type: string;
@@ -1636,172 +1631,217 @@ export const generateDailyDigest = onSchedule(
     }
 
     const events: DigestEvent[] = [];
-
-    // 1. Submissions in the last 24h
-    const submissionsSnap = await db.collection("submissions")
-      .where("submittedAt", ">=", yesterdayISO).get();
+    const errors: string[] = [];
 
     let totalSubmissions = 0;
     let totalResubmissions = 0;
     let totalAutoFlagged = 0;
     let totalAIFlagged = 0;
+    let totalGraded = 0;
+    let totalEWSAlerts = 0;
+    let totalLevelUps = 0;
+    let totalQuestsCompleted = 0;
+    let totalBossDefeated = 0;
+    let totalNewEnrollments = 0;
 
-    for (const doc of submissionsSnap.docs) {
-      const data = doc.data();
-      const attemptNumber = data.attemptNumber ?? 1;
-      if (attemptNumber > 1) {
-        totalResubmissions++;
-        events.push({
-          type: "RESUBMISSION",
-          studentId: data.userId,
-          studentName: data.studentName,
-          assignmentId: data.assignmentId,
-          assignmentTitle: data.assignmentTitle,
-          classType: data.classType,
-          detail: `Attempt #${attemptNumber}`,
-          timestamp: data.submittedAt,
-        });
-      } else {
-        totalSubmissions++;
-        events.push({
-          type: "SUBMISSION",
-          studentId: data.userId,
-          studentName: data.studentName,
-          assignmentId: data.assignmentId,
-          assignmentTitle: data.assignmentTitle,
-          classType: data.classType,
-          timestamp: data.submittedAt,
-        });
+    // 1. Submissions in the last 24h
+    try {
+      const submissionsSnap = await db.collection("submissions")
+        .where("submittedAt", ">=", yesterdayISO).get();
+
+      for (const doc of submissionsSnap.docs) {
+        const data = doc.data();
+        const attemptNumber = data.attemptNumber ?? 1;
+        if (attemptNumber > 1) {
+          totalResubmissions++;
+          events.push({
+            type: "RESUBMISSION",
+            studentId: data.userId,
+            studentName: data.studentName,
+            assignmentId: data.assignmentId,
+            assignmentTitle: data.assignmentTitle,
+            classType: data.classType,
+            detail: `Attempt #${attemptNumber}`,
+            timestamp: data.submittedAt,
+          });
+        } else {
+          totalSubmissions++;
+          events.push({
+            type: "SUBMISSION",
+            studentId: data.userId,
+            studentName: data.studentName,
+            assignmentId: data.assignmentId,
+            assignmentTitle: data.assignmentTitle,
+            classType: data.classType,
+            timestamp: data.submittedAt,
+          });
+        }
+        if (data.status === "FLAGGED") {
+          totalAutoFlagged++;
+          events.push({
+            type: "AUTO_FLAGGED",
+            studentId: data.userId,
+            studentName: data.studentName,
+            assignmentId: data.assignmentId,
+            assignmentTitle: data.assignmentTitle,
+            detail: "Auto-flagged for suspicious behavior",
+            timestamp: data.submittedAt,
+          });
+        }
+        if (data.flaggedAsAI === true) {
+          totalAIFlagged++;
+          events.push({
+            type: "AI_FLAGGED",
+            studentId: data.userId,
+            studentName: data.studentName,
+            assignmentId: data.assignmentId,
+            assignmentTitle: data.assignmentTitle,
+            detail: "Flagged as AI-generated",
+            timestamp: data.submittedAt,
+          });
+        }
       }
-      if (data.status === "FLAGGED") {
-        totalAutoFlagged++;
-        events.push({
-          type: "AUTO_FLAGGED",
-          studentId: data.userId,
-          studentName: data.studentName,
-          assignmentId: data.assignmentId,
-          assignmentTitle: data.assignmentTitle,
-          detail: "Auto-flagged for suspicious behavior",
-          timestamp: data.submittedAt,
-        });
-      }
-      if (data.flaggedAsAI === true) {
-        totalAIFlagged++;
-        events.push({
-          type: "AI_FLAGGED",
-          studentId: data.userId,
-          studentName: data.studentName,
-          assignmentId: data.assignmentId,
-          assignmentTitle: data.assignmentTitle,
-          detail: "Flagged as AI-generated",
-          timestamp: data.submittedAt,
-        });
-      }
+    } catch (err) {
+      logger.error("buildDailyDigest: submissions query failed", err);
+      errors.push("submissions");
     }
 
     // 2. Graded submissions (rubricGrade.gradedAt in last 24h)
-    // Re-query all submissions that have a rubricGrade and check gradedAt
-    const gradedSnap = await db.collection("submissions")
-      .where("rubricGrade.gradedAt", ">=", yesterdayISO).get();
+    try {
+      const gradedSnap = await db.collection("submissions")
+        .where("rubricGrade.gradedAt", ">=", yesterdayISO).get();
 
-    const totalGraded = gradedSnap.size;
-    for (const doc of gradedSnap.docs) {
-      const data = doc.data();
-      events.push({
-        type: "GRADED",
-        studentId: data.userId,
-        studentName: data.studentName,
-        assignmentId: data.assignmentId,
-        assignmentTitle: data.assignmentTitle,
-        detail: `Graded by teacher`,
-        timestamp: data.rubricGrade?.gradedAt || data.submittedAt,
-      });
+      totalGraded = gradedSnap.size;
+      for (const doc of gradedSnap.docs) {
+        const data = doc.data();
+        events.push({
+          type: "GRADED",
+          studentId: data.userId,
+          studentName: data.studentName,
+          assignmentId: data.assignmentId,
+          assignmentTitle: data.assignmentTitle,
+          detail: `Graded by teacher`,
+          timestamp: data.rubricGrade?.gradedAt || data.submittedAt,
+        });
+      }
+    } catch (err) {
+      logger.error("buildDailyDigest: graded query failed", err);
+      errors.push("graded");
     }
 
     // 3. New EWS alerts from last 24h
-    const alertsSnap = await db.collection("student_alerts")
-      .where("isDismissed", "==", false)
-      .where("createdAt", ">=", yesterdayISO).get();
+    try {
+      const alertsSnap = await db.collection("student_alerts")
+        .where("isDismissed", "==", false)
+        .where("createdAt", ">=", yesterdayISO).get();
 
-    const totalEWSAlerts = alertsSnap.size;
-    for (const alertDoc of alertsSnap.docs) {
-      const alertData = alertDoc.data();
-      events.push({
-        type: "EWS_ALERT",
-        studentId: alertData.studentId,
-        studentName: alertData.studentName,
-        classType: alertData.classType,
-        detail: `${alertData.riskLevel} — ${alertData.reason}`,
-        timestamp: alertData.createdAt || yesterdayISO,
-      });
+      totalEWSAlerts = alertsSnap.size;
+      for (const alertDoc of alertsSnap.docs) {
+        const alertData = alertDoc.data();
+        events.push({
+          type: "EWS_ALERT",
+          studentId: alertData.studentId,
+          studentName: alertData.studentName,
+          classType: alertData.classType,
+          detail: `${alertData.riskLevel} — ${alertData.reason}`,
+          timestamp: alertData.createdAt || yesterdayISO,
+        });
+      }
+    } catch (err) {
+      logger.error("buildDailyDigest: student_alerts query failed (missing index?)", err);
+      errors.push("ews_alerts");
     }
 
     // 4. Level ups (notifications in last 24h)
-    const levelUpSnap = await db.collection("notifications")
-      .where("type", "==", "LEVEL_UP")
-      .where("createdAt", ">=", yesterdayISO).get();
+    try {
+      const levelUpSnap = await db.collection("notifications")
+        .where("type", "==", "LEVEL_UP")
+        .where("createdAt", ">=", yesterdayISO).get();
 
-    const totalLevelUps = levelUpSnap.size;
-    for (const doc of levelUpSnap.docs) {
-      const data = doc.data();
-      events.push({
-        type: "LEVEL_UP",
-        studentId: data.userId,
-        studentName: data.studentName,
-        detail: data.message || "Level up",
-        timestamp: data.createdAt,
-      });
+      totalLevelUps = levelUpSnap.size;
+      for (const doc of levelUpSnap.docs) {
+        const data = doc.data();
+        events.push({
+          type: "LEVEL_UP",
+          studentId: data.userId,
+          studentName: data.studentName,
+          detail: data.message || "Level up",
+          timestamp: data.createdAt,
+        });
+      }
+    } catch (err) {
+      logger.error("buildDailyDigest: level_up query failed", err);
+      errors.push("level_ups");
     }
 
     // 5. Quest completions
-    const questSnap = await db.collection("notifications")
-      .where("type", "==", "QUEST_APPROVED")
-      .where("createdAt", ">=", yesterdayISO).get();
+    try {
+      const questSnap = await db.collection("notifications")
+        .where("type", "==", "QUEST_APPROVED")
+        .where("createdAt", ">=", yesterdayISO).get();
 
-    const totalQuestsCompleted = questSnap.size;
-    for (const doc of questSnap.docs) {
-      const data = doc.data();
-      events.push({
-        type: "QUEST_COMPLETED",
-        studentId: data.userId,
-        studentName: data.studentName,
-        detail: data.message || "Quest completed",
-        timestamp: data.createdAt,
-      });
+      totalQuestsCompleted = questSnap.size;
+      for (const doc of questSnap.docs) {
+        const data = doc.data();
+        events.push({
+          type: "QUEST_COMPLETED",
+          studentId: data.userId,
+          studentName: data.studentName,
+          detail: data.message || "Quest completed",
+          timestamp: data.createdAt,
+        });
+      }
+    } catch (err) {
+      logger.error("buildDailyDigest: quest query failed", err);
+      errors.push("quests");
     }
 
     // 6. Boss defeats
-    const bossSnap = await db.collection("notifications")
-      .where("type", "==", "BOSS_DEFEATED")
-      .where("createdAt", ">=", yesterdayISO).get();
+    try {
+      const bossSnap = await db.collection("notifications")
+        .where("type", "==", "BOSS_DEFEATED")
+        .where("createdAt", ">=", yesterdayISO).get();
 
-    const totalBossDefeated = bossSnap.size;
-    for (const doc of bossSnap.docs) {
-      const data = doc.data();
-      events.push({
-        type: "BOSS_DEFEATED",
-        studentId: data.userId,
-        studentName: data.studentName,
-        detail: data.message || "Boss defeated",
-        timestamp: data.createdAt,
-      });
+      totalBossDefeated = bossSnap.size;
+      for (const doc of bossSnap.docs) {
+        const data = doc.data();
+        events.push({
+          type: "BOSS_DEFEATED",
+          studentId: data.userId,
+          studentName: data.studentName,
+          detail: data.message || "Boss defeated",
+          timestamp: data.createdAt,
+        });
+      }
+    } catch (err) {
+      logger.error("buildDailyDigest: boss query failed", err);
+      errors.push("bosses");
     }
 
     // 7. New enrollments (students created in last 24h)
-    const enrollSnap = await db.collection("users")
-      .where("role", "==", "STUDENT")
-      .where("createdAt", ">=", yesterdayISO).get();
+    try {
+      const enrollSnap = await db.collection("users")
+        .where("role", "==", "STUDENT")
+        .where("createdAt", ">=", yesterdayISO).get();
 
-    const totalNewEnrollments = enrollSnap.size;
-    for (const doc of enrollSnap.docs) {
-      const data = doc.data();
-      events.push({
-        type: "NEW_ENROLLMENT",
-        studentId: doc.id,
-        studentName: data.displayName || data.name,
-        detail: "New student enrolled",
-        timestamp: data.createdAt,
-      });
+      totalNewEnrollments = enrollSnap.size;
+      for (const doc of enrollSnap.docs) {
+        const data = doc.data();
+        events.push({
+          type: "NEW_ENROLLMENT",
+          studentId: doc.id,
+          studentName: data.displayName || data.name,
+          detail: "New student enrolled",
+          timestamp: data.createdAt,
+        });
+      }
+    } catch (err) {
+      logger.error("buildDailyDigest: enrollment query failed", err);
+      errors.push("enrollments");
+    }
+
+    if (errors.length > 0) {
+      logger.warn(`buildDailyDigest: ${errors.length} section(s) failed: ${errors.join(", ")}`);
     }
 
     // Sort events by timestamp descending
@@ -1829,14 +1869,37 @@ export const generateDailyDigest = onSchedule(
     await db.collection("daily_digests").doc(dateStr).set(digest);
 
     logger.info(
-      `generateDailyDigest: Wrote digest for ${dateStr} — ` +
+      `buildDailyDigest: Wrote digest for ${dateStr} — ` +
       `${totalSubmissions} submissions, ${totalResubmissions} resubs, ` +
       `${totalGraded} graded, ${totalEWSAlerts} active alerts, ` +
       `${totalLevelUps} level-ups, ${totalQuestsCompleted} quests, ` +
       `${totalBossDefeated} bosses, ${totalNewEnrollments} enrollments.`
     );
-  }
+
+    return { date: dateStr, summary: digest.summary };
+}
+
+/**
+ * generateDailyDigest — Runs every day at 6:30 AM EST.
+ * Compiles the past 24 hours of portal activity into a single digest document
+ * for the teacher dashboard. Runs 30 min after dailyAnalysis so EWS alerts
+ * are already generated.
+ */
+export const generateDailyDigest = onSchedule(
+  { schedule: "30 6 * * *", timeZone: "America/New_York" },
+  async () => { await buildDailyDigest(); }
 );
+
+/**
+ * triggerDailyDigest — Admin-only callable to manually generate today's digest.
+ */
+export const triggerDailyDigest = onCall(async (request) => {
+  if (!request.auth?.token?.admin) {
+    throw new HttpsError("permission-denied", "Admin only.");
+  }
+  const result = await buildDailyDigest();
+  return result;
+});
 
 // ==========================================
 // UTILITY FUNCTIONS

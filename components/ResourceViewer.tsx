@@ -49,6 +49,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
   // Assessment state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitFailed, setSubmitFailed] = useState(() => {
+    return id ? sessionStorage.getItem(`submit_failed_${id}`) === '1' : false;
+  });
   const [assessmentResult, setAssessmentResult] = useState<{
     correct: number;
     total: number;
@@ -109,6 +112,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         status: existingSubmission.status ?? 'NORMAL',
         xpEarned: 0,
       });
+      // Clear submit-failed flag since auto-recovery succeeded
+      if (id) sessionStorage.removeItem(`submit_failed_${id}`);
+      setSubmitFailed(false);
     }
   }, [existingSubmission, assessmentResult, isAssessment]);
 
@@ -216,6 +222,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         const errMsg = err instanceof Error ? err.message : String(err);
         if (errMsg.includes('already-exists')) {
           toast.success('Your assessment was already submitted successfully!');
+          setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
           setIsSubmitting(false);
           return;
         }
@@ -226,6 +233,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         }
         reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
         toast.error('Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.');
+        setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
       }
     }
     setIsSubmitting(false);
@@ -267,6 +275,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }, [activeAssignment, user.id, assessmentResult, confirm]);
 
   const handleExit = () => {
+    if (id) sessionStorage.removeItem(`submit_failed_${id}`);
     setAssignViewMode('WORK');
     // The navigation guard pushed an extra history entry; skip past it
     if (guardHistoryPushedRef.current) {
@@ -283,7 +292,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const guardHistoryPushedRef = useRef(false);
 
   useEffect(() => {
-    if (!isAssessment || assessmentResult) return;
+    if (!isAssessment || assessmentResult || submitFailed) return;
 
     // Push a duplicate state so back button can be intercepted
     window.history.pushState(null, '', window.location.href);
@@ -310,7 +319,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         guardHistoryPushedRef.current = false;
       }
     };
-  }, [isAssessment, assessmentResult]);
+  }, [isAssessment, assessmentResult, submitFailed]);
 
   if (!activeAssignment) {
     // Still loading app data — show skeleton instead of "not found"
@@ -583,6 +592,21 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Escape hatch — submission failed or already submitted but no results to show */}
+      {submitFailed && !assessmentResult && isAssessment && (
+        <div className="fixed top-0 left-0 right-0 z-[55] bg-amber-600/90 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-white text-xs font-medium">
+            Your work has been saved. Check with your teacher if your submission went through.
+          </p>
+          <button
+            onClick={handleExit}
+            className="shrink-0 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+          >
+            <Home className="w-3.5 h-3.5" /> Return to Dashboard
+          </button>
         </div>
       )}
 
