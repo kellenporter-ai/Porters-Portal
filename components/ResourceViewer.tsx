@@ -182,44 +182,53 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     }
 
     setIsSubmitting(true);
-    try {
-      const result = await dataService.submitAssessment(
-        user.name,
-        activeAssignment.id,
-        responses,
-        metrics,
-        activeAssignment.classType,
-        sessionTokenRef.current || undefined
-      );
-      setAssessmentResult({
-        correct: result.assessmentScore.correct,
-        total: result.assessmentScore.total,
-        percentage: result.assessmentScore.percentage,
-        perBlock: result.assessmentScore.perBlock,
-        attemptNumber: result.attemptNumber,
-        status: result.status,
-        xpEarned: result.xpEarned,
-      });
-      // Clear cached session token so retakes get a fresh one
-      if (activeAssignment.id) {
-        const key = `assessment_session_${activeAssignment.id}`;
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-        sessionTokenRef.current = null;
-      }
-      toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes('already-exists')) {
-        // Submission already went through server-side — reassure the student
-        toast.success('Your assessment was already submitted successfully!');
-      } else {
+    const MAX_SUBMIT_RETRIES = 2;
+    for (let attempt = 0; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
+      try {
+        const result = await dataService.submitAssessment(
+          user.name,
+          activeAssignment.id,
+          responses,
+          metrics,
+          activeAssignment.classType,
+          sessionTokenRef.current || undefined
+        );
+        setAssessmentResult({
+          correct: result.assessmentScore.correct,
+          total: result.assessmentScore.total,
+          percentage: result.assessmentScore.percentage,
+          perBlock: result.assessmentScore.perBlock,
+          attemptNumber: result.attemptNumber,
+          status: result.status,
+          xpEarned: result.xpEarned,
+        });
+        // Clear cached session token so retakes get a fresh one
+        if (activeAssignment.id) {
+          const key = `assessment_session_${activeAssignment.id}`;
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+          sessionTokenRef.current = null;
+        }
+        toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
+        setIsSubmitting(false);
+        return;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes('already-exists')) {
+          toast.success('Your assessment was already submitted successfully!');
+          setIsSubmitting(false);
+          return;
+        }
+        if (attempt < MAX_SUBMIT_RETRIES) {
+          toast.info('Submission taking longer than expected. Retrying...');
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
         reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
         toast.error('Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.');
       }
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   }, [activeAssignment, user.name, toast]);
 
   // Assessment retake handler — confirm, then clear saved working responses so Proctor starts fresh
@@ -296,6 +305,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (guardHistoryPushedRef.current) {
+        window.history.go(-1);
+        guardHistoryPushedRef.current = false;
+      }
     };
   }, [isAssessment, assessmentResult]);
 

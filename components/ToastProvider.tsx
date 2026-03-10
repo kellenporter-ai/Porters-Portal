@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
     id: string;
@@ -13,6 +13,7 @@ interface ToastContextType {
     success: (message: string) => void;
     error: (message: string) => void;
     info: (message: string) => void;
+    warning: (message: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -27,12 +28,14 @@ const ICONS: Record<ToastType, React.ReactNode> = {
     success: <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />,
     error: <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />,
     info: <Info className="w-5 h-5 text-blue-400 shrink-0" />,
+    warning: <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />,
 };
 
 const STYLES: Record<ToastType, string> = {
     success: 'border-green-500/30 bg-green-950/80',
     error: 'border-red-500/30 bg-red-950/80',
     info: 'border-blue-500/30 bg-blue-950/80',
+    warning: 'border-amber-500/30 bg-amber-950/80',
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,6 +57,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         success: (msg) => addToast(msg, 'success'),
         error: (msg) => addToast(msg, 'error'),
         info: (msg) => addToast(msg, 'info'),
+        warning: (msg) => addToast(msg, 'warning'),
     };
 
     return (

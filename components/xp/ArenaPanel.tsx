@@ -215,6 +215,10 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
         setQueueMatchId(result.matchId);
         setPhase('QUEUED');
         // Subscribe to the queued document to detect when an opponent joins
+        if (unsubQueueRef.current) {
+          unsubQueueRef.current();
+          unsubQueueRef.current = null;
+        }
         unsubQueueRef.current = dataService.subscribeToArenaQueue(result.matchId, (match) => {
           if (match && match.status === 'COMPLETED') {
             unsubQueueRef.current?.();

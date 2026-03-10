@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { IdleMission, ActiveIdleMission } from '../../types';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
@@ -48,7 +48,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
   const toast = useToast();
   const [missions, setMissions] = useState<IdleMission[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const [activeMissions, setActiveMissions] = useState<ActiveIdleMission[]>([]);
   const [playerLevel, setPlayerLevel] = useState(1);
   const [playerStats, setPlayerStats] = useState({ tech: 10, focus: 10, analysis: 10, charisma: 10 });
@@ -82,8 +82,13 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
   }, []);
 
   const maxSlots = playerLevel >= 50 ? 3 : playerLevel >= 25 ? 2 : 1;
-  const unclaimed = activeMissions.filter(m => !m.claimed);
+  const unclaimed = useMemo(() => activeMissions.filter(m => !m.claimed), [activeMissions]);
   const slotsUsed = unclaimed.length;
+
+  const countdowns = useMemo(() => {
+    void tick;
+    return new Map(unclaimed.map(m => [m.missionId, { label: formatCountdown(m.completesAt), ready: isComplete(m.completesAt) }]));
+  }, [unclaimed, tick]);
 
   const handleDeploy = async (mission: IdleMission) => {
     setLoading(`deploy-${mission.id}`);
@@ -116,11 +121,13 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
     }
   };
 
-  // Build a map of missionId -> active entry for quick lookup
-  const activeMap = new Map<string, ActiveIdleMission>();
-  for (const m of activeMissions) {
-    if (!m.claimed) activeMap.set(m.missionId, m);
-  }
+  const activeMap = useMemo(() => {
+    const map = new Map<string, ActiveIdleMission>();
+    for (const m of activeMissions) {
+      if (!m.claimed) map.set(m.missionId, m);
+    }
+    return map;
+  }, [activeMissions]);
 
   return (
     <div className="space-y-4">
@@ -140,7 +147,8 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
         <div className="space-y-2">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-purple-400 px-1">Active Deployments</h4>
           {unclaimed.map(active => {
-            const ready = isComplete(active.completesAt);
+            const cd = countdowns.get(active.missionId);
+            const ready = cd?.ready ?? isComplete(active.completesAt);
             const isClaiming = loading === `claim-${active.missionId}`;
             return (
               <div key={`${active.missionId}-${active.deployedAt}`}
@@ -157,7 +165,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
                       <Clock className="w-4 h-4 text-gray-500" />
                     )}
                     <span className={`text-sm font-bold ${ready ? 'text-emerald-400' : 'text-gray-300'}`}>
-                      {formatCountdown(active.completesAt)}
+                      {cd?.label ?? formatCountdown(active.completesAt)}
                     </span>
                   </div>
                 </div>

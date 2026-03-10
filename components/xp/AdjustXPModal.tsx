@@ -3,6 +3,7 @@ import { User } from '../../types';
 import { useAppData } from '../../lib/AppDataContext';
 import { Search, ChevronDown, Filter, Users } from 'lucide-react';
 import Modal from '../Modal';
+import { useToast } from '../ToastProvider';
 
 interface AdjustXPModalProps {
     user: User | null;
@@ -15,6 +16,7 @@ interface AdjustXPModalProps {
 const QUICK_AMOUNTS = [+10, +50, +100, -10, -50, -100];
 
 const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, allStudents }) => {
+    const toast = useToast();
     const { classConfigs } = useAppData();
     const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
     const [adjustAmount, setAdjustAmount] = useState(50);
@@ -57,8 +59,12 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
         if (!allStudents || selectedIds.size === 0) return;
         setApplying(true);
         const targets = allStudents.filter(s => selectedIds.has(s.id));
-        for (const student of targets) {
-            onAdjust(student, adjustAmount);
+        const results = await Promise.allSettled(
+            targets.map(student => Promise.resolve(onAdjust(student, adjustAmount)))
+        );
+        const failures = results.filter(r => r.status === 'rejected');
+        if (failures.length > 0) {
+            toast.error(`${failures.length} of ${targets.length} adjustments failed.`);
         }
         setApplying(false);
         setSelectedIds(new Set());

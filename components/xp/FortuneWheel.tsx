@@ -44,7 +44,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
       setRotation(prev => prev + targetAngle);
 
       // Wait for animation to finish
-      timersRef.current.push(setTimeout(() => {
+      const timerId = setTimeout(() => {
         sfx.wheelPrize();
         setResult(data.rewardDescription);
         setSpinning(false);
@@ -53,7 +53,9 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
         } else {
           toast.info(data.rewardDescription);
         }
-      }, 4000));
+        timersRef.current = timersRef.current.filter(t => t !== timerId);
+      }, 4000);
+      timersRef.current.push(timerId);
     } catch (err) {
       setSpinning(false);
       toast.error(err instanceof Error ? err.message : 'Spin failed');

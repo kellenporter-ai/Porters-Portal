@@ -106,7 +106,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                         {quiz.questions.length} Questions
                       </span>
                       <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">
-                        HP: {(quiz.currentHp ?? (quiz.scaledMaxHp || quiz.maxHp)).toLocaleString()}/{(quiz.scaledMaxHp || quiz.maxHp).toLocaleString()}{quiz.scaledMaxHp && quiz.scaledMaxHp !== quiz.maxHp ? ` (base: ${quiz.maxHp.toLocaleString()})` : ''}
+                        HP: {(quiz.currentHp ?? (quiz.scaledMaxHp ?? quiz.maxHp)).toLocaleString()}/{(quiz.scaledMaxHp ?? quiz.maxHp).toLocaleString()}{quiz.scaledMaxHp && quiz.scaledMaxHp !== quiz.maxHp ? ` (base: ${quiz.maxHp.toLocaleString()})` : ''}
                       </span>
                       <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
                         {quiz.damagePerCorrect} dmg/correct

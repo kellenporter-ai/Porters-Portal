@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BossEncounter } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
@@ -50,16 +50,17 @@ const BossCard: React.FC<{
   const hoursLeft = Math.max(0, Math.floor(timeLeft / 3600000));
 
   // Build leaderboard from distributed damage log
-  const topDamagers = damageLog.reduce<Record<string, { name: string; total: number }>>((acc, entry) => {
-    if (!acc[entry.userId]) acc[entry.userId] = { name: entry.userName, total: 0 };
-    acc[entry.userId].total += entry.damage;
-    return acc;
-  }, {});
-  const leaderboard = Object.entries(topDamagers)
-    .sort(([, a], [, b]) => b.total - a.total)
-    .slice(0, 5);
-
-  const myDamage = topDamagers[userId]?.total || 0;
+  const { leaderboard, myDamage } = useMemo(() => {
+    const topDamagers = damageLog.reduce<Record<string, { name: string; total: number }>>((acc, entry) => {
+      if (!acc[entry.userId]) acc[entry.userId] = { name: entry.userName, total: 0 };
+      acc[entry.userId].total += entry.damage;
+      return acc;
+    }, {});
+    const lb = Object.entries(topDamagers)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .slice(0, 5);
+    return { leaderboard: lb, myDamage: topDamagers[userId]?.total || 0 };
+  }, [damageLog, userId]);
   const isHit = lastHit?.bossId === boss.id;
 
   return (

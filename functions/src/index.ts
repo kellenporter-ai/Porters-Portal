@@ -1133,42 +1133,44 @@ export const sundayReset = onSchedule(
 
     logger.info("Starting weekly evidence cleanup...");
 
-    const evidenceSnap = await db.collection("evidence").get();
-    if (evidenceSnap.empty) {
-      logger.info("No evidence documents to clean up.");
-      return;
-    }
-
-    // 1. Delete uploaded images from Storage
+    // 1. Delete uploaded images from Storage + Firestore docs in paginated batches
     let storageDeleted = 0;
-    for (const docSnap of evidenceSnap.docs) {
-      const data = docSnap.data();
-      if (data.imageUrl) {
-        try {
-          // imageUrl is a full GCS download URL — extract the storage path
-          const urlPath = decodeURIComponent(new URL(data.imageUrl).pathname);
-          // Path format: /v0/b/<bucket>/o/<encoded-path> — extract after /o/
-          const match = urlPath.match(/\/o\/(.+)/);
-          if (match) {
-            await bucket.file(match[1]).delete().catch(() => {});
-            storageDeleted++;
+    let count = 0;
+    let lastDoc: any = null;
+
+    while (true) {
+      let query = db.collection("evidence").limit(499);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const evidenceSnap = await query.get();
+      if (evidenceSnap.empty) break;
+      lastDoc = evidenceSnap.docs[evidenceSnap.docs.length - 1];
+
+      // Delete images from Storage
+      for (const docSnap of evidenceSnap.docs) {
+        const data = docSnap.data();
+        if (data.imageUrl) {
+          try {
+            const urlPath = decodeURIComponent(new URL(data.imageUrl).pathname);
+            const match = urlPath.match(/\/o\/(.+)/);
+            if (match) {
+              await bucket.file(match[1]).delete().catch(() => {});
+              storageDeleted++;
+            }
+          } catch {
+            // File may already be deleted — not critical
           }
-        } catch {
-          // File may already be deleted — not critical
         }
       }
-    }
-    logger.info(`Deleted ${storageDeleted} evidence images from Storage.`);
 
-    // 2. Delete Firestore evidence docs in chunks of 499
-    let chunk = db.batch();
-    let count = 0;
-    for (const docSnap of evidenceSnap.docs) {
-      chunk.delete(docSnap.ref);
-      count++;
-      if (count % 499 === 0) { await chunk.commit(); chunk = db.batch(); }
+      // Batch delete Firestore docs
+      const chunk = db.batch();
+      evidenceSnap.docs.forEach((d) => chunk.delete(d.ref));
+      await chunk.commit();
+      count += evidenceSnap.size;
+      if (evidenceSnap.size < 499) break;
     }
-    if (count % 499 !== 0) await chunk.commit();
+
+    logger.info(`Deleted ${storageDeleted} evidence images from Storage.`);
     logger.info(`Deleted ${count} evidence documents from Firestore.`);
   }
 );
@@ -1198,17 +1200,39 @@ export const dailyAnalysis = onSchedule(
 
     logger.info(`dailyAnalysis: Analyzing submissions since ${windowStartISO}`);
 
-    // 1. Fetch all students
-    const usersSnap = await db.collection("users")
-      .where("role", "==", "STUDENT").get();
-    if (usersSnap.empty) {
+    // 1. Fetch all students (paginated)
+    const allUserDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let lastUserDoc: any = null;
+    while (true) {
+      let uQuery = db.collection("users")
+        .where("role", "==", "STUDENT").limit(499);
+      if (lastUserDoc) uQuery = uQuery.startAfter(lastUserDoc);
+      const uSnap = await uQuery.get();
+      if (uSnap.empty) break;
+      lastUserDoc = uSnap.docs[uSnap.docs.length - 1];
+      allUserDocs.push(...uSnap.docs);
+      if (uSnap.size < 499) break;
+    }
+    if (allUserDocs.length === 0) {
       logger.info("dailyAnalysis: No students found. Skipping.");
       return;
     }
+    const usersSnap = { docs: allUserDocs, empty: false };
 
-    // 2. Fetch recent submissions (from archived + current)
-    const submissionsSnap = await db.collection("submissions")
-      .where("submittedAt", ">=", windowStartISO).get();
+    // 2. Fetch recent submissions (paginated)
+    const allSubDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let lastSubDoc: any = null;
+    while (true) {
+      let sQuery = db.collection("submissions")
+        .where("submittedAt", ">=", windowStartISO).limit(499);
+      if (lastSubDoc) sQuery = sQuery.startAfter(lastSubDoc);
+      const sSnap = await sQuery.get();
+      if (sSnap.empty) break;
+      lastSubDoc = sSnap.docs[sSnap.docs.length - 1];
+      allSubDocs.push(...sSnap.docs);
+      if (sSnap.size < 499) break;
+    }
+    const submissionsSnap = { docs: allSubDocs };
 
     // Build per-student metrics
     const studentMetrics: Map<string, {
@@ -2007,10 +2031,6 @@ export const startAssessmentSession = onCall(async (request) => {
 // ==========================================
 // SUBMIT ASSESSMENT — Server-side grading + telemetry
 // ==========================================
-// Grace period: tokenless submissions allowed until this timestamp.
-// Set to ~12 hours after deployment on 2026-03-06.
-const SESSION_TOKEN_REQUIRED_AFTER = 1772755200000 + 12 * 60 * 60 * 1000; // 2026-03-06T00:00:00Z + 12h = 2026-03-06T12:00:00Z
-
 export const submitAssessment = onCall(async (request) => {
   // 1. Verify auth
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
@@ -2024,7 +2044,6 @@ export const submitAssessment = onCall(async (request) => {
   // 2. Validate session token (or enforce grace period)
   const db = admin.firestore();
   let sessionStartedAt: number | null = null;
-  let legacySubmission = false;
 
   if (sessionToken) {
     // Validate and consume token atomically via transaction
@@ -2055,22 +2074,16 @@ export const submitAssessment = onCall(async (request) => {
       sessionStartedAt = Number(tokenData.startedAt);
     }
   } else {
-    // No token provided — check grace period
-    const now = Date.now();
-    if (now > SESSION_TOKEN_REQUIRED_AFTER) {
-      // Check if student has unsaved draft responses
-      const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
-      const draftSnap = await draftRef.get();
-      const hasUnsavedWork = draftSnap.exists && Object.keys(draftSnap.data()?.responses || {}).length > 0;
-      throw new HttpsError("failed-precondition",
-        JSON.stringify({
-          message: "Your session has expired. Please start a new assessment attempt.",
-          hasUnsavedWork,
-          hint: hasUnsavedWork ? "Your draft responses are saved. Starting a new attempt will preserve them for recovery." : undefined,
-        }));
-    }
-    legacySubmission = true;
-    logger.warn(`submitAssessment: tokenless submission from uid=${uid}, assignment=${assignmentId} (grace period)`);
+    // No session token — check if student has unsaved draft responses for a helpful error
+    const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
+    const draftSnap = await draftRef.get();
+    const hasUnsavedWork = draftSnap.exists && Object.keys(draftSnap.data()?.responses || {}).length > 0;
+    throw new HttpsError("failed-precondition",
+      JSON.stringify({
+        message: "Your session has expired. Please start a new assessment attempt.",
+        hasUnsavedWork,
+        hint: hasUnsavedWork ? "Your draft responses are saved. Starting a new attempt will preserve them for recovery." : undefined,
+      }));
   }
 
   // 3. Read assignment to get answer keys
@@ -2269,7 +2282,6 @@ export const submitAssessment = onCall(async (request) => {
     hasUnreadAdmin: true,
     hasUnreadStudent: false,
     ...(userSection ? { userSection } : {}),
-    ...(legacySubmission ? { legacySubmission: true } : {}),
     ...(sessionToken ? { sessionToken } : {}),
   };
 
@@ -3348,7 +3360,7 @@ export const dealBossDamage = onCall(async (request) => {
   await batch.commit();
 
   // Step 5: Read all shards to calculate current HP + sync boss document
-  const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).get();
+  const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).limit(BOSS_SHARD_COUNT).get();
   let totalDamage = 0;
   shardsSnap.forEach(doc => { totalDamage += doc.data().damageDealt || 0; });
   const newHp = Math.max(0, boss.maxHp - totalDamage);
@@ -3365,13 +3377,21 @@ export const dealBossDamage = onCall(async (request) => {
     const rewardItemRarity = rewards.itemRarity || null;
 
     if (rewardXp > 0 || rewardFlux > 0 || rewardItemRarity) {
-      // Read damage_log subcollection to find all unique contributors
-      const logSnap = await db.collection(`boss_encounters/${bossId}/damage_log`).get();
+      // Read damage_log subcollection to find all unique contributors (paginated)
       const contributorIds = new Set<string>();
-      logSnap.forEach(doc => {
-        const entry = doc.data();
-        if (entry.userId) contributorIds.add(entry.userId);
-      });
+      let lastLogDoc: any = null;
+      while (true) {
+        let logQuery = db.collection(`boss_encounters/${bossId}/damage_log`).limit(499);
+        if (lastLogDoc) logQuery = logQuery.startAfter(lastLogDoc);
+        const logSnap = await logQuery.get();
+        if (logSnap.empty) break;
+        lastLogDoc = logSnap.docs[logSnap.docs.length - 1];
+        logSnap.forEach(doc => {
+          const entry = doc.data();
+          if (entry.userId) contributorIds.add(entry.userId);
+        });
+        if (logSnap.size < 499) break;
+      }
 
       // Award each contributor
       for (const contributorId of contributorIds) {
@@ -4327,7 +4347,6 @@ export const migrateClassXp = onCall(async (request) => {
   const dryRun = request.data?.dryRun !== false; // default true for safety
 
   const db = admin.firestore();
-  const snapshot = await db.collection("users").where("role", "==", "STUDENT").get();
 
   const BATCH_SIZE = 400;
   const toUpdate: { id: string; name: string; classType: string; currentClassXp: number; totalXp: number }[] = [];
@@ -4336,34 +4355,46 @@ export const migrateClassXp = onCall(async (request) => {
   let skippedAlreadyCorrect = 0;
   let skippedNoClass = 0;
   let skippedNoXp = 0;
+  let totalScanned = 0;
 
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    const gam = data.gamification || {};
-    const totalXp: number = gam.xp || 0;
-    const classXpMap: Record<string, number> = gam.classXp || {};
+  let lastDoc: any = null;
+  while (true) {
+    let query = db.collection("users").where("role", "==", "STUDENT").limit(499);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    totalScanned += snapshot.size;
 
-    const classes: string[] = data.enrolledClasses?.length
-      ? data.enrolledClasses
-      : data.classType ? [data.classType] : [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const gam = data.gamification || {};
+      const totalXp: number = gam.xp || 0;
+      const classXpMap: Record<string, number> = gam.classXp || {};
 
-    if (classes.length === 0) { skippedNoClass++; return; }
-    if (classes.length > 1)   { skippedMultiClass++; return; }
-    if (totalXp === 0)        { skippedNoXp++; return; }
+      const classes: string[] = data.enrolledClasses?.length
+        ? data.enrolledClasses
+        : data.classType ? [data.classType] : [];
 
-    const singleClass = classes[0];
-    const currentClassXp = classXpMap[singleClass] || 0;
+      if (classes.length === 0) { skippedNoClass++; return; }
+      if (classes.length > 1)   { skippedMultiClass++; return; }
+      if (totalXp === 0)        { skippedNoXp++; return; }
 
-    if (currentClassXp >= totalXp) { skippedAlreadyCorrect++; return; }
+      const singleClass = classes[0];
+      const currentClassXp = classXpMap[singleClass] || 0;
 
-    toUpdate.push({
-      id: doc.id,
-      name: data.name || doc.id,
-      classType: singleClass,
-      currentClassXp,
-      totalXp,
+      if (currentClassXp >= totalXp) { skippedAlreadyCorrect++; return; }
+
+      toUpdate.push({
+        id: doc.id,
+        name: data.name || doc.id,
+        classType: singleClass,
+        currentClassXp,
+        totalXp,
+      });
     });
-  });
+    if (snapshot.size < 499) break;
+  }
 
   if (!dryRun && toUpdate.length > 0) {
     for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
@@ -4380,7 +4411,7 @@ export const migrateClassXp = onCall(async (request) => {
 
   return {
     dryRun,
-    totalScanned: snapshot.size,
+    totalScanned,
     updated: toUpdate.length,
     skippedMultiClass,
     skippedAlreadyCorrect,
@@ -4442,53 +4473,72 @@ export const onNewAssignment = onDocumentCreated(
 
     logger.info(`New assignment published: "${title}" for ${classType}`);
 
-    // Find all students enrolled in this class
+    // Find all students enrolled in this class (paginated)
     const db = admin.firestore();
-    const studentsSnap = await db.collection("users")
-      .where("role", "==", "STUDENT")
-      .where("isWhitelisted", "==", true)
-      .get();
-
     let emailsSent = 0;
-    const emailPromises: Promise<void>[] = [];
+    let lastDoc: any = null;
 
-    studentsSnap.docs.forEach((doc) => {
-      const student = doc.data();
-      const enrolled: string[] = student.enrolledClasses || [];
-      if (!enrolled.includes(classType)) return;
+    while (true) {
+      let query = db.collection("users")
+        .where("role", "==", "STUDENT")
+        .where("isWhitelisted", "==", true)
+        .limit(499);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const studentsSnap = await query.get();
+      if (studentsSnap.empty) break;
+      lastDoc = studentsSnap.docs[studentsSnap.docs.length - 1];
 
-      // Section filtering
-      if (data.targetSections?.length) {
-        const studentSection = student.classSections?.[classType] || student.section || "";
-        if (!data.targetSections.includes(studentSection)) return;
+      const emailPromises: Promise<void>[] = [];
+
+      studentsSnap.docs.forEach((doc) => {
+        const student = doc.data();
+        const enrolled: string[] = student.enrolledClasses || [];
+        if (!enrolled.includes(classType)) return;
+
+        // Section filtering
+        if (data.targetSections?.length) {
+          const studentSection = student.classSections?.[classType] || student.section || "";
+          if (!data.targetSections.includes(studentSection)) return;
+        }
+
+        const email = student.email as string;
+        if (!email) return;
+
+        emailsSent++;
+        emailPromises.push(
+          queueEmail(
+            email,
+            `New Assignment: ${title}`,
+            `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+                <h2 style="color: #a78bfa; margin: 0 0 8px;">📋 New Assignment Posted</h2>
+                <h3 style="color: #ffffff; margin: 0 0 16px;">${title}</h3>
+                <p style="color: #9ca3af; margin: 0 0 8px;">Class: <strong style="color: #e5e7eb;">${classType}</strong></p>
+                ${dueDate ? `<p style="color: #9ca3af; margin: 0 0 8px;">Due: <strong style="color: #fbbf24;">${dueDate}</strong></p>` : ""}
+                ${data.description ? `<p style="color: #9ca3af; margin: 16px 0 0;">${data.description}</p>` : ""}
+                <hr style="border: 1px solid #374151; margin: 16px 0;" />
+                <p style="color: #6b7280; font-size: 12px;">Porter's Portal — ${classType}</p>
+              </div>
+            </div>
+            `,
+          ),
+        );
+
+        // Batch emails in groups of 100
+        if (emailPromises.length >= 100) {
+          // Intentionally not awaited inside forEach — handled below
+        }
+      });
+
+      // Send emails in batches of 100
+      for (let i = 0; i < emailPromises.length; i += 100) {
+        await Promise.all(emailPromises.slice(i, i + 100));
       }
 
-      const email = student.email as string;
-      if (!email) return;
+      if (studentsSnap.size < 499) break;
+    }
 
-      emailsSent++;
-      emailPromises.push(
-        queueEmail(
-          email,
-          `New Assignment: ${title}`,
-          `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
-              <h2 style="color: #a78bfa; margin: 0 0 8px;">📋 New Assignment Posted</h2>
-              <h3 style="color: #ffffff; margin: 0 0 16px;">${title}</h3>
-              <p style="color: #9ca3af; margin: 0 0 8px;">Class: <strong style="color: #e5e7eb;">${classType}</strong></p>
-              ${dueDate ? `<p style="color: #9ca3af; margin: 0 0 8px;">Due: <strong style="color: #fbbf24;">${dueDate}</strong></p>` : ""}
-              ${data.description ? `<p style="color: #9ca3af; margin: 16px 0 0;">${data.description}</p>` : ""}
-              <hr style="border: 1px solid #374151; margin: 16px 0;" />
-              <p style="color: #6b7280; font-size: 12px;">Porter's Portal — ${classType}</p>
-            </div>
-          </div>
-          `,
-        ),
-      );
-    });
-
-    await Promise.all(emailPromises);
     logger.info(`Queued ${emailsSent} emails for new assignment "${title}"`);
   },
 );
@@ -4571,55 +4621,69 @@ export const checkStreaksAtRisk = onSchedule(
     const weekNum = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
     const currentWeekId = `${now.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 
-    // Get all students with active streaks
-    const studentsSnap = await db.collection("users")
-      .where("role", "==", "STUDENT")
-      .where("isWhitelisted", "==", true)
-      .get();
-
+    // Get all students with active streaks (paginated)
     let emailsSent = 0;
-    const emailPromises: Promise<void>[] = [];
+    let lastDoc: any = null;
 
-    studentsSnap.docs.forEach((doc) => {
-      const data = doc.data();
-      const gam = data.gamification || {};
-      const streak = gam.engagementStreak as number || 0;
-      const lastWeek = gam.lastStreakWeek as string || "";
+    while (true) {
+      let query = db.collection("users")
+        .where("role", "==", "STUDENT")
+        .where("isWhitelisted", "==", true)
+        .limit(499);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const studentsSnap = await query.get();
+      if (studentsSnap.empty) break;
+      lastDoc = studentsSnap.docs[studentsSnap.docs.length - 1];
 
-      // Only warn if they have a streak >= 2 weeks and haven't engaged this week
-      if (streak < 2 || lastWeek === currentWeekId) return;
+      const emailPromises: Promise<void>[] = [];
 
-      const email = data.email as string;
-      if (!email) return;
+      studentsSnap.docs.forEach((doc) => {
+        const data = doc.data();
+        const gam = data.gamification || {};
+        const streak = gam.engagementStreak as number || 0;
+        const lastWeek = gam.lastStreakWeek as string || "";
 
-      const studentName = data.name as string || "Agent";
+        // Only warn if they have a streak >= 2 weeks and haven't engaged this week
+        if (streak < 2 || lastWeek === currentWeekId) return;
 
-      emailsSent++;
-      emailPromises.push(
-        queueEmail(
-          email,
-          `⚠️ Your ${streak}-week streak is at risk!`,
-          `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
-              <h2 style="color: #f97316; margin: 0 0 8px;">🔥 Streak Alert</h2>
-              <p style="color: #e5e7eb; margin: 0 0 16px;">Hi ${studentName},</p>
-              <div style="background: #0f0720; border: 1px solid #f97316; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
-                <span style="font-size: 48px; font-weight: bold; color: #f97316;">${streak}</span>
-                <p style="color: #9ca3af; margin: 4px 0 0;">week streak at risk</p>
+        const email = data.email as string;
+        if (!email) return;
+
+        const studentName = data.name as string || "Agent";
+
+        emailsSent++;
+        emailPromises.push(
+          queueEmail(
+            email,
+            `⚠️ Your ${streak}-week streak is at risk!`,
+            `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+                <h2 style="color: #f97316; margin: 0 0 8px;">🔥 Streak Alert</h2>
+                <p style="color: #e5e7eb; margin: 0 0 16px;">Hi ${studentName},</p>
+                <div style="background: #0f0720; border: 1px solid #f97316; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
+                  <span style="font-size: 48px; font-weight: bold; color: #f97316;">${streak}</span>
+                  <p style="color: #9ca3af; margin: 4px 0 0;">week streak at risk</p>
+                </div>
+                <p style="color: #9ca3af; margin: 0 0 8px;">You haven't logged any engagement this week. Complete an assignment before the week ends to keep your streak alive!</p>
+                <p style="color: #fbbf24; font-weight: bold; margin: 16px 0 0;">Don't lose your XP bonus — log in now!</p>
+                <hr style="border: 1px solid #374151; margin: 16px 0;" />
+                <p style="color: #6b7280; font-size: 12px;">Porter's Portal</p>
               </div>
-              <p style="color: #9ca3af; margin: 0 0 8px;">You haven't logged any engagement this week. Complete an assignment before the week ends to keep your streak alive!</p>
-              <p style="color: #fbbf24; font-weight: bold; margin: 16px 0 0;">Don't lose your XP bonus — log in now!</p>
-              <hr style="border: 1px solid #374151; margin: 16px 0;" />
-              <p style="color: #6b7280; font-size: 12px;">Porter's Portal</p>
             </div>
-          </div>
-          `,
-        ),
-      );
-    });
+            `,
+          ),
+        );
+      });
 
-    await Promise.all(emailPromises);
+      // Send emails in batches of 100
+      for (let i = 0; i < emailPromises.length; i += 100) {
+        await Promise.all(emailPromises.slice(i, i + 100));
+      }
+
+      if (studentsSnap.size < 499) break;
+    }
+
     logger.info(`Streak-at-risk: queued ${emailsSent} warning emails (week: ${currentWeekId})`);
   },
 );
@@ -4637,30 +4701,40 @@ export const backfillAssignmentDates = onCall(async (request) => {
   await verifyAdmin(request.auth);
 
   const db = admin.firestore();
-  const snap = await db.collection("assignments").get();
 
   let updated = 0;
   let skipped = 0;
-  const batch = db.batch();
+  let lastDoc: any = null;
 
-  snap.docs.forEach((doc) => {
-    const data = doc.data();
-    if (data.createdAt) {
-      skipped++;
-      return;
-    }
-    // Use Firestore's native document creation timestamp
-    const createTime = doc.createTime?.toDate().toISOString() ||
-      new Date().toISOString();
-    batch.update(doc.ref, {
-      createdAt: createTime,
-      updatedAt: data.updatedAt || createTime,
+  while (true) {
+    let query = db.collection("assignments").limit(499);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snap = await query.get();
+    if (snap.empty) break;
+    lastDoc = snap.docs[snap.docs.length - 1];
+
+    const batch = db.batch();
+    let batchCount = 0;
+    snap.docs.forEach((doc) => {
+      const data = doc.data();
+      if (data.createdAt) {
+        skipped++;
+        return;
+      }
+      const createTime = doc.createTime?.toDate().toISOString() ||
+        new Date().toISOString();
+      batch.update(doc.ref, {
+        createdAt: createTime,
+        updatedAt: data.updatedAt || createTime,
+      });
+      updated++;
+      batchCount++;
     });
-    updated++;
-  });
 
-  if (updated > 0) {
-    await batch.commit();
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+    if (snap.size < 499) break;
   }
 
   logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}`);
@@ -4676,52 +4750,64 @@ export const backfillWordCount = onCall(async (request) => {
   await verifyAdmin(request.auth);
 
   const db = admin.firestore();
-  const snap = await db.collection("submissions").where("isAssessment", "==", true).get();
 
   let updated = 0;
   let skipped = 0;
-  // Firestore batches max 500 writes
-  let batch = db.batch();
-  let batchCount = 0;
+  let lastDoc: any = null;
 
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    if (data.metrics?.wordCount != null) {
-      skipped++;
-      continue;
-    }
+  while (true) {
+    let query = db.collection("submissions")
+      .where("isAssessment", "==", true)
+      .limit(499);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snap = await query.get();
+    if (snap.empty) break;
+    lastDoc = snap.docs[snap.docs.length - 1];
 
-    const responses = data.blockResponses || {};
-    let totalWordCount = 0;
-    for (const blockId of Object.keys(responses)) {
-      const answer = responses[blockId]?.answer;
-      if (typeof answer === "string") {
-        const trimmed = answer.trim();
-        if (trimmed.length > 0) {
-          totalWordCount += trimmed.split(/\s+/).length;
+    // Firestore batches max 500 writes
+    let batch = db.batch();
+    let batchCount = 0;
+
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      if (data.metrics?.wordCount != null) {
+        skipped++;
+        continue;
+      }
+
+      const responses = data.blockResponses || {};
+      let totalWordCount = 0;
+      for (const blockId of Object.keys(responses)) {
+        const answer = responses[blockId]?.answer;
+        if (typeof answer === "string") {
+          const trimmed = answer.trim();
+          if (trimmed.length > 0) {
+            totalWordCount += trimmed.split(/\s+/).length;
+          }
         }
+      }
+
+      const engagementTime = data.metrics?.engagementTime || 0;
+      const wordsPerSecond = engagementTime > 0 ? Math.round((totalWordCount / engagementTime) * 100) / 100 : 0;
+
+      batch.update(doc.ref, {
+        "metrics.wordCount": totalWordCount,
+        "metrics.wordsPerSecond": wordsPerSecond,
+      });
+      updated++;
+      batchCount++;
+
+      if (batchCount >= 490) {
+        await batch.commit();
+        batch = db.batch();
+        batchCount = 0;
       }
     }
 
-    const engagementTime = data.metrics?.engagementTime || 0;
-    const wordsPerSecond = engagementTime > 0 ? Math.round((totalWordCount / engagementTime) * 100) / 100 : 0;
-
-    batch.update(doc.ref, {
-      "metrics.wordCount": totalWordCount,
-      "metrics.wordsPerSecond": wordsPerSecond,
-    });
-    updated++;
-    batchCount++;
-
-    if (batchCount >= 490) {
+    if (batchCount > 0) {
       await batch.commit();
-      batch = db.batch();
-      batchCount = 0;
     }
-  }
-
-  if (batchCount > 0) {
-    await batch.commit();
+    if (snap.size < 499) break;
   }
 
   logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}`);
@@ -4771,11 +4857,15 @@ export const startDungeonRun = onCall(async (request) => {
       .where('userId', '==', uid)
       .where('dungeonId', '==', dungeonId)
       .where('status', '==', 'COMPLETED')
+      .orderBy('startedAt', 'desc')
+      .limit(1)
       .get();
     const failedRuns = await db.collection('dungeon_runs')
       .where('userId', '==', uid)
       .where('dungeonId', '==', dungeonId)
       .where('status', '==', 'FAILED')
+      .orderBy('startedAt', 'desc')
+      .limit(1)
       .get();
     const allFinished = [...completedRuns.docs, ...failedRuns.docs]
       .map(d => d.data())
@@ -5825,24 +5915,40 @@ export const cleanupStaleData = onSchedule({ schedule: "0 3 * * *", timeZone: "A
   // 2. Delete lesson_block_responses_archive older than 90 days
   let archivesCleaned = 0;
   const cutoffMs = now - NINETY_DAYS_MS;
-  const cutoffIso = new Date(cutoffMs).toISOString();
+  const cutoffTimestamp = admin.firestore.Timestamp.fromMillis(cutoffMs);
 
-  // Handle both Timestamp and ISO string archivedAt formats
-  const allArchives = await db.collection("lesson_block_responses_archive").get();
-  const toDelete = allArchives.docs.filter((d) => {
-    const archivedAt = d.data().archivedAt;
-    if (!archivedAt) return true; // No date = stale, delete
-    if (typeof archivedAt === "string") return archivedAt < cutoffIso;
-    if (archivedAt.toMillis) return archivedAt.toMillis() < cutoffMs;
-    return false;
-  });
-
-  // Batch delete in chunks of 499
-  for (let i = 0; i < toDelete.length; i += 499) {
+  // Paginated cleanup: query by archivedAt < cutoff (Timestamp format)
+  let lastArchiveDoc: any = null;
+  while (true) {
+    let archiveQuery = db.collection("lesson_block_responses_archive")
+      .where("archivedAt", "<", cutoffTimestamp)
+      .limit(499);
+    if (lastArchiveDoc) archiveQuery = archiveQuery.startAfter(lastArchiveDoc);
+    const archiveSnap = await archiveQuery.get();
+    if (archiveSnap.empty) break;
+    lastArchiveDoc = archiveSnap.docs[archiveSnap.docs.length - 1];
     const batch = db.batch();
-    toDelete.slice(i, i + 499).forEach((d) => batch.delete(d.ref));
+    archiveSnap.docs.forEach((d) => batch.delete(d.ref));
     await batch.commit();
-    archivesCleaned += Math.min(499, toDelete.length - i);
+    archivesCleaned += archiveSnap.size;
+    if (archiveSnap.size < 499) break;
+  }
+
+  // Also clean up docs with no archivedAt (stale) or ISO string format
+  let lastStaleDoc: any = null;
+  while (true) {
+    let staleQuery = db.collection("lesson_block_responses_archive")
+      .where("archivedAt", "==", null)
+      .limit(499);
+    if (lastStaleDoc) staleQuery = staleQuery.startAfter(lastStaleDoc);
+    const staleSnap = await staleQuery.get();
+    if (staleSnap.empty) break;
+    lastStaleDoc = staleSnap.docs[staleSnap.docs.length - 1];
+    const batch = db.batch();
+    staleSnap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    archivesCleaned += staleSnap.size;
+    if (staleSnap.size < 499) break;
   }
 
   logger.info(`cleanupStaleData: deleted ${sessionsCleaned} session tokens, ${archivesCleaned} archived responses`);

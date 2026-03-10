@@ -1108,6 +1108,7 @@ export const dataService = {
   unflagSubmissionAsAI: async (submissionId: string) => {
     try {
       const snap = await getDoc(doc(db, 'submissions', submissionId));
+      if (!snap.exists()) throw new Error('Submission not found');
       const prev = snap.data();
       await updateDoc(doc(db, 'submissions', submissionId), {
         flaggedAsAI: false,

@@ -13,6 +13,7 @@ import GoogleLogin from './components/GoogleLogin';
 import { ShieldAlert, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
 import ErrorBoundary, { FeatureErrorBoundary } from './components/ErrorBoundary';
+import { reportError } from './lib/errorReporting';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
 import { usePushNotifications } from './lib/usePushNotifications';
@@ -247,6 +248,7 @@ const App: React.FC = () => {
     let unsubProfile: (() => void) | null = null;
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        clearDeniedCollections();
         await handleSession(firebaseUser);
         unsubProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), (snapshot) => {
           if (snapshot.exists()) {
@@ -255,6 +257,8 @@ const App: React.FC = () => {
               setUser(prev => ({ ...(prev || {}), ...raw } as User));
             }
           }
+        }, (error) => {
+          reportError(error, { context: 'user profile onSnapshot' });
         });
       } else {
         setUser(null);
