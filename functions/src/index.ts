@@ -2304,8 +2304,25 @@ const BANNED_WORDS = [
 ];
 const BANNED_PATTERNS = BANNED_WORDS.map((word) => new RegExp(`\\b${word}\\b`, "i"));
 
+function normalizeForModeration(text: string): string {
+  // Strip zero-width and invisible characters
+  let cleaned = text.replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, "");
+  // Normalize Unicode to ASCII decomposed form, then strip diacritics
+  cleaned = cleaned.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  // Common leetspeak substitutions
+  cleaned = cleaned
+    .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e")
+    .replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t")
+    .replace(/@/g, "a").replace(/\$/g, "s").replace(/\+/g, "t");
+  // Strip non-alphanumeric separators (catches s.h.i.t, s-h-i-t, s h i t)
+  cleaned = cleaned.replace(/[^a-zA-Z0-9\s]/g, "");
+  // Collapse repeated characters (fuuuck → fuck)
+  cleaned = cleaned.replace(/(.)\1{2,}/g, "$1$1");
+  return cleaned.toLowerCase();
+}
+
 function checkModeration(text: string): boolean {
-  const cleaned = text.replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, "");
+  const cleaned = normalizeForModeration(text);
   return BANNED_PATTERNS.some((pattern) => pattern.test(cleaned));
 }
 
@@ -2341,17 +2358,26 @@ export const sendClassMessage = onCall(async (request) => {
     }
   }
 
-  // Validate group membership for group channels
-  if (channelId.startsWith("group_")) {
-    const groupId = channelId.replace("group_", "");
-    const groupSnap = await db.doc(`student_groups/${groupId}`).get();
-    if (!groupSnap.exists) {
-      throw new HttpsError("not-found", "Group not found.");
-    }
-    const members = groupSnap.data()!.members || [];
-    const isMember = members.some((m: { userId: string }) => m.userId === uid);
-    if (!isMember && userData.role !== "ADMIN") {
-      throw new HttpsError("permission-denied", "Not a member of this group.");
+  // Validate channel access — admin bypasses all checks
+  if (userData.role !== "ADMIN") {
+    if (channelId.startsWith("group_")) {
+      const groupId = channelId.replace("group_", "");
+      const groupSnap = await db.doc(`student_groups/${groupId}`).get();
+      if (!groupSnap.exists) {
+        throw new HttpsError("not-found", "Group not found.");
+      }
+      const members = groupSnap.data()!.members || [];
+      const isMember = members.some((m: { userId: string }) => m.userId === uid);
+      if (!isMember) {
+        throw new HttpsError("permission-denied", "Not a member of this group.");
+      }
+    } else if (channelId.startsWith("class_") || channelId.startsWith("res_")) {
+      // Validate class enrollment for class and resource channels
+      const enrolledClasses: string[] = userData.enrolledClasses || [];
+      const targetClass = classType || "";
+      if (!targetClass || !enrolledClasses.includes(targetClass)) {
+        throw new HttpsError("permission-denied", "Not enrolled in this class.");
+      }
     }
   }
 

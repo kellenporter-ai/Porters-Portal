@@ -21,8 +21,19 @@ interface CommunicationsProps {
   onOpenResource?: (id: string) => void;
 }
 
-const QUICK_REACTIONS = ['❤️', '🔥', '✅', '❌', '🧪', '🔭', '🤔', '💯'];
-const EMOJI_GRID = ['😀', '😂', '😍', '😎', '🤔', '🤨', '😐', '🙄', '😴', '🤮', '🤯', '🥳', '😭', '😱', '👍', '👎', '🔥', '✨', '⚛️', '🧪', '🔭', '🔬', '🎓', '📚', '✅', '❌'];
+const QUICK_REACTIONS: { emoji: string; label: string }[] = [
+  { emoji: '❤️', label: 'heart' }, { emoji: '🔥', label: 'fire' }, { emoji: '✅', label: 'check' }, { emoji: '❌', label: 'wrong' },
+  { emoji: '🧪', label: 'experiment' }, { emoji: '🔭', label: 'telescope' }, { emoji: '🤔', label: 'thinking' }, { emoji: '💯', label: 'hundred' },
+];
+const EMOJI_GRID: { emoji: string; label: string }[] = [
+  { emoji: '😀', label: 'grin' }, { emoji: '😂', label: 'laugh' }, { emoji: '😍', label: 'heart eyes' }, { emoji: '😎', label: 'cool' },
+  { emoji: '🤔', label: 'thinking' }, { emoji: '🤨', label: 'skeptical' }, { emoji: '😐', label: 'neutral' }, { emoji: '🙄', label: 'eye roll' },
+  { emoji: '😴', label: 'sleepy' }, { emoji: '🤮', label: 'sick' }, { emoji: '🤯', label: 'mind blown' }, { emoji: '🥳', label: 'party' },
+  { emoji: '😭', label: 'crying' }, { emoji: '😱', label: 'shocked' }, { emoji: '👍', label: 'thumbs up' }, { emoji: '👎', label: 'thumbs down' },
+  { emoji: '🔥', label: 'fire' }, { emoji: '✨', label: 'sparkles' }, { emoji: '⚛️', label: 'atom' }, { emoji: '🧪', label: 'experiment' },
+  { emoji: '🔭', label: 'telescope' }, { emoji: '🔬', label: 'microscope' }, { emoji: '🎓', label: 'graduation' }, { emoji: '📚', label: 'books' },
+  { emoji: '✅', label: 'check' }, { emoji: '❌', label: 'wrong' },
+];
 
 const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, assignments, classConfigs, unreadChannels, onMarkChannelRead, onOpenResource }) => {
   const { confirm } = useConfirm();
@@ -43,6 +54,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const msgEmojiPickerRef = useRef<HTMLDivElement>(null);
   const muteMenuRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   
   const chatEnabledClasses = useMemo(() => {
       return Object.values(DefaultClassTypes).filter(c => {
@@ -64,7 +76,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
               setSelectedClass(chatEnabledClasses[0]);
           }
       }
-  }, [chatEnabledClasses]);
+  }, [chatEnabledClasses, selectedClass]);
 
   const activeChannelId = useMemo(() => {
       if (activeTab === 'Resources' && selectedResourceId) return `res_${selectedResourceId}`;
@@ -93,6 +105,16 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       if (!user.mutedUntil) return false;
       return new Date(user.mutedUntil) > new Date();
   }, [user.mutedUntil]);
+
+  const mutePlaceholder = useMemo(() => {
+      if (!isMuted || !user.mutedUntil) return 'Transmission Disabled';
+      const muteEnd = new Date(user.mutedUntil);
+      if (muteEnd.getFullYear() >= 9000) return 'Transmission Disabled (indefinite)';
+      const mins = Math.max(1, Math.ceil((muteEnd.getTime() - Date.now()) / 60000));
+      if (mins < 60) return `Muted for ${mins} min`;
+      const hrs = Math.floor(mins / 60);
+      return `Muted for ${hrs}h ${mins % 60}m`;
+  }, [isMuted, user.mutedUntil]);
 
   const displayMessages = useMemo(() => {
     return activeTab === 'Bookmarks' ? pinnedMessages : messages;
@@ -150,6 +172,13 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
     onMarkChannelRead?.(activeChannelId);
   }, [isOpen, activeChannelId, onMarkChannelRead]);
 
+  // Focus the panel when it opens for keyboard/screen reader users
+  useEffect(() => {
+    if (isOpen && panelRef.current) {
+      panelRef.current.focus();
+    }
+  }, [isOpen]);
+
   // Admin sees ALL groups for the selected class; students see only their own
   useEffect(() => {
     if (!isOpen) return;
@@ -196,7 +225,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
     if (displayMessages.length > 0) {
       msgVirtualizer.scrollToIndex(displayMessages.length - 1, { align: 'end' });
     }
-  }, [displayMessages.length, isLoading, activeTab, selectedResourceId]);
+  }, [displayMessages.length, isLoading, activeTab, selectedResourceId, msgVirtualizer]);
 
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -312,7 +341,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-0 right-0 md:bottom-6 md:right-6 w-full md:w-[420px] h-[650px] z-[60] font-sans animate-in slide-in-from-bottom-10 duration-500 shadow-2xl flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 md:rounded-3xl overflow-hidden">
+    <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Communications panel" className="fixed bottom-0 right-0 md:bottom-6 md:right-6 w-full md:w-[420px] h-[650px] max-h-[calc(100vh-24px)] z-[60] font-sans animate-in slide-in-from-bottom-10 duration-500 shadow-2xl flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 md:rounded-3xl overflow-hidden focus:outline-none">
       
       {/* HEADER */}
       <div className="flex items-center justify-between p-4 bg-white/5 border-b border-white/5 backdrop-blur-md z-10">
@@ -332,9 +361,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 </h3>
                 {activeTab !== 'Resources' && activeTab !== 'Moderation' && activeTab !== 'Groups' && chatEnabledClasses.length > 1 && (
                     <div className="relative group flex items-center cursor-pointer">
-                        <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider truncate">{selectedClass}</span>
+                        <span className="text-xs text-gray-400 font-medium uppercase tracking-wider truncate">{selectedClass}</span>
                         <ChevronDown className="w-3 h-3 text-gray-500 ml-1" />
-                        <select className="absolute inset-0 opacity-0 cursor-pointer" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+                        <select className="absolute inset-0 opacity-0 cursor-pointer focus:opacity-100 focus:bg-black/80 focus:text-white focus:rounded-md focus:text-xs" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} aria-label="Select class channel">
                             {chatEnabledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
@@ -347,16 +376,16 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
       <div className="flex-1 flex overflow-hidden">
         {/* NAV */}
         <div className="w-16 bg-black/20 border-r border-white/5 flex flex-col items-center py-4 gap-4">
-            <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                 <MessageSquare className="w-5 h-5" />
                 {hasUnreadMain && activeTab !== 'Main' && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
             </button>
-            <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                 <BookOpen className="w-5 h-5" />
                 {hasUnreadResources && activeTab !== 'Resources' && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
             </button>
             {(myGroups.length > 0 || user.role === 'ADMIN') && (
-                <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                     <Users className="w-5 h-5" />
                     {hasUnreadGroups && activeTab !== 'Groups' ? (
                         <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
@@ -365,9 +394,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                     )}
                 </button>
             )}
-            <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><Bookmark className="w-5 h-5" /></button>
+            <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><Bookmark className="w-5 h-5" /></button>
             {user.role === 'ADMIN' && (
-                <button onClick={() => setActiveTab('Moderation')} aria-label="Moderation queue" className={`mt-auto p-3 rounded-2xl transition-all relative ${activeTab === 'Moderation' ? 'bg-red-600 text-white shadow-lg shadow-red-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <button onClick={() => setActiveTab('Moderation')} aria-label="Moderation queue" className={`mt-auto p-3 rounded-2xl transition-all relative ${activeTab === 'Moderation' ? 'bg-red-600 text-white shadow-lg shadow-red-500/20 ring-2 ring-red-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                     <Shield className="w-5 h-5" />
                     {flaggedMessages.length > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">{flaggedMessages.length}</span>
@@ -485,6 +514,19 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 <>
                     {/* Virtualized message list */}
                     <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth" role="log" aria-live="polite" aria-label="Chat messages">
+                        {isLoading && displayMessages.length === 0 && (
+                            <div className="flex items-center justify-center h-32 text-gray-500">
+                                <div className="w-5 h-5 border-2 border-gray-600 border-t-indigo-400 rounded-full animate-spin mr-3" />
+                                <span className="text-sm">Loading messages...</span>
+                            </div>
+                        )}
+                        {!isLoading && displayMessages.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                                <MessageSquare className="w-10 h-10 mb-3 opacity-30" />
+                                <p className="text-sm">{activeTab === 'Bookmarks' ? 'No bookmarked messages' : 'No messages yet'}</p>
+                                <p className="text-xs text-gray-600 mt-1">{activeTab === 'Bookmarks' ? 'Bookmark messages to find them here.' : 'Be the first to send a message!'}</p>
+                            </div>
+                        )}
                         <div style={{ height: `${msgVirtualizer.getTotalSize()}px`, position: 'relative', paddingTop: 32 }}>
                             {msgVirtualizer.getVirtualItems().map(virtualRow => {
                                 const msg = displayMessages[virtualRow.index];
@@ -499,6 +541,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                         data-index={virtualRow.index}
                                         className={`group flex flex-col px-4 ${isMe ? 'items-end' : 'items-start'} absolute top-0 left-0 w-full`}
                                         style={{ transform: `translateY(${virtualRow.start}px)` }}
+                                        tabIndex={0}
+                                        role="group"
+                                        aria-label={`Message from ${msg.senderName}`}
                                     >
                                         {!isContinuation && (
                                             <div className="flex items-center gap-2 mb-1 px-1">
@@ -510,16 +555,16 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
                                         <div className="relative max-w-[85%]">
                                             {/* Action Toolbar */}
-                                            <div className={`flex items-center bg-black/80 backdrop-blur rounded-full px-2 py-1 gap-2 border border-white/10 opacity-0 group-hover:opacity-100 transition-all absolute -top-8 ${isMe ? 'right-0' : 'left-0'} z-30`}>
-                                                <button onClick={() => setShowMessageEmojiPickerId(msg.id)} className="p-1 hover:bg-white/10 rounded-full transition" aria-label="Add reaction"><Smile className="w-3.5 h-3.5 text-yellow-400" /></button>
-                                                <button onClick={() => handleTogglePin(msg.id)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.pinnedBy?.includes(user.id) ? 'text-purple-400' : 'text-gray-400'}`} aria-label="Bookmark message"><Bookmark className="w-3.5 h-3.5" /></button>
+                                            <div className={`flex items-center bg-black/80 backdrop-blur rounded-full px-2 py-1 gap-1 border border-white/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all absolute -top-10 ${isMe ? 'right-0' : 'left-0'} z-30`}>
+                                                <button onClick={() => setShowMessageEmojiPickerId(msg.id)} className="p-2 hover:bg-white/10 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Add reaction"><Smile className="w-4 h-4 text-yellow-400" /></button>
+                                                <button onClick={() => handleTogglePin(msg.id)} className={`p-2 hover:bg-white/10 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center ${msg.pinnedBy?.includes(user.id) ? 'text-purple-400' : 'text-gray-400'}`} aria-label="Bookmark message"><Bookmark className="w-4 h-4" /></button>
                                                 {user.role === 'ADMIN' && (
                                                     <>
-                                                        <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-1 hover:bg-white/10 rounded-full transition ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-3.5 h-3.5" /></button>
-                                                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition" aria-label="Delete message"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-2 hover:bg-white/10 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-4 h-4" /></button>
+                                                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Delete message"><Trash2 className="w-4 h-4" /></button>
                                                         {msg.senderId !== user.id && (
                                                             <div className="relative">
-                                                                <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-1 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition" aria-label="Mute user"><MicOff className="w-3.5 h-3.5" /></button>
+                                                                <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-2 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Mute user"><MicOff className="w-4 h-4" /></button>
                                                                 {muteMenuTarget?.id === msg.id && (
                                                                     <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
                                                                         <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
@@ -537,8 +582,8 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                             {/* Quick Emoji Picker Submenu */}
                                             {showMessageEmojiPickerId === msg.id && (
                                                 <div ref={msgEmojiPickerRef} className={`absolute z-40 bottom-full mb-2 bg-black/95 border border-white/20 rounded-xl p-1 shadow-2xl flex gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-0'}`}>
-                                                    {QUICK_REACTIONS.map(emoji => (
-                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="p-1.5 hover:bg-white/10 rounded-lg transition text-sm">{emoji}</button>
+                                                    {QUICK_REACTIONS.map(({ emoji, label }) => (
+                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="p-2 hover:bg-white/10 rounded-lg transition text-sm min-w-[36px] min-h-[36px]" aria-label={`React with ${label}`}>{emoji}</button>
                                                     ))}
                                                 </div>
                                             )}
@@ -555,7 +600,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                                 {msg.reactions && Object.entries(msg.reactions).map(([emoji, users]) => {
                                                     const userList = users as string[];
                                                     return userList.length > 0 && (
-                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`text-[10px] px-1.5 py-0.5 rounded-full border transition ${userList.includes(user.id) ? 'bg-indigo-500/30 border-indigo-500/50 text-white' : 'bg-black/30 border-white/5 text-gray-400 hover:bg-white/10'}`}>
+                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`text-xs px-1.5 py-0.5 rounded-full border transition ${userList.includes(user.id) ? 'bg-indigo-500/30 border-indigo-500/50 text-white' : 'bg-black/30 border-white/5 text-gray-300 hover:bg-white/10'}`}>
                                                             {emoji} {userList.length}
                                                         </button>
                                                     );
@@ -573,11 +618,14 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                         <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
                             {showEmojiPicker && (
                                 <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-4 bg-[#1a1b1e] border border-white/10 rounded-2xl p-3 shadow-2xl grid grid-cols-6 gap-2 w-64 animate-in slide-in-from-bottom-2 z-50">
-                                    {EMOJI_GRID.map(e => <button key={e} type="button" onClick={() => setInputText(prev => prev + e)} className="p-2 hover:bg-white/10 rounded-lg text-xl transition">{e}</button>)}
+                                    {EMOJI_GRID.map(({ emoji, label }) => <button key={emoji} type="button" onClick={() => setInputText(prev => prev + emoji)} className="p-2 hover:bg-white/10 rounded-lg text-xl transition" aria-label={`Insert ${label} emoji`}>{emoji}</button>)}
                                 </div>
                             )}
                             <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-3 text-gray-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition" aria-label="Open emoji picker"><Smile className="w-5 h-5" /></button>
-                            <input type="text" value={inputText} onChange={e => setInputText(e.target.value)} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? "Transmission Disabled" : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition disabled:opacity-70 disabled:text-gray-300" />
+                            <div className="flex-1 relative">
+                                <input type="text" value={inputText} onChange={e => setInputText(e.target.value.slice(0, 2000))} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? mutePlaceholder : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} maxLength={2000} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition disabled:opacity-70 disabled:text-gray-300" />
+                                {inputText.length > 1800 && <span className={`absolute right-2 top-1 text-[10px] ${inputText.length > 1950 ? 'text-red-400' : 'text-gray-500'}`}>{inputText.length}/2000</span>}
+                            </div>
                             <button type="submit" disabled={!activeChannelId || isMuted || !inputText.trim() || !isOnline} className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message"><Send className="w-5 h-5" /></button>
                         </form>
                     </div>

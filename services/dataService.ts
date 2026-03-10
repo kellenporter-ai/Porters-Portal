@@ -9,9 +9,9 @@ import { reportError } from '../lib/errorReporting';
 
 // Track collections that have failed with permission errors to prevent
 // re-subscribing after ErrorBoundary remounts (which would crash Firestore SDK).
-// Uses a Map<name, deniedAtMs> with a 5-minute TTL so transient permission errors
-// don't permanently block a collection for the rest of the session.
-const DENIED_TTL_MS = 5 * 60 * 1000;
+// Uses a Map<name, deniedAtMs> with a 30-second TTL so transient permission errors
+// (e.g. during auth state transitions) recover quickly instead of blocking the UI.
+const DENIED_TTL_MS = 30 * 1000;
 
 /** Strip undefined values from an object before passing to Firestore setDoc(). */
 const stripUndefined = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
@@ -366,12 +366,14 @@ export const dataService = {
     const q = query(
         collection(db, 'class_messages'),
         where('channelId', '==', channelId),
+        orderBy('timestamp', 'desc'),
         limit(maxResults)
     );
-    
+
     return onSnapshot(q, (snapshot) => {
         const messages = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
-        messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        // Reverse to chronological order (query fetches newest-first for correct limit)
+        messages.reverse();
         callback(messages);
     }, (error) => {
         reportError(error, { subscription: 'channelMessages' });
@@ -663,9 +665,9 @@ export const dataService = {
   },
 
   /** Student-scoped submissions — avoids Firestore permission error on unfiltered query */
-  subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void) => {
+  subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void, maxResults = 50) => {
     // Only filter by userId — no orderBy to avoid composite index requirement
-    const q = query(collection(db, 'submissions'), where('userId', '==', userId), limit(50));
+    const q = query(collection(db, 'submissions'), where('userId', '==', userId), limit(maxResults));
     return onSnapshot(q, (snapshot) => {
       const submissions = snapshot.docs.map(d => {
         const data = d.data();

@@ -53,7 +53,7 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isOwner(userId)
             && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification', 'mutedUntil'])
+                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification'])
             && (
               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['gamification'])
               || request.resource.data.gamification.diff(resource.data.gamification).affectedKeys()
@@ -138,9 +138,9 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isAuthenticated() && resource.data.channelId != null);
       
-      // Authenticated users can create messages with their own senderId
-      allow create: if isAuthenticated() 
-        && request.resource.data.senderId == request.auth.uid;
+      // Only Cloud Functions (Admin SDK) can create messages — prevents bypassing
+      // server-side validation (mute checks, moderation, enrollment verification).
+      allow create: if false;
       
       // Students can ONLY update reactions and pinnedBy (personal pins)
       // They cannot modify content, senderId, senderName, isGlobalPinned, or isFlagged
@@ -179,10 +179,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
       
       match /messages/{messageId} {
-        allow read: if isAuthenticated();
-        // Authenticated users can create messages with their own senderId
-        allow create: if isAuthenticated() 
-          && request.resource.data.senderId == request.auth.uid;
+        // Only participants of the parent conversation can read messages
+        allow read: if isAdmin() ||
+          (isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds);
+        // Authenticated participants can create messages with their own senderId
+        allow create: if isAuthenticated()
+          && request.resource.data.senderId == request.auth.uid
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds;
       }
     }
 
