@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { User, Submission, WhitelistedUser } from '../types';
 import { dataService } from '../services/dataService';
+import { reportError } from './errorReporting';
 
 interface AdminData {
   rawUsers: User[];
@@ -27,11 +28,16 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [whitelistedEmails, setWhitelistedEmails] = useState<WhitelistedUser[]>([]);
 
   useEffect(() => {
-    const unsubs = [
-      dataService.subscribeToSubmissions(setSubmissions),
-      dataService.subscribeToUsers(setRawUsers),
-      dataService.subscribeToWhitelist(setWhitelistedEmails),
-    ];
+    const unsubs: (() => void)[] = [];
+
+    try { unsubs.push(dataService.subscribeToSubmissions(setSubmissions)); }
+    catch (e) { reportError(e, { subscription: 'submissions' }); }
+
+    try { unsubs.push(dataService.subscribeToUsers(setRawUsers)); }
+    catch (e) { reportError(e, { subscription: 'users' }); }
+
+    try { unsubs.push(dataService.subscribeToWhitelist(setWhitelistedEmails)); }
+    catch (e) { reportError(e, { subscription: 'whitelist' }); }
     return () => unsubs.forEach(u => u());
   }, []);
 

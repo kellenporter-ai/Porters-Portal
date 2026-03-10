@@ -212,7 +212,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
   const handleUnmute = async (userId: string) => {
       if(await confirm({ message: "Lift silence sanction for this operative?", confirmLabel: "Unmute", variant: "info" })) {
-          await dataService.muteUser(userId, 0);
+          try {
+              await dataService.muteUser(userId, 0);
+          } catch {
+              toast.error('Failed to unmute user.');
+          }
       }
   };
 
@@ -224,17 +228,25 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   ];
 
   const handleMuteFromFlag = async (senderId: string, minutes: number) => {
-      await dataService.muteUser(senderId, minutes);
+      try {
+          await dataService.muteUser(senderId, minutes);
+      } catch {
+          toast.error('Failed to mute user.');
+      }
       setMuteMenuFlagId(null);
   };
 
   const handleExtendMute = async (userId: string, currentMute: string) => {
       const currentEnd = new Date(currentMute).getTime();
       // Add 1 hour to the current expiry
-      const newEnd = new Date(Math.max(currentEnd, Date.now()) + 60 * 60 * 1000); 
+      const newEnd = new Date(Math.max(currentEnd, Date.now()) + 60 * 60 * 1000);
       // Calculate minutes from now
       const minutesFromNow = Math.ceil((newEnd.getTime() - Date.now()) / 60000);
-      await dataService.muteUser(userId, minutesFromNow);
+      try {
+          await dataService.muteUser(userId, minutesFromNow);
+      } catch {
+          toast.error('Failed to extend mute.');
+      }
   };
   
   const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (

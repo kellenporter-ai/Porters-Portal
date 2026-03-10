@@ -74,11 +74,35 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const session = getSessionState(user.id, user.gamification?.lastLevelSeen || 1);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newlyAcquiredItem, setNewlyAcquiredItem] = useState<RPGItem | null>(null);
-  const activeTab = studentTab;
+  // Tab transition: displayTab lags behind studentTab by 150ms to allow exit animation
+  const [displayTab, setDisplayTab] = useState<StudentTab>(studentTab);
+  const [tabExiting, setTabExiting] = useState(false);
+  const tabExitRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (studentTab !== displayTab && !tabExiting) {
+      setTabExiting(true);
+      tabExitRef.current = setTimeout(() => {
+        setDisplayTab(studentTab);
+        setTabExiting(false);
+      }, 150);
+      return () => { if (tabExitRef.current) clearTimeout(tabExitRef.current); };
+    }
+    // If studentTab changed while already exiting, update target
+    if (studentTab !== displayTab && tabExiting) {
+      if (tabExitRef.current) clearTimeout(tabExitRef.current);
+      tabExitRef.current = setTimeout(() => {
+        setDisplayTab(studentTab);
+        setTabExiting(false);
+      }, 150);
+      return () => { if (tabExitRef.current) clearTimeout(tabExitRef.current); };
+    }
+  }, [studentTab]);
+  const activeTab = displayTab;
   const [xpFloatAmount, setXpFloatAmount] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
+  const [questActionLoading, setQuestActionLoading] = useState<string | null>(null);
 
   // Guard against duplicate level-up triggers from rapid re-renders
   const levelUpTriggeredRef = React.useRef(false);
@@ -286,9 +310,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const handleClassChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newClass = e.target.value;
+      const previousClass = activeClass;
       setActiveClass(newClass);
-      await dataService.switchUserView(user.id, newClass);
-  }, [user.id]);
+      try {
+          await dataService.switchUserView(user.id, newClass);
+      } catch {
+          setActiveClass(previousClass);
+          toast.error('Failed to switch class.');
+      }
+  }, [user.id, activeClass, toast]);
 
   // --- QUEST LOGIC ---
   const activeQuests = user.gamification?.activeQuests || [];
@@ -307,26 +337,34 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   );
 
   const handleAcceptQuest = useCallback(async (quest: Quest) => {
+      if (questActionLoading) return;
+      setQuestActionLoading(quest.id);
       try {
           await dataService.acceptQuest(user.id, quest.id);
           sfx.questAccept();
           toast.success(`Contract accepted: ${quest.title}`);
       } catch {
           toast.error('Failed to accept contract.');
+      } finally {
+          setQuestActionLoading(null);
       }
-  }, [user.id, toast]);
+  }, [user.id, toast, questActionLoading]);
 
   const handleDeployQuest = useCallback(async (quest: Quest) => {
+      if (questActionLoading) return;
       const isManual = quest.type === 'CUSTOM';
       if(!await confirm({ message: isManual ? "Submit quest for manual HQ verification?" : "Deploy agent for skill check? This will calculate your success probability based on current gear.", confirmLabel: isManual ? "Submit" : "Deploy", variant: "info" })) return;
+      setQuestActionLoading(quest.id);
       try {
           await dataService.deployMission(user.id, quest);
           sfx.questDeploy();
           toast.info('Mission deployed. Awaiting verification.');
       } catch {
           toast.error('Deployment failed.');
+      } finally {
+          setQuestActionLoading(null);
       }
-  }, [user.id, confirm, toast]);
+  }, [user.id, confirm, toast, questActionLoading]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full pb-6 lg:pb-12">
@@ -502,46 +540,53 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* --- MIDDLE: CONTENT --- */}
       <div className="lg:col-span-9 space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} content`}>
-
+           <div className={`flex-1 transition-all duration-150 ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (
-                 <HomeTab
-                     assignments={assignments}
-                     submissions={submissions}
-                     activeClass={activeClass}
-                     practiceCompletion={practiceCompletion}
-                     availableQuests={availableQuests}
-                     activeQuests={activeQuests}
-                     completedQuests={completedQuests}
-                     activeEvent={activeEvent}
-                     onNavigate={onNavigate}
-                     onStartAssignment={onStartAssignment}
-                     userSection={user.section}
-                     userClassSections={user.classSections}
-                 />
+                 <FeatureErrorBoundary feature="Home">
+                   <HomeTab
+                       assignments={assignments}
+                       submissions={submissions}
+                       activeClass={activeClass}
+                       practiceCompletion={practiceCompletion}
+                       availableQuests={availableQuests}
+                       activeQuests={activeQuests}
+                       completedQuests={completedQuests}
+                       activeEvent={activeEvent}
+                       onNavigate={onNavigate}
+                       onStartAssignment={onStartAssignment}
+                       userSection={user.section}
+                       userClassSections={user.classSections}
+                   />
+                 </FeatureErrorBoundary>
              )}
 
              {activeTab === 'MISSIONS' && (
-                 <MissionsTab
-                     newQuests={newQuests}
-                     myAcceptedQuests={myAcceptedQuests}
-                     activeQuests={activeQuests}
-                     onAcceptQuest={handleAcceptQuest}
-                     onDeployQuest={handleDeployQuest}
-                 />
+                 <FeatureErrorBoundary feature="Missions">
+                   <MissionsTab
+                       newQuests={newQuests}
+                       myAcceptedQuests={myAcceptedQuests}
+                       activeQuests={activeQuests}
+                       onAcceptQuest={handleAcceptQuest}
+                       onDeployQuest={handleDeployQuest}
+                       questActionLoading={questActionLoading}
+                   />
+                 </FeatureErrorBoundary>
              )}
 
              {activeTab === 'RESOURCES' && (
-                 <ResourcesTab
-                     unitGroups={unitGroups}
-                     expandedUnits={expandedUnits}
-                     onToggleUnit={toggleUnit}
-                     practiceCompletion={practiceCompletion}
-                     onStartAssignment={onStartAssignment}
-                     classConfigs={classConfigs}
-                     activeClass={activeClass}
-                     submissions={submissions}
-                 />
+                 <FeatureErrorBoundary feature="Resources">
+                   <ResourcesTab
+                       unitGroups={unitGroups}
+                       expandedUnits={expandedUnits}
+                       onToggleUnit={toggleUnit}
+                       practiceCompletion={practiceCompletion}
+                       onStartAssignment={onStartAssignment}
+                       classConfigs={classConfigs}
+                       activeClass={activeClass}
+                       submissions={submissions}
+                   />
+                 </FeatureErrorBoundary>
              )}
 
              {activeTab === 'LOADOUT' && (
@@ -631,20 +676,24 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
 
              {activeTab === 'PROGRESS' && (
-                 <ProgressDashboard
-                     assignments={assignments}
-                     submissions={submissions}
-                     activeClass={activeClass}
-                 />
+                 <FeatureErrorBoundary feature="Progress">
+                   <ProgressDashboard
+                       assignments={assignments}
+                       submissions={submissions}
+                       activeClass={activeClass}
+                   />
+                 </FeatureErrorBoundary>
              )}
 
              {activeTab === 'CALENDAR' && (
-                 <CalendarView
-                     assignments={assignments}
-                     submissions={submissions}
-                     activeClass={activeClass}
-                     onStartAssignment={onStartAssignment}
-                 />
+                 <FeatureErrorBoundary feature="Calendar">
+                   <CalendarView
+                       assignments={assignments}
+                       submissions={submissions}
+                       activeClass={activeClass}
+                       onStartAssignment={onStartAssignment}
+                   />
+                 </FeatureErrorBoundary>
              )}
 
              {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
@@ -670,6 +719,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      </FeatureErrorBoundary>
                  </div>
              )}
+           </div>
           </div>
       </div>
 

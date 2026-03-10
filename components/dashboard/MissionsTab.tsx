@@ -15,9 +15,10 @@ interface MissionsTabProps {
   activeQuests: ActiveQuestEntry[];
   onAcceptQuest: (quest: Quest) => void;
   onDeployQuest: (quest: Quest) => void;
+  questActionLoading?: string | null;
 }
 
-const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, activeQuests, onAcceptQuest, onDeployQuest }) => {
+const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, activeQuests, onAcceptQuest, onDeployQuest, questActionLoading }) => {
   return (
     <div key="missions" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Available Contracts</h3>
@@ -44,9 +45,10 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
             </div>
             <button
               onClick={() => onAcceptQuest(quest)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/20 transition flex items-center gap-2"
+              disabled={questActionLoading === quest.id}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/20 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Crosshair className="w-4 h-4" /> Accept Contract
+              <Crosshair className="w-4 h-4" /> {questActionLoading === quest.id ? 'Accepting...' : 'Accept Contract'}
             </button>
           </div>
         ))}
@@ -87,10 +89,11 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
                   <div className="flex gap-3">
                     <button
                       onClick={() => onDeployQuest(quest)}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-3 group/btn"
+                      disabled={questActionLoading === quest.id}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-3 group/btn disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Radio className="w-5 h-5 group-hover/btn:animate-pulse" />
-                      {isManual ? "Broadcast Submission to HQ" : "Deploy for Skill Check"}
+                      {questActionLoading === quest.id ? "Deploying..." : isManual ? "Broadcast Submission to HQ" : "Deploy for Skill Check"}
                     </button>
                     {quest.isGroupQuest && (
                       <button className="bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-2xl text-sm font-black transition border border-white/10">

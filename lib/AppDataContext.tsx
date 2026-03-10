@@ -36,10 +36,13 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
 
   useEffect(() => {
     if (!user.isWhitelisted && user.role !== UserRole.ADMIN) return;
-    const unsubs = [
-      dataService.subscribeToAssignments((a) => { setAssignments(a); setLoading(false); }),
-      dataService.subscribeToClassConfigs(setClassConfigs),
-    ];
+    const unsubs: (() => void)[] = [];
+
+    try { unsubs.push(dataService.subscribeToAssignments((a) => { setAssignments(a); setLoading(false); })); }
+    catch (e) { reportError(e, { subscription: 'assignments' }); setLoading(false); }
+
+    try { unsubs.push(dataService.subscribeToClassConfigs(setClassConfigs)); }
+    catch (e) { reportError(e, { subscription: 'classConfigs' }); }
 
     // XP events & quests may fail for permission reasons — don't block other subscriptions.
     // Students only need active events/quests; admins get the full list for management.

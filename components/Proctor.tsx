@@ -121,6 +121,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
   const awardedBlocksRef = useRef<Set<string>>(new Set());
 
+  // Track component mount state for async handlers (e.g. message event getDoc calls)
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
   // Lesson block response persistence
   const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
   const blockResponsesRef = useRef<BlockResponseMap>({});
@@ -191,6 +195,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // For non-assessments: load saved responses as before (resume where they left off).
   useEffect(() => {
     if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
+    let cancelled = false;
     const docId = `${userId}_${assignmentId}_blocks`;
     if (isAssessment) {
       // Check if student already has an active session (e.g. page refresh mid-assessment).
@@ -201,6 +206,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       if (hasActiveSession) {
         // Mid-assessment refresh — restore saved responses
         getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
+          if (cancelled) return;
           if (snap.exists()) {
             const data = snap.data();
             const responses = data.responses || {};
@@ -210,6 +216,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             setSavedBlockResponses({});
           }
         }).catch(err => {
+          if (cancelled) return;
           console.error('Failed to load assessment block responses after refresh', err);
           setSavedBlockResponses({});
         });
@@ -222,9 +229,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           responses: {},
           lastUpdated: new Date().toISOString(),
         }).then(() => {
+          if (cancelled) return;
           blockResponsesRef.current = {};
           setSavedBlockResponses({});
         }).catch(err => {
+          if (cancelled) return;
           console.error('Failed to clear assessment block responses', err);
           blockResponsesRef.current = {};
           setSavedBlockResponses({});
@@ -232,6 +241,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       }
     } else {
       getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
+        if (cancelled) return;
         if (snap.exists()) {
           const data = snap.data();
           const responses = data.responses || {};
@@ -241,10 +251,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           setSavedBlockResponses({});
         }
       }).catch(err => {
+        if (cancelled) return;
         console.error('Failed to load lesson block responses', err);
         setSavedBlockResponses({});
       });
     }
+    return () => { cancelled = true; };
   }, [userId, assignmentId, lessonBlocks, isAssessment]);
 
   // Debounced save of lesson block responses to Firestore
@@ -627,6 +639,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           setBridgeConnected(true);
           try {
             const progressDoc = await getDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`));
+            if (!mountedRef.current) return;
             const docData = progressDoc.exists() ? progressDoc.data() as PracticeProgressDoc : null;
 
             // Restore awarded questions set

@@ -1804,7 +1804,7 @@ export const dataService = {
         }
       });
       callback(result);
-    }, () => { /* permission error */ });
+    }, (error) => { reportError(error, { subscription: 'practiceProgress' }); });
   },
 
   // ========================================
@@ -1819,7 +1819,7 @@ export const dataService = {
     const q = query(collection(db, 'bug_reports'), orderBy('timestamp', 'desc'), limit(100));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BugReport)));
-    }, () => {});
+    }, (error) => { reportError(error, { subscription: 'bugReports' }); });
   },
 
   resolveBugReport: async (reportId: string) => {
