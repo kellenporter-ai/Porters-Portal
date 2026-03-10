@@ -5,6 +5,7 @@ import { useAppData } from '../lib/AppDataContext';
 import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain, Copy } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
+import { reportError } from '../lib/errorReporting';
 import SectionPicker from './SectionPicker';
 import { getClassProfile } from '../lib/classProfile';
 import { useToast } from './ToastProvider';
@@ -188,7 +189,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
           toast.success(`Mission "${newQuest.title}" deployed.`);
           setMissionForm(INITIAL_MISSION_STATE);
           setIsQuestModalOpen(false);
-      } catch (err) { console.error("Failed to issue mission:", err); toast.error("Failed to issue mission."); }
+      } catch (err) { reportError(err, { component: 'XPManagement' }); toast.error("Failed to issue mission."); }
       finally { setIsSubmittingQuest(false); }
   };
 

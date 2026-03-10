@@ -8,7 +8,12 @@ import * as logger from "firebase-functions/logger";
 admin.initializeApp();
 
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "kellporter2@paps.net";
+/** Lazy getter — only throws when actually called, not at module load */
+function getAdminEmail(): string {
+  const email = process.env.ADMIN_EMAIL;
+  if (!email) throw new Error("ADMIN_EMAIL environment variable must be set");
+  return email;
+}
 
 // ==========================================
 // SHARED CONSTANTS
@@ -452,10 +457,11 @@ export const setAdminClaim = onRequest(async (req, res) => {
       return;
     }
 
-    const userRecord = await admin.auth().getUserByEmail(ADMIN_EMAIL);
+    const adminEmail = getAdminEmail();
+    const userRecord = await admin.auth().getUserByEmail(adminEmail);
     await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
-    logger.info(`Admin claim set for ${ADMIN_EMAIL}`);
-    res.status(200).send(`SUCCESS: Admin claim set for ${ADMIN_EMAIL}. Sign out and back in for it to take effect.`);
+    logger.info(`Admin claim set for ${adminEmail}`);
+    res.status(200).send(`SUCCESS: Admin claim set for ${adminEmail}. Sign out and back in for it to take effect.`);
   } catch (error) {
     logger.error("Failed to set admin claim", error);
     res.status(500).send("FAILED: An internal error occurred.");
@@ -2052,8 +2058,16 @@ export const submitAssessment = onCall(async (request) => {
     // No token provided — check grace period
     const now = Date.now();
     if (now > SESSION_TOKEN_REQUIRED_AFTER) {
+      // Check if student has unsaved draft responses
+      const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
+      const draftSnap = await draftRef.get();
+      const hasUnsavedWork = draftSnap.exists && Object.keys(draftSnap.data()?.responses || {}).length > 0;
       throw new HttpsError("failed-precondition",
-        "Your page is out of date. Please refresh the page to start a new assessment session.");
+        JSON.stringify({
+          message: "Your session has expired. Please start a new assessment attempt.",
+          hasUnsavedWork,
+          hint: hasUnsavedWork ? "Your draft responses are saved. Starting a new attempt will preserve them for recovery." : undefined,
+        }));
     }
     legacySubmission = true;
     logger.warn(`submitAssessment: tokenless submission from uid=${uid}, assignment=${assignmentId} (grace period)`);
@@ -2065,6 +2079,17 @@ export const submitAssessment = onCall(async (request) => {
   const assignment = assignmentSnap.data()!;
 
   if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
+
+  // Validate student is enrolled in the class offering this assessment
+  if (assignment.classType) {
+    const studentSnap = await db.doc(`users/${uid}`).get();
+    const studentData = studentSnap.data();
+    const enrolledClasses: string[] = studentData?.enrolledClasses || [];
+    const studentClassType = studentData?.classType;
+    if (!enrolledClasses.includes(assignment.classType) && studentClassType !== assignment.classType) {
+      throw new HttpsError("permission-denied", "Not enrolled in the class for this assessment.");
+    }
+  }
 
   // 3. Grade auto-gradable blocks
   const blocks = assignment.lessonBlocks || [];
@@ -2344,6 +2369,16 @@ export const sendClassMessage = onCall(async (request) => {
 
   const db = admin.firestore();
 
+  // Rate limit — 3 seconds between messages per user
+  const cooldownRef = db.doc(`message_cooldowns/${uid}`);
+  const cooldownSnap = await cooldownRef.get();
+  if (cooldownSnap.exists) {
+    const lastTime = cooldownSnap.data()?.lastMessageTime;
+    if (lastTime && Date.now() - lastTime < 3000) {
+      throw new HttpsError("resource-exhausted", "Please wait a few seconds before sending another message.");
+    }
+  }
+
   // Server-side mute check
   const userSnap = await db.doc(`users/${uid}`).get();
   if (!userSnap.exists) {
@@ -2359,7 +2394,9 @@ export const sendClassMessage = onCall(async (request) => {
   }
 
   // Validate channel access — admin bypasses all checks
-  if (userData.role !== "ADMIN") {
+  const callerAuth = await admin.auth().getUser(uid);
+  const isAdmin = !!callerAuth.customClaims?.admin;
+  if (!isAdmin) {
     if (channelId.startsWith("group_")) {
       const groupId = channelId.replace("group_", "");
       const groupSnap = await db.doc(`student_groups/${groupId}`).get();
@@ -2381,13 +2418,16 @@ export const sendClassMessage = onCall(async (request) => {
     }
   }
 
+  // Strip HTML tags to prevent XSS
+  const sanitizedContent = content.trim().replace(/<[^>]*>/g, "");
+
   // Server-side moderation
-  const isFlagged = checkModeration(content);
+  const isFlagged = checkModeration(sanitizedContent);
 
   const messageData: Record<string, unknown> = {
     senderId: uid,
     senderName: userData.name || "Student",
-    content: content.trim(),
+    content: sanitizedContent,
     timestamp: new Date().toISOString(),
     isFlagged,
     channelId,
@@ -2407,12 +2447,15 @@ export const sendClassMessage = onCall(async (request) => {
       messageId: msgRef.id,
       senderId: uid,
       senderName: userData.name || "Student",
-      content: content.trim(),
+      content: sanitizedContent,
       timestamp: new Date().toISOString(),
       classType: classType || "Unknown",
       isResolved: false,
     });
   }
+
+  // Update rate limit cooldown
+  await cooldownRef.set({ lastMessageTime: Date.now() });
 
   logger.info(`sendClassMessage: ${uid} sent message in ${channelId}${isFlagged ? " [FLAGGED]" : ""}`);
   return { messageId: msgRef.id, isFlagged };
@@ -2539,7 +2582,7 @@ export const awardQuestionXP = onCall(async (request) => {
       if (lastUpdated) {
         const elapsed = Date.now() - new Date(lastUpdated).getTime();
         if (elapsed < 3000) {
-          return { awarded: false, reason: "Too fast" };
+          return { awarded: false, reason: "Please wait a few seconds before claiming another question." };
         }
       }
     }
@@ -3366,7 +3409,7 @@ export const dealBossDamage = onCall(async (request) => {
             await contribRef.update(contribUpdates);
           }
         } catch (err) {
-          console.error(`Failed to reward boss contributor ${contributorId}:`, err);
+          logger.error(`Failed to reward boss contributor ${contributorId}:`, err);
         }
       }
     }
@@ -3835,7 +3878,7 @@ export const answerBossQuiz = onCall(async (request) => {
             await contribRef.update(contribUpdates);
           }
         } catch (err) {
-          console.error(`Failed to reward quiz boss contributor ${c.id}:`, err);
+          logger.error(`Failed to reward quiz boss contributor ${c.id}:`, err);
         }
       }
 
@@ -3926,12 +3969,8 @@ export const answerBossQuiz = onCall(async (request) => {
 });
 
 export const scaleBossHp = onCall(async (request) => {
-  const uid = verifyAuth(request.auth);
-  // Admin check
-  const userSnap = await admin.firestore().doc(`users/${uid}`).get();
-  if (!userSnap.exists || userSnap.data()?.role !== 'ADMIN') {
-    throw new HttpsError("permission-denied", "Admin only.");
-  }
+  verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
 
   const { quizId } = request.data;
   if (!quizId) throw new HttpsError("invalid-argument", "Quiz ID required.");
@@ -3950,14 +3989,16 @@ export const scaleBossHp = onCall(async (request) => {
   let scaledHp = quiz.maxHp * (tierMultipliers[difficultyTier] || 1);
 
   if (autoScale?.enabled && autoScale.factors?.length > 0) {
-    const usersSnap = await db.collection('users').where('role', '==', 'STUDENT').get();
+    // Scope query to class-specific students when possible to avoid loading all users
+    let usersQuery: FirebaseFirestore.Query = db.collection('users').where('role', '==', 'STUDENT');
+    if (quiz.classType && quiz.classType !== 'GLOBAL') {
+      usersQuery = usersQuery.where('classType', '==', quiz.classType);
+    }
+    const usersSnap = await usersQuery.get();
     const targetStudents: FirebaseFirestore.DocumentData[] = [];
 
     usersSnap.forEach(d => {
       const data = d.data();
-      if (quiz.classType && quiz.classType !== 'GLOBAL') {
-        if (data.classType !== quiz.classType) return;
-      }
       if (quiz.targetSections?.length > 0) {
         if (!quiz.targetSections.includes(data.section)) return;
       }
@@ -5659,6 +5700,198 @@ export const equipFluxCosmetic = onCall(async (request) => {
   const updateField = `gamification.activeCosmetics.${resolvedSlot}`;
   await userRef.update({ [updateField]: cosmeticId || admin.firestore.FieldValue.delete() });
   return { success: true, slot: resolvedSlot, cosmeticId };
+});
+
+// ==========================================
+// ARCHIVE & CLEAR LESSON BLOCK RESPONSES (ATOMIC)
+// ==========================================
+export const archiveAndClearResponses = onCall({ region: "us-east1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Must be signed in.");
+
+  const { assignmentId } = request.data as { assignmentId?: string };
+  if (!assignmentId || typeof assignmentId !== "string") {
+    throw new HttpsError("invalid-argument", "assignmentId is required.");
+  }
+
+  const db = admin.firestore();
+  const docId = `${uid}_${assignmentId}_blocks`;
+  const responsesRef = db.doc(`lesson_block_responses/${docId}`);
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(responsesRef);
+
+    if (snap.exists) {
+      const existing = snap.data()!;
+      const responses = existing.responses || {};
+
+      // Archive if there were actual responses
+      if (Object.keys(responses).length > 0) {
+        const archiveRef = db.collection("lesson_block_responses_archive").doc();
+        tx.set(archiveRef, {
+          ...existing,
+          archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+          reason: "fresh_assessment_start",
+        });
+      }
+    }
+
+    // Clear responses for the fresh start (anti-cheat)
+    tx.set(responsesRef, {
+      userId: uid,
+      assignmentId,
+      responses: {},
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  return { success: true };
+});
+
+// ==========================================
+// BEHAVIOR AWARD + XP (ATOMIC)
+// ==========================================
+export const awardBehaviorXP = onCall({ region: "us-east1" }, async (request) => {
+  const uid = verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
+
+  const db = admin.firestore();
+
+  const { studentId, classType, xpAmount, fluxAmount, reason, timestamp } = request.data as {
+    studentId?: string;
+    classType?: string;
+    xpAmount?: number;
+    fluxAmount?: number;
+    reason?: string;
+    timestamp?: string;
+  };
+
+  if (!studentId || !classType || xpAmount === undefined || fluxAmount === undefined || !reason) {
+    throw new HttpsError("invalid-argument", "Missing required fields: studentId, classType, xpAmount, fluxAmount, reason.");
+  }
+
+  const batch = db.batch();
+
+  // 1. Create the behavior award doc
+  const awardRef = db.collection("behavior_awards").doc();
+  batch.set(awardRef, {
+    studentId,
+    classType,
+    xpAmount,
+    fluxAmount,
+    reason,
+    timestamp: timestamp || new Date().toISOString(),
+    awardedBy: uid,
+  });
+
+  // 2. Increment student XP + currency atomically
+  const userRef = db.doc(`users/${studentId}`);
+  batch.update(userRef, {
+    "gamification.xp": admin.firestore.FieldValue.increment(xpAmount),
+    [`gamification.classXp.${classType}`]: admin.firestore.FieldValue.increment(xpAmount),
+    "gamification.currency": admin.firestore.FieldValue.increment(fluxAmount),
+  });
+
+  await batch.commit();
+
+  return { success: true, awardId: awardRef.id };
+});
+
+// ==========================================
+// SCHEDULED CLEANUP — Assessment Sessions & Response Archives
+// ==========================================
+export const cleanupStaleData = onSchedule({ schedule: "0 3 * * *", timeZone: "America/New_York", region: "us-east1" }, async () => {
+  const db = admin.firestore();
+  const now = Date.now();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+
+  // 1. Delete assessment_sessions older than 7 days
+  let sessionsCleaned = 0;
+  const sessionsQuery = db.collection("assessment_sessions")
+    .where("startedAt", "<", admin.firestore.Timestamp.fromMillis(now - SEVEN_DAYS_MS))
+    .limit(499);
+
+  let sessionBatch = await sessionsQuery.get();
+  while (!sessionBatch.empty) {
+    const batch = db.batch();
+    sessionBatch.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    sessionsCleaned += sessionBatch.size;
+    if (sessionBatch.size < 499) break;
+    sessionBatch = await sessionsQuery.get();
+  }
+
+  // 2. Delete lesson_block_responses_archive older than 90 days
+  let archivesCleaned = 0;
+  const cutoffMs = now - NINETY_DAYS_MS;
+  const cutoffIso = new Date(cutoffMs).toISOString();
+
+  // Handle both Timestamp and ISO string archivedAt formats
+  const allArchives = await db.collection("lesson_block_responses_archive").get();
+  const toDelete = allArchives.docs.filter((d) => {
+    const archivedAt = d.data().archivedAt;
+    if (!archivedAt) return true; // No date = stale, delete
+    if (typeof archivedAt === "string") return archivedAt < cutoffIso;
+    if (archivedAt.toMillis) return archivedAt.toMillis() < cutoffMs;
+    return false;
+  });
+
+  // Batch delete in chunks of 499
+  for (let i = 0; i < toDelete.length; i += 499) {
+    const batch = db.batch();
+    toDelete.slice(i, i + 499).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    archivesCleaned += Math.min(499, toDelete.length - i);
+  }
+
+  logger.info(`cleanupStaleData: deleted ${sessionsCleaned} session tokens, ${archivesCleaned} archived responses`);
+});
+
+// ==========================================
+// ADMIN ADD TO WHITELIST (ATOMIC)
+// ==========================================
+export const adminAddToWhitelist = onCall({ region: "us-east1" }, async (request) => {
+  verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
+
+  const db = admin.firestore();
+
+  const { email, classType } = request.data as { email?: string; classType?: string };
+  if (!email || !classType) {
+    throw new HttpsError("invalid-argument", "email and classType are required.");
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const whitelistRef = db.doc(`allowed_emails/${normalizedEmail}`);
+
+  // Read current whitelist state
+  const existing = await whitelistRef.get();
+  const currentTypes: string[] = existing.exists ? (existing.data()?.classTypes || [existing.data()?.classType].filter(Boolean)) : [];
+  const mergedTypes = Array.from(new Set([...currentTypes, classType]));
+
+  // Find matching users
+  const usersSnap = await db.collection("users").where("email", "==", normalizedEmail).get();
+
+  // Atomic batch: whitelist doc + all matching user docs
+  const batch = db.batch();
+
+  batch.set(whitelistRef, { classType, classTypes: mergedTypes }, { merge: true });
+
+  usersSnap.docs.forEach((userDoc) => {
+    const userData = userDoc.data();
+    const currentClasses: string[] = userData.enrolledClasses || (userData.classType ? [userData.classType] : []);
+    const newClasses = Array.from(new Set([...currentClasses, classType]));
+    batch.update(userDoc.ref, {
+      isWhitelisted: true,
+      classType,
+      enrolledClasses: newClasses,
+    });
+  });
+
+  await batch.commit();
+
+  return { success: true, email: normalizedEmail, classType, usersUpdated: usersSnap.size };
 });
 
 // ==========================================

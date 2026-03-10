@@ -271,6 +271,10 @@ service cloud.firestore {
       allow read, write: if false; // Admin SDK only
     }
 
+    match /message_cooldowns/{docId} {
+      allow read, write: if false; // Admin SDK only
+    }
+
     // ==========================================
     // PRACTICE PROGRESS (Proctor Bridge)
     // ==========================================

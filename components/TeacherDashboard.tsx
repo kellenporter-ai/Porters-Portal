@@ -18,7 +18,8 @@ import StudentDetailDrawer from './StudentDetailDrawer';
 import BehaviorQuickAward from './BehaviorQuickAward';
 import { downloadGradeCSV } from '../lib/csvGradeExport';
 
-const RubricViewer = React.lazy(() => import('./RubricViewer'));
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
 
 interface TeacherDashboardProps {
   users: User[];
@@ -1118,9 +1119,34 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       const elements = (rawAnswer as { elements?: Array<Record<string, unknown>> }).elements || [];
                                       if (elements.length > 0) {
                                         displayAnswer = `Drawing (${elements.length} element${elements.length !== 1 ? 's' : ''})`;
+                                        // Compute bounding box from element coordinates (canvas may be wider than 800 on large screens)
+                                        let maxX = 800, maxY = block.canvasHeight ?? 400;
+                                        for (const el of elements) {
+                                          const pts: { x: number; y: number }[] = [];
+                                          if (el.type === 'stroke' && Array.isArray(el.points)) pts.push(...(el.points as { x: number; y: number }[]));
+                                          if (el.type === 'arrow' || el.type === 'shape') {
+                                            if (el.start) pts.push(el.start as { x: number; y: number });
+                                            if (el.end) pts.push(el.end as { x: number; y: number });
+                                          }
+                                          if (el.type === 'text' && el.position) {
+                                            const pos = el.position as { x: number; y: number };
+                                            const fontSize = Number(el.fontSize || 14);
+                                            const textLen = String(el.text || '').length;
+                                            // Estimate rendered text width: ~0.6 × fontSize per character
+                                            const estWidth = textLen * fontSize * 0.6;
+                                            pts.push(pos);
+                                            pts.push({ x: pos.x + estWidth, y: pos.y + fontSize });
+                                          }
+                                          for (const p of pts) {
+                                            if (p.x > maxX) maxX = p.x;
+                                            if (p.y > maxY) maxY = p.y;
+                                          }
+                                        }
+                                        const vbW = Math.ceil(maxX + 20);
+                                        const vbH = Math.ceil(maxY + 20);
                                         // Render SVG preview of drawing elements
                                         richRenderer = (
-                                          <svg viewBox="0 0 800 400" className="w-full max-w-md h-auto bg-white rounded mt-1 border border-white/10" style={{ maxHeight: 200 }}>
+                                          <svg viewBox={`0 0 ${vbW} ${vbH}`} className="w-full max-w-2xl h-auto bg-white rounded mt-1 border border-white/10">
                                             {elements.map((el, i) => {
                                               if (el.type === 'arrow') {
                                                 const sx = el.start as { x: number; y: number }, ex = el.end as { x: number; y: number };

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FORTUNE_WHEEL_PRIZES } from '../../lib/achievements';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
@@ -20,7 +20,9 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const wheelRef = useRef<SVGGElement>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const toast = useToast();
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   const today = new Date().toISOString().split('T')[0];
   const alreadySpun = lastSpin === today;
@@ -42,7 +44,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
       setRotation(prev => prev + targetAngle);
 
       // Wait for animation to finish
-      setTimeout(() => {
+      timersRef.current.push(setTimeout(() => {
         sfx.wheelPrize();
         setResult(data.rewardDescription);
         setSpinning(false);
@@ -51,7 +53,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
         } else {
           toast.info(data.rewardDescription);
         }
-      }, 4000);
+      }, 4000));
     } catch (err) {
       setSpinning(false);
       toast.error(err instanceof Error ? err.message : 'Spin failed');

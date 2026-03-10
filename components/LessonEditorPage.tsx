@@ -14,9 +14,11 @@ import { parseRubricMarkdown, validateRubric } from '../lib/rubricParser';
 import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
 
-const RubricViewer = React.lazy(() => import('./RubricViewer'));
-const QuestionBankManager = React.lazy(() => import('./QuestionBankManager'));
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
+const QuestionBankManager = lazyWithRetry(() => import('./QuestionBankManager'));
 import { dataService } from '../services/dataService';
+import { reportError } from '../lib/errorReporting';
 import { useToast } from './ToastProvider';
 import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
 import ResourceSidebar from './lesson-editor/ResourceSidebar';
@@ -481,7 +483,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       clearAutoSave();
     } catch (err) {
       toast.error('Save failed.');
-      console.error(err);
+      reportError(err, { component: 'LessonEditorPage' });
     } finally {
       setIsSaving(false);
     }
@@ -502,7 +504,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       clearAutoSave();
     } catch (err) {
       toast.error('Failed to save.');
-      console.error(err);
+      reportError(err, { component: 'LessonEditorPage' });
     } finally {
       setIsSaving(false);
     }

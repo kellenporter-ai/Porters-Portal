@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { EnrollmentCode, DefaultClassTypes, ClassConfig } from '../types';
 import { KeyRound, Plus, Copy, X, Check, Ban } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -20,6 +20,9 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
   const [newSection, setNewSection] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   useEffect(() => {
     const unsub = dataService.subscribeToEnrollmentCodes(setCodes);
@@ -27,22 +30,30 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
   }, []);
 
   const handleCreate = async () => {
-    const code = await dataService.createEnrollmentCode(newClass, newSection || undefined, newMaxUses ? parseInt(newMaxUses) : undefined);
-    toast.success(`Code created: ${code}`);
-    setShowCreate(false);
-    setNewSection('');
-    setNewMaxUses('');
+    try {
+      const code = await dataService.createEnrollmentCode(newClass, newSection || undefined, newMaxUses ? parseInt(newMaxUses) : undefined);
+      toast.success(`Code created: ${code}`);
+      setShowCreate(false);
+      setNewSection('');
+      setNewMaxUses('');
+    } catch {
+      toast.error('Failed to create enrollment code.');
+    }
   };
 
   const handleCopy = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    timersRef.current.push(setTimeout(() => setCopiedId(null), 2000));
   };
 
   const handleDeactivate = async (codeId: string) => {
     if (!await confirm({ message: 'Deactivate this enrollment code?', confirmLabel: 'Deactivate' })) return;
-    await dataService.deactivateEnrollmentCode(codeId);
+    try {
+      await dataService.deactivateEnrollmentCode(codeId);
+    } catch {
+      toast.error('Failed to deactivate code.');
+    }
   };
 
   const classOptions = classConfigs && classConfigs.length > 0

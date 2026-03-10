@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAppData } from '../lib/AppDataContext';
@@ -12,12 +12,13 @@ import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, U
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 
-const Proctor = lazy(() => import('./Proctor'));
-const ReviewQuestions = lazy(() => import('./ReviewQuestions'));
-const RubricViewer = lazy(() => import('./RubricViewer'));
-const StudyMaterial = lazy(() => import('./StudyMaterial'));
-const LessonBlocks = lazy(() => import('./LessonBlocks').then(m => ({ default: m.default })));
+const Proctor = lazyWithRetry(() => import('./Proctor'));
+const ReviewQuestions = lazyWithRetry(() => import('./ReviewQuestions'));
+const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
+const StudyMaterial = lazyWithRetry(() => import('./StudyMaterial'));
+const LessonBlocks = lazyWithRetry(() => import('./LessonBlocks').then(m => ({ default: m.default })));
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center h-64 text-gray-500">
@@ -231,7 +232,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     const afterThis = attLeft != null ? attLeft - 1 : null;
     const confirmed = await confirm({
       title: 'Retake Assessment',
-      message: `Your previous answers will be cleared and you'll start fresh.${afterThis != null ? (afterThis === 0 ? ' This will be your last attempt.' : ` You will have ${afterThis} attempt${afterThis !== 1 ? 's' : ''} remaining after this.`) : ''} Are you sure you want to retake?`,
+      message: `Your previous answers will be loaded so you can review and edit them before resubmitting.${afterThis != null ? (afterThis === 0 ? ' This will be your last attempt.' : ` You will have ${afterThis} attempt${afterThis !== 1 ? 's' : ''} remaining after this.`) : ''} Are you sure you want to retake?`,
       confirmLabel: 'Start Retake',
       cancelLabel: 'Go Back',
       variant: 'info',
@@ -243,8 +244,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       await setDoc(doc(db, 'lesson_block_responses', docId), {
         userId: user.id,
         assignmentId: activeAssignment.id,
-        responses: {},
+        responses: existingSubmission?.blockResponses ?? {},
         lastUpdated: new Date().toISOString(),
+        retakePreFilled: true,
       });
     } catch { /* ignore if doc doesn't exist yet */ }
     // Clear cached session token so retake gets a fresh one
@@ -504,7 +506,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <p className="text-xs text-purple-300 font-medium mb-1">Ready to try again?</p>
               <p className="text-[11px] text-purple-300/70">
                 You missed {incorrectCount} question{incorrectCount !== 1 ? 's' : ''}{pendingCount > 0 ? ` and ${pendingCount} ${pendingCount === 1 ? 'is' : 'are'} pending review` : ''}.
-                Retaking will clear your answers and let you start fresh.
+                Retaking will load your previous answers so you can edit and resubmit.
                 {!isUnlimited && ` You have ${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} left.`}
               </p>
             </div>

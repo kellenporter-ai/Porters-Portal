@@ -302,8 +302,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       );
     }
 
-    // Admin: render flat as before
-    return <>{filteredItems.map(i => renderNavButton(i))}</>;
+    // Admin: render flat, respecting collapsed state
+    return <>{filteredItems.map(i => renderNavButton(i, sidebarCollapsed))}</>;
   };
 
   // Arrow key navigation within sidebar nav items

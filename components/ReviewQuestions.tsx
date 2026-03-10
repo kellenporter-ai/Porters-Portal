@@ -85,7 +85,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
             if (time >= 5) {
                 const uid = getAuth().currentUser?.uid;
                 if (uid) {
-                    dataService.submitReviewEngagement(uid, assignment.id, assignment.title, assignment.classType, time).catch(err => console.error('Failed to submit review engagement:', err));
+                    dataService.submitReviewEngagement(uid, assignment.id, assignment.title, assignment.classType, time).catch(err => reportError(err, { component: 'ReviewQuestions' }));
                 }
             }
         };
@@ -111,7 +111,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                 setAllQuestions(questions);
                 selectNewBatch(questions);
             } catch (err) {
-                console.error('Failed to load question bank:', err);
+                reportError(err, { component: 'ReviewQuestions' });
                 setBankEmpty(true);
                 return;
             } finally {

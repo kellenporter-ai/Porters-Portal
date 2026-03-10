@@ -7,6 +7,7 @@ import { useToast } from './ToastProvider';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
 
 import { dataService } from '../services/dataService';
+import { reportError } from '../lib/errorReporting';
 
 // ─── Inline component for joining another class via enrollment code ───
 const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
@@ -113,7 +114,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
       }
       onClose();
     } catch (err) {
-      console.error(err);
+      reportError(err, { component: 'SettingsModal' });
       toast.error("Failed to save settings.");
     } finally {
       setIsSaving(false);

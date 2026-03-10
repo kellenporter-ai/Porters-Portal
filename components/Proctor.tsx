@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
-import { db, callAwardQuestionXP, callStartAssessmentSession } from '../lib/firebase';
-import { doc, getDoc, setDoc, deleteDoc, addDoc, collection } from 'firebase/firestore';
+import { db, callAwardQuestionXP, callStartAssessmentSession, callArchiveAndClearResponses } from '../lib/firebase';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import AnnotationOverlay from './AnnotationOverlay';
@@ -11,6 +11,7 @@ import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
+import { reportError } from '../lib/errorReporting';
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -222,46 +223,42 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           }
         }).catch(err => {
           if (cancelled) return;
-          console.error('Failed to load assessment block responses after refresh', err);
+          reportError(err, { component: 'Proctor', context: 'Failed to load assessment block responses after refresh' });
           setSavedBlockResponses({});
         });
       } else {
-        // Fresh assessment start — archive then clear any pre-existing responses.
-        // Soft-delete: move old responses to an archive collection before wiping,
-        // so student work can be recovered if the wipe was unintended.
-        const archiveThenClear = async () => {
-          try {
-            const snap = await getDoc(doc(db, 'lesson_block_responses', docId));
-            if (snap.exists()) {
-              const existing = snap.data();
-              const responses = existing.responses || {};
-              // Only archive if there were actual responses
-              if (Object.keys(responses).length > 0) {
-                await addDoc(collection(db, 'lesson_block_responses_archive'), {
-                  ...existing,
-                  archivedAt: new Date().toISOString(),
-                  reason: 'fresh_assessment_start',
-                });
-              }
-            }
-          } catch {
-            // Archive is best-effort — don't block the assessment start
+        // Check if this is a retake with pre-filled responses from the prior submission
+        const docId = `${userId}_${assignmentId}_blocks`;
+        const handleFreshStart = async () => {
+          const snap = await getDoc(doc(db, 'lesson_block_responses', docId));
+          if (snap.exists() && snap.data().retakePreFilled) {
+            // Retake: load pre-filled responses, clear the flag
+            const data = snap.data();
+            const responses = data.responses || {};
+            await updateDoc(doc(db, 'lesson_block_responses', docId), { retakePreFilled: false });
+            return responses;
           }
-          // Clear responses for the fresh start (anti-cheat)
-          await setDoc(doc(db, 'lesson_block_responses', docId), {
-            userId,
-            assignmentId,
-            responses: {},
-            lastUpdated: new Date().toISOString(),
-          });
+          // Fresh assessment start — archive & clear via atomic Cloud Function
+          try {
+            await callArchiveAndClearResponses({ assignmentId });
+          } catch (err) {
+            reportError(err, { component: 'Proctor', context: 'Failed to archive and clear assessment responses' });
+            await setDoc(doc(db, 'lesson_block_responses', docId), {
+              userId,
+              assignmentId,
+              responses: {},
+              lastUpdated: new Date().toISOString(),
+            });
+          }
+          return {};
         };
-        archiveThenClear().then(() => {
+        handleFreshStart().then((responses) => {
           if (cancelled) return;
-          blockResponsesRef.current = {};
-          setSavedBlockResponses({});
+          blockResponsesRef.current = responses;
+          setSavedBlockResponses(responses);
         }).catch(err => {
           if (cancelled) return;
-          console.error('Failed to clear assessment block responses', err);
+          reportError(err, { component: 'Proctor', context: 'Failed to handle assessment fresh start' });
           blockResponsesRef.current = {};
           setSavedBlockResponses({});
         });
@@ -279,7 +276,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         }
       }).catch(err => {
         if (cancelled) return;
-        console.error('Failed to load lesson block responses', err);
+        reportError(err, { component: 'Proctor', context: 'Failed to load lesson block responses' });
         setSavedBlockResponses({});
       });
     }
@@ -312,7 +309,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         assignmentId,
         responses: blockResponsesRef.current,
         lastUpdated: new Date().toISOString(),
-      }, { merge: true }).catch(err => console.error('Failed to save lesson block responses', err));
+      }, { merge: true }).catch(err => reportError(err, { method: 'saveBlockResponses', assignmentId }));
     }, 1500);
   }, [userId, assignmentId]);
 
@@ -329,7 +326,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         assignmentId,
         responses: blockResponsesRef.current,
         lastUpdated: new Date().toISOString(),
-      }, { merge: true }).catch(() => {});
+      }, { merge: true }).catch(err => reportError(err, { method: 'flushBlockResponses', assignmentId }));
     }
   }, [userId, assignmentId]);
 
@@ -497,6 +494,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       if (!isActive) setIsActive(true);
   }, [isActive]);
 
+  // Throttled version for high-frequency events (mousemove)
+  const lastInteractionTimeRef = useRef(0);
+  const throttledInteraction = useCallback(() => {
+    const now = Date.now();
+    if (now - lastInteractionTimeRef.current < 500) return;
+    lastInteractionTimeRef.current = now;
+    handleInteraction();
+  }, [handleInteraction]);
+
   // Specific telemetry handlers
   const handleKeyDown = useCallback(() => {
     metricsRef.current.keystrokes++;
@@ -505,7 +511,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     keystrokeTimesRef.current.push(now);
     // Keep only last 50 timestamps for rolling window
     if (keystrokeTimesRef.current.length > 50) {
-      keystrokeTimesRef.current = keystrokeTimesRef.current.slice(-50);
+      keystrokeTimesRef.current.shift();
     }
     // Detect burst: 5+ keystrokes within 100ms each = likely paste
     const times = keystrokeTimesRef.current;
@@ -565,7 +571,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         setTimeout(() => setXpToast(null), 2000);
       }
     } catch (err) {
-      console.error('Lesson block XP award failed', err);
+      reportError(err, { component: 'Proctor', context: 'Lesson block XP award failed' });
     }
   }, [userId, assignmentId, classType, handleInteraction]);
 
@@ -589,16 +595,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('paste', handlePaste);
       window.addEventListener('click', handleClick);
-      window.addEventListener('mousemove', handleInteraction);
+      window.addEventListener('mousemove', throttledInteraction);
       window.addEventListener('scroll', handleInteraction);
       return () => {
           window.removeEventListener('keydown', handleKeyDown);
           window.removeEventListener('paste', handlePaste);
           window.removeEventListener('click', handleClick);
-          window.removeEventListener('mousemove', handleInteraction);
+          window.removeEventListener('mousemove', throttledInteraction);
           window.removeEventListener('scroll', handleInteraction);
       };
-  }, [handleKeyDown, handlePaste, handleClick, handleInteraction]);
+  }, [handleKeyDown, handlePaste, handleClick, handleInteraction, throttledInteraction]);
 
   // Assessment: Track tab switches (visibilitychange only — blur fires on iframe focus)
   useEffect(() => {
@@ -638,7 +644,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // ONE-TIME Submission on Unmount
   useEffect(() => {
-      return () => { onCompleteRef.current(metricsRef.current); };
+      return () => {
+        onCompleteRef.current(metricsRef.current);
+        blockTimingRef.current = {};
+        keystrokeTimesRef.current = [];
+      };
   }, []);
 
   // ============================================================
@@ -702,7 +712,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               payload: { userId, savedState, completionInfo }
             }, targetOrigin);
           } catch (err) {
-            console.error('Bridge: Failed to load saved state', err);
+            reportError(err, { component: 'Proctor', context: 'Bridge: Failed to load saved state' });
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
               payload: { userId, savedState: null, completionInfo: null }
@@ -741,7 +751,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
             iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, targetOrigin);
           } catch (err) {
-            console.error('Bridge: Save failed', err);
+            reportError(err, { component: 'Proctor', context: 'Bridge: Save failed' });
             iframe.contentWindow?.postMessage({ type: 'portal-save-error' }, targetOrigin);
           }
           break;
@@ -794,7 +804,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
             iframe.contentWindow?.postMessage({ type: 'portal-complete-ok', payload: { totalCompletions, bestScore } }, targetOrigin);
           } catch (err) {
-            console.error('Bridge: Completion save failed', err);
+            reportError(err, { component: 'Proctor', context: 'Bridge: Completion save failed' });
             iframe.contentWindow?.postMessage({ type: 'portal-complete-error' }, targetOrigin);
           }
           break;
@@ -826,7 +836,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
             iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
           } catch (err) {
-            console.error('Bridge: Replay reset failed', err);
+            reportError(err, { component: 'Proctor', context: 'Bridge: Replay reset failed' });
           }
           break;
         }
@@ -863,7 +873,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 payload: { questionId, awarded: resultData.awarded, xp: resultData.serverXP || xpAmount }
               }, targetOrigin);
             } catch (err) {
-              console.error('Bridge: XP award failed', err);
+              reportError(err, { component: 'Proctor', context: 'Bridge: XP award failed' });
               iframe.contentWindow?.postMessage({
                 type: 'portal-xp-result',
                 payload: { questionId, awarded: false, xp: 0 }
@@ -916,7 +926,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
         iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
       } catch (err) {
-        console.error('Replay reset failed', err);
+        reportError(err, { component: 'Proctor', context: 'Replay reset failed' });
       }
     })();
   }, [userId, assignmentId]);

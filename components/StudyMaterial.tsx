@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Loader2, BookOpen, Clock, PlayCircle, AlertTriangle } from 'lucide-react';
 import { createInitialMetrics } from '../lib/telemetry';
 import katex from 'katex';
+import { reportError } from '../lib/errorReporting';
 
 interface StudyMaterialProps {
     assignment: Assignment;
@@ -121,7 +122,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
                     setIsEmpty(true);
                 }
             } catch (err) {
-                console.error('Failed to load reading material:', err);
+                reportError(err, { component: 'StudyMaterial' });
                 setIsEmpty(true);
             } finally {
                 setIsLoading(false);

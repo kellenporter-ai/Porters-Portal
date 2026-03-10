@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, Outlet } from 'react-router-dom';
 import { User, UserRole, Submission, DefaultClassTypes, Assignment, isValidUser } from './types';
 import { dataService, clearDeniedCollections } from './services/dataService';
@@ -23,22 +23,23 @@ import { AppDataProvider, useAppData } from './lib/AppDataContext';
 import { AdminDataProvider, useAdminData } from './lib/AdminDataContext';
 import { ChatProvider, useChat } from './lib/ChatContext';
 import { TAB_TO_PATH, XP_SUB_ROUTES } from './lib/routes';
+import { lazyWithRetry } from './lib/lazyWithRetry';
 
-// ─── Lazy-loaded route components — split admin, teacher, and student bundles ───
-const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
-const UserManagement = lazy(() => import('./components/UserManagement'));
-const AdminPanel = lazy(() => import('./components/AdminPanel'));
-const XPManagement = lazy(() => import('./components/XPManagement'));
-const GroupManager = lazy(() => import('./components/GroupManager'));
-const PhysicsTools = lazy(() => import('./components/PhysicsTools'));
-const Communications = lazy(() => import('./components/Communications'));
-const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
-const EvidenceLocker = lazy(() => import('./components/EvidenceLocker'));
-const Leaderboard = lazy(() => import('./components/Leaderboard'));
-const EnrollmentCodes = lazy(() => import('./components/EnrollmentCodes'));
-const LessonEditorPage = lazy(() => import('./components/LessonEditorPage'));
-const ResourceViewer = lazy(() => import('./components/ResourceViewer'));
-const StudentReports = lazy(() => import('./components/StudentReports'));
+// ─── Lazy-loaded route components — auto-reload on stale chunk errors ───
+const TeacherDashboard = lazyWithRetry(() => import('./components/TeacherDashboard'));
+const UserManagement = lazyWithRetry(() => import('./components/UserManagement'));
+const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'));
+const XPManagement = lazyWithRetry(() => import('./components/XPManagement'));
+const GroupManager = lazyWithRetry(() => import('./components/GroupManager'));
+const PhysicsTools = lazyWithRetry(() => import('./components/PhysicsTools'));
+const Communications = lazyWithRetry(() => import('./components/Communications'));
+const StudentDashboard = lazyWithRetry(() => import('./components/StudentDashboard'));
+const EvidenceLocker = lazyWithRetry(() => import('./components/EvidenceLocker'));
+const Leaderboard = lazyWithRetry(() => import('./components/Leaderboard'));
+const EnrollmentCodes = lazyWithRetry(() => import('./components/EnrollmentCodes'));
+const LessonEditorPage = lazyWithRetry(() => import('./components/LessonEditorPage'));
+const ResourceViewer = lazyWithRetry(() => import('./components/ResourceViewer'));
+const StudentReports = lazyWithRetry(() => import('./components/StudentReports'));
 
 const LazyFallback = () => <RouteSkeleton />;
 

@@ -7,6 +7,7 @@ import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
 import { useAppData } from '../../lib/AppDataContext';
 import Modal from '../Modal';
+import { reportError } from '../../lib/errorReporting';
 
 interface QuizBossFormModalProps {
   isOpen: boolean;
@@ -420,7 +421,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
       onClose();
     } catch (err) {
-      console.error('Failed to save quiz boss:', err);
+      reportError(err, { component: 'QuizBossFormModal' });
       toast.error(err instanceof Error ? `Save failed: ${err.message}` : 'Failed to save quiz boss.');
     } finally {
       setIsSaving(false);
@@ -475,7 +476,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       toast.success('Quiz boss saved as draft (inactive).');
       onClose();
     } catch (err) {
-      console.error('Failed to save draft boss:', err);
+      reportError(err, { component: 'QuizBossFormModal' });
       toast.error(err instanceof Error ? `Draft save failed: ${err.message}` : 'Failed to save draft.');
     } finally {
       setIsSaving(false);

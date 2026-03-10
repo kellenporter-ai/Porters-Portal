@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../types';
 import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColors } from '../lib/gamification';
 import { getEvolutionTier, getActiveSetBonuses, ACHIEVEMENTS } from '../lib/achievements';
@@ -27,6 +27,8 @@ const SLOT_ORDER: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', '
 
 const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onClose }) => {
   const [copied, setCopied] = React.useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
   const gam = user.gamification || { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false };
   const level = gam.level || 1;
   const rankDetails = getRankDetails(level);
@@ -52,7 +54,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/profile/${user.id}`);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    timersRef.current.push(setTimeout(() => setCopied(false), 2000));
   };
 
   return (

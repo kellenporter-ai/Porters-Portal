@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Upload, Copy, CheckCircle2, Loader2, FileJson, AlertTriangle, Trash2, Database, ChevronRight, Search, Plus, XCircle, Zap, BookOpen } from 'lucide-react';
 import { useToast } from './ToastProvider';
+import { reportError } from '../lib/errorReporting';
 import Modal from './Modal';
 
 interface ReadingSection { title: string; content: string; }
@@ -149,8 +150,10 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
     const [pendingReading, setPendingReading] = useState<ReadingMaterial | null>(null);
     const [readingParseError, setReadingParseError] = useState<string | null>(null);
     const [copiedReading, setCopiedReading] = useState(false);
+    const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
     const readingFileRef = useRef<HTMLInputElement>(null);
     const isPracticeSet = assignment.category === 'Practice Set';
+    useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
     // Load existing bank and reading material
     useEffect(() => {
@@ -172,7 +175,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                     setReadingMaterial(null);
                 }
             } catch (err) {
-                console.error('Failed to load bank:', err);
+                reportError(err, { component: 'QuestionBankManager' });
                 setQuestions([]);
             } finally {
                 setIsLoading(false);
@@ -224,7 +227,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(PROMPT_TEMPLATE(assignment.title, assignment.classType, assignment.description));
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        timersRef.current.push(setTimeout(() => setCopied(false), 2000));
         toast.success('Prompt copied!');
     };
 
@@ -232,7 +235,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
     const handleCopyReadingPrompt = () => {
         navigator.clipboard.writeText(READING_PROMPT_TEMPLATE(assignment.title, assignment.classType, assignment.description));
         setCopiedReading(true);
-        setTimeout(() => setCopiedReading(false), 2000);
+        timersRef.current.push(setTimeout(() => setCopiedReading(false), 2000));
         toast.success('Reading prompt copied!');
     };
 

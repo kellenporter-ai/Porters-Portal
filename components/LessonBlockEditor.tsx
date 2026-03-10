@@ -10,6 +10,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import { LessonBlock, BlockType } from '../types';
 import LessonBlocks from './LessonBlocks';
 import { dataService } from '../services/dataService';
+import { reportError } from '../lib/errorReporting';
 
 interface LessonBlockEditorProps {
   blocks: LessonBlock[];
@@ -363,7 +364,7 @@ const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => 
       onUpdate({ ...block, url });
     } catch (err) {
       setError('Upload failed. Please try again.');
-      console.error('Image upload error:', err);
+      reportError(err, { component: 'LessonBlockEditor' });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

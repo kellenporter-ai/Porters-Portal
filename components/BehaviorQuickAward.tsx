@@ -50,23 +50,28 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
 
     setAwarding(true);
     try {
-      for (const student of selectedStudents) {
-        await dataService.awardBehavior({
-          studentId: student.id,
-          studentName: student.name,
-          categoryId: cat.id,
-          categoryName: cat.name,
-          xpAmount: cat.xpAmount,
-          fluxAmount: cat.fluxAmount,
-          classType: student.classType || 'AP Physics',
-          awardedBy: 'admin',
-          timestamp: new Date().toISOString(),
-        });
+      const results = await Promise.allSettled(
+        selectedStudents.map(student =>
+          dataService.awardBehavior({
+            studentId: student.id,
+            studentName: student.name,
+            categoryId: cat.id,
+            categoryName: cat.name,
+            xpAmount: cat.xpAmount,
+            fluxAmount: cat.fluxAmount,
+            classType: student.classType || 'AP Physics',
+            awardedBy: 'admin',
+            timestamp: new Date().toISOString(),
+          })
+        )
+      );
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (succeeded > 0) {
+        toast.success(`${cat.icon} +${cat.xpAmount} XP awarded to ${succeeded} student${succeeded !== 1 ? 's' : ''} for ${cat.name}!`);
       }
-      if (selectedStudents.length === 1) {
-        toast.success(`${cat.icon} +${cat.xpAmount} XP awarded to ${selectedStudents[0].name} for ${cat.name}!`);
-      } else {
-        toast.success(`${cat.icon} +${cat.xpAmount} XP awarded to ${selectedStudents.length} students for ${cat.name}!`);
+      if (failed > 0) {
+        toast.error(`Failed to award ${failed} student${failed !== 1 ? 's' : ''}.`);
       }
       setSelectedStudents([]);
       setSearch('');

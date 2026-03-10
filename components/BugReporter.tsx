@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bug, X, Send, CheckCircle } from 'lucide-react';
 import { User } from '../types';
 import { dataService } from '../services/dataService';
@@ -17,6 +17,8 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [cooldown, setCooldown] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   const handleSubmit = async () => {
     if (!description.trim() || cooldown) return;
@@ -34,8 +36,8 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
       });
       setSubmitted(true);
       setCooldown(true);
-      setTimeout(() => setCooldown(false), 5000);
-      setTimeout(() => { setSubmitted(false); setIsOpen(false); setDescription(''); }, 2000);
+      timersRef.current.push(setTimeout(() => setCooldown(false), 5000));
+      timersRef.current.push(setTimeout(() => { setSubmitted(false); setIsOpen(false); setDescription(''); }, 2000));
     } catch {
       toast.error('Failed to submit report. Please try again.');
     } finally {

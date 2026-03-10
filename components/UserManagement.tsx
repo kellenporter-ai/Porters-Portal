@@ -5,6 +5,7 @@ import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser, getUs
 import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
 import { dataService } from '../services/dataService';
+import { reportError } from '../lib/errorReporting';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 
@@ -454,7 +455,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           setIsGroupModalOpen(false);
           setIsEditingGroup(false);
       } catch (error) {
-          console.error("Failed to save config:", error);
+          reportError(error, { component: 'UserManagement' });
           toast.error("Failed to save class configuration.");
       } finally {
           setIsSubmittingGroup(false);

@@ -1,46 +1,17 @@
 
 import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode } from '../lib/firebase';
+import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { TEACHER_DISPLAY_NAME } from '../constants';
 import { reportError } from '../lib/errorReporting';
+import { resilientSnapshot, clearDeniedCollections } from './resilientSnapshot';
 
-// Track collections that have failed with permission errors to prevent
-// re-subscribing after ErrorBoundary remounts (which would crash Firestore SDK).
-// Uses a Map<name, deniedAtMs> with a 30-second TTL so transient permission errors
-// (e.g. during auth state transitions) recover quickly instead of blocking the UI.
-const DENIED_TTL_MS = 30 * 1000;
+export { clearDeniedCollections };
 
 /** Strip undefined values from an object before passing to Firestore setDoc(). */
 const stripUndefined = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
-const _deniedCollections = new Map<string, number>();
-
-/** Clear all denial caches — call when auth state changes. */
-export function clearDeniedCollections() {
-  _deniedCollections.clear();
-}
-
-const guardedSnapshot = (
-  name: string,
-  q: any,
-  callback: (snapshot: any) => void
-) => {
-  const deniedAt = _deniedCollections.get(name);
-  if (deniedAt !== undefined && Date.now() - deniedAt < DENIED_TTL_MS) {
-    return () => {};
-  }
-  // If TTL has expired, remove stale entry so we retry
-  if (deniedAt !== undefined) _deniedCollections.delete(name);
-
-  return onSnapshot(q, callback, (error: any) => {
-    reportError(error, { subscription: name });
-    if (error?.code === 'permission-denied' || error?.code === 'failed-precondition') {
-      _deniedCollections.set(name, Date.now());
-    }
-  });
-};
 
 export const dataService = {
   // --- HELPERS ---
@@ -61,7 +32,7 @@ export const dataService = {
     const q = activeOnly
       ? query(collection(db, 'xp_events'), where('isActive', '==', true))
       : collection(db, 'xp_events');
-    return guardedSnapshot('xp_events', q, (snapshot: any) => {
+    return resilientSnapshot('xp_events', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as XPEvent)));
     });
   },
@@ -78,7 +49,7 @@ export const dataService = {
     const q = activeOnly
       ? query(collection(db, 'quests'), where('isActive', '==', true))
       : collection(db, 'quests');
-    return guardedSnapshot('quests', q, (snapshot: any) => {
+    return resilientSnapshot('quests', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Quest)));
     });
   },
@@ -144,7 +115,7 @@ export const dataService = {
   // --- CUSTOM ITEM LIBRARY ---
 
   subscribeToCustomItems: (callback: (items: CustomItem[]) => void) => {
-    return guardedSnapshot('customItems', collection(db, 'customItems'), (snapshot: any) => {
+    return resilientSnapshot('customItems', collection(db, 'customItems'), (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as CustomItem)));
     });
   },
@@ -162,7 +133,7 @@ export const dataService = {
   // ========================================
 
   subscribeToQuestTemplates: (callback: (templates: import('../types').Quest[]) => void) => {
-    return guardedSnapshot('quest_templates', collection(db, 'quest_templates'), (snapshot: any) => {
+    return resilientSnapshot('quest_templates', collection(db, 'quest_templates'), (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() })));
     });
   },
@@ -412,7 +383,7 @@ export const dataService = {
       orderBy('timestamp', 'desc'),
       limit(20)
     );
-    return guardedSnapshot('recent_messages', q, (snapshot: any) => {
+    return resilientSnapshot('recent_messages', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ChatMessage)));
     });
   },
@@ -502,7 +473,7 @@ export const dataService = {
           const storagePromises = logs.map(log => {
               if (!log.imageUrl) return Promise.resolve();
               const fileRef = ref(storage, log.imageUrl);
-              return deleteObject(fileRef).catch(err => console.warn("File missing:", err));
+              return deleteObject(fileRef).catch(err => reportError(err, { method: 'deleteWeeklyEvidence', logId: log.id }));
           });
           await Promise.all(storagePromises);
 
@@ -550,10 +521,8 @@ export const dataService = {
     });
   },
 
-  subscribeToUsers: (callback: (users: User[]) => void, maxResults?: number) => {
-    const q = maxResults
-      ? query(collection(db, 'users'), limit(maxResults))
-      : collection(db, 'users');
+  subscribeToUsers: (callback: (users: User[]) => void, maxResults = 500) => {
+    const q = query(collection(db, 'users'), limit(maxResults));
     return onSnapshot(q, (snapshot) => {
       const users = snapshot.docs.map(doc => {
         const data = doc.data();
@@ -647,10 +616,10 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'submissions' }));
   },
 
-  /** Assignment-scoped submissions — fetches ALL submissions for a specific assignment (no global limit). */
+  /** Assignment-scoped submissions — fetches submissions for a specific assignment, capped at 500. */
   subscribeToAssignmentSubmissions: (assignmentId: string, callback: (submissions: Submission[]) => void) => {
     // Single-field where() avoids composite index requirement — sort client-side
-    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId));
+    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), limit(500));
     return onSnapshot(q, (snapshot) => {
       const submissions = snapshot.docs.map(d => {
         const data = d.data();
@@ -821,26 +790,7 @@ export const dataService = {
 
   addToWhitelist: async (email: string, classType: ClassType) => {
     try {
-      // Merge into classTypes array instead of overwriting
-      const whitelistRef = doc(db, 'allowed_emails', email);
-      const existing = await getDoc(whitelistRef);
-      const currentTypes: string[] = existing.exists() ? (existing.data().classTypes || [existing.data().classType].filter(Boolean)) : [];
-      const mergedTypes = Array.from(new Set([...currentTypes, classType]));
-      await setDoc(whitelistRef, { classType, classTypes: mergedTypes });
-
-      const q = query(collection(db, 'users'), where('email', '==', email));
-      const snap = await getDocs(q);
-      await Promise.all(snap.docs.map(async (d) => {
-        const userData = d.data();
-        const currentClasses = userData.enrolledClasses || (userData.classType ? [userData.classType] : []);
-        const newClasses = Array.from(new Set([...currentClasses, classType]));
-        
-        await updateDoc(doc(db, 'users', d.id), {
-          isWhitelisted: true,
-          classType: classType, 
-          enrolledClasses: newClasses
-        });
-      }));
+      await callAdminAddToWhitelist({ email, classType });
     } catch (error) {
       reportError(error, { method: 'addToWhitelist' });
     }
@@ -1221,10 +1171,8 @@ export const dataService = {
     }
   },
 
-  subscribeToLeaderboard: (callback: (users: User[]) => void, maxResults?: number) => {
-      const q = maxResults
-        ? query(collection(db, 'users'), where('role', '==', 'STUDENT'), limit(maxResults))
-        : query(collection(db, 'users'), where('role', '==', 'STUDENT'));
+  subscribeToLeaderboard: (callback: (users: User[]) => void, maxResults = 200) => {
+      const q = query(collection(db, 'users'), where('role', '==', 'STUDENT'), limit(maxResults));
       return onSnapshot(q, (snapshot) => {
           callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as User)));
       }, (error: unknown) => reportError(error, { subscription: 'leaderboard' }));
@@ -1273,7 +1221,7 @@ export const dataService = {
 
   subscribeToAnnouncements: (callback: (announcements: Announcement[]) => void) => {
     const q = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'), limit(20));
-    return guardedSnapshot('announcements', q, (snapshot: any) => {
+    return resilientSnapshot('announcements', q, (snapshot: any) => {
         const now = new Date();
         const announcements = snapshot.docs
             .map((d: any) => ({ id: d.id, ...d.data() } as Announcement))
@@ -1311,33 +1259,49 @@ export const dataService = {
   },
 
   markNotificationRead: async (notificationId: string) => {
-    await updateDoc(doc(db, 'notifications', notificationId), { isRead: true });
+    try {
+      await updateDoc(doc(db, 'notifications', notificationId), { isRead: true });
+    } catch (error) {
+      reportError(error, { method: 'markNotificationRead', notificationId });
+    }
   },
 
   markAllNotificationsRead: async (userId: string) => {
-    const q = query(
-        collection(db, 'notifications'),
-        where('userId', '==', userId),
-        where('isRead', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    const updates = snapshot.docs.map(d => updateDoc(d.ref, { isRead: true }));
-    await Promise.all(updates);
+    try {
+      const q = query(
+          collection(db, 'notifications'),
+          where('userId', '==', userId),
+          where('isRead', '==', false)
+      );
+      const snapshot = await getDocs(q);
+      const updates = snapshot.docs.map(d => updateDoc(d.ref, { isRead: true }));
+      await Promise.all(updates);
+    } catch (error) {
+      reportError(error, { method: 'markAllNotificationsRead', userId });
+    }
   },
 
   createNotification: async (notification: Omit<Notification, 'id'>) => {
-    await addDoc(collection(db, 'notifications'), notification);
+    try {
+      await addDoc(collection(db, 'notifications'), notification);
+    } catch (error) {
+      reportError(error, { method: 'createNotification' });
+    }
   },
 
   // Bulk-create notifications for a list of users
   notifyUsers: async (userIds: string[], type: Notification['type'], title: string, message: string, meta?: Record<string, any>) => {
-    const batch = userIds.map(userId => addDoc(collection(db, 'notifications'), {
-        userId, type, title, message,
-        timestamp: new Date().toISOString(),
-        isRead: false,
-        meta: meta || {}
-    }));
-    await Promise.all(batch);
+    try {
+      const batch = userIds.map(userId => addDoc(collection(db, 'notifications'), {
+          userId, type, title, message,
+          timestamp: new Date().toISOString(),
+          isRead: false,
+          meta: meta || {}
+      }));
+      await Promise.all(batch);
+    } catch (error) {
+      reportError(error, { method: 'notifyUsers', userCount: userIds.length });
+    }
   },
 
   // --- CODENAME ---
@@ -1411,7 +1375,7 @@ export const dataService = {
 
   subscribeToBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
     const q = query(collection(db, 'boss_encounters'), where('isActive', '==', true));
-    return guardedSnapshot('boss_encounters', q, (snapshot: any) => {
+    return resilientSnapshot('boss_encounters', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as BossEncounter)));
     });
   },
@@ -1421,7 +1385,7 @@ export const dataService = {
     const q = query(collection(db, 'boss_encounters'), limit(50));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as BossEncounter)));
-    });
+    }, (error: unknown) => reportError(error, { subscription: 'allBossEncounters' }));
   },
 
   // Admin: create or update a boss encounter
@@ -1449,7 +1413,7 @@ export const dataService = {
       let totalDamage = 0;
       snapshot.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
       callback(totalDamage);
-    }, () => { /* permission error — ignore */ });
+    }, (error: unknown) => reportError(error, { subscription: 'bossShards', bossId }));
   },
 
   // Subscribe to a boss's damage log subcollection for the leaderboard
@@ -1458,7 +1422,7 @@ export const dataService = {
     return onSnapshot(logRef, (snapshot) => {
       const entries = snapshot.docs.map((d) => d.data() as { userId: string; userName: string; damage: number; timestamp: string });
       callback(entries);
-    }, () => { /* permission error — ignore */ });
+    }, (error: unknown) => reportError(error, { subscription: 'bossDamageLog', bossId }));
   },
 
   dealBossDamage: async (bossId: string, userName: string, classType: string) => {
@@ -1479,7 +1443,7 @@ export const dataService = {
 
   subscribeToBossQuizzes: (classType: string, callback: (quizzes: BossQuizEvent[]) => void) => {
     const q = query(collection(db, 'boss_quizzes'), where('isActive', '==', true));
-    return guardedSnapshot('boss_quizzes', q, (snapshot: any) => {
+    return resilientSnapshot('boss_quizzes', q, (snapshot: any) => {
       const quizzes = snapshot.docs
         .map((d: any) => ({ id: d.id, ...d.data() } as BossQuizEvent))
         .filter((q: BossQuizEvent) => q.classType === classType || q.classType === 'GLOBAL');
@@ -1494,7 +1458,7 @@ export const dataService = {
       let totalDamage = 0;
       snapshot.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
       callback(totalDamage);
-    }, () => { /* permission error — ignore */ });
+    }, (error: unknown) => reportError(error, { subscription: 'bossQuizShards', quizId }));
   },
 
   subscribeToBossQuizDamageLog: (quizId: string, callback: (log: { userId: string; userName: string; damage: number; isCrit?: boolean; timestamp: string }[]) => void) => {
@@ -1502,7 +1466,7 @@ export const dataService = {
     return onSnapshot(logRef, (snapshot) => {
       const entries = snapshot.docs.map((d) => d.data() as { userId: string; userName: string; damage: number; isCrit?: boolean; timestamp: string });
       callback(entries);
-    }, () => { /* permission error — ignore */ });
+    }, (error: unknown) => reportError(error, { subscription: 'bossQuizDamageLog', quizId }));
   },
 
   answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
@@ -1520,7 +1484,7 @@ export const dataService = {
     const q = collection(db, 'boss_quizzes');
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as BossQuizEvent)));
-    });
+    }, (error: unknown) => reportError(error, { subscription: 'allBossQuizzes' }));
   },
 
   // Admin: create or update a quiz boss
@@ -1546,7 +1510,7 @@ export const dataService = {
   subscribeToBossQuestionBanks: (callback: (banks: import('../types').BossQuestionBank[]) => void) => {
     return onSnapshot(collection(db, 'boss_question_banks'), (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as import('../types').BossQuestionBank)));
-    });
+    }, (error: unknown) => reportError(error, { subscription: 'bossQuestionBanks' }));
   },
 
   saveBossQuestionBank: async (bank: import('../types').BossQuestionBank) => {
@@ -1646,7 +1610,7 @@ export const dataService = {
     const q = query(collection(db, 'tutoring_sessions'), orderBy('createdAt', 'desc'), limit(100));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as import('../types').TutoringSession)));
-    });
+    }, (error: unknown) => reportError(error, { subscription: 'allTutoringSessions' }));
   },
 
   // Admin: cancel a tutoring session
@@ -1656,7 +1620,7 @@ export const dataService = {
 
   subscribeToTutoringSessions: (classType: string, callback: (sessions: TutoringSession[]) => void) => {
     const q = query(collection(db, 'tutoring_sessions'), where('classType', '==', classType), limit(50));
-    return guardedSnapshot('tutoring_sessions', q, (snapshot: any) => {
+    return resilientSnapshot('tutoring_sessions', q, (snapshot: any) => {
       const sessions = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as TutoringSession));
       sessions.sort((a: TutoringSession, b: TutoringSession) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       callback(sessions);
@@ -1672,7 +1636,7 @@ export const dataService = {
 
   subscribeToKnowledgeGates: (callback: (gates: KnowledgeGate[]) => void) => {
     const q = query(collection(db, 'knowledge_gates'), where('isActive', '==', true));
-    return guardedSnapshot('knowledge_gates', q, (snapshot: any) => {
+    return resilientSnapshot('knowledge_gates', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as KnowledgeGate)));
     });
   },
@@ -1686,7 +1650,7 @@ export const dataService = {
 
   subscribeToSeasonalCosmetics: (callback: (cosmetics: SeasonalCosmetic[]) => void) => {
     const q = query(collection(db, 'seasonal_cosmetics'), where('isAvailable', '==', true));
-    return guardedSnapshot('seasonal_cosmetics', q, (snapshot: any) => {
+    return resilientSnapshot('seasonal_cosmetics', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as SeasonalCosmetic)));
     });
   },
@@ -1735,7 +1699,7 @@ export const dataService = {
   subscribeToDailyChallenges: (callback: (challenges: DailyChallenge[]) => void) => {
     const today = new Date().toISOString().split('T')[0];
     const q = query(collection(db, 'daily_challenges'), where('date', '==', today));
-    return guardedSnapshot('daily_challenges', q, (snapshot: any) => {
+    return resilientSnapshot('daily_challenges', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as DailyChallenge)));
     });
   },
@@ -1777,7 +1741,7 @@ export const dataService = {
 
   subscribeToStudentAlerts: (callback: (alerts: StudentAlert[]) => void) => {
     const q = query(collection(db, 'student_alerts'), where('isDismissed', '==', false));
-    return guardedSnapshot('student_alerts', q, (snapshot: any) => {
+    return resilientSnapshot('student_alerts', q, (snapshot: any) => {
       const alerts = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as StudentAlert));
       alerts.sort((a: StudentAlert, b: StudentAlert) => {
         const severity: Record<string, number> = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1 };
@@ -1794,7 +1758,7 @@ export const dataService = {
   // --- TELEMETRY BUCKETS ---
 
   subscribeToStudentBuckets: (callback: (profiles: StudentBucketProfile[]) => void) => {
-    return guardedSnapshot('student_buckets', collection(db, 'student_buckets'), (snapshot: any) => {
+    return resilientSnapshot('student_buckets', collection(db, 'student_buckets'), (snapshot: any) => {
       const profiles = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as StudentBucketProfile));
       callback(profiles);
     });
@@ -1804,7 +1768,7 @@ export const dataService = {
 
   subscribeToDailyDigests: (callback: (digests: DailyDigest[]) => void) => {
     const q = query(collection(db, 'daily_digests'), orderBy('date', 'desc'), limit(7));
-    return guardedSnapshot('daily_digests', q, (snapshot: any) => {
+    return resilientSnapshot('daily_digests', q, (snapshot: any) => {
       const digests = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as DailyDigest));
       digests.sort((a: DailyDigest, b: DailyDigest) => b.date.localeCompare(a.date));
       callback(digests);
@@ -1887,7 +1851,7 @@ export const dataService = {
     const q = query(collection(db, 'enrollment_codes'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EnrollmentCode)));
-    }, () => {});
+    }, (error: unknown) => reportError(error, { subscription: 'enrollmentCodes' }));
   },
 
   deactivateEnrollmentCode: async (codeId: string) => {
@@ -1909,13 +1873,13 @@ export const dataService = {
   // ========================================
 
   awardBehavior: async (award: Omit<BehaviorAward, 'id'>) => {
-    await addDoc(collection(db, 'behavior_awards'), award);
-    // Also award the XP via existing system
-    const userRef = doc(db, 'users', award.studentId);
-    await updateDoc(userRef, {
-      'gamification.xp': increment(award.xpAmount),
-      [`gamification.classXp.${award.classType}`]: increment(award.xpAmount),
-      'gamification.currency': increment(award.fluxAmount),
+    await callAwardBehaviorXP({
+      studentId: award.studentId,
+      classType: award.classType,
+      xpAmount: award.xpAmount,
+      fluxAmount: award.fluxAmount,
+      reason: award.categoryName,
+      timestamp: award.timestamp,
     });
   },
 
@@ -1923,7 +1887,7 @@ export const dataService = {
     const q = query(collection(db, 'behavior_awards'), where('classType', '==', classType), orderBy('timestamp', 'desc'), limit(50));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BehaviorAward)));
-    }, () => {});
+    }, (error: unknown) => reportError(error, { subscription: 'behaviorAwards', classType }));
   },
 
   // ========================================
@@ -2007,13 +1971,13 @@ export const dataService = {
       where('classType', '==', classType),
       where('isActive', '==', true)
     );
-    return guardedSnapshot('dungeons', q, (snapshot: any) => {
+    return resilientSnapshot('dungeons', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Dungeon)));
     });
   },
 
   subscribeToAllDungeons: (callback: (dungeons: Dungeon[]) => void) => {
-    return guardedSnapshot('dungeons', collection(db, 'dungeons'), (snapshot: any) => {
+    return resilientSnapshot('dungeons', collection(db, 'dungeons'), (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Dungeon)));
     });
   },
@@ -2033,7 +1997,7 @@ export const dataService = {
       where('dungeonId', '==', dungeonId),
       where('status', '==', 'IN_PROGRESS')
     );
-    return guardedSnapshot('dungeon_runs', q, (snapshot: any) => {
+    return resilientSnapshot('dungeon_runs', q, (snapshot: any) => {
       const doc = snapshot.docs[0];
       callback(doc ? ({ id: doc.id, ...doc.data() } as DungeonRun) : null);
     });
@@ -2075,13 +2039,13 @@ export const dataService = {
       where('isActive', '==', true),
       where('classType', '==', classType)
     );
-    return guardedSnapshot('idle_missions', q, (snapshot: any) => {
+    return resilientSnapshot('idle_missions', q, (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as IdleMission)));
     });
   },
 
   subscribeToAllIdleMissions: (callback: (missions: IdleMission[]) => void) => {
-    return guardedSnapshot('idle_missions_all', collection(db, 'idle_missions'), (snapshot: any) => {
+    return resilientSnapshot('idle_missions_all', collection(db, 'idle_missions'), (snapshot: any) => {
       callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as IdleMission)));
     });
   },
@@ -2148,7 +2112,7 @@ export const dataService = {
       orderBy('completedAt', 'desc'),
       limit(20)
     );
-    return guardedSnapshot('arena_matches', q, (snapshot: any) => {
+    return resilientSnapshot('arena_matches', q, (snapshot: any) => {
       const all = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ArenaMatch));
       // Filter to matches involving this user
       const mine = all.filter((m: ArenaMatch) =>
