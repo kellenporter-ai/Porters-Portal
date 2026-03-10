@@ -21,13 +21,6 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Check if a user is whitelisted (has a doc in allowed_emails)
-    // Note: This requires a get() call which costs a read — use sparingly
-    function isWhitelisted() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email));
-    }
-
     // ==========================================
     // USER PROFILES
     // ==========================================
@@ -96,14 +89,23 @@ service cloud.firestore {
 
       // Students can create their own submissions, but NOT assessments
       // (assessments are created server-side via Cloud Functions / Admin SDK)
-      allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.isAssessment != true;
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.isAssessment != true &&
+        request.resource.data.keys().hasOnly([
+          'userId', 'userName', 'assignmentId', 'assignmentTitle',
+          'metrics', 'status', 'score', 'submittedAt', 'classType', 'section',
+          'blockResponses', 'lessonId', 'lessonTitle'
+        ]);
 
       // Students can update their own non-assessment submissions; admin can update all
-      allow update: if isAdmin() ||
-        (isAuthenticated() && resource.data.userId == request.auth.uid
-         && resource.data.isAssessment != true);
+      allow update: if isAdmin() || (isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.isAssessment != true &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['userId', 'userName', 'assignmentId', 'assignmentTitle',
+            'metrics', 'status', 'score', 'submittedAt', 'blockResponses',
+            'classType', 'section', 'lessonId', 'lessonTitle']));
 
       // Only admin can delete submissions
       allow delete: if isAdmin();
@@ -143,11 +145,10 @@ service cloud.firestore {
       allow create: if false;
       
       // Students can ONLY update reactions and pinnedBy (personal pins)
-      // They cannot modify content, senderId, senderName, isGlobalPinned, or isFlagged
-      allow update: if isAdmin() 
-        || (isAuthenticated() 
-            && !request.resource.data.diff(resource.data).affectedKeys()
-                .hasAny(['content', 'senderId', 'senderName', 'isGlobalPinned', 'isFlagged', 'systemNote', 'channelId', 'timestamp']));
+      allow update: if isAdmin()
+        || (isAuthenticated()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['reactions', 'pinnedBy']));
       
       allow delete: if isAdmin();
     }
@@ -375,8 +376,25 @@ service cloud.firestore {
       // Students can create tutoring requests with their own ID
       allow create: if isAuthenticated() &&
         request.resource.data.requesterId == request.auth.uid;
-      // Students can claim tutor role; Cloud Functions complete sessions
-      allow update: if isAdmin() || isAuthenticated();
+      // Field-level gating per role
+      allow update: if isAdmin()
+        // Requester can cancel their own OPEN request
+        || (isAuthenticated()
+            && resource.data.requesterId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+            && request.resource.data.status == 'CANCELLED')
+        // Non-requester can claim tutor role on OPEN sessions
+        || (isAuthenticated()
+            && resource.data.status == 'OPEN'
+            && request.auth.uid != resource.data.requesterId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tutorId', 'tutorName', 'status'])
+            && request.resource.data.status == 'MATCHED')
+        // Participants can transition status or submit feedback
+        || (isAuthenticated()
+            && (request.auth.uid == resource.data.requesterId || request.auth.uid == resource.data.tutorId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['status', 'requesterFeedback', 'tutorFeedback'])
+            && request.resource.data.status in ['IN_PROGRESS', 'COMPLETED']);
       allow delete: if isAdmin();
     }
 
@@ -507,6 +525,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Only admin can create codes
       allow create: if isAdmin();
+      // TODO: Consider moving usedCount increment to Cloud Function for atomic enforcement
       // Admin can update any field; students can ONLY increment usedCount
       allow update: if isAdmin()
         || (isAuthenticated()
@@ -532,6 +551,31 @@ service cloud.firestore {
     // ==========================================
     match /assessment_sessions/{sessionId} {
       allow read, write: if false;
+    }
+
+    // ==========================================
+    // CUSTOM ITEMS (Admin-managed item library)
+    // ==========================================
+    match /customItems/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // QUEST TEMPLATES (Admin-only)
+    // ==========================================
+    match /quest_templates/{templateId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // GRADING CORRECTIONS (Append-only audit log)
+    // ==========================================
+    match /grading_corrections/{correctionId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
     }
 
     // ==========================================
