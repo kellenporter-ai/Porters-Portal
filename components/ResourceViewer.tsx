@@ -8,7 +8,7 @@ import { doc, getDoc, setDoc, collection, query, where, limit, onSnapshot, order
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, ChevronRight, Eye } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -17,6 +17,7 @@ const Proctor = lazy(() => import('./Proctor'));
 const ReviewQuestions = lazy(() => import('./ReviewQuestions'));
 const RubricViewer = lazy(() => import('./RubricViewer'));
 const StudyMaterial = lazy(() => import('./StudyMaterial'));
+const LessonBlocks = lazy(() => import('./LessonBlocks').then(m => ({ default: m.default })));
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center h-64 text-gray-500">
@@ -31,7 +32,7 @@ interface ResourceViewerProps {
 const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { assignments } = useAppData();
+  const { assignments, loading: appDataLoading } = useAppData();
   const { setIsCommOpen } = useChat();
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -59,11 +60,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [showBlockerModal, setShowBlockerModal] = useState(false);
   const [showRubric, setShowRubric] = useState(false);
   const [existingSubmission, setExistingSubmission] = useState<Submission | null>(null);
+  const [reviewMode, setReviewMode] = useState(false);
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
   // Session token for assessment security (issued by startAssessmentSession Cloud Function)
   const sessionTokenRef = useRef<string | null>(null);
+  // Suppress auto-recovery during retake flow (so clearing assessmentResult doesn't instantly re-populate)
+  const isRetakingRef = useRef(false);
 
   const activeAssignment = assignments.find(a => a.id === id) || null;
   const isAssessment = activeAssignment?.isAssessment === true && user.role !== UserRole.ADMIN;
@@ -91,6 +95,22 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     return () => unsub();
   }, [id, user.id, user.role, activeAssignment?.isAssessment]);
 
+  // Auto-recover: if server has a submission but client never showed the score modal
+  // (handles network errors during submit response, page refresh after submit, etc.)
+  useEffect(() => {
+    if (existingSubmission && !assessmentResult && isAssessment && !isRetakingRef.current) {
+      setAssessmentResult({
+        correct: existingSubmission.assessmentScore?.correct ?? 0,
+        total: existingSubmission.assessmentScore?.total ?? 0,
+        percentage: existingSubmission.assessmentScore?.percentage ?? 0,
+        perBlock: existingSubmission.assessmentScore?.perBlock ?? {},
+        attemptNumber: existingSubmission.attemptNumber ?? 1,
+        status: existingSubmission.status ?? 'NORMAL',
+        xpEarned: 0,
+      });
+    }
+  }, [existingSubmission, assessmentResult, isAssessment]);
+
   // Probe supplemental tabs
   // Play lesson-open sound when resource loads
   useEffect(() => {
@@ -101,18 +121,18 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     setHasQuestionBank(false);
     setHasStudyMaterial(false);
     if (!id) return;
+    let cancelled = false;
     getDoc(doc(db, 'question_banks', id)).then(snap => {
-      if (snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
+      if (!cancelled && snap.exists() && (snap.data().questions || []).length > 0) setHasQuestionBank(true);
     }).catch(err => {
-      reportError(err, { context: 'probe question bank', assignmentId: id });
-      toast.error('Failed to load question bank');
+      if (!cancelled) reportError(err, { context: 'probe question bank', assignmentId: id });
     });
     getDoc(doc(db, 'reading_materials', id)).then(snap => {
-      if (snap.exists()) setHasStudyMaterial(true);
+      if (!cancelled && snap.exists()) setHasStudyMaterial(true);
     }).catch(err => {
-      reportError(err, { context: 'probe reading materials', assignmentId: id });
-      toast.error('Failed to load study materials');
+      if (!cancelled) reportError(err, { context: 'probe reading materials', assignmentId: id });
     });
+    return () => { cancelled = true; };
   }, [id, toast]);
 
   // Admin: subscribe to submissions for engagement count (scoped to this assignment)
@@ -151,6 +171,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
   const handleAssessmentSubmit = useCallback(async () => {
     if (!activeAssignment || !getMetricsAndResponsesRef.current) return;
+    isRetakingRef.current = false; // Allow recovery effect if this submission errors
     const { metrics, responses } = getMetricsAndResponsesRef.current();
 
     // Client-side guard: require minimum engagement time
@@ -185,8 +206,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       }
       toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
     } catch (err) {
-      reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
-      toast.error('Failed to submit assessment. Please try again.');
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('already-exists')) {
+        // Submission already went through server-side — reassure the student
+        toast.success('Your assessment was already submitted successfully!');
+      } else {
+        reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
+        toast.error('Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -208,6 +235,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       variant: 'info',
     });
     if (!confirmed) return;
+    isRetakingRef.current = true; // Suppress recovery effect while retaking
     const docId = `${user.id}_${activeAssignment.id}_blocks`;
     try {
       await setDoc(doc(db, 'lesson_block_responses', docId), {
@@ -266,10 +294,45 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }, [isAssessment, assessmentResult]);
 
   if (!activeAssignment) {
+    // Still loading app data — show skeleton instead of "not found"
+    if (appDataLoading) {
+      return <div className="flex items-center justify-center h-64 text-gray-500"><p>Loading...</p></div>;
+    }
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
         <p>Resource not found.</p>
         <button onClick={() => navigate(-1)} className="ml-4 text-purple-400 hover:text-purple-300">Go back</button>
+      </div>
+    );
+  }
+
+  // Review mode — read-only view of submitted answers
+  if (reviewMode && existingSubmission?.blockResponses && activeAssignment?.lessonBlocks) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0a0416] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/30 shrink-0">
+          <button
+            onClick={() => setReviewMode(false)}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Results
+          </button>
+          <h2 className="text-sm font-bold text-white">Your Submission</h2>
+          <span className="text-[10px] text-gray-500">
+            {existingSubmission.submittedAt
+              ? new Date(existingSubmission.submittedAt).toLocaleDateString()
+              : ''}
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <Suspense fallback={<LazyFallback />}>
+            <LessonBlocks
+              blocks={activeAssignment.lessonBlocks}
+              savedResponses={existingSubmission.blockResponses as BlockResponseMap}
+              readOnly={true}
+            />
+          </Suspense>
+        </div>
       </div>
     );
   }
@@ -451,6 +514,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Retake{!isUnlimited ? ` (${attemptsRemaining} left)` : ''}</span>
+              </button>
+            )}
+            {config.showReviewAfterSubmit !== false && existingSubmission?.blockResponses && Object.keys(existingSubmission.blockResponses).length > 0 && (
+              <button
+                onClick={() => setReviewMode(true)}
+                className="flex-1 flex items-center justify-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-bold py-3 rounded-xl transition text-sm"
+              >
+                <Eye className="w-4 h-4" /> Review My Work
               </button>
             )}
             <button

@@ -25,6 +25,7 @@ interface LessonBlocksProps {
   onResponseChange?: (blockId: string, response: unknown) => void;
   onExportPdf?: () => void;
   onClearResponses?: () => void;
+  readOnly?: boolean;
 }
 
 // ──────────────────────────────────────────────
@@ -59,7 +60,7 @@ const InfoBoxBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   );
 };
 
-const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { selected: number; answered: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { selected: number; answered: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const [selected, setSelected] = useState<number | null>(savedResponse?.selected ?? null);
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
   const isCorrect = selected === block.correctAnswer;
@@ -90,9 +91,13 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             role="radio"
             aria-checked={selected === idx}
             onClick={() => handleSelect(idx)}
-            disabled={answered}
+            disabled={answered || readOnly}
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-              answered && idx === block.correctAnswer
+              readOnly
+                ? selected === idx
+                  ? 'border-purple-500/30 bg-purple-500/10 text-white'
+                  : 'border-white/10 bg-white/5 text-gray-300'
+                : answered && idx === block.correctAnswer
                 ? 'border-green-500/50 bg-green-500/10 text-green-400'
                 : answered && idx === selected && !isCorrect
                 ? 'border-red-500/50 bg-red-500/10 text-red-400'
@@ -104,18 +109,18 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-gray-500 w-5">{String.fromCharCode(65 + idx)}.</span>
               <span>{opt}</span>
-              {answered && idx === block.correctAnswer && <CheckCircle2 className="w-4 h-4 text-green-400 ml-auto" />}
-              {answered && idx === selected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 ml-auto" />}
+              {!readOnly && answered && idx === block.correctAnswer && <CheckCircle2 className="w-4 h-4 text-green-400 ml-auto" />}
+              {!readOnly && answered && idx === selected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 ml-auto" />}
             </div>
           </button>
         ))}
       </div>
-      {!answered && (
+      {!readOnly && !answered && (
         <button onClick={handleSubmit} disabled={selected === null} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition">
           Check Answer
         </button>
       )}
-      {answered && (
+      {!readOnly && answered && (
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <div className={`text-xs font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
@@ -143,7 +148,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
   );
 };
 
-const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const [answer, setAnswer] = useState(savedResponse?.answer ?? '');
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
   const [isCorrect, setIsCorrect] = useState(savedResponse?.isCorrect ?? false);
@@ -172,7 +177,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
             setAnswer(val);
             onResponseChange?.({ answer: val, answered: false, isCorrect: false });
           }}
-          disabled={answered}
+          disabled={answered || readOnly}
           placeholder="Type your answer... (Ctrl+Enter to submit)"
           aria-label={block.content || 'Short answer'}
           className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
@@ -184,13 +189,13 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
             }
           }}
         />
-        {!answered && (
+        {!readOnly && !answered && (
           <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0">
             Submit
           </button>
         )}
       </div>
-      {answered && (
+      {!readOnly && answered && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
             {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> Accepted answers: {(block.acceptedAnswers || []).join(', ')}</>}
@@ -233,7 +238,7 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
   );
 };
 
-const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { checked: number[] }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { checked: number[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const [checked, setChecked] = useState<Set<number>>(new Set(savedResponse?.checked ?? []));
   const allChecked = (block.items || []).length > 0 && checked.size === (block.items || []).length;
 
@@ -260,15 +265,22 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
             key={idx}
             role="checkbox"
             aria-checked={checked.has(idx)}
-            onClick={() => toggle(idx)}
+            aria-disabled={readOnly}
+            onClick={() => !readOnly && toggle(idx)}
             className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border text-sm transition ${
-              checked.has(idx)
+              readOnly
+                ? checked.has(idx)
+                  ? 'border-purple-500/30 bg-purple-500/5 text-purple-400 line-through cursor-default'
+                  : 'border-white/10 bg-white/5 text-gray-300 cursor-default'
+                : checked.has(idx)
                 ? 'border-green-500/30 bg-green-500/5 text-green-400 line-through'
                 : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
             }`}
           >
             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition ${
-              checked.has(idx) ? 'border-green-500 bg-green-500' : 'border-gray-600'
+              readOnly
+                ? checked.has(idx) ? 'border-purple-500 bg-purple-500' : 'border-gray-600'
+                : checked.has(idx) ? 'border-green-500 bg-green-500' : 'border-gray-600'
             }`}>
               {checked.has(idx) && <CheckCircle2 className="w-3 h-3 text-white" />}
             </div>
@@ -276,7 +288,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
           </button>
         ))}
       </div>
-      {allChecked && (
+      {!readOnly && allChecked && (
         <div className="text-xs font-bold text-green-400 flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3" /> All items completed!
         </div>
@@ -440,7 +452,7 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
   </div>
 );
 
-const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { placements: Record<number, 'left' | 'right'>; submitted: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { placements: Record<number, 'left' | 'right'>; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const items = block.sortItems || [];
   const [placements, setPlacements] = useState<Record<number, 'left' | 'right'>>(savedResponse?.placements ?? {});
   const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
@@ -484,7 +496,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       {block.instructions && <p className="text-xs text-gray-400">{block.instructions}</p>}
 
       {/* Unplaced items */}
-      {unplaced.length > 0 && (
+      {!readOnly && unplaced.length > 0 && (
         <div className="space-y-1">
           <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Sort these items</div>
           <div className="flex flex-wrap gap-2">
@@ -505,11 +517,11 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
           <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">{block.leftLabel || 'Category A'}</div>
           <div className="space-y-1">
             {leftItems.map(idx => (
-              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${submitted ? (items[idx].correct === 'left' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
+              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-gray-300 bg-black/20' : submitted ? (items[idx].correct === 'left' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
                 <span>{items[idx].text}</span>
-                {!submitted && <button onClick={() => removeItem(idx)} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
-                {submitted && items[idx].correct === 'left' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
-                {submitted && items[idx].correct !== 'left' && <XCircle className="w-3 h-3 text-red-400" />}
+                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
+                {!readOnly && submitted && items[idx].correct === 'left' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
+                {!readOnly && submitted && items[idx].correct !== 'left' && <XCircle className="w-3 h-3 text-red-400" />}
               </div>
             ))}
           </div>
@@ -518,23 +530,23 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
           <div className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">{block.rightLabel || 'Category B'}</div>
           <div className="space-y-1">
             {rightItems.map(idx => (
-              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${submitted ? (items[idx].correct === 'right' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
+              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-gray-300 bg-black/20' : submitted ? (items[idx].correct === 'right' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
                 <span>{items[idx].text}</span>
-                {!submitted && <button onClick={() => removeItem(idx)} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
-                {submitted && items[idx].correct === 'right' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
-                {submitted && items[idx].correct !== 'right' && <XCircle className="w-3 h-3 text-red-400" />}
+                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
+                {!readOnly && submitted && items[idx].correct === 'right' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
+                {!readOnly && submitted && items[idx].correct !== 'right' && <XCircle className="w-3 h-3 text-red-400" />}
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {!submitted && unplaced.length === 0 && items.length > 0 && (
+      {!readOnly && !submitted && unplaced.length === 0 && items.length > 0 && (
         <button onClick={handleSubmit} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition">
           Check Sorting
         </button>
       )}
-      {submitted && (
+      {!readOnly && submitted && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold ${correctCount === items.length ? 'text-green-400' : 'text-amber-400'}`}>
             {correctCount === items.length ? 'All correct!' : `${correctCount}/${items.length} correct`}
@@ -554,7 +566,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   );
 };
 
-const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Record<string, string>[] }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
+const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Record<string, string>[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, savedResponse, onResponseChange, readOnly }) => {
   const columns = block.columns || [];
   const rowCount = block.trials || 3;
   const [data, setData] = useState<Record<string, string>[]>(() =>
@@ -596,7 +608,8 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
                         type="text"
                         value={row[col.key] || ''}
                         onChange={e => updateCell(rowIdx, col.key, e.target.value)}
-                        className="w-full bg-black/20 border border-white/5 rounded px-2 py-1 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 transition"
+                        disabled={readOnly}
+                        className={`w-full bg-black/20 border border-white/5 rounded px-2 py-1 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 transition${readOnly ? ' opacity-80' : ''}`}
                       />
                     ) : (
                       <span className="px-2 py-1 text-gray-400">{row[col.key]}</span>
@@ -612,7 +625,7 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
   );
 };
 
-const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; delta: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; final: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}> }; onResponseChange?: (response: unknown) => void }> = ({ block, savedResponse, onResponseChange }) => {
+const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; delta: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; final: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}> }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, savedResponse, onResponseChange, readOnly }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [userHeight, setUserHeight] = useState<number | null>(null);
   const chartHeight = userHeight ?? (block.height || 450);
@@ -642,10 +655,10 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
         ref={iframeRef}
         src="/tools/bar-chart.html?embedded=true"
         className="w-full rounded-lg border border-white/10"
-        style={{ height: chartHeight, background: 'transparent', pointerEvents: isResizing ? 'none' : 'auto' }}
+        style={{ height: chartHeight, background: 'transparent', pointerEvents: readOnly ? 'none' : isResizing ? 'none' : 'auto' }}
         title="Bar Chart Tool"
       />
-      <div
+      {!readOnly && <div
         style={{
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           height: '16px', cursor: 'row-resize', userSelect: 'none',
@@ -678,12 +691,12 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
         title="Drag to resize chart"
       >
         <GripHorizontal size={14} color="rgba(255,255,255,0.4)" />
-      </div>
+      </div>}
     </div>
   );
 };
 
-const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { order: { item: string; origIdx: number }[]; submitted: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { order: { item: string; origIdx: number }[]; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const correctOrder = block.items || [];
   // Deterministic shuffle based on block ID
   const shuffled = useMemo(() => {
@@ -731,12 +744,14 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
         {order.map((item, idx) => (
           <div
             key={item.origIdx}
-            draggable={!submitted}
+            draggable={!submitted && !readOnly}
             onDragStart={() => setDragIdx(idx)}
             onDragOver={e => e.preventDefault()}
             onDrop={() => { if (dragIdx !== null) moveItem(dragIdx, idx); setDragIdx(null); }}
-            className={`flex items-center gap-2 p-3 rounded-xl border text-sm transition cursor-grab active:cursor-grabbing ${
-              submitted
+            className={`flex items-center gap-2 p-3 rounded-xl border text-sm transition ${readOnly ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} ${
+              readOnly
+                ? 'border-white/10 bg-white/5 text-gray-300'
+                : submitted
                 ? item.origIdx === idx
                   ? 'border-green-500/30 bg-green-500/5 text-green-400'
                   : 'border-red-500/30 bg-red-500/5 text-red-400'
@@ -748,9 +763,9 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             <GripVertical className="w-4 h-4 text-gray-600 shrink-0" />
             <span className="text-xs font-mono text-gray-500 w-5">{idx + 1}.</span>
             <span className="flex-1">{item.item}</span>
-            {submitted && item.origIdx === idx && <CheckCircle2 className="w-4 h-4 text-green-400" />}
-            {submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-400" />}
-            {!submitted && (
+            {!readOnly && submitted && item.origIdx === idx && <CheckCircle2 className="w-4 h-4 text-green-400" />}
+            {!readOnly && submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-400" />}
+            {!readOnly && !submitted && (
               <div className="flex gap-0.5">
                 <button onClick={() => idx > 0 && moveItem(idx, idx - 1)} disabled={idx === 0} className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 -rotate-90" /></button>
                 <button onClick={() => idx < order.length - 1 && moveItem(idx, idx + 1)} disabled={idx === order.length - 1} className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 rotate-90" /></button>
@@ -759,12 +774,12 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
           </div>
         ))}
       </div>
-      {!submitted && (
+      {!readOnly && !submitted && (
         <button onClick={handleSubmit} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition">
           Check Order
         </button>
       )}
-      {submitted && (
+      {!readOnly && submitted && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold ${correctCount === correctOrder.length ? 'text-green-400' : 'text-amber-400'}`}>
             {correctCount === correctOrder.length ? 'Perfect order!' : `${correctCount}/${correctOrder.length} in correct position`}
@@ -784,7 +799,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   );
 };
 
-const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void }> = ({ block, allBlocks, onComplete, savedResponse, onResponseChange }) => {
+const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, allBlocks, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const linkedBlock = allBlocks.find(b => b.id === block.linkedBlockId);
   const [answer, setAnswer] = useState(savedResponse?.answer ?? '');
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
@@ -822,7 +837,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
             setAnswer(val);
             onResponseChange?.({ answer: val, answered: false, isCorrect: false });
           }}
-          disabled={answered}
+          disabled={answered || readOnly}
           placeholder="Type your answer... (Ctrl+Enter to submit)"
           aria-label={block.content || 'Linked question answer'}
           className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
@@ -834,13 +849,13 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
             }
           }}
         />
-        {!answered && (
+        {!readOnly && !answered && (
           <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0">
             Submit
           </button>
         )}
       </div>
-      {answered && (
+      {!readOnly && answered && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
             {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? `Accepted: ${block.acceptedAnswers?.join(', ')}` : 'Response recorded'}</>}
@@ -864,7 +879,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
 // Main lesson viewer
 // ──────────────────────────────────────────────
 
-const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned, savedResponses, onResponseChange, onExportPdf, onClearResponses }) => {
+const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, onAllComplete, showSidebar = false, engagementTime, xpEarned, savedResponses, onResponseChange, onExportPdf, onClearResponses, readOnly }) => {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState<'clear' | 'export-clear' | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -1014,10 +1029,10 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     switch (block.type) {
       case 'TEXT': return <TextBlock block={block} />;
       case 'INFO_BOX': return <InfoBoxBlock block={block} />;
-      case 'MC': return <MCBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'SHORT_ANSWER': return <ShortAnswerBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'MC': return <MCBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'SHORT_ANSWER': return <ShortAnswerBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'VOCABULARY': return <VocabularyBlock block={block} />;
-      case 'CHECKLIST': return <ChecklistBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'CHECKLIST': return <ChecklistBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'SECTION_HEADER': return <SectionHeaderBlock block={block} />;
       case 'IMAGE': return <ImageBlock block={block} />;
       case 'VIDEO': return <VideoBlock block={block} />;
@@ -1027,13 +1042,13 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       case 'EMBED': return <EmbedBlock block={block} />;
       case 'VOCAB_LIST': return <VocabListBlock block={block} />;
       case 'ACTIVITY': return <ActivityBlock block={block} />;
-      case 'SORTING': return <SortingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'DATA_TABLE': return <DataTableBlock block={block} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'DRAWING': return <DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
-      case 'MATH_RESPONSE': return <MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={onRespChange} />;
+      case 'SORTING': return <SortingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'DATA_TABLE': return <DataTableBlock block={block} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'DRAWING': return <DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'MATH_RESPONSE': return <MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       default: return <div className="text-sm text-gray-500 italic">Unknown block type: {block.type}</div>;
     }
   };
@@ -1049,7 +1064,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const contentArea = (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
       {/* Progress bar + actions */}
-      <div className="flex items-center gap-2 mb-3 shrink-0">
+      {!readOnly && <div className="flex items-center gap-2 mb-3 shrink-0">
         <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div
             className="h-1.5 rounded-full bg-purple-500 transition-all duration-500"
@@ -1132,7 +1147,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Scrollable block container */}
       <div

@@ -48,6 +48,7 @@ interface DrawingBlockProps {
   onComplete: (correct: boolean) => void;
   savedResponse?: DrawingResponse;
   onResponseChange?: (response: unknown) => void;
+  readOnly?: boolean;
 }
 
 type Tool = 'select' | 'arrow' | 'pen' | 'shape' | 'text' | 'eraser';
@@ -410,13 +411,15 @@ function renderElementToCanvas(ctx: CanvasRenderingContext2D, el: DrawingElement
 // Component
 // ──────────────────────────────────────────────
 
-const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedResponse, onResponseChange }) => {
+const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const [elements, setElements] = useState<DrawingElement[]>(savedResponse?.elements ?? []);
   const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
+  // When readOnly, behave as if submitted — disable all interaction
+  const locked = readOnly || submitted;
 
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [penColor, setPenColor] = useState('#000000');
@@ -873,7 +876,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // ──────────────────────────────────────────
 
   const handlePointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (submitted) return;
+    if (locked) return;
     e.preventDefault();
     const pos = getCanvasCoords(e as React.MouseEvent);
     const isShift = shiftHeld.current;
@@ -1035,10 +1038,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       setTextPlacement(pos);
       setTextInput('');
     }
-  }, [submitted, activeTool, getCanvasCoords, elements, selectedIndices]);
+  }, [locked, activeTool, getCanvasCoords, elements, selectedIndices]);
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (submitted) return;
+    if (locked) return;
     e.preventDefault();
     const pos = getCanvasCoords(e as React.MouseEvent);
 
@@ -1215,10 +1218,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         setDragEnd(pos);
       }
     }
-  }, [isDrawing, submitted, activeTool, getCanvasCoords, elements, selectedIndices, dragMode, dragOffset, moveElements, resizeArrow, dragStart]);
+  }, [isDrawing, locked, activeTool, getCanvasCoords, elements, selectedIndices, dragMode, dragOffset, moveElements, resizeArrow, dragStart]);
 
   const handlePointerUp = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing || submitted) return;
+    if (!isDrawing || locked) return;
     e.preventDefault();
 
     if (activeTool === 'select') {
@@ -1302,7 +1305,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     setIsDrawing(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [isDrawing, submitted, activeTool, currentStroke, dragStart, dragEnd, penColor, penWidth, activeShape, selectionBox, dragMode, elements, fillEnabled, fillColor, fillOpacity, commitToHistory, activeVectorType, customSymbol]);
+  }, [isDrawing, locked, activeTool, currentStroke, dragStart, dragEnd, penColor, penWidth, activeShape, selectionBox, dragMode, elements, fillEnabled, fillColor, fillOpacity, commitToHistory, activeVectorType, customSymbol]);
 
   // ──────────────────────────────────────────
   // Text confirm
@@ -1584,7 +1587,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (submitted) return;
+      if (locked) return;
       if (textPlacement) return;
       // Don't hijack when typing in inputs
       const tag = (e.target as HTMLElement)?.tagName;
@@ -1649,14 +1652,14 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [submitted, textPlacement, handleUndo, handleRedo, handleCopy, handlePaste, selectedIndices, deleteSelected, toggleComponent, elements, bringToFront, sendToBack, moveUp, moveDown, moveElements, precisionEditor]);
+  }, [locked, textPlacement, handleUndo, handleRedo, handleCopy, handlePaste, selectedIndices, deleteSelected, toggleComponent, elements, bringToFront, sendToBack, moveUp, moveDown, moveElements, precisionEditor]);
 
   // ──────────────────────────────────────────
   // Cursor style
   // ──────────────────────────────────────────
 
   const cursorStyle = (() => {
-    if (submitted) return 'default';
+    if (locked) return 'default';
     switch (activeTool) {
       case 'select': return 'default';
       case 'pen': return 'crosshair';
@@ -1723,7 +1726,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       )}
 
       {/* Toolbar */}
-      {!submitted && (
+      {!locked && (
         <div
           style={{
             display: 'flex',
@@ -2256,6 +2259,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           borderRadius: '10px',
           overflow: 'hidden',
           background: '#ffffff',
+          ...(readOnly ? { pointerEvents: 'none' as const } : {}),
         }}
       >
         <canvas
@@ -2324,14 +2328,14 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   zIndex: 5,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   border: selectedIndices.has(idx) ? '1.5px solid #007aff' : '1px solid rgba(0,0,0,0.05)',
-                  pointerEvents: submitted ? 'none' : 'auto',
+                  pointerEvents: locked ? 'none' : 'auto',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '2px',
                 }}
               >
                 {/* Delete button */}
-                {!submitted && (
+                {!locked && (
                   <button
                     onClick={() => deleteElement(idx)}
                     style={{
@@ -2357,7 +2361,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                     <input
                       value={el.label1}
                       onChange={(e) => updateArrowLabel(idx, 'label1', e.target.value)}
-                      disabled={submitted}
+                      disabled={locked}
                       placeholder="by"
                       style={{
                         width: '35px', border: 'none', borderBottom: `2px solid #007aff`,
@@ -2370,7 +2374,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                     <input
                       value={el.label2}
                       onChange={(e) => updateArrowLabel(idx, 'label2', e.target.value)}
-                      disabled={submitted}
+                      disabled={locked}
                       placeholder="on"
                       style={{
                         width: '35px', border: 'none', borderBottom: `2px solid #FF3B30`,
@@ -2384,7 +2388,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   <input
                     value={el.label1}
                     onChange={(e) => updateArrowLabel(idx, 'label1', e.target.value)}
-                    disabled={submitted}
+                    disabled={locked}
                     placeholder="label"
                     style={{
                       width: '40px', border: 'none', borderBottom: `2px solid ${cfg.color}`,
@@ -2667,7 +2671,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       </div>
 
       {/* Resize handle */}
-      {!submitted && (
+      {!locked && (
         <div
           style={{
             display: 'flex', justifyContent: 'center', alignItems: 'center',
@@ -2704,6 +2708,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       )}
 
       {/* Submit / Submitted state */}
+      {!readOnly && (
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {!submitted ? (
           <button
@@ -2744,6 +2749,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           </>
         )}
       </div>
+      )}
 
       {/* Style tag for hover-based delete button visibility */}
       <style>{`

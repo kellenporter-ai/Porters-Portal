@@ -471,6 +471,7 @@ export interface Assignment {
     allowResubmission?: boolean;    // default true
     maxAttempts?: number;           // 0 = unlimited
     showScoreOnSubmit?: boolean;    // default true
+    showReviewAfterSubmit?: boolean; // default true — let students review submitted answers
     lockNavigation?: boolean;       // default true for assessments
   };
   rubric?: Rubric;

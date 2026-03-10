@@ -23,6 +23,7 @@ interface MathResponseBlockProps {
   onComplete: (correct: boolean) => void;
   savedResponse?: MathResponse;
   onResponseChange?: (response: unknown) => void;
+  readOnly?: boolean;
 }
 
 // ──────────────────────────────────────────────
@@ -385,6 +386,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
   onComplete,
   savedResponse,
   onResponseChange,
+  readOnly,
 }) => {
   const maxSteps = block.maxSteps ?? 10;
   const stepLabels =
@@ -574,8 +576,51 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
         </p>
       </div>
 
-      {/* Steps */}
-      <div className="space-y-3">
+      {/* Read-only display: just rendered LaTeX per step */}
+      {readOnly && (
+        <div className="space-y-3">
+          {steps.map((step, index) => (
+            <div key={index} className="space-y-1">
+              <span className="text-xs text-purple-300 font-medium">
+                {step.label}
+              </span>
+              <div className="bg-white/5 rounded-lg px-3 py-2 overflow-x-auto">
+                {step.latex.trim() ? (
+                  isListStep(step.label) ? (
+                    <div className="space-y-1">
+                      {step.latex.split(' \\\\ ').map((line, li) => (
+                        <div
+                          key={li}
+                          className="text-white katex-preview flex items-center gap-2"
+                        >
+                          <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: renderLatex(line.trim()),
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="text-white katex-preview"
+                      dangerouslySetInnerHTML={{
+                        __html: renderLatex(step.latex),
+                      }}
+                    />
+                  )
+                ) : (
+                  <p className="text-gray-500 text-xs italic">No response</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Editable steps (hidden in readOnly mode) */}
+      {!readOnly && <div className="space-y-3">
         {steps.map((step, index) => (
           <div key={index} className="group space-y-1">
             {/* Input row */}
@@ -747,10 +792,10 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
             </div>
           </div>
         ))}
-      </div>
+      </div>}
 
       {/* Add Step button */}
-      {!submitted && steps.length < maxSteps && (
+      {!readOnly && !submitted && steps.length < maxSteps && (
         <button
           type="button"
           onClick={addStep}
@@ -762,7 +807,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       )}
 
       {/* Math Keyboard */}
-      {block.showLatexHelp !== false && !submitted && (
+      {block.showLatexHelp !== false && !readOnly && !submitted && (
         <div className="space-y-2.5 border-t border-white/5 pt-3">
           {/* Structure buttons */}
           <div className="flex items-center gap-1.5">
@@ -850,7 +895,8 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
         </div>
       )}
 
-      {/* Submit / Edit */}
+      {/* Submit / Edit (hidden in readOnly mode) */}
+      {!readOnly && (
       <div className="flex items-center gap-3">
         {!submitted ? (
           <button
@@ -876,6 +922,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
