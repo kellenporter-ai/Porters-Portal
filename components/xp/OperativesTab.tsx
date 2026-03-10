@@ -107,6 +107,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
     getScrollElement: () => listParentRef.current,
     estimateSize: () => 56,
     overscan: 10,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
 
   return (
@@ -179,8 +180,10 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
               return (
                 <div
                   key={student.id}
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
                   className="absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition-colors border-b border-white/5"
-                  style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
                 >
                   <div className="flex-[2] py-3 pl-4">
                     <div className="flex items-center gap-3">

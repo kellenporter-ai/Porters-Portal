@@ -46,6 +46,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
     getScrollElement: () => parentRef.current,
     estimateSize: () => 64,
     overscan: 10,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
 
   if (classStudents.length === 0) {
@@ -64,8 +65,10 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
           return (
             <div
               key={student.id}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
               className={`flex items-center hover:bg-white/5 transition group border-b border-white/5 absolute top-0 left-0 w-full ${selectedUsers.has(student.id) ? 'bg-purple-500/10' : ''}`}
-              style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+              style={{ transform: `translateY(${virtualRow.start}px)` }}
             >
               <div className="p-4 text-center w-12 shrink-0">
                 <button onClick={() => toggleUser(student.id)} className="text-gray-500 hover:text-purple-400 transition">

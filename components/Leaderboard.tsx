@@ -76,6 +76,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
     getScrollElement: () => listParentRef.current,
     estimateSize: () => 72,
     overscan: 5,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
 
   return (
@@ -174,10 +175,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                             return (
                                 <div
                                     key={u.id}
+                                    ref={rowVirtualizer.measureElement}
+                                    data-index={virtualRow.index}
                                     role="listitem"
                                     aria-label={`Rank ${i + 1}: ${displayName}, ${classXP.toLocaleString()} XP`}
                                     className="p-5 flex items-center gap-5 transition hover:bg-white/5 border-b border-white/5 absolute top-0 left-0 w-full"
-                                    style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                                    style={{ transform: `translateY(${virtualRow.start}px)` }}
                                 >
                                     <div className="w-10 text-center font-bold text-lg text-gray-600 font-mono">
                                         {i < 3 && i === 0 && <Trophy className="w-6 h-6 text-yellow-400 mx-auto" />}

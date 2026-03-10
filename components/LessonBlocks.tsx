@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
-import DrawingBlock from './blocks/DrawingBlock';
-import MathResponseBlock from './blocks/MathResponseBlock';
+const DrawingBlock = React.lazy(() => import('./blocks/DrawingBlock'));
+const MathResponseBlock = React.lazy(() => import('./blocks/MathResponseBlock'));
 
 export type { LessonBlock } from '../types';
 
@@ -1047,8 +1047,8 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
-      case 'DRAWING': return <DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
-      case 'MATH_RESPONSE': return <MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
+      case 'DRAWING': return <React.Suspense fallback={<div className="h-[400px] bg-white/5 rounded-xl animate-pulse flex items-center justify-center text-gray-500 text-sm">Loading drawing tool...</div>}><DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} /></React.Suspense>;
+      case 'MATH_RESPONSE': return <React.Suspense fallback={<div className="h-[200px] bg-white/5 rounded-xl animate-pulse flex items-center justify-center text-gray-500 text-sm">Loading math tool...</div>}><MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} /></React.Suspense>;
       default: return <div className="text-sm text-gray-500 italic">Unknown block type: {block.type}</div>;
     }
   };

@@ -5,6 +5,7 @@ import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, Stu
 import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
+import { callTriggerDailyDigest } from '../lib/firebase';
 import { BUCKET_META } from '../lib/telemetry';
 import { calculateRubricPercentage } from '../lib/rubricParser';
 import katex from 'katex';
@@ -60,6 +61,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState<Submission[]>([]);
   const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
+  const [digestGenerating, setDigestGenerating] = useState(false);
   const [csvMaxPoints, setCsvMaxPoints] = useState(100);
   const [showNotStarted, setShowNotStarted] = useState(false);
 
@@ -187,6 +189,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     getScrollElement: () => tableScrollRef.current,
     estimateSize: () => 52,
     overscan: 15,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
 
   // Batch selection helpers
@@ -1543,10 +1546,29 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       {adminTab === 'digest' && (<FeatureErrorBoundary feature="Daily Digest">
         <div className="space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
-              <Newspaper className="w-5 h-5 text-blue-400" />
-              Daily Activity Digest
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Newspaper className="w-5 h-5 text-blue-400" />
+                Daily Activity Digest
+              </h3>
+              <button
+                disabled={digestGenerating}
+                onClick={async () => {
+                  setDigestGenerating(true);
+                  try {
+                    await callTriggerDailyDigest();
+                  } catch (err) {
+                    reportError(err instanceof Error ? err : new Error(String(err)), { source: 'triggerDailyDigest' });
+                  } finally {
+                    setDigestGenerating(false);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${digestGenerating ? 'animate-spin' : ''}`} />
+                {digestGenerating ? 'Generating...' : 'Generate Now'}
+              </button>
+            </div>
 
             {dailyDigests.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
@@ -2088,8 +2110,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 return (
                   <div
                     key={student.id}
+                    ref={tableVirtualizer.measureElement}
+                    data-index={virtualRow.index}
                     className={`absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
-                    style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
+                    style={{ transform: `translateY(${virtualRow.start}px)` }}
                   >
                     <div className="p-3 w-10 shrink-0">
                       <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(student.id)} onClick={e => e.stopPropagation()} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label={`Select ${student.name}`} />

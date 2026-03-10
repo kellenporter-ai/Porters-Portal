@@ -8,6 +8,14 @@ import {
   ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield, Brain,
   PenTool, Calculator
 } from 'lucide-react';
+import {
+  DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay,
+  useSensor, useSensors, PointerSensor, KeyboardSensor,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useDebounce } from '../lib/rateLimiting';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass } from '../types';
 import { parseRubricMarkdown, validateRubric } from '../lib/rubricParser';
@@ -157,6 +165,8 @@ const getBlockSummary = (block: LessonBlock): string => {
     case 'BAR_CHART': return block.title || 'Bar chart';
     case 'RANKING': return block.content.slice(0, 60) || 'Ranking question';
     case 'LINKED': return block.content.slice(0, 60) || 'Linked question';
+    case 'DRAWING': return block.title || 'Drawing';
+    case 'MATH_RESPONSE': return block.title || 'Math response';
     default: return block.type;
   }
 };
@@ -206,6 +216,40 @@ const UnitSelector: React.FC<{ value: string; onChange: (val: string) => void; e
 };
 
 // ──────────────────────────────────────────────
+// Sortable Block Row (drag-and-drop wrapper)
+// ──────────────────────────────────────────────
+
+interface SortableBlockRowProps {
+  id: string;
+  children: (dragHandleProps: Record<string, unknown>) => React.ReactNode;
+}
+
+const SortableBlockRow: React.FC<SortableBlockRowProps> = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ ...attributes, ...listeners })}
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────
 // Main Lesson Editor Page
 // ──────────────────────────────────────────────
 
@@ -244,6 +288,16 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showQuestionBank, setShowQuestionBank] = useState(false);
+
+  // Auto-save to Firestore
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // Resource settings state
   const [resTitle, setResTitle] = useState('');
@@ -356,6 +410,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setExpandedBlock(null);
       setPreviewMode(false);
       setHasUnsavedChanges(false);
+      setAutoSaveStatus('idle');
+      setAutoSavedAt(null);
       setShowSettings(false);
       setShowQuestionBank(false);
     }
@@ -423,6 +479,31 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     updateBlocks(next);
   }, [blocks, updateBlocks]);
 
+  // ── Drag-and-drop reordering ──
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const blockIds = useMemo(() => blocks.map(b => b.id), [blocks]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveBlockId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveBlockId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = blocks.findIndex(b => b.id === active.id);
+    const newIndex = blocks.findIndex(b => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    updateBlocks(arrayMove(blocks, oldIndex, newIndex));
+  }, [blocks, updateBlocks]);
+
+  const activeBlock = activeBlockId ? blocks.find(b => b.id === activeBlockId) : null;
+
   const buildPayload = useCallback((status: AssignmentStatus, scheduledAt?: string): Partial<Assignment> => {
     const base: Partial<Assignment> = {
       title: resTitle,
@@ -442,6 +523,40 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     if (selectedAssignment?.id && !isNewResource) base.id = selectedAssignment.id;
     return base;
   }, [resTitle, resDescription, resUnit, resCategory, blocks, resContentUrl, resSections, resDueDate, selectedAssignment, isNewResource, isAssessment, assessmentConfig, parsedRubric]);
+
+  // Debounced auto-save to Firestore (10s) for existing assignments only
+  const performFirestoreAutoSave = useDebounce(() => {
+    if (!mountedRef.current) return;
+    if (isNewResource || !selectedAssignment) return;
+    if (!hasUnsavedChanges) return;
+
+    setAutoSaveStatus('saving');
+    const payload = buildPayload(selectedAssignment.status);
+    dataService.addAssignment({ ...selectedAssignment, ...payload } as Assignment)
+      .then(() => {
+        if (!mountedRef.current) return;
+        const now = new Date();
+        setAutoSaveStatus('saved');
+        setAutoSavedAt(now);
+        setHasUnsavedChanges(false);
+        setLastSavedAt(now);
+        clearAutoSave();
+      })
+      .catch((err) => {
+        if (!mountedRef.current) return;
+        setAutoSaveStatus('idle');
+        toast.error('Auto-save failed — save manually.');
+        reportError(err, { component: 'LessonEditorPage', action: 'firestoreAutoSave' });
+      });
+  }, 10000);
+
+  // Trigger Firestore auto-save when content changes on existing assignments
+  useEffect(() => {
+    if (hasUnsavedChanges && selectedAssignment && !isNewResource) {
+      setAutoSaveStatus('idle'); // reset while debounce timer runs
+      performFirestoreAutoSave();
+    }
+  }, [hasUnsavedChanges, blocks, resTitle, resUnit, resCategory, resDescription, resSections, resScheduleDate, resDueDate, selectedAssignment, isNewResource, performFirestoreAutoSave]);
 
   const handleDeploy = useCallback(async (status: AssignmentStatus, scheduledAt?: string) => {
     if (!resTitle.trim()) { toast.error('Title is required.'); return; }
@@ -501,6 +616,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       await dataService.addAssignment({ ...selectedAssignment, ...payload } as Assignment);
       toast.success('Saved!');
       setHasUnsavedChanges(false);
+      setAutoSaveStatus('idle');
+      setAutoSavedAt(null);
       clearAutoSave();
     } catch (err) {
       toast.error('Failed to save.');
@@ -569,11 +686,17 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           {isEditing && (
             <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2">
               {isNewResource ? 'New Resource' : resTitle}
-              {hasUnsavedChanges && <span className="text-amber-400">*unsaved</span>}
-              {lastSavedAt && !hasUnsavedChanges && (
+              {autoSaveStatus === 'saving' && (
+                <span className="text-purple-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Auto-saving...</span>
+              )}
+              {autoSaveStatus !== 'saving' && hasUnsavedChanges && <span className="text-amber-400">*unsaved</span>}
+              {autoSaveStatus === 'saved' && !hasUnsavedChanges && autoSavedAt && (
+                <span className="text-emerald-400/70 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Auto-saved {autoSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {autoSaveStatus !== 'saved' && lastSavedAt && !hasUnsavedChanges && (
                 <span className="text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               )}
-              {lastSavedAt && hasUnsavedChanges && (
+              {lastSavedAt && hasUnsavedChanges && autoSaveStatus !== 'saving' && (
                 <span className="text-gray-600 flex items-center gap-1"><Clock className="w-3 h-3" /> Draft {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               )}
             </span>
@@ -838,37 +961,79 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
               <div className="space-y-0">
                 <InsertButton onInsert={(type) => insertBlock(0, type)} />
 
-                {blocks.map((block, index) => {
-                  const typeInfo = getBlockTypeInfo(block.type);
-                  const isExpanded = expandedBlock === block.id;
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
+                    {blocks.map((block, index) => {
+                      const typeInfo = getBlockTypeInfo(block.type);
+                      const isExpanded = expandedBlock === block.id;
 
-                  return (
-                    <React.Fragment key={block.id}>
-                      <div className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
-                        <button type="button" onClick={() => setExpandedBlock(isExpanded ? null : block.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                          <span className="text-gray-500">{typeInfo?.icon}</span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
-                          <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(block)}</span>
-                          <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
-                            <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronUp className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronDown className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => duplicateBlock(index)} className="p-1 text-gray-600 hover:text-blue-400 transition"><Copy className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={() => removeBlock(index)} className="p-1 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-3.5 h-3.5" /></button>
+                      return (
+                        <React.Fragment key={block.id}>
+                          <SortableBlockRow id={block.id}>
+                            {(dragHandleProps) => (
+                              <div className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
+                                <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                                  <div
+                                    {...dragHandleProps}
+                                    className="cursor-grab active:cursor-grabbing p-1 -ml-2 text-gray-600 hover:text-purple-400 transition touch-none"
+                                    title="Drag to reorder"
+                                  >
+                                    <GripVertical className="w-3.5 h-3.5" />
+                                  </div>
+                                  <button type="button" onClick={() => setExpandedBlock(isExpanded ? null : block.id)} className="flex items-center gap-3 flex-1 min-w-0">
+                                    <span className="text-gray-500">{typeInfo?.icon}</span>
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
+                                    <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(block)}</span>
+                                  </button>
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronUp className="w-3.5 h-3.5" /></button>
+                                    <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronDown className="w-3.5 h-3.5" /></button>
+                                    <button type="button" onClick={() => duplicateBlock(index)} className="p-1 text-gray-600 hover:text-blue-400 transition"><Copy className="w-3.5 h-3.5" /></button>
+                                    <button type="button" onClick={() => removeBlock(index)} className="p-1 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-3.5 h-3.5" /></button>
+                                  </div>
+                                  <button type="button" onClick={() => setExpandedBlock(isExpanded ? null : block.id)} className="p-0">
+                                    <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                  </button>
+                                </div>
+
+                                {isExpanded && (
+                                  <div className="px-4 pb-4 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <InlineBlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => { const next = [...blocks]; next[index] = updated; updateBlocks(next); }} />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </SortableBlockRow>
+
+                          <InsertButton onInsert={(type) => insertBlock(index + 1, type)} />
+                        </React.Fragment>
+                      );
+                    })}
+                  </SortableContext>
+
+                  <DragOverlay>
+                    {activeBlock ? (() => {
+                      const typeInfo = getBlockTypeInfo(activeBlock.type);
+                      return (
+                        <div className="border border-purple-500/40 rounded-2xl bg-[#0f0720]/95 backdrop-blur-sm shadow-xl shadow-purple-500/10">
+                          <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                            <div className="p-1 -ml-2 text-purple-400">
+                              <GripVertical className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-gray-500">{typeInfo?.icon}</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
+                            <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(activeBlock)}</span>
                           </div>
-                          <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                        </button>
-
-                        {isExpanded && (
-                          <div className="px-4 pb-4 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                            <InlineBlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => { const next = [...blocks]; next[index] = updated; updateBlocks(next); }} />
-                          </div>
-                        )}
-                      </div>
-
-                      <InsertButton onInsert={(type) => insertBlock(index + 1, type)} />
-                    </React.Fragment>
-                  );
-                })}
+                        </div>
+                      );
+                    })() : null}
+                  </DragOverlay>
+                </DndContext>
 
                 {blocks.length === 0 && (
                   <div className="text-center py-12 text-gray-600">
