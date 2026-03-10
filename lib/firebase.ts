@@ -101,3 +101,6 @@ export const callCancelArenaQueue = httpsCallable(functions, 'cancelArenaQueue')
 export const callPurchaseFluxItem = httpsCallable(functions, 'purchaseFluxItem');
 export const callEquipFluxCosmetic = httpsCallable(functions, 'equipFluxCosmetic');
 
+// Enrollment
+export const callRedeemEnrollmentCode = httpsCallable(functions, 'redeemEnrollmentCode');
+

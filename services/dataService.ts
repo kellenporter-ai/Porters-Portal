@@ -1,6 +1,6 @@
 
 import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic } from '../lib/firebase';
+import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -1869,31 +1869,14 @@ export const dataService = {
     await updateDoc(doc(db, 'enrollment_codes', codeId), { isActive: false });
   },
 
-  redeemEnrollmentCode: async (code: string, userId: string): Promise<{ success: boolean; classType?: string; error?: string }> => {
-    const q = query(collection(db, 'enrollment_codes'), where('code', '==', code.toUpperCase()), where('isActive', '==', true));
-    const snap = await getDocs(q);
-    if (snap.empty) return { success: false, error: 'Invalid or expired code.' };
-    const codeDoc = snap.docs[0];
-    const data = codeDoc.data() as EnrollmentCode;
-    if (data.maxUses && data.usedCount >= data.maxUses) return { success: false, error: 'This code has reached its usage limit.' };
-
-    // Add student to class
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return { success: false, error: 'User not found.' };
-    const user = userSnap.data();
-    const enrolled = user.enrolledClasses || [];
-    if (enrolled.includes(data.classType)) return { success: false, error: 'Already enrolled in this class.' };
-
-    await updateDoc(userRef, {
-      enrolledClasses: arrayUnion(data.classType),
-      isWhitelisted: true,
-    });
-    if (data.section) {
-      await updateDoc(userRef, { [`classSections.${data.classType}`]: data.section });
+  redeemEnrollmentCode: async (code: string, _userId: string): Promise<{ success: boolean; classType?: string; error?: string }> => {
+    try {
+      const result = await callRedeemEnrollmentCode({ code });
+      return result.data as { success: boolean; classType?: string; error?: string };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to redeem code.';
+      return { success: false, error: msg };
     }
-    await updateDoc(codeDoc.ref, { usedCount: increment(1) });
-    return { success: true, classType: data.classType };
   },
 
   // ========================================

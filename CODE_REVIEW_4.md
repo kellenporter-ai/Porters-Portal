@@ -37,7 +37,7 @@ For a game system where students earn gear, craft items, and compare loadouts �
 
 ---
 
-## #2 — Customize modal only offers hue, no body type selector (V1)
+## #2 — Customize modal only offers hue, no body type selector (V1) ✅ COMPLETED
 
 **File:** `StudentDashboard.tsx` lines 703-739
 **Problem:** The type system has `bodyType: 'A' | 'B'` and the new avatar supports both silhouettes, but the "Edit DNA Profile" modal only shows the hue grid. Students can't pick their body type. This is the single cheapest way to double avatar variety.
@@ -59,7 +59,7 @@ Also update `handleCustomizeSave` to persist `bodyType` alongside `hue`, and `up
 
 ---
 
-## #3 — Settings modal uses light-mode styling inside dark app (V2)
+## #3 — Settings modal uses light-mode styling inside dark app (V2) ✅ COMPLETED
 
 **File:** `SettingsModal.tsx` lines 55-72
 **Problem:** The `SettingRow` component uses `bg-gray-50`, `border-gray-100`, `text-gray-900` — these are light-mode colors. Inside the dark glass modal, these rows render as bright white boxes that completely break the aesthetic. This is the most visually jarring inconsistency in the app.
@@ -77,7 +77,7 @@ shadow-purple-100 → shadow-purple-900/30
 
 ---
 
-## #4 — No item comparison when equipping gear (V2)
+## #4 — No item comparison when equipping gear (V2) ✅ COMPLETED
 
 **File:** `StudentDashboard.tsx` lines 782-789
 **Problem:** When a student clicks "Equip Gear" in the Nano-Fabricator Terminal, they have no way to see what's currently in that slot. If they have a RARE belt equipped and find a new UNCOMMON belt, they might accidentally downgrade. The equip action should show a side-by-side comparison.
@@ -106,7 +106,7 @@ shadow-purple-100 → shadow-purple-900/30
 
 ---
 
-## #5 — Inventory items have no tooltip on hover (V2)
+## #5 — Inventory items have no tooltip on hover (V2) ✅ COMPLETED
 
 **File:** `StudentDashboard.tsx` lines 629-655
 **Problem:** The inventory grid shows slot icons with rarity-colored borders, but the only way to learn an item's name is to click it and open the full modal. In any RPG, hovering over an item in your bag shows a quick tooltip. This forces unnecessary clicks for browsing.
@@ -124,7 +124,7 @@ For a more polished version, add a CSS tooltip with `group-hover` that shows nam
 
 ---
 
-## #6 — Leaderboard has no animation or visual flair for top 3 (V1)
+## #6 — Leaderboard has no animation or visual flair for top 3 (V1) ✅ COMPLETED
 
 **File:** `Leaderboard.tsx` lines 91-128
 **Problem:** The leaderboard is a flat list with Trophy/Medal icons. The top 3 get a faint purple gradient background. For students, rankings are one of the biggest motivators — this needs more ceremony.
@@ -138,7 +138,7 @@ For a more polished version, add a CSS tooltip with `group-hover` that shows nam
 
 ---
 
-## #7 — Teacher Dashboard engagement table lacks visual signals (V2)
+## #7 — Teacher Dashboard engagement table lacks visual signals (V2) ✅ COMPLETED
 
 **File:** `TeacherDashboard.tsx` lines 199-235
 **Problem:** The Student Engagement Ranking table shows raw numbers but provides no visual cues for interpretation. A teacher scanning 30+ students can't quickly identify who's falling behind or excelling.
@@ -152,7 +152,7 @@ For a more polished version, add a CSS tooltip with `group-hover` that shows nam
 
 ---
 
-## #8 — No transition animations between tabs (V3)
+## #8 — No transition animations between tabs (V3) ✅ COMPLETED
 
 **File:** `StudentDashboard.tsx` lines 371-383
 **Problem:** Switching between RESOURCES / LOADOUT / MISSIONS tabs has entry animations (`animate-in fade-in slide-in-from-*`) but no exit animation — the old content vanishes instantly and the new content fades in. This creates a jarring pop.
@@ -168,7 +168,7 @@ Alternatively, use `framer-motion`'s `AnimatePresence` for cleaner orchestration
 
 ---
 
-## #9 — Loadout background is too subtle (V3)
+## #9 — Loadout background is too subtle (V3) ✅ COMPLETED
 
 **File:** `StudentDashboard.tsx` line 619-620
 **Problem:** The loadout character visualizer panel has a `bg-black/30` with a faint radial blue gradient. This makes the avatar area feel like another card rather than a dramatic character display. The hex grid CSS class (`loadout-hex-bg`) exists in style.css but is only used in the customize modal, not the main loadout.
@@ -183,7 +183,7 @@ Alternatively, use `framer-motion`'s `AnimatePresence` for cleaner orchestration
 
 ---
 
-## #10 — Slot hover states don't preview item details (V3)
+## #10 — Slot hover states don't preview item details (V3) ✅ COMPLETED
 
 **File:** `StudentDashboard.tsx` lines 228-258 (SlotRender)
 **Problem:** Equipment slots show a tiny icon + truncated name. Hovering scales the slot up by 10% but reveals nothing new. Students need to click to learn what's actually equipped.
@@ -198,7 +198,7 @@ Alternatively, use `framer-motion`'s `AnimatePresence` for cleaner orchestration
 
 ---
 
-## #11 — No sound effects or haptic feedback on key actions (V2)
+## #11 — No sound effects or haptic feedback on key actions (V2) ✅ COMPLETED
 
 **Problem:** Equipping items, leveling up, accepting quests, crafting — these are high-moment actions with no audio reinforcement. The level-up modal has confetti but is silent. This is a gamification app — sound matters.
 
@@ -211,7 +211,7 @@ Alternatively, use `framer-motion`'s `AnimatePresence` for cleaner orchestration
 
 ---
 
-## #12 — Codename/identity system is underutilized (V3)
+## #12 — Codename/identity system is underutilized (V3) ✅ COMPLETED
 
 **File:** `SettingsModal.tsx`, `Layout.tsx`, `StudentDashboard.tsx`
 **Problem:** Students can toggle "Privacy Codename" in settings, which swaps their real name for `user.gamification?.codename` on the leaderboard. But there's no way for students to *choose* their codename — it appears to be assigned or empty. This is a missed engagement opportunity.
@@ -231,21 +231,19 @@ Validate: 3-20 chars, alphanumeric + spaces, no profanity (reuse existing modera
 
 ## Implementation Priority
 
-| # | Item | Impact | Effort |
+| # | Item | Impact | Status |
 |---|------|--------|--------|
 | 1 | ✅ Avatar overhaul | 🔥🔥🔥 | Done |
-| 2 | Body type selector in customize modal | 🔥🔥🔥 | ~20 min |
-| 3 | Fix settings modal dark-mode styling | 🔥🔥 | ~10 min |
-| 4 | Item comparison on equip | 🔥🔥 | ~30 min |
-| 5 | Inventory item tooltips | 🔥🔥 | ~15 min |
-| 6 | Leaderboard visual upgrade | 🔥🔥🔥 | ~1 hr |
-| 7 | Teacher dashboard visual signals | 🔥🔥 | ~45 min |
-| 8 | Tab transition animations | 🔥 | ~20 min |
-| 9 | Loadout background enhancement | 🔥 | ~5 min |
-| 10 | Slot hover tooltips | 🔥 | ~20 min |
-| 11 | Sound effects system | 🔥🔥 | ~1 hr |
-| 12 | Codename editor | 🔥 | ~30 min |
+| 2 | ✅ Body type selector (Alpha/Beta/Femme) | 🔥🔥🔥 | Done |
+| 3 | ✅ Settings modal dark-mode styling | 🔥🔥 | Done |
+| 4 | ✅ Item comparison on equip | 🔥🔥 | Done |
+| 5 | ✅ Inventory item tooltips | 🔥🔥 | Done |
+| 6 | ✅ Leaderboard podium + animations | 🔥🔥🔥 | Done |
+| 7 | ✅ Teacher dashboard visual signals | 🔥🔥 | Done |
+| 8 | ✅ Tab transition animations | 🔥 | Done (Mar 9, 2026) |
+| 9 | ✅ Loadout background enhancement | 🔥 | Done |
+| 10 | ✅ Slot hover tooltips | 🔥 | Done |
+| 11 | ✅ Sound effects system (Kenney .ogg) | 🔥🔥 | Done |
+| 12 | ✅ Codename editor | 🔥 | Done |
 
-**Recommended order:** 2 → 3 → 9 → 5 → 10 → 4 → 6 → 7 → 8 → 12 → 11
-
-Items 2, 3, and 9 are quick wins that immediately improve the experience. Items 5 and 10 remove daily friction. Item 4 prevents costly mistakes. Item 6 has the highest student-facing wow factor after the avatar. Item 11 should be last since it requires asset creation.
+**All items complete.** CODE_REVIEW_4 is fully resolved.

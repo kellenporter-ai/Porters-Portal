@@ -10,6 +10,7 @@ import { calculateRubricPercentage } from '../lib/rubricParser';
 import katex from 'katex';
 import { analyzeIntegrity, type IntegrityReport } from '../lib/integrityAnalysis';
 import { reportError } from '../lib/errorReporting';
+import { FeatureErrorBoundary } from './ErrorBoundary';
 import { useConfirm } from './ConfirmDialog';
 import { useToast } from './ToastProvider';
 import AnnouncementManager from './AnnouncementManager';
@@ -307,10 +308,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       </div>
 
       {adminTab === 'analytics' && (
-        <AnalyticsTab users={users} assignments={assignments} submissions={submissions} bucketProfiles={bucketProfiles} />
+        <FeatureErrorBoundary feature="Analytics Tab">
+          <AnalyticsTab users={users} assignments={assignments} submissions={submissions} bucketProfiles={bucketProfiles} />
+        </FeatureErrorBoundary>
       )}
 
-      {adminTab === 'assessments' && (() => {
+      {adminTab === 'assessments' && (<FeatureErrorBoundary feature="Assessments Tab">{(() => {
         const assessmentAssignments = assignments.filter(a => a.isAssessment);
         const selectedAssessment = assessmentAssignments.find(a => a.id === selectedAssessmentId) || null;
         // When a specific assessment is selected, use the dedicated assignment-scoped subscription
@@ -1509,9 +1512,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             )}
           </div>
         );
-      })()}
+      })()}</FeatureErrorBoundary>)}
 
-      {adminTab === 'digest' && (
+      {adminTab === 'digest' && (<FeatureErrorBoundary feature="Daily Digest">
         <div className="space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
             <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
@@ -1655,9 +1658,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             )}
           </div>
         </div>
-      )}
+      </FeatureErrorBoundary>)}
 
       <div className={adminTab === 'dashboard' ? '' : 'hidden'}>
+      <FeatureErrorBoundary feature="Dashboard Overview">
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard label="Total Students" value={totalStudents} icon={<Users className="w-12 h-12" />} color="from-blue-500 to-cyan-400" />
@@ -2102,6 +2106,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
       </div>
 
+      </FeatureErrorBoundary>
       </div>
 
       {/* STUDENT DETAIL DRAWER */}

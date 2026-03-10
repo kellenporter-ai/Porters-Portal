@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BossQuizEvent, BossQuizProgress, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
+import { useIsMounted } from '../../lib/useIsMounted';
 import BattleScene from './BattleScene';
 import BattleFeed from './BattleFeed';
 
@@ -242,6 +243,16 @@ const QuizBossCard: React.FC<{
   const [attackHealAmount, setAttackHealAmount] = useState<number | undefined>(undefined);
   const [attackShieldBlocked, setAttackShieldBlocked] = useState(false);
 
+  // Timer + unmount safety
+  const isMounted = useIsMounted();
+  const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const safeTimeout = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => { if (isMounted()) fn(); }, ms);
+    timerRefs.current.push(id);
+    return id;
+  };
+  useEffect(() => () => timerRefs.current.forEach(clearTimeout), []);
+
   // Once progress loads, initialize question index and HP from server state (runs only once)
   useEffect(() => {
     if (!progressLoaded) return;
@@ -289,6 +300,7 @@ const QuizBossCard: React.FC<{
     setSelectedAnswer(answer);
     onAnswer(quizId, questionId, answer, {
       onResult: (result) => {
+        if (!isMounted()) return;
         if (result.playerHp !== undefined) setPlayerHp(result.playerHp);
         if (result.playerMaxHp !== undefined) setPlayerMaxHp(result.playerMaxHp);
         if (result.knockedOut) setKnockedOut(true);
@@ -299,19 +311,19 @@ const QuizBossCard: React.FC<{
           setAttackHealAmount(result.healAmount);
           setAttackShieldBlocked(false);
           setAttackState('player-attack');
-          setTimeout(() => setAttackState('idle'), 800);
+          safeTimeout(() => setAttackState('idle'), 800);
         } else if (result.shieldBlocked) {
           setAttackDamage(0);
           setAttackShieldBlocked(true);
           setAttackIsCrit(false);
           setAttackState('boss-attack');
-          setTimeout(() => setAttackState('idle'), 800);
+          safeTimeout(() => setAttackState('idle'), 800);
         } else if (result.playerDamage && result.playerDamage > 0) {
           setAttackDamage(result.playerDamage);
           setAttackShieldBlocked(false);
           setAttackIsCrit(false);
           setAttackState('boss-attack');
-          setTimeout(() => setAttackState('idle'), 800);
+          safeTimeout(() => setAttackState('idle'), 800);
         }
 
         setAnswerResult(result);
@@ -319,17 +331,17 @@ const QuizBossCard: React.FC<{
         // Phase transition — show overlay for 3 seconds then dismiss
         if (result.phaseTransition) {
           setShowPhaseTransition(result.phaseTransition);
-          setTimeout(() => setShowPhaseTransition(null), 3000);
+          safeTimeout(() => setShowPhaseTransition(null), 3000);
         }
 
         // Boss ability trigger — show notification for 3 seconds
         if (result.triggeredAbility) {
           setShowAbility(result.triggeredAbility);
-          setTimeout(() => setShowAbility(null), 3000);
+          safeTimeout(() => setShowAbility(null), 3000);
         }
 
         if (!result.knockedOut) {
-          setTimeout(() => {
+          safeTimeout(() => {
             setCurrentQuestion(prev => prev + 1);
             setSelectedAnswer(null);
             setAnswerResult(null);

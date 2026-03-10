@@ -5660,3 +5660,66 @@ export const equipFluxCosmetic = onCall(async (request) => {
   await userRef.update({ [updateField]: cosmeticId || admin.firestore.FieldValue.delete() });
   return { success: true, slot: resolvedSlot, cosmeticId };
 });
+
+// ==========================================
+// ENROLLMENT CODE REDEMPTION (ATOMIC)
+// ==========================================
+export const redeemEnrollmentCode = onCall({ region: "us-east1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Must be signed in.");
+
+  const { code } = request.data as { code?: string };
+  if (!code || typeof code !== "string" || code.trim().length < 4) {
+    throw new HttpsError("invalid-argument", "A valid enrollment code is required.");
+  }
+
+  const db = admin.firestore();
+  const normalizedCode = code.toUpperCase().replace(/-/g, "");
+
+  // Find the active code
+  const codesSnap = await db.collection("enrollment_codes")
+    .where("code", "==", normalizedCode)
+    .where("isActive", "==", true)
+    .limit(1)
+    .get();
+
+  if (codesSnap.empty) {
+    return { success: false, error: "Invalid or expired code." };
+  }
+
+  const codeDocRef = codesSnap.docs[0].ref;
+
+  // Atomic transaction — prevents usedCount race condition
+  return db.runTransaction(async (tx) => {
+    const freshCode = await tx.get(codeDocRef);
+    if (!freshCode.exists) return { success: false, error: "Code no longer exists." };
+    const codeData = freshCode.data()!;
+
+    if (codeData.maxUses && codeData.usedCount >= codeData.maxUses) {
+      return { success: false, error: "This code has reached its usage limit." };
+    }
+
+    const userRef = db.doc(`users/${uid}`);
+    const userSnap = await tx.get(userRef);
+    if (!userSnap.exists) return { success: false, error: "User not found." };
+
+    const userData = userSnap.data()!;
+    const enrolled: string[] = userData.enrolledClasses || [];
+    if (enrolled.includes(codeData.classType)) {
+      return { success: false, error: "Already enrolled in this class." };
+    }
+
+    // Atomic updates — enroll student + increment usedCount
+    const userUpdate: Record<string, unknown> = {
+      enrolledClasses: admin.firestore.FieldValue.arrayUnion(codeData.classType),
+      isWhitelisted: true,
+    };
+    if (codeData.section) {
+      userUpdate[`classSections.${codeData.classType}`] = codeData.section;
+    }
+    tx.update(userRef, userUpdate);
+    tx.update(codeDocRef, { usedCount: admin.firestore.FieldValue.increment(1) });
+
+    return { success: true, classType: codeData.classType };
+  });
+});

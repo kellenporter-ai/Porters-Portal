@@ -1,5 +1,6 @@
 import React from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { reportError } from '../lib/errorReporting';
 
 interface Props {
     children: React.ReactNode;
@@ -86,6 +87,7 @@ export class FeatureErrorBoundary extends React.Component<FeatureProps, FeatureS
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error(`FeatureErrorBoundary [${this.props.feature}]:`, error, errorInfo);
+        reportError(error, { feature: this.props.feature, componentStack: errorInfo.componentStack });
     }
 
     handleRetry = () => {

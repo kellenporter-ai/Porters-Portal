@@ -6,6 +6,7 @@ import { getAuth } from 'firebase/auth';
 import { Loader2, Zap, CheckCircle2, XCircle, Brain, ChevronRight, Star, ArrowUpDown, Lightbulb, Lock, RefreshCw } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { dataService } from '../services/dataService';
+import { reportError } from '../lib/errorReporting';
 
 interface ReviewQuestionsProps {
     assignment: Assignment;
@@ -54,6 +55,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
     const [activeTier, setActiveTier] = useState<number>(1);
     const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
     const [answeredBefore, setAnsweredBefore] = useState<Set<string>>(new Set());
+    const [submittingId, setSubmittingId] = useState<string | null>(null);
 
     const metricsRef = useRef<{ engagementTime: number }>({ engagementTime: 0 });
     const lastInteractionRef = useRef<number>(Date.now());
@@ -155,46 +157,49 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
 
     const handleSubmit = async (question: ReviewQuestion) => {
         const answer = answers[question.id];
-        if (!answer?.selected) return;
-        let isCorrect = false;
-        if (question.type === 'multiple_select' || question.type === 'ranking') {
-            const sel = answer.selected as string[];
-            const cor = question.correctAnswer as string[];
-            isCorrect = sel.length === cor.length && sel.every((s, i) => s === cor[i]);
-        } else if (question.type === 'linked_mc') {
-            isCorrect = answer.selected === question.correctAnswer &&
-                (!question.linkedFollowUp || answer.linkedSelected === question.linkedFollowUp.correctAnswer);
-        } else {
-            isCorrect = answer.selected === question.correctAnswer;
-        }
-
-        if (isCorrect) {
-            if (answeredBefore.has(question.id)) {
-                setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: true, xpAwarded: false } }));
-                toast.success('Correct! (XP already claimed for this question)');
+        if (!answer?.selected || submittingId === question.id) return;
+        setSubmittingId(question.id);
+        try {
+            let isCorrect = false;
+            if (question.type === 'multiple_select' || question.type === 'ranking') {
+                const sel = answer.selected as string[];
+                const cor = question.correctAnswer as string[];
+                isCorrect = sel.length === cor.length && sel.every((s, i) => s === cor[i]);
+            } else if (question.type === 'linked_mc') {
+                isCorrect = answer.selected === question.correctAnswer &&
+                    (!question.linkedFollowUp || answer.linkedSelected === question.linkedFollowUp.correctAnswer);
             } else {
-                // Set submitted+correct immediately for UI feedback
-                setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: true, xpAwarded: false } }));
-                try {
-                    const result = await callAwardQuestionXP({ assignmentId: assignment.id, questionId: question.id, xpAmount: question.xp, classType: assignment.classType });
-                    const data = result.data as { awarded: boolean };
-                    if (data.awarded) {
-                        toast.success(`+${question.xp} XP earned!`);
-                        // Set xpAwarded in a single atomic update with all flags
-                        setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: true, xpAwarded: true } }));
-                        setAnsweredBefore(prev => new Set([...prev, question.id]));
-                    } else {
-                        toast.success('Correct! (XP already claimed)');
-                    }
-                } catch (err) { console.error('XP award error:', err); }
+                isCorrect = answer.selected === question.correctAnswer;
             }
-        } else {
-            const penalty = Math.ceil(question.xp / 2);
-            setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: false, xpAwarded: false, penalty } }));
-            toast.error(`-${penalty} XP penalty`);
-            try {
-                await callPenalizeWrongAnswer({ assignmentId: assignment.id, questionId: question.id, classType: assignment.classType });
-            } catch (err) { console.error('Penalty error:', err); }
+
+            if (isCorrect) {
+                if (answeredBefore.has(question.id)) {
+                    setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: true, xpAwarded: false } }));
+                    toast.success('Correct! (XP already claimed for this question)');
+                } else {
+                    setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: true, xpAwarded: false } }));
+                    try {
+                        const result = await callAwardQuestionXP({ assignmentId: assignment.id, questionId: question.id, xpAmount: question.xp, classType: assignment.classType });
+                        const data = result.data as { awarded: boolean };
+                        if (data.awarded) {
+                            toast.success(`+${question.xp} XP earned!`);
+                            setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: true, xpAwarded: true } }));
+                            setAnsweredBefore(prev => new Set([...prev, question.id]));
+                        } else {
+                            toast.success('Correct! (XP already claimed)');
+                        }
+                    } catch (err) { reportError(err, { context: 'awardQuestionXP', questionId: question.id }); }
+                }
+            } else {
+                const penalty = Math.ceil(question.xp / 2);
+                setAnswers(a => ({ ...a, [question.id]: { ...a[question.id], submitted: true, correct: false, xpAwarded: false, penalty } }));
+                toast.error(`-${penalty} XP penalty`);
+                try {
+                    await callPenalizeWrongAnswer({ assignmentId: assignment.id, questionId: question.id, classType: assignment.classType });
+                } catch (err) { reportError(err, { context: 'penalizeWrongAnswer', questionId: question.id }); }
+            }
+        } finally {
+            setSubmittingId(null);
         }
     };
 
@@ -278,8 +283,8 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                         </div>
                                     )}
                                     {!isSubmitted ? (
-                                        <button onClick={() => handleSubmit(question)} disabled={!answer?.selected || (Array.isArray(answer?.selected) && answer.selected.length === 0)}
-                                            className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold rounded-xl transition">Submit Answer</button>
+                                        <button onClick={() => handleSubmit(question)} disabled={!answer?.selected || (Array.isArray(answer?.selected) && answer.selected.length === 0) || submittingId === question.id}
+                                            className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold rounded-xl transition">{submittingId === question.id ? 'Submitting...' : 'Submit Answer'}</button>
                                     ) : (
                                         <div className={`p-4 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
                                             <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : `Incorrect — ${answer?.penalty || Math.ceil(question.xp / 2)} XP penalty`}</span></div>

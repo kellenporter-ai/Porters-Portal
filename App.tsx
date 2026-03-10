@@ -366,14 +366,14 @@ const App: React.FC = () => {
           {/* ─── Admin routes (role-gated, wrapped in AdminDataProvider) ─── */}
           <Route element={<RequireAdmin isAdmin={isAdmin} />}>
             <Route element={<AdminLayout />}>
-              <Route path="/dashboard" element={<Suspense fallback={<LazyFallback />}><DashboardRoute /></Suspense>} />
-              <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><AdminPanelRoute /></Suspense>} />
-              <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><EditorRoute /></Suspense>} />
-              <Route path="/users" element={<Suspense fallback={<LazyFallback />}><UserManagementRoute /></Suspense>} />
-              <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><GroupsRoute /></Suspense>} />
-              <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><EnrollmentRoute /></Suspense>} />
-              <Route path="/reports" element={<Suspense fallback={<LazyFallback />}><StudentReportsRoute /></Suspense>} />
-              <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><XPRoute /></Suspense>} />
+              <Route path="/dashboard" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Teacher Dashboard"><DashboardRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Admin Panel"><AdminPanelRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Lesson Editor"><EditorRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/users" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="User Management"><UserManagementRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Groups"><GroupsRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Enrollment"><EnrollmentRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/reports" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Reports"><StudentReportsRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="XP Management"><XPRoute /></FeatureErrorBoundary></Suspense>} />
             </Route>
           </Route>
 
@@ -462,7 +462,7 @@ const App: React.FC = () => {
 
           {/* ─── Resource viewer (shared — both admin and student) ─── */}
           <Route path="/resources/:id" element={
-            <Suspense fallback={<LazyFallback />}><ResourceViewer user={user} /></Suspense>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Resource Viewer"><ResourceViewer user={user} /></FeatureErrorBoundary></Suspense>
           } />
 
           {/* ─── Default + catch-all ─── */}

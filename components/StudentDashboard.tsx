@@ -11,6 +11,7 @@ import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
 import { getSessionState } from '../lib/useStudentSession';
 import { reportError } from '../lib/errorReporting';
+import { useIsMounted } from '../lib/useIsMounted';
 import { useAppData } from '../lib/AppDataContext';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
@@ -61,6 +62,7 @@ interface StudentDashboardProps {
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
+  const isMounted = useIsMounted();
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   // Initialize activeClass from user, but DON'T snap back on every classType change.
   // For multi-class students, activeClass is the local view selector.
@@ -193,12 +195,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     const lastClaim = user.gamification?.lastLoginRewardDate;
     if (lastClaim !== today && !dailyLoginClaimed) {
       dataService.claimDailyLogin().then(result => {
+        if (!isMounted()) return;
         if (!result.alreadyClaimed) {
           setDailyLoginClaimed(true);
           sfx.dailyReward();
           toast.success(`Daily login: +${result.xpReward} XP, +${result.fluxReward} Flux (${result.streak}-day streak!)`);
         }
-      }).catch(() => { /* Cloud function not deployed yet — silent */ });
+      }).catch(err => reportError(err, { context: 'claimDailyLogin' }));
     }
   }, []); // Run once on mount
 
@@ -206,7 +209,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   useEffect(() => {
     if (session.streakAttempted) return;
     session.streakAttempted = true;
-    dataService.updateEngagementStreak().catch(() => { /* silent */ });
+    dataService.updateEngagementStreak().catch(err => reportError(err, { context: 'updateEngagementStreak' }));
   }, []);
 
   // Announcements
@@ -643,7 +646,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            selectedCharacterModel={user.gamification?.selectedCharacterModel}
                            ownedCharacterModels={user.gamification?.ownedCharacterModels || []}
                            onSelectCharacterModel={async (modelId) => {
-                             try { await dataService.selectCharacterModel(user.id, modelId); } catch { /* handled */ }
+                             try { await dataService.selectCharacterModel(user.id, modelId); } catch (err) { reportError(err, { context: 'selectCharacterModel' }); }
                            }}
                        />
                      </FeatureErrorBoundary>

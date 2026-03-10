@@ -2,16 +2,18 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // PUBLIC assets (background video, etc.) — read-only for all authenticated users
+    // PUBLIC assets (background video, etc.) — read-only for all authenticated users (50MB max)
     match /public/{fileName} {
       allow read: if request.auth != null;
-      allow write: if request.auth.token.admin == true;
+      allow write: if request.auth.token.admin == true
+        && request.resource.size < 50 * 1024 * 1024;
     }
 
-    // RESOURCES (HTML files, PDFs, supplementals) — admin writes, everyone reads
+    // RESOURCES (HTML files, PDFs, supplementals) — admin writes, everyone reads (50MB max)
     match /resources/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if request.auth.token.admin == true;
+      allow write: if request.auth.token.admin == true
+        && request.resource.size < 50 * 1024 * 1024;
     }
 
     // LESSON IMAGES — admin uploads, everyone reads (10MB max)
