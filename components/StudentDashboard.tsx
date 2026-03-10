@@ -17,11 +17,7 @@ import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
 import { Announcement } from '../types';
-import SkillTreePanel from './xp/SkillTreePanel';
-import FortuneWheel from './xp/FortuneWheel';
-import BossEncounterPanel from './xp/BossEncounterPanel';
-import BossQuizPanel from './xp/BossQuizPanel';
-import TutoringPanel from './xp/TutoringPanel';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
@@ -33,10 +29,15 @@ import AgentLoadoutTab from './dashboard/AgentLoadoutTab';
 import BadgesTab from './dashboard/BadgesTab';
 import ProgressDashboard from './dashboard/ProgressDashboard';
 import CalendarView from './dashboard/CalendarView';
-import DungeonPanel from './xp/DungeonPanel';
-import ArenaPanel from './xp/ArenaPanel';
-import IdleMissionsPanel from './xp/IdleMissionsPanel';
-import FluxShopPanel from './xp/FluxShopPanel';
+const SkillTreePanel = lazyWithRetry(() => import('./xp/SkillTreePanel'));
+const FortuneWheel = lazyWithRetry(() => import('./xp/FortuneWheel'));
+const BossEncounterPanel = lazyWithRetry(() => import('./xp/BossEncounterPanel'));
+const BossQuizPanel = lazyWithRetry(() => import('./xp/BossQuizPanel'));
+const TutoringPanel = lazyWithRetry(() => import('./xp/TutoringPanel'));
+const DungeonPanel = lazyWithRetry(() => import('./xp/DungeonPanel'));
+const ArenaPanel = lazyWithRetry(() => import('./xp/ArenaPanel'));
+const IdleMissionsPanel = lazyWithRetry(() => import('./xp/IdleMissionsPanel'));
+const FluxShopPanel = lazyWithRetry(() => import('./xp/FluxShopPanel'));
 
 type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
 
@@ -607,11 +608,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'SKILLS' && (
                  <div key="skills" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Skill Tree">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <SkillTreePanel
                            specialization={user.gamification?.specialization}
                            skillPoints={user.gamification?.skillPoints || 0}
                            unlockedSkills={user.gamification?.unlockedSkills || []}
                        />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -619,11 +622,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'FORTUNE' && (
                  <div key="fortune" className="space-y-8" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Fortune Wheel">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <FortuneWheel
                            currency={currency}
                            lastSpin={user.gamification?.lastWheelSpin}
                            classType={activeClass}
                        />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -631,6 +636,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'FLUX_SHOP' && (
                  <div key="flux-shop" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Flux Shop">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <FluxShopPanel
                            currency={currency}
                            activeBoosts={user.gamification?.activeBoosts || []}
@@ -649,6 +655,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                              try { await dataService.selectCharacterModel(user.id, modelId); } catch (err) { reportError(err, { context: 'selectCharacterModel' }); }
                            }}
                        />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -656,11 +663,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'TUTORING' && (
                  <div key="tutoring" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Tutoring">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <TutoringPanel
                            userId={user.id}
                            userName={user.name}
                            classType={activeClass}
                        />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -702,7 +711,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
                  <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Dungeons">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <DungeonPanel userId={user.id} classType={activeClass} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} selectedCharacterModel={user.gamification?.selectedCharacterModel} />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -710,7 +721,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'ARENA' && enabledFeatures.pvpArena && (
                  <div key="arena" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Arena">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <ArenaPanel userId={user.id} classType={activeClass} />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -718,7 +731,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'DEPLOY' && (
                  <div key="deploy" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Idle Missions">
+                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                        <IdleMissionsPanel userId={user.id} classType={activeClass} />
+                       </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -731,10 +746,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       <div className="lg:col-span-12">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <FeatureErrorBoundary feature="Boss Encounters">
+                <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                 <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
+                </React.Suspense>
               </FeatureErrorBoundary>
               <FeatureErrorBoundary feature="Boss Quiz">
+                <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
                 <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+                </React.Suspense>
               </FeatureErrorBoundary>
           </div>
       </div>

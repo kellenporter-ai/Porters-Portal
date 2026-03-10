@@ -491,7 +491,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   const correctCount = items.filter((item, idx) => placements[idx] === item.correct).length;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" role="region" aria-label={block.title || block.content || 'Sorting activity'}>
       {block.title && <p className="text-base text-white font-medium">{block.title}</p>}
       {block.instructions && <p className="text-xs text-gray-400">{block.instructions}</p>}
 
@@ -503,8 +503,8 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             {unplaced.map(idx => (
               <div key={idx} className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300">
                 <span>{items[idx].text}</span>
-                <button onClick={() => placeItem(idx, 'left')} className="ml-1 text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-500/30 transition">{block.leftLabel || 'L'}</button>
-                <button onClick={() => placeItem(idx, 'right')} className="text-[10px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition">{block.rightLabel || 'R'}</button>
+                <button onClick={() => placeItem(idx, 'left')} aria-label={`Place ${items[idx].text} in ${block.leftLabel || 'Category A'}`} className="ml-1 text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-500/30 transition">{block.leftLabel || 'L'}</button>
+                <button onClick={() => placeItem(idx, 'right')} aria-label={`Place ${items[idx].text} in ${block.rightLabel || 'Category B'}`} className="text-[10px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition">{block.rightLabel || 'R'}</button>
               </div>
             ))}
           </div>
@@ -519,7 +519,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             {leftItems.map(idx => (
               <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-gray-300 bg-black/20' : submitted ? (items[idx].correct === 'left' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
                 <span>{items[idx].text}</span>
-                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
+                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
                 {!readOnly && submitted && items[idx].correct === 'left' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
                 {!readOnly && submitted && items[idx].correct !== 'left' && <XCircle className="w-3 h-3 text-red-400" />}
               </div>
@@ -532,7 +532,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             {rightItems.map(idx => (
               <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-gray-300 bg-black/20' : submitted ? (items[idx].correct === 'right' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
                 <span>{items[idx].text}</span>
-                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
+                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
                 {!readOnly && submitted && items[idx].correct === 'right' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
                 {!readOnly && submitted && items[idx].correct !== 'right' && <XCircle className="w-3 h-3 text-red-400" />}
               </div>
@@ -586,7 +586,7 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
     <div className="space-y-2">
       {block.title && <p className="text-base text-white font-medium">{block.title}</p>}
       <div className="overflow-x-auto rounded-xl border border-white/10">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" aria-label={block.title || 'Data table'}>
           <thead>
             <tr className="bg-black/30">
               <th className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left w-12">#</th>
@@ -609,6 +609,7 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
                         value={row[col.key] || ''}
                         onChange={e => updateCell(rowIdx, col.key, e.target.value)}
                         disabled={readOnly}
+                        aria-label={`${col.label} for trial ${rowIdx + 1}`}
                         className={`w-full bg-black/20 border border-white/5 rounded px-2 py-1 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 transition${readOnly ? ' opacity-80' : ''}`}
                       />
                     ) : (
@@ -659,6 +660,9 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
         title="Bar Chart Tool"
       />
       {!readOnly && <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize chart height"
         style={{
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           height: '16px', cursor: 'row-resize', userSelect: 'none',
@@ -735,7 +739,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   const correctCount = order.filter((item, idx) => item.origIdx === idx).length;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" role="list" aria-label={block.content || 'Ranking activity'}>
       <p className="text-base text-white font-medium flex items-center gap-2">
         <GripVertical className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
@@ -744,6 +748,8 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
         {order.map((item, idx) => (
           <div
             key={item.origIdx}
+            role="listitem"
+            aria-label={`Item ${idx + 1}: ${item.item}`}
             draggable={!submitted && !readOnly}
             onDragStart={() => setDragIdx(idx)}
             onDragOver={e => e.preventDefault()}
@@ -767,8 +773,8 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             {!readOnly && submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-400" />}
             {!readOnly && !submitted && (
               <div className="flex gap-0.5">
-                <button onClick={() => idx > 0 && moveItem(idx, idx - 1)} disabled={idx === 0} className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 -rotate-90" /></button>
-                <button onClick={() => idx < order.length - 1 && moveItem(idx, idx + 1)} disabled={idx === order.length - 1} className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 rotate-90" /></button>
+                <button onClick={() => idx > 0 && moveItem(idx, idx - 1)} disabled={idx === 0} aria-label="Move up" className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 -rotate-90" /></button>
+                <button onClick={() => idx < order.length - 1 && moveItem(idx, idx + 1)} disabled={idx === order.length - 1} aria-label="Move down" className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 rotate-90" /></button>
               </div>
             )}
           </div>
