@@ -45,8 +45,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [hasStudyMaterial, setHasStudyMaterial] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
 
-  // Block progress for header progress bar (0–1)
+  // Block progress for header progress bar (0–1) and sticky banner counts
   const [blockProgress, setBlockProgress] = useState(0);
+  const [answeredBlocks, setAnsweredBlocks] = useState(0);
+  const [totalBlocks, setTotalBlocks] = useState(0);
 
   // Assessment state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -791,6 +793,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                     const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
                     const total = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
                     setBlockProgress(total > 0 ? completed / total : 0);
+                    setAnsweredBlocks(completed);
+                    setTotalBlocks(total);
                   }}
                   contentUrl={activeAssignment.contentUrl}
                   htmlContent={activeAssignment.htmlContent}
@@ -845,6 +849,39 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           )}
         </Suspense>
       </div>
+
+      {/* Sticky bottom banner for assessments — always-visible submit CTA */}
+      {isAssessment && !assessmentResult && !existingSubmission && !reviewMode && assignViewMode === 'WORK' && (
+        <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[#0a0118] via-[#0a0118]/95 to-transparent pt-4 pb-3 px-4">
+          <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
+            <div className="flex items-center gap-3 text-sm">
+              <div className={`flex items-center gap-1.5 font-bold ${answeredBlocks === totalBlocks && totalBlocks > 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                {answeredBlocks === totalBlocks && totalBlocks > 0
+                  ? <CheckCircle2 className="w-4 h-4" />
+                  : <AlertTriangle className="w-4 h-4" />
+                }
+                {totalBlocks > 0
+                  ? `${answeredBlocks} of ${totalBlocks} questions answered`
+                  : 'Answer questions above'
+                }
+              </div>
+              {answeredBlocks < totalBlocks && totalBlocks > 0 && (
+                <span className="text-xs text-gray-400">
+                  — you must click the green button to submit your assessment
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handleAssessmentSubmit}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
+            >
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -179,7 +179,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
             onResponseChange?.({ answer: val, answered: false, isCorrect: false });
           }}
           disabled={answered || readOnly}
-          placeholder="Type your answer... (Ctrl+Enter to submit)"
+          placeholder="Type your answer... (Ctrl+Enter to lock in)"
           aria-label={block.content || 'Short answer'}
           className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
           rows={2}
@@ -192,7 +192,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
         />
         {!readOnly && !answered && (
           <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0">
-            Submit
+            Lock In
           </button>
         )}
       </div>
@@ -845,7 +845,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
             onResponseChange?.({ answer: val, answered: false, isCorrect: false });
           }}
           disabled={answered || readOnly}
-          placeholder="Type your answer... (Ctrl+Enter to submit)"
+          placeholder="Type your answer... (Ctrl+Enter to lock in)"
           aria-label={block.content || 'Linked question answer'}
           className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
           rows={2}
@@ -858,7 +858,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
         />
         {!readOnly && !answered && (
           <button onClick={handleSubmit} disabled={!answer.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition shrink-0">
-            Submit
+            Lock In
           </button>
         )}
       </div>
@@ -1186,7 +1186,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
         <div className="space-y-2 text-xs">
           <div className="flex justify-between text-gray-300"><span>Next block</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">j</kbd></div>
           <div className="flex justify-between text-gray-300"><span>Previous block</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">k</kbd></div>
-          <div className="flex justify-between text-gray-300"><span>Submit answer</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">Ctrl+Enter</kbd></div>
+          <div className="flex justify-between text-gray-300"><span>Lock in answer</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">Ctrl+Enter</kbd></div>
           <div className="flex justify-between text-gray-300"><span>Toggle this help</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">?</kbd></div>
         </div>
         <button onClick={() => setShowShortcutsHelp(false)} className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold text-white transition">
