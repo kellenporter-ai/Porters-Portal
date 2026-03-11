@@ -428,7 +428,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
               <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">{getCategoryLabel(type)}</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {items.map(item => {
                 const affordable = currency >= item.cost;
                 const dailyCount = getDailyCount(item.id);
@@ -512,7 +512,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           </div>
           <p className="text-xs text-gray-500 px-1">Upgrade your operative with a new 3D character model. Free starters are always available.</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {CHARACTER_MODELS.map(model => {
               const isOwned = availableModelIds.has(model.id);
               const isSelected = selectedCharacterModel === model.id;
@@ -632,7 +632,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
               <span className="text-[10px] text-gray-500 font-mono ml-auto">{subColors.price} Flux each</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {subItems.map(item => {
                 const affordable = currency >= item.cost;
                 const isPurchasing = purchasing === item.id;

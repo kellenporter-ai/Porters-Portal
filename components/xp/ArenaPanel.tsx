@@ -399,14 +399,20 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
         </button>
 
         {/* Match history */}
-        {history.length > 0 && (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Recent Matches</h4>
-            {history.map((m) => (
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Recent Matches</h4>
+          {history.length > 0 ? (
+            history.map((m) => (
               <MatchHistoryRow key={m.id} match={m} userId={userId} />
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Swords className="w-10 h-10 mx-auto mb-3 text-gray-600 opacity-40" />
+              <p className="text-sm text-gray-400">No arena matches yet</p>
+              <p className="text-xs text-gray-500 mt-1">Challenge a classmate to climb the ranks!</p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

@@ -155,6 +155,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
           <div key={item.name} className="flex justify-center">
             <button
               data-nav-item
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${item.name}`}
               onClick={() => {
                 if (item.children) {
                   if (!isChildActive(item)) {
@@ -186,6 +189,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         <div key={item.name}>
           <button
             data-nav-item
+            role="tab"
+            aria-selected={isActive}
+            aria-controls={`tabpanel-${item.name}`}
             onClick={() => {
               if (item.children) {
                 if (expandedParent === item.name) {
@@ -392,7 +398,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                       </button>
                   </div>
 
-                  <nav className="flex-1 space-y-2 overflow-y-auto" aria-label="Mobile navigation" onKeyDown={handleNavKeyDown}>
+                  <nav className="flex-1 space-y-2 overflow-y-auto" role="tablist" aria-label="Mobile navigation" onKeyDown={handleNavKeyDown}>
                       <NavItems />
                   </nav>
 
@@ -446,7 +452,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             </button>
           </div>
 
-          <nav className={`flex-1 space-y-2 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? 'p-2' : 'p-4'}`} aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
+          <nav className={`flex-1 space-y-2 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? 'p-2' : 'p-4'}`} role="tablist" aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
             <NavItems />
           </nav>
 
@@ -512,7 +518,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       </aside>
 
       {/* Main Content */}
-      <main id="main-content" className={`flex-1 overflow-y-auto p-4 pb-20 md:p-6 lg:p-8 lg:pb-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
+      <main id="main-content" className={`flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-20 lg:p-8 lg:pb-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
         <div className="h-full">
           <Outlet />
         </div>
@@ -520,7 +526,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Mobile bottom nav — quick access to key pages (below lg breakpoint) */}
       {user.role === UserRole.STUDENT && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-around px-2" aria-label="Quick navigation">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-around px-2" role="tablist" aria-label="Quick navigation">
           {([
             { name: 'Home', icon: <Home className="w-5 h-5" />, tab: 'Home' },
             { name: 'Resources', icon: <Layers className="w-5 h-5" />, tab: 'Resources' },
@@ -531,6 +537,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             return (
               <button
                 key={item.tab}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${item.tab}`}
                 onClick={() => handleNavigate(item.tab)}
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${

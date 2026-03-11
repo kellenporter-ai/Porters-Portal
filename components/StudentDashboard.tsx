@@ -23,7 +23,13 @@ import GamificationSkeleton from './GamificationSkeleton';
 import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
+import { STUDENT_TAB_MAP } from '../lib/routes';
 import IntelDossier from './IntelDossier';
+
+// Reverse map: StudentTab key → nav name (for ARIA tabpanel IDs matching Layout's aria-controls)
+const TAB_KEY_TO_NAV: Record<string, string> = Object.fromEntries(
+  Object.entries(STUDENT_TAB_MAP).map(([navName, tabKey]) => [tabKey, navName])
+);
 const HomeTab = lazyWithRetry(() => import('./dashboard/HomeTab'));
 const MissionsTab = lazyWithRetry(() => import('./dashboard/MissionsTab'));
 const ResourcesTab = lazyWithRetry(() => import('./dashboard/ResourcesTab'));
@@ -576,7 +582,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* --- MIDDLE: CONTENT --- */}
       <div className="lg:col-span-9 space-y-6">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} content`}>
+          <div id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
            <div className={`flex-1 transition-all ${reducedMotion ? 'duration-0' : 'duration-150'} ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (

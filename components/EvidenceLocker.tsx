@@ -7,8 +7,6 @@ import { dataService } from '../services/dataService';
 import { storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { reportError } from '../lib/errorReporting';
-// @ts-ignore
-import { jsPDF } from 'jspdf';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import { useOnlineStatus } from '../lib/useOnlineStatus';
@@ -180,6 +178,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
       
       try {
           // jsPDF types are incomplete — cast to access internal APIs
+          const { jsPDF } = await import('jspdf');
           const doc = new jsPDF() as InstanceType<typeof jsPDF> & Record<string, any>;
           const pageWidth = doc.internal.pageSize.getWidth();
           const pageHeight = doc.internal.pageSize.getHeight();

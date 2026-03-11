@@ -35,6 +35,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   const [panelPos, setPanelPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({});
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   const prevUnreadRef = useRef(0);
 
@@ -91,11 +92,19 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   useEffect(() => {
     if (!isOpen) return;
     updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
+    const throttledUpdate = () => {
+      if (rafRef.current) return;
+      rafRef.current = requestAnimationFrame(() => {
+        updatePosition();
+        rafRef.current = null;
+      });
+    };
+    window.addEventListener('resize', throttledUpdate);
+    window.addEventListener('scroll', throttledUpdate, true);
     return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', throttledUpdate);
+      window.removeEventListener('scroll', throttledUpdate, true);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [isOpen, updatePosition]);
 

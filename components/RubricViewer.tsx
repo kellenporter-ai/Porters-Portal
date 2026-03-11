@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Rubric, RubricTier, RubricGrade, AISuggestedGrade, AISuggestedSkillGrade, RUBRIC_TIER_COLORS } from '../types';
 import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 
@@ -9,16 +9,18 @@ interface TierButtonStripProps {
   selectedTier: number | null;
   aiSuggestion: AISuggestedSkillGrade | null;
   mode: string;
+  flashTier: string | null;
   onTierClick: (questionId: string, skillId: string, tierIndex: number) => void;
 }
 
-const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, skillId, selectedTier, aiSuggestion, mode, onTierClick }) => (
+const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, skillId, selectedTier, aiSuggestion, mode, flashTier, onTierClick }) => (
   <div className="grid grid-cols-5 gap-px bg-white/5">
     {tiers.map((tier, tierIdx) => {
       const colors = RUBRIC_TIER_COLORS[tier.label];
       const isSelected = selectedTier === tierIdx;
       const isAISuggested = aiSuggestion?.suggestedTier === tierIdx;
       const isClickable = mode === 'grade';
+      const isFlashing = flashTier === `${questionId}:${skillId}:${tierIdx}`;
 
       return (
         <button
@@ -35,6 +37,7 @@ const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, s
                 : `bg-black/30 ${colors.text} hover:${colors.bg}`
             }
             ${isClickable ? 'cursor-pointer' : 'cursor-default'}
+            ${isFlashing ? 'ring-2 ring-green-400 scale-105' : ''}
           `}
         >
           {isAISuggested && !isSelected && (
@@ -104,6 +107,8 @@ interface RubricViewerProps {
 const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, aiSuggestedGrade, onGradeChange, onAcceptAllAI, className = '', compact = false }) => {
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(rubric.questions[0]?.id || null);
+  const [flashTier, setFlashTier] = useState<string | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const getSelectedTier = useCallback((questionId: string, skillId: string): number | null => {
     return rubricGrade?.grades?.[questionId]?.[skillId]?.selectedTier ?? null;
@@ -127,7 +132,11 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
     const key = parseInt(e.key, 10);
     if (key >= 1 && key <= 5) {
       e.preventDefault();
-      handleTierClick(questionId, skillId, key - 1);
+      const tierIdx = key - 1;
+      handleTierClick(questionId, skillId, tierIdx);
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      setFlashTier(`${questionId}:${skillId}:${tierIdx}`);
+      flashTimerRef.current = setTimeout(() => setFlashTier(null), 300);
     }
   }, [mode, handleTierClick]);
 
@@ -218,6 +227,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                         selectedTier={selectedTier}
                         aiSuggestion={aiSuggestion}
                         mode={mode}
+                        flashTier={flashTier}
                         onTierClick={handleTierClick}
                       />
 

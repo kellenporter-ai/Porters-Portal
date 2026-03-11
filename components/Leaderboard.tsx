@@ -5,6 +5,7 @@ import { User, DefaultClassTypes } from '../types';
 import { dataService } from '../services/dataService';
 import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
 import { getRankDetails, levelForXp } from '../lib/gamification';
+import { useReducedMotion } from '../lib/useReducedMotion';
 import PlayerInspectModal from './xp/PlayerInspectModal';
 import ProfileFrame from './dashboard/ProfileFrame';
 
@@ -37,6 +38,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const [selectedClass, setSelectedClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || DefaultClassTypes.AP_PHYSICS);
   const [isLoading, setIsLoading] = useState(true);
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
+  const reducedMotion = useReducedMotion();
   const handleInspect = useCallback((id: string) => setInspectUserId(id), []);
   const handleCloseInspect = useCallback(() => setInspectUserId(null), []);
 
@@ -125,7 +127,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                         ];
                         return (
                             <div key={u.id} className={`flex flex-col items-center ${isFirst ? 'order-2' : rank === 1 ? 'order-1' : 'order-3'}`}
-                                 style={{ animation: `fadeSlideUp 0.5s ease-out ${0.1 + rank * 0.15}s both` }}>
+                                 style={!reducedMotion ? { animation: `fadeSlideUp 0.5s ease-out ${0.1 + rank * 0.15}s both` } : undefined}>
                                 <div className={`relative mb-2 ${isFirst ? 'mb-3' : ''}`}>
                                     <ProfileFrame
                                         photoUrl={u.avatarUrl}
