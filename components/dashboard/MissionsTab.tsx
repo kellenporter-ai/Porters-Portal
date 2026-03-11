@@ -2,6 +2,7 @@
 import React from 'react';
 import { Quest } from '../../types';
 import { Target, AlertTriangle, Crosshair, Users, Radio, Zap } from 'lucide-react';
+import { useReducedMotion } from '../../lib/useReducedMotion';
 
 interface ActiveQuestEntry {
   questId: string;
@@ -19,11 +20,18 @@ interface MissionsTabProps {
 }
 
 const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, activeQuests, onAcceptQuest, onDeployQuest, questActionLoading }) => {
+  const reducedMotion = useReducedMotion();
   return (
     <div key="missions" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Available Contracts</h3>
       <div className="grid grid-cols-1 gap-4">
-        {newQuests.length === 0 && <div className="text-gray-500 italic px-4 py-10 text-center bg-black/10 rounded-xl border border-dashed border-white/5">No new contracts available. Check back later.</div>}
+        {newQuests.length === 0 && (
+          <div className="text-center py-12 px-6 bg-black/10 rounded-xl border border-dashed border-white/5">
+            <Crosshair className="w-10 h-10 mx-auto mb-3 text-gray-600 opacity-30" />
+            <p className="text-sm text-gray-500 mb-1">No contracts on the wire</p>
+            <p className="text-xs text-gray-600">New missions deploy when your handler activates them.</p>
+          </div>
+        )}
         {newQuests.map(quest => (
           <div key={quest.id} className="bg-black/20 border border-indigo-500/30 p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/60 transition">
             <div className="flex justify-between items-start mb-2">
@@ -56,7 +64,13 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
 
       <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 pt-4 border-t border-white/10">Active Operations</h3>
       <div className="grid grid-cols-1 gap-4">
-        {myAcceptedQuests.length === 0 && <div className="text-gray-500 italic px-4 py-10 text-center bg-black/10 rounded-xl border border-dashed border-white/5">No active operations. Accept a contract above to begin.</div>}
+        {myAcceptedQuests.length === 0 && (
+          <div className="text-center py-12 px-6 bg-black/10 rounded-xl border border-dashed border-white/5">
+            <Radio className="w-10 h-10 mx-auto mb-3 text-gray-600 opacity-30" />
+            <p className="text-sm text-gray-500 mb-1">No active ops</p>
+            <p className="text-xs text-gray-600">Accept a contract above to begin your mission.</p>
+          </div>
+        )}
         {myAcceptedQuests.map(quest => {
           const status = activeQuests.find(q => q.questId === quest.id)?.status || 'ACCEPTED';
           const myRoll = activeQuests.find(q => q.questId === quest.id)?.deploymentRoll;
@@ -107,7 +121,7 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-ping absolute -top-1 -right-1"></div>
+                        <div className={`w-3 h-3 bg-green-500 rounded-full ${reducedMotion ? '' : 'animate-ping'} absolute -top-1 -right-1`}></div>
                         <div className="w-3 h-3 bg-green-500 rounded-full absolute -top-1 -right-1 shadow-[0_0_10px_#22c55e]"></div>
                         <Zap className="w-6 h-6 text-purple-400" />
                       </div>
@@ -126,7 +140,7 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
                   </div>
 
                   <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 animate-pulse w-3/4"></div>
+                    <div className={`h-full bg-indigo-500 ${reducedMotion ? '' : 'animate-pulse'} w-3/4`}></div>
                   </div>
 
                   <p className="text-[11px] text-gray-500 italic text-center font-mono">

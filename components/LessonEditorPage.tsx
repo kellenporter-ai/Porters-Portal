@@ -5,8 +5,8 @@ import {
   BookOpen, ListChecks, Info, Eye, GripVertical, Copy, Heading,
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
-  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Clock, Shield, Brain,
-  PenTool, Calculator
+  ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Shield, Brain,
+  PenTool, Calculator, Search
 } from 'lucide-react';
 import {
   DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay,
@@ -253,6 +253,15 @@ const SortableBlockRow: React.FC<SortableBlockRowProps> = ({ id, children }) => 
 // Main Lesson Editor Page
 // ──────────────────────────────────────────────
 
+const getRelativeTime = (date: Date) => {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+};
+
 const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClose, initialAssignmentId, classConfigs = [], users = [], availableSections = [], onCreateAssignment }) => {
   const toast = useToast();
 
@@ -288,6 +297,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showQuestionBank, setShowQuestionBank] = useState(false);
+  const [showBlockSearch, setShowBlockSearch] = useState(false);
+  const [blockSearchQuery, setBlockSearchQuery] = useState('');
 
   // Auto-save to Firestore
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -368,6 +379,19 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     } catch { /* corrupt data — ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoSaveKey]);
+
+  // Ctrl+K / Cmd+K to toggle block search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowBlockSearch(prev => !prev);
+        setBlockSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Clean localStorage after successful server save
   const clearAutoSave = useCallback(() => {
@@ -684,22 +708,27 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
             <BookOpen className="w-5 h-5 text-purple-400" /> Resource Editor
           </h1>
           {isEditing && (
-            <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2">
-              {isNewResource ? 'New Resource' : resTitle}
-              {autoSaveStatus === 'saving' && (
-                <span className="text-purple-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Auto-saving...</span>
-              )}
-              {autoSaveStatus !== 'saving' && hasUnsavedChanges && <span className="text-amber-400">*unsaved</span>}
-              {autoSaveStatus === 'saved' && !hasUnsavedChanges && autoSavedAt && (
-                <span className="text-emerald-400/70 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Auto-saved {autoSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              )}
-              {autoSaveStatus !== 'saved' && lastSavedAt && !hasUnsavedChanges && (
-                <span className="text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              )}
-              {lastSavedAt && hasUnsavedChanges && autoSaveStatus !== 'saving' && (
-                <span className="text-gray-600 flex items-center gap-1"><Clock className="w-3 h-3" /> Draft {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              )}
-            </span>
+            <>
+              <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+                {isNewResource ? 'New Resource' : resTitle}
+              </span>
+              <div className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border transition-all duration-500 ${
+                autoSaveStatus === 'saving' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
+                hasUnsavedChanges ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
+                autoSaveStatus === 'saved' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' :
+                'bg-white/5 border-white/10 text-gray-500'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  autoSaveStatus === 'saving' ? 'bg-purple-400 animate-pulse' :
+                  hasUnsavedChanges ? 'bg-amber-400' :
+                  autoSaveStatus === 'saved' ? 'bg-emerald-400' : 'bg-gray-600'
+                }`} />
+                {autoSaveStatus === 'saving' ? 'Saving...' :
+                 hasUnsavedChanges ? 'Unsaved changes' :
+                 autoSavedAt ? `Saved ${getRelativeTime(autoSavedAt)}` :
+                 lastSavedAt ? `Saved ${getRelativeTime(lastSavedAt)}` : 'No changes'}
+              </div>
+            </>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -976,7 +1005,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                         <React.Fragment key={block.id}>
                           <SortableBlockRow id={block.id}>
                             {(dragHandleProps) => (
-                              <div className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
+                              <div id={block.id} className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
                                 <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
                                   <div
                                     {...dragHandleProps}
@@ -1055,6 +1084,99 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
             onClose={() => setShowQuestionBank(false)}
           />
         </React.Suspense>
+      )}
+
+      {/* Block Search Modal (Ctrl+K / Cmd+K) */}
+      {showBlockSearch && isEditing && (
+        <div
+          className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
+          onClick={() => setShowBlockSearch(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+              <Search className="w-4 h-4 text-gray-500 shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                value={blockSearchQuery}
+                onChange={(e) => setBlockSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setShowBlockSearch(false);
+                  } else if (e.key === 'Enter') {
+                    const query = blockSearchQuery.toLowerCase();
+                    const match = blocks.find((b) => {
+                      const typeInfo = getBlockTypeInfo(b.type);
+                      const typeName = typeInfo?.label.toLowerCase() || b.type.toLowerCase();
+                      const summary = getBlockSummary(b).toLowerCase();
+                      return typeName.includes(query) || summary.includes(query);
+                    });
+                    if (match) {
+                      setExpandedBlock(match.id);
+                      setShowBlockSearch(false);
+                      setTimeout(() => {
+                        document.getElementById(match.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }
+                  }
+                }}
+                placeholder="Search blocks by type or content..."
+                className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 focus:outline-none"
+              />
+              <kbd className="text-[9px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">ESC</kbd>
+            </div>
+            <div className="max-h-[40vh] overflow-y-auto custom-scrollbar">
+              {blocks.length === 0 ? (
+                <div className="px-4 py-6 text-center text-xs text-gray-600">No blocks in this resource.</div>
+              ) : (
+                blocks
+                  .map((block, index) => ({ block, index }))
+                  .filter(({ block }) => {
+                    if (!blockSearchQuery) return true;
+                    const query = blockSearchQuery.toLowerCase();
+                    const typeInfo = getBlockTypeInfo(block.type);
+                    const typeName = typeInfo?.label.toLowerCase() || block.type.toLowerCase();
+                    const summary = getBlockSummary(block).toLowerCase();
+                    return typeName.includes(query) || summary.includes(query);
+                  })
+                  .map(({ block, index }) => {
+                    const typeInfo = getBlockTypeInfo(block.type);
+                    return (
+                      <button
+                        key={block.id}
+                        type="button"
+                        onClick={() => {
+                          setExpandedBlock(block.id);
+                          setShowBlockSearch(false);
+                          setTimeout(() => {
+                            document.getElementById(block.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 100);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition border-b border-white/5 last:border-b-0"
+                      >
+                        <span className="text-[10px] text-gray-600 font-mono w-5 shrink-0 text-right">{index + 1}</span>
+                        <span className="text-gray-500 shrink-0">{typeInfo?.icon}</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider w-20 shrink-0">{typeInfo?.label}</span>
+                        <span className="text-xs text-gray-500 truncate flex-1">{getBlockSummary(block).slice(0, 50)}</span>
+                      </button>
+                    );
+                  })
+              )}
+              {blockSearchQuery && blocks.length > 0 && blocks.filter((b) => {
+                const query = blockSearchQuery.toLowerCase();
+                const typeInfo = getBlockTypeInfo(b.type);
+                const typeName = typeInfo?.label.toLowerCase() || b.type.toLowerCase();
+                const summary = getBlockSummary(b).toLowerCase();
+                return typeName.includes(query) || summary.includes(query);
+              }).length === 0 && (
+                <div className="px-4 py-6 text-center text-xs text-gray-600">No matching blocks.</div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

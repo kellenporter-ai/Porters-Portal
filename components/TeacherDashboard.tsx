@@ -1409,6 +1409,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 },
                               }));
                             }}
+                            onAcceptAllAI={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? () => {
+                              const draft: Record<string, Record<string, RubricSkillGrade>> = {};
+                              for (const q of selectedAssessment.rubric!.questions) {
+                                const aiQ = sub.aiSuggestedGrade?.grades[q.id];
+                                if (!aiQ) continue;
+                                draft[q.id] = {};
+                                for (const s of q.skills) {
+                                  const aiS = aiQ[s.id];
+                                  if (aiS) {
+                                    draft[q.id][s.id] = {
+                                      selectedTier: aiS.suggestedTier,
+                                      percentage: TIER_PERCENTAGES[aiS.suggestedTier],
+                                    };
+                                  }
+                                }
+                              }
+                              setRubricDraft(draft);
+                            } : undefined}
                           />
                         </React.Suspense>
                       </div>

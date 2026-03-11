@@ -207,7 +207,18 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
     setAttacking(null);
   };
 
-  if (bosses.length === 0) return null;
+  if (bosses.length === 0) return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+        <Sword className="w-5 h-5" /> Active Threats
+      </h3>
+      <div className="text-center py-12 px-6">
+        <Sword className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
+        <p className="text-sm text-gray-500 mb-1">No active boss encounters</p>
+        <p className="text-xs text-gray-600">Your teacher will deploy a boss when the time comes. Prepare your loadout.</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">

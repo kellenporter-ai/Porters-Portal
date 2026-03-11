@@ -8,12 +8,13 @@ interface RubricViewerProps {
   rubricGrade?: RubricGrade;
   aiSuggestedGrade?: AISuggestedGrade;
   onGradeChange?: (questionId: string, skillId: string, tierIndex: number) => void;
+  onAcceptAllAI?: () => void;
   className?: string;
   /** When true, render a compact variant optimized for side-by-side grading panels */
   compact?: boolean;
 }
 
-const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, aiSuggestedGrade, onGradeChange, className = '', compact = false }) => {
+const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, aiSuggestedGrade, onGradeChange, onAcceptAllAI, className = '', compact = false }) => {
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(rubric.questions[0]?.id || null);
 
@@ -34,8 +35,29 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
   // In grade mode, descriptors are always visible — no toggle needed
   const showDescriptorsAlways = mode === 'grade';
 
+  const handleSkillKeyDown = (e: React.KeyboardEvent, questionId: string, skillId: string) => {
+    if (mode !== 'grade') return;
+    const key = parseInt(e.key, 10);
+    if (key >= 1 && key <= 5) {
+      e.preventDefault();
+      handleTierClick(questionId, skillId, key - 1);
+    }
+  };
+
+  const showAcceptAllButton = mode === 'grade' && aiSuggestedGrade?.status === 'pending_review' && onAcceptAllAI;
+
   return (
     <div className={`space-y-3 ${className}`}>
+      {showAcceptAllButton && (
+        <button
+          type="button"
+          onClick={onAcceptAllAI}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[11px] font-bold text-amber-300 transition"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          Accept All AI Suggestions
+        </button>
+      )}
       {rubric.questions.map((question) => {
         const isQuestionExpanded = expandedQuestion === question.id;
 
@@ -86,11 +108,16 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                   const aiSuggestion = getAISuggestion(question.id, skill.id);
 
                   return (
-                    <div key={skill.id} className={`bg-black/20 rounded-lg border overflow-hidden ${
-                      aiSuggestion && selectedTier === aiSuggestion.suggestedTier
-                        ? 'border-amber-500/20'
-                        : 'border-white/5'
-                    }`}>
+                    <div
+                      key={skill.id}
+                      tabIndex={mode === 'grade' ? 0 : undefined}
+                      onKeyDown={(e) => handleSkillKeyDown(e, question.id, skill.id)}
+                      className={`bg-black/20 rounded-lg border overflow-hidden ${
+                        aiSuggestion && selectedTier === aiSuggestion.suggestedTier
+                          ? 'border-amber-500/20'
+                          : 'border-white/5'
+                      } ${mode === 'grade' ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
+                    >
                       {/* Skill text */}
                       <div className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} border-b border-white/5`}>
                         <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-gray-300 italic leading-relaxed`}>{skill.skillText}</p>

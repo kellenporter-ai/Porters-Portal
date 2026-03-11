@@ -5,6 +5,7 @@ import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useThrottle } from '../../lib/rateLimiting';
 import { useToast } from '../ToastProvider';
+import { useReducedMotion } from '../../lib/useReducedMotion';
 
 interface FortuneWheelProps {
   currency: number;
@@ -22,6 +23,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
   const wheelRef = useRef<SVGGElement>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const toast = useToast();
+  const reducedMotion = useReducedMotion();
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   const today = new Date().toISOString().split('T')[0];
@@ -43,7 +45,8 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
       const targetAngle = 360 * 5 + (360 - prizeIdx * segAngle - segAngle / 2);
       setRotation(prev => prev + targetAngle);
 
-      // Wait for animation to finish
+      // Wait for animation to finish — use short duration when reduced motion is preferred
+      const spinDuration = reducedMotion ? 200 : 4000;
       const timerId = setTimeout(() => {
         sfx.wheelPrize();
         setResult(data.rewardDescription);
@@ -54,7 +57,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
           toast.info(data.rewardDescription);
         }
         timersRef.current = timersRef.current.filter(t => t !== timerId);
-      }, 4000);
+      }, spinDuration);
       timersRef.current.push(timerId);
     } catch (err) {
       setSpinning(false);
@@ -83,7 +86,11 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
             style={{
               transform: `rotate(${rotation}deg)`,
               transformOrigin: '0px 0px',
-              transition: spinning ? 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
+              transition: spinning
+                ? reducedMotion
+                  ? 'transform 0.2s ease-out'
+                  : 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)'
+                : 'none',
             }}
             ref={wheelRef}
           >

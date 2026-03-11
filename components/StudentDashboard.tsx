@@ -18,6 +18,8 @@ import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
 import { Announcement } from '../types';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
+import { useReducedMotion } from '../lib/useReducedMotion';
+import GamificationSkeleton from './GamificationSkeleton';
 import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
@@ -69,6 +71,27 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // For multi-class students, activeClass is the local view selector.
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
   const { xpEvents, quests: allQuests } = useAppData();
+  const reducedMotion = useReducedMotion();
+
+  // Preload heavy gamification chunks during idle time
+  useEffect(() => {
+    const preload = () => {
+      import('./xp/SkillTreePanel');
+      import('./xp/FortuneWheel');
+      import('./xp/DungeonPanel');
+      import('./xp/ArenaPanel');
+      import('./xp/FluxShopPanel');
+      import('./xp/BossEncounterPanel');
+      import('./xp/BossQuizPanel');
+    };
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(preload, { timeout: 5000 });
+      return () => cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(preload, 3000);
+      return () => clearTimeout(id);
+    }
+  }, []);
 
   // Practice progress (completion badges)
   const [practiceCompletion, setPracticeCompletion] = useState<Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>>({});
@@ -460,7 +483,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                     <span>{displayXp.toLocaleString()} XP ({activeClass})</span>
                     <span>{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
                     {xpFloatAmount && (
-                        <span className="xp-float-anim absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap" aria-live="polite" role="status">
+                        <span className={`${reducedMotion ? '' : 'xp-float-anim'} absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap`} aria-live="polite" role="status">
                             +{xpFloatAmount} XP
                         </span>
                     )}
@@ -544,7 +567,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* --- MIDDLE: CONTENT --- */}
       <div className="lg:col-span-9 space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()} content`}>
-           <div className={`flex-1 transition-all duration-150 ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
+           <div className={`flex-1 transition-all ${reducedMotion ? 'duration-0' : 'duration-150'} ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (
                  <FeatureErrorBoundary feature="Home">
@@ -608,7 +631,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'SKILLS' && (
                  <div key="skills" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Skill Tree">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                        <SkillTreePanel
                            specialization={user.gamification?.specialization}
                            skillPoints={user.gamification?.skillPoints || 0}
@@ -622,7 +645,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'FORTUNE' && (
                  <div key="fortune" className="space-y-8" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Fortune Wheel">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton />}>
                        <FortuneWheel
                            currency={currency}
                            lastSpin={user.gamification?.lastWheelSpin}
@@ -636,7 +659,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'FLUX_SHOP' && (
                  <div key="flux-shop" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Flux Shop">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton />}>
                        <FluxShopPanel
                            currency={currency}
                            activeBoosts={user.gamification?.activeBoosts || []}
@@ -663,7 +686,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'TUTORING' && (
                  <div key="tutoring" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Tutoring">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton />}>
                        <TutoringPanel
                            userId={user.id}
                            userName={user.name}
@@ -711,7 +734,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
                  <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Dungeons">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                        <DungeonPanel userId={user.id} classType={activeClass} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} selectedCharacterModel={user.gamification?.selectedCharacterModel} />
                        </React.Suspense>
                      </FeatureErrorBoundary>
@@ -721,7 +744,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'ARENA' && enabledFeatures.pvpArena && (
                  <div key="arena" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Arena">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton />}>
                        <ArenaPanel userId={user.id} classType={activeClass} />
                        </React.Suspense>
                      </FeatureErrorBoundary>
@@ -731,7 +754,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'DEPLOY' && (
                  <div key="deploy" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Idle Missions">
-                       <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                       <React.Suspense fallback={<GamificationSkeleton />}>
                        <IdleMissionsPanel userId={user.id} classType={activeClass} />
                        </React.Suspense>
                      </FeatureErrorBoundary>
@@ -746,12 +769,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       <div className="lg:col-span-12">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
               <FeatureErrorBoundary feature="Boss Encounters">
-                <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                <React.Suspense fallback={<GamificationSkeleton />}>
                 <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
                 </React.Suspense>
               </FeatureErrorBoundary>
               <FeatureErrorBoundary feature="Boss Quiz">
-                <React.Suspense fallback={<div className="flex items-center justify-center py-12 text-gray-500 text-sm">Loading...</div>}>
+                <React.Suspense fallback={<GamificationSkeleton />}>
                 <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
                 </React.Suspense>
               </FeatureErrorBoundary>
@@ -771,7 +794,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       <Modal isOpen={showLevelUp} onClose={handleLevelUpAck} title="PROMOTION GRANTED" maxWidth="max-w-md">
           <div className="text-center py-6 relative overflow-hidden">
-              {/* CSS Confetti particles */}
+              {/* CSS Confetti particles — skipped when reduced motion is preferred */}
+              {!reducedMotion && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ contain: 'strict' }}>
                   {Array.from({ length: 20 }).map((_, i) => (
                       <div
@@ -788,6 +812,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       />
                   ))}
               </div>
+              )}
 
               {/* Level Badge */}
               <div className="relative inline-block mb-6">
