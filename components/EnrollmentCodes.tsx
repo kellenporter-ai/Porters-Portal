@@ -77,16 +77,16 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
       {showCreate && (
         <div className="mb-5 p-4 bg-black/20 border border-white/10 rounded-xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
           <div className="flex gap-3">
-            <select value={newClass} onChange={e => setNewClass(e.target.value)} className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+            <select value={newClass} onChange={e => setNewClass(e.target.value)} aria-label="Class" className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
               {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select value={newSection} onChange={e => setNewSection(e.target.value)} className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+            <select value={newSection} onChange={e => setNewSection(e.target.value)} aria-label="Section" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
               <option value="">No Section</option>
               {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="flex gap-3 items-center">
-            <input type="number" min="1" placeholder="Max uses (unlimited if empty)" value={newMaxUses} onChange={e => setNewMaxUses(e.target.value)} className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" />
+            <input type="number" min="1" placeholder="Max uses (unlimited if empty)" aria-label="Max uses" value={newMaxUses} onChange={e => setNewMaxUses(e.target.value)} className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" />
             <button onClick={handleCreate} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">Create</button>
             <button onClick={() => setShowCreate(false)} className="p-2 text-gray-400 hover:text-white transition"><X className="w-4 h-4" /></button>
           </div>

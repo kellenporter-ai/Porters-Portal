@@ -229,7 +229,7 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
         <div>
           <div className="text-sm font-bold text-white">{block.term}</div>
           {flipped ? (
-            <div className="text-base text-gray-200 mt-1 animate-in fade-in duration-200">{block.definition}</div>
+            <div className="text-base text-gray-200 mt-1 animate-in fade-in duration-200" aria-live="polite">{block.definition}</div>
           ) : (
             <div className="text-xs text-gray-500 mt-1">Tap to reveal definition</div>
           )}
@@ -317,7 +317,7 @@ const ImageBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
       <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20">
         <img
           src={driveUrl !== block.url ? driveUrl : block.url}
-          alt={block.alt || block.caption || ''}
+          alt={block.alt || block.caption || 'Lesson image'}
           className="w-full max-h-[500px] object-contain"
           loading="lazy"
         />
@@ -431,7 +431,7 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
             <div className="flex-1">
               <div className="text-sm font-bold text-white">{t.term}</div>
               {revealed.has(idx) ? (
-                <div className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200">{t.definition}</div>
+                <div className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200" aria-live="polite">{t.definition}</div>
               ) : (
                 <div className="text-xs text-gray-500 mt-1">Tap to reveal</div>
               )}
@@ -590,9 +590,9 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
         <table className="w-full text-sm" aria-label={block.title || 'Data table'}>
           <thead>
             <tr className="bg-black/30">
-              <th className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left w-12">#</th>
+              <th scope="col" className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left w-12">#</th>
               {columns.map(col => (
-                <th key={col.key} className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left">
+                <th scope="col" key={col.key} className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left">
                   {col.label}{col.unit ? ` (${col.unit})` : ''}
                 </th>
               ))}

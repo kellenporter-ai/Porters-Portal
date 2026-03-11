@@ -77,7 +77,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
       </h3>
       <p className="text-xs text-gray-500">Spend {WHEEL_COST} Flux for a daily spin</p>
 
-      <div className="relative w-[320px] h-[320px]">
+      <div className="relative w-full max-w-[320px] aspect-square mx-auto">
         {/* Pointer */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[24px] border-t-yellow-400 drop-shadow-lg" />
 

@@ -9,6 +9,13 @@ export default defineConfig({
     open: true
   },
   build: {
-    rollupOptions: {}
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'recharts': ['recharts'],
+          'katex': ['katex'],
+        }
+      }
+    }
   }
 });

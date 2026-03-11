@@ -103,7 +103,7 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
 const BlockTypePalette: React.FC<{ onSelect: (type: BlockType) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
   const categories = ['Content', 'Interactive', 'Questions', 'Tools'];
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl p-3 z-50 w-[480px] max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl p-3 z-50 w-full max-w-[480px] max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
       {categories.map(cat => (
         <div key={cat} className="mb-2 last:mb-0">
           <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>

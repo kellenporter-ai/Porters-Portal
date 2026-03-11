@@ -120,6 +120,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                                 <input
                                     type="text"
                                     placeholder="Search students..."
+                                    aria-label="Search students"
                                     value={bulkSearch}
                                     onChange={e => setBulkSearch(e.target.value)}
                                     className="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-sm text-white focus:outline-none focus:border-purple-500/50"

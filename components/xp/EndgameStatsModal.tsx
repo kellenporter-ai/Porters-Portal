@@ -92,7 +92,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
   }, [quiz, progress, users, questionAnalytics]);
 
   return (
-    <Modal isOpen={!!quiz} onClose={onClose} title={quiz ? `Endgame: ${quiz.bossName}` : 'Endgame'} maxWidth="max-w-4xl">
+    <Modal isOpen={!!quiz} onClose={onClose} title={quiz ? `Endgame: ${quiz.bossName}` : 'Endgame'} maxWidth="max-w-4xl w-[95vw]">
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading endgame data...</div>
       ) : quiz && (

@@ -538,7 +538,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 }`}
               >
                 {item.icon}
-                <span className="text-[9px] font-bold">{item.name}</span>
+                <span className="text-[10px] font-bold">{item.name}</span>
               </button>
             );
           })}

@@ -75,23 +75,24 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   // Preload heavy gamification chunks during idle time
   useEffect(() => {
+    const safeImport = (loader: () => Promise<unknown>) => loader().catch(() => {});
     const preload = () => {
-      import('./dashboard/HomeTab');
-      import('./dashboard/MissionsTab');
-      import('./dashboard/ResourcesTab');
-      import('./dashboard/AgentLoadoutTab');
-      import('./dashboard/BadgesTab');
-      import('./dashboard/ProgressDashboard');
-      import('./dashboard/CalendarView');
-      import('./xp/SkillTreePanel');
-      import('./xp/FortuneWheel');
-      import('./xp/DungeonPanel');
-      import('./xp/ArenaPanel');
-      import('./xp/FluxShopPanel');
-      import('./xp/BossEncounterPanel');
-      import('./xp/BossQuizPanel');
-      import('./xp/TutoringPanel');
-      import('./xp/IdleMissionsPanel');
+      safeImport(() => import('./dashboard/HomeTab'));
+      safeImport(() => import('./dashboard/MissionsTab'));
+      safeImport(() => import('./dashboard/ResourcesTab'));
+      safeImport(() => import('./dashboard/AgentLoadoutTab'));
+      safeImport(() => import('./dashboard/BadgesTab'));
+      safeImport(() => import('./dashboard/ProgressDashboard'));
+      safeImport(() => import('./dashboard/CalendarView'));
+      safeImport(() => import('./xp/SkillTreePanel'));
+      safeImport(() => import('./xp/FortuneWheel'));
+      safeImport(() => import('./xp/DungeonPanel'));
+      safeImport(() => import('./xp/ArenaPanel'));
+      safeImport(() => import('./xp/FluxShopPanel'));
+      safeImport(() => import('./xp/BossEncounterPanel'));
+      safeImport(() => import('./xp/BossQuizPanel'));
+      safeImport(() => import('./xp/TutoringPanel'));
+      safeImport(() => import('./xp/IdleMissionsPanel'));
     };
     if ('requestIdleCallback' in window) {
       const id = requestIdleCallback(preload, { timeout: 5000 });

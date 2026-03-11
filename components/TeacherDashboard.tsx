@@ -1942,9 +1942,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       <table className="w-full text-left">
                           <thead>
                               <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
-                                  <th className="pb-2">Operative</th>
-                                  <th className="pb-2">Remaining</th>
-                                  <th className="pb-2 text-right">Protocol</th>
+                                  <th scope="col" className="pb-2">Operative</th>
+                                  <th scope="col" className="pb-2">Remaining</th>
+                                  <th scope="col" className="pb-2 text-right">Protocol</th>
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-white/5">

@@ -64,12 +64,12 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     return base;
   }, [equipped]);
 
-  const radarData = [
+  const radarData = useMemo(() => [
     { subject: 'Tech', A: playerStats.tech, fullMark: 100 },
     { subject: 'Focus', A: playerStats.focus, fullMark: 100 },
     { subject: 'Analysis', A: playerStats.analysis, fullMark: 100 },
     { subject: 'Charisma', A: playerStats.charisma, fullMark: 100 },
-  ];
+  ], [playerStats]);
 
   // --- DnD sensors ---
   const sensors = useSensors(
