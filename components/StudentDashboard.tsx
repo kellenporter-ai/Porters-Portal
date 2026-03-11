@@ -90,6 +90,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       import('./xp/FluxShopPanel');
       import('./xp/BossEncounterPanel');
       import('./xp/BossQuizPanel');
+      import('./xp/TutoringPanel');
+      import('./xp/IdleMissionsPanel');
     };
     if ('requestIdleCallback' in window) {
       const id = requestIdleCallback(preload, { timeout: 5000 });
