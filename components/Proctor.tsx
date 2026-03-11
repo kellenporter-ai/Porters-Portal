@@ -6,12 +6,15 @@ import { db, callAwardQuestionXP, callStartAssessmentSession, callArchiveAndClea
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
+import SaveStatusIndicator from './SaveStatusIndicator';
 import AnnotationOverlay from './AnnotationOverlay';
 import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
+import { usePersistentSave } from '../lib/usePersistentSave';
+import { persistentWrite, draftKey, clearDraft, syncDirtyDraft } from '../lib/persistentWrite';
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -128,9 +131,29 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Lesson block response persistence
   const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
-  const blockResponsesRef = useRef<BlockResponseMap>({});
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [blockResetKey, setBlockResetKey] = useState(0);
+
+  // Persistent save hook — replaces inline debounce + flush logic
+  const {
+    saveStatus,
+    updateResponse: hookUpdateResponse,
+    flushNow,
+    getResponses,
+    clearAll: clearSavedResponses,
+    isOnline,
+    setInitialResponses,
+  } = usePersistentSave({
+    userId,
+    assignmentId,
+    collection: 'lesson_block_responses',
+  });
+
+  // Sync dirty practice drafts from localStorage on mount and online recovery
+  useEffect(() => {
+    if (!userId || !assignmentId || !isOnline) return;
+    const practiceLsKey = draftKey('practice', userId, assignmentId);
+    syncDirtyDraft(practiceLsKey, 'practice_progress', `${userId}_${assignmentId}`);
+  }, [userId, assignmentId, isOnline]);
 
   // Assessment telemetry
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
@@ -216,7 +239,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (snap.exists()) {
             const data = snap.data();
             const responses = data.responses || {};
-            blockResponsesRef.current = responses;
+            setInitialResponses(responses);
             setSavedBlockResponses(responses);
           } else {
             setSavedBlockResponses({});
@@ -254,12 +277,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         };
         handleFreshStart().then((responses) => {
           if (cancelled) return;
-          blockResponsesRef.current = responses;
+          setInitialResponses(responses);
           setSavedBlockResponses(responses);
         }).catch(err => {
           if (cancelled) return;
           reportError(err, { component: 'Proctor', context: 'Failed to handle assessment fresh start' });
-          blockResponsesRef.current = {};
+          setInitialResponses({});
           setSavedBlockResponses({});
         });
       }
@@ -269,7 +292,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         if (snap.exists()) {
           const data = snap.data();
           const responses = data.responses || {};
-          blockResponsesRef.current = responses;
+          setInitialResponses(responses);
           setSavedBlockResponses(responses);
         } else {
           setSavedBlockResponses({});
@@ -283,7 +306,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     return () => { cancelled = true; };
   }, [userId, assignmentId, lessonBlocks, isAssessment]);
 
-  // Debounced save of lesson block responses to Firestore
+  // Block response change handler — tracks per-block timing, delegates save to hook
   const handleBlockResponseChange = useCallback((blockId: string, response: unknown) => {
     // Track per-block timing
     const now = Date.now();
@@ -298,75 +321,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     // Update per-block timing in metrics
     metricsRef.current.perBlockTiming = { ...blockTimingRef.current };
 
-    blockResponsesRef.current = { ...blockResponsesRef.current, [blockId]: response };
-    if (!userId || !assignmentId) return;
-    // Debounce: save 1.5s after last change
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      const docId = `${userId}_${assignmentId}_blocks`;
-      setDoc(doc(db, 'lesson_block_responses', docId), {
-        userId,
-        assignmentId,
-        responses: blockResponsesRef.current,
-        lastUpdated: new Date().toISOString(),
-      }, { merge: true }).catch(err => reportError(err, { method: 'saveBlockResponses', assignmentId }));
-    }, 1500);
-  }, [userId, assignmentId]);
+    // Delegate to persistent save hook (handles debounce, retry, localStorage mirror)
+    hookUpdateResponse(blockId, response);
+  }, [hookUpdateResponse]);
 
-  // Flush pending saves immediately (shared by unmount, beforeunload, and visibilitychange)
-  const flushPendingSaves = useCallback(() => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-    if (userId && assignmentId && Object.keys(blockResponsesRef.current).length > 0) {
-      const docId = `${userId}_${assignmentId}_blocks`;
-      setDoc(doc(db, 'lesson_block_responses', docId), {
-        userId,
-        assignmentId,
-        responses: blockResponsesRef.current,
-        lastUpdated: new Date().toISOString(),
-      }, { merge: true }).catch(err => reportError(err, { method: 'flushBlockResponses', assignmentId }));
-    }
-  }, [userId, assignmentId]);
-
-  // Flush pending saves on unmount
-  useEffect(() => {
-    return () => flushPendingSaves();
-  }, [flushPendingSaves]);
-
-  // Flush pending saves when tab is hidden or page is closing
-  useEffect(() => {
-    const handleVisibilityFlush = () => {
-      if (document.visibilityState === 'hidden') flushPendingSaves();
-    };
-    const handleBeforeUnload = () => flushPendingSaves();
-    document.addEventListener('visibilitychange', handleVisibilityFlush);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityFlush);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [flushPendingSaves]);
-
-  // Clear saved lesson block responses (Firestore + local state)
+  // Clear saved lesson block responses (Firestore + localStorage + local state)
   const handleClearBlockResponses = useCallback(async () => {
     if (!userId || !assignmentId) return;
-    // Cancel any pending save
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    clearSavedResponses(); // Cancels pending saves + clears localStorage draft
     const docId = `${userId}_${assignmentId}_blocks`;
     try {
       await deleteDoc(doc(db, 'lesson_block_responses', docId));
     } catch { /* doc may not exist */ }
-    blockResponsesRef.current = {};
     setSavedBlockResponses({});
     setBlockResetKey(prev => prev + 1); // Force remount of LessonBlocks
-  }, [userId, assignmentId]);
+  }, [userId, assignmentId, clearSavedResponses]);
 
   // Export lesson block progress to PDF
   const handleExportBlocksPdf = useCallback(() => {
     if (!lessonBlocks || lessonBlocks.length === 0) return;
-    const responses = blockResponsesRef.current;
+    const responses = getResponses() as BlockResponseMap;
 
     // Build HTML for each block with student responses
     const blockHtmlSections = lessonBlocks.map(block => {
@@ -631,16 +605,18 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           blockTimingRef.current[currentBlockRef.current] = (blockTimingRef.current[currentBlockRef.current] || 0) + elapsed;
           metricsRef.current.perBlockTiming = { ...blockTimingRef.current };
         }
+        // Flush pending save before reading responses
+        flushNow();
         return {
           metrics: { ...metricsRef.current },
-          responses: { ...blockResponsesRef.current },
+          responses: { ...getResponses() },
         };
       };
     }
     return () => {
       if (onGetMetricsAndResponses) onGetMetricsAndResponses.current = null;
     };
-  }, [onGetMetricsAndResponses]);
+  }, [onGetMetricsAndResponses, flushNow, getResponses]);
 
   // ONE-TIME Submission on Unmount
   useEffect(() => {
@@ -724,34 +700,35 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         case 'portal-save': {
           const { state, currentQuestion } = data.payload || {};
           if (!state) break;
-          try {
-            // Preserve existing completion data when saving
-            const existingDoc = progressDocRef.current;
-            const saveData: Record<string, unknown> = {
-              userId,
-              assignmentId,
-              state,
-              currentQuestion: currentQuestion ?? 0,
-              answeredQuestions: Array.from(awardedQuestionsRef.current),
-              lastUpdated: new Date().toISOString(),
-            };
-            // Always preserve completion fields if they exist
-            if (existingDoc?.completed) {
-              saveData.completed = existingDoc.completed;
-              saveData.completedAt = existingDoc.completedAt;
-              saveData.bestScore = existingDoc.bestScore;
-              saveData.totalCompletions = existingDoc.totalCompletions;
-              saveData.completionHistory = existingDoc.completionHistory;
-            }
+          // Preserve existing completion data when saving
+          const existingDoc = progressDocRef.current;
+          const saveData: Record<string, unknown> = {
+            userId,
+            assignmentId,
+            state,
+            currentQuestion: currentQuestion ?? 0,
+            answeredQuestions: Array.from(awardedQuestionsRef.current),
+            lastUpdated: new Date().toISOString(),
+          };
+          // Always preserve completion fields if they exist
+          if (existingDoc?.completed) {
+            saveData.completed = existingDoc.completed;
+            saveData.completedAt = existingDoc.completedAt;
+            saveData.bestScore = existingDoc.bestScore;
+            saveData.totalCompletions = existingDoc.totalCompletions;
+            saveData.completionHistory = existingDoc.completionHistory;
+          }
 
-            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+          const practiceLsKey = draftKey('practice', userId!, assignmentId!);
+          const practiceDocId = `${userId}_${assignmentId}`;
+          const result = await persistentWrite('practice_progress', practiceDocId, saveData, practiceLsKey);
 
-            // Update local ref
-            progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
+          // Update local ref
+          progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
 
+          if (result === 'saved') {
             iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, targetOrigin);
-          } catch (err) {
-            reportError(err, { component: 'Proctor', context: 'Bridge: Save failed' });
+          } else {
             iframe.contentWindow?.postMessage({ type: 'portal-save-error' }, targetOrigin);
           }
           break;
@@ -760,51 +737,51 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         case 'portal-complete': {
           // Module completed — create a permanent completion snapshot
           const { score, totalQuestions, correctAnswers } = data.payload || {};
-          try {
-            const existingDoc = progressDocRef.current;
-            const now = new Date().toISOString();
-            const snapshot: CompletionSnapshot = {
-              completedAt: now,
-              score: score ?? 0,
-              totalQuestions: totalQuestions ?? 0,
-              correctAnswers: correctAnswers ?? 0,
-              answeredQuestions: Array.from(awardedQuestionsRef.current),
-            };
+          const existingDocC = progressDocRef.current;
+          const now = new Date().toISOString();
+          const snapshot: CompletionSnapshot = {
+            completedAt: now,
+            score: score ?? 0,
+            totalQuestions: totalQuestions ?? 0,
+            correctAnswers: correctAnswers ?? 0,
+            answeredQuestions: Array.from(awardedQuestionsRef.current),
+          };
 
-            const completionHistory = [...(existingDoc?.completionHistory || []), snapshot];
-            const bestScore = Math.max(existingDoc?.bestScore || 0, score || 0);
-            const totalCompletions = (existingDoc?.totalCompletions || 0) + 1;
+          const completionHistory = [...(existingDocC?.completionHistory || []), snapshot];
+          const bestScore = Math.max(existingDocC?.bestScore || 0, score || 0);
+          const totalCompletions = (existingDocC?.totalCompletions || 0) + 1;
 
-            const saveData: Record<string, unknown> = {
-              userId,
-              assignmentId,
-              completed: true,
-              completedAt: existingDoc?.completedAt || now, // Preserve first completion date
-              bestScore,
-              totalCompletions,
-              completionHistory,
-              answeredQuestions: Array.from(awardedQuestionsRef.current),
-              lastUpdated: now,
-            };
-            // Preserve current active state too
-            if (existingDoc?.state) {
-              saveData.state = existingDoc.state;
-              saveData.currentQuestion = existingDoc.currentQuestion;
-            }
+          const completeSaveData: Record<string, unknown> = {
+            userId,
+            assignmentId,
+            completed: true,
+            completedAt: existingDocC?.completedAt || now,
+            bestScore,
+            totalCompletions,
+            completionHistory,
+            answeredQuestions: Array.from(awardedQuestionsRef.current),
+            lastUpdated: now,
+          };
+          if (existingDocC?.state) {
+            completeSaveData.state = existingDocC.state;
+            completeSaveData.currentQuestion = existingDocC.currentQuestion;
+          }
 
-            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
+          const completeLsKey = draftKey('practice', userId!, assignmentId!);
+          const completeDocId = `${userId}_${assignmentId}`;
+          const completeResult = await persistentWrite('practice_progress', completeDocId, completeSaveData, completeLsKey);
 
-            progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
-            setModuleCompleted(true);
-            setCompletionCount(totalCompletions);
+          progressDocRef.current = { ...progressDocRef.current, ...completeSaveData } as PracticeProgressDoc;
+          setModuleCompleted(true);
+          setCompletionCount(totalCompletions);
 
-            sfx.xpGain();
-            setXpToast({ text: 'Module Complete!', type: 'success' });
-            setTimeout(() => setXpToast(null), 3000);
+          sfx.xpGain();
+          setXpToast({ text: 'Module Complete!', type: 'success' });
+          setTimeout(() => setXpToast(null), 3000);
 
+          if (completeResult === 'saved') {
             iframe.contentWindow?.postMessage({ type: 'portal-complete-ok', payload: { totalCompletions, bestScore } }, targetOrigin);
-          } catch (err) {
-            reportError(err, { component: 'Proctor', context: 'Bridge: Completion save failed' });
+          } else {
             iframe.contentWindow?.postMessage({ type: 'portal-complete-error' }, targetOrigin);
           }
           break;
@@ -812,32 +789,30 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
         case 'portal-replay': {
           // Student wants to replay — reset active state but PRESERVE completion records
-          try {
-            const existingDoc = progressDocRef.current;
-            const saveData: Record<string, unknown> = {
-              userId,
-              assignmentId,
-              state: null,
-              currentQuestion: 0,
-              // Keep answered questions for XP tracking (they won't get double-awarded)
-              answeredQuestions: Array.from(awardedQuestionsRef.current),
-              lastUpdated: new Date().toISOString(),
-              // Preserve ALL completion data
-              completed: existingDoc?.completed || false,
-              completedAt: existingDoc?.completedAt || null,
-              bestScore: existingDoc?.bestScore || null,
-              totalCompletions: existingDoc?.totalCompletions || 0,
-              completionHistory: existingDoc?.completionHistory || [],
-            };
+          const existingDocR = progressDocRef.current;
+          const replaySaveData: Record<string, unknown> = {
+            userId,
+            assignmentId,
+            state: null,
+            currentQuestion: 0,
+            answeredQuestions: Array.from(awardedQuestionsRef.current),
+            lastUpdated: new Date().toISOString(),
+            completed: existingDocR?.completed || false,
+            completedAt: existingDocR?.completedAt || null,
+            bestScore: existingDocR?.bestScore || null,
+            totalCompletions: existingDocR?.totalCompletions || 0,
+            completionHistory: existingDocR?.completionHistory || [],
+          };
 
-            await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
-            progressDocRef.current = saveData as unknown as PracticeProgressDoc;
-            setShowReplayPrompt(false);
+          const replayLsKey = draftKey('practice', userId!, assignmentId!);
+          const replayDocId = `${userId}_${assignmentId}`;
+          // Clear localStorage practice draft (resetting state)
+          clearDraft(replayLsKey);
+          await persistentWrite('practice_progress', replayDocId, replaySaveData, replayLsKey);
+          progressDocRef.current = replaySaveData as unknown as PracticeProgressDoc;
+          setShowReplayPrompt(false);
 
-            iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
-          } catch (err) {
-            reportError(err, { component: 'Proctor', context: 'Bridge: Replay reset failed' });
-          }
+          iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
           break;
         }
 
@@ -899,36 +874,32 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     const iframe = iframeRef.current;
     if (!iframe || !userId || !assignmentId) return;
 
-    // Send replay message to iframe
     const iframeSrc = iframe.src ? new URL(iframe.src).origin : '';
     const targetOrigin = iframeSrc || window.location.origin;
 
-    // Reset active state server-side
     (async () => {
-      try {
-        const existingDoc = progressDocRef.current;
-        const saveData: Record<string, unknown> = {
-          userId,
-          assignmentId,
-          state: null,
-          currentQuestion: 0,
-          answeredQuestions: Array.from(awardedQuestionsRef.current),
-          lastUpdated: new Date().toISOString(),
-          completed: existingDoc?.completed || false,
-          completedAt: existingDoc?.completedAt || null,
-          bestScore: existingDoc?.bestScore || null,
-          totalCompletions: existingDoc?.totalCompletions || 0,
-          completionHistory: existingDoc?.completionHistory || [],
-        };
-        await setDoc(doc(db, 'practice_progress', `${userId}_${assignmentId}`), saveData, { merge: true });
-        if (!mountedRef.current) return;
-        progressDocRef.current = saveData as unknown as PracticeProgressDoc;
-        setShowReplayPrompt(false);
+      const existingDoc = progressDocRef.current;
+      const saveData: Record<string, unknown> = {
+        userId,
+        assignmentId,
+        state: null,
+        currentQuestion: 0,
+        answeredQuestions: Array.from(awardedQuestionsRef.current),
+        lastUpdated: new Date().toISOString(),
+        completed: existingDoc?.completed || false,
+        completedAt: existingDoc?.completedAt || null,
+        bestScore: existingDoc?.bestScore || null,
+        totalCompletions: existingDoc?.totalCompletions || 0,
+        completionHistory: existingDoc?.completionHistory || [],
+      };
+      const replayLsKey = draftKey('practice', userId, assignmentId);
+      clearDraft(replayLsKey);
+      await persistentWrite('practice_progress', `${userId}_${assignmentId}`, saveData, replayLsKey);
+      if (!mountedRef.current) return;
+      progressDocRef.current = saveData as unknown as PracticeProgressDoc;
+      setShowReplayPrompt(false);
 
-        iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
-      } catch (err) {
-        reportError(err, { component: 'Proctor', context: 'Replay reset failed' });
-      }
+      iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
     })();
   }, [userId, assignmentId]);
 
@@ -1027,6 +998,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         Completed{completionCount > 1 ? ` (${completionCount}x)` : ''}
                     </div>
                 )}
+                {/* Save status indicator */}
+                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} />
             </div>
             <div className="flex items-center gap-3 flex-wrap">
                 {/* TTS — Screen Reader */}

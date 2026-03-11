@@ -851,6 +851,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
   selectedCharacterModel,
 }) => {
   const [dungeons,      setDungeons]      = useState<Dungeon[]>([]);
+  const [dungeonsLoaded, setDungeonsLoaded] = useState(false);
   const [activeRun,     setActiveRun]     = useState<DungeonRun | null>(null);
   const [activeDungeon, setActiveDungeon] = useState<Dungeon | null>(null);
   const [lastResult,    setLastResult]    = useState<RoomAnswerResult | null>(null);
@@ -880,8 +881,8 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
   useEffect(() => {
     let unsub: (() => void) | undefined;
     try {
-      unsub = dataService.subscribeToDungeons(classType, setDungeons);
-    } catch { /* permission error — silently skip */ }
+      unsub = dataService.subscribeToDungeons(classType, (d) => { setDungeons(d); setDungeonsLoaded(true); });
+    } catch { setDungeonsLoaded(true); /* permission error — silently skip */ }
     return () => unsub?.();
   }, [classType]);
 
@@ -1040,6 +1041,27 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
   }
 
   // ── Dungeon list ────────────────────────────────────────────────────────
+  if (!dungeonsLoaded) {
+    return (
+      <section aria-label="Loading" role="status" className="space-y-4">
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="w-5 h-5 bg-white/10 rounded" />
+          <div className="h-5 w-44 bg-white/10 rounded" />
+        </div>
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="animate-pulse rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3">
+            <div className="h-5 w-40 bg-white/10 rounded" />
+            <div className="h-3 w-64 bg-white/10 rounded" />
+            <div className="flex gap-3">
+              <div className="h-8 w-20 bg-white/10 rounded-lg" />
+              <div className="h-8 w-20 bg-white/10 rounded-lg" />
+            </div>
+            <div className="h-10 w-full bg-white/10 rounded-xl" />
+          </div>
+        ))}
+      </section>
+    );
+  }
   if (dungeons.length === 0) return null;
 
   return (

@@ -422,7 +422,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
                     <div className="space-y-2">
                         {resourceRooms.map(room => (
-                            <div key={room.id} onClick={() => setSelectedResourceId(room.id)} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer flex justify-between items-center ${unreadChannels?.has(`res_${room.id}`) ? 'border-indigo-500/40' : 'border-white/5'}`}>
+                            <div key={room.id} role="button" tabIndex={0} onClick={() => setSelectedResourceId(room.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedResourceId(room.id); } }} aria-label={`Open resource channel: ${room.title}`} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer flex justify-between items-center focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded ${unreadChannels?.has(`res_${room.id}`) ? 'border-indigo-500/40' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-3 overflow-hidden">
                                     <div className="relative p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition shadow-inner">
                                         <Hash className="w-5 h-5" />
@@ -450,7 +450,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                 <p className="text-[10px] text-gray-600 mt-1">Your teacher will assign you to a group.</p>
                             </div>
                         ) : myGroups.map(group => (
-                            <div key={group.id} onClick={() => setSelectedGroupId(group.id)} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer ${unreadChannels?.has(`group_${group.id}`) ? 'border-cyan-500/40' : 'border-white/5'}`}>
+                            <div key={group.id} role="button" tabIndex={0} onClick={() => setSelectedGroupId(group.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedGroupId(group.id); } }} aria-label={`Open group chat: ${group.name}`} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded ${unreadChannels?.has(`group_${group.id}`) ? 'border-cyan-500/40' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-3">
                                     <div className="relative p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition shadow-inner">
                                         <Users className="w-5 h-5" />
@@ -527,9 +527,13 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                     {/* Virtualized message list */}
                     <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth" role="log" aria-live="polite" aria-label="Chat messages">
                         {isLoading && displayMessages.length === 0 && (
-                            <div className="flex items-center justify-center h-32 text-gray-500">
-                                <div className="w-5 h-5 border-2 border-gray-600 border-t-indigo-400 rounded-full animate-spin mr-3" />
-                                <span className="text-sm">Loading messages...</span>
+                            <div className="px-4 pt-6 space-y-4" role="status" aria-label="Loading">
+                                {/* Skeleton message bubbles — alternating left/right */}
+                                <div className="flex items-start"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tl-sm h-10 w-48" /></div>
+                                <div className="flex justify-end"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tr-sm h-10 w-56" /></div>
+                                <div className="flex items-start"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tl-sm h-10 w-36" /></div>
+                                <div className="flex justify-end"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tr-sm h-10 w-44" /></div>
+                                <div className="flex items-start"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tl-sm h-10 w-52" /></div>
                             </div>
                         )}
                         {!isLoading && displayMessages.length === 0 && (

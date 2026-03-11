@@ -58,6 +58,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   const [equipping, setEquipping] = useState<string | null>(null);
   // Cosmetic preview: null = show currently equipped, string = preview that cosmetic ID
   const [previewCosmeticId, setPreviewCosmeticId] = useState<string | null>(null);
+  const [shopTab, setShopTab] = useState<'all' | 'boosts' | 'utility' | 'cosmetics' | 'models'>('all');
 
   // Build a merged activeCosmetics for preview: preview overrides only its slot
   const displayedCosmetics: ActiveCosmetics = useMemo(() => {
@@ -311,6 +312,30 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
         </div>
       </div>
 
+      {/* Category Filter Tabs */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {([
+          { key: 'all', label: 'All', icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+          { key: 'boosts', label: 'Boosts', icon: <Sparkles className="w-3.5 h-3.5" /> },
+          { key: 'utility', label: 'Utility', icon: <RotateCcw className="w-3.5 h-3.5" /> },
+          { key: 'cosmetics', label: 'Cosmetics', icon: <Palette className="w-3.5 h-3.5" /> },
+          ...(ENABLE_3D_AVATAR ? [{ key: 'models', label: 'Models', icon: <CuboidIcon className="w-3.5 h-3.5" /> }] : []),
+        ] as { key: string; label: string; icon: React.ReactNode }[]).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setShopTab(tab.key as typeof shopTab)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+              shopTab === tab.key
+                ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300'
+                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Agent Preview Panel */}
       {playerEquipped && (
         <div className="bg-black/30 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
@@ -391,6 +416,10 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
 
       {/* Non-cosmetic Item Categories (XP Boosts, Utility, Name Colors) */}
       {Object.entries(grouped).map(([type, items]) => {
+        // Filter by tab
+        if (shopTab === 'boosts' && type !== 'XP_BOOST') return null;
+        if (shopTab === 'utility' && type !== 'REROLL_TOKEN' && type !== 'NAME_COLOR') return null;
+        if (shopTab === 'cosmetics' || shopTab === 'models') return null;
         const colors = getCategoryColor(type);
         return (
           <div key={type} className="space-y-3">
@@ -475,7 +504,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
       })}
 
       {/* 3D Character Models — hidden when 3D avatars are disabled */}
-      {ENABLE_3D_AVATAR && characterModelItems.length > 0 && (
+      {(shopTab === 'all' || shopTab === 'models') && ENABLE_3D_AVATAR && characterModelItems.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
             <CuboidIcon className="w-5 h-5 text-violet-400" aria-hidden="true" />
@@ -580,6 +609,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
       )}
 
       {/* Agent Cosmetics — organized by subcategory */}
+      {(shopTab === 'all' || shopTab === 'cosmetics') && (
       <div className="space-y-2">
         <div className="flex items-center gap-2 px-1">
           <span className="text-teal-400" aria-hidden="true"><User className="w-5 h-5" /></span>
@@ -587,8 +617,9 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
         </div>
         <p className="text-xs text-gray-500 px-1">Customize your operative with auras, particles, frames, and trails. Equip one of each type simultaneously.</p>
       </div>
+      )}
 
-      {cosmeticSubOrder.map(visualType => {
+      {(shopTab === 'all' || shopTab === 'cosmetics') && cosmeticSubOrder.map(visualType => {
         const subItems = cosmeticSubGroups[visualType];
         if (!subItems || subItems.length === 0) return null;
         const subColors = getCosmeticSubColor(visualType);

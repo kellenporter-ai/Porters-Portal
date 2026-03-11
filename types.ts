@@ -404,6 +404,7 @@ export interface RubricGrade {
   overallPercentage: number;
   gradedAt: string;
   gradedBy: string;
+  teacherFeedback?: string;
 }
 
 // AI Grading Assistant types

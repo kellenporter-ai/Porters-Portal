@@ -385,79 +385,79 @@ const App: React.FC = () => {
 
           {/* ─── Student routes ─── */}
           <Route path="/home" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Home">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="HOME" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/resources" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Resources">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="RESOURCES" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/loadout" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Loadout">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="LOADOUT" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/missions" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Missions">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="MISSIONS" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/badges" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Achievements">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ACHIEVEMENTS" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/skills" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Skills">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="SKILLS" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/fortune" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Fortune">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FORTUNE" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/flux-shop" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Flux Shop">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FLUX_SHOP" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/tutoring" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Tutoring">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="TUTORING" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/intel" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Intel Dossier">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="INTEL" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/progress" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Progress">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="PROGRESS" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/calendar" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Calendar">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="CALENDAR" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/dungeons" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Dungeons">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="DUNGEONS" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/arena" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Arena">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ARENA" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/deploy" element={
-            <Suspense fallback={<LazyFallback />}>
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Deploy">
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="DEPLOY" />
-            </Suspense>
+            </FeatureErrorBoundary></Suspense>
           } />
           <Route path="/forensics" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>

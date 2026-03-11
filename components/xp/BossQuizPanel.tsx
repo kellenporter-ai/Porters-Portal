@@ -386,19 +386,30 @@ const QuizBossCard: React.FC<{
       ) : (
         <>
           {/* Battle Scene — animated player vs boss */}
-          <div className="relative rounded-xl bg-black/30 border border-white/5 overflow-hidden">
+          <div className={`relative rounded-xl bg-black/30 border border-white/5 overflow-hidden ${showAbility ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
             {/* Boss Ability Alert */}
             {showAbility && (
-              <div role="alert" aria-live="assertive" className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/80 to-transparent p-4 text-center animate-in slide-in-from-top duration-300 z-10">
-                <div className="text-lg font-black text-red-400 uppercase tracking-wider">{showAbility.name}</div>
-                <div className="text-xs text-red-300">
-                  {showAbility.effect === 'AOE_DAMAGE' && `All students take ${showAbility.value} damage!`}
-                  {showAbility.effect === 'HEAL_BOSS' && `Boss regenerates ${showAbility.value}% HP!`}
-                  {showAbility.effect === 'ENRAGE' && `Boss damage increased by ${showAbility.value}%!`}
-                  {showAbility.effect === 'SILENCE' && `Critical hits disabled!`}
-                  {showAbility.effect === 'FOCUS_FIRE' && `Top damage dealer targeted!`}
+              <>
+                <style>{`
+                  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(2px)} }
+                  @keyframes flash { 0%{opacity:0.6} 100%{opacity:0} }
+                `}</style>
+                <div role="alert" aria-live="assertive" className="absolute inset-0 z-10 pointer-events-none">
+                  {/* Screen flash */}
+                  <div className="absolute inset-0 bg-red-500/20 animate-[flash_0.5s_ease-out]" />
+                  {/* Content */}
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/90 to-transparent p-4 text-center animate-in slide-in-from-top duration-300">
+                    <div className="text-lg font-black text-red-400 uppercase tracking-wider animate-[shake_0.4s_ease-in-out]">{showAbility.name}</div>
+                    <div className="text-xs text-red-300">
+                      {showAbility.effect === 'AOE_DAMAGE' && `All students take ${showAbility.value} damage!`}
+                      {showAbility.effect === 'HEAL_BOSS' && `Boss regenerates ${showAbility.value}% HP!`}
+                      {showAbility.effect === 'ENRAGE' && `Boss damage increased by ${showAbility.value}%!`}
+                      {showAbility.effect === 'SILENCE' && `Critical hits disabled!`}
+                      {showAbility.effect === 'FOCUS_FIRE' && `Top damage dealer targeted!`}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
             <BattleScene
               playerAppearance={playerAppearance}
@@ -424,11 +435,28 @@ const QuizBossCard: React.FC<{
               <span className="text-red-400 font-mono">{currentHp} HP</span>
               <span className="text-gray-600">{effectiveMaxHp}</span>
             </div>
-            <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden" role="progressbar" aria-valuenow={currentHp} aria-valuemin={0} aria-valuemax={effectiveMaxHp} aria-label="Boss health">
+            <div className="relative w-full bg-white/5 rounded-full h-3 overflow-hidden" role="progressbar" aria-valuenow={currentHp} aria-valuemin={0} aria-valuemax={effectiveMaxHp} aria-label="Boss health">
               <div
                 className="h-3 rounded-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-500"
                 style={{ width: `${hpPercent}%` }}
               />
+              {/* Phase threshold markers */}
+              {[75, 50, 25].map(threshold => (
+                <div
+                  key={threshold}
+                  className="absolute top-0 bottom-0 w-0.5 bg-white/30"
+                  style={{ left: `${threshold}%` }}
+                  title={`${threshold}% HP`}
+                />
+              ))}
+            </div>
+            {/* Threshold labels */}
+            <div className="flex justify-between text-[8px] text-gray-600 mt-0.5 px-1">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
             </div>
           </div>
 
@@ -596,13 +624,15 @@ const QuizBossCard: React.FC<{
 
 const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, userClassSections, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
   const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
+  const [quizzesLoaded, setQuizzesLoaded] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
     try {
-      unsub = dataService.subscribeToBossQuizzes(classType, setAllQuizzes);
+      unsub = dataService.subscribeToBossQuizzes(classType, (q) => { setAllQuizzes(q); setQuizzesLoaded(true); });
     } catch {
+      setQuizzesLoaded(true);
       // Firestore permission error — feature not available for this user
     }
     return () => unsub?.();
@@ -656,6 +686,31 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
       callbacks.onResult({ correct: false, damage: 0 });
     }
   };
+
+  if (!quizzesLoaded) {
+    return (
+      <div className="space-y-4" role="status" aria-label="Loading">
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="w-5 h-5 bg-white/10 rounded" />
+          <div className="h-5 w-44 bg-white/10 rounded" />
+        </div>
+        <div className="animate-pulse rounded-2xl border border-amber-500/20 bg-amber-950/30 p-5 space-y-4">
+          {/* Boss name + HP bar area */}
+          <div className="h-5 w-48 bg-white/10 rounded" />
+          <div className="h-3 w-64 bg-white/10 rounded" />
+          <div className="h-3 w-full bg-white/10 rounded-full" />
+          {/* Question area */}
+          <div className="h-4 w-3/4 bg-white/10 rounded" />
+          {/* Answer options */}
+          <div className="space-y-2.5">
+            <div className="h-12 w-full bg-white/10 rounded-xl" />
+            <div className="h-12 w-full bg-white/10 rounded-xl" />
+            <div className="h-12 w-full bg-white/10 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (quizzes.length === 0) return null;
 

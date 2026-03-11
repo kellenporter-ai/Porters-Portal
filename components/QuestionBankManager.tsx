@@ -532,7 +532,15 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                     const isExp = expandedId === q.id;
                                     return (
                                         <div key={q.id} className={`rounded-xl border transition ${isExp ? `${tc.border} ${tc.bg}` : 'border-white/5 bg-white/[0.02] hover:border-white/10'}`}>
-                                            <div className="flex items-start gap-2.5 p-3 cursor-pointer" onClick={() => setExpandedId(isExp ? null : q.id)}>
+                                            <div
+                                                className="flex items-start gap-2.5 p-3 cursor-pointer focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded"
+                                                role="button"
+                                                tabIndex={0}
+                                                aria-expanded={isExp}
+                                                aria-controls={`question-detail-${q.id}`}
+                                                aria-label={`${isExp ? 'Collapse' : 'Expand'} question ${q.id}: ${q.stem.slice(0, 60)}`}
+                                                onClick={() => setExpandedId(isExp ? null : q.id)}
+                                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExp ? null : q.id); } }}>
                                                 <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-[9px] font-black ${tc.bg} ${tc.text}`}>T{q.tier}</div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
@@ -546,7 +554,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                                 <ChevronRight className={`w-3.5 h-3.5 text-gray-600 shrink-0 mt-1 transition-transform ${isExp ? 'rotate-90' : ''}`} />
                                             </div>
                                             {isExp && (
-                                                <div className="px-3 pb-3 space-y-2">
+                                                <div id={`question-detail-${q.id}`} className="px-3 pb-3 space-y-2">
                                                     {q.context && <div className="text-[10px] text-gray-500 italic bg-black/20 rounded-lg p-2">{q.context}</div>}
                                                     <div className="space-y-1">
                                                         {q.options.map(opt => {

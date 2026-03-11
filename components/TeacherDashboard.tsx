@@ -49,6 +49,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [assessmentSortKey] = useState<string>('score');
   const [assessmentSortDesc] = useState(true);
   const [rubricDraft, setRubricDraft] = useState<Record<string, Record<string, RubricSkillGrade>>>({});
+  const [feedbackDraft, setFeedbackDraft] = useState('');
   const [isSavingRubric, setIsSavingRubric] = useState(false);
   const [assessmentSearch, setAssessmentSearch] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
@@ -481,7 +482,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               <select
                 value={selectedAssessmentId || ''}
-                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setShowNotStarted(false); }}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setFeedbackDraft(''); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setShowNotStarted(false); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
@@ -551,6 +552,45 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <Download className="w-3 h-3" />
                     Export Grades ({gradedCount})
                   </button>
+                </div>
+              )}
+
+              {!selectedAssessmentId && assessmentAssignments.length > 0 && (
+                <div className="mt-4 space-y-1.5">
+                  <h4 className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Grading Progress</h4>
+                  {[...assessmentAssignments].sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateB - dateA;
+                  }).map(assignment => {
+                    if (!assignment.rubric) return null;
+                    const assessmentSubs = submissions.filter(s => s.assignmentId === assignment.id && s.status !== 'STARTED');
+                    const uniqueStudents = new Set(assessmentSubs.map(s => s.userId)).size;
+                    const gradedStudents = new Set(
+                      assessmentSubs.filter(s => s.rubricGrade).map(s => s.userId)
+                    ).size;
+                    const pct = uniqueStudents > 0 ? Math.round((gradedStudents / uniqueStudents) * 100) : 0;
+                    return (
+                      <button
+                        key={assignment.id}
+                        onClick={() => { setSelectedAssessmentId(assignment.id); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setShowNotStarted(false); }}
+                        className="w-full text-left bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-xl px-4 py-3 transition group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-white group-hover:text-purple-300 transition truncate mr-3">
+                            {assignment.title}
+                          </span>
+                          <span className="text-[10px] text-gray-500 whitespace-nowrap">{assignment.classType}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-purple-500'}`} style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className={`text-[10px] font-bold tabular-nums ${pct === 100 ? 'text-green-400' : 'text-gray-400'}`}>{gradedStudents}/{uniqueStudents}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -923,6 +963,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 // Pre-populate from existing rubric grade, or from AI suggestion if available
                 if (group.best.rubricGrade?.grades) {
                   setRubricDraft(group.best.rubricGrade.grades);
+                  setFeedbackDraft(group.best.rubricGrade?.teacherFeedback || '');
                 } else if (group.best.aiSuggestedGrade?.status === 'pending_review') {
                   // Convert AI suggestions to rubric draft format
                   const aiDraft: Record<string, Record<string, RubricSkillGrade>> = {};
@@ -936,8 +977,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     }
                   }
                   setRubricDraft(aiDraft);
+                  setFeedbackDraft('');
                 } else {
                   setRubricDraft({});
+                  setFeedbackDraft('');
                 }
               };
 
@@ -976,8 +1019,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       return (
                         <div
                           key={group.userId}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${group.userName}${group.hasRubricGrade ? ', graded' : ', ungraded'}${group.isInProgress ? ', in progress' : `, ${displayPct}%`}`}
                           onClick={() => selectStudent(group.userId)}
-                          className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 ${
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStudent(group.userId); } }}
+                          className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
                             isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-white/5 border-l-2 border-l-transparent'
                           } ${group.latest.flaggedAsAI ? 'bg-purple-900/5' : ''}`}
                         >
@@ -1084,6 +1131,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 if (newSub) {
                                   setGradingAttemptId(newSub.id);
                                   setRubricDraft(newSub.rubricGrade?.grades || {});
+                                  setFeedbackDraft(newSub.rubricGrade?.teacherFeedback || '');
                                 }
                               }}
                               className="bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/50 transition"
@@ -1487,6 +1535,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         </React.Suspense>
                       </div>
 
+                      {/* Teacher feedback */}
+                      <div className="px-4 py-2 border-t border-white/10">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Teacher Feedback</label>
+                        <textarea
+                          value={feedbackDraft}
+                          onChange={e => setFeedbackDraft(e.target.value)}
+                          placeholder="Optional feedback for the student..."
+                          rows={2}
+                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none"
+                        />
+                      </div>
+
                       {/* Save bar — sticky at bottom */}
                       <div className="border-t border-white/10 p-3 bg-white/[0.02]">
                         <div className="flex items-center justify-between">
@@ -1511,6 +1571,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   overallPercentage: pct,
                                   gradedAt: new Date().toISOString(),
                                   gradedBy: 'Admin',
+                                  ...(feedbackDraft.trim() ? { teacherFeedback: feedbackDraft.trim() } : {}),
                                 };
                                 // Use acceptAISuggestedGrade if this was an AI pre-fill
                                 const hadAISuggestion = sub.aiSuggestedGrade?.status === 'pending_review';
@@ -1562,6 +1623,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 }
 
                                 setRubricDraft({});
+                                setFeedbackDraft('');
                                 if (result.clearedAIFlag) {
                                   toast.success(`Grade saved: ${pct}% -- AI flag automatically cleared`);
                                 } else {
@@ -2110,59 +2172,59 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           )}
 
           {/* Header row */}
-          <div className="flex items-center border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
-            <div className="p-3 w-10 shrink-0">
+          <div className="flex items-center border-b border-white/10 text-[10px] uppercase font-bold text-gray-500" role="row">
+            <div className="p-3 w-10 shrink-0" role="columnheader">
               <input type="checkbox" checked={selectedIds.size === sortedStudents.length && sortedStudents.length > 0} onChange={toggleSelectAll} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label="Select all students" />
             </div>
-            <div className="p-3 flex-[2] min-w-0 cursor-pointer select-none" onClick={() => handleSort('name')}>
+            <div className="p-3 flex-[2] min-w-0 cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded" role="columnheader" tabIndex={0} aria-sort={sortCol === 'name' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} aria-label="Sort by student name" onClick={() => handleSort('name')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('name'); } }}>
               <div className="flex items-center gap-1">
                 <span>Student</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'name' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'name' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="p-3 flex-1 cursor-pointer select-none" onClick={() => handleSort('class')}>
+            <div className="p-3 flex-1 cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded" role="columnheader" tabIndex={0} aria-sort={sortCol === 'class' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} aria-label="Sort by class" onClick={() => handleSort('class')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('class'); } }}>
               <div className="flex items-center gap-1">
                 <span>Class</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'class' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'class' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="p-3 flex-1 cursor-pointer select-none text-center" onClick={() => handleSort('lastSeen')}>
+            <div className="p-3 flex-1 cursor-pointer select-none text-center focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded" role="columnheader" tabIndex={0} aria-sort={sortCol === 'lastSeen' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} aria-label="Sort by last seen" onClick={() => handleSort('lastSeen')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('lastSeen'); } }}>
               <div className="flex items-center gap-1 justify-center">
                 <span>Last Seen</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'lastSeen' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'lastSeen' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="p-3 flex-1 cursor-pointer select-none text-center" onClick={() => handleSort('time')}>
+            <div className="p-3 flex-1 cursor-pointer select-none text-center focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded" role="columnheader" tabIndex={0} aria-sort={sortCol === 'time' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} aria-label="Sort by total time" onClick={() => handleSort('time')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('time'); } }}>
               <div className="flex items-center gap-1 justify-center">
                 <span>Total Time</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'time' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'time' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="p-3 flex-1 cursor-pointer select-none text-center" onClick={() => handleSort('resources')}>
+            <div className="p-3 flex-1 cursor-pointer select-none text-center focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded" role="columnheader" tabIndex={0} aria-sort={sortCol === 'resources' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} aria-label="Sort by resources completed" onClick={() => handleSort('resources')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('resources'); } }}>
               <div className="flex items-center gap-1 justify-center">
                 <span>Resources</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'resources' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'resources' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="p-3 flex-1 cursor-pointer select-none text-right" onClick={() => handleSort('xp')}>
+            <div className="p-3 flex-1 cursor-pointer select-none text-right focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded" role="columnheader" tabIndex={0} aria-sort={sortCol === 'xp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} aria-label="Sort by XP" onClick={() => handleSort('xp')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('xp'); } }}>
               <div className="flex items-center gap-1 justify-end">
                 <span>XP</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'xp' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'xp' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
                 </span>
@@ -2198,13 +2260,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     key={student.id}
                     ref={tableVirtualizer.measureElement}
                     data-index={virtualRow.index}
-                    className={`absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
+                    role="row"
+                    tabIndex={0}
+                    aria-label={`${student.name}, ${student.classType}, ${xp} XP`}
+                    className={`absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
                     style={{ transform: `translateY(${virtualRow.start}px)` }}
+                    onClick={() => setSelectedStudentId(student.id)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStudentId(student.id); } }}
                   >
-                    <div className="p-3 w-10 shrink-0">
+                    <div className="p-3 w-10 shrink-0" role="cell">
                       <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(student.id)} onClick={e => e.stopPropagation()} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label={`Select ${student.name}`} />
                     </div>
-                    <div className="p-3 font-bold text-white flex-[2] min-w-0" onClick={() => setSelectedStudentId(student.id)}>
+                    <div className="p-3 font-bold text-white flex-[2] min-w-0" role="cell">
                       <div className="flex items-center gap-2">
                         <div className="relative shrink-0">
                           {student.avatarUrl ? (
@@ -2223,11 +2290,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         )}
                       </div>
                     </div>
-                    <div className="p-3 text-sm text-gray-400 flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.classType}</div>
-                    <div className={`p-3 text-center text-xs font-mono flex-1 ${lastSeenColor}`} onClick={() => setSelectedStudentId(student.id)}>{formatLastSeen(student.lastLoginAt)}</div>
-                    <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.totalTime || 0}m</div>
-                    <div className="p-3 text-center text-white flex-1" onClick={() => setSelectedStudentId(student.id)}>{student.stats?.problemsCompleted || 0}</div>
-                    <div className="p-3 text-right flex-1" onClick={() => setSelectedStudentId(student.id)}>
+                    <div className="p-3 text-sm text-gray-400 flex-1" role="cell">{student.classType}</div>
+                    <div className={`p-3 text-center text-xs font-mono flex-1 ${lastSeenColor}`} role="cell">{formatLastSeen(student.lastLoginAt)}</div>
+                    <div className="p-3 text-center text-white flex-1" role="cell">{student.stats?.totalTime || 0}m</div>
+                    <div className="p-3 text-center text-white flex-1" role="cell">{student.stats?.problemsCompleted || 0}</div>
+                    <div className="p-3 text-right flex-1" role="cell">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${xpPct}%` }} />

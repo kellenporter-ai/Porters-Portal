@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
-const DrawingBlock = React.lazy(() => import('./blocks/DrawingBlock'));
-const MathResponseBlock = React.lazy(() => import('./blocks/MathResponseBlock'));
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+const DrawingBlock = lazyWithRetry(() => import('./blocks/DrawingBlock'));
+const MathResponseBlock = lazyWithRetry(() => import('./blocks/MathResponseBlock'));
 
 export type { LessonBlock } from '../types';
 

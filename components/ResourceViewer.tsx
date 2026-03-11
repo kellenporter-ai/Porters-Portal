@@ -8,6 +8,7 @@ import { doc, getDoc, setDoc, collection, query, where, limit, onSnapshot, order
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
+import { draftKey, clearDraft } from '../lib/persistentWrite';
 import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, ChevronRight, Eye } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
@@ -214,6 +215,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
           sessionTokenRef.current = null;
+          // Clear localStorage draft — work is safely submitted (use user.id to match hook's key)
+          clearDraft(draftKey('draft', user.id, activeAssignment.id));
         }
         toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
         setIsSubmitting(false);
@@ -232,7 +235,22 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           continue;
         }
         reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
-        toast.error('Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.');
+
+        // Parse failed-precondition errors for hasUnsavedWork hint
+        let toastMsg = 'Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.';
+        if (errMsg.includes('failed-precondition')) {
+          try {
+            const parsed = JSON.parse(errMsg.replace(/^.*?(\{)/, '$1'));
+            if (parsed.hasUnsavedWork) {
+              toastMsg = 'Session expired, but your draft is saved. Start a new attempt to continue where you left off.';
+            } else {
+              toastMsg = 'Session expired. Please start a new assessment attempt.';
+            }
+          } catch {
+            // Couldn't parse — use default message
+          }
+        }
+        toast.error(toastMsg);
         setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
       }
     }
@@ -513,6 +531,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 <div className="mt-3 bg-white/5 border border-white/10 rounded-lg p-3 text-center">
                   <span className="text-sm font-bold text-white">{existingSubmission.rubricGrade.overallPercentage}%</span>
                   <span className="text-[10px] text-gray-500 ml-2">Rubric Score</span>
+                  {existingSubmission.rubricGrade.teacherFeedback && (
+                    <div className="mt-3 bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 text-left">
+                      <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Teacher Feedback</div>
+                      <p className="text-xs text-gray-300 whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-[10px] text-gray-500 mt-2 text-center italic">
@@ -635,6 +659,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   <div className="text-2xl font-bold text-white">{existingSubmission.rubricGrade.overallPercentage}%</div>
                   <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">Rubric Score</div>
                   <div className="text-[10px] text-gray-600 mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
+                  {existingSubmission.rubricGrade.teacherFeedback && (
+                    <div className="mt-3 bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 text-left">
+                      <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Teacher Feedback</div>
+                      <p className="text-xs text-gray-300 whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
+                    </div>
+                  )}
                 </div>
               )}
               {!existingSubmission?.rubricGrade && existingSubmission && (

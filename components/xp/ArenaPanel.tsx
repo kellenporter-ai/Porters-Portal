@@ -4,7 +4,7 @@ import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Swords, TrendingUp, TrendingDown, Loader2, X, Star, Zap } from 'lucide-react';
+import { Swords, TrendingUp, TrendingDown, Loader2, X, Star, Zap, Shield, ShieldCheck, Target, Crown, type LucideIcon } from 'lucide-react';
 import { calculateGearScore } from '../../lib/gamification';
 
 interface ArenaPanelProps {
@@ -20,6 +20,19 @@ const ROLE_COLORS: Record<string, string> = {
   SPECIALIST: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
   GHOST:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
 };
+
+// Rating brackets — spy/operative themed
+const RATING_BRACKETS: readonly { name: string; min: number; max: number; color: string; barColor: string; bg: string; border: string; Icon: LucideIcon }[] = [
+  { name: 'Recruit',          min: 0,    max: 799,      color: 'text-gray-400',   barColor: 'bg-gray-400',   bg: 'bg-gray-500/10',   border: 'border-gray-500/20',   Icon: Shield },
+  { name: 'Field Agent',      min: 800,  max: 999,      color: 'text-green-400',  barColor: 'bg-green-400',  bg: 'bg-green-500/10',  border: 'border-green-500/20',  Icon: Shield },
+  { name: 'Specialist',       min: 1000, max: 1199,     color: 'text-blue-400',   barColor: 'bg-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   Icon: ShieldCheck },
+  { name: 'Elite Operative',  min: 1200, max: 1499,     color: 'text-purple-400', barColor: 'bg-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', Icon: Target },
+  { name: 'Shadow Commander', min: 1500, max: Infinity,  color: 'text-amber-400',  barColor: 'bg-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20',  Icon: Crown },
+];
+
+function getRatingBracket(rating: number) {
+  return RATING_BRACKETS.find(b => rating >= b.min && rating <= b.max) || RATING_BRACKETS[0];
+}
 
 // HP bar component
 const HpBar: React.FC<{ current: number; max: number; color: 'blue' | 'red' }> = ({ current, max, color }) => {
@@ -315,6 +328,41 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
               <div className="text-[10px] text-gray-500 uppercase tracking-widest">Losses</div>
             </div>
           </div>
+          {/* Rating bracket card */}
+          {(() => {
+            const bracket = getRatingBracket(arenaProfile.rating);
+            const bracketIdx = RATING_BRACKETS.indexOf(bracket);
+            const nextBracket = RATING_BRACKETS[bracketIdx + 1];
+            const progressInBracket = nextBracket
+              ? Math.round(((arenaProfile.rating - bracket.min) / (nextBracket.min - bracket.min)) * 100)
+              : 100;
+            const BracketIcon = bracket.Icon;
+            return (
+              <div className={`${bracket.bg} border ${bracket.border} rounded-xl p-3`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-black ${bracket.color} flex items-center gap-1.5`}>
+                    <BracketIcon className="w-4 h-4" />{bracket.name}
+                  </span>
+                  <span className="text-xs font-mono text-gray-400">{arenaProfile.rating} SR</span>
+                </div>
+                {nextBracket && (
+                  <div className="mt-2">
+                    <div className="w-full h-1.5 bg-black/30 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${bracket.barColor} transition-all duration-500`}
+                        style={{ width: `${progressInBracket}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
+                      <span>{bracket.min}</span>
+                      <span>{nextBracket.min} ({nextBracket.name})</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Daily matches remaining */}
           <div className="flex items-center justify-between text-xs border-t border-white/5 pt-2">
             <span className="text-gray-500">Daily matches</span>

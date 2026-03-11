@@ -548,28 +548,52 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   </button>
               )}
             </div>
-            <div className="flex-1 p-4 cursor-pointer select-none group" onClick={() => handleClassSort(type, 'name')}>
+            <div
+              className="flex-1 p-4 cursor-pointer select-none group focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded"
+              onClick={() => handleClassSort(type, 'name')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClassSort(type, 'name'); } }}
+              role="columnheader"
+              tabIndex={0}
+              aria-sort={(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' ? ((classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+              aria-label="Sort by operative name"
+            >
               <div className="flex items-center gap-1">
                 <span>Operative</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group" onClick={() => handleClassSort(type, 'section')}>
+            <div
+              className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded"
+              onClick={() => handleClassSort(type, 'section')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClassSort(type, 'section'); } }}
+              role="columnheader"
+              tabIndex={0}
+              aria-sort={(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' ? ((classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+              aria-label="Sort by section"
+            >
               <div className="flex items-center gap-1 justify-center">
                 <span>Section</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
                 </span>
               </div>
             </div>
-            <div className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group" onClick={() => handleClassSort(type, 'status')}>
+            <div
+              className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded"
+              onClick={() => handleClassSort(type, 'status')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClassSort(type, 'status'); } }}
+              role="columnheader"
+              tabIndex={0}
+              aria-sort={(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' ? ((classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+              aria-label="Sort by system status"
+            >
               <div className="flex items-center gap-1 justify-center">
                 <span>System Status</span>
-                <span className="flex flex-col gap-px">
+                <span className="flex flex-col gap-px" aria-hidden="true">
                   <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
                   <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
                 </span>
