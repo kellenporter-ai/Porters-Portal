@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User } from '../../types';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import { Search, Plus, ChevronDown, ChevronUp, Filter, Briefcase, Pencil, Check, X, Lock, Unlock } from 'lucide-react';
 import { calculateGearScore } from '../../lib/gamification';
 
@@ -20,7 +20,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
   onSaveCodename,
   onSaveCodenameLocked,
 }) => {
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');

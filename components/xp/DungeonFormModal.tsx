@@ -3,7 +3,7 @@ import { Dungeon, DungeonRoomType, BossQuizQuestion, ItemRarity } from '../../ty
 import { Plus, Trash2, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 
 interface DungeonFormModalProps {
@@ -312,7 +312,7 @@ const RoomEditor: React.FC<{
 // -------------------------------------------------------
 const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, editingDungeon }) => {
   const toast = useToast();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   const classOptions = classConfigs.length > 0
     ? [...classConfigs.map(c => c.className), 'GLOBAL']
     : FALLBACK_CLASS_OPTIONS;

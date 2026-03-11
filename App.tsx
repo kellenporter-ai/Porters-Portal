@@ -20,7 +20,7 @@ import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
 import RouteSkeleton from './components/RouteSkeleton';
-import { AppDataProvider, useAppData } from './lib/AppDataContext';
+import { AppDataProvider, useAppData, useAssignments, useClassConfig } from './lib/AppDataContext';
 import { AdminDataProvider, useAdminData } from './lib/AdminDataContext';
 import { ChatProvider, useChat } from './lib/ChatContext';
 import { TAB_TO_PATH, XP_SUB_ROUTES } from './lib/routes';
@@ -180,7 +180,7 @@ const FloatingOverlays: React.FC<{ user: User }> = ({ user }) => {
 // ─── Admin route wrappers (pull from AdminDataContext) ───
 const DashboardRoute: React.FC = () => {
   const { users, submissions } = useAdminData();
-  const { assignments } = useAppData();
+  const { assignments } = useAssignments();
   return <TeacherDashboard users={users} assignments={assignments} submissions={submissions} />;
 };
 
@@ -191,7 +191,7 @@ const AdminPanelRoute: React.FC = () => {
 
 const UserManagementRoute: React.FC = () => {
   const { users, whitelistedEmails } = useAdminData();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   return <UserManagement users={users} whitelistedEmails={whitelistedEmails} classConfigs={classConfigs} onWhitelist={async (e, c) => dataService.addToWhitelist(e, c)} />;
 };
 
@@ -202,13 +202,14 @@ const GroupsRoute: React.FC = () => {
 
 const EnrollmentRoute: React.FC = () => {
   const { availableSections } = useAdminData();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   return <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />;
 };
 
 const EditorRoute: React.FC = () => {
   const { rawUsers, availableSections } = useAdminData();
-  const { assignments, classConfigs } = useAppData();
+  const { assignments } = useAssignments();
+  const { classConfigs } = useClassConfig();
   const navigate = useNavigate();
   return (
     <LessonEditorPage
@@ -224,7 +225,7 @@ const EditorRoute: React.FC = () => {
 
 const StudentReportsRoute: React.FC = () => {
   const { users, submissions } = useAdminData();
-  const { assignments } = useAppData();
+  const { assignments } = useAssignments();
   return <StudentReports users={users} assignments={assignments} submissions={submissions} />;
 };
 

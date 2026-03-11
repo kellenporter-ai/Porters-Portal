@@ -12,7 +12,7 @@ import { sfx } from '../lib/sfx';
 import { getSessionState } from '../lib/useStudentSession';
 import { reportError } from '../lib/errorReporting';
 import { useIsMounted } from '../lib/useIsMounted';
-import { useAppData } from '../lib/AppDataContext';
+import { useGameData } from '../lib/AppDataContext';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
@@ -24,13 +24,13 @@ import LootDropAnimation from './xp/LootDropAnimation';
 import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
 import IntelDossier from './IntelDossier';
-import HomeTab from './dashboard/HomeTab';
-import MissionsTab from './dashboard/MissionsTab';
-import ResourcesTab from './dashboard/ResourcesTab';
-import AgentLoadoutTab from './dashboard/AgentLoadoutTab';
-import BadgesTab from './dashboard/BadgesTab';
-import ProgressDashboard from './dashboard/ProgressDashboard';
-import CalendarView from './dashboard/CalendarView';
+const HomeTab = lazyWithRetry(() => import('./dashboard/HomeTab'));
+const MissionsTab = lazyWithRetry(() => import('./dashboard/MissionsTab'));
+const ResourcesTab = lazyWithRetry(() => import('./dashboard/ResourcesTab'));
+const AgentLoadoutTab = lazyWithRetry(() => import('./dashboard/AgentLoadoutTab'));
+const BadgesTab = lazyWithRetry(() => import('./dashboard/BadgesTab'));
+const ProgressDashboard = lazyWithRetry(() => import('./dashboard/ProgressDashboard'));
+const CalendarView = lazyWithRetry(() => import('./dashboard/CalendarView'));
 const SkillTreePanel = lazyWithRetry(() => import('./xp/SkillTreePanel'));
 const FortuneWheel = lazyWithRetry(() => import('./xp/FortuneWheel'));
 const BossEncounterPanel = lazyWithRetry(() => import('./xp/BossEncounterPanel'));
@@ -70,12 +70,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   // Initialize activeClass from user, but DON'T snap back on every classType change.
   // For multi-class students, activeClass is the local view selector.
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
-  const { xpEvents, quests: allQuests } = useAppData();
+  const { xpEvents, quests: allQuests } = useGameData();
   const reducedMotion = useReducedMotion();
 
   // Preload heavy gamification chunks during idle time
   useEffect(() => {
     const preload = () => {
+      import('./dashboard/HomeTab');
+      import('./dashboard/MissionsTab');
+      import('./dashboard/ResourcesTab');
+      import('./dashboard/AgentLoadoutTab');
+      import('./dashboard/BadgesTab');
+      import('./dashboard/ProgressDashboard');
+      import('./dashboard/CalendarView');
       import('./xp/SkillTreePanel');
       import('./xp/FortuneWheel');
       import('./xp/DungeonPanel');
@@ -571,6 +578,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
              {activeTab === 'HOME' && (
                  <FeatureErrorBoundary feature="Home">
+                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                    <HomeTab
                        assignments={assignments}
                        submissions={submissions}
@@ -585,11 +593,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        userSection={user.section}
                        userClassSections={user.classSections}
                    />
+                   </React.Suspense>
                  </FeatureErrorBoundary>
              )}
 
              {activeTab === 'MISSIONS' && (
                  <FeatureErrorBoundary feature="Missions">
+                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                    <MissionsTab
                        newQuests={newQuests}
                        myAcceptedQuests={myAcceptedQuests}
@@ -598,11 +608,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        onDeployQuest={handleDeployQuest}
                        questActionLoading={questActionLoading}
                    />
+                   </React.Suspense>
                  </FeatureErrorBoundary>
              )}
 
              {activeTab === 'RESOURCES' && (
                  <FeatureErrorBoundary feature="Resources">
+                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                    <ResourcesTab
                        unitGroups={unitGroups}
                        expandedUnits={expandedUnits}
@@ -613,18 +625,23 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        activeClass={activeClass}
                        submissions={submissions}
                    />
+                   </React.Suspense>
                  </FeatureErrorBoundary>
              )}
 
              {activeTab === 'LOADOUT' && (
                <FeatureErrorBoundary feature="Agent Loadout">
+                 <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                  <AgentLoadoutTab user={user} activeClass={activeClass} level={level} />
+                 </React.Suspense>
                </FeatureErrorBoundary>
              )}
 
              {activeTab === 'ACHIEVEMENTS' && (
                <FeatureErrorBoundary feature="Badges">
+                 <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                  <BadgesTab user={user} activeClass={activeClass} />
+                 </React.Suspense>
                </FeatureErrorBoundary>
              )}
 
@@ -712,22 +729,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
              {activeTab === 'PROGRESS' && (
                  <FeatureErrorBoundary feature="Progress">
+                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                    <ProgressDashboard
                        assignments={assignments}
                        submissions={submissions}
                        activeClass={activeClass}
                    />
+                   </React.Suspense>
                  </FeatureErrorBoundary>
              )}
 
              {activeTab === 'CALENDAR' && (
                  <FeatureErrorBoundary feature="Calendar">
+                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                    <CalendarView
                        assignments={assignments}
                        submissions={submissions}
                        activeClass={activeClass}
                        onStartAssignment={onStartAssignment}
                    />
+                   </React.Suspense>
                  </FeatureErrorBoundary>
              )}
 

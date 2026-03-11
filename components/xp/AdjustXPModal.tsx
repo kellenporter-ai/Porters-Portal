@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { User } from '../../types';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import { Search, ChevronDown, Filter, Users } from 'lucide-react';
 import Modal from '../Modal';
 import { useToast } from '../ToastProvider';
@@ -17,7 +17,7 @@ const QUICK_AMOUNTS = [+10, +50, +100, -10, -50, -100];
 
 const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, allStudents }) => {
     const toast = useToast();
-    const { classConfigs } = useAppData();
+    const { classConfigs } = useClassConfig();
     const mountedRef = useRef(true);
     useEffect(() => () => { mountedRef.current = false; }, []);
     const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];

@@ -5,7 +5,7 @@ import BossAvatar from './BossAvatar';
 import SectionPicker from '../SectionPicker';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 import { reportError } from '../../lib/errorReporting';
 
@@ -114,7 +114,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   availableSections,
 }) => {
   const toast = useToast();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const [quizBossForm, setQuizBossForm] = useState<QuizBossFormState>(emptyForm());
   const [formModifiers, setFormModifiers] = useState<BossModifier[]>([]);

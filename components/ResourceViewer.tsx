@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, UserRole, TelemetryMetrics, Submission } from '../types';
-import { useAppData } from '../lib/AppDataContext';
+import { useAssignments } from '../lib/AppDataContext';
 import { useChat } from '../lib/ChatContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
@@ -33,7 +33,7 @@ interface ResourceViewerProps {
 const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { assignments, loading: appDataLoading } = useAppData();
+  const { assignments, loading: appDataLoading } = useAssignments();
   const { setIsCommOpen } = useChat();
   const toast = useToast();
   const { confirm } = useConfirm();

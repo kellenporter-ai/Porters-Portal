@@ -389,7 +389,7 @@ const QuizBossCard: React.FC<{
           <div className="relative rounded-xl bg-black/30 border border-white/5 overflow-hidden">
             {/* Boss Ability Alert */}
             {showAbility && (
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/80 to-transparent p-4 text-center animate-in slide-in-from-top duration-300 z-10">
+              <div role="alert" aria-live="assertive" className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/80 to-transparent p-4 text-center animate-in slide-in-from-top duration-300 z-10">
                 <div className="text-lg font-black text-red-400 uppercase tracking-wider">{showAbility.name}</div>
                 <div className="text-xs text-red-300">
                   {showAbility.effect === 'AOE_DAMAGE' && `All students take ${showAbility.value} damage!`}
@@ -424,7 +424,7 @@ const QuizBossCard: React.FC<{
               <span className="text-red-400 font-mono">{currentHp} HP</span>
               <span className="text-gray-600">{effectiveMaxHp}</span>
             </div>
-            <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden" role="progressbar" aria-valuenow={currentHp} aria-valuemin={0} aria-valuemax={effectiveMaxHp} aria-label="Boss health">
               <div
                 className="h-3 rounded-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-500"
                 style={{ width: `${hpPercent}%` }}
@@ -438,7 +438,7 @@ const QuizBossCard: React.FC<{
               <span className="text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp === -1 ? playerMaxHp : playerHp}</span>
               <span className="text-gray-600">{playerMaxHp}</span>
             </div>
-            <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden" role="progressbar" aria-valuenow={playerHp === -1 ? playerMaxHp : playerHp} aria-valuemin={0} aria-valuemax={playerMaxHp} aria-label="Your health">
               <div
                 className={`h-2.5 rounded-full transition-all duration-500 ${playerHpPercent > 50 ? 'bg-gradient-to-r from-emerald-600 to-green-500' : playerHpPercent > 25 ? 'bg-gradient-to-r from-yellow-600 to-orange-500' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
                 style={{ width: `${playerHpPercent}%` }}
@@ -463,7 +463,7 @@ const QuizBossCard: React.FC<{
 
           {/* Phase Transition Overlay */}
           {showPhaseTransition && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-500">
+            <div role="alertdialog" aria-label={`Phase shift: ${showPhaseTransition.name}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-500">
               <div className="text-center space-y-4 animate-in zoom-in-95 duration-700">
                 <div className="text-6xl font-black text-red-500 animate-pulse">PHASE SHIFT</div>
                 <div className="text-2xl font-bold text-orange-400">{showPhaseTransition.name}</div>
@@ -476,7 +476,7 @@ const QuizBossCard: React.FC<{
 
           {/* Knocked out state */}
           {knockedOut ? (
-            <div className="text-center py-8">
+            <div role="alert" className="text-center py-8">
               <XCircle className="w-12 h-12 text-red-400 mx-auto mb-2" />
               <p className="text-sm font-bold text-red-400">Knocked Out!</p>
               <p className="text-xs text-gray-500 mt-1">The boss has defeated you. Gear up with better armor (Analysis) and health (Charisma) to survive longer.</p>
@@ -503,7 +503,7 @@ const QuizBossCard: React.FC<{
 
               <p className="text-base text-white font-semibold leading-relaxed">{question.stem}</p>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2.5" role="radiogroup" aria-label="Answer options">
                 {question.options.map((option, idx) => {
                   const isSelected = selectedAnswer === idx;
                   const showResult = answerResult && isSelected;
@@ -512,6 +512,8 @@ const QuizBossCard: React.FC<{
                   return (
                     <button
                       key={idx}
+                      role="radio"
+                      aria-checked={isSelected}
                       onClick={() => handleLocalAnswer(quiz.id, question.id, idx)}
                       disabled={submitting || !!answerResult || knockedOut}
                       className={`w-full text-left p-4 rounded-xl border text-base transition-all ${
@@ -534,7 +536,7 @@ const QuizBossCard: React.FC<{
 
               {/* Answer result feedback */}
               {answerResult && answerResult.correct && (
-                <div className="text-center space-y-1">
+                <div role="status" aria-live="polite" className="text-center space-y-1">
                   <div className="text-base text-amber-400 font-bold animate-bounce">
                     <Zap className="w-5 h-5 inline mr-1" />
                     {answerResult.isCrit ? 'CRITICAL HIT! ' : ''}-{answerResult.damage} HP to boss!
@@ -547,13 +549,13 @@ const QuizBossCard: React.FC<{
                 </div>
               )}
               {answerResult && !answerResult.correct && answerResult.shieldBlocked && (
-                <div className="text-center text-sm text-cyan-400 font-bold animate-bounce">
+                <div role="status" aria-live="polite" className="text-center text-sm text-cyan-400 font-bold animate-bounce">
                   <Shield className="w-4 h-4 inline mr-1" />
                   Shield blocked the attack!
                 </div>
               )}
               {answerResult && !answerResult.correct && !answerResult.shieldBlocked && answerResult.playerDamage && answerResult.playerDamage > 0 && (
-                <div className="text-center text-sm text-red-400 font-bold animate-bounce">
+                <div role="status" aria-live="polite" className="text-center text-sm text-red-400 font-bold animate-bounce">
                   <Heart className="w-4 h-4 inline mr-1" />
                   Boss hits you for {answerResult.playerDamage} damage!
                 </div>

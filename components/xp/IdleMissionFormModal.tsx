@@ -3,7 +3,7 @@ import { IdleMission, ItemRarity } from '../../types';
 import { Plus, Trash2 } from 'lucide-react';
 import Modal from '../Modal';
 import { dataService } from '../../services/dataService';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import { useToast } from '../ToastProvider';
 
 interface IdleMissionFormModalProps {
@@ -88,7 +88,7 @@ function formToMission(form: FormState, id: string): IdleMission {
 
 const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onClose, editingMission }) => {
   const toast = useToast();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : FALLBACK_CLASS_OPTIONS;
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);

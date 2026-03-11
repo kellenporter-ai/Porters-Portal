@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, XPEvent, Quest, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem, Dungeon, IdleMission } from '../types';
-import { useAppData } from '../lib/AppDataContext';
+import { useClassConfig } from '../lib/AppDataContext';
 import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain, Copy } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
@@ -46,7 +46,7 @@ interface XPManagementProps {
 const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const activeTab: XPTab = (initialTab && TAB_NAME_MAP[initialTab]) || 'OPERATIVES';
 

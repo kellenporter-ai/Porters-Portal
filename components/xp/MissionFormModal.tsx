@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { ItemRarity, CustomItem } from '../../types';
 import { getAssetColors } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 import SectionPicker from '../SectionPicker';
 import { Save, FolderOpen, Copy, Trash2 } from 'lucide-react';
@@ -69,7 +69,7 @@ interface MissionFormModalProps {
 }
 
 const MissionFormModal: React.FC<MissionFormModalProps> = ({ isOpen, onClose, form, setForm, onSubmit, onSaveDraft, isSubmitting, availableSections = [], customItems = [] }) => {
-    const { classConfigs } = useAppData();
+    const { classConfigs } = useClassConfig();
     const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
     const isSkillCheck = form.type === 'SKILL_CHECK';
     const [templates, setTemplates] = useState<QuestTemplate[]>([]);

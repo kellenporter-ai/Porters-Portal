@@ -225,13 +225,13 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                     <span className="text-[10px] bg-white/10 text-gray-400 px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[10px] text-gray-500">/ {totalPossibleXP} XP</span></div>
+                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[10px] text-gray-500">/ {totalPossibleXP} XP</span></div>
                     <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
                 </div>
             </div>
-            <div className="flex gap-2 px-4 py-3 border-b border-white/5 bg-black/20">
+            <div className="flex gap-2 px-4 py-3 border-b border-white/5 bg-black/20" role="tablist" aria-label="Question difficulty tiers">
                 {[1, 2, 3].map(tier => { const t = TIER_LABELS[tier]; const tQs = selectedQuestions.filter(q => q.tier === tier); const ans = tQs.filter(q => answers[q.id]?.submitted).length; const cor = tQs.filter(q => answers[q.id]?.correct).length; return (
-                    <button key={tier} onClick={() => setActiveTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTier === tier ? `${t.bg} ${t.color} ${t.border} border` : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                    <button key={tier} role="tab" aria-selected={activeTier === tier} aria-controls="review-question-panel" onClick={() => setActiveTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTier === tier ? `${t.bg} ${t.color} ${t.border} border` : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
                         {t.icon}<span className="hidden sm:inline">{t.name}</span><span className="sm:hidden">Tier {tier}</span>
                         {ans > 0 && <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-400'}`}>{cor}/{tQs.length}</span>}
                     </button>);
@@ -243,7 +243,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                     <button onClick={handleNewSet} className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-1.5"><RefreshCw className="w-3 h-3" /> New Questions</button>
                 </div>
             )}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+            <div id="review-question-panel" role="tabpanel" aria-label={`Tier ${activeTier} questions: ${TIER_LABELS[activeTier].name}`} className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
                 {tierQuestions.map((question, idx) => {
                     const answer = answers[question.id]; const isExpanded = expandedQuestion === question.id; const isSubmitted = answer?.submitted; const isCorrect = answer?.correct; const ts = TIER_LABELS[question.tier];
                     return (
@@ -283,10 +283,10 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                         </div>
                                     )}
                                     {!isSubmitted ? (
-                                        <button onClick={() => handleSubmit(question)} disabled={!answer?.selected || (Array.isArray(answer?.selected) && answer.selected.length === 0) || submittingId === question.id}
+                                        <button onClick={() => handleSubmit(question)} disabled={!answer?.selected || (Array.isArray(answer?.selected) && answer.selected.length === 0) || submittingId === question.id} aria-busy={submittingId === question.id}
                                             className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold rounded-xl transition">{submittingId === question.id ? 'Submitting...' : 'Submit Answer'}</button>
                                     ) : (
-                                        <div className={`p-4 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+                                        <div role="alert" className={`p-4 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
                                             <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : `Incorrect — ${answer?.penalty || Math.ceil(question.xp / 2)} XP penalty`}</span></div>
                                             <p className="text-xs text-gray-400 leading-relaxed">{question.explanation}</p>
                                         </div>
@@ -303,9 +303,9 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
 };
 
 const MCInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSelect: (q: string, o: string, t: string) => void }> = ({ question, answer, onSelect }) => (
-    <div className="space-y-2">{question.options.map(opt => {
+    <div className="space-y-2" role="radiogroup" aria-label="Answer options">{question.options.map(opt => {
         const sel = answer?.selected === opt.id; const show = answer?.submitted; const right = opt.id === question.correctAnswer;
-        return (<button key={opt.id} onClick={() => onSelect(question.id, opt.id, question.type)} disabled={answer?.submitted}
+        return (<button key={opt.id} role="radio" aria-checked={sel} onClick={() => onSelect(question.id, opt.id, question.type)} disabled={answer?.submitted}
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : sel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-white/5 text-gray-500') : sel ? 'border-purple-500/50 bg-purple-500/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
             <span className="font-mono font-bold mr-2 text-xs">{opt.id.toUpperCase()}.</span> {opt.text}</button>);
     })}</div>
@@ -313,9 +313,9 @@ const MCInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSele
 
 const MultiSelectInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSelect: (q: string, o: string, t: string) => void }> = ({ question, answer, onSelect }) => {
     const selected = (answer?.selected as string[]) || []; const correctIds = question.correctAnswer as string[];
-    return (<div className="space-y-2"><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Select all that apply</p>{question.options.map(opt => {
+    return (<div className="space-y-2" role="group" aria-label="Select all that apply"><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Select all that apply</p>{question.options.map(opt => {
         const isSel = selected.includes(opt.id); const show = answer?.submitted; const right = correctIds.includes(opt.id);
-        return (<button key={opt.id} onClick={() => onSelect(question.id, opt.id, 'multiple_select')} disabled={answer?.submitted}
+        return (<button key={opt.id} role="checkbox" aria-checked={isSel} onClick={() => onSelect(question.id, opt.id, 'multiple_select')} disabled={answer?.submitted}
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : isSel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-white/5 text-gray-500') : isSel ? 'border-purple-500/50 bg-purple-500/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${isSel ? 'border-purple-500 bg-purple-500' : 'border-gray-600'}`}>{isSel && <CheckCircle2 className="w-3 h-3 text-white" />}</div>
             <span><span className="font-mono font-bold mr-1 text-xs">{opt.id.toUpperCase()}.</span> {opt.text}</span></button>);
@@ -330,13 +330,13 @@ const RankingInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; o
             const opt = question.options.find(o => o.id === id); const rightPos = show && correctOrder[i] === id;
             return (<span key={id} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${show ? (rightPos ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30') : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>{i + 1}. {opt?.text.slice(0, 30)}{(opt?.text.length || 0) > 30 ? '...' : ''}</span>);
         })}</div>}
-        {question.options.map(opt => {
+        <div role="group" aria-label="Ranking options">{question.options.map(opt => {
             const isSel = selected.includes(opt.id); const pos = selected.indexOf(opt.id);
-            return (<button key={opt.id} onClick={() => onSelect(question.id, opt.id, 'ranking')} disabled={answer?.submitted}
+            return (<button key={opt.id} onClick={() => onSelect(question.id, opt.id, 'ranking')} disabled={answer?.submitted} aria-pressed={isSel} aria-label={`${opt.text}${isSel ? `, ranked ${pos + 1}` : ''}`}
                 className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${isSel ? 'border-purple-500/50 bg-purple-500/10 text-purple-300 opacity-60' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
                 {isSel ? <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-bold flex items-center justify-center">{pos + 1}</span> : <span className="w-6 h-6 rounded-full border-2 border-gray-600 text-xs flex items-center justify-center text-gray-600">?</span>}
                 {opt.text}</button>);
-        })}
+        })}</div>
     </div>);
 };
 

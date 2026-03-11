@@ -120,12 +120,12 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-[9px] font-black ${completionPercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
+            <span className={`text-[11px] font-black ${completionPercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
               {completionPercent}
             </span>
           </div>
         </div>
-        <span className="text-[8px] text-gray-500 font-mono">{minutes}:{String(seconds).padStart(2, '0')}</span>
+        <span className="text-[11px] text-gray-500 font-mono">{minutes}:{String(seconds).padStart(2, '0')}</span>
         {/* Mini block dots — only visible types */}
         <div className="flex flex-col gap-0.5 items-center mt-1">
           {blocks.map((block, index) => {
@@ -158,7 +158,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
     <div className="w-44 flex-shrink-0 flex flex-col gap-3 overflow-y-auto custom-scrollbar py-2 pr-1">
       {/* Header with collapse button */}
       <div className="flex items-center justify-between px-2">
-        <span className="text-[8px] text-gray-500 uppercase font-bold tracking-widest">Progress</span>
+        <span className="text-[11px] text-gray-500 uppercase font-bold tracking-widest">Progress</span>
         <button
           onClick={() => setCollapsed(true)}
           className="p-1 text-gray-500 hover:text-purple-400 transition cursor-pointer"
@@ -186,10 +186,10 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             </span>
           </div>
         </div>
-        <div className="text-[9px] text-gray-500 font-bold">
+        <div className="text-[11px] text-gray-500 font-bold">
           {completedInteractive}/{totalInteractive} complete
         </div>
-        <div className="flex items-center gap-2 text-[9px] text-gray-500 font-mono">
+        <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono">
           <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {minutes}:{String(seconds).padStart(2, '0')}</span>
           {xpEarned > 0 && <span className="text-amber-400">+{xpEarned}</span>}
         </div>
@@ -197,7 +197,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
 
       {/* Block navigation — filtered to useful types */}
       <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex flex-col gap-0.5">
-        <div className="text-[8px] text-gray-500 uppercase font-bold tracking-widest px-1.5 mb-0.5">Contents</div>
+        <div className="text-[11px] text-gray-500 uppercase font-bold tracking-widest px-1.5 mb-0.5">Contents</div>
         {blocks.map((block, index) => {
           if (!VISIBLE_TYPES.has(block.type)) return null;
           const isCurrent = index === currentBlockIndex;
@@ -211,7 +211,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
               <button
                 key={block.id}
                 onClick={() => onNavigateToBlock(index)}
-                className={`flex items-center gap-1.5 px-1.5 py-1 mt-1 first:mt-0 text-left text-[9px] font-bold uppercase tracking-wider cursor-pointer transition ${
+                className={`flex items-center gap-1.5 px-1.5 py-1 mt-1 first:mt-0 text-left text-[11px] font-bold uppercase tracking-wider cursor-pointer transition ${
                   isCurrent ? 'text-purple-300' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
@@ -224,7 +224,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             <button
               key={block.id}
               onClick={() => onNavigateToBlock(index)}
-              className={`flex items-center gap-1.5 px-1.5 py-1 rounded-md text-left transition-all text-[10px] cursor-pointer ${
+              className={`flex items-center gap-1.5 px-1.5 py-1 rounded-md text-left transition-all text-[11px] cursor-pointer ${
                 isCurrent
                   ? 'bg-purple-500/20 text-purple-300'
                   : isComplete

@@ -64,6 +64,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [digestGenerating, setDigestGenerating] = useState(false);
   const [csvMaxPoints, setCsvMaxPoints] = useState(100);
   const [showNotStarted, setShowNotStarted] = useState(false);
+  const [batchAcceptingAI, setBatchAcceptingAI] = useState(false);
+  const [batchAcceptProgress, setBatchAcceptProgress] = useState<{ done: number; total: number } | null>(null);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -591,6 +593,60 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       <Sparkles className="w-6 h-6" />{aiSuggestedCount}
                     </div>
                     <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Suggested</div>
+                    <button
+                      disabled={batchAcceptingAI}
+                      onClick={async () => {
+                        const pending = allStudentGroups.filter(g => g.hasAISuggestion && !g.hasRubricGrade);
+                        if (pending.length === 0) return;
+                        const confirmed = await confirm({ message: `Accept all ${pending.length} AI-suggested grades? You can still edit them individually later.`, confirmLabel: 'Accept All', variant: 'info' });
+                        if (!confirmed) return;
+                        setBatchAcceptingAI(true);
+                        setBatchAcceptProgress({ done: 0, total: pending.length });
+                        const TIER_PERCENTAGES = [0, 55, 65, 85, 100];
+                        let accepted = 0;
+                        let failed = 0;
+                        for (const group of pending) {
+                          const sub = group.submissions.find(s => s.aiSuggestedGrade?.status === 'pending_review');
+                          if (!sub?.aiSuggestedGrade || !selectedAssessment?.rubric) continue;
+                          try {
+                            const grades: Record<string, Record<string, RubricSkillGrade>> = {};
+                            for (const q of selectedAssessment.rubric.questions) {
+                              const aiQ = sub.aiSuggestedGrade.grades[q.id];
+                              if (!aiQ) continue;
+                              grades[q.id] = {};
+                              for (const s of q.skills) {
+                                const aiS = aiQ[s.id];
+                                if (aiS) {
+                                  grades[q.id][s.id] = { selectedTier: aiS.suggestedTier, percentage: TIER_PERCENTAGES[aiS.suggestedTier] };
+                                }
+                              }
+                            }
+                            const pct = calculateRubricPercentage(grades, selectedAssessment.rubric);
+                            const rubricGrade: RubricGrade = { grades, overallPercentage: pct, gradedAt: new Date().toISOString(), gradedBy: 'Admin (batch)' };
+                            await dataService.acceptAISuggestedGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
+                            setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
+                              ...s, rubricGrade, score: pct,
+                              aiSuggestedGrade: { ...s.aiSuggestedGrade!, status: 'accepted' as const },
+                            } : s));
+                            accepted++;
+                          } catch (err) {
+                            reportError(err, { method: 'batchAcceptAI', submissionId: sub.id });
+                            failed++;
+                          }
+                          setBatchAcceptProgress({ done: accepted + failed, total: pending.length });
+                        }
+                        setBatchAcceptingAI(false);
+                        setBatchAcceptProgress(null);
+                        toast.success(`Batch grading complete: ${accepted} accepted${failed > 0 ? `, ${failed} failed` : ''}`);
+                      }}
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-lg px-2 py-1.5 transition disabled:opacity-50"
+                    >
+                      {batchAcceptingAI ? (
+                        <><RefreshCw className="w-3 h-3 animate-spin" /> {batchAcceptProgress ? `${batchAcceptProgress.done}/${batchAcceptProgress.total}` : 'Processing...'}</>
+                      ) : (
+                        <><CheckCircle className="w-3 h-3" /> Accept All AI Grades</>
+                      )}
+                    </button>
                   </div>
                 )}
                 {/* In Progress stat */}
@@ -1528,6 +1584,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             )}
                             {isSavingRubric ? 'Saving...' : isAlreadyGraded ? 'Update Grade' : 'Save Grade'}
                           </button>
+                          {/* Grade Next — navigate to next ungraded student */}
+                          {(() => {
+                            const nextUngraded = studentGroups.find(g => g.needsGrading && g.userId !== gradingStudentId);
+                            return nextUngraded ? (
+                              <button
+                                onClick={() => selectStudent(nextUngraded.userId)}
+                                className="flex items-center gap-1.5 text-xs font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 px-3 py-2 rounded-lg transition"
+                              >
+                                Grade Next <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            ) : null;
+                          })()}
                         </div>
                         {isAlreadyGraded && sub.rubricGrade && (
                           <div className="text-[10px] text-gray-600 mt-1.5">

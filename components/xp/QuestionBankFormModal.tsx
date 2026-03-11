@@ -3,7 +3,7 @@ import { BossQuestionBank } from '../../types';
 import { Plus, Trash2, Check, X, Upload, FileJson } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
-import { useAppData } from '../../lib/AppDataContext';
+import { useClassConfig } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 
 interface QuestionBankFormModalProps {
@@ -37,7 +37,7 @@ const emptyForm: BankFormState = {
 
 const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, onClose, editingBank }) => {
   const toast = useToast();
-  const { classConfigs } = useAppData();
+  const { classConfigs } = useClassConfig();
   const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
   const [bankForm, setBankForm] = useState<BankFormState>(emptyForm);
   const [bankImportError, setBankImportError] = useState<string | null>(null);

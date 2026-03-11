@@ -10,7 +10,7 @@ import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
 import SpaceBackground from './SpaceBackground';
 import { dataService } from '../services/dataService';
-import { useAppData } from '../lib/AppDataContext';
+import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 
 interface LayoutProps {
   user: User;
@@ -118,7 +118,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   const NavItems = () => {
-    const { enabledFeatures, assignments } = useAppData();
+    const { enabledFeatures } = useClassConfig();
+    const { assignments } = useAssignments();
 
     // Urgency dot: count overdue or due-today assignments for students
     const hasUrgentAssignments = user.role === UserRole.STUDENT && assignments.some(a => {
