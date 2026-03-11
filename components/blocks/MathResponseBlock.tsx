@@ -427,28 +427,16 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
 
   // ── Step mutations ──
 
-  // Check if a step label indicates a list-mode input (Given/Find)
-  const isListStep = useCallback((label: string) => {
-    const l = label.toLowerCase().replace(/[:\s]/g, '');
-    return l === 'given' || l === 'find';
-  }, []);
-
   const updateStepInput = useCallback(
     (index: number, value: string) => {
       setSteps(prev => {
-        const step = prev[index];
-        // For list-mode steps, convert each line separately
-        let latex: string;
-        if (isListStep(step.label)) {
-          latex = value
-            .split('\n')
-            .map(line => line.trim())
-            .filter(Boolean)
-            .map(line => naturalToLatex(line))
-            .join(' \\\\ ');
-        } else {
-          latex = naturalToLatex(value);
-        }
+        // Convert each line separately (all steps are list-mode)
+        const latex = value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => naturalToLatex(line))
+          .join(' \\\\ ');
         const next = prev.map((s, i) =>
           i === index ? { ...s, input: value, latex } : s
         );
@@ -456,7 +444,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
         return next;
       });
     },
-    [emitChange, isListStep]
+    [emitChange]
   );
 
   const updateStepLabel = useCallback(
@@ -586,30 +574,21 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
               </span>
               <div className="bg-white/5 rounded-lg px-3 py-2 overflow-x-auto">
                 {step.latex.trim() ? (
-                  isListStep(step.label) ? (
-                    <div className="space-y-1">
-                      {step.latex.split(' \\\\ ').map((line, li) => (
+                  <div className="space-y-1">
+                    {step.latex.split(' \\\\ ').map((line, li) => (
+                      <div
+                        key={li}
+                        className="text-white katex-preview flex items-center gap-2"
+                      >
+                        <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
                         <div
-                          key={li}
-                          className="text-white katex-preview flex items-center gap-2"
-                        >
-                          <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: renderLatex(line.trim()),
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      className="text-white katex-preview"
-                      dangerouslySetInnerHTML={{
-                        __html: renderLatex(step.latex),
-                      }}
-                    />
-                  )
+                          dangerouslySetInnerHTML={{
+                            __html: renderLatex(line.trim()),
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-gray-500 text-xs italic">No response</p>
                 )}
@@ -670,69 +649,44 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                 </datalist>
               </div>
 
-              {/* Natural math input — textarea for list steps (Given/Find), input for others */}
+              {/* Natural math input — all steps use textarea with per-line bullet rendering */}
               <div className="flex-1 min-w-0">
                 <label className="sr-only" htmlFor={`step-input-${index}`}>
                   Step {index + 1} math input
                 </label>
-                {isListStep(step.label) ? (
-                  <textarea
-                    id={`step-input-${index}`}
-                    value={step.input ?? step.latex}
-                    onChange={e => updateStepInput(index, e.target.value)}
-                    onFocus={e => {
-                      focusedInputRef.current = {
-                        index,
-                        el: e.currentTarget as unknown as HTMLInputElement,
-                      };
-                    }}
-                    onKeyDown={e => {
-                      if (
-                        (e.ctrlKey || e.metaKey) &&
-                        e.key === 'Enter'
-                      ) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                    disabled={submitted}
-                    rows={3}
-                    placeholder={
-                      step.label.toLowerCase().includes('given')
-                        ? 'List known values, one per line:\nv_i = 10 m/s\na = 2 m/s^2\nt = 5 s'
-                        : 'List what you need to find, one per line:\nv_f = ?\nd = ?'
+                <textarea
+                  id={`step-input-${index}`}
+                  ref={el => {
+                    inputRefs.current[index] = el as unknown as HTMLInputElement;
+                  }}
+                  value={step.input ?? step.latex}
+                  onChange={e => updateStepInput(index, e.target.value)}
+                  onFocus={e => {
+                    focusedInputRef.current = {
+                      index,
+                      el: e.currentTarget as unknown as HTMLInputElement,
+                    };
+                  }}
+                  onKeyDown={e => {
+                    if (
+                      (e.ctrlKey || e.metaKey) &&
+                      e.key === 'Enter'
+                    ) {
+                      e.preventDefault();
+                      handleSubmit();
                     }
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y"
-                  />
-                ) : (
-                  <input
-                    id={`step-input-${index}`}
-                    ref={el => {
-                      inputRefs.current[index] = el;
-                    }}
-                    type="text"
-                    value={step.input ?? step.latex}
-                    onChange={e => updateStepInput(index, e.target.value)}
-                    onFocus={e => {
-                      focusedInputRef.current = {
-                        index,
-                        el: e.currentTarget,
-                      };
-                    }}
-                    onKeyDown={e => {
-                      if (
-                        (e.ctrlKey || e.metaKey) &&
-                        e.key === 'Enter'
-                      ) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                    disabled={submitted}
-                    placeholder="Type math naturally \u2014 e.g. v = d/t, F = m \u00D7 a"
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
-                  />
-                )}
+                  }}
+                  disabled={submitted}
+                  rows={3}
+                  placeholder={
+                    step.label.toLowerCase().includes('given')
+                      ? 'List known values, one per line:\nv_i = 10 m/s\na = 2 m/s^2\nt = 5 s'
+                      : step.label.toLowerCase().includes('find')
+                      ? 'List what you need to find, one per line:\nv_f = ?\nd = ?'
+                      : 'Type math naturally — one expression per line\ne.g. v = d/t\nF = m × a'
+                  }
+                  className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y"
+                />
               </div>
 
               {/* Delete button */}
@@ -757,36 +711,25 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   aria-live="polite"
                   aria-label={`Preview for step ${index + 1}`}
                 >
-                  {isListStep(step.label) ? (
-                    <div className="space-y-1">
-                      {step.latex.split(' \\\\ ').map((line, li) => (
+                  <div className="space-y-1">
+                    {step.latex.split(' \\\\ ').map((line, li) => (
+                      <div
+                        key={li}
+                        className="text-white katex-preview flex items-center gap-2"
+                      >
+                        <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
                         <div
-                          key={li}
-                          className="text-white katex-preview flex items-center gap-2"
-                        >
-                          <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: renderLatex(line.trim()),
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      className="text-white katex-preview"
-                      dangerouslySetInnerHTML={{
-                        __html: renderLatex(step.latex),
-                      }}
-                    />
-                  )}
+                          dangerouslySetInnerHTML={{
+                            __html: renderLatex(line.trim()),
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <p className="text-gray-600 text-xs italic px-3 py-1">
-                  {isListStep(step.label)
-                    ? 'List items will preview here as you type'
-                    : 'Preview appears here as you type'}
+                  Preview appears here as you type
                 </p>
               )}
             </div>

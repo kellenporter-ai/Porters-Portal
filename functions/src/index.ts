@@ -959,6 +959,13 @@ export const craftItem = onCall(async (request) => {
       }
       const pp = item.affixes.filter((a: Affix) => a.type === "PREFIX").sort((a: Affix, b: Affix) => b.tier - a.tier)[0];
       const ps = item.affixes.filter((a: Affix) => a.type === "SUFFIX").sort((a: Affix, b: Affix) => b.tier - a.tier)[0];
+      // Backfill baseName for old items that lack it
+      if (!item.baseName) {
+        let derived = item.name || "";
+        for (const p of PREFIX_DEFS) derived = derived.replace(new RegExp(`^${p.name}\\s`), "");
+        for (const s of SUFFIX_DEFS) derived = derived.replace(new RegExp(`\\s${s.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`), "");
+        item.baseName = derived.trim() || (BASE_ITEMS[item.slot]?.[0]?.name ?? item.slot ?? "Item");
+      }
       let newName = item.baseName;
       if (pp) newName = `${pp.name} ${newName}`;
       if (ps) newName = `${newName} ${ps.name}`;
