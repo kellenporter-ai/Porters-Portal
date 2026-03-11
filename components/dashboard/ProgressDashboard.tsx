@@ -52,17 +52,27 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
   // ─── Completion rates ───────────────────
   const completionStats = useMemo(() => {
     const total = classAssignments.length;
-    const started = submissions.filter(s =>
-      classAssignments.some(a => a.id === s.assignmentId) && s.status !== 'STARTED',
-    ).length;
-    const withScore = submissions.filter(s =>
-      classAssignments.some(a => a.id === s.assignmentId) && s.score > 0,
+    // Deduplicate: count each assignment at most once (retakes shouldn't inflate count)
+    const completedIds = new Set(
+      submissions
+        .filter(s => classAssignments.some(a => a.id === s.assignmentId) && s.status !== 'STARTED')
+        .map(s => s.assignmentId),
     );
-    const avgScore = withScore.length > 0
-      ? withScore.reduce((sum, s) => sum + s.score, 0) / withScore.length
+    const completed = completedIds.size;
+    // For avg score, take the best score per assignment
+    const bestScores = new Map<string, number>();
+    submissions
+      .filter(s => classAssignments.some(a => a.id === s.assignmentId) && s.score > 0)
+      .forEach(s => {
+        const prev = bestScores.get(s.assignmentId) || 0;
+        if (s.score > prev) bestScores.set(s.assignmentId, s.score);
+      });
+    const scoreValues = [...bestScores.values()];
+    const avgScore = scoreValues.length > 0
+      ? scoreValues.reduce((sum, v) => sum + v, 0) / scoreValues.length
       : 0;
-    const rate = total > 0 ? Math.round((started / total) * 100) : 0;
-    return { total, started, rate, avgScore: Math.round(avgScore) };
+    const rate = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+    return { total, completed, rate, avgScore: Math.round(avgScore), scoredCount: scoreValues.length };
   }, [classAssignments, submissions]);
 
   // ─── Scores over time (by submission date) ───
@@ -167,14 +177,14 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
         <StatCard
           label="Completion"
           value={`${completionStats.rate}%`}
-          sub={`${completionStats.started} of ${completionStats.total} assignments`}
+          sub={`${completionStats.completed} of ${completionStats.total} assignments`}
           icon={<CheckCircle2 className="w-4 h-4" />}
           color="bg-emerald-500/20 text-emerald-400"
         />
         <StatCard
           label="Avg Score"
           value={completionStats.avgScore > 0 ? `${completionStats.avgScore}%` : '—'}
-          sub={scoresOverTime.length > 0 ? `Across ${scoresOverTime.length} graded` : 'No graded work yet'}
+          sub={completionStats.scoredCount > 0 ? `Across ${completionStats.scoredCount} graded` : 'No graded work yet'}
           icon={<Target className="w-4 h-4" />}
           color="bg-blue-500/20 text-blue-400"
         />

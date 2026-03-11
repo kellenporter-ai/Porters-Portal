@@ -121,13 +121,14 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
                     x={lx}
                     y={ly}
                     fill="white"
-                    fontSize="9"
+                    fontSize="11"
                     fontWeight="bold"
                     textAnchor="middle"
                     dominantBaseline="central"
                     transform={`rotate(${textAngle}, ${lx}, ${ly})`}
+                    style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
                   >
-                    {seg.label}
+                    {seg.label.length > 12 ? seg.label.slice(0, 11) + '…' : seg.label}
                   </text>
                 </g>
               );

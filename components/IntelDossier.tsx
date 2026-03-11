@@ -205,7 +205,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricCard label="Class XP" value={classXp.toLocaleString()} sub={`${totalXp.toLocaleString()} total across all classes`} color="text-amber-400" icon={<Zap className="w-3.5 h-3.5" />} />
         <MetricCard label="Gear Score" value={gearScore} sub={`${Object.values(equipped).filter(Boolean).length}/8 slots filled`} color="text-purple-400" icon={<Shield className="w-3.5 h-3.5" />} />
-        <MetricCard label="Resources Accessed" value={classSubmissions.length} sub={`${statusBreakdown.SUCCESS} excellent`} color="text-emerald-400" icon={<Target className="w-3.5 h-3.5" />} />
+        <MetricCard label="Resources Accessed" value={classSubmissions.length} sub={`${statusBreakdown.SUCCESS} scored well`} color="text-emerald-400" icon={<Target className="w-3.5 h-3.5" />} />
         <MetricCard label="Cyber-Flux" value={currency} sub="crafting currency" color="text-cyan-400" icon={<Sparkles className="w-3.5 h-3.5" />} />
       </div>
 

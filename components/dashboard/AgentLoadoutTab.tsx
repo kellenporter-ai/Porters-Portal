@@ -290,7 +290,9 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               )}
             </>
           ) : (
-            <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{slot.slice(0, 4)}</span>
+            <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{
+              { HEAD: 'HEAD', HANDS: 'HANDS', RING1: 'RING', RING2: 'RING', AMULET: 'AMUL.', CHEST: 'CHEST', BELT: 'BELT', FEET: 'FEET' }[slot] || slot.slice(0, 4)
+            }</span>
           )}
         </div>
       </div>

@@ -259,7 +259,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
               </span>
             )}
             {resource.lastEngagement && (
-              <span className="text-[9px] text-green-500 font-bold">{engMin}m engaged</span>
+              <span className="text-[9px] text-emerald-400 font-bold">{engMin}m engaged</span>
             )}
             {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
               <span className="text-[9px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>

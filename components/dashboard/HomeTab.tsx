@@ -168,15 +168,19 @@ const HomeTab: React.FC<HomeTabProps> = ({
   // Completion stats
   const stats = useMemo(() => {
     const total = classAssignments.length;
-    const started = submissions.filter(s =>
-      classAssignments.some(a => a.id === s.assignmentId) && s.status !== 'STARTED',
-    ).length;
+    // Deduplicate: count each assignment at most once (retakes shouldn't inflate count)
+    const completedIds = new Set(
+      submissions
+        .filter(s => classAssignments.some(a => a.id === s.assignmentId) && s.status !== 'STARTED')
+        .map(s => s.assignmentId),
+    );
+    const completed = completedIds.size;
     const totalTime = submissions
       .filter(s => classAssignments.some(a => a.id === s.assignmentId))
       .reduce((sum, s) => sum + (s.metrics?.engagementTime || 0), 0);
     const practicesMastered = classAssignments.filter(a => practiceCompletion[a.id]?.completed).length;
 
-    return { total, started, totalTime, practicesMastered };
+    return { total, completed, totalTime, practicesMastered };
   }, [classAssignments, submissions, practiceCompletion]);
 
   // New quests
@@ -322,7 +326,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           >
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
-                <div className="text-xl font-black text-white">{stats.started}</div>
+                <div className="text-xl font-black text-white">{stats.completed}</div>
                 <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-1">Completed</div>
                 <div className="text-[9px] text-gray-500">of {stats.total}</div>
               </div>
