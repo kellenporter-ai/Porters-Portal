@@ -865,7 +865,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       </div>
 
       {/* Sticky bottom banner for assessments — always-visible submit CTA */}
-      {isAssessment && !assessmentResult && !existingSubmission && !reviewMode && assignViewMode === 'WORK' && (
+      {isAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && !reviewMode && assignViewMode === 'WORK' && (
         <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[#0a0118] via-[#0a0118]/95 to-transparent pt-4 pb-3 px-4">
           <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm">

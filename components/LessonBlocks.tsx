@@ -975,13 +975,28 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       },
       {
         root: scrollContainerRef.current,
-        rootMargin: '0px 0px -10% 0px',
-        threshold: 0.15,
+        rootMargin: '0px 0px -5% 0px',
+        threshold: 0.1,
       }
     );
 
     elements.forEach(el => observer.observe(el));
-    return () => observer.disconnect();
+
+    // Fallback: ensure all blocks become visible after a short delay.
+    // Prevents blocks from staying invisible if the IntersectionObserver
+    // can't reach them (e.g. last block on small Chromebook screens).
+    const fallbackTimer = setTimeout(() => {
+      elements.forEach(el => {
+        if (!el.classList.contains('block-visible')) {
+          el.classList.add('block-visible');
+        }
+      });
+    }, 1500);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallbackTimer);
+    };
   }, [blocks]);
 
   // Navigate to a block by scrolling
@@ -1162,7 +1177,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
         className="flex-1 overflow-y-auto custom-scrollbar"
         style={{ scrollBehavior: 'smooth' }}
       >
-        <div className="flex flex-col gap-6 pb-24 px-1">
+        <div className="flex flex-col gap-6 pb-32 px-1">
           {blocks.map((block, index) => (
             <div
               key={block.id}
