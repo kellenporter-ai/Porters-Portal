@@ -658,6 +658,30 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'assignmentSubmissions', assignmentId }));
   },
 
+  /** Fetch a student's draft responses for an assessment (admin view). */
+  fetchDraftResponses: async (userId: string, assignmentId: string): Promise<Record<string, unknown> | null> => {
+    const docRef = doc(db, 'lesson_block_responses', `${userId}_${assignmentId}_blocks`);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return (data.responses as Record<string, unknown>) || null;
+  },
+
+  /** Assessment sessions — fetches open (unused) sessions for draft tracking. Admin-only read. */
+  subscribeToAssessmentSessions: (assignmentId: string, callback: (sessions: Array<{ userId: string; startedAt: string }>) => void) => {
+    const q = query(collection(db, 'assessment_sessions'), where('assignmentId', '==', assignmentId), where('used', '==', false), limit(500));
+    return onSnapshot(q, (snapshot) => {
+      const sessions = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+          userId: data.userId as string,
+          startedAt: data.startedAt?.toDate?.()?.toISOString?.() || data.startedAt || '',
+        };
+      });
+      callback(sessions);
+    }, (error: unknown) => reportError(error, { subscription: 'assessmentSessions', assignmentId }));
+  },
+
   /** Student-scoped submissions — avoids Firestore permission error on unfiltered query */
   subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void, maxResults = 50) => {
     // Only filter by userId — no orderBy to avoid composite index requirement

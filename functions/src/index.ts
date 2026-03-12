@@ -2054,6 +2054,68 @@ export const submitEngagement = onCall(async (request) => {
 });
 
 // ==========================================
+// ASSESSMENT GRADING HELPER — Reusable block grading logic
+// ==========================================
+function gradeAssessmentBlocks(
+  blocks: Array<Record<string, unknown>>,
+  responses: Record<string, unknown>
+): { correct: number; total: number; percentage: number; perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }> } {
+  let correct = 0;
+  let total = 0;
+  const perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }> = {};
+
+  for (const block of blocks) {
+    if (["MC", "SHORT_ANSWER", "SORTING", "RANKING", "LINKED"].includes(block.type as string)) {
+      const resp = (responses as Record<string, Record<string, unknown>>)[block.id as string];
+      let isCorrect = false;
+      let needsReview = false;
+
+      if (block.type === "MC" && resp?.selected === block.correctAnswer) {
+        isCorrect = true;
+      }
+      if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
+        const accepted = ((block.acceptedAnswers || []) as string[]).map((a: string) => a.toLowerCase().trim()).filter(Boolean);
+        if (accepted.length === 0) {
+          needsReview = true;
+        } else {
+          isCorrect = accepted.includes(((resp?.answer || "") as string).toLowerCase().trim());
+        }
+      }
+      if (block.type === "SORTING") {
+        const sortItems = (block.sortItems || []) as Array<{ correct: string }>;
+        const placements = (resp?.placements || {}) as Record<string, string>;
+        isCorrect = sortItems.length > 0 && sortItems.every((item: { correct: string }, idx: number) =>
+          placements[String(idx)] === item.correct
+        );
+      }
+      if (block.type === "RANKING") {
+        const items = (block.items || []) as string[];
+        const order = (resp?.order || []) as Array<{ item: string }>;
+        isCorrect = items.length > 0 && order.length === items.length &&
+          order.every((o: { item: string }, idx: number) => o.item === items[idx]);
+      }
+
+      if (needsReview) {
+        perBlock[block.id as string] = { correct: false, answer: resp, needsReview: true };
+      } else {
+        total++;
+        if (isCorrect) correct++;
+        perBlock[block.id as string] = { correct: isCorrect, answer: resp };
+      }
+    }
+
+    // Non-auto-gradable interactive blocks — always require manual/rubric review
+    if (["DRAWING", "MATH_RESPONSE", "BAR_CHART", "DATA_TABLE", "CHECKLIST"].includes(block.type as string)) {
+      const resp = (responses as Record<string, unknown>)[block.id as string];
+      perBlock[block.id as string] = { correct: false, answer: resp, needsReview: true };
+    }
+  }
+
+  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+  return { correct, total, percentage, perBlock };
+}
+
+// ==========================================
 // START ASSESSMENT SESSION — Issue cryptographic session token
 // ==========================================
 export const startAssessmentSession = onCall(async (request) => {
@@ -2078,7 +2140,8 @@ export const startAssessmentSession = onCall(async (request) => {
       .where("assignmentId", "==", assignmentId)
       .where("isAssessment", "==", true)
       .get();
-    if (existingSubs.size >= cfg.maxAttempts) {
+    const activeSubmissions = existingSubs.docs.filter(d => d.data().status !== "RETURNED");
+    if (activeSubmissions.length >= cfg.maxAttempts) {
       throw new HttpsError("resource-exhausted", "You have used all available attempts for this assessment.");
     }
   }
@@ -2176,59 +2239,7 @@ export const submitAssessment = onCall(async (request) => {
 
   // 3. Grade auto-gradable blocks
   const blocks = assignment.lessonBlocks || [];
-  let correct = 0;
-  let total = 0;
-  const perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }> = {};
-
-  for (const block of blocks) {
-    if (["MC", "SHORT_ANSWER", "SORTING", "RANKING", "LINKED"].includes(block.type)) {
-      const resp = responses[block.id];
-      let isCorrect = false;
-      let needsReview = false;
-
-      if (block.type === "MC" && resp?.selected === block.correctAnswer) {
-        isCorrect = true;
-      }
-      if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
-        const accepted = (block.acceptedAnswers || []).map((a: string) => a.toLowerCase().trim()).filter(Boolean);
-        if (accepted.length === 0) {
-          // No accepted answers — requires manual/rubric review
-          needsReview = true;
-        } else {
-          isCorrect = accepted.includes((resp?.answer || "").toLowerCase().trim());
-        }
-      }
-      if (block.type === "SORTING") {
-        const sortItems = block.sortItems || [];
-        const placements = resp?.placements || {};
-        isCorrect = sortItems.length > 0 && sortItems.every((item: { correct: string }, idx: number) =>
-          placements[String(idx)] === item.correct
-        );
-      }
-      if (block.type === "RANKING") {
-        const items = block.items || [];
-        const order = resp?.order || [];
-        isCorrect = items.length > 0 && order.length === items.length &&
-          order.every((o: { item: string }, idx: number) => o.item === items[idx]);
-      }
-
-      if (needsReview) {
-        perBlock[block.id] = { correct: false, answer: resp, needsReview: true };
-      } else {
-        total++;
-        if (isCorrect) correct++;
-        perBlock[block.id] = { correct: isCorrect, answer: resp };
-      }
-    }
-
-    // Non-auto-gradable interactive blocks — always require manual/rubric review
-    if (["DRAWING", "MATH_RESPONSE", "BAR_CHART", "DATA_TABLE", "CHECKLIST"].includes(block.type)) {
-      const resp = responses[block.id];
-      perBlock[block.id] = { correct: false, answer: resp, needsReview: true };
-    }
-  }
-
-  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const { correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses);
 
   // 4. Determine attempt number
   const existingSubs = await db.collection("submissions")
@@ -2236,7 +2247,8 @@ export const submitAssessment = onCall(async (request) => {
     .where("assignmentId", "==", assignmentId)
     .where("isAssessment", "==", true)
     .get();
-  const attemptNumber = existingSubs.size + 1;
+  const activeSubmissions = existingSubs.docs.filter(d => d.data().status !== "RETURNED");
+  const attemptNumber = activeSubmissions.length + 1;
 
   // 5. Calculate telemetry status
   let assessmentThresholds: Partial<TelemetryThresholds> = {};
@@ -2399,6 +2411,252 @@ export const submitAssessment = onCall(async (request) => {
     status,
     xpEarned,
   };
+});
+
+// ==========================================
+// RETURN ASSESSMENT — Allow student to revise and resubmit
+// ==========================================
+export const returnAssessment = onCall(async (request) => {
+  // 1. Verify admin
+  await verifyAdmin(request.auth);
+
+  // 2. Validate input
+  const { submissionId } = request.data;
+  if (!submissionId) throw new HttpsError("invalid-argument", "submissionId required");
+
+  // 3. Read submission
+  const db = admin.firestore();
+  const subRef = db.doc(`submissions/${submissionId}`);
+  const subSnap = await subRef.get();
+  if (!subSnap.exists) throw new HttpsError("not-found", "Submission not found");
+  const sub = subSnap.data()!;
+
+  // 4. Validate it's an assessment and not already returned
+  if (!sub.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment submission");
+  if (sub.status === "RETURNED") throw new HttpsError("already-exists", "This submission has already been returned");
+
+  // 5. Check no active session (student mid-attempt)
+  const activeSessions = await db.collection("assessment_sessions")
+    .where("userId", "==", sub.userId)
+    .where("assignmentId", "==", sub.assignmentId)
+    .where("used", "==", false)
+    .limit(1)
+    .get();
+  if (!activeSessions.empty) {
+    throw new HttpsError("failed-precondition", "Student has an active assessment session. Wait for them to submit or use Submit on Behalf.");
+  }
+
+  // 6. Copy blockResponses to lesson_block_responses for pre-fill
+  if (sub.blockResponses && Object.keys(sub.blockResponses).length > 0) {
+    const draftRef = db.doc(`lesson_block_responses/${sub.userId}_${sub.assignmentId}_blocks`);
+    await draftRef.set({
+      userId: sub.userId,
+      assignmentId: sub.assignmentId,
+      responses: sub.blockResponses,
+      lastUpdated: new Date().toISOString(),
+      retakePreFilled: true,
+    });
+  }
+
+  // 7. Update submission — mark as RETURNED, preserve grades for comparison
+  await subRef.update({
+    status: "RETURNED",
+    returnedAt: new Date().toISOString(),
+    returnedBy: request.auth!.uid,
+  });
+
+  // 8. Notify student
+  const assignmentSnap = await db.doc(`assignments/${sub.assignmentId}`).get();
+  const classType = assignmentSnap.exists ? assignmentSnap.data()!.classType : "";
+  const title = sub.assignmentTitle || "Assessment";
+
+  await db.collection("announcements").add({
+    title: "Assessment Returned",
+    content: `Your assessment "${title}" has been returned for revision. Please review and resubmit.`,
+    classType: classType || "GLOBAL",
+    priority: "INFO",
+    createdAt: new Date().toISOString(),
+    createdBy: "Admin",
+    targetStudentIds: [sub.userId],
+  });
+
+  logger.info(`returnAssessment: submission ${submissionId} returned by ${request.auth!.uid}`);
+  return { success: true };
+});
+
+// ==========================================
+// SUBMIT ON BEHALF — Admin submits student's draft work
+// ==========================================
+export const submitOnBehalf = onCall(async (request) => {
+  // 1. Verify admin
+  await verifyAdmin(request.auth);
+
+  // 2. Validate input
+  const { userId, assignmentId } = request.data;
+  if (!userId || !assignmentId) throw new HttpsError("invalid-argument", "userId and assignmentId required");
+
+  const db = admin.firestore();
+
+  // 3. Read draft responses
+  const draftRef = db.doc(`lesson_block_responses/${userId}_${assignmentId}_blocks`);
+  const draftSnap = await draftRef.get();
+  if (!draftSnap.exists) throw new HttpsError("not-found", "No draft responses found for this student");
+  const draftData = draftSnap.data()!;
+  const responses = draftData.responses || {};
+  if (Object.keys(responses).length === 0) throw new HttpsError("not-found", "Draft has no responses");
+
+  // 4. Read assignment
+  const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
+  if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
+  const assignment = assignmentSnap.data()!;
+  if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
+
+  // 5. Grade using shared helper
+  const blocks = assignment.lessonBlocks || [];
+  const { correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses);
+
+  // 6. Mark session token as used (if found)
+  let sessionStartedAt: number | null = null;
+  const sessionQuery = await db.collection("assessment_sessions")
+    .where("userId", "==", userId)
+    .where("assignmentId", "==", assignmentId)
+    .where("used", "==", false)
+    .limit(1)
+    .get();
+  if (!sessionQuery.empty) {
+    const sessionDoc = sessionQuery.docs[0];
+    await sessionDoc.ref.update({ used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+    const startedAt = sessionDoc.data().startedAt;
+    sessionStartedAt = startedAt?.toMillis?.() || Number(startedAt) || null;
+  }
+
+  // 7. Calculate attempt number (exclude RETURNED)
+  const existingSubs = await db.collection("submissions")
+    .where("userId", "==", userId)
+    .where("assignmentId", "==", assignmentId)
+    .where("isAssessment", "==", true)
+    .get();
+  const activeCount = existingSubs.docs.filter(d => d.data().status !== "RETURNED").length;
+  const attemptNumber = activeCount + 1;
+
+  // 8. Look up student info
+  const studentSnap = await db.doc(`users/${userId}`).get();
+  const studentData = studentSnap.exists ? studentSnap.data()! : {};
+  const userName = studentData.name || studentData.displayName || "Student";
+  const classType = assignment.classType || "";
+
+  // Look up section
+  let userSection: string | undefined;
+  if (classType) {
+    userSection = studentData.classSections?.[classType]
+      ?? ((studentData.classType === classType || (studentData.enrolledClasses || []).includes(classType)) ? studentData.section : undefined);
+  }
+
+  // 9. Build metrics from Proctor snapshot (falls back to session-based estimate)
+  const serverNow = Date.now();
+  const elapsed = sessionStartedAt ? Math.max(0, (serverNow - sessionStartedAt) / 1000) : 0;
+  const snap = draftData.metricsSnapshot as Record<string, unknown> | undefined;
+
+  // 9b. Calculate word count from short-answer responses
+  let totalWordCount = 0;
+  for (const block of blocks) {
+    if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
+      const resp = responses[block.id] as Record<string, unknown> | undefined;
+      const answerText = typeof resp?.answer === "string" ? (resp.answer as string).trim() : "";
+      if (answerText.length > 0) {
+        totalWordCount += answerText.split(/\s+/).length;
+      }
+    }
+  }
+  const metricsEngagement = snap ? (Number(snap.engagementTime) || 0) : elapsed;
+  const wordsPerSecond = metricsEngagement > 0 ? Math.round((totalWordCount / metricsEngagement) * 100) / 100 : 0;
+
+  // 10. Create submission doc
+  const submissionDoc = {
+    userId,
+    userName,
+    assignmentId,
+    assignmentTitle: assignment.title || "",
+    metrics: snap ? {
+      engagementTime: snap.engagementTime || 0,
+      clientReportedEngagement: snap.engagementTime || 0,
+      keystrokes: snap.keystrokes || 0,
+      pasteCount: snap.pasteCount || 0,
+      clickCount: snap.clickCount || 0,
+      startTime: snap.startTime || sessionStartedAt || serverNow,
+      lastActive: snap.lastActive || serverNow,
+      tabSwitchCount: snap.tabSwitchCount || 0,
+      perBlockTiming: snap.perBlockTiming || {},
+      typingCadence: snap.typingCadence || {},
+      serverElapsedSec: Math.round(elapsed),
+      wordCount: totalWordCount,
+      wordsPerSecond,
+    } : {
+      engagementTime: elapsed,
+      clientReportedEngagement: 0,
+      keystrokes: 0,
+      pasteCount: 0,
+      clickCount: 0,
+      startTime: sessionStartedAt || serverNow,
+      lastActive: serverNow,
+      tabSwitchCount: 0,
+      perBlockTiming: {},
+      typingCadence: {},
+      serverElapsedSec: Math.round(elapsed),
+      wordCount: totalWordCount,
+      wordsPerSecond,
+    },
+    submittedAt: new Date().toISOString(),
+    status: "NORMAL",
+    score: percentage,
+    isAssessment: true,
+    attemptNumber,
+    assessmentScore: { correct, total, percentage, perBlock },
+    blockResponses: responses,
+    privateComments: [],
+    hasUnreadAdmin: true,
+    hasUnreadStudent: false,
+    submittedOnBehalfBy: request.auth!.uid,
+    ...(userSection ? { userSection } : {}),
+  };
+
+  await db.collection("submissions").add(submissionDoc);
+
+  // 11. Award XP (same as submitAssessment)
+  const baseXP = Math.round(percentage * 0.5);
+  let xpEarned = 0;
+  if (baseXP > 0) {
+    const effectiveClass = classType || "Uncategorized";
+    const multiplier = await getActiveXPMultiplier(effectiveClass);
+    xpEarned = Math.round(baseXP * multiplier);
+
+    const userRef = db.doc(`users/${userId}`);
+    await db.runTransaction(async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+      if (!userSnap.exists) return;
+      const data = userSnap.data()!;
+      const gam = data.gamification || {};
+      const classXp = gam.classXp || {};
+      transaction.update(userRef, {
+        "gamification.xp": (gam.xp || 0) + xpEarned,
+        [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
+      });
+    });
+  }
+
+  // 12. Notify student
+  await db.collection("announcements").add({
+    title: "Assessment Submitted",
+    content: `Your teacher has submitted your draft work for "${assignment.title || "Assessment"}". You can view your results in the portal.`,
+    classType: classType || "GLOBAL",
+    priority: "INFO",
+    createdAt: new Date().toISOString(),
+    createdBy: "Admin",
+    targetStudentIds: [userId],
+  });
+
+  logger.info(`submitOnBehalf: admin ${request.auth!.uid} submitted for ${userId} on ${assignmentId}, scored ${percentage}%`);
+  return { success: true, assessmentScore: { correct, total, percentage, perBlock }, attemptNumber, xpEarned };
 });
 
 // ==========================================

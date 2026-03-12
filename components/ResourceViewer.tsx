@@ -105,7 +105,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   // Auto-recover: if server has a submission but client never showed the score modal
   // (handles network errors during submit response, page refresh after submit, etc.)
   useEffect(() => {
-    if (existingSubmission && !assessmentResult && isAssessment && !isRetakingRef.current) {
+    if (existingSubmission && existingSubmission.status !== 'RETURNED' && !assessmentResult && isAssessment && !isRetakingRef.current) {
       setAssessmentResult({
         correct: existingSubmission.assessmentScore?.correct ?? 0,
         total: existingSubmission.assessmentScore?.total ?? 0,
@@ -778,6 +778,20 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           <div>
             <p className="font-bold text-purple-300 mb-1">Your submission has been flagged for suspected AI usage.</p>
             <p className="text-purple-300/80">Your score is currently recorded as <span className="font-bold text-white">0%</span> until you either resubmit the assessment using your own work or provide a written defense to your teacher.</p>
+          </div>
+        </div>
+      )}
+
+      {existingSubmission?.status === 'RETURNED' && (
+        <div className="mx-4 mt-4 mb-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-amber-300">Assessment Returned</p>
+            <p className="text-xs text-amber-400/70">Your teacher returned this assessment for revision. Review your answers and submit when ready.</p>
           </div>
         </div>
       )}

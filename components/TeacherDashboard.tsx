@@ -2,10 +2,10 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass, DailyDigest } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper, Send, Eye } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
-import { callTriggerDailyDigest } from '../lib/firebase';
+import { callTriggerDailyDigest, callReturnAssessment, callSubmitOnBehalf } from '../lib/firebase';
 import { BUCKET_META } from '../lib/telemetry';
 import { calculateRubricPercentage } from '../lib/rubricParser';
 import katex from 'katex';
@@ -46,8 +46,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'assessments' | 'digest'>('dashboard');
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
-  const [assessmentSortKey] = useState<string>('score');
-  const [assessmentSortDesc] = useState(true);
+  const [assessmentSortKey, setAssessmentSortKey] = useState<string>('submitted');
+  const [assessmentSortDesc, setAssessmentSortDesc] = useState(true);
+  const [draftSessions, setDraftSessions] = useState<Array<{ userId: string; startedAt: string }>>([]);
   const [rubricDraft, setRubricDraft] = useState<Record<string, Record<string, RubricSkillGrade>>>({});
   const [feedbackDraft, setFeedbackDraft] = useState('');
   const [isSavingRubric, setIsSavingRubric] = useState(false);
@@ -64,9 +65,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
   const [digestGenerating, setDigestGenerating] = useState(false);
   const [csvMaxPoints, setCsvMaxPoints] = useState(100);
-  const [showNotStarted, setShowNotStarted] = useState(false);
   const [batchAcceptingAI, setBatchAcceptingAI] = useState(false);
   const [batchAcceptProgress, setBatchAcceptProgress] = useState<{ done: number; total: number } | null>(null);
+  const [viewingDraftUserId, setViewingDraftUserId] = useState<string | null>(null);
+  const [draftResponses, setDraftResponses] = useState<Record<string, unknown> | null>(null);
+  const [draftLoading, setDraftLoading] = useState(false);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -102,6 +105,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     const unsub = dataService.subscribeToAssignmentSubmissions(selectedAssessmentId, setAssessmentSubmissions);
     return () => unsub();
   }, [selectedAssessmentId]);
+
+  // Subscribe to open assessment sessions (draft tracking)
+  useEffect(() => {
+    if (!selectedAssessmentId) {
+      setDraftSessions([]);
+      return;
+    }
+    const unsub = dataService.subscribeToAssessmentSessions(selectedAssessmentId, setDraftSessions);
+    return () => unsub();
+  }, [selectedAssessmentId]);
+
+  // When not_started filter is selected, auto-select first not-started student in unified list
+  useEffect(() => {
+    if (assessmentStatusFilter === 'not_started') {
+      setGradingStudentId(null);
+      setGradingAttemptId(null);
+    }
+  }, [assessmentStatusFilter]);
 
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
   const availableSections = useMemo(() => {
@@ -414,7 +435,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             })
           : enrolledInClass;
         const submittedUserIds = new Set(sectionFilteredSubs.map(s => s.userId));
-        const notStartedStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id));
+        const draftUserIds = new Set(draftSessions.map(s => s.userId));
+        const draftSessionMap = new Map(draftSessions.map(s => [s.userId, s.startedAt]));
+        const hasDraftStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id) && draftUserIds.has(s.id));
+        const notStartedStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id) && !draftUserIds.has(s.id));
 
         // Graded count and average score (best-per-student, not per-submission)
         const gradedCount = allStudentGroups.filter(g => g.hasRubricGrade).length;
@@ -438,6 +462,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 case 'needs_grading': return g.needsGrading;
                 case 'graded': return g.hasRubricGrade;
                 case 'in_progress': return g.isInProgress;
+                case 'not_started': return false;
                 case 'normal': return g.latest.status !== 'FLAGGED' && !g.latest.flaggedAsAI && !g.needsGrading;
                 default: return true;
               }
@@ -451,11 +476,42 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             case 'name': av = a.userName.toLowerCase(); bv = b.userName.toLowerCase(); return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
             case 'attempt': av = a.attemptCount; bv = b.attemptCount; break;
             case 'score': av = getEffectiveScore(a.best); bv = getEffectiveScore(b.best); break;
+            case 'submitted': {
+              const aTime = a.latest.submittedAt ? new Date(a.latest.submittedAt).getTime() : 0;
+              const bTime = b.latest.submittedAt ? new Date(b.latest.submittedAt).getTime() : 0;
+              return assessmentSortDesc ? bTime - aTime : aTime - bTime;
+            }
             case 'status': av = a.latest.status; bv = b.latest.status; return assessmentSortDesc ? bv.localeCompare(av) : av.localeCompare(bv);
             default: av = getEffectiveScore(a.best); bv = getEffectiveScore(b.best); break;
           }
           return assessmentSortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
         });
+
+        // Unified student list: merge submitted, draft, and not-started students
+        type UnifiedEntry =
+          | { type: 'submitted'; group: typeof allStudentGroups[0] }
+          | { type: 'draft'; student: typeof enrolledInClass[0]; startedAt?: string }
+          | { type: 'not_started'; student: typeof enrolledInClass[0] };
+
+        // Filter unified list based on status filter
+        const showDraftAndNotStarted = !assessmentStatusFilter || assessmentStatusFilter === 'not_started';
+        const showSubmitted = assessmentStatusFilter !== 'not_started';
+        // Also apply search to draft/not-started
+        const draftSearchFiltered = assessmentSearch
+          ? hasDraftStudents.filter(s => s.name.toLowerCase().includes(assessmentSearch.toLowerCase()))
+          : hasDraftStudents;
+        const notStartedSearchFiltered = assessmentSearch
+          ? notStartedStudents.filter(s => s.name.toLowerCase().includes(assessmentSearch.toLowerCase()))
+          : notStartedStudents;
+
+        const unifiedList: UnifiedEntry[] = [
+          ...(showSubmitted ? studentGroups.map(g => ({ type: 'submitted' as const, group: g })) : []),
+          ...(showDraftAndNotStarted ? draftSearchFiltered.map(s => ({ type: 'draft' as const, student: s, startedAt: draftSessionMap.get(s.id) })) : []),
+          ...(showDraftAndNotStarted ? notStartedSearchFiltered.map(s => ({ type: 'not_started' as const, student: s })) : []),
+        ];
+
+        const getUnifiedId = (entry: UnifiedEntry) => entry.type === 'submitted' ? entry.group.userId : entry.student.id;
+        const getUnifiedName = (entry: UnifiedEntry) => entry.type === 'submitted' ? entry.group.userName : entry.student.name;
 
         const formatEngagementTime = (seconds: number) => {
           const m = Math.floor(seconds / 60);
@@ -482,7 +538,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               <select
                 value={selectedAssessmentId || ''}
-                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setFeedbackDraft(''); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setShowNotStarted(false); }}
+                onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setFeedbackDraft(''); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setViewingDraftUserId(null); setDraftResponses(null); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
@@ -573,7 +629,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     return (
                       <button
                         key={assignment.id}
-                        onClick={() => { setSelectedAssessmentId(assignment.id); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setShowNotStarted(false); }}
+                        onClick={() => { setSelectedAssessmentId(assignment.id); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setViewingDraftUserId(null); setDraftResponses(null); }}
                         className="w-full text-left bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-xl px-4 py-3 transition group"
                       >
                         <div className="flex items-center justify-between">
@@ -699,6 +755,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     </div>
                   ) : null;
                 })()}
+                {/* Has Draft stat */}
+                {hasDraftStudents.length > 0 && (
+                  <div className="border rounded-2xl p-5 bg-cyan-900/10 border-cyan-500/30">
+                    <div className="text-3xl font-bold text-cyan-400">{hasDraftStudents.length}</div>
+                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Has Draft</div>
+                  </div>
+                )}
                 {/* Not Started stat */}
                 <div className={`border rounded-2xl p-5 ${notStartedStudents.length > 0 ? 'bg-orange-900/10 border-orange-500/30' : 'bg-white/5 border-white/10'}`}>
                   <div className={`text-3xl font-bold ${notStartedStudents.length > 0 ? 'text-orange-400' : 'text-white'}`}>{notStartedStudents.length}</div>
@@ -863,84 +926,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               </div>
             )}
 
-            {/* Not Started Students Panel */}
-            {selectedAssessmentId && notStartedStudents.length > 0 && (
-              <div className="bg-orange-900/10 border border-orange-500/20 rounded-2xl p-4">
-                <button
-                  onClick={() => setShowNotStarted(!showNotStarted)}
-                  className="w-full flex items-center justify-between text-left"
-                >
-                  <h4 className="text-sm font-bold text-orange-400 flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Not Started ({notStartedStudents.length})
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        try {
-                          await dataService.createAnnouncement({
-                            title: 'Assessment Reminder',
-                            content: `Reminder: "${selectedAssessment!.title}" hasn't been started yet. Please begin working on it.`,
-                            classType: selectedAssessment!.classType,
-                            priority: 'WARNING',
-                            createdAt: new Date().toISOString(),
-                            createdBy: 'Admin',
-                            targetStudentIds: notStartedStudents.map(s => s.id),
-                          });
-                          toast.success(`Reminder sent to ${notStartedStudents.length} student${notStartedStudents.length !== 1 ? 's' : ''}`);
-                        } catch {
-                          toast.error('Failed to send reminder');
-                        }
-                      }}
-                      className="text-[10px] text-orange-400 hover:text-orange-300 font-bold px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition flex items-center gap-1"
-                    >
-                      <Zap className="w-3 h-3" /> Nudge All
-                    </button>
-                    {showNotStarted ? <ChevronUp className="w-4 h-4 text-orange-400" /> : <ChevronDown className="w-4 h-4 text-orange-400" />}
-                  </div>
-                </button>
-                {showNotStarted && (
-                  <div className="mt-3 space-y-1">
-                    {notStartedStudents.map(student => (
-                      <div key={student.id} className="flex items-center justify-between px-3 py-2 bg-black/20 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-300 font-bold">{student.name}</span>
-                          {(() => {
-                            const sec = getUserSectionForClass(student, selectedAssessment!.classType);
-                            return sec && !assessmentSectionFilter ? <span className="text-[9px] text-gray-600">{sec}</span> : null;
-                          })()}
-                        </div>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await dataService.createAnnouncement({
-                                title: 'Assessment Reminder',
-                                content: `Reminder: "${selectedAssessment!.title}" is waiting for you. Please complete it soon.`,
-                                classType: selectedAssessment!.classType,
-                                priority: 'INFO',
-                                createdAt: new Date().toISOString(),
-                                createdBy: 'Admin',
-                                targetStudentIds: [student.id],
-                              });
-                              toast.success(`Reminder sent for ${student.name}`);
-                            } catch {
-                              toast.error('Failed to send reminder');
-                            }
-                          }}
-                          className="text-[10px] text-orange-400 hover:text-orange-300 font-bold px-2 py-1 rounded bg-orange-500/10 hover:bg-orange-500/20 transition"
-                        >
-                          Nudge
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 3-Panel Grading View */}
-            {selectedAssessmentId && studentGroups.length > 0 && (() => {
+            {/* 3-Panel Grading View (unified student list) */}
+            {selectedAssessmentId && unifiedList.length > 0 && (() => {
               const computeTotalTime = (sub: Submission) => {
                 if (sub.submittedAt && sub.metrics?.startTime) {
                   return Math.round((new Date(sub.submittedAt).getTime() - sub.metrics.startTime) / 1000);
@@ -953,11 +940,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               const selectedSub = selectedGroup
                 ? (selectedGroup.submissions.find(s => s.id === gradingAttemptId) || selectedGroup.best)
                 : null;
-              const currentStudentIndex = selectedGroup ? studentGroups.indexOf(selectedGroup) : -1;
+              // Navigation index is based on unified list
+              const selectedUnifiedId = gradingStudentId || viewingDraftUserId;
+              const currentUnifiedIndex = selectedUnifiedId ? unifiedList.findIndex(e => getUnifiedId(e) === selectedUnifiedId) : -1;
 
               const selectStudent = (userId: string) => {
                 const group = studentGroups.find(g => g.userId === userId);
                 if (!group) return;
+                setViewingDraftUserId(null);
+                setDraftResponses(null);
                 setGradingStudentId(userId);
                 setGradingAttemptId(group.best.id);
                 // Pre-populate from existing rubric grade, or from AI suggestion if available
@@ -984,11 +975,41 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 }
               };
 
-              const navigateStudent = (delta: number) => {
-                const nextIdx = currentStudentIndex + delta;
-                if (nextIdx >= 0 && nextIdx < studentGroups.length) {
-                  selectStudent(studentGroups[nextIdx].userId);
+              const selectDraftStudent = async (studentId: string) => {
+                setGradingStudentId(null);
+                setGradingAttemptId(null);
+                setRubricDraft({});
+                setFeedbackDraft('');
+                setViewingDraftUserId(studentId);
+                setDraftLoading(true);
+                try {
+                  const responses = await dataService.fetchDraftResponses(studentId, selectedAssessmentId!);
+                  setDraftResponses(responses);
+                } catch (err) {
+                  reportError(err, { method: 'fetchDraftResponses' });
+                  setDraftResponses(null);
+                  toast.error('Failed to load draft');
+                } finally {
+                  setDraftLoading(false);
                 }
+              };
+
+              const selectNotStartedStudent = (studentId: string) => {
+                setGradingStudentId(null);
+                setGradingAttemptId(null);
+                setRubricDraft({});
+                setFeedbackDraft('');
+                setViewingDraftUserId(studentId);
+                setDraftResponses(null);
+              };
+
+              const navigateUnified = (delta: number) => {
+                const nextIdx = currentUnifiedIndex + delta;
+                if (nextIdx < 0 || nextIdx >= unifiedList.length) return;
+                const entry = unifiedList[nextIdx];
+                if (entry.type === 'submitted') selectStudent(entry.group.userId);
+                else if (entry.type === 'draft') selectDraftStudent(entry.student.id);
+                else selectNotStartedStudent(entry.student.id);
               };
 
               return (
@@ -998,8 +1019,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   // Keyboard navigation: arrow keys when not focused on input/select/textarea
                   const tag = (e.target as HTMLElement).tagName;
                   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); navigateStudent(-1); }
-                  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); navigateStudent(1); }
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); navigateUnified(-1); }
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); navigateUnified(1); }
                 }}
                 tabIndex={0}
               >
@@ -1007,66 +1028,155 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col">
                   <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Students</h4>
-                    <span className="text-[10px] text-gray-600">{studentGroups.length} result{studentGroups.length !== 1 ? 's' : ''}</span>
+                    <span className="text-[10px] text-gray-600">
+                      {studentGroups.length} submitted
+                      {hasDraftStudents.length > 0 && <span className="text-cyan-400"> · {hasDraftStudents.length} draft{hasDraftStudents.length !== 1 ? 's' : ''}</span>}
+                      {notStartedStudents.length > 0 && <span className="text-orange-400"> · {notStartedStudents.length} not started</span>}
+                    </span>
+                  </div>
+                  <div className="flex items-center border-b border-white/5 bg-white/[0.01]">
+                    {([['name', 'Name'], ['score', 'Score'], ['submitted', 'Time'], ['attempt', '#']] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          if (assessmentSortKey === key) setAssessmentSortDesc(d => !d);
+                          else { setAssessmentSortKey(key); setAssessmentSortDesc(key === 'submitted' || key === 'score'); }
+                        }}
+                        className={`flex-1 text-center py-1.5 text-[9px] font-bold uppercase tracking-wider transition hover:bg-white/5 ${assessmentSortKey === key ? 'text-purple-400' : 'text-gray-600 hover:text-gray-400'}`}
+                      >
+                        {label}
+                        {assessmentSortKey === key && (
+                          <span className="ml-0.5">{assessmentSortDesc ? '\u25BE' : '\u25B4'}</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                   <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 420px)' }}>
-                    {studentGroups.map(group => {
-                      const isSelected = group.userId === gradingStudentId;
-                      const bestPct = group.best.flaggedAsAI ? 0 : getEffectiveScore(group.best);
-                      const bestGradedPct = group.bestGraded ? group.bestGraded.rubricGrade!.overallPercentage : null;
-                      const displayPct = bestGradedPct != null ? bestGradedPct : bestPct;
+                    {unifiedList.map(entry => {
+                      const entryId = getUnifiedId(entry);
+                      const entryName = getUnifiedName(entry);
+                      const isSelected = entryId === gradingStudentId || entryId === viewingDraftUserId;
+
+                      if (entry.type === 'submitted') {
+                        const group = entry.group;
+                        const bestPct = group.best.flaggedAsAI ? 0 : getEffectiveScore(group.best);
+                        const bestGradedPct = group.bestGraded ? group.bestGraded.rubricGrade!.overallPercentage : null;
+                        const displayPct = bestGradedPct != null ? bestGradedPct : bestPct;
+
+                        return (
+                          <div
+                            key={entryId}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${group.userName}${group.hasRubricGrade ? ', graded' : ', ungraded'}${group.isInProgress ? ', in progress' : `, ${displayPct}%`}`}
+                            onClick={() => selectStudent(group.userId)}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStudent(group.userId); } }}
+                            className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
+                              isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-white/5 border-l-2 border-l-transparent'
+                            } ${group.latest.flaggedAsAI ? 'bg-purple-900/5' : ''}`}
+                          >
+                            <div className="shrink-0">
+                              {group.hasRubricGrade ? (
+                                <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                              ) : (
+                                <div className="w-3.5 h-3.5 rounded-full border border-gray-600 bg-transparent" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                  {group.userName}
+                                </span>
+                                {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" />}
+                                {group.hasAISuggestion && !group.hasRubricGrade && (
+                                  <Sparkles className="w-3 h-3 text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
+                                )}
+                                {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
+                                  <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                )}
+                                {group.attemptCount > 1 && (
+                                  <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
+                                    ×{group.attemptCount}
+                                  </span>
+                                )}
+                                {group.isInProgress && (
+                                  <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0">
+                                    IN PROGRESS
+                                  </span>
+                                )}
+                                {group.latest.status === 'RETURNED' && (
+                                  <span className="text-[9px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded shrink-0">
+                                    RETURNED
+                                  </span>
+                                )}
+                                {group.attemptCount > 1 && group.latest.submittedAt && (Date.now() - new Date(group.latest.submittedAt).getTime() < 24 * 60 * 60 * 1000) && (
+                                  <span className="text-[9px] font-bold bg-cyan-500/20 text-cyan-400 px-1 py-0.5 rounded shrink-0 animate-pulse">NEW</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
+                                  <span className="text-[9px] text-gray-600">{group.userSection}</span>
+                                )}
+                                {group.latest.submittedAt && !group.isInProgress && (
+                                  <span className="text-[9px] text-gray-600">{formatLastSeen(group.latest.submittedAt)}</span>
+                                )}
+                              </div>
+                            </div>
+                            <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-400' : getScoreColor(displayPct)}`}>
+                              {group.isInProgress ? '\u2014' : `${displayPct}%`}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      // Draft or not-started student
+                      const student = entry.type === 'draft' ? entry.student : entry.student;
+                      const isDraft = entry.type === 'draft';
+                      const studentSection = getUserSectionForClass(student, selectedAssessment!.classType);
 
                       return (
                         <div
-                          key={group.userId}
+                          key={entryId}
                           role="button"
                           tabIndex={0}
-                          aria-label={`${group.userName}${group.hasRubricGrade ? ', graded' : ', ungraded'}${group.isInProgress ? ', in progress' : `, ${displayPct}%`}`}
-                          onClick={() => selectStudent(group.userId)}
-                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStudent(group.userId); } }}
+                          aria-label={`${entryName}, ${isDraft ? 'has draft' : 'not started'}`}
+                          onClick={() => isDraft ? selectDraftStudent(entryId) : selectNotStartedStudent(entryId)}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isDraft ? selectDraftStudent(entryId) : selectNotStartedStudent(entryId); } }}
                           className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
-                            isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-white/5 border-l-2 border-l-transparent'
-                          } ${group.latest.flaggedAsAI ? 'bg-purple-900/5' : ''}`}
+                            isSelected
+                              ? isDraft ? 'bg-cyan-500/15 border-l-2 border-l-cyan-500' : 'bg-orange-500/10 border-l-2 border-l-orange-500'
+                              : 'hover:bg-white/5 border-l-2 border-l-transparent'
+                          }`}
                         >
-                          {/* Graded indicator */}
                           <div className="shrink-0">
-                            {group.hasRubricGrade ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                            {isDraft ? (
+                              <Eye className="w-3.5 h-3.5 text-cyan-400/60" />
                             ) : (
-                              <div className="w-3.5 h-3.5 rounded-full border border-gray-600 bg-transparent" />
+                              <div className="w-3.5 h-3.5 rounded-full border border-gray-700 bg-transparent opacity-30" />
                             )}
                           </div>
-
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                                {group.userName}
+                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : isDraft ? 'text-gray-300' : 'text-gray-500'}`}>
+                                {entryName}
                               </span>
-                              {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" />}
-                              {group.hasAISuggestion && !group.hasRubricGrade && (
-                                <Sparkles className="w-3 h-3 text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
-                              )}
-                              {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
-                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                              )}
-                              {group.attemptCount > 1 && (
-                                <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
-                                  ×{group.attemptCount}
-                                </span>
-                              )}
-                              {group.isInProgress && (
-                                <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0">
-                                  IN PROGRESS
-                                </span>
+                              {isDraft ? (
+                                <span className="text-[9px] font-bold bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded shrink-0">DRAFT</span>
+                              ) : (
+                                <span className="text-[9px] font-bold bg-orange-500/15 text-orange-400/70 px-1.5 py-0.5 rounded shrink-0">NOT STARTED</span>
                               )}
                             </div>
-                            {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                              <span className="text-[9px] text-gray-600 block">{group.userSection}</span>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {studentSection && !assessmentSectionFilter && availableSections.length > 1 && (
+                                <span className="text-[9px] text-gray-600">{studentSection}</span>
+                              )}
+                              {isDraft && entry.startedAt && (
+                                <span className="text-[9px] text-cyan-400/50">started {formatLastSeen(entry.startedAt)}</span>
+                              )}
+                            </div>
                           </div>
-
-                          <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-400' : getScoreColor(displayPct)}`}>
-                            {group.isInProgress ? '\u2014' : `${displayPct}%`}
+                          <span className="text-[11px] font-bold tabular-nums shrink-0 text-gray-700">
+                            —
                           </span>
                         </div>
                       );
@@ -1076,7 +1186,224 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                 {/* Center Panel: Student Work */}
                 <div className="flex-1 min-w-0 flex flex-col">
-                  {!selectedGroup || !selectedSub ? (
+                  {viewingDraftUserId && !selectedGroup ? (() => {
+                    const draftStudent = users.find(u => u.id === viewingDraftUserId);
+                    const draftStudentName = draftStudent?.name || 'Student';
+                    const isNotStarted = !draftUserIds.has(viewingDraftUserId);
+                    return (
+                      <>
+                        <div className={`px-4 py-3 border-b border-white/10 flex items-center gap-3 ${isNotStarted ? 'bg-orange-500/[0.03]' : 'bg-cyan-500/[0.03]'}`}>
+                          {/* Prev/Next navigation */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => navigateUnified(-1)}
+                              disabled={currentUnifiedIndex <= 0}
+                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              title="Previous student"
+                            >
+                              <ChevronLeft className="w-4 h-4 text-gray-400" />
+                            </button>
+                            <span className="text-[10px] text-gray-600 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
+                            <button
+                              onClick={() => navigateUnified(1)}
+                              disabled={currentUnifiedIndex >= unifiedList.length - 1}
+                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              title="Next student"
+                            >
+                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                            </button>
+                          </div>
+                          {isNotStarted ? <Users className="w-4 h-4 text-orange-400" /> : <Eye className="w-4 h-4 text-cyan-400" />}
+                          <h4 className="text-sm font-bold text-white">{draftStudentName}</h4>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isNotStarted ? 'bg-orange-500/20 text-orange-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                            {isNotStarted ? 'NOT STARTED' : 'DRAFT'}
+                          </span>
+                          {!isNotStarted && (
+                            <div className="ml-auto flex items-center gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await dataService.createAnnouncement({
+                                      title: 'Assessment Reminder',
+                                      content: `Reminder: You started "${selectedAssessment!.title}" but haven't submitted yet. Please finish and submit your work.`,
+                                      classType: selectedAssessment!.classType,
+                                      priority: 'INFO',
+                                      createdAt: new Date().toISOString(),
+                                      createdBy: 'Admin',
+                                      targetStudentIds: [viewingDraftUserId],
+                                    });
+                                    toast.success(`Reminder sent to ${draftStudentName}`);
+                                  } catch {
+                                    toast.error('Failed to send reminder');
+                                  }
+                                }}
+                                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold px-2 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 transition"
+                              >
+                                Nudge
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: 'Submit on Behalf',
+                                    message: `This will submit ${draftStudentName}'s current draft work as their assessment attempt. Auto-gradable questions will be scored.`,
+                                    confirmLabel: 'Submit Their Work',
+                                    variant: 'warning',
+                                  });
+                                  if (!ok) return;
+                                  try {
+                                    await callSubmitOnBehalf({ userId: viewingDraftUserId, assignmentId: selectedAssessmentId });
+                                    toast.success(`Submitted ${draftStudentName}'s assessment`);
+                                  } catch (err) {
+                                    reportError(err, { method: 'callSubmitOnBehalf' });
+                                    toast.error('Failed to submit on behalf');
+                                  }
+                                }}
+                                className="text-[10px] text-green-400 hover:text-green-300 font-bold px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 transition flex items-center gap-0.5"
+                              >
+                                <Send className="w-3 h-3" /> Submit
+                              </button>
+                            </div>
+                          )}
+                          {isNotStarted && (
+                            <div className="ml-auto">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await dataService.createAnnouncement({
+                                      title: 'Assessment Reminder',
+                                      content: `Reminder: "${selectedAssessment!.title}" is waiting for you. Please complete it soon.`,
+                                      classType: selectedAssessment!.classType,
+                                      priority: 'INFO',
+                                      createdAt: new Date().toISOString(),
+                                      createdBy: 'Admin',
+                                      targetStudentIds: [viewingDraftUserId],
+                                    });
+                                    toast.success(`Reminder sent to ${draftStudentName}`);
+                                  } catch {
+                                    toast.error('Failed to send reminder');
+                                  }
+                                }}
+                                className="text-[10px] text-orange-400 hover:text-orange-300 font-bold px-2 py-1 rounded bg-orange-500/10 hover:bg-orange-500/20 transition"
+                              >
+                                Nudge
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="overflow-y-auto custom-scrollbar p-4" style={{ maxHeight: 'calc(100vh - 470px)' }}>
+                          {draftLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                              <div className="text-gray-500 text-sm">Loading draft...</div>
+                            </div>
+                          ) : !draftResponses ? (
+                            <div className="flex items-center justify-center py-12">
+                              <div className="text-center">
+                                <FileText className="w-12 h-12 mx-auto mb-3 text-gray-700 opacity-30" />
+                                {isNotStarted ? (
+                                  <>
+                                    <p className="text-orange-400/80 text-sm font-bold">Not Started</p>
+                                    <p className="text-gray-600 text-xs mt-1">This student hasn't opened the assessment yet.</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-gray-500 text-sm">No draft responses found</p>
+                                    <p className="text-gray-600 text-xs mt-1">The student opened the assessment but may not have answered any questions yet.</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ) : selectedAssessment?.lessonBlocks ? (
+                            <div className="space-y-2">
+                              {selectedAssessment.lessonBlocks
+                                .filter((block: LessonBlock) => ['MC', 'SHORT_ANSWER', 'RANKING', 'SORTING', 'LINKED', 'DRAWING', 'MATH_RESPONSE', 'BAR_CHART'].includes(block.type))
+                                .map((block: LessonBlock, qi: number) => {
+                                  const rawAnswer = draftResponses[block.id] as Record<string, unknown> | undefined;
+                                  const hasAnswer = rawAnswer != null;
+                                  let displayAnswer = 'No answer yet';
+                                  let richRenderer: React.ReactNode | null = null;
+
+                                  if (hasAnswer) {
+                                    if (block.type === 'SHORT_ANSWER') {
+                                      displayAnswer = String((rawAnswer as { answer?: string }).answer || 'No answer yet');
+                                    } else if (block.type === 'MC') {
+                                      const selected = (rawAnswer as { selected?: number }).selected;
+                                      displayAnswer = selected != null && block.options ? String(block.options[selected]) : 'No selection';
+                                    } else if (block.type === 'RANKING') {
+                                      const order = (rawAnswer as { order?: { item: string }[] }).order || [];
+                                      displayAnswer = order.map(o => o.item).join(' \u2192 ') || 'No answer yet';
+                                    } else if (block.type === 'SORTING') {
+                                      const placements = (rawAnswer as { placements?: Record<string, string> }).placements || {};
+                                      displayAnswer = Object.values(placements).join(', ') || 'No answer yet';
+                                    } else if (block.type === 'DRAWING') {
+                                      const elements = (rawAnswer as { elements?: Array<Record<string, unknown>> }).elements || [];
+                                      displayAnswer = elements.length > 0 ? `Drawing (${elements.length} element${elements.length !== 1 ? 's' : ''})` : 'No drawing yet';
+                                    } else if (block.type === 'MATH_RESPONSE') {
+                                      const steps = (rawAnswer as { steps?: Array<{ label: string; latex: string; input?: string }> }).steps || [];
+                                      if (steps.length > 0) {
+                                        displayAnswer = `Math (${steps.length} step${steps.length !== 1 ? 's' : ''})`;
+                                        richRenderer = (
+                                          <div className="mt-1 space-y-1">
+                                            {steps.map((step, i) => (
+                                              <div key={i} className="flex items-start gap-2 bg-white/5 rounded px-2 py-1">
+                                                <span className="text-[10px] text-gray-500 font-bold shrink-0 mt-0.5">{step.label}</span>
+                                                <span className="text-xs text-gray-300">{step.input || step.latex || '\u2014'}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        );
+                                      }
+                                    } else if (block.type === 'BAR_CHART') {
+                                      const chartData = rawAnswer as { initial?: Array<{ value: number; labelHTML: string }>; delta?: Array<{ value: number; labelHTML: string }>; final?: Array<{ value: number; labelHTML: string }> };
+                                      if (chartData.initial) {
+                                        const sections = ['initial', 'delta', 'final'] as const;
+                                        const nonEmpty = sections.filter(s => chartData[s]?.some(b => b.value !== 0));
+                                        displayAnswer = `Bar Chart (${nonEmpty.length > 0 ? nonEmpty.join(', ') : 'empty'})`;
+                                      }
+                                    } else {
+                                      displayAnswer = typeof rawAnswer === 'string' ? rawAnswer : JSON.stringify(rawAnswer);
+                                    }
+                                  }
+
+                                  return (
+                                    <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${hasAnswer ? 'bg-cyan-900/10 border-cyan-500/20' : 'bg-white/5 border-white/5'}`}>
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasAnswer ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-500/20 text-gray-500'}`}>
+                                        {qi + 1}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-xs text-gray-300 mb-1">
+                                          <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
+                                        </div>
+                                        <div className="text-[11px] text-gray-500">
+                                          <span className="font-bold">Draft Answer:</span>{' '}
+                                          <span className={hasAnswer ? 'text-cyan-400' : 'text-gray-600 italic'}>{displayAnswer}</span>
+                                        </div>
+                                        {richRenderer}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {Object.entries(draftResponses).map(([blockId, answer]) => {
+                                const ansObj = answer as Record<string, unknown> | null;
+                                const answerText = ansObj != null
+                                  ? (typeof ansObj === 'string' ? ansObj : (ansObj.answer as string) || (ansObj.selected != null ? `Option ${ansObj.selected}` : JSON.stringify(ansObj)))
+                                  : 'No answer';
+                                return (
+                                  <div key={blockId} className="flex items-center gap-3 p-2 rounded-lg border bg-cyan-900/10 border-cyan-500/20">
+                                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-cyan-500/20 text-cyan-400">?</div>
+                                    <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
+                                    <span className="text-xs text-cyan-300 truncate flex-1">{answerText}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })() : !selectedGroup || !selectedSub ? (
                     <div className="flex-1 flex items-center justify-center p-12" style={{ minHeight: 'calc(100vh - 420px)' }}>
                       <div className="text-center">
                         <FileText className="w-16 h-16 mx-auto mb-4 text-gray-700 opacity-30" />
@@ -1098,17 +1425,17 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           {/* Prev/Next navigation */}
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => navigateStudent(-1)}
-                              disabled={currentStudentIndex <= 0}
+                              onClick={() => navigateUnified(-1)}
+                              disabled={currentUnifiedIndex <= 0}
                               className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
                               title="Previous student"
                             >
                               <ChevronLeft className="w-4 h-4 text-gray-400" />
                             </button>
-                            <span className="text-[10px] text-gray-600 tabular-nums">{currentStudentIndex + 1}/{studentGroups.length}</span>
+                            <span className="text-[10px] text-gray-600 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
                             <button
-                              onClick={() => navigateStudent(1)}
-                              disabled={currentStudentIndex >= studentGroups.length - 1}
+                              onClick={() => navigateUnified(1)}
+                              disabled={currentUnifiedIndex >= unifiedList.length - 1}
                               className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
                               title="Next student"
                             >
@@ -1138,7 +1465,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             >
                               {selectedGroup.submissions.map(s => (
                                 <option key={s.id} value={s.id}>
-                                  Attempt {s.attemptNumber || 1}{s.id === selectedGroup.best.id ? ' (Best)' : ''}{s.rubricGrade ? ` - ${s.rubricGrade.overallPercentage}%` : ''}
+                                  Attempt {s.attemptNumber || 1}{s.status === 'RETURNED' ? ' (Returned)' : ''}{s.id === selectedGroup.best.id ? ' (Best)' : ''}{s.rubricGrade ? ` - ${s.rubricGrade.overallPercentage}%` : ''}
                                 </option>
                               ))}
                             </select>
@@ -1431,6 +1758,40 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   })()}
                 </div>
 
+                {/* Right Panel: Draft/Not-Started notice */}
+                {viewingDraftUserId && !selectedGroup && (() => {
+                  const isNotStartedRight = !draftUserIds.has(viewingDraftUserId);
+                  return (
+                    <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
+                      <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                        <h5 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isNotStartedRight ? 'text-orange-400' : 'text-cyan-400'}`}>
+                          {isNotStartedRight ? <><Users className="w-3.5 h-3.5" /> Not Started</> : <><Eye className="w-3.5 h-3.5" /> Draft Preview</>}
+                        </h5>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center p-8">
+                        <div className="text-center">
+                          <FileText className={`w-12 h-12 mx-auto mb-3 ${isNotStartedRight ? 'text-orange-500/20' : 'text-cyan-500/20'}`} />
+                          {isNotStartedRight ? (
+                            <>
+                              <p className="text-orange-400 text-sm font-bold mb-1">Not yet started</p>
+                              <p className="text-gray-500 text-xs leading-relaxed max-w-[250px]">
+                                This student hasn't opened the assessment. Use Nudge to send them a reminder.
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-cyan-400 text-sm font-bold mb-1">Draft — not yet submitted</p>
+                              <p className="text-gray-500 text-xs leading-relaxed max-w-[250px]">
+                                This student's work is still in progress. You can nudge them to submit, or submit on their behalf using the header buttons.
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Right Panel: Rubric Grading */}
                 {selectedAssessment?.rubric && selectedGroup && selectedSub && (() => {
                   const sub = selectedSub;
@@ -1438,6 +1799,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   const currentGrades = { ...(sub.rubricGrade?.grades || {}), ...rubricDraft };
                   const rubricPct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
                   const isAlreadyGraded = !!sub.rubricGrade;
+                  const isReturnedAttempt = sub.status === 'RETURNED';
 
                   return (
                     <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
@@ -1489,6 +1851,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             </div>
                           </div>
                         )}
+                        {isReturnedAttempt && (
+                          <div className="mx-3 mt-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
+                            <Undo2 className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span className="text-[11px] text-amber-300">This attempt was returned. Grades shown are from the prior review.</span>
+                          </div>
+                        )}
                         <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
                           <RubricViewer
                             rubric={selectedAssessment.rubric}
@@ -1501,7 +1869,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               gradedBy: sub.rubricGrade?.gradedBy || '',
                             }}
                             aiSuggestedGrade={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? sub.aiSuggestedGrade : undefined}
-                            onGradeChange={(questionId, skillId, tierIndex) => {
+                            onGradeChange={isReturnedAttempt ? undefined : (questionId, skillId, tierIndex) => {
                               setRubricDraft(prev => ({
                                 ...prev,
                                 [questionId]: {
@@ -1536,6 +1904,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       </div>
 
                       {/* Teacher feedback */}
+                      {!isReturnedAttempt && (
                       <div className="px-4 py-2 border-t border-white/10">
                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Teacher Feedback</label>
                         <textarea
@@ -1546,13 +1915,45 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none"
                         />
                       </div>
+                      )}
 
                       {/* Save bar — sticky at bottom */}
+                      {!isReturnedAttempt && (
                       <div className="border-t border-white/10 p-3 bg-white/[0.02]">
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-400">
                             Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
                           </div>
+                          {/* Return to Student button */}
+                          {sub.status !== 'RETURNED' && sub.status !== 'STARTED' && (
+                            <button
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: 'Return Assessment',
+                                  message: `This will return ${selectedGroup.userName}'s assessment for revision. Their previous answers will be preserved and they can edit and resubmit. The existing grade will be kept for your reference.`,
+                                  confirmLabel: 'Return to Student',
+                                  variant: 'warning',
+                                });
+                                if (!ok) return;
+                                try {
+                                  await callReturnAssessment({ submissionId: sub.id });
+                                  setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
+                                    ...s,
+                                    status: 'RETURNED' as const,
+                                    returnedAt: new Date().toISOString(),
+                                    returnedBy: 'Admin',
+                                  } : s));
+                                  toast.success(`Assessment returned to ${selectedGroup.userName}`);
+                                } catch (err) {
+                                  reportError(err, { method: 'callReturnAssessment' });
+                                  toast.error('Failed to return assessment');
+                                }
+                              }}
+                              className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 rounded-lg transition"
+                            >
+                              <Undo2 className="w-3.5 h-3.5" /> Return to Student
+                            </button>
+                          )}
                           <button
                             onClick={async () => {
                               setIsSavingRubric(true);
@@ -1646,12 +2047,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             )}
                             {isSavingRubric ? 'Saving...' : isAlreadyGraded ? 'Update Grade' : 'Save Grade'}
                           </button>
-                          {/* Grade Next — navigate to next ungraded student */}
+                          {/* Grade Next — navigate to next ungraded submitted student (wraps around) */}
                           {(() => {
-                            const nextUngraded = studentGroups.find(g => g.needsGrading && g.userId !== gradingStudentId);
+                            const submittedEntries = unifiedList.filter((e): e is Extract<UnifiedEntry, { type: 'submitted' }> => e.type === 'submitted');
+                            const currentSubmittedIdx = submittedEntries.findIndex(e => e.group.userId === gradingStudentId);
+                            const nextUngraded = submittedEntries.slice(currentSubmittedIdx + 1).find(e => e.group.needsGrading)
+                              || submittedEntries.slice(0, currentSubmittedIdx).find(e => e.group.needsGrading);
                             return nextUngraded ? (
                               <button
-                                onClick={() => selectStudent(nextUngraded.userId)}
+                                onClick={() => selectStudent(nextUngraded.group.userId)}
                                 className="flex items-center gap-1.5 text-xs font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 px-3 py-2 rounded-lg transition"
                               >
                                 Grade Next <ChevronRight className="w-3.5 h-3.5" />
@@ -1665,6 +2069,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           </div>
                         )}
                       </div>
+                      )}
                     </div>
                   );
                 })()}

@@ -595,6 +595,48 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     };
   }, [isAssessment]);
 
+  // Persist metrics snapshot to draft doc (for submitOnBehalf to read)
+  useEffect(() => {
+    if (!isAssessment || !userId || !assignmentId) return;
+    const metricsDocId = `${userId}_${assignmentId}_blocks`;
+
+    const saveMetricsSnapshot = () => {
+      const m = metricsRef.current;
+      // Fire-and-forget — don't block the UI
+      updateDoc(doc(db, 'lesson_block_responses', metricsDocId), {
+        metricsSnapshot: {
+          engagementTime: m.engagementTime,
+          keystrokes: m.keystrokes,
+          pasteCount: m.pasteCount,
+          clickCount: m.clickCount,
+          tabSwitchCount: m.tabSwitchCount || 0,
+          startTime: m.startTime,
+          lastActive: Date.now(),
+          perBlockTiming: m.perBlockTiming || {},
+          typingCadence: m.typingCadence || {},
+          wordCount: m.wordCount || 0,
+          wordsPerSecond: m.wordsPerSecond || 0,
+        },
+      }).catch(() => { /* doc may not exist yet */ });
+    };
+
+    // Save on visibility change (student leaves tab)
+    const handleVis = () => {
+      if (document.visibilityState === 'hidden') saveMetricsSnapshot();
+    };
+    document.addEventListener('visibilitychange', handleVis);
+
+    // Periodic snapshot every 30s
+    const interval = setInterval(saveMetricsSnapshot, 30000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVis);
+      clearInterval(interval);
+      // Final snapshot on unmount
+      saveMetricsSnapshot();
+    };
+  }, [isAssessment, userId, assignmentId]);
+
   // Expose metrics + responses getter for parent (assessment submission)
   useEffect(() => {
     if (onGetMetricsAndResponses) {

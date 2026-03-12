@@ -114,3 +114,7 @@ export const callAdminAddToWhitelist = httpsCallable(functions, 'adminAddToWhite
 // Admin digest
 export const callTriggerDailyDigest = httpsCallable(functions, 'triggerDailyDigest');
 
+// Assessment admin actions
+export const callReturnAssessment = httpsCallable(functions, 'returnAssessment');
+export const callSubmitOnBehalf = httpsCallable(functions, 'submitOnBehalf');
+

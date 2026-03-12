@@ -498,11 +498,11 @@ export interface Submission {
   assignmentTitle: string;
   metrics: TelemetryMetrics;
   submittedAt?: string; 
-  status: 'FLAGGED' | 'SUCCESS' | 'SUPPORT_NEEDED' | 'NORMAL' | 'STARTED';
+  status: 'FLAGGED' | 'SUCCESS' | 'SUPPORT_NEEDED' | 'NORMAL' | 'STARTED' | 'RETURNED';
   score: number;
   privateComments: Comment[];
-  hasUnreadAdmin?: boolean; 
-  hasUnreadStudent?: boolean; 
+  hasUnreadAdmin?: boolean;
+  hasUnreadStudent?: boolean;
   isPinned?: boolean;
   isArchived?: boolean;
   // Assessment-specific fields
@@ -521,6 +521,10 @@ export interface Submission {
   flaggedAsAI?: boolean;
   flaggedAsAIBy?: string;
   flaggedAsAIAt?: string;
+  // Return/unsubmit fields
+  returnedAt?: string;
+  returnedBy?: string;
+  submittedOnBehalfBy?: string;
 }
 
 export interface ChatMessage {

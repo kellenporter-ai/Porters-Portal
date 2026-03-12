@@ -86,6 +86,14 @@
       ]
     },
     {
+      "collectionGroup": "assessment_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignmentId", "order": "ASCENDING" },
+        { "fieldPath": "used", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "student_alerts",
       "queryScope": "COLLECTION",
       "fields": [
