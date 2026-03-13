@@ -80,19 +80,25 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(false);
 
+  const safeIndex = Math.max(0, Math.min(currentBlockIndex, blocks.length - 1));
   const interactiveBlocks = blocks.filter(b => ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'].includes(b.type));
   const completedInteractive = interactiveBlocks.filter(b => completedBlocks.has(b.id)).length;
   const totalInteractive = interactiveBlocks.length;
   const completionPercent = totalInteractive > 0
     ? Math.round((completedInteractive / totalInteractive) * 100)
-    : (currentBlockIndex >= blocks.length - 1 ? 100 : Math.round(((currentBlockIndex + 1) / blocks.length) * 100));
+    : blocks.length > 0
+      ? (safeIndex >= blocks.length - 1 ? 100 : Math.round(((safeIndex + 1) / blocks.length) * 100))
+      : 0;
+
+  // Clamp to 0–100 to guard against NaN/Infinity from unexpected data
+  const safePercent = Math.max(0, Math.min(100, isFinite(completionPercent) ? completionPercent : 0));
 
   // SVG progress ring dimensions
   const size = collapsed ? 36 : 64;
   const strokeWidth = collapsed ? 4 : 6;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (completionPercent / 100) * circumference;
+  const strokeDashoffset = circumference - (safePercent / 100) * circumference;
 
   const minutes = Math.floor(engagementTime / 60);
   const seconds = engagementTime % 60;
@@ -113,15 +119,15 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
           <svg width={size} height={size} className="transform -rotate-90">
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} />
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
-              stroke={completionPercent === 100 ? '#34d399' : '#a855f7'}
+              stroke={safePercent === 100 ? '#34d399' : '#a855f7'}
               strokeWidth={strokeWidth} strokeLinecap="round"
               strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
               className="transition-all duration-700 ease-out"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-[11px] font-black ${completionPercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
-              {completionPercent}
+            <span className={`text-[11px] font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
+              {safePercent}
             </span>
           </div>
         </div>
@@ -174,15 +180,15 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
           <svg width={size} height={size} className="transform -rotate-90">
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} />
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
-              stroke={completionPercent === 100 ? '#34d399' : '#a855f7'}
+              stroke={safePercent === 100 ? '#34d399' : '#a855f7'}
               strokeWidth={strokeWidth} strokeLinecap="round"
               strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
               className="transition-all duration-700 ease-out"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-sm font-black ${completionPercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
-              {completionPercent}%
+            <span className={`text-sm font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
+              {safePercent}%
             </span>
           </div>
         </div>

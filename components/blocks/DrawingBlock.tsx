@@ -434,7 +434,9 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   const [fillColor, setFillColor] = useState('#007aff');
   const [fillOpacity, setFillOpacity] = useState(0.3);
 
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [isDrawing, _setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
+  const setIsDrawing = useCallback((v: boolean) => { isDrawingRef.current = v; _setIsDrawing(v); }, []);
   const [currentStroke, setCurrentStroke] = useState<{ x: number; y: number }[]>([]);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
@@ -877,7 +879,9 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   const handlePointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (locked) return;
-    e.preventDefault();
+    // Only preventDefault for mouse events here; touch preventDefault is deferred
+    // to handlePointerMove so touch-scrolling works when not drawing
+    if (!('touches' in e.nativeEvent)) e.preventDefault();
     const pos = getCanvasCoords(e as React.MouseEvent);
     const isShift = shiftHeld.current;
 
@@ -1042,7 +1046,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (locked) return;
-    e.preventDefault();
+    if (isDrawingRef.current) e.preventDefault();
     const pos = getCanvasCoords(e as React.MouseEvent);
 
     // Tooltip on hover over arrows
@@ -2265,7 +2269,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         <canvas
           ref={canvasRef}
           height={canvasHeight}
-          style={{ display: 'block', width: '100%', cursor: cursorStyle, touchAction: 'none' }}
+          style={{ display: 'block', width: '100%', cursor: cursorStyle, touchAction: isDrawing ? 'none' : 'pan-y' }}
           role="img"
           aria-label={block.title ? `Drawing canvas: ${block.title}` : 'Drawing canvas for force diagram'}
           onMouseDown={handlePointerDown}

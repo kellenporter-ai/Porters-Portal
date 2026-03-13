@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
+import { FeatureErrorBoundary } from './ErrorBoundary';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 const DrawingBlock = lazyWithRetry(() => import('./blocks/DrawingBlock'));
 const MathResponseBlock = lazyWithRetry(() => import('./blocks/MathResponseBlock'));
@@ -645,6 +646,10 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
         latestStateRef.current = e.data.state;
         onResponseChange?.(e.data.state);
       }
+      if (e.data?.type === 'barChartWheel' && iframeRef.current) {
+        const scrollParent = iframeRef.current.closest('.overflow-y-auto');
+        if (scrollParent) scrollParent.scrollBy({ top: e.data.deltaY, left: e.data.deltaX });
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -1215,14 +1220,16 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     return (
       <div className="flex gap-4 h-full">
         {contentArea}
-        <LessonProgressSidebar
-          blocks={blocks}
-          currentBlockIndex={visibleBlockIndex}
-          completedBlocks={completedBlocks}
-          onNavigateToBlock={navigateToBlock}
-          engagementTime={engagementTime}
-          xpEarned={xpEarned}
-        />
+        <FeatureErrorBoundary feature="Lesson Progress Sidebar">
+          <LessonProgressSidebar
+            blocks={blocks}
+            currentBlockIndex={visibleBlockIndex}
+            completedBlocks={completedBlocks}
+            onNavigateToBlock={navigateToBlock}
+            engagementTime={engagementTime}
+            xpEarned={xpEarned}
+          />
+        </FeatureErrorBoundary>
         {shortcutsOverlay}
       </div>
     );

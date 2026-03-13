@@ -813,6 +813,15 @@
     window.addEventListener('touchmove', (e) => { if(isDragging) { e.preventDefault(); updateBar(dragColumn, e.touches[0].clientY); } }, {passive: false});
     window.addEventListener('touchend', () => isDragging = false);
 
+    // Forward wheel events to parent so lesson block container can scroll
+    if (isEmbedded) {
+      window.addEventListener('wheel', (e) => {
+        if (!isDragging) {
+          window.parent.postMessage({ type: 'barChartWheel', deltaY: e.deltaY, deltaX: e.deltaX }, '*');
+        }
+      }, { passive: true });
+    }
+
     // --- SAVE / LOAD / RESET / SNAPSHOT ---
 
     document.getElementById('reset-btn').addEventListener('click', () => {
