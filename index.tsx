@@ -4,6 +4,11 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './style.css'; // REQUIRED: This triggers Tailwind processing
+import { patchDomForTranslateExtensions } from './lib/patchDomForTranslateExtensions';
+
+// Prevent crashes from Google Translate and similar browser extensions that
+// mutate the DOM (replacing text nodes with <font> tags) while React is managing it.
+patchDomForTranslateExtensions();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

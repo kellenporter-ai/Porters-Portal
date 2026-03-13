@@ -82,11 +82,11 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
 
   return (
     <div className="space-y-3">
-      <p className="text-base text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <HelpCircle className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
-      <div className="space-y-2" role="radiogroup" aria-label={block.content}>
+      <div className="space-y-2" role="radiogroup" aria-label={block.content} translate="no">
         {(block.options || []).map((opt, idx) => (
           <button
             key={idx}
@@ -167,7 +167,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
 
   return (
     <div className="space-y-3">
-      <p className="text-base text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0" />
         {block.content}
       </p>
@@ -257,11 +257,11 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 
   return (
     <div className="space-y-3">
-      <p className="text-base text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <ListChecks className="w-4 h-4 text-green-400 shrink-0" />
         {block.content}
       </p>
-      <div className="space-y-2" role="group" aria-label={block.content || 'Checklist'}>
+      <div className="space-y-2" role="group" aria-label={block.content || 'Checklist'} translate="no">
         {(block.items || []).map((item, idx) => (
           <button
             key={idx}

@@ -1015,7 +1015,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     {isActive ? <PlayCircle className="w-4 h-4" /> : <Clock className="w-4 h-4 animate-pulse" />}
                     {isActive ? 'Active Session' : 'Away (Paused)'}
                 </div>
-                <div className="text-xs text-gray-400 font-mono bg-black/40 px-2 py-1 rounded">
+                <div className="text-xs text-gray-400 font-mono bg-black/40 px-2 py-1 rounded" translate="no">
                     TIME: {Math.floor(displayTime / 60)}m {displayTime % 60}s
                 </div>
                 {bridgeConnected && questionsAnswered > 0 && (
@@ -1190,7 +1190,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         </h3>
                         {ttsText && <ProctorTTS textContent={ttsText} />}
                     </div>
-                    <div ref={contentRef} className="proctor-content text-sm leading-relaxed" />
+                    <div ref={contentRef} className="proctor-content text-sm leading-relaxed" translate="no" />
                 </div>
             )}
         </div>

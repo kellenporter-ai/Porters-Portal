@@ -11,7 +11,20 @@ interface State {
     error: Error | null;
 }
 
+/** Errors caused by browser translation extensions mutating the DOM. */
+function isTranslationExtensionError(error: Error): boolean {
+    const msg = error.message || '';
+    return (
+        msg.includes("Failed to execute 'removeChild'") ||
+        msg.includes("Failed to execute 'insertBefore'") ||
+        msg.includes('The node to be removed is not a child') ||
+        msg.includes('Node was not found')
+    );
+}
+
 class ErrorBoundary extends React.Component<Props, State> {
+    private translationRetries = 0;
+
     constructor(props: Props) {
         super(props);
         this.state = { hasError: false, error: null };
@@ -22,6 +35,13 @@ class ErrorBoundary extends React.Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        // Auto-recover from translation extension errors (up to 3 times)
+        if (isTranslationExtensionError(error) && this.translationRetries < 3) {
+            this.translationRetries++;
+            console.warn('[PorterPortal] Recovered from translation extension DOM conflict', error.message);
+            this.setState({ hasError: false, error: null });
+            return;
+        }
         console.error('ErrorBoundary caught:', error, errorInfo);
     }
 
@@ -76,6 +96,8 @@ interface FeatureState {
 }
 
 export class FeatureErrorBoundary extends React.Component<FeatureProps, FeatureState> {
+    private translationRetries = 0;
+
     constructor(props: FeatureProps) {
         super(props);
         this.state = { hasError: false, error: null };
@@ -86,6 +108,13 @@ export class FeatureErrorBoundary extends React.Component<FeatureProps, FeatureS
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        // Auto-recover from translation extension errors (up to 3 times per feature)
+        if (isTranslationExtensionError(error) && this.translationRetries < 3) {
+            this.translationRetries++;
+            console.warn(`[PorterPortal] Recovered from translation extension DOM conflict in ${this.props.feature}`, error.message);
+            this.setState({ hasError: false, error: null });
+            return;
+        }
         console.error(`FeatureErrorBoundary [${this.props.feature}]:`, error, errorInfo);
         reportError(error, { feature: this.props.feature, componentStack: errorInfo.componentStack });
     }
