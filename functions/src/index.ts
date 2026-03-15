@@ -6416,7 +6416,7 @@ function sleep(ms: number): Promise<void> {
 /**
  * classroomListCourses — List active courses for the authenticated teacher.
  */
-export const classroomListCourses = onCall({ region: "us-east1" }, async (request) => {
+export const classroomListCourses = onCall(async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -6448,7 +6448,7 @@ export const classroomListCourses = onCall({ region: "us-east1" }, async (reques
 /**
  * classroomListCourseWork — List course work for a given course.
  */
-export const classroomListCourseWork = onCall({ region: "us-east1" }, async (request) => {
+export const classroomListCourseWork = onCall(async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken, courseId } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -6484,7 +6484,7 @@ export const classroomListCourseWork = onCall({ region: "us-east1" }, async (req
 /**
  * classroomCreateCourseWork — Create a new assignment in Google Classroom.
  */
-export const classroomCreateCourseWork = onCall({ region: "us-east1" }, async (request) => {
+export const classroomCreateCourseWork = onCall(async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken, courseId, title, maxPoints } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -6532,7 +6532,7 @@ export const classroomCreateCourseWork = onCall({ region: "us-east1" }, async (r
  * matches students by email to Classroom roster, and patches grades.
  * Includes exponential backoff for rate limiting (429 errors).
  */
-export const classroomPushGrades = onCall({ region: "us-east1" }, async (request) => {
+export const classroomPushGrades = onCall(async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken, assignmentId } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
