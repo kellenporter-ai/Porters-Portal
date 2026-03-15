@@ -1651,10 +1651,17 @@ async function buildDailyDigest() {
     let totalBossDefeated = 0;
     let totalNewEnrollments = 0;
 
+    // Build student name lookup map
+    const studentsSnap = await db.collection("users").where("role", "==", "STUDENT").select("name").get();
+    const userNameMap = new Map<string, string>();
+    for (const doc of studentsSnap.docs) {
+      userNameMap.set(doc.id, doc.data().name || "Unknown");
+    }
+
     // 1. Submissions in the last 24h
     try {
       const submissionsSnap = await db.collection("submissions")
-        .where("submittedAt", ">=", yesterdayISO).get();
+        .where("submittedAt", ">=", yesterdayISO).limit(500).get();
 
       for (const doc of submissionsSnap.docs) {
         const data = doc.data();
@@ -1664,7 +1671,7 @@ async function buildDailyDigest() {
           events.push({
             type: "RESUBMISSION",
             studentId: data.userId,
-            studentName: data.studentName,
+            studentName: data.userName,
             assignmentId: data.assignmentId,
             assignmentTitle: data.assignmentTitle,
             classType: data.classType,
@@ -1676,7 +1683,7 @@ async function buildDailyDigest() {
           events.push({
             type: "SUBMISSION",
             studentId: data.userId,
-            studentName: data.studentName,
+            studentName: data.userName,
             assignmentId: data.assignmentId,
             assignmentTitle: data.assignmentTitle,
             classType: data.classType,
@@ -1688,7 +1695,7 @@ async function buildDailyDigest() {
           events.push({
             type: "AUTO_FLAGGED",
             studentId: data.userId,
-            studentName: data.studentName,
+            studentName: data.userName,
             assignmentId: data.assignmentId,
             assignmentTitle: data.assignmentTitle,
             detail: "Auto-flagged for suspicious behavior",
@@ -1700,7 +1707,7 @@ async function buildDailyDigest() {
           events.push({
             type: "AI_FLAGGED",
             studentId: data.userId,
-            studentName: data.studentName,
+            studentName: data.userName,
             assignmentId: data.assignmentId,
             assignmentTitle: data.assignmentTitle,
             detail: "Flagged as AI-generated",
@@ -1708,32 +1715,26 @@ async function buildDailyDigest() {
           });
         }
       }
+
+      // Compute graded submissions in-memory (avoids nested field index)
+      for (const doc of submissionsSnap.docs) {
+        const data = doc.data();
+        if (data.rubricGrade?.gradedAt && data.rubricGrade.gradedAt >= yesterdayISO) {
+          totalGraded++;
+          events.push({
+            type: "GRADED",
+            studentId: data.userId,
+            studentName: data.userName,
+            assignmentId: data.assignmentId,
+            assignmentTitle: data.assignmentTitle,
+            detail: "Graded by teacher",
+            timestamp: data.rubricGrade.gradedAt,
+          });
+        }
+      }
     } catch (err) {
       logger.error("buildDailyDigest: submissions query failed", err);
       errors.push("submissions");
-    }
-
-    // 2. Graded submissions (rubricGrade.gradedAt in last 24h)
-    try {
-      const gradedSnap = await db.collection("submissions")
-        .where("rubricGrade.gradedAt", ">=", yesterdayISO).get();
-
-      totalGraded = gradedSnap.size;
-      for (const doc of gradedSnap.docs) {
-        const data = doc.data();
-        events.push({
-          type: "GRADED",
-          studentId: data.userId,
-          studentName: data.studentName,
-          assignmentId: data.assignmentId,
-          assignmentTitle: data.assignmentTitle,
-          detail: `Graded by teacher`,
-          timestamp: data.rubricGrade?.gradedAt || data.submittedAt,
-        });
-      }
-    } catch (err) {
-      logger.error("buildDailyDigest: graded query failed", err);
-      errors.push("graded");
     }
 
     // 3. New EWS alerts from last 24h
@@ -1763,7 +1764,7 @@ async function buildDailyDigest() {
     try {
       const levelUpSnap = await db.collection("notifications")
         .where("type", "==", "LEVEL_UP")
-        .where("createdAt", ">=", yesterdayISO).get();
+        .where("timestamp", ">=", yesterdayISO).get();
 
       totalLevelUps = levelUpSnap.size;
       for (const doc of levelUpSnap.docs) {
@@ -1771,9 +1772,9 @@ async function buildDailyDigest() {
         events.push({
           type: "LEVEL_UP",
           studentId: data.userId,
-          studentName: data.studentName,
+          studentName: userNameMap.get(data.userId) || "Unknown",
           detail: data.message || "Level up",
-          timestamp: data.createdAt,
+          timestamp: data.timestamp,
         });
       }
     } catch (err) {
@@ -1785,7 +1786,7 @@ async function buildDailyDigest() {
     try {
       const questSnap = await db.collection("notifications")
         .where("type", "==", "QUEST_APPROVED")
-        .where("createdAt", ">=", yesterdayISO).get();
+        .where("timestamp", ">=", yesterdayISO).get();
 
       totalQuestsCompleted = questSnap.size;
       for (const doc of questSnap.docs) {
@@ -1793,9 +1794,9 @@ async function buildDailyDigest() {
         events.push({
           type: "QUEST_COMPLETED",
           studentId: data.userId,
-          studentName: data.studentName,
+          studentName: userNameMap.get(data.userId) || "Unknown",
           detail: data.message || "Quest completed",
-          timestamp: data.createdAt,
+          timestamp: data.timestamp,
         });
       }
     } catch (err) {
@@ -1807,7 +1808,7 @@ async function buildDailyDigest() {
     try {
       const bossSnap = await db.collection("notifications")
         .where("type", "==", "BOSS_DEFEATED")
-        .where("createdAt", ">=", yesterdayISO).get();
+        .where("timestamp", ">=", yesterdayISO).get();
 
       totalBossDefeated = bossSnap.size;
       for (const doc of bossSnap.docs) {
@@ -1815,9 +1816,9 @@ async function buildDailyDigest() {
         events.push({
           type: "BOSS_DEFEATED",
           studentId: data.userId,
-          studentName: data.studentName,
+          studentName: userNameMap.get(data.userId) || "Unknown",
           detail: data.message || "Boss defeated",
-          timestamp: data.createdAt,
+          timestamp: data.timestamp,
         });
       }
     } catch (err) {
@@ -1837,7 +1838,7 @@ async function buildDailyDigest() {
         events.push({
           type: "NEW_ENROLLMENT",
           studentId: doc.id,
-          studentName: data.displayName || data.name,
+          studentName: data.name,
           detail: "New student enrolled",
           timestamp: data.createdAt,
         });
@@ -1893,14 +1894,14 @@ async function buildDailyDigest() {
  * are already generated.
  */
 export const generateDailyDigest = onSchedule(
-  { schedule: "30 6 * * *", timeZone: "America/New_York" },
+  { schedule: "30 6 * * *", timeZone: "America/New_York", timeoutSeconds: 120, memory: "512MiB" },
   async () => { await buildDailyDigest(); }
 );
 
 /**
  * triggerDailyDigest — Admin-only callable to manually generate today's digest.
  */
-export const triggerDailyDigest = onCall(async (request) => {
+export const triggerDailyDigest = onCall({ timeoutSeconds: 120, memory: "512MiB" }, async (request) => {
   if (!request.auth?.token?.admin) {
     throw new HttpsError("permission-denied", "Admin only.");
   }
