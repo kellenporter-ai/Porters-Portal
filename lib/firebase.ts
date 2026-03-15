@@ -118,3 +118,9 @@ export const callTriggerDailyDigest = httpsCallable(functions, 'triggerDailyDige
 export const callReturnAssessment = httpsCallable(functions, 'returnAssessment');
 export const callSubmitOnBehalf = httpsCallable(functions, 'submitOnBehalf');
 
+// Google Classroom grade sync
+export const callClassroomListCourses = httpsCallable(functions, 'classroomListCourses');
+export const callClassroomListCourseWork = httpsCallable(functions, 'classroomListCourseWork');
+export const callClassroomCreateCourseWork = httpsCallable(functions, 'classroomCreateCourseWork');
+export const callClassroomPushGrades = httpsCallable(functions, 'classroomPushGrades');
+

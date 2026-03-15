@@ -3,6 +3,7 @@ import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { google } from "googleapis";
 
 
 admin.initializeApp();
@@ -6390,4 +6391,343 @@ export const redeemEnrollmentCode = onCall({ region: "us-east1" }, async (reques
 
     return { success: true, classType: codeData.classType };
   });
+});
+
+// ==========================================
+// GOOGLE CLASSROOM API — Grade Sync
+// ==========================================
+
+/**
+ * Helper: create an OAuth2 client using the teacher's access token.
+ */
+function createClassroomClient(accessToken: string) {
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: accessToken });
+  return google.classroom({ version: "v1", auth: oauth2Client });
+}
+
+/**
+ * Helper: sleep for exponential backoff.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * classroomListCourses — List active courses for the authenticated teacher.
+ */
+export const classroomListCourses = onCall({ region: "us-east1" }, async (request) => {
+  await verifyAdmin(request.auth);
+  const { accessToken } = request.data;
+  if (!accessToken || typeof accessToken !== "string") {
+    throw new HttpsError("invalid-argument", "Missing accessToken.");
+  }
+
+  const classroom = createClassroomClient(accessToken);
+  try {
+    const courses: { id: string | null | undefined; name: string | null | undefined; section: string | null | undefined; descriptionHeading: string | null | undefined }[] = [];
+    let pageToken: string | undefined;
+    do {
+      const res = await classroom.courses.list({
+        teacherId: "me",
+        courseStates: ["ACTIVE"],
+        pageToken,
+      });
+      for (const c of res.data.courses || []) {
+        courses.push({ id: c.id, name: c.name, section: c.section, descriptionHeading: c.descriptionHeading });
+      }
+      pageToken = res.data.nextPageToken || undefined;
+    } while (pageToken);
+    return { courses };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomListCourses error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
+  }
+});
+
+/**
+ * classroomListCourseWork — List course work for a given course.
+ */
+export const classroomListCourseWork = onCall({ region: "us-east1" }, async (request) => {
+  await verifyAdmin(request.auth);
+  const { accessToken, courseId } = request.data;
+  if (!accessToken || typeof accessToken !== "string") {
+    throw new HttpsError("invalid-argument", "Missing accessToken.");
+  }
+  if (!courseId || typeof courseId !== "string") {
+    throw new HttpsError("invalid-argument", "Missing courseId.");
+  }
+
+  const classroom = createClassroomClient(accessToken);
+  try {
+    const courseWork: { id: string | null | undefined; title: string | null | undefined; maxPoints: number | null | undefined; state: string | null | undefined }[] = [];
+    let pageToken: string | undefined;
+    do {
+      const res = await classroom.courses.courseWork.list({
+        courseId,
+        orderBy: "updateTime desc",
+        pageToken,
+      });
+      for (const cw of res.data.courseWork || []) {
+        courseWork.push({ id: cw.id, title: cw.title, maxPoints: cw.maxPoints, state: cw.state });
+      }
+      pageToken = res.data.nextPageToken || undefined;
+    } while (pageToken);
+    return { courseWork };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomListCourseWork error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
+  }
+});
+
+/**
+ * classroomCreateCourseWork — Create a new assignment in Google Classroom.
+ */
+export const classroomCreateCourseWork = onCall({ region: "us-east1" }, async (request) => {
+  await verifyAdmin(request.auth);
+  const { accessToken, courseId, title, maxPoints } = request.data;
+  if (!accessToken || typeof accessToken !== "string") {
+    throw new HttpsError("invalid-argument", "Missing accessToken.");
+  }
+  if (!courseId || typeof courseId !== "string") {
+    throw new HttpsError("invalid-argument", "Missing courseId.");
+  }
+  if (!title || typeof title !== "string") {
+    throw new HttpsError("invalid-argument", "Missing title.");
+  }
+  if (maxPoints == null || typeof maxPoints !== "number" || maxPoints < 0) {
+    throw new HttpsError("invalid-argument", "Invalid maxPoints.");
+  }
+
+  const classroom = createClassroomClient(accessToken);
+  try {
+    const res = await classroom.courses.courseWork.create({
+      courseId,
+      requestBody: {
+        title,
+        maxPoints,
+        workType: "ASSIGNMENT",
+        state: "PUBLISHED",
+      },
+    });
+    return {
+      courseWork: {
+        id: res.data.id,
+        title: res.data.title,
+        maxPoints: res.data.maxPoints,
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomCreateCourseWork error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
+  }
+});
+
+/**
+ * classroomPushGrades — Push Portal grades to Google Classroom for a linked assignment.
+ *
+ * Reads submissions from Firestore, resolves best scores per student,
+ * matches students by email to Classroom roster, and patches grades.
+ * Includes exponential backoff for rate limiting (429 errors).
+ */
+export const classroomPushGrades = onCall({ region: "us-east1" }, async (request) => {
+  await verifyAdmin(request.auth);
+  const { accessToken, assignmentId } = request.data;
+  if (!accessToken || typeof accessToken !== "string") {
+    throw new HttpsError("invalid-argument", "Missing accessToken.");
+  }
+  if (!assignmentId || typeof assignmentId !== "string") {
+    throw new HttpsError("invalid-argument", "Missing assignmentId.");
+  }
+
+  const db = admin.firestore();
+
+  // 1. Read the assignment doc and verify classroomLink exists
+  const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
+  if (!assignmentSnap.exists) {
+    throw new HttpsError("not-found", "Assignment not found.");
+  }
+  const assignment = assignmentSnap.data()!;
+  const classroomLink = assignment.classroomLink;
+  if (!classroomLink || !classroomLink.courseId || !classroomLink.courseWorkId) {
+    throw new HttpsError("failed-precondition", "Assignment is not linked to Google Classroom.");
+  }
+
+  const { courseId, courseWorkId } = classroomLink;
+  const classroom = createClassroomClient(accessToken);
+
+  // 1b. Fetch live maxPoints from Classroom (not stale value from classroomLink)
+  let maxPoints: number;
+  try {
+    const cwRes = await classroom.courses.courseWork.get({ courseId, id: courseWorkId });
+    maxPoints = cwRes.data.maxPoints ?? classroomLink.maxPoints ?? 100;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("Failed to fetch CourseWork from Classroom", { error: msg });
+    throw new HttpsError("internal", `Cannot read Classroom assignment: ${msg}`);
+  }
+
+  // 2. Read all submissions for this assignment
+  const subsSnap = await db.collection("submissions")
+    .where("assignmentId", "==", assignmentId)
+    .get();
+
+  if (subsSnap.empty) {
+    return { pushed: 0, skipped: 0, errors: [] };
+  }
+
+  // 3. For each student, find the best effective score (handles retakes)
+  const bestScores: Record<string, number> = {}; // userId -> best percentage
+  for (const doc of subsSnap.docs) {
+    const sub = doc.data();
+    const userId = sub.userId;
+    if (!userId) continue;
+
+    // Effective score: rubricGrade > assessmentScore > score > 0
+    const effectivePercentage =
+      sub.rubricGrade?.overallPercentage ??
+      sub.assessmentScore?.percentage ??
+      sub.score ??
+      0;
+
+    if (bestScores[userId] === undefined || effectivePercentage > bestScores[userId]) {
+      bestScores[userId] = effectivePercentage;
+    }
+  }
+
+  // 4. Get emails for all Portal students with submissions
+  const userIds = Object.keys(bestScores);
+  if (userIds.length === 0) {
+    return { pushed: 0, skipped: 0, errors: [] };
+  }
+
+  // Firestore 'in' queries support max 30 items; batch if needed
+  const emailMap: Record<string, string> = {}; // email -> userId
+  for (let i = 0; i < userIds.length; i += 30) {
+    const batch = userIds.slice(i, i + 30);
+    const usersSnap = await db.collection("users")
+      .where(admin.firestore.FieldPath.documentId(), "in", batch)
+      .get();
+    for (const userDoc of usersSnap.docs) {
+      const email = userDoc.data().email;
+      if (email) {
+        emailMap[email.toLowerCase()] = userDoc.id;
+      }
+    }
+  }
+
+  // 5. Get Classroom student submissions
+  let classroomSubmissions: Array<{
+    id: string;
+    userId: string;
+  }> = [];
+
+  try {
+    let pageToken: string | undefined;
+    do {
+      const res = await classroom.courses.courseWork.studentSubmissions.list({
+        courseId,
+        courseWorkId,
+        pageToken,
+      });
+      const subs = res.data.studentSubmissions || [];
+      for (const s of subs) {
+        if (s.id && s.userId) {
+          classroomSubmissions.push({ id: s.id, userId: s.userId });
+        }
+      }
+      pageToken = res.data.nextPageToken || undefined;
+    } while (pageToken);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("Failed to list Classroom submissions", { error: msg });
+    throw new HttpsError("internal", `Failed to list Classroom submissions: ${msg}`);
+  }
+
+  // 6. Build a map of Classroom student email -> submission ID
+  // Batch-fetch all enrolled students (avoids N+1 per-student API calls)
+  const classroomUserIdToEmail: Record<string, string> = {};
+  try {
+    let studentsPageToken: string | undefined;
+    do {
+      const res = await classroom.courses.students.list({
+        courseId,
+        pageSize: 100,
+        pageToken: studentsPageToken,
+      });
+      for (const student of res.data.students || []) {
+        const email = student.profile?.emailAddress;
+        const userId = student.userId;
+        if (email && userId) {
+          classroomUserIdToEmail[userId] = email.toLowerCase();
+        }
+      }
+      studentsPageToken = res.data.nextPageToken || undefined;
+    } while (studentsPageToken);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("Failed to list Classroom students", { error: msg });
+    throw new HttpsError("internal", `Failed to list Classroom students: ${msg}`);
+  }
+
+  const classroomEmailToSubId: Record<string, string> = {};
+  for (const cs of classroomSubmissions) {
+    const email = classroomUserIdToEmail[cs.userId];
+    if (email) {
+      classroomEmailToSubId[email] = cs.id;
+    }
+  }
+
+  // 7. Match and push grades
+  let pushed = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (const [email, userId] of Object.entries(emailMap)) {
+    const submissionId = classroomEmailToSubId[email];
+    if (!submissionId) {
+      skipped++;
+      continue;
+    }
+
+    const percentage = bestScores[userId];
+    const assignedGrade = (percentage / 100) * maxPoints;
+
+    // Retry with exponential backoff for rate limiting
+    let success = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await classroom.courses.courseWork.studentSubmissions.patch({
+          courseId,
+          courseWorkId,
+          id: submissionId,
+          updateMask: "assignedGrade",
+          requestBody: { assignedGrade },
+        });
+        pushed++;
+        success = true;
+        break;
+      } catch (err: unknown) {
+        const status = (err as { code?: number }).code;
+        if (status === 429 && attempt < 2) {
+          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          logger.warn(`Rate limited on grade push, retrying in ${delay}ms`, { email, attempt });
+          await sleep(delay);
+        } else {
+          const msg = err instanceof Error ? err.message : "Unknown error";
+          errors.push(`${email}: ${msg}`);
+          break;
+        }
+      }
+    }
+    if (!success && errors[errors.length - 1]?.startsWith(email) === false) {
+      errors.push(`${email}: Max retries exceeded`);
+    }
+  }
+
+  logger.info("classroomPushGrades complete", { pushed, skipped, errorCount: errors.length });
+  return { pushed, skipped, errors };
 });

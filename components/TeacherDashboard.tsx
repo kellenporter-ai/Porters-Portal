@@ -2,10 +2,12 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass, DailyDigest } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper, Send, Eye } from 'lucide-react';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, Upload, Loader2, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper, Send, Eye } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
-import { callTriggerDailyDigest, callReturnAssessment, callSubmitOnBehalf } from '../lib/firebase';
+import { callTriggerDailyDigest, callReturnAssessment, callSubmitOnBehalf, callClassroomPushGrades } from '../lib/firebase';
+import { getClassroomAccessToken } from '../lib/classroomAuth';
+import ClassroomLinkModal from './ClassroomLinkModal';
 import { BUCKET_META } from '../lib/telemetry';
 import { calculateRubricPercentage } from '../lib/rubricParser';
 import katex from 'katex';
@@ -70,6 +72,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [viewingDraftUserId, setViewingDraftUserId] = useState<string | null>(null);
   const [draftResponses, setDraftResponses] = useState<Record<string, unknown> | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
+  const [classroomLinkModalOpen, setClassroomLinkModalOpen] = useState(false);
+  const [pushingToClassroom, setPushingToClassroom] = useState(false);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -610,6 +614,36 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <Download className="w-3 h-3" aria-hidden="true" />
                     Export Grades ({gradedCount})
                   </button>
+                  <button
+                    onClick={async () => {
+                      if (!selectedAssessment) return;
+                      if (!selectedAssessment.classroomLink) {
+                        setClassroomLinkModalOpen(true);
+                        return;
+                      }
+                      // Already linked — push grades directly
+                      setPushingToClassroom(true);
+                      try {
+                        const accessToken = await getClassroomAccessToken();
+                        const result = await callClassroomPushGrades({ accessToken, assignmentId: selectedAssessment.id });
+                        const data = result.data as { pushed: number; skipped: number };
+                        toast.success(`Pushed ${data.pushed} grades to Classroom${data.skipped > 0 ? ` (${data.skipped} skipped)` : ''}`);
+                      } catch (err: any) {
+                        toast.error(err.message || 'Failed to push grades to Classroom');
+                      } finally {
+                        setPushingToClassroom(false);
+                      }
+                    }}
+                    disabled={pushingToClassroom}
+                    className="text-xs text-green-400 hover:text-green-300 border border-green-500/20 hover:border-green-500/40 rounded-lg px-3 py-1.5 transition bg-green-500/10 hover:bg-green-500/20 flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {pushingToClassroom ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Upload className="w-3 h-3" aria-hidden="true" />
+                    )}
+                    {selectedAssessment.classroomLink ? `Push to Classroom (${gradedCount})` : 'Link & Push to Classroom'}
+                  </button>
                 </div>
               )}
 
@@ -635,8 +669,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         className="w-full text-left bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-xl px-4 py-3 transition group"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-white group-hover:text-purple-300 transition truncate mr-3">
+                          <span className="text-sm text-white group-hover:text-purple-300 transition truncate mr-3 flex items-center gap-1.5">
                             {assignment.title}
+                            {assignment.classroomLink && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20 flex-shrink-0" title={`Linked to ${assignment.classroomLink.courseName}`}>GC</span>
+                            )}
                           </span>
                           <span className="text-xs text-gray-400 whitespace-nowrap">{assignment.classType}</span>
                         </div>
@@ -2756,6 +2793,37 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         isOpen={showBehaviorAward}
         onClose={() => setShowBehaviorAward(false)}
       />
+
+      {/* Google Classroom Link Modal */}
+      {classroomLinkModalOpen && selectedAssessmentId && (() => {
+        const assignmentForModal = assignments.find(a => a.id === selectedAssessmentId);
+        if (!assignmentForModal) return null;
+        return (
+          <ClassroomLinkModal
+            isOpen={classroomLinkModalOpen}
+            onClose={() => setClassroomLinkModalOpen(false)}
+            assignment={assignmentForModal}
+            onLinked={async (link) => {
+              toast.success(`Linked to ${link.courseName} — ${link.courseWorkTitle}`);
+              // Auto-push grades after linking
+              setPushingToClassroom(true);
+              try {
+                const accessToken = await getClassroomAccessToken();
+                const result = await callClassroomPushGrades({ accessToken, assignmentId: selectedAssessmentId });
+                const data = result.data as { pushed: number; skipped: number };
+                toast.success(`Pushed ${data.pushed} grades to Classroom${data.skipped > 0 ? ` (${data.skipped} skipped)` : ''}`);
+              } catch (err: any) {
+                toast.error(err.message || 'Failed to push grades after linking');
+              } finally {
+                setPushingToClassroom(false);
+              }
+            }}
+            onUnlinked={() => {
+              toast.success('Unlinked from Google Classroom');
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };
