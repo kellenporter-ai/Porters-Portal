@@ -97,8 +97,18 @@ export function usePersistentSave({
   const updateResponse = useCallback((blockId: string, response: unknown) => {
     responsesRef.current = { ...responsesRef.current, [blockId]: response };
     onResponsesChange?.(responsesRef.current);
+    // Immediate synchronous localStorage write — closes the debounce gap
+    // where data only exists in JS memory
+    if (lsKey && userId && assignmentId) {
+      writeDraft(lsKey, {
+        userId,
+        assignmentId,
+        responses: responsesRef.current,
+        lastUpdated: new Date().toISOString(),
+      }, true);
+    }
     scheduleSave();
-  }, [scheduleSave, onResponsesChange]);
+  }, [scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
 
   // Public: immediate flush
   const flushNow = useCallback(() => {

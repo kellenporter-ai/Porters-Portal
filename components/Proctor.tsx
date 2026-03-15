@@ -261,6 +261,29 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             await updateDoc(doc(db, 'lesson_block_responses', docId), { retakePreFilled: false });
             return responses;
           }
+          // Session recovery: if server has recent responses (within 3 hours),
+          // the student likely lost localStorage (cleared cache, switched device).
+          // Restore their work instead of archiving it.
+          if (snap.exists()) {
+            const data = snap.data();
+            const responses = data.responses || {};
+            const lastUpdated = data.lastUpdated;
+            const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+            if (Object.keys(responses).length > 0 && lastUpdated && lastUpdated > threeHoursAgo) {
+              // Session recovery — restore responses and re-create session token
+              const storageKey = `assessment_session_${assignmentId}`;
+              try {
+                const result = await callStartAssessmentSession({ assignmentId });
+                const tokenData = result.data as { sessionToken: string };
+                localStorage.setItem(storageKey, tokenData.sessionToken);
+                sessionStorage.setItem(storageKey, tokenData.sessionToken);
+                onSessionToken?.(tokenData.sessionToken);
+              } catch {
+                // If token request fails, still restore work — don't lose data
+              }
+              return responses;
+            }
+          }
           // Fresh assessment start — archive & clear via atomic Cloud Function
           try {
             await callArchiveAndClearResponses({ assignmentId });
