@@ -45,6 +45,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
   const [courseWork, setCourseWork] = useState<CourseWork[]>([]);
   const [courseWorkLoading, setCourseWorkLoading] = useState(false);
   const [courseWorkError, setCourseWorkError] = useState<string | null>(null);
+  const [courseWorkLoaded, setCourseWorkLoaded] = useState(false);
 
   const [selectedCourseWorkId, setSelectedCourseWorkId] = useState<string | null>(null);
   const [createNew, setCreateNew] = useState(false);
@@ -53,6 +54,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
 
   const [saving, setSaving] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +73,8 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
     setNewMaxPoints(100);
     setCoursesError(null);
     setCourseWorkError(null);
+    setCourseWorkLoaded(false);
+    setGeneralError(null);
 
     // If already linked, don't need to auth immediately
     if (assignment.classroomLink) return;
@@ -99,7 +103,13 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
     try {
       const result = await callClassroomListCourses({ accessToken: token });
       const data = result.data as { courses: Course[] };
-      setCourses(data.courses || []);
+      const loadedCourses = (data.courses || []).filter(c => c.id);
+      setCourses(loadedCourses);
+      // Auto-select if only one course
+      if (loadedCourses.length === 1) {
+        setSelectedCourseId(loadedCourses[0].id);
+        fetchCourseWork(loadedCourses[0].id, token);
+      }
     } catch (err: any) {
       setCoursesError(err.message || 'Failed to load courses');
     } finally {
@@ -113,12 +123,20 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
     setCourseWork([]);
     setSelectedCourseWorkId(null);
     setCreateNew(false);
+    setCourseWorkLoaded(false);
     try {
       const result = await callClassroomListCourseWork({ accessToken: token, courseId });
       const data = result.data as { courseWork: CourseWork[] };
-      setCourseWork(data.courseWork || []);
+      const items = (data.courseWork || []).filter(cw => cw.id);
+      setCourseWork(items);
+      setCourseWorkLoaded(true);
+      // If no existing coursework, default to create-new mode
+      if (items.length === 0) {
+        setCreateNew(true);
+      }
     } catch (err: any) {
-      setCourseWorkError(err.message || 'Failed to load course work');
+      setCourseWorkError(err.message || 'Failed to load assignments');
+      setCourseWorkLoaded(true);
     } finally {
       setCourseWorkLoading(false);
     }
@@ -137,6 +155,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
     if (!selectedCourse) return;
 
     setSaving(true);
+    setGeneralError(null);
     try {
       let courseWorkId: string;
       let courseWorkTitle: string;
@@ -177,7 +196,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
       onLinked(link);
       onClose();
     } catch (err: any) {
-      setCoursesError(err.message || 'Failed to link assignment');
+      setGeneralError(err.message || 'Failed to link assignment');
     } finally {
       setSaving(false);
     }
@@ -190,7 +209,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
       onUnlinked();
       onClose();
     } catch (err: any) {
-      setCoursesError(err.message || 'Failed to unlink assignment');
+      setGeneralError(err.message || 'Failed to unlink assignment');
     } finally {
       setUnlinking(false);
     }
@@ -217,7 +236,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
 
   const isLinked = !!assignment.classroomLink;
 
-  const canConfirm = !saving && selectedCourseId && (createNew ? newTitle.trim().length > 0 : !!selectedCourseWorkId);
+  const canConfirm = !saving && selectedCourseId && courseWorkLoaded && (createNew ? newTitle.trim().length > 0 : !!selectedCourseWorkId);
 
   return (
     <div
@@ -304,7 +323,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
             </div>
           )}
 
-          {/* Course selection */}
+          {/* Course selection + CourseWork selection */}
           {!isLinked && accessToken && (
             <div className="space-y-4">
               {/* Step 1: Select course */}
@@ -321,6 +340,10 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                   <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
                     {coursesError}
                   </div>
+                ) : courses.length === 0 ? (
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-400">
+                    No active courses found in your Google Classroom account.
+                  </div>
                 ) : (
                   <div className="relative">
                     <select
@@ -329,7 +352,9 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                       className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-green-500/50 cursor-pointer"
                       aria-label="Select a Google Classroom course"
                     >
-                      <option value="" disabled>Choose a course...</option>
+                      {courses.length > 1 && (
+                        <option value="" disabled>Choose a course...</option>
+                      )}
                       {courses.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -348,7 +373,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                   {courseWorkLoading ? (
                     <div className="flex items-center gap-2 py-3 text-gray-400 text-sm">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading assignments...
+                      Loading Classroom assignments...
                     </div>
                   ) : courseWorkError ? (
                     <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
@@ -425,31 +450,33 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
               )}
 
               {/* Error display */}
-              {coursesError && selectedCourseId && (
+              {generalError && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
-                  {coursesError}
+                  {generalError}
                 </div>
               )}
 
-              {/* Step 3: Confirm */}
-              <button
-                onClick={handleConfirm}
-                disabled={!canConfirm}
-                className="w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-4 py-2.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                aria-label="Confirm link to Google Classroom"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Linking...
-                  </>
-                ) : (
-                  <>
-                    <Link className="w-4 h-4" />
-                    Link Assignment
-                  </>
-                )}
-              </button>
+              {/* Step 3: Confirm — only show when Step 2 is ready */}
+              {selectedCourseId && courseWorkLoaded && (
+                <button
+                  onClick={handleConfirm}
+                  disabled={!canConfirm}
+                  className="w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-4 py-2.5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Confirm link to Google Classroom"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {createNew ? 'Creating & Linking...' : 'Linking...'}
+                    </>
+                  ) : (
+                    <>
+                      <Link className="w-4 h-4" />
+                      {createNew ? 'Create & Link Assignment' : 'Link Assignment'}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
