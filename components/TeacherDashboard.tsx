@@ -279,7 +279,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   };
   
   const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-white/20 transition-all duration-300">
+    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-white/20 transition-all duration-300" aria-label={label}>
       <div className={`absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity ${color}`}>
         {icon}
       </div>
@@ -319,29 +319,29 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             <h1 className="text-3xl font-bold text-white mb-2">Teacher Dashboard</h1>
             <p className="text-gray-400">Engagement analytics and operational overview.</p>
         </div>
-        <div className="flex bg-black/30 rounded-xl p-1 border border-white/10">
-          <button onClick={() => setAdminTab('dashboard')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-            <Activity className="w-3.5 h-3.5" /> Overview
+        <div className="flex bg-black/30 rounded-xl p-1 border border-white/10" role="tablist" aria-label="Dashboard sections">
+          <button id="tab-dashboard" role="tab" aria-selected={adminTab === 'dashboard'} aria-controls="tabpanel-dashboard" onClick={() => setAdminTab('dashboard')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <Activity className="w-3.5 h-3.5" aria-hidden="true" /> Overview
           </button>
-          <button onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-            <BarChart3 className="w-3.5 h-3.5" /> Analytics
+          <button id="tab-analytics" role="tab" aria-selected={adminTab === 'analytics'} aria-controls="tabpanel-analytics" onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Analytics
           </button>
-          <button onClick={() => setAdminTab('assessments')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'assessments' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-            <Shield className="w-3.5 h-3.5" /> Assessments
+          <button id="tab-assessments" role="tab" aria-selected={adminTab === 'assessments'} aria-controls="tabpanel-assessments" onClick={() => setAdminTab('assessments')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'assessments' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <Shield className="w-3.5 h-3.5" aria-hidden="true" /> Assessments
           </button>
-          <button onClick={() => setAdminTab('digest')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'digest' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-            <Newspaper className="w-3.5 h-3.5" /> Daily Digest
+          <button id="tab-digest" role="tab" aria-selected={adminTab === 'digest'} aria-controls="tabpanel-digest" onClick={() => setAdminTab('digest')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'digest' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            <Newspaper className="w-3.5 h-3.5" aria-hidden="true" /> Daily Digest
           </button>
         </div>
       </div>
 
       {adminTab === 'analytics' && (
-        <FeatureErrorBoundary feature="Analytics Tab">
+        <div role="tabpanel" id="tabpanel-analytics" aria-labelledby="tab-analytics"><FeatureErrorBoundary feature="Analytics Tab">
           <AnalyticsTab users={users} assignments={assignments} submissions={submissions} bucketProfiles={bucketProfiles} />
-        </FeatureErrorBoundary>
+        </FeatureErrorBoundary></div>
       )}
 
-      {adminTab === 'assessments' && (<FeatureErrorBoundary feature="Assessments Tab">{(() => {
+      {adminTab === 'assessments' && (<div role="tabpanel" id="tabpanel-assessments" aria-labelledby="tab-assessments"><FeatureErrorBoundary feature="Assessments Tab">{(() => {
         const assessmentAssignments = assignments.filter(a => a.isAssessment);
         const selectedAssessment = assessmentAssignments.find(a => a.id === selectedAssessmentId) || null;
         // When a specific assessment is selected, use the dedicated assignment-scoped subscription
@@ -528,15 +528,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-red-400" />
+                  <Shield className="w-5 h-5 text-red-400" aria-hidden="true" />
                   Assessment Review
                 </h3>
-                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
+                <span className="text-xs text-gray-400 uppercase font-bold tracking-widest">
                   {assessmentAssignments.length} assessment{assessmentAssignments.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
               <select
+                aria-label="Select assessment"
                 value={selectedAssessmentId || ''}
                 onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setFeedbackDraft(''); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setViewingDraftUserId(null); setDraftResponses(null); }}
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
@@ -579,6 +580,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <input
                     type="number"
                     min={1}
+                    aria-label="Maximum points for CSV export"
                     value={csvMaxPoints}
                     onChange={e => setCsvMaxPoints(Math.max(1, Number(e.target.value) || 1))}
                     className="w-16 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/50"
@@ -605,7 +607,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     }}
                     className="text-xs text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg px-3 py-1.5 transition bg-white/5 hover:bg-white/10 flex items-center gap-1.5"
                   >
-                    <Download className="w-3 h-3" />
+                    <Download className="w-3 h-3" aria-hidden="true" />
                     Export Grades ({gradedCount})
                   </button>
                 </div>
@@ -636,7 +638,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           <span className="text-sm text-white group-hover:text-purple-300 transition truncate mr-3">
                             {assignment.title}
                           </span>
-                          <span className="text-[10px] text-gray-500 whitespace-nowrap">{assignment.classType}</span>
+                          <span className="text-xs text-gray-400 whitespace-nowrap">{assignment.classType}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1.5">
                           <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -652,7 +654,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               {assessmentAssignments.length === 0 && (
                 <div className="text-center py-8 text-gray-500 italic mt-4">
-                  <Shield className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                  <Shield className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
                   No assessments created yet. Toggle &quot;Assessment Mode&quot; in the Resource Editor to create one.
                 </div>
               )}
@@ -660,7 +662,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {/* Summary Stats */}
             {selectedAssessmentId && (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" role="group" aria-label="Assessment summary statistics">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                   <div className="text-3xl font-bold text-white">{avgScore}%</div>
                   <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
@@ -686,7 +688,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 {selectedAssessment?.rubric && aiSuggestedCount > 0 && (
                   <div className="border rounded-2xl p-5 bg-amber-900/10 border-amber-500/30">
                     <div className="text-3xl font-bold text-amber-400 flex items-center gap-2">
-                      <Sparkles className="w-6 h-6" />{aiSuggestedCount}
+                      <Sparkles className="w-6 h-6" aria-hidden="true" />{aiSuggestedCount}
                     </div>
                     <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Suggested</div>
                     <button
@@ -774,16 +776,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             {selectedAssessmentId && (sectionFilteredSubs.length > 0 || notStartedStudents.length > 0) && (
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
                   <input
                     type="text"
                     placeholder="Search students..."
+                    aria-label="Search students in assessment"
                     value={assessmentSearch}
                     onChange={e => setAssessmentSearch(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
                   />
                 </div>
                 <select
+                  aria-label="Filter by status"
                   value={assessmentStatusFilter}
                   onChange={e => setAssessmentStatusFilter(e.target.value)}
                   className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
@@ -800,6 +804,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 </select>
                 {availableSections.length > 1 && (
                   <select
+                    aria-label="Filter by section"
                     value={assessmentSectionFilter}
                     onChange={e => setAssessmentSectionFilter(e.target.value)}
                     className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
@@ -823,7 +828,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   }}
                   className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl transition whitespace-nowrap ${showIntegrityPanel ? 'bg-amber-500 text-black' : 'bg-amber-600/80 hover:bg-amber-500 text-white'}`}
                 >
-                  <Fingerprint className="w-3.5 h-3.5" />
+                  <Fingerprint className="w-3.5 h-3.5" aria-hidden="true" />
                   {showIntegrityPanel ? 'Hide Report' : 'Check Integrity'}
                 </button>
               </div>
@@ -834,7 +839,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="bg-amber-900/10 border border-amber-500/20 rounded-3xl p-6 backdrop-blur-md space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-lg font-bold text-amber-400 flex items-center gap-2">
-                    <Fingerprint className="w-5 h-5" />
+                    <Fingerprint className="w-5 h-5" aria-hidden="true" />
                     Integrity Analysis
                   </h4>
                   <div className="flex items-center gap-3 text-xs text-gray-400">
@@ -848,7 +853,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                 {integrityReport.flaggedPairs.length === 0 ? (
                   <div className="text-center py-6">
-                    <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400 opacity-40" />
+                    <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400 opacity-40" aria-hidden="true" />
                     <p className="text-sm text-green-400 font-bold">No suspicious similarity detected</p>
                     <p className="text-xs text-gray-500 mt-1">All student responses appear to be independently written.</p>
                   </div>
@@ -864,7 +869,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         <div key={idx} className={`border rounded-2xl overflow-hidden transition ${isHigh ? 'bg-red-900/10 border-red-500/20' : 'bg-amber-900/10 border-amber-500/15'}`}>
                           <div
                             className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={isExpanded}
                             onClick={() => setExpandedPairIdx(isExpanded ? null : idx)}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedPairIdx(isExpanded ? null : idx); } }}
                           >
                             <div className={`px-2 py-1 rounded-lg text-xs font-bold ${isHigh ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
                               {pair.overallSimilarity > 0 ? `${pair.overallSimilarity}%` : 'MC'}
@@ -897,11 +906,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
                                     <div className="bg-white/5 rounded-lg p-3">
-                                      <div className="text-[10px] text-gray-500 font-bold mb-1">{pair.studentA.userName}</div>
+                                      <div className="text-xs text-gray-400 font-bold mb-1">{pair.studentA.userName}</div>
                                       <div className="text-xs text-gray-300 whitespace-pre-wrap break-words">{block.textA}</div>
                                     </div>
                                     <div className="bg-white/5 rounded-lg p-3">
-                                      <div className="text-[10px] text-gray-500 font-bold mb-1">{pair.studentB.userName}</div>
+                                      <div className="text-xs text-gray-400 font-bold mb-1">{pair.studentB.userName}</div>
                                       <div className="text-xs text-gray-300 whitespace-pre-wrap break-words">{block.textB}</div>
                                     </div>
                                   </div>
@@ -1028,7 +1037,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col">
                   <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Students</h4>
-                    <span className="text-[10px] text-gray-600">
+                    <span className="text-xs text-gray-500">
                       {studentGroups.length} submitted
                       {hasDraftStudents.length > 0 && <span className="text-cyan-400"> · {hasDraftStudents.length} draft{hasDraftStudents.length !== 1 ? 's' : ''}</span>}
                       {notStartedStudents.length > 0 && <span className="text-orange-400"> · {notStartedStudents.length} not started</span>}
@@ -1042,7 +1051,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           if (assessmentSortKey === key) setAssessmentSortDesc(d => !d);
                           else { setAssessmentSortKey(key); setAssessmentSortDesc(key === 'submitted' || key === 'score'); }
                         }}
-                        className={`flex-1 text-center py-1.5 text-[9px] font-bold uppercase tracking-wider transition hover:bg-white/5 ${assessmentSortKey === key ? 'text-purple-400' : 'text-gray-600 hover:text-gray-400'}`}
+                        className={`flex-1 text-center py-1.5 min-h-[44px] text-[9px] font-bold uppercase tracking-wider transition hover:bg-white/5 ${assessmentSortKey === key ? 'text-purple-400' : 'text-gray-600 hover:text-gray-400'}`}
                       >
                         {label}
                         {assessmentSortKey === key && (
@@ -1077,7 +1086,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           >
                             <div className="shrink-0">
                               {group.hasRubricGrade ? (
-                                <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                                <CheckCircle className="w-3.5 h-3.5 text-green-400" aria-hidden="true" />
                               ) : (
                                 <div className="w-3.5 h-3.5 rounded-full border border-gray-600 bg-transparent" />
                               )}
@@ -1087,12 +1096,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                                   {group.userName}
                                 </span>
-                                {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" />}
+                                {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" aria-hidden="true" />}
                                 {group.hasAISuggestion && !group.hasRubricGrade && (
                                   <Sparkles className="w-3 h-3 text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
                                 )}
                                 {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
-                                  <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                  <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" aria-hidden="true" />
                                 )}
                                 {group.attemptCount > 1 && (
                                   <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
@@ -1115,10 +1124,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               </div>
                               <div className="flex items-center gap-1">
                                 {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                                  <span className="text-[9px] text-gray-600">{group.userSection}</span>
+                                  <span className="text-xs text-gray-500">{group.userSection}</span>
                                 )}
                                 {group.latest.submittedAt && !group.isInProgress && (
-                                  <span className="text-[9px] text-gray-600">{formatLastSeen(group.latest.submittedAt)}</span>
+                                  <span className="text-xs text-gray-500">{formatLastSeen(group.latest.submittedAt)}</span>
                                 )}
                               </div>
                             </div>
@@ -1168,7 +1177,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             </div>
                             <div className="flex items-center gap-1">
                               {studentSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                                <span className="text-[9px] text-gray-600">{studentSection}</span>
+                                <span className="text-xs text-gray-500">{studentSection}</span>
                               )}
                               {isDraft && entry.startedAt && (
                                 <span className="text-[9px] text-cyan-400/50">started {formatLastSeen(entry.startedAt)}</span>
@@ -1198,17 +1207,17 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <button
                               onClick={() => navigateUnified(-1)}
                               disabled={currentUnifiedIndex <= 0}
-                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
-                              title="Previous student"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              aria-label="Previous student"
                             >
                               <ChevronLeft className="w-4 h-4 text-gray-400" />
                             </button>
-                            <span className="text-[10px] text-gray-600 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
+                            <span className="text-xs text-gray-500 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
                             <button
                               onClick={() => navigateUnified(1)}
                               disabled={currentUnifiedIndex >= unifiedList.length - 1}
-                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
-                              title="Next student"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              aria-label="Next student"
                             >
                               <ChevronRight className="w-4 h-4 text-gray-400" />
                             </button>
@@ -1345,7 +1354,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                           <div className="mt-1 space-y-1">
                                             {steps.map((step, i) => (
                                               <div key={i} className="flex items-start gap-2 bg-white/5 rounded px-2 py-1">
-                                                <span className="text-[10px] text-gray-500 font-bold shrink-0 mt-0.5">{step.label}</span>
+                                                <span className="text-xs text-gray-400 font-bold shrink-0 mt-0.5">{step.label}</span>
                                                 <span className="text-xs text-gray-300">{step.input || step.latex || '\u2014'}</span>
                                               </div>
                                             ))}
@@ -1427,17 +1436,17 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <button
                               onClick={() => navigateUnified(-1)}
                               disabled={currentUnifiedIndex <= 0}
-                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
-                              title="Previous student"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              aria-label="Previous student"
                             >
                               <ChevronLeft className="w-4 h-4 text-gray-400" />
                             </button>
-                            <span className="text-[10px] text-gray-600 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
+                            <span className="text-xs text-gray-500 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
                             <button
                               onClick={() => navigateUnified(1)}
                               disabled={currentUnifiedIndex >= unifiedList.length - 1}
-                              className="p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
-                              title="Next student"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              aria-label="Next student"
                             >
                               <ChevronRight className="w-4 h-4 text-gray-400" />
                             </button>
@@ -1446,12 +1455,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           {/* Student name */}
                           <h4 className="text-sm font-bold text-white">{selectedGroup.userName}</h4>
                           {selectedGroup.userSection && (
-                            <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded">{selectedGroup.userSection}</span>
+                            <span className="text-xs text-gray-400 bg-white/5 px-2 py-0.5 rounded">{selectedGroup.userSection}</span>
                           )}
 
                           {/* Attempt selector */}
                           {selectedGroup.submissions.length > 1 && (
                             <select
+                              aria-label="Select attempt"
                               value={gradingAttemptId || ''}
                               onChange={e => {
                                 const newSub = selectedGroup.submissions.find(s => s.id === e.target.value);
@@ -1473,7 +1483,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                           <div className="ml-auto flex items-center gap-2">
                             {/* Metrics badges */}
-                            <div className="hidden md:flex items-center gap-2 text-[10px] text-gray-500">
+                            <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
                               <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
                               <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
                               <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-gray-600'}>{formatEngagementTime(inactiveTime)} idle</span>
@@ -1625,7 +1635,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                           <div className="mt-1 space-y-1">
                                             {steps.map((step, i) => (
                                               <div key={i} className="flex items-start gap-2 bg-white/5 rounded px-2 py-1">
-                                                <span className="text-[10px] text-gray-500 font-bold shrink-0 mt-0.5">{step.label}</span>
+                                                <span className="text-xs text-gray-400 font-bold shrink-0 mt-0.5">{step.label}</span>
                                                 {step.latex ? (
                                                   <span className="text-xs text-gray-200" dangerouslySetInnerHTML={{ __html: (() => { try { return katex.renderToString(step.latex, { throwOnError: false }); } catch { return step.input || step.latex; } })() }} />
                                                 ) : (
@@ -1649,7 +1659,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               if (!bars || bars.every(b => b.value === 0)) return null;
                                               return (
                                                 <div key={section} className="bg-white/5 rounded px-2 py-1">
-                                                  <span className="text-[10px] text-gray-500 font-bold uppercase">{section}</span>
+                                                  <span className="text-xs text-gray-400 font-bold uppercase">{section}</span>
                                                   <div className="flex gap-2 mt-0.5">
                                                     {bars.map((bar, i) => (
                                                       <div key={i} className="flex flex-col items-center">
@@ -1662,7 +1672,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                             opacity: 0.7,
                                                           }}
                                                         />
-                                                        <div className="text-[9px] text-gray-500 truncate max-w-[40px]" dangerouslySetInnerHTML={{ __html: bar.labelHTML || `${i + 1}` }} />
+                                                        <div className="text-xs text-gray-400 truncate max-w-[40px]" dangerouslySetInnerHTML={{ __html: bar.labelHTML || `${i + 1}` }} />
                                                       </div>
                                                     ))}
                                                   </div>
@@ -1857,7 +1867,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <span className="text-[11px] text-amber-300">This attempt was returned. Grades shown are from the prior review.</span>
                           </div>
                         )}
-                        <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading rubric...</div>}>
+                        <React.Suspense fallback={<div className="text-xs text-gray-400">Loading rubric...</div>}>
                           <RubricViewer
                             rubric={selectedAssessment.rubric}
                             mode="grade"
@@ -2064,7 +2074,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           })()}
                         </div>
                         {isAlreadyGraded && sub.rubricGrade && (
-                          <div className="text-[10px] text-gray-600 mt-1.5">
+                          <div className="text-xs text-gray-500 mt-1.5">
                             Last graded by {sub.rubricGrade.gradedBy} on {new Date(sub.rubricGrade.gradedAt).toLocaleDateString()}
                           </div>
                         )}
@@ -2094,14 +2104,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             )}
           </div>
         );
-      })()}</FeatureErrorBoundary>)}
+      })()}</FeatureErrorBoundary></div>)}
 
-      {adminTab === 'digest' && (<FeatureErrorBoundary feature="Daily Digest">
+      {adminTab === 'digest' && (<div role="tabpanel" id="tabpanel-digest" aria-labelledby="tab-digest"><FeatureErrorBoundary feature="Daily Digest">
         <div className="space-y-6">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Newspaper className="w-5 h-5 text-blue-400" />
+                <Newspaper className="w-5 h-5 text-blue-400" aria-hidden="true" />
                 Daily Activity Digest
               </h3>
               <button
@@ -2125,7 +2135,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {dailyDigests.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-20" aria-hidden="true" />
                 <p className="text-sm font-bold">No digest reports yet</p>
                 <p className="text-xs mt-1">Daily digests are generated automatically each morning at 6:30 AM.</p>
               </div>
@@ -2138,7 +2148,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       <h4 className="text-sm font-bold text-white">
                         {new Date(digest.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                       </h4>
-                      <span className="text-[10px] text-gray-500">Generated {new Date(digest.generatedAt).toLocaleTimeString()}</span>
+                      <span className="text-xs text-gray-400">Generated {new Date(digest.generatedAt).toLocaleTimeString()}</span>
                     </div>
 
                     {/* Summary Stats Grid */}
@@ -2202,7 +2212,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     {/* Event Feed */}
                     {digest.events.length > 0 && (
                       <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
-                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Activity Feed</div>
+                        <div className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-2">Activity Feed</div>
                         {digest.events.map((event, idx) => {
                           const eventColors: Record<string, string> = {
                             SUBMISSION: 'text-green-400',
@@ -2259,9 +2269,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             )}
           </div>
         </div>
-      </FeatureErrorBoundary>)}
+      </FeatureErrorBoundary></div>)}
 
-      <div className={adminTab === 'dashboard' ? '' : 'hidden'}>
+      <div className={adminTab === 'dashboard' ? '' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
       <FeatureErrorBoundary feature="Dashboard Overview">
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2277,7 +2287,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <div className={`border rounded-3xl p-6 backdrop-blur-md transition-colors ${flags.length > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-white/5 border-white/10'}`}>
               <div className="flex justify-between items-center mb-6">
                   <h3 className={`text-xl font-bold flex items-center gap-2 ${flags.length > 0 ? 'text-red-400' : 'text-white'}`}>
-                      {flags.length > 0 ? <AlertTriangle className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5 text-gray-400" />}
+                      {flags.length > 0 ? <AlertTriangle className="w-5 h-5" aria-hidden="true" /> : <ShieldAlert className="w-5 h-5 text-gray-400" aria-hidden="true" />}
                       Moderation Queue
                   </h3>
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${flags.length > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-green-500/20 text-green-400'}`}>
@@ -2287,7 +2297,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               
               {flags.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 italic">
-                      <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                      <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
                       No active alerts. Comms channels are clear.
                   </div>
               ) : (
@@ -2299,26 +2309,26 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       <div className="text-sm font-bold text-white">{flag.senderName} <span className="text-xs text-gray-500 font-normal">in {flag.classType}</span></div>
                                       <div className="text-xs text-red-300 italic mt-1">"{flag.content}"</div>
                                   </div>
-                                  <div className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
+                                  <div className="text-xs text-gray-400 whitespace-nowrap ml-2">
                                       {new Date(flag.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                   </div>
                               </div>
                               <div className="flex gap-2 mt-2">
-                                  <button onClick={async () => { await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.unflagMessage(flag.messageId).catch(err => reportError(err, { method: 'unflagMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition">
-                                      <Check className="w-3 h-3" /> Dismiss
+                                  <button onClick={async () => { await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.unflagMessage(flag.messageId).catch(err => reportError(err, { method: 'unflagMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition">
+                                      <Check className="w-3 h-3" aria-hidden="true" /> Dismiss
                                   </button>
-                                  <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(err => reportError(err, { method: 'deleteFlaggedMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
-                                      <Trash2 className="w-3 h-3" /> Delete
+                                  <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(err => reportError(err, { method: 'deleteFlaggedMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
+                                      <Trash2 className="w-3 h-3" aria-hidden="true" /> Delete
                                   </button>
                                   <div className="relative">
-                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" aria-label="Mute user">
-                                          <MicOff className="w-3 h-3" />
+                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" aria-label="Mute user" aria-haspopup="menu" aria-expanded={muteMenuFlagId === flag.id}>
+                                          <MicOff className="w-3 h-3" aria-hidden="true" />
                                       </button>
                                       {muteMenuFlagId === flag.id && (
-                                          <div className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
-                                              <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {flag.senderName}</div>
+                                          <div role="menu" className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap" onKeyDown={e => { if (e.key === 'Escape') setMuteMenuFlagId(null); }}>
+                                              <div className="text-xs text-gray-400 px-2 py-1 font-bold uppercase">Mute {flag.senderName}</div>
                                               {MUTE_DURATIONS.map(d => (
-                                                  <button key={d.minutes} onClick={() => handleMuteFromFlag(flag.senderId, d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
+                                                  <button key={d.minutes} role="menuitem" onClick={() => handleMuteFromFlag(flag.senderId, d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
                                               ))}
                                           </div>
                                       )}
@@ -2333,13 +2343,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           {/* Muted Students */}
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <MicOff className="w-5 h-5 text-orange-400" />
+                  <MicOff className="w-5 h-5 text-orange-400" aria-hidden="true" />
                   Silenced Operatives
               </h3>
               
               {mutedStudents.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 italic">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
                       No active silence sanctions.
                   </div>
               ) : (
@@ -2366,19 +2376,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                       </td>
                                       <td className="py-3 text-right">
                                           <div className="flex justify-end gap-2">
-                                              <button 
+                                              <button
                                                   onClick={() => handleExtendMute(s.id, s.mutedUntil!)}
-                                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition"
+                                                  className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition"
                                                   aria-label="Extend mute 1 hour"
                                               >
-                                                  <RefreshCw className="w-3.5 h-3.5" />
+                                                  <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
                                               </button>
                                               <button
                                                   onClick={() => handleUnmute(s.id)}
-                                                  className="p-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition"
+                                                  className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition"
                                                   aria-label="Unmute user"
                                               >
-                                                  <CheckCircle className="w-3.5 h-3.5" />
+                                                  <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                               </button>
                                           </div>
                                       </td>
@@ -2396,7 +2406,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         <div className="bg-amber-900/10 border border-amber-500/30 rounded-3xl p-6 backdrop-blur-md">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-amber-400 flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+              <Activity className="w-5 h-5" aria-hidden="true" />
               Early Warning System
             </h3>
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-300">
@@ -2432,13 +2442,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           </span>
                         )}
                         <span className="text-sm font-bold text-white truncate">{alert.studentName}</span>
-                        <span className="text-[10px] text-gray-500">{alert.classType}</span>
+                        <span className="text-xs text-gray-400">{alert.classType}</span>
                       </div>
                       <p className="text-xs text-gray-300 leading-relaxed">{alert.message}</p>
                       {bucketInfo && (
                         <p className="text-[10px] text-gray-400 mt-1 italic">{bucketInfo.description}</p>
                       )}
-                      <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
+                      <div className="flex gap-4 mt-2 text-xs text-gray-400">
                         <span>ES: {alert.engagementScore}</span>
                         <span>Class Avg: {alert.classMean}</span>
                         <span>{new Date(alert.createdAt).toLocaleDateString()}</span>
@@ -2471,10 +2481,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-cyan-400" />
+              <Activity className="w-5 h-5 text-cyan-400" aria-hidden="true" />
               Student Engagement Buckets
             </h3>
-            <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
+            <span className="text-xs text-gray-400 uppercase font-bold tracking-widest">
               {students.length} student{students.length !== 1 ? 's' : ''} ({bucketProfiles.length} profiled)
             </span>
           </div>
@@ -2535,21 +2545,23 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               onClick={() => setShowBehaviorAward(true)}
               className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition"
             >
-              <Award className="w-3.5 h-3.5" /> Quick Award
+              <Award className="w-3.5 h-3.5" aria-hidden="true" /> Quick Award
             </button>
           </div>
           <div className="flex flex-col md:flex-row gap-3 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search students..."
+                aria-label="Search students"
                 value={engagementSearch}
                 onChange={e => setEngagementSearch(e.target.value)}
                 className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
               />
             </div>
             <select
+              aria-label="Filter by engagement bucket"
               value={bucketFilter}
               onChange={e => setBucketFilter(e.target.value as TelemetryBucket | '')}
               className="bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50"
@@ -2567,16 +2579,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <span className="text-sm font-bold text-purple-300">{selectedIds.size} selected</span>
               <div className="flex-1" />
               <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-lg text-xs font-bold transition">
-                <Download className="w-3.5 h-3.5" /> Export CSV
+                <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export CSV
               </button>
               <button onClick={() => { setShowBehaviorAward(true); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 border border-amber-500/30 text-white rounded-lg text-xs font-bold transition">
-                <Zap className="w-3.5 h-3.5" /> Bulk XP
+                <Zap className="w-3.5 h-3.5" aria-hidden="true" /> Bulk XP
               </button>
               <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-gray-400 hover:text-white text-xs transition">Clear</button>
             </div>
           )}
 
           {/* Header row */}
+          <div role="table" aria-label="Student engagement">
+          <div role="rowgroup">
           <div className="flex items-center border-b border-white/10 text-[10px] uppercase font-bold text-gray-500" role="row">
             <div className="p-3 w-10 shrink-0" role="columnheader">
               <input type="checkbox" checked={selectedIds.size === sortedStudents.length && sortedStudents.length > 0} onChange={toggleSelectAll} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label="Select all students" />
@@ -2636,8 +2650,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               </div>
             </div>
           </div>
+          </div>
 
           {/* Virtualized student rows */}
+          <div role="rowgroup">
           <div ref={tableScrollRef} className="max-h-[520px] overflow-y-auto custom-scrollbar">
             <div style={{ height: `${tableVirtualizer.getTotalSize()}px`, position: 'relative' }}>
               {tableVirtualizer.getVirtualItems().map(virtualRow => {
@@ -2684,11 +2700,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">{student.name.charAt(0)}</div>
                           )}
-                          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`} />
+                          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`} aria-label={msSinceLogin < 3600000 ? 'Active' : msSinceLogin < 86400000 ? 'Idle' : msSinceLogin < Infinity ? 'Inactive' : 'Never seen'} />
                         </div>
                         <span className="truncate max-w-[120px]">{student.name}</span>
                         {studentAlert && riskDot[studentAlert.riskLevel] && (
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} />
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${riskDot[studentAlert.riskLevel]}`} title={`${studentAlert.riskLevel} risk: ${studentAlert.reason}`} aria-label={`${studentAlert.riskLevel} risk`} />
                         )}
                         {bucketMeta && (
                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bucketMeta.bgColor} ${bucketMeta.color} border ${bucketMeta.borderColor}`} title={bucketMeta.description}>{bucketMeta.label}</span>
@@ -2702,7 +2718,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <div className="p-3 text-right flex-1" role="cell">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${xpPct}%` }} />
+                          <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" role="progressbar" aria-valuenow={xpPct} aria-valuemin={0} aria-valuemax={100} aria-label="XP progress" style={{ width: `${xpPct}%` }} />
                         </div>
                         <span className="text-purple-400 font-bold text-sm min-w-[3rem] text-right">{xp}</span>
                       </div>
@@ -2711,6 +2727,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 );
               })}
             </div>
+          </div>
+          </div>
           </div>
       </div>
 
