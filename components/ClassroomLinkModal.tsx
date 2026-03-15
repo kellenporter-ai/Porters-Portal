@@ -18,6 +18,8 @@ interface ClassroomLinkModalProps {
 interface Course {
   id: string;
   name: string;
+  section?: string;
+  descriptionHeading?: string;
 }
 
 interface CourseWork {
@@ -103,7 +105,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
     try {
       const result = await callClassroomListCourses({ accessToken: token });
       const data = result.data as { courses: Course[] };
-      const loadedCourses = (data.courses || []).filter(c => c.id);
+      const loadedCourses = (data.courses || []).filter(c => c.id && c.name);
       setCourses(loadedCourses);
       // Auto-select if only one course
       if (loadedCourses.length === 1) {
@@ -356,7 +358,9 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                         <option value="" disabled>Choose a course...</option>
                       )}
                       {courses.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id}>
+                          {c.name}{c.section ? ` — ${c.section}` : ''}{c.descriptionHeading ? ` (${c.descriptionHeading})` : ''}
+                        </option>
                       ))}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />

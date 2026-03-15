@@ -6425,16 +6425,15 @@ export const classroomListCourses = onCall({ region: "us-east1" }, async (reques
 
   const classroom = createClassroomClient(accessToken);
   try {
-    const courses: { id: string | null | undefined; name: string | null | undefined; section: string | null | undefined; descriptionHeading: string | null | undefined }[] = [];
+    const courses: { id: string | null | undefined; name: string | null | undefined; section: string | null | undefined; descriptionHeading: string | null | undefined; ownerId: string | null | undefined; courseState: string | null | undefined }[] = [];
     let pageToken: string | undefined;
     do {
       const res = await classroom.courses.list({
-        teacherId: "me",
         courseStates: ["ACTIVE"],
         pageToken,
       });
       for (const c of res.data.courses || []) {
-        courses.push({ id: c.id, name: c.name, section: c.section, descriptionHeading: c.descriptionHeading });
+        courses.push({ id: c.id, name: c.name, section: c.section, descriptionHeading: c.descriptionHeading, ownerId: c.ownerId, courseState: c.courseState });
       }
       pageToken = res.data.nextPageToken || undefined;
     } while (pageToken);
