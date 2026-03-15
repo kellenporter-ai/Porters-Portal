@@ -68,7 +68,7 @@ const Section: React.FC<{
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="text-[10px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition"
+          className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition py-1.5 px-2 -my-1.5 -mx-2 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           {actionLabel} <ChevronRight className="w-3 h-3" />
         </button>
@@ -89,17 +89,18 @@ const QuickNavCard: React.FC<{
 }> = ({ label, icon, color, badge, onClick }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98] ${color}`}
+    aria-label={badge ? `${label}, ${badge} new` : label}
+    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-purple-500 ${color}`}
   >
     <div className="relative">
       {icon}
       {badge !== undefined && badge !== 0 && (
-        <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+        <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
           {badge}
         </span>
       )}
     </div>
-    <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+    <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
   </button>
 );
 
@@ -201,12 +202,13 @@ const HomeTab: React.FC<HomeTabProps> = ({
 
   return (
     <div key="home" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+      <h2 className="sr-only">Home</h2>
 
       {/* Up Next — most urgent incomplete assignment */}
       {upNextAssignment && (
         <button
           onClick={() => onStartAssignment?.(upNextAssignment.id)}
-          className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-600/15 to-blue-600/15 border border-purple-500/30 hover:border-purple-500/50 transition-all hover:scale-[1.005] active:scale-[0.995] text-left group"
+          className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-600/15 to-blue-600/15 border border-purple-500/30 hover:border-purple-500/50 transition-all motion-safe:hover:scale-[1.005] motion-safe:active:scale-[0.995] text-left group focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           <div className="w-12 h-12 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center shrink-0">
             <Target className="w-6 h-6 text-purple-400" />
@@ -287,7 +289,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           onAction={() => onNavigate('Calendar')}
         >
           {upcomingDue.length === 0 ? (
-            <div className="text-sm text-gray-500 italic py-6 text-center bg-black/10 rounded-xl border border-dashed border-white/5">
+            <div className="text-sm text-gray-500 italic py-6 text-center bg-black/10 rounded-xl border border-dashed border-white/15">
               No upcoming due dates
             </div>
           ) : (
@@ -296,13 +298,13 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 <button
                   key={a.id}
                   onClick={() => onStartAssignment?.(a.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-white/5 text-left ${urgencyColor(a.dueDate!)}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-white/5 text-left focus-visible:ring-2 focus-visible:ring-purple-500 ${urgencyColor(a.dueDate!)}`}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white truncate">{a.title}</div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-bold">{relativeDate(a.dueDate!)}</span>
-                      {a.unit && <span className="text-[10px] text-gray-500">{a.unit}</span>}
+                      <span className="text-xs font-bold">{relativeDate(a.dueDate!)}</span>
+                      {a.unit && <span className="text-xs text-gray-400">{a.unit}</span>}
                     </div>
                   </div>
                   {a.isCompleted ? (
@@ -310,6 +312,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   ) : (
                     <ChevronRight className="w-4 h-4 opacity-40 shrink-0" />
                   )}
+                  <span className="sr-only">{a.isCompleted ? 'Completed' : 'Not yet completed'}</span>
                 </button>
               ))}
             </div>
@@ -327,8 +330,8 @@ const HomeTab: React.FC<HomeTabProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-white">{stats.completed}</div>
-                <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-1">Completed</div>
-                <div className="text-[9px] text-gray-500">of {stats.total}</div>
+                <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Completed</div>
+                <div className="text-xs text-gray-400">of {stats.total}</div>
               </div>
               <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-white">
@@ -336,11 +339,11 @@ const HomeTab: React.FC<HomeTabProps> = ({
                     ? `${(stats.totalTime / 3600).toFixed(1)}h`
                     : `${Math.round(stats.totalTime / 60)}m`}
                 </div>
-                <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-1">Study Time</div>
+                <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Study Time</div>
               </div>
               <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-white">{acceptedQuestCount}</div>
-                <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-1">Active Quests</div>
+                <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Active Quests</div>
               </div>
             </div>
           </Section>
@@ -386,7 +389,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               <button
                 key={s.id}
                 onClick={() => onStartAssignment?.(s.assignmentId)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition text-left"
+                className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition text-left focus-visible:ring-2 focus-visible:ring-purple-500"
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                   s.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -395,9 +398,10 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 }`}>
                   <BookOpen className="w-4 h-4" />
                 </div>
+                <span className="sr-only">{s.status === 'SUCCESS' ? 'Completed' : s.status === 'FLAGGED' ? 'Flagged' : 'In progress'}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-white font-medium truncate">{s.assignmentTitle}</div>
-                  <div className="text-[10px] text-gray-500">
+                  <div className="text-xs text-gray-400">
                     {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                     {s.score > 0 && <span className="ml-2 text-yellow-400">{s.score}%</span>}
                   </div>

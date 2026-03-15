@@ -1,7 +1,7 @@
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { User, Assignment, Submission, RPGItem, Quest, ClassConfig } from '../types';
-import { ChevronRight, Microscope, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye } from 'lucide-react';
+import { ChevronRight, Microscope, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye, AlertTriangle, AlertCircle } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
 import { dataService } from '../services/dataService';
@@ -120,12 +120,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [displayTab, setDisplayTab] = useState<StudentTab>(studentTab);
   const [tabExiting, setTabExiting] = useState(false);
   const tabExitRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tabpanelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (studentTab !== displayTab && !tabExiting) {
       setTabExiting(true);
       tabExitRef.current = setTimeout(() => {
         setDisplayTab(studentTab);
         setTabExiting(false);
+        tabpanelRef.current?.focus();
       }, 150);
       return () => { if (tabExitRef.current) clearTimeout(tabExitRef.current); };
     }
@@ -135,6 +137,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       tabExitRef.current = setTimeout(() => {
         setDisplayTab(studentTab);
         setTabExiting(false);
+        tabpanelRef.current?.focus();
       }, 150);
       return () => { if (tabExitRef.current) clearTimeout(tabExitRef.current); };
     }
@@ -414,36 +417,37 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* ANNOUNCEMENTS BANNER */}
       {visibleAnnouncements.length > 0 && (
-        <div className="lg:col-span-12 space-y-2">
+        <section aria-label="Announcements" className="lg:col-span-12 space-y-2">
           {visibleAnnouncements.map(a => {
             const styles = {
               INFO: 'bg-blue-600/10 border-blue-500/30 text-blue-300',
               WARNING: 'bg-yellow-600/10 border-yellow-500/30 text-yellow-300',
-              URGENT: 'bg-red-600/10 border-red-500/30 text-red-300 animate-pulse',
+              URGENT: `bg-red-600/10 border-red-500/30 text-red-300${reducedMotion ? '' : ' animate-pulse'}`,
             };
+            const AnnouncementIcon = a.priority === 'URGENT' ? AlertCircle : a.priority === 'WARNING' ? AlertTriangle : Megaphone;
             return (
-              <div key={a.id} className={`border rounded-2xl p-4 flex items-start gap-3 ${styles[a.priority]}`}>
-                <Megaphone className="w-5 h-5 shrink-0 mt-0.5" />
+              <div key={a.id} className={`border rounded-2xl p-4 flex items-start gap-3 ${styles[a.priority]}`} {...(a.priority === 'URGENT' ? { role: 'alert' } : {})}>
+                <AnnouncementIcon className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm text-white">{a.title}</div>
-                  <div className="text-xs mt-0.5 opacity-80">{a.content}</div>
+                  <h3 className="font-bold text-sm text-white"><span className="sr-only">{a.priority === 'URGENT' ? 'Urgent: ' : a.priority === 'WARNING' ? 'Warning: ' : 'Info: '}</span>{a.title}</h3>
+                  <div className="text-xs mt-0.5 text-inherit">{a.content}</div>
                 </div>
-                <button onClick={() => handleDismissAnnouncement(a.id)} className="p-1 text-gray-500 hover:text-white transition shrink-0" aria-label="Dismiss announcement">
+                <button onClick={() => handleDismissAnnouncement(a.id)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-white transition shrink-0 focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg" aria-label="Dismiss announcement">
                   <XIcon className="w-4 h-4" />
                 </button>
               </div>
             );
           })}
-        </div>
+        </section>
       )}
 
       {/* ACTIVE EVENT BANNER */}
       {activeEvent && (
         <div className="lg:col-span-12">
-          <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)] animate-pulse">
+          <div className={`bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)]${reducedMotion ? '' : ' animate-pulse'}`} role="status" aria-live="polite">
             <div className="flex items-center gap-3">
               <div className="bg-blue-500 text-white p-2 rounded-lg">
-                <Zap className="w-5 h-5 fill-current" />
+                <Zap className="w-5 h-5 fill-current" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-white font-bold text-lg uppercase tracking-wider">{activeEvent.title} ACTIVE</h3>
@@ -458,14 +462,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       )}
 
       {/* --- LEFT COLUMN: OPERATIVE STATUS --- */}
-      <div className="lg:col-span-3 space-y-6">
+      <aside aria-label="Player status" className="lg:col-span-3 space-y-6">
         <div className={`bg-white/5 border rounded-3xl p-6 backdrop-blur-md relative overflow-hidden group ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>
             <div className="relative z-10 flex flex-col items-center">
                 <div className={`w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-white/10 to-white/5 mb-4 ${rankDetails.tierGlow} shadow-xl`}>
                     <img
                       src={user.avatarUrl}
-                      alt="Avatar"
+                      alt={`${user.gamification?.codename || user.name}'s avatar`}
                       className={`w-full h-full rounded-full border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
                     />
                 </div>
@@ -484,7 +488,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <select
                             value={activeClass}
                             onChange={handleClassChange}
-                            className="w-full bg-black/40 border border-white/20 text-white text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 transition"
+                            aria-label="Switch active class"
+                            className="w-full bg-black/40 border border-white/20 text-white text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
                         >
                             {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
@@ -495,7 +500,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-white/5 relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
                     <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                 </div>
-                <div className="flex justify-between w-full text-[9px] text-gray-500 mt-2 font-mono font-bold relative">
+                <div className="flex justify-between w-full text-xs text-gray-400 mt-2 font-mono font-bold relative">
                     <span>{displayXp.toLocaleString()} XP ({activeClass})</span>
                     <span>{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
                     {xpFloatAmount && (
@@ -510,10 +515,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
-                    <Hexagon className="w-6 h-6" />
+                    <Hexagon className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
-                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Cyber-Flux</div>
+                    <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Cyber-Flux</div>
                     <div className="text-xl font-black text-white leading-none">{displayCurrency}</div>
                 </div>
             </div>
@@ -527,15 +532,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center">
-                            <Flame className="w-6 h-6" />
+                            <Flame className="w-6 h-6" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
-                            <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Streak</div>
+                            <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Streak</div>
                             <div className="text-xl font-black text-orange-400 leading-none">{streak}w</div>
                         </div>
                         {multiplier > 1 && (
                             <div className="text-right">
-                                <div className="text-[9px] text-gray-500 uppercase">XP Bonus</div>
+                                <div className="text-xs text-gray-400 uppercase">XP Bonus</div>
                                 <div className="text-sm font-black text-yellow-400">+{Math.round((multiplier - 1) * 100)}%</div>
                             </div>
                         )}
@@ -547,9 +552,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         {/* Login Streak */}
         {(user.gamification?.loginStreak || 0) > 1 && (
             <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-3 flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-purple-400" />
+                <Sparkles className="w-5 h-5 text-purple-400" aria-hidden="true" />
                 <div>
-                    <div className="text-[10px] text-gray-500 uppercase font-bold">Daily Login</div>
+                    <div className="text-xs text-gray-400 uppercase font-bold">Daily Login</div>
                     <div className="text-sm font-black text-purple-400">{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
@@ -558,31 +563,31 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         {/* Profile Showcase Button */}
         <button
             onClick={() => setShowProfile(true)}
-            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-2xl flex items-center justify-center gap-2 transition text-gray-400 hover:text-white text-sm font-bold"
+            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-2xl flex items-center justify-center gap-2 transition text-gray-400 hover:text-white text-sm font-bold focus-visible:ring-2 focus-visible:ring-purple-500"
         >
-            <Eye className="w-4 h-4" /> View Profile
+            <Eye className="w-4 h-4" aria-hidden="true" /> View Profile
         </button>
 
         <div className="space-y-2">
-             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">Access Nodes</label>
+             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Access Nodes</h3>
              {enabledFeatures.evidenceLocker && (
-                 <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-4 rounded-2xl flex items-center justify-between transition group">
+                 <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-4 rounded-2xl flex items-center justify-between transition group focus-visible:ring-2 focus-visible:ring-purple-500">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400 shadow-inner"><Microscope className="w-5 h-5" /></div>
+                        <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400 shadow-inner"><Microscope className="w-5 h-5" aria-hidden="true" /></div>
                         <div className="text-left">
                             <div className="font-bold text-gray-200 text-sm">Evidence Log</div>
-                            <div className="text-[10px] text-emerald-300/70 uppercase font-bold tracking-tight">Weekly Portfolio</div>
+                            <div className="text-xs text-emerald-300/70 uppercase font-bold tracking-tight">Weekly Portfolio</div>
                         </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition" />
                  </button>
              )}
         </div>
-      </div>
+      </aside>
 
       {/* --- MIDDLE: CONTENT --- */}
-      <div className="lg:col-span-9 space-y-6">
-          <div id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
+      <main className="lg:col-span-9 space-y-6">
+          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
            <div className={`flex-1 transition-all ${reducedMotion ? 'duration-0' : 'duration-150'} ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (
@@ -792,7 +797,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
            </div>
           </div>
-      </div>
+      </main>
 
       {/* BOSS ENCOUNTERS — Full-width panel */}
       {enabledFeatures.bossFights && (
@@ -847,8 +852,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               {/* Level Badge */}
               <div className="relative inline-block mb-6">
                   {/* Outer glow rings */}
-                  <div className="absolute inset-[-12px] rounded-full border-2 border-yellow-400/30 animate-ping" style={{ animationDuration: '2s' }} />
-                  <div className="absolute inset-[-6px] rounded-full border border-yellow-400/20 animate-pulse" />
+                  {!reducedMotion && <div className="absolute inset-[-12px] rounded-full border-2 border-yellow-400/30 animate-ping" style={{ animationDuration: '2s' }} />}
+                  {!reducedMotion && <div className="absolute inset-[-6px] rounded-full border border-yellow-400/20 animate-pulse" />}
                   {/* Main badge */}
                   <div className="level-up-burst w-28 h-28 mx-auto bg-gradient-to-tr from-yellow-400 via-amber-500 to-yellow-600 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.6)] relative">
                       <span className="text-5xl font-black text-white drop-shadow-lg">{level}</span>
@@ -857,25 +862,25 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
               {/* Rank reveal */}
               <div className="mb-2 overflow-hidden inline-block">
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tight" style={{ animation: 'typeReveal 0.8s steps(20) 0.4s both', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight" style={reducedMotion ? { display: 'inline-block' } : { animation: 'typeReveal 0.8s steps(20) 0.4s both', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block' }}>
                       {rankDetails.rankName}
                   </h2>
               </div>
-              <p className="text-gray-400 mb-8 animate-in fade-in duration-500" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+              <p className="text-gray-400 mb-8 animate-in fade-in duration-500" style={reducedMotion ? {} : { animationDelay: '0.6s', animationFillMode: 'both' }}>
                   Clearance Level Increased. New capabilities unlocked.
               </p>
 
               {newlyAcquiredItem && (
                   <div className={`${getAssetColors(newlyAcquiredItem.rarity).shimmer} bg-white/5 border rounded-xl p-5 mb-6 relative overflow-hidden ${getAssetColors(newlyAcquiredItem.rarity).border}`}
-                       style={{ animation: 'levelUpBurst 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both' }}>
+                       style={reducedMotion ? {} : { animation: 'levelUpBurst 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both' }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-transparent opacity-50" />
                       <div className="relative z-10">
-                          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mb-2">⚡ Supply Drop Received</div>
+                          <div className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mb-2">⚡ Supply Drop Received</div>
                           <div className={`text-xl font-bold ${getAssetColors(newlyAcquiredItem.rarity).text}`}>
                               {newlyAcquiredItem.name}
                           </div>
-                          <div className="text-[10px] text-gray-500 uppercase font-mono mt-1">{newlyAcquiredItem.rarity} {newlyAcquiredItem.slot}</div>
-                          <div className="flex justify-center gap-5 mt-3 text-[10px] font-mono">
+                          <div className="text-xs text-gray-400 uppercase font-mono mt-1">{newlyAcquiredItem.rarity} {newlyAcquiredItem.slot}</div>
+                          <div className="flex justify-center gap-5 mt-3 text-xs font-mono">
                               {Object.entries(newlyAcquiredItem.stats).map(([key, val]) => (
                                   <span key={key} className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">+{val} {key.toUpperCase()}</span>
                               ))}
@@ -887,8 +892,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               {/* Delayed button */}
               <button
                   onClick={handleLevelUpAck}
-                  className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-black rounded-xl uppercase tracking-widest transition shadow-[0_0_30px_rgba(234,179,8,0.3)]"
-                  style={{ animation: 'buttonFadeIn 0.4s ease-out 1.2s both' }}
+                  className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-black rounded-xl uppercase tracking-widest transition shadow-[0_0_30px_rgba(234,179,8,0.3)] focus-visible:ring-2 focus-visible:ring-purple-500"
+                  style={reducedMotion ? {} : { animation: 'buttonFadeIn 0.4s ease-out 1.2s both' }}
               >
                   Accept Promotion
               </button>
