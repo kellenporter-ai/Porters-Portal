@@ -39,13 +39,13 @@ const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKIN
 // Original block renderers
 // ──────────────────────────────────────────────
 
-const TextBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
+const TextBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="text-base text-gray-200 leading-relaxed whitespace-pre-line">
     {block.content}
   </div>
-);
+));
 
-const InfoBoxBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const InfoBoxBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const variantStyles = {
     tip: 'border-green-500/30 bg-green-500/5 text-green-400',
     warning: 'border-amber-500/30 bg-amber-500/5 text-amber-400',
@@ -60,9 +60,9 @@ const InfoBoxBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
       <div className="text-gray-200">{block.content}</div>
     </div>
   );
-};
+});
 
-const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { selected: number; answered: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
+const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { selected: number; answered: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const [selected, setSelected] = useState<number | null>(savedResponse?.selected ?? null);
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
   const isCorrect = selected === block.correctAnswer;
@@ -148,9 +148,9 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
       )}
     </div>
   );
-};
+});
 
-const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
+const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const [answer, setAnswer] = useState(savedResponse?.answer ?? '');
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
   const [isCorrect, setIsCorrect] = useState(savedResponse?.isCorrect ?? false);
@@ -200,7 +200,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
       {!readOnly && answered && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
-            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> Accepted answers: {(block.acceptedAnswers || []).join(', ')}</>}
+            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> Not quite — review the material above.</>}
           </div>
           <button
             onClick={() => {
@@ -215,9 +215,9 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
       )}
     </div>
   );
-};
+});
 
-const VocabularyBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const VocabularyBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -238,10 +238,11 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
       </div>
     </button>
   );
-};
+});
 
-const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { checked: number[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
+const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { checked: number[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const [checked, setChecked] = useState<Set<number>>(new Set(savedResponse?.checked ?? []));
+  const wasCompleteRef = useRef(checked.size === (block.items || []).length && checked.size > 0);
   const allChecked = (block.items || []).length > 0 && checked.size === (block.items || []).length;
 
   const toggle = (idx: number) => {
@@ -250,9 +251,11 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
     else next.add(idx);
     setChecked(next);
     onResponseChange?.({ checked: Array.from(next) });
-    if (next.size === (block.items || []).length) {
+    const nowComplete = next.size === (block.items || []).length;
+    if (nowComplete && !wasCompleteRef.current) {
       onComplete(true);
     }
+    wasCompleteRef.current = nowComplete;
   };
 
   return (
@@ -297,38 +300,44 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
       )}
     </div>
   );
-};
+});
 
 // ──────────────────────────────────────────────
 // NEW block renderers
 // ──────────────────────────────────────────────
 
-const SectionHeaderBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
+const SectionHeaderBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="text-center py-2">
     {block.icon && <div className="text-3xl mb-2">{block.icon}</div>}
     <h2 className="text-xl font-black text-white tracking-tight">{block.title}</h2>
     {block.subtitle && <p className="text-sm text-gray-400 mt-1">{block.subtitle}</p>}
   </div>
-);
+));
 
-const ImageBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const ImageBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const driveUrl = (block.url || '').replace(/\/file\/d\/([^/]+)\/.*/, '/uc?export=view&id=$1');
+  const [imgError, setImgError] = useState(false);
   return (
     <div className="space-y-2">
       <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20">
-        <img
-          src={driveUrl !== block.url ? driveUrl : block.url}
-          alt={block.alt || block.caption || 'Lesson image'}
-          className="w-full max-h-[500px] object-contain"
-          loading="lazy"
-        />
+        {imgError ? (
+          <div className="w-full h-[200px] flex items-center justify-center text-sm text-gray-500">Image failed to load</div>
+        ) : (
+          <img
+            src={driveUrl !== block.url ? driveUrl : block.url}
+            alt={block.alt || block.caption || 'Lesson image'}
+            className="w-full max-h-[500px] object-contain"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        )}
       </div>
       {block.caption && <p className="text-xs text-gray-500 text-center italic">{block.caption}</p>}
     </div>
   );
-};
+});
 
-const VideoBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const VideoBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const getEmbedUrl = (url: string) => {
     const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : '';
@@ -345,9 +354,9 @@ const VideoBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
       {block.caption && <p className="text-xs text-gray-500 text-center italic flex items-center justify-center gap-1"><Play className="w-3 h-3" /> {block.caption}</p>}
     </div>
   );
-};
+});
 
-const ObjectivesBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
+const ObjectivesBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 space-y-2">
     <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
       <Target className="w-4 h-4" />
@@ -362,13 +371,13 @@ const ObjectivesBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
       ))}
     </ul>
   </div>
-);
+));
 
-const DividerBlock: React.FC = () => (
+const DividerBlock: React.FC = React.memo(() => (
   <div className="lesson-divider" />
-);
+));
 
-const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
+const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <a
     href={block.url}
     target={block.openInNewTab !== false ? '_blank' : '_self'}
@@ -385,7 +394,7 @@ const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
       </div>
     </div>
   </a>
-);
+));
 
 const getGoogleDriveEmbedUrl = (url: string): string => {
   // Convert Google Drive share/view links to embeddable preview URLs
@@ -397,26 +406,32 @@ const getGoogleDriveEmbedUrl = (url: string): string => {
   return url;
 };
 
-const EmbedBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const embedUrl = getGoogleDriveEmbedUrl(block.url || '');
   const isGoogleDrive = embedUrl !== block.url;
+  const [embedError, setEmbedError] = useState(false);
   return (
     <div className="space-y-2">
       <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20" style={{ height: block.height || 500 }}>
-        <iframe
-          src={embedUrl}
-          className="w-full h-full border-0"
-          title={block.caption || 'Embedded content'}
-          sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${isGoogleDrive ? ' allow-popups-to-escape-sandbox' : ''}`}
-          allow={isGoogleDrive ? 'autoplay' : undefined}
-        />
+        {embedError ? (
+          <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Embed failed to load</div>
+        ) : (
+          <iframe
+            src={embedUrl}
+            className="w-full h-full border-0"
+            title={block.caption || 'Embedded content'}
+            sandbox={isGoogleDrive ? `allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox` : `allow-scripts allow-forms allow-popups`}
+            allow={isGoogleDrive ? 'autoplay' : undefined}
+            onError={() => setEmbedError(true)}
+          />
+        )}
       </div>
       {block.caption && <p className="text-xs text-gray-500 text-center italic">{block.caption}</p>}
     </div>
   );
-};
+});
 
-const VocabListBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+const VocabListBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
 
   return (
@@ -442,9 +457,9 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
       ))}
     </div>
   );
-};
+});
 
-const ActivityBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
+const ActivityBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-2">
     <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
       {block.icon && <span className="text-lg">{block.icon}</span>}
@@ -452,9 +467,9 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = ({ block }) => (
     </div>
     <div className="text-sm text-gray-300 whitespace-pre-line">{block.instructions}</div>
   </div>
-);
+));
 
-const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { placements: Record<number, 'left' | 'right'>; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
+const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { placements: Record<number, 'left' | 'right'>; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const items = block.sortItems || [];
   const [placements, setPlacements] = useState<Record<number, 'left' | 'right'>>(savedResponse?.placements ?? {});
   const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
@@ -494,16 +509,16 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3" role="region" aria-label={block.title || block.content || 'Sorting activity'}>
-      {block.title && <p className="text-base text-white font-medium">{block.title}</p>}
-      {block.instructions && <p className="text-xs text-gray-400">{block.instructions}</p>}
+      {block.title && <p className="text-base text-white font-medium" translate="no">{block.title}</p>}
+      {block.instructions && <p className="text-xs text-gray-400" translate="no">{block.instructions}</p>}
 
       {/* Unplaced items */}
       {!readOnly && unplaced.length > 0 && (
         <div className="space-y-1">
           <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Sort these items</div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="listbox" aria-label="Items to sort" translate="no">
             {unplaced.map(idx => (
-              <div key={idx} className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300">
+              <div key={idx} role="option" className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300">
                 <span>{items[idx].text}</span>
                 <button onClick={() => placeItem(idx, 'left')} aria-label={`Place ${items[idx].text} in ${block.leftLabel || 'Category A'}`} className="ml-1 text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-500/30 transition">{block.leftLabel || 'L'}</button>
                 <button onClick={() => placeItem(idx, 'right')} aria-label={`Place ${items[idx].text} in ${block.rightLabel || 'Category B'}`} className="text-[10px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition">{block.rightLabel || 'R'}</button>
@@ -514,7 +529,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       )}
 
       {/* Category columns */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3" translate="no">
         <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 min-h-[80px]">
           <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">{block.leftLabel || 'Category A'}</div>
           <div className="space-y-1">
@@ -566,9 +581,9 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       )}
     </div>
   );
-};
+});
 
-const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Record<string, string>[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, savedResponse, onResponseChange, readOnly }) => {
+const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Record<string, string>[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, savedResponse, onResponseChange, readOnly }) => {
   const columns = block.columns || [];
   const rowCount = block.trials || 3;
   const [data, setData] = useState<Record<string, string>[]>(() =>
@@ -626,25 +641,27 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
       </div>
     </div>
   );
-};
+});
 
-const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; delta: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; final: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}> }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, savedResponse, onResponseChange, readOnly }) => {
+const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; delta: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}>; final: Array<{value: number; labelHTML: string; labelType?: string; labelTemplate?: string}> }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, savedResponse, onResponseChange, readOnly }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [userHeight, setUserHeight] = useState<number | null>(null);
   const chartHeight = userHeight ?? (block.height || 450);
-  // Track latest state so iframe remounts restore current work, not just initial Firestore state
   const latestStateRef = useRef(savedResponse);
+  const onResponseChangeRef = useRef(onResponseChange);
+  onResponseChangeRef.current = onResponseChange;
   const resizeRef = useRef<{ startY: number; startH: number } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
       if (e.data?.type === 'barChartReady' && latestStateRef.current && iframeRef.current) {
-        iframeRef.current.contentWindow?.postMessage({ type: 'loadBarChartState', state: latestStateRef.current }, '*');
+        iframeRef.current.contentWindow?.postMessage({ type: 'loadBarChartState', state: latestStateRef.current }, window.location.origin);
       }
       if (e.data?.type === 'barChartState') {
         latestStateRef.current = e.data.state;
-        onResponseChange?.(e.data.state);
+        onResponseChangeRef.current?.(e.data.state);
       }
       if (e.data?.type === 'barChartWheel' && iframeRef.current) {
         const scrollParent = iframeRef.current.closest('.overflow-y-auto');
@@ -653,7 +670,7 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onResponseChange]);
+  }, []);
 
   return (
     <div className="space-y-2">
@@ -698,19 +715,38 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
           window.addEventListener('mousemove', onMove);
           window.addEventListener('mouseup', onUp);
         }}
+        onTouchStart={e => {
+          const touch = e.touches[0];
+          resizeRef.current = { startY: touch.clientY, startH: chartHeight };
+          setIsResizing(true);
+
+          const onTouchMove = (ev: TouchEvent) => {
+            if (!resizeRef.current) return;
+            const newH = Math.max(200, Math.min(1000, resizeRef.current.startH + (ev.touches[0].clientY - resizeRef.current.startY)));
+            setUserHeight(newH);
+          };
+          const onTouchEnd = () => {
+            resizeRef.current = null;
+            setIsResizing(false);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+          };
+          window.addEventListener('touchmove', onTouchMove);
+          window.addEventListener('touchend', onTouchEnd);
+        }}
         title="Drag to resize chart"
       >
         <GripHorizontal size={14} color="rgba(255,255,255,0.4)" />
       </div>}
     </div>
   );
-};
+});
 
-const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { order: { item: string; origIdx: number }[]; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
+const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { order: { item: string; origIdx: number }[]; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const correctOrder = block.items || [];
-  // Deterministic shuffle based on block ID
   const shuffled = useMemo(() => {
-    const arr = correctOrder.map((item, idx) => ({ item, origIdx: idx }));
+    const items = block.items || [];
+    const arr = items.map((item, idx) => ({ item, origIdx: idx }));
     let seed = block.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     for (let i = arr.length - 1; i > 0; i--) {
       seed = (seed * 16807 + 0) % 2147483647;
@@ -718,7 +754,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-  }, [block.id, correctOrder]);
+  }, [block.id, block.items]);
 
   const [order, setOrder] = useState(savedResponse?.order ?? shuffled);
   const [submitted, setSubmitted] = useState(savedResponse?.submitted ?? false);
@@ -746,11 +782,11 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3" role="list" aria-label={block.content || 'Ranking activity'}>
-      <p className="text-base text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <GripVertical className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
-      <div className="space-y-1">
+      <div className="space-y-1" translate="no">
         {order.map((item, idx) => (
           <div
             key={item.origIdx}
@@ -809,9 +845,9 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       )}
     </div>
   );
-};
+});
 
-const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = ({ block, allBlocks, onComplete, savedResponse, onResponseChange, readOnly }) => {
+const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onComplete: (correct: boolean) => void; savedResponse?: { answer: string; answered: boolean; isCorrect: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, allBlocks, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const linkedBlock = allBlocks.find(b => b.id === block.linkedBlockId);
   const [answer, setAnswer] = useState(savedResponse?.answer ?? '');
   const [answered, setAnswered] = useState(savedResponse?.answered ?? false);
@@ -834,10 +870,10 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
           <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
             <Link className="w-3 h-3" /> Referenced question
           </div>
-          <p className="text-xs text-gray-400">{linkedBlock.content}</p>
+          <p className="text-xs text-gray-400" translate="no">{linkedBlock.content}</p>
         </div>
       )}
-      <p className="text-base text-white font-medium flex items-center gap-2">
+      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <Link className="w-4 h-4 text-purple-400 shrink-0" />
         {block.content}
       </p>
@@ -870,7 +906,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
       {!readOnly && answered && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
-            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? `Accepted: ${block.acceptedAnswers?.join(', ')}` : 'Response recorded'}</>}
+            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? 'Not quite — review the material above.' : 'Response recorded'}</>}
           </div>
           <button
             onClick={() => {
@@ -885,7 +921,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
       )}
     </div>
   );
-};
+});
 
 // ──────────────────────────────────────────────
 // Main lesson viewer
@@ -924,6 +960,10 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const allCompleteFireRef = useRef(false);
+
+  useEffect(() => {
+    allCompleteFireRef.current = false;
+  }, [blocks]);
 
   const handleBlockComplete = useCallback((blockId: string, correct: boolean) => {
     onBlockComplete?.(blockId, correct);
@@ -1011,6 +1051,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
     const el = blockRefs.current.get(block.id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
     }
   }, [blocks]);
 
@@ -1186,7 +1227,8 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           {blocks.map((block, index) => (
             <div
               key={block.id}
-              ref={(el) => { if (el) blockRefs.current.set(block.id, el); }}
+              ref={(el) => { if (el) blockRefs.current.set(block.id, el); else blockRefs.current.delete(block.id); }}
+              tabIndex={-1}
               className={`block-reveal ${block.type === 'DIVIDER' ? '' : 'bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5'}`}
               data-stagger={index % 4}
               style={{ scrollMarginTop: 20 }}
@@ -1200,7 +1242,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   );
 
   const shortcutsOverlay = showShortcutsHelp ? (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" onClick={() => setShowShortcutsHelp(false)}>
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" role="dialog" aria-modal="true" onClick={() => setShowShortcutsHelp(false)} onKeyDown={e => { if (e.key === 'Tab') e.preventDefault(); }}>
       <div className="bg-[#1a1b26] border border-white/10 rounded-2xl p-6 max-w-xs w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
         <h3 className="text-sm font-bold text-white mb-4">Keyboard Shortcuts</h3>
         <div className="space-y-2 text-xs">
@@ -1209,7 +1251,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           <div className="flex justify-between text-gray-300"><span>Lock in answer</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">Ctrl+Enter</kbd></div>
           <div className="flex justify-between text-gray-300"><span>Toggle this help</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">?</kbd></div>
         </div>
-        <button onClick={() => setShowShortcutsHelp(false)} className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold text-white transition">
+        <button autoFocus onClick={() => setShowShortcutsHelp(false)} className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold text-white transition">
           Got it
         </button>
       </div>
