@@ -9,7 +9,7 @@ import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
 import { draftKey, clearDraft } from '../lib/persistentWrite';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, ChevronRight, Eye } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -46,7 +46,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [liveCount, setLiveCount] = useState(0);
 
   // Block progress for header progress bar (0–1) and sticky banner counts
-  const [blockProgress, setBlockProgress] = useState(0);
+  const [, setBlockProgress] = useState(0);
   const [answeredBlocks, setAnsweredBlocks] = useState(0);
   const [totalBlocks, setTotalBlocks] = useState(0);
 
@@ -603,7 +603,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }
 
   return (
-    <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416] flex flex-col' : 'space-y-2 h-full flex flex-col'}`}>
+    <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416] flex flex-col' : 'gap-1 h-full flex flex-col'}`}>
       {/* Navigation blocker modal */}
       {showBlockerModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center">
@@ -689,41 +689,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Breadcrumbs — hidden during assessment lockdown */}
-      {!isAssessment && (
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] text-gray-500 px-1 py-1.5">
-          <button onClick={() => navigate('/home')} className="hover:text-gray-300 transition flex items-center gap-1">
-            <Home className="w-3 h-3" /> Home
-          </button>
-          <ChevronRight className="w-3 h-3 text-gray-600" />
-          <button onClick={() => navigate('/resources')} className="hover:text-gray-300 transition">
-            Resources
-          </button>
-          {activeAssignment.unit && (
-            <>
-              <ChevronRight className="w-3 h-3 text-gray-600" />
-              <span className="text-gray-400">{activeAssignment.unit}</span>
-            </>
-          )}
-          <ChevronRight className="w-3 h-3 text-gray-600" />
-          <span className="text-gray-300 truncate max-w-[200px]">{activeAssignment.title}</span>
-        </nav>
-      )}
 
       {/* Header bar */}
-      <div className={`relative flex items-center justify-between text-white ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-white/5 border-white/10'} px-4 py-2 ${isAssessment ? '' : 'rounded-xl'} border backdrop-blur-md overflow-hidden`}>
-        {/* Progress bar — thin gradient at bottom of header */}
-        {activeAssignment.lessonBlocks && activeAssignment.lessonBlocks.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5">
-            <div
-              className="h-full transition-all duration-500 ease-out rounded-r-full"
-              style={{
-                width: `${blockProgress * 100}%`,
-                background: `linear-gradient(90deg, #9333ea ${Math.max(0, 100 - blockProgress * 100)}%, #22c55e 100%)`,
-              }}
-            />
-          </div>
-        )}
+      <div className={`relative flex items-center justify-between text-white ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-[#0f0720] border-white/10'} px-4 py-1.5 ${isAssessment ? '' : 'rounded-xl'} border overflow-hidden`}>
         <div className="flex items-center gap-4 min-w-0">
           <h2 className="text-sm font-bold truncate flex items-center gap-2">
             {isAssessment && <Shield className="w-4 h-4 text-red-400 shrink-0" />}
@@ -780,8 +748,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <Eye className="w-3.5 h-3.5" /> Submit (Preview)
             </span>
           ) : (
-            <button onClick={handleExit} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-              <ArrowLeft className="w-3.5 h-3.5" /> Exit
+            <button onClick={() => navigate(activeAssignment.unit ? '/resources' : '/home')} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/10" title={activeAssignment.unit || 'Resources'}>
+              <ArrowLeft className="w-3.5 h-3.5" /> {activeAssignment.unit || 'Back'}
             </button>
           )}
         </div>
@@ -836,6 +804,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
                   previewMode={isPreview}
+                  hasSidebar={!!(activeAssignment.lessonBlocks && activeAssignment.lessonBlocks.length >= 3)}
                 />
               </div>
               {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (

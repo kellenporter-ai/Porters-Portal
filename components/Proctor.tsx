@@ -7,7 +7,6 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import SaveStatusIndicator from './SaveStatusIndicator';
-import AnnotationOverlay from './AnnotationOverlay';
 import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
@@ -42,6 +41,8 @@ interface ProctorProps {
   onSessionToken?: (token: string | null) => void;
   /** Admin preview mode — disables all Firestore writes, XP awards, and telemetry persistence. */
   previewMode?: boolean;
+  /** Whether LessonProgressSidebar is visible — hides redundant HUD badges */
+  hasSidebar?: boolean;
 }
 
 // ============================================================
@@ -102,7 +103,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode, hasSidebar }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -1092,26 +1093,28 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           </div>
         )}
         {/* HUD */}
-        <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex flex-wrap justify-between items-center gap-y-1 border-b border-white/5 z-20">
+        <div className={`bg-[#0f0720] px-4 ${hasSidebar ? 'py-1' : 'py-2'} flex flex-wrap justify-between items-center gap-y-1 border-b border-white/5 z-20`}>
             <div className="flex items-center gap-4 flex-wrap">
-                <div className={`flex items-center gap-2 text-sm font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
-                    {isActive ? <PlayCircle className="w-4 h-4" /> : <Clock className="w-4 h-4 animate-pulse" />}
-                    {isActive ? 'Active Session' : 'Away (Paused)'}
+                <div className={`flex items-center gap-2 ${hasSidebar ? 'text-xs' : 'text-sm'} font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
+                    {isActive ? <PlayCircle className={hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} /> : <Clock className={`${hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} animate-pulse`} />}
+                    {hasSidebar ? (isActive ? 'Active' : 'Paused') : (isActive ? 'Active Session' : 'Away (Paused)')}
                 </div>
-                <div className="text-xs text-gray-400 font-mono bg-black/40 px-2 py-1 rounded" translate="no">
-                    TIME: {Math.floor(displayTime / 60)}m {displayTime % 60}s
-                </div>
-                {bridgeConnected && questionsAnswered > 0 && (
+                {!hasSidebar && (
+                  <div className="text-xs text-gray-400 font-mono bg-black/40 px-2 py-1 rounded" translate="no">
+                      TIME: {Math.floor(displayTime / 60)}m {displayTime % 60}s
+                  </div>
+                )}
+                {!hasSidebar && bridgeConnected && questionsAnswered > 0 && (
                     <div className="flex items-center gap-2 text-xs font-bold text-purple-300 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
                         <CheckCircle2 className="w-3 h-3" /> {questionsAnswered} answered
                     </div>
                 )}
-                {!bridgeConnected && lessonBlocksAnswered > 0 && (
+                {!hasSidebar && !bridgeConnected && lessonBlocksAnswered > 0 && (
                     <div className="flex items-center gap-2 text-xs font-bold text-indigo-300 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
                         <CheckCircle2 className="w-3 h-3" /> {lessonBlocksAnswered} blocks completed
                     </div>
                 )}
-                {bridgeConnected && xpEarnedSession > 0 && (
+                {!hasSidebar && bridgeConnected && xpEarnedSession > 0 && (
                     <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
                         <Zap className="w-3 h-3" /> {xpEarnedSession} XP
                     </div>
@@ -1152,7 +1155,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         </button>
                     )
                 )}
-                {contentUrl && (
+                {contentUrl && focusMode !== 'lessons' && (
                     <button
                         onClick={toggleFullscreen}
                         className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
@@ -1162,12 +1165,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
                     </button>
                 )}
-                {bridgeConnected && (
+                {!hasSidebar && bridgeConnected && (
                     <div className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
                         <Zap className="w-3 h-3" /> XP Linked
                     </div>
                 )}
-                {!isActive && (
+                {!hasSidebar && !isActive && (
                     <div className="flex items-center gap-2 text-[10px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
                         <AlertTriangle className="w-3 h-3" /> Resume movement for XP
                     </div>
@@ -1213,12 +1216,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             allowFullScreen
                             onLoad={handleInteraction}
                         />
-                        {/* Annotation drawing overlay on top of iframe */}
-                        <AnnotationOverlay containerRef={iframeWrapperRef} assignmentId={assignmentId} />
                     </div>
                     {/* Focus mode toggle bar */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className="flex items-center justify-center gap-2 bg-black/60 py-1.5 px-3 z-10 shrink-0 border-y border-white/5">
+                        <div className="flex items-center justify-center gap-1.5 bg-[#0f0720] py-0.5 px-2 z-10 shrink-0 border-y border-white/5">
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
                                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}

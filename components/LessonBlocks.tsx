@@ -1129,14 +1129,16 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const contentArea = (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
       {/* Progress bar + actions */}
-      {!readOnly && <div className="flex items-center gap-2 mb-3 shrink-0">
-        <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-          <div
-            className="h-1.5 rounded-full bg-purple-500 transition-all duration-500"
-            style={{ width: `${completionProgress}%` }}
-          />
-        </div>
-        <span className="text-[10px] text-gray-500 font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
+      {!readOnly && <div className={`flex items-center gap-2 ${showSidebar && blocks.length >= 3 ? 'mb-1 justify-end' : 'mb-3'} shrink-0`}>
+        {!(showSidebar && blocks.length >= 3) && <>
+          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="h-1.5 rounded-full bg-purple-500 transition-all duration-500"
+              style={{ width: `${completionProgress}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-gray-500 font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
+        </>}
 
         {/* Actions menu */}
         {(onExportPdf || onClearResponses) && (
@@ -1220,7 +1222,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
         className="flex-1 overflow-y-auto custom-scrollbar"
         style={{ scrollBehavior: 'smooth' }}
       >
-        <div className="flex flex-col gap-6 pb-32 px-1">
+        <div className="flex flex-col gap-6 pb-16 px-1">
           {blocks.map((block, index) => (
             <div
               key={block.id}
