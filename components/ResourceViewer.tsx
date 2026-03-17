@@ -4,7 +4,7 @@ import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAssignments } from '../lib/AppDataContext';
 import { useChat } from '../lib/ChatContext';
 import { dataService } from '../services/dataService';
-import { doc, getDoc, setDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
@@ -219,6 +219,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           sessionTokenRef.current = null;
           // Clear localStorage draft — work is safely submitted (use user.id to match hook's key)
           clearDraft(draftKey('draft', user.id, activeAssignment.id));
+          // Also clear Firestore draft (belt-and-suspenders — server also deletes on submit)
+          try {
+            const draftDocId = `${user.id}_${activeAssignment.id}_blocks`;
+            deleteDoc(doc(db, 'lesson_block_responses', draftDocId)).catch(() => {});
+          } catch { /* ignore */ }
         }
         toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
         setIsSubmitting(false);

@@ -261,16 +261,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             await updateDoc(doc(db, 'lesson_block_responses', docId), { retakePreFilled: false });
             return responses;
           }
-          // Session recovery: if server has recent responses (within 3 hours),
-          // the student likely lost localStorage (cleared cache, switched device).
-          // Restore their work instead of archiving it.
+          // Session recovery: if server has responses, the student has work in progress.
+          // Always restore — students can take unlimited time on assessments.
           if (snap.exists()) {
             const data = snap.data();
             const responses = data.responses || {};
-            const lastUpdated = data.lastUpdated;
-            const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-            if (Object.keys(responses).length > 0 && lastUpdated && lastUpdated > threeHoursAgo) {
-              // Session recovery — restore responses and re-create session token
+            if (Object.keys(responses).length > 0) {
+              // Session recovery — always restore existing draft responses
               const storageKey = `assessment_session_${assignmentId}`;
               try {
                 const result = await callStartAssessmentSession({ assignmentId });
@@ -752,6 +749,29 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               type: 'portal-init',
               payload: { userId, savedState, completionInfo }
             }, targetOrigin);
+
+            // Check for bridge localStorage recovery data (from beforeunload/pagehide)
+            const bridgeKey = `portalBridge_${userId}_lastState`;
+            try {
+              const recoveredRaw = localStorage.getItem(bridgeKey);
+              if (recoveredRaw) {
+                const recovered = JSON.parse(recoveredRaw);
+                if (recovered?.state) {
+                  // Save recovered bridge state to Firestore via the normal practice_progress path
+                  const practiceDocId = `${userId}_${assignmentId}`;
+                  const practiceLsKey = draftKey('practice', userId!, assignmentId!);
+                  const recoveryData: Record<string, unknown> = {
+                    userId,
+                    assignmentId,
+                    state: recovered.state.state || recovered.state,
+                    currentQuestion: recovered.state.currentQuestion ?? 0,
+                    lastUpdated: recovered.timestamp || new Date().toISOString(),
+                  };
+                  persistentWrite('practice_progress', practiceDocId, recoveryData, practiceLsKey).catch(() => {});
+                }
+                localStorage.removeItem(bridgeKey);
+              }
+            } catch { /* ignore recovery errors */ }
           } catch (err) {
             reportError(err, { component: 'Proctor', context: 'Bridge: Failed to load saved state' });
             iframe.contentWindow?.postMessage({

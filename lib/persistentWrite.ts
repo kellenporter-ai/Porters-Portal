@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { reportError } from './errorReporting';
 
@@ -38,9 +38,48 @@ export function writeDraft<T = unknown>(key: string, data: T, dirty: boolean): v
       dirty,
     };
     localStorage.setItem(key, JSON.stringify(envelope));
-  } catch {
-    // localStorage full or unavailable — nothing we can do
+  } catch (err) {
+    if (err instanceof DOMException && (err.name === 'QuotaExceededError' || err.code === 22)) {
+      // Try to evict oldest drafts to make room
+      const evicted = evictOldestDrafts(key);
+      if (evicted) {
+        // Retry after eviction
+        try {
+          const envelope: DraftEnvelope<T> = { data, timestamp: new Date().toISOString(), dirty };
+          localStorage.setItem(key, JSON.stringify(envelope));
+          return; // Success after eviction
+        } catch { /* still full */ }
+      }
+      // Couldn't free enough space — notify the app
+      window.dispatchEvent(new CustomEvent('portal-storage-full', {
+        detail: { key, message: 'Storage full — your work is being saved to the server only' },
+      }));
+    }
+    // Other errors (localStorage unavailable, private browsing) — silent fail
   }
+}
+
+/** Evict the oldest draft entries to free localStorage space. Returns true if any were evicted. */
+function evictOldestDrafts(protectedKey: string): boolean {
+  const draftEntries: { key: string; timestamp: string }[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || k === protectedKey) continue;
+    if (k.startsWith('draft_') || k.startsWith('practice_')) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(k) || '');
+        if (parsed?.timestamp) {
+          draftEntries.push({ key: k, timestamp: parsed.timestamp });
+        }
+      } catch { /* not a draft */ }
+    }
+  }
+  if (draftEntries.length === 0) return false;
+  // Sort oldest first and evict up to 3
+  draftEntries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const toEvict = draftEntries.slice(0, Math.min(3, draftEntries.length));
+  toEvict.forEach(e => localStorage.removeItem(e.key));
+  return true;
 }
 
 /** Remove a draft from localStorage. */
@@ -73,7 +112,26 @@ export async function persistentWrite(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      await setDoc(doc(db, collectionPath, docId), data, { merge: true });
+      // Use dot-notation updateDoc for atomic per-field updates when responses present
+      if (data.responses && typeof data.responses === 'object') {
+        const dotNotation: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(data.responses as Record<string, unknown>)) {
+          dotNotation[`responses.${key}`] = value;
+        }
+        // Forward all non-response fields at top level
+        for (const [key, value] of Object.entries(data)) {
+          if (key !== 'responses') dotNotation[key] = value;
+        }
+
+        try {
+          await updateDoc(doc(db, collectionPath, docId), dotNotation);
+        } catch {
+          // Doc may not exist yet — fall back to setDoc (creates the doc)
+          await setDoc(doc(db, collectionPath, docId), data, { merge: true });
+        }
+      } else {
+        await setDoc(doc(db, collectionPath, docId), data, { merge: true });
+      }
       // Success — mark localStorage clean
       if (lsKey) writeDraft(lsKey, data, false);
       onStatusChange?.('saved');

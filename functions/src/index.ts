@@ -2134,6 +2134,19 @@ export const startAssessmentSession = onCall(async (request) => {
   const assignment = assignmentSnap.data()!;
   if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
 
+  // Check for existing unused session token (crash recovery — reuse instead of creating new)
+  const existingTokens = await db.collection("assessment_sessions")
+    .where("userId", "==", uid)
+    .where("assignmentId", "==", assignmentId)
+    .where("used", "==", false)
+    .limit(1)
+    .get();
+  if (!existingTokens.empty) {
+    const existingToken = existingTokens.docs[0];
+    logger.info(`startAssessmentSession: reusing existing token for uid=${uid}, assignment=${assignmentId}`);
+    return { sessionToken: existingToken.id, startedAt: Date.now() };
+  }
+
   // Check max attempts
   const cfg = assignment.assessmentConfig || {};
   if (cfg.maxAttempts && cfg.maxAttempts > 0) {
@@ -2179,10 +2192,11 @@ export const submitAssessment = onCall(async (request) => {
   // 2. Validate session token (or enforce grace period)
   const db = admin.firestore();
   let sessionStartedAt: number | null = null;
+  // Hoist tokenRef so it's accessible for the atomic commit transaction later
+  const tokenRef = sessionToken ? db.collection("assessment_sessions").doc(sessionToken) : null;
 
-  if (sessionToken) {
-    // Validate and consume token atomically via transaction
-    const tokenRef = db.collection("assessment_sessions").doc(sessionToken);
+  if (sessionToken && tokenRef) {
+    // Phase 1: Validate token (but don't mark used yet — that happens atomically with submission)
     const tokenData = await db.runTransaction(async (transaction) => {
       const tokenSnap = await transaction.get(tokenRef);
       if (!tokenSnap.exists) {
@@ -2198,8 +2212,7 @@ export const submitAssessment = onCall(async (request) => {
       if (data.used) {
         throw new HttpsError("already-exists", "This assessment session has already been submitted. Please start a new attempt.");
       }
-      // Atomically mark as used
-      transaction.update(tokenRef, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+      // Don't mark used here — deferred to atomic commit with submission (Fix 2)
       return data;
     });
     // Extract startedAt from the session doc (Firestore Timestamp -> millis)
@@ -2369,7 +2382,28 @@ export const submitAssessment = onCall(async (request) => {
     ...(sessionToken ? { sessionToken } : {}),
   };
 
-  await db.collection("submissions").add(assessmentSubmission);
+  // Phase 2: Atomic commit — token burn + submission create + draft delete
+  // Uses a transaction to re-validate the token (prevents race between phase 1 and phase 2)
+  if (tokenRef) {
+    await db.runTransaction(async (t) => {
+      // Re-check token not used (prevents double-submit race)
+      const tokenSnap = await t.get(tokenRef);
+      if (tokenSnap.data()?.used) {
+        throw new HttpsError("already-exists", "This assessment session has already been submitted. Please start a new attempt.");
+      }
+      // Mark token used
+      t.update(tokenRef, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+      // Create submission
+      const submissionRef = db.collection("submissions").doc();
+      t.set(submissionRef, assessmentSubmission);
+      // Delete draft (Fix 3) — prevents stale data on retakes
+      const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
+      t.delete(draftRef);
+    });
+  } else {
+    // No session token path — should not reach here (thrown above), but safety fallback
+    await db.collection("submissions").add(assessmentSubmission);
+  }
 
   // 7. Award XP scaled by percentage
   const baseXP = Math.round(percentage * 0.5); // 0-50 XP

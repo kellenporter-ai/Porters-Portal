@@ -180,10 +180,32 @@
                 }
             });
 
-            // Auto-save on page unload
+            // Auto-save on page unload — synchronous localStorage + best-effort postMessage
             window.addEventListener('beforeunload', function() {
                 if (PortalBridge._lastState) {
+                    // Synchronous localStorage write — survives iframe teardown
+                    try {
+                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_lastState';
+                        localStorage.setItem(key, JSON.stringify({
+                            state: PortalBridge._lastState,
+                            timestamp: new Date().toISOString()
+                        }));
+                    } catch(e) { /* localStorage unavailable or full */ }
+                    // Best-effort async postMessage (may not complete)
                     PortalBridge.save(PortalBridge._lastState);
+                }
+            });
+
+            // pagehide is more reliable than beforeunload on mobile/tablets
+            window.addEventListener('pagehide', function() {
+                if (PortalBridge._lastState) {
+                    try {
+                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_lastState';
+                        localStorage.setItem(key, JSON.stringify({
+                            state: PortalBridge._lastState,
+                            timestamp: new Date().toISOString()
+                        }));
+                    } catch(e) { /* localStorage unavailable or full */ }
                 }
             });
 

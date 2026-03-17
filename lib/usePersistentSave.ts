@@ -27,8 +27,8 @@ interface UsePersistentSaveReturn {
   lastSavedAt: string | null;
   /** Update a single block/field response. Triggers debounced save. */
   updateResponse: (blockId: string, response: unknown) => void;
-  /** Force an immediate save (e.g. before submit). */
-  flushNow: () => void;
+  /** Force an immediate save (e.g. before submit). Awaitable. */
+  flushNow: () => Promise<WriteStatus> | undefined;
   /** Get current responses snapshot. */
   getResponses: () => Record<string, unknown>;
   /** Clear all responses (Firestore + localStorage + local state). */
@@ -63,8 +63,8 @@ export function usePersistentSave({
   }, []);
 
   // Core save function — uses generation counter to ignore stale retry callbacks
-  const doSave = useCallback(() => {
-    if (!docId || !userId || !assignmentId) return;
+  const doSave = useCallback((): Promise<WriteStatus> | undefined => {
+    if (!docId || !userId || !assignmentId) return undefined;
 
     const gen = ++saveGenRef.current;
     const data = {
@@ -74,7 +74,7 @@ export function usePersistentSave({
       lastUpdated: new Date().toISOString(),
     };
 
-    persistentWrite(collection, docId, data, lsKey, (status) => {
+    return persistentWrite(collection, docId, data, lsKey, (status) => {
       // Only update UI status if this is still the latest save
       if (gen !== saveGenRef.current) return;
       setStatus(status);
@@ -110,13 +110,13 @@ export function usePersistentSave({
     scheduleSave();
   }, [scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
 
-  // Public: immediate flush
-  const flushNow = useCallback(() => {
+  // Public: immediate flush (awaitable)
+  const flushNow = useCallback((): Promise<WriteStatus> | undefined => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    doSave();
+    return doSave();
   }, [doSave]);
 
   // Public: get snapshot
@@ -135,6 +135,15 @@ export function usePersistentSave({
     responsesRef.current = responses;
     onResponsesChange?.(responses);
   }, [onResponsesChange]);
+
+  // Listen for localStorage quota exhaustion events from persistentWrite
+  useEffect(() => {
+    const handleStorageFull = () => {
+      setStatus('error');
+    };
+    window.addEventListener('portal-storage-full', handleStorageFull);
+    return () => window.removeEventListener('portal-storage-full', handleStorageFull);
+  }, [setStatus]);
 
   // Mount recovery: check for dirty localStorage drafts
   useEffect(() => {

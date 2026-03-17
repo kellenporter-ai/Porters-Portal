@@ -299,6 +299,8 @@ service cloud.firestore {
         (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
       allow create, update: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
     }
 
     // ==========================================
