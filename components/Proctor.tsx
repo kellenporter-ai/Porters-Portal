@@ -40,6 +40,8 @@ interface ProctorProps {
   isAssessment?: boolean;
   onGetMetricsAndResponses?: React.MutableRefObject<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>;
   onSessionToken?: (token: string | null) => void;
+  /** Admin preview mode — disables all Firestore writes, XP awards, and telemetry persistence. */
+  previewMode?: boolean;
 }
 
 // ============================================================
@@ -100,7 +102,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -146,11 +148,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     userId,
     assignmentId,
     collection: 'lesson_block_responses',
+    disabled: previewMode,
   });
 
   // Sync dirty practice drafts from localStorage on mount and online recovery
   useEffect(() => {
-    if (!userId || !assignmentId || !isOnline) return;
+    if (previewMode || !userId || !assignmentId || !isOnline) return;
     const practiceLsKey = draftKey('practice', userId, assignmentId);
     syncDirtyDraft(practiceLsKey, 'practice_progress', `${userId}_${assignmentId}`);
   }, [userId, assignmentId, isOnline]);
@@ -165,7 +168,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Start assessment session and obtain server-issued token
   useEffect(() => {
-    if (!isAssessment || !assignmentId) return;
+    if (previewMode || !isAssessment || !assignmentId) return;
 
     // Check for existing session token (localStorage survives tab close; sessionStorage is backup)
     const storageKey = `assessment_session_${assignmentId}`;
@@ -223,6 +226,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // For non-assessments: load saved responses as before (resume where they left off).
   useEffect(() => {
     if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
+    // Preview mode — start with empty responses, no Firestore reads
+    if (previewMode) {
+      setSavedBlockResponses({});
+      return;
+    }
     let cancelled = false;
     const docId = `${userId}_${assignmentId}_blocks`;
     if (isAssessment) {
@@ -349,13 +357,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const handleClearBlockResponses = useCallback(async () => {
     if (!userId || !assignmentId) return;
     clearSavedResponses(); // Cancels pending saves + clears localStorage draft
-    const docId = `${userId}_${assignmentId}_blocks`;
-    try {
-      await deleteDoc(doc(db, 'lesson_block_responses', docId));
-    } catch { /* doc may not exist */ }
+    if (!previewMode) {
+      const docId = `${userId}_${assignmentId}_blocks`;
+      try {
+        await deleteDoc(doc(db, 'lesson_block_responses', docId));
+      } catch { /* doc may not exist */ }
+    }
     setSavedBlockResponses({});
     setBlockResetKey(prev => prev + 1); // Force remount of LessonBlocks
-  }, [userId, assignmentId, clearSavedResponses]);
+  }, [userId, assignmentId, clearSavedResponses, previewMode]);
 
   // Export lesson block progress to PDF
   const handleExportBlocksPdf = useCallback(() => {
@@ -548,6 +558,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       return next;
     });
     handleInteraction();
+    if (previewMode) return; // Skip XP award in preview mode
     const xpAmount = 15;
     try {
       const result = await callAwardQuestionXP({
@@ -567,7 +578,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     } catch (err) {
       reportError(err, { component: 'Proctor', context: 'Lesson block XP award failed' });
     }
-  }, [userId, assignmentId, classType, handleInteraction]);
+  }, [userId, assignmentId, classType, handleInteraction, previewMode]);
 
   // Session Timer
   useEffect(() => {
@@ -617,7 +628,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Persist metrics snapshot to draft doc (for submitOnBehalf to read)
   useEffect(() => {
-    if (!isAssessment || !userId || !assignmentId) return;
+    if (previewMode || !isAssessment || !userId || !assignmentId) return;
     const metricsDocId = `${userId}_${assignmentId}_blocks`;
 
     const saveMetricsSnapshot = () => {
@@ -758,16 +769,18 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 const recovered = JSON.parse(recoveredRaw);
                 if (recovered?.state) {
                   // Save recovered bridge state to Firestore via the normal practice_progress path
-                  const practiceDocId = `${userId}_${assignmentId}`;
-                  const practiceLsKey = draftKey('practice', userId!, assignmentId!);
-                  const recoveryData: Record<string, unknown> = {
-                    userId,
-                    assignmentId,
-                    state: recovered.state.state || recovered.state,
-                    currentQuestion: recovered.state.currentQuestion ?? 0,
-                    lastUpdated: recovered.timestamp || new Date().toISOString(),
-                  };
-                  persistentWrite('practice_progress', practiceDocId, recoveryData, practiceLsKey).catch(() => {});
+                  if (!previewMode) {
+                    const practiceDocId = `${userId}_${assignmentId}`;
+                    const practiceLsKey = draftKey('practice', userId!, assignmentId!);
+                    const recoveryData: Record<string, unknown> = {
+                      userId,
+                      assignmentId,
+                      state: recovered.state.state || recovered.state,
+                      currentQuestion: recovered.state.currentQuestion ?? 0,
+                      lastUpdated: recovered.timestamp || new Date().toISOString(),
+                    };
+                    persistentWrite('practice_progress', practiceDocId, recoveryData, practiceLsKey).catch(() => {});
+                  }
                 }
                 localStorage.removeItem(bridgeKey);
               }
@@ -804,12 +817,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             saveData.completionHistory = existingDoc.completionHistory;
           }
 
+          // Update local ref
+          progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
+
+          if (previewMode) {
+            iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, targetOrigin);
+            break;
+          }
           const practiceLsKey = draftKey('practice', userId!, assignmentId!);
           const practiceDocId = `${userId}_${assignmentId}`;
           const result = await persistentWrite('practice_progress', practiceDocId, saveData, practiceLsKey);
-
-          // Update local ref
-          progressDocRef.current = { ...progressDocRef.current, ...saveData } as PracticeProgressDoc;
 
           if (result === 'saved') {
             iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, targetOrigin);
@@ -852,10 +869,6 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             completeSaveData.currentQuestion = existingDocC.currentQuestion;
           }
 
-          const completeLsKey = draftKey('practice', userId!, assignmentId!);
-          const completeDocId = `${userId}_${assignmentId}`;
-          const completeResult = await persistentWrite('practice_progress', completeDocId, completeSaveData, completeLsKey);
-
           progressDocRef.current = { ...progressDocRef.current, ...completeSaveData } as PracticeProgressDoc;
           setModuleCompleted(true);
           setCompletionCount(totalCompletions);
@@ -863,6 +876,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           sfx.xpGain();
           setXpToast({ text: 'Module Complete!', type: 'success' });
           setTimeout(() => setXpToast(null), 3000);
+
+          if (previewMode) {
+            iframe.contentWindow?.postMessage({ type: 'portal-complete-ok', payload: { totalCompletions, bestScore } }, targetOrigin);
+            break;
+          }
+          const completeLsKey = draftKey('practice', userId!, assignmentId!);
+          const completeDocId = `${userId}_${assignmentId}`;
+          const completeResult = await persistentWrite('practice_progress', completeDocId, completeSaveData, completeLsKey);
 
           if (completeResult === 'saved') {
             iframe.contentWindow?.postMessage({ type: 'portal-complete-ok', payload: { totalCompletions, bestScore } }, targetOrigin);
@@ -889,13 +910,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             completionHistory: existingDocR?.completionHistory || [],
           };
 
-          const replayLsKey = draftKey('practice', userId!, assignmentId!);
-          const replayDocId = `${userId}_${assignmentId}`;
-          // Clear localStorage practice draft (resetting state)
-          clearDraft(replayLsKey);
-          await persistentWrite('practice_progress', replayDocId, replaySaveData, replayLsKey);
           progressDocRef.current = replaySaveData as unknown as PracticeProgressDoc;
           setShowReplayPrompt(false);
+
+          if (!previewMode) {
+            const replayLsKey = draftKey('practice', userId!, assignmentId!);
+            const replayDocId = `${userId}_${assignmentId}`;
+            clearDraft(replayLsKey);
+            await persistentWrite('practice_progress', replayDocId, replaySaveData, replayLsKey);
+          }
 
           iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, targetOrigin);
           break;
@@ -908,6 +931,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (correct && !awardedQuestionsRef.current.has(questionId)) {
             awardedQuestionsRef.current.add(questionId);
             setQuestionsAnswered(prev => prev + 1);
+
+            if (previewMode) {
+              iframe.contentWindow?.postMessage({
+                type: 'portal-xp-result',
+                payload: { questionId, awarded: false, xp: 0 }
+              }, targetOrigin);
+              break;
+            }
 
             const xpAmount = attempts === 1 ? 15 : 10;
 
@@ -977,9 +1008,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         totalCompletions: existingDoc?.totalCompletions || 0,
         completionHistory: existingDoc?.completionHistory || [],
       };
-      const replayLsKey = draftKey('practice', userId, assignmentId);
-      clearDraft(replayLsKey);
-      await persistentWrite('practice_progress', `${userId}_${assignmentId}`, saveData, replayLsKey);
+      if (!previewMode) {
+        const replayLsKey = draftKey('practice', userId, assignmentId);
+        clearDraft(replayLsKey);
+        await persistentWrite('practice_progress', `${userId}_${assignmentId}`, saveData, replayLsKey);
+      }
       if (!mountedRef.current) return;
       progressDocRef.current = saveData as unknown as PracticeProgressDoc;
       setShowReplayPrompt(false);
@@ -1032,8 +1065,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // Transform Google Drive URLs for the main iframe
   const resolvedContentUrl = contentUrl ? toGoogleDrivePreview(contentUrl) : contentUrl;
 
-  // Block assessment if session token request failed
-  if (isAssessment && sessionTokenError) {
+  // Block assessment if session token request failed (skip in preview mode)
+  if (isAssessment && sessionTokenError && !previewMode) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-black/20 border border-white/10 rounded-2xl p-8 text-center">
         <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
@@ -1051,6 +1084,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   return (
     <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
+        {/* Preview Mode Banner */}
+        {previewMode && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 text-center text-[10px] font-bold text-amber-300 tracking-widest uppercase z-20">
+            <Eye className="w-3 h-3 inline mr-1.5 -mt-0.5" />
+            Admin Preview — No data will be saved
+          </div>
+        )}
         {/* HUD */}
         <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex flex-wrap justify-between items-center gap-y-1 border-b border-white/5 z-20">
             <div className="flex items-center gap-4 flex-wrap">

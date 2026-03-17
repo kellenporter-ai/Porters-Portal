@@ -18,6 +18,8 @@ interface UsePersistentSaveOptions {
   collection?: string; // defaults to 'lesson_block_responses'
   /** Called whenever the internal response map changes (for parent state sync). */
   onResponsesChange?: (responses: Record<string, unknown>) => void;
+  /** When true, skip all Firestore writes and localStorage drafts (admin preview mode). */
+  disabled?: boolean;
 }
 
 interface UsePersistentSaveReturn {
@@ -44,6 +46,7 @@ export function usePersistentSave({
   assignmentId,
   collection = 'lesson_block_responses',
   onResponsesChange,
+  disabled,
 }: UsePersistentSaveOptions): UsePersistentSaveReturn {
   const isOnline = useOnlineStatus();
   const [saveStatus, setSaveStatus] = useState<WriteStatus>('idle');
@@ -64,7 +67,7 @@ export function usePersistentSave({
 
   // Core save function — uses generation counter to ignore stale retry callbacks
   const doSave = useCallback((): Promise<WriteStatus> | undefined => {
-    if (!docId || !userId || !assignmentId) return undefined;
+    if (disabled || !docId || !userId || !assignmentId) return undefined;
 
     const gen = ++saveGenRef.current;
     const data = {
@@ -82,7 +85,7 @@ export function usePersistentSave({
         setLastSavedAt(new Date().toISOString());
       }
     });
-  }, [docId, userId, assignmentId, collection, lsKey, setStatus]);
+  }, [disabled, docId, userId, assignmentId, collection, lsKey, setStatus]);
 
   // Debounced save trigger
   const scheduleSave = useCallback(() => {
@@ -97,6 +100,7 @@ export function usePersistentSave({
   const updateResponse = useCallback((blockId: string, response: unknown) => {
     responsesRef.current = { ...responsesRef.current, [blockId]: response };
     onResponsesChange?.(responsesRef.current);
+    if (disabled) return; // Preview mode — update local state only, skip persistence
     // Immediate synchronous localStorage write — closes the debounce gap
     // where data only exists in JS memory
     if (lsKey && userId && assignmentId) {
@@ -108,7 +112,7 @@ export function usePersistentSave({
       }, true);
     }
     scheduleSave();
-  }, [scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
+  }, [disabled, scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
 
   // Public: immediate flush (awaitable)
   const flushNow = useCallback((): Promise<WriteStatus> | undefined => {
@@ -147,7 +151,7 @@ export function usePersistentSave({
 
   // Mount recovery: check for dirty localStorage drafts
   useEffect(() => {
-    if (!lsKey || !docId) return;
+    if (disabled || !lsKey || !docId) return;
     const draft = readDraft(lsKey);
     if (draft?.dirty) {
       // Restore dirty data into local state
@@ -159,16 +163,17 @@ export function usePersistentSave({
       // Try to sync to Firestore
       syncDirtyDraft(lsKey, collection, docId, setStatus);
     }
-  }, [lsKey, docId, collection, setStatus, onResponsesChange]);
+  }, [disabled, lsKey, docId, collection, setStatus, onResponsesChange]);
 
   // Online recovery: sync dirty drafts when coming back online
   useEffect(() => {
-    if (!isOnline || !lsKey || !docId) return;
+    if (disabled || !isOnline || !lsKey || !docId) return;
     syncDirtyDraft(lsKey, collection, docId, setStatus);
-  }, [isOnline, lsKey, docId, collection, setStatus]);
+  }, [disabled, isOnline, lsKey, docId, collection, setStatus]);
 
   // Flush on visibilitychange (synchronous localStorage + async Firestore)
   useEffect(() => {
+    if (disabled) return; // Preview mode — no persistence needed
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden' && userId && assignmentId) {
         // Cancel pending debounce
@@ -208,7 +213,7 @@ export function usePersistentSave({
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [userId, assignmentId, lsKey, doSave]);
+  }, [disabled, userId, assignmentId, lsKey, doSave]);
 
   // Flush on unmount
   useEffect(() => {

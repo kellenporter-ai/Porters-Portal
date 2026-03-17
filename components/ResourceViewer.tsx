@@ -77,12 +77,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const isRetakingRef = useRef(false);
 
   const activeAssignment = assignments.find(a => a.id === id) || null;
-  const isAssessment = activeAssignment?.isAssessment === true && user.role !== UserRole.ADMIN;
+  const isPreview = user.role === UserRole.ADMIN;
+  const isAssessment = activeAssignment?.isAssessment === true;
+  const isLiveAssessment = isAssessment && !isPreview;
   const config = activeAssignment?.assessmentConfig || { allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true };
 
   // Fetch student's existing submission for rubric grade display
   useEffect(() => {
-    if (!id || user.role === UserRole.ADMIN || !activeAssignment?.isAssessment) return;
+    if (!id || isPreview || !activeAssignment?.isAssessment) return;
     const q = query(
       collection(db, 'submissions'),
       where('userId', '==', user.id),
@@ -105,7 +107,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   // Auto-recover: if server has a submission but client never showed the score modal
   // (handles network errors during submit response, page refresh after submit, etc.)
   useEffect(() => {
-    if (existingSubmission && existingSubmission.status !== 'RETURNED' && !assessmentResult && isAssessment && !isRetakingRef.current) {
+    if (existingSubmission && existingSubmission.status !== 'RETURNED' && !assessmentResult && isLiveAssessment && !isRetakingRef.current) {
       setAssessmentResult({
         correct: existingSubmission.assessmentScore?.correct ?? 0,
         total: existingSubmission.assessmentScore?.total ?? 0,
@@ -119,7 +121,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       if (id) sessionStorage.removeItem(`submit_failed_${id}`);
       setSubmitFailed(false);
     }
-  }, [existingSubmission, assessmentResult, isAssessment]);
+  }, [existingSubmission, assessmentResult, isLiveAssessment]);
 
   // Probe supplemental tabs
   // Play lesson-open sound when resource loads
@@ -317,7 +319,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const guardHistoryPushedRef = useRef(false);
 
   useEffect(() => {
-    if (!isAssessment || assessmentResult || submitFailed) return;
+    if (!isLiveAssessment || assessmentResult || submitFailed) return;
 
     // Push a duplicate state so back button can be intercepted
     window.history.pushState(null, '', window.location.href);
@@ -344,7 +346,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         guardHistoryPushedRef.current = false;
       }
     };
-  }, [isAssessment, assessmentResult, submitFailed]);
+  }, [isLiveAssessment, assessmentResult, submitFailed]);
 
   if (!activeAssignment) {
     // Still loading app data — show skeleton instead of "not found"
@@ -627,7 +629,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       )}
 
       {/* Escape hatch — submission failed or already submitted but no results to show */}
-      {submitFailed && !assessmentResult && isAssessment && (
+      {submitFailed && !assessmentResult && isLiveAssessment && (
         <div className="fixed top-0 left-0 right-0 z-[55] bg-amber-600/90 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-white text-xs font-medium">
             Your work has been saved. Check with your teacher if your submission went through.
@@ -759,7 +761,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </button>
           )}
           {/* Assessment: Submit button instead of Exit */}
-          {isAssessment ? (
+          {isAssessment && !isPreview ? (
             <button
               onClick={handleAssessmentSubmit}
               disabled={isSubmitting}
@@ -768,6 +770,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
             </button>
+          ) : isAssessment && isPreview ? (
+            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 px-4 py-1.5 rounded-lg border border-amber-500/20">
+              <Eye className="w-3.5 h-3.5" /> Submit (Preview)
+            </span>
           ) : (
             <button onClick={handleExit} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
               <ArrowLeft className="w-3.5 h-3.5" /> Exit
@@ -824,6 +830,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   isAssessment={isAssessment}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
+                  previewMode={isPreview}
                 />
               </div>
               {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (
@@ -869,8 +876,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         </Suspense>
       </div>
 
-      {/* Sticky bottom banner for assessments — always-visible submit CTA */}
-      {isAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && !reviewMode && assignViewMode === 'WORK' && (
+      {/* Sticky bottom banner for assessments — always-visible submit CTA (hidden in admin preview) */}
+      {isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && !reviewMode && assignViewMode === 'WORK' && (
         <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[#0a0118] via-[#0a0118]/95 to-transparent pt-4 pb-3 px-4">
           <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm">
