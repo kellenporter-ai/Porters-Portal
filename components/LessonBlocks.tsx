@@ -8,6 +8,7 @@ import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
 import { FeatureErrorBoundary } from './ErrorBoundary';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
+import { BlockText } from '../lib/blockText';
 const DrawingBlock = lazyWithRetry(() => import('./blocks/DrawingBlock'));
 const MathResponseBlock = lazyWithRetry(() => import('./blocks/MathResponseBlock'));
 
@@ -40,9 +41,7 @@ const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKIN
 // ──────────────────────────────────────────────
 
 const TextBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
-  <div className="text-base text-gray-200 leading-relaxed whitespace-pre-line">
-    {block.content}
-  </div>
+  <BlockText text={block.content} tag="div" className="text-base text-gray-200 leading-relaxed" />
 ));
 
 const InfoBoxBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
@@ -57,7 +56,7 @@ const InfoBoxBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) =>
       <div className="font-bold text-xs uppercase tracking-widest mb-1">
         {block.variant === 'tip' ? 'Tip' : block.variant === 'warning' ? 'Warning' : 'Note'}
       </div>
-      <div className="text-gray-200">{block.content}</div>
+      <BlockText text={block.content} tag="div" className="text-gray-200" />
     </div>
   );
 });
@@ -82,10 +81,10 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
 
   return (
     <div className="space-y-3">
-      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <HelpCircle className="w-4 h-4 text-purple-400 shrink-0" />
-        {block.content}
-      </p>
+        <BlockText text={block.content} />
+      </div>
       <div className="space-y-2" role="radiogroup" aria-label={block.content} translate="no">
         {(block.options || []).map((opt, idx) => (
           <button
@@ -140,9 +139,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             </button>
           </div>
           {block.explanation && (
-            <div className="text-sm text-gray-300 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-              {block.explanation}
-            </div>
+            <BlockText text={block.explanation} tag="div" className="text-sm text-gray-300 bg-white/5 border border-white/10 rounded-lg px-3 py-2" />
           )}
         </div>
       )}
@@ -167,10 +164,10 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
 
   return (
     <div className="space-y-3">
-      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0" />
-        {block.content}
-      </p>
+        <BlockText text={block.content} />
+      </div>
       <div className="flex gap-2 items-end">
         <textarea
           value={answer}
@@ -228,9 +225,9 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block })
       <div className="flex items-start gap-3">
         <BookOpen className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
         <div>
-          <div className="text-sm font-bold text-white">{block.term}</div>
+          <BlockText text={block.term} tag="div" className="text-sm font-bold text-white" />
           {flipped ? (
-            <div className="text-base text-gray-200 mt-1 animate-in fade-in duration-200" aria-live="polite">{block.definition}</div>
+            <BlockText text={block.definition} tag="div" className="text-base text-gray-200 mt-1 animate-in fade-in duration-200" />
           ) : (
             <div className="text-xs text-gray-500 mt-1">Tap to reveal definition</div>
           )}
@@ -260,10 +257,10 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 
   return (
     <div className="space-y-3">
-      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <ListChecks className="w-4 h-4 text-green-400 shrink-0" />
-        {block.content}
-      </p>
+        <BlockText text={block.content} />
+      </div>
       <div className="space-y-2" role="group" aria-label={block.content || 'Checklist'} translate="no">
         {(block.items || []).map((item, idx) => (
           <button
@@ -309,8 +306,8 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 const SectionHeaderBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="text-center py-2">
     {block.icon && <div className="text-3xl mb-2">{block.icon}</div>}
-    <h2 className="text-xl font-black text-white tracking-tight">{block.title}</h2>
-    {block.subtitle && <p className="text-sm text-gray-400 mt-1">{block.subtitle}</p>}
+    <BlockText text={block.title} tag="div" className="text-xl font-black text-white tracking-tight" />
+    {block.subtitle && <BlockText text={block.subtitle} tag="p" className="text-sm text-gray-400 mt-1" />}
   </div>
 ));
 
@@ -332,7 +329,7 @@ const ImageBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
           />
         )}
       </div>
-      {block.caption && <p className="text-xs text-gray-500 text-center italic">{block.caption}</p>}
+      {block.caption && <BlockText text={block.caption} tag="p" className="text-xs text-gray-500 text-center italic" />}
     </div>
   );
 });
@@ -351,7 +348,7 @@ const VideoBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
       <div className="rounded-xl overflow-hidden border border-white/10 aspect-video bg-black">
         <iframe src={embedUrl} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" title={block.caption || 'Video'} />
       </div>
-      {block.caption && <p className="text-xs text-gray-500 text-center italic flex items-center justify-center gap-1"><Play className="w-3 h-3" /> {block.caption}</p>}
+      {block.caption && <div className="text-xs text-gray-500 text-center italic flex items-center justify-center gap-1"><Play className="w-3 h-3" /> <BlockText text={block.caption} /></div>}
     </div>
   );
 });
@@ -366,7 +363,7 @@ const ObjectivesBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block })
       {(block.items || []).map((item, idx) => (
         <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
           <span className="text-emerald-400 mt-0.5 shrink-0">•</span>
-          {item}
+          <BlockText text={item} />
         </li>
       ))}
     </ul>
@@ -386,8 +383,8 @@ const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block 
   >
     <div className="flex items-center justify-between">
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold text-purple-300 group-hover:text-purple-200 transition">{block.title || block.url}</div>
-        {block.content && <div className="text-xs text-gray-400 mt-0.5">{block.content}</div>}
+        <BlockText text={block.title || block.url} tag="div" className="text-sm font-bold text-purple-300 group-hover:text-purple-200 transition" />
+        {block.content && <BlockText text={block.content} tag="div" className="text-xs text-gray-400 mt-0.5" />}
       </div>
       <div className="flex items-center gap-1 text-xs text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg shrink-0 ml-3">
         {block.buttonLabel || 'Open'} <ExternalLink className="w-3 h-3" />
@@ -426,7 +423,7 @@ const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
           />
         )}
       </div>
-      {block.caption && <p className="text-xs text-gray-500 text-center italic">{block.caption}</p>}
+      {block.caption && <BlockText text={block.caption} tag="p" className="text-xs text-gray-500 text-center italic" />}
     </div>
   );
 });
@@ -445,9 +442,9 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) 
           <div className="flex items-start gap-3">
             <BookOpen className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <div className="text-sm font-bold text-white">{t.term}</div>
+              <BlockText text={t.term} tag="div" className="text-sm font-bold text-white" />
               {revealed.has(idx) ? (
-                <div className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200" aria-live="polite">{t.definition}</div>
+                <BlockText text={t.definition} tag="div" className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200" />
               ) : (
                 <div className="text-xs text-gray-500 mt-1">Tap to reveal</div>
               )}
@@ -463,9 +460,9 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) =
   <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-2">
     <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
       {block.icon && <span className="text-lg">{block.icon}</span>}
-      {block.title || 'Activity'}
+      <BlockText text={block.title || 'Activity'} />
     </div>
-    <div className="text-sm text-gray-300 whitespace-pre-line">{block.instructions}</div>
+    <BlockText text={block.instructions} tag="div" className="text-sm text-gray-300" />
   </div>
 ));
 
@@ -509,8 +506,8 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3" role="region" aria-label={block.title || block.content || 'Sorting activity'}>
-      {block.title && <p className="text-base text-white font-medium" translate="no">{block.title}</p>}
-      {block.instructions && <p className="text-xs text-gray-400" translate="no">{block.instructions}</p>}
+      {block.title && <BlockText text={block.title} tag="p" className="text-base text-white font-medium" />}
+      {block.instructions && <BlockText text={block.instructions} tag="p" className="text-xs text-gray-400" />}
 
       {/* Unplaced items */}
       {!readOnly && unplaced.length > 0 && (
@@ -601,7 +598,7 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
 
   return (
     <div className="space-y-2">
-      {block.title && <p className="text-base text-white font-medium">{block.title}</p>}
+      {block.title && <BlockText text={block.title} tag="p" className="text-base text-white font-medium" />}
       <div className="overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-sm" aria-label={block.title || 'Data table'}>
           <thead>
@@ -674,7 +671,7 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
 
   return (
     <div className="space-y-2">
-      {block.title && <p className="text-base text-white font-medium text-center">{block.title}</p>}
+      {block.title && <BlockText text={block.title} tag="p" className="text-base text-white font-medium text-center" />}
       <iframe
         ref={iframeRef}
         src="/tools/bar-chart.html?embedded=true"
@@ -782,10 +779,10 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3" role="list" aria-label={block.content || 'Ranking activity'}>
-      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <GripVertical className="w-4 h-4 text-purple-400 shrink-0" />
-        {block.content}
-      </p>
+        <BlockText text={block.content} />
+      </div>
       <div className="space-y-1" translate="no">
         {order.map((item, idx) => (
           <div
@@ -870,13 +867,13 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
           <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
             <Link className="w-3 h-3" /> Referenced question
           </div>
-          <p className="text-xs text-gray-400" translate="no">{linkedBlock.content}</p>
+          <BlockText text={linkedBlock.content} tag="p" className="text-xs text-gray-400" />
         </div>
       )}
-      <p className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
         <Link className="w-4 h-4 text-purple-400 shrink-0" />
-        {block.content}
-      </p>
+        <BlockText text={block.content} />
+      </div>
       <div className="flex gap-2 items-end">
         <textarea
           value={answer}

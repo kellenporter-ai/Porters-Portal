@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Plus, X, ChevronUp, ChevronDown, Pencil, Calculator } from 'lucide-react';
 import katex from 'katex';
 import { LessonBlock } from '../../types';
+import { BlockText } from '../../lib/blockText';
 
 // ──────────────────────────────────────────────
 // Types
@@ -554,14 +555,12 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       {/* Question / Prompt */}
       <div className="space-y-1">
         {block.title && (
-          <p className="text-sm text-white font-medium flex items-center gap-2">
+          <div className="text-sm text-white font-medium flex items-center gap-2">
             <Calculator className="w-4 h-4 text-purple-400 shrink-0" />
-            {block.title}
-          </p>
+            <BlockText text={block.title} />
+          </div>
         )}
-        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
-          {block.content}
-        </p>
+        <BlockText text={block.content} tag="p" className="text-sm text-gray-300 leading-relaxed" />
       </div>
 
       {/* Read-only display: just rendered LaTeX per step */}

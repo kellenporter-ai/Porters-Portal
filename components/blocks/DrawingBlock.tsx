@@ -1,11 +1,11 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Pencil, Eraser, ArrowUpRight, Square, Type, Undo2, Redo2, Trash2,
   Circle, Minus, Check, Edit3, MousePointer2, Keyboard, GripHorizontal,
   Copy, ClipboardPaste, ArrowUpToLine, ArrowDownToLine, ArrowUp, ArrowDown
 } from 'lucide-react';
-import katex from 'katex';
 import { LessonBlock } from '../../types';
+import { BlockText } from '../../lib/blockText';
 
 // ──────────────────────────────────────────────
 // Data types
@@ -1714,31 +1714,6 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // ──────────────────────────────────────────
 
   // ──────────────────────────────────────────
-  // LaTeX processing for description text
-  // ──────────────────────────────────────────
-  const processLatex = useCallback((text: string): string => {
-    // Display math: $$...$$
-    let result = text.replace(/\$\$([^$]+)\$\$/g, (_m, tex) => {
-      try {
-        return katex.renderToString(tex.trim(), { throwOnError: false, displayMode: true });
-      } catch { return `<code>${tex}</code>`; }
-    });
-    // Inline math: $...$
-    result = result.replace(/\$([^$]+)\$/g, (_m, tex) => {
-      try {
-        return katex.renderToString(tex.trim(), { throwOnError: false, displayMode: false });
-      } catch { return `<code>${tex}</code>`; }
-    });
-    // Newlines to <br>
-    result = result.replace(/\n/g, '<br/>');
-    return result;
-  }, []);
-
-  const titleHtml = useMemo(() => block.title ? processLatex(block.title) : '', [block.title, processLatex]);
-  const contentHtml = useMemo(() => block.content ? processLatex(block.content) : '', [block.content, processLatex]);
-  const instructionsHtml = useMemo(() => block.instructions ? processLatex(block.instructions) : '', [block.instructions, processLatex]);
-
-  // ──────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────
 
@@ -1746,13 +1721,13 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     <div className="space-y-3">
       {/* Title / prompt */}
       {block.title && (
-        <p style={{ fontSize: '14px', fontWeight: 600, color: '#fff', margin: '0 0 4px 0' }} dangerouslySetInnerHTML={{ __html: titleHtml }} />
+        <BlockText text={block.title} tag="p" style={{ fontSize: '14px', fontWeight: 600, color: '#fff', margin: '0 0 4px 0' }} />
       )}
       {block.content && (
-        <p style={{ fontSize: '14px', color: '#d1d5db', lineHeight: 1.6, margin: '0 0 4px 0' }} dangerouslySetInnerHTML={{ __html: contentHtml }} />
+        <BlockText text={block.content} tag="p" style={{ fontSize: '14px', color: '#d1d5db', lineHeight: 1.6, margin: '0 0 4px 0' }} />
       )}
       {block.instructions && (
-        <p style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic', margin: '0 0 4px 0' }} dangerouslySetInnerHTML={{ __html: instructionsHtml }} />
+        <BlockText text={block.instructions} tag="p" style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic', margin: '0 0 4px 0' }} />
       )}
 
       {/* Toolbar */}
