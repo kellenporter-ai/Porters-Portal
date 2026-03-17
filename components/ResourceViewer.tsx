@@ -304,6 +304,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const handleExit = () => {
     if (id) sessionStorage.removeItem(`submit_failed_${id}`);
     setAssignViewMode('WORK');
+    // Admin preview opens in a new tab — close it to return to the editor
+    if (isPreview && window.opener) {
+      window.close();
+      return;
+    }
     // The navigation guard pushed an extra history entry; skip past it
     if (guardHistoryPushedRef.current) {
       guardHistoryPushedRef.current = false;
