@@ -371,7 +371,7 @@ const App: React.FC = () => {
     <ThemeProvider userSettings={user.settings} onUpdateSettings={handleThemeSettingsUpdate}>
     <AppDataProvider user={user}>
     <ChatProvider user={user}>
-    <>
+<>
       <ConnectionStatus />
       <FloatingOverlays user={user} />
 

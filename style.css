@@ -20,9 +20,9 @@
   --accent-hover: #6d28d9;
   --accent-muted: rgba(124, 58, 237, 0.12);
   --accent-text: #7c3aed;
-  --border: rgba(124, 58, 237, 0.18);
-  --border-strong: rgba(124, 58, 237, 0.30);
-  --border-accent: rgba(124, 58, 237, 0.40);
+  --border: rgba(124, 58, 237, 0.18) !important;
+  --border-strong: rgba(124, 58, 237, 0.30) !important;
+  --border-accent: rgba(124, 58, 237, 0.40) !important;
   --sidebar-bg: #efe8f8;
   --sidebar-text: #1e1233;
   --sidebar-text-muted: #6a6580;
@@ -59,9 +59,9 @@
   --accent-hover: #9333ea;
   --accent-muted: rgba(168, 85, 247, 0.15);
   --accent-text: #a855f7;
-  --border: rgba(147, 51, 234, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.20);
-  --border-accent: rgba(147, 51, 234, 0.30);
+  --border: rgba(147, 51, 234, 0.12) !important;
+  --border-strong: rgba(255, 255, 255, 0.20) !important;
+  --border-accent: rgba(147, 51, 234, 0.30) !important;
   --sidebar-bg: #0a0518;
   --sidebar-text: #e9d5ff;
   --sidebar-text-muted: #9ca3af;
@@ -87,6 +87,14 @@
 :root:not(.dark) .rounded-3xl,
 :root:not(.dark) .rounded-xl {
   box-shadow: var(--glass-glow);
+}
+
+/* Block borders — direct override, bypasses CSS variable injection from extensions/MDM */
+.block-reveal {
+  border-color: rgba(124, 58, 237, 0.18) !important;
+}
+.dark .block-reveal {
+  border-color: rgba(147, 51, 234, 0.12) !important;
 }
 
 /* Respect OS-level reduced motion preference (mirrors .perf-mode behavior) */
