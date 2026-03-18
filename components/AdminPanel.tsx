@@ -622,13 +622,22 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="font-bold text-sm text-[var(--text-primary)] truncate">{req.song}</p>
                             <p className="text-xs text-[var(--text-tertiary)] truncate">{req.artist}</p>
                           </div>
-                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 ${statusBadge}`}>
-                            {req.status}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => navigator.clipboard.writeText(`${req.song} ${req.artist}`).then(() => toast.success('Copied!'))}
+                              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)] rounded-lg transition"
+                              title="Copy to clipboard"
+                            >
+                              <Clipboard className="w-3.5 h-3.5" />
+                            </button>
+                            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${statusBadge}`}>
+                              {req.status}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
                           <span className="text-[10px] text-[var(--text-muted)]">
