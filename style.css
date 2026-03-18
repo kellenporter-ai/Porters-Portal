@@ -59,7 +59,7 @@
   --accent-hover: #9333ea;
   --accent-muted: rgba(168, 85, 247, 0.15);
   --accent-text: #a855f7;
-  --border: rgba(255, 255, 255, 0.10);
+  --border: rgba(147, 51, 234, 0.12);
   --border-strong: rgba(255, 255, 255, 0.20);
   --border-accent: rgba(147, 51, 234, 0.30);
   --sidebar-bg: #0a0518;
@@ -133,6 +133,9 @@ a:focus:not(:focus-visible),
 input:focus:not(:focus-visible),
 select:focus:not(:focus-visible),
 textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+[tabindex="-1"]:focus-visible {
   outline: none;
 }
 
