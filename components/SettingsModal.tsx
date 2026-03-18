@@ -292,7 +292,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
           <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Appearance</label>
           <div className="flex gap-2 p-1.5 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
             <button
-              onClick={() => setTheme('light')}
+              onClick={() => { setTheme('light'); setLocalSettings(prev => ({ ...prev, themeMode: 'light' })); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-bold transition ${
                 theme === 'light'
                   ? 'bg-[var(--accent)] text-white shadow-lg'
@@ -303,7 +303,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               Light
             </button>
             <button
-              onClick={() => setTheme('dark')}
+              onClick={() => { setTheme('dark'); setLocalSettings(prev => ({ ...prev, themeMode: 'dark' })); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-bold transition ${
                 theme === 'dark'
                   ? 'bg-[var(--accent)] text-white shadow-lg'

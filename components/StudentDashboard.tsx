@@ -25,6 +25,7 @@ import ProfileShowcase from './ProfileShowcase';
 import { getStreakMultiplier } from '../lib/achievements';
 import { STUDENT_TAB_MAP } from '../lib/routes';
 import IntelDossier from './IntelDossier';
+import { useTheme } from '../lib/ThemeContext';
 
 // Reverse map: StudentTab key → nav name (for ARIA tabpanel IDs matching Layout's aria-controls)
 const TAB_KEY_TO_NAV: Record<string, string> = Object.fromEntries(
@@ -78,6 +79,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
   const { xpEvents, quests: allQuests } = useGameData();
   const reducedMotion = useReducedMotion();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   // Preload heavy gamification chunks during idle time
   useEffect(() => {
@@ -473,12 +476,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                       className={`w-full h-full rounded-full border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
                     />
                 </div>
-                <h2 className="text-xl font-bold tracking-tight" style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : { color: 'white' }}>{user.gamification?.codename || user.name}</h2>
+                <h2
+                  className={`text-xl font-bold tracking-tight ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
+                  style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : undefined}
+                >{user.gamification?.codename || user.name}</h2>
                 <div className="flex flex-col items-center gap-1">
                     <span className={`font-mono text-xs uppercase tracking-[0.2em] mt-1 font-bold ${rankDetails.tierColor.split(' ')[1]}`}>
                     {rankDetails.rankName} (Lvl {level})
                     </span>
-                    <span className="text-[10px] bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded border border-yellow-500/20 font-bold uppercase tracking-widest">
+                    <span className={`text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 font-bold uppercase tracking-widest ${isLight ? 'text-yellow-700' : 'text-yellow-400'}`}>
                         Gear Score: {gearScore}
                     </span>
                 </div>
@@ -529,19 +535,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             const streak = user.gamification?.engagementStreak || 0;
             const multiplier = getStreakMultiplier(streak);
             return (
-                <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
+                <div className={`border rounded-2xl p-4 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-400'}`}>
                             <Flame className="w-6 h-6" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
                             <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
-                            <div className="text-xl font-black text-orange-400 leading-none">{streak}w</div>
+                            <div className={`text-xl font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
                         </div>
                         {multiplier > 1 && (
                             <div className="text-right">
                                 <div className="text-xs text-[var(--text-tertiary)] uppercase">XP Bonus</div>
-                                <div className="text-sm font-black text-yellow-400">+{Math.round((multiplier - 1) * 100)}%</div>
+                                <div className={`text-sm font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
                             </div>
                         )}
                     </div>
@@ -551,11 +557,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
         {/* Login Streak */}
         {(user.gamification?.loginStreak || 0) > 1 && (
-            <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-3 flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-purple-400" aria-hidden="true" />
+            <div className={`border rounded-2xl p-3 flex items-center gap-3 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
+                <Sparkles className={`w-5 h-5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
                 <div>
                     <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
-                    <div className="text-sm font-black text-purple-400">{user.gamification?.loginStreak || 0} day streak</div>
+                    <div className={`text-sm font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
         )}
@@ -576,7 +582,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400 shadow-inner"><Microscope className="w-5 h-5" aria-hidden="true" /></div>
                         <div className="text-left">
                             <div className="font-bold text-[var(--text-secondary)] text-sm">Evidence Log</div>
-                            <div className="text-xs text-emerald-300/70 uppercase font-bold tracking-tight">Weekly Portfolio</div>
+                            <div className={`text-xs uppercase font-bold tracking-tight ${isLight ? 'text-emerald-600' : 'text-emerald-300/70'}`}>Weekly Portfolio</div>
                         </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition" />

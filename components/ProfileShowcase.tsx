@@ -9,6 +9,7 @@ import OperativeAvatar from './dashboard/OperativeAvatar';
 import Avatar3D from './dashboard/Avatar3D';
 import ProfileFrame from './dashboard/ProfileFrame';
 import { Shield, Zap, Trophy, Star, Target, Flame, Swords, GraduationCap, Copy, Check } from 'lucide-react';
+import { useTheme } from '../lib/ThemeContext';
 
 interface ProfileShowcaseProps {
   user: User;
@@ -27,6 +28,8 @@ const SLOT_ORDER: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', '
 
 const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onClose }) => {
   const [copied, setCopied] = React.useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
   const gam = user.gamification || { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false };
@@ -60,7 +63,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-gradient-to-br from-[#0d0e1a] to-[#1a1b2e] border border-[var(--border)] rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        className={`border border-[var(--border)] rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl ${isLight ? 'bg-gradient-to-br from-white to-[#f0eafa]' : 'bg-gradient-to-br from-[#0d0e1a] to-[#1a1b2e]'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Hero section */}
