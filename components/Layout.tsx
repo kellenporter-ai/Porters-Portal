@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     if (typeof navigator === 'undefined') return;
     const isCrOS = /CrOS/.test(navigator.userAgent);
     const alreadySuggested = localStorage.getItem('perfModeSuggested');
-    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' };
+    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
     if (isCrOS && !alreadySuggested && !currentSettings.performanceMode) {
       setShowCrosBanner(true);
     }
@@ -63,7 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   const enablePerfMode = useCallback(async () => {
-    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' };
+    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
     await dataService.updateUserSettings(user.id, { ...currentSettings, performanceMode: true });
     dismissCrosBanner();
   }, [user.id, user.settings, dismissCrosBanner]);
@@ -76,7 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     liveBackground: true,
     performanceMode: false,
     privacyMode: false,
-    compactView: false,
+    compactView: true,
     themeMode: 'dark'
   };
 
@@ -440,31 +440,43 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-60' : 'w-72'}`}>
         <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn ${settings.performanceMode ? '' : 'backdrop-blur-2xl'}`}>
           {/* Header */}
-          <div className={`flex items-center border-b border-[var(--sidebar-border)] ${sidebarCollapsed ? 'p-4 justify-center' : 'p-8 gap-4'}`}>
-            <div className={`bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl ${sidebarCollapsed ? 'p-2' : 'p-3'}`}>
-              <GraduationCap className={sidebarCollapsed ? 'w-5 h-5 text-white' : 'w-6 h-6 text-white'} />
-            </div>
-            {!sidebarCollapsed && (
-              <div>
-                <h1 className="font-bold text-lg tracking-tight text-[var(--sidebar-text)]">Porter Portal</h1>
-                <p className="text-xs text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
-                  {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
-                </p>
+          {sidebarCollapsed ? (
+            <div className="flex flex-col items-center gap-2 p-3 border-b border-[var(--sidebar-border)]">
+              <div className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl p-2">
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
-            )}
-          </div>
-
-          {/* Collapse toggle */}
-          <div className={`flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} px-3 pt-3`}>
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-            </button>
-          </div>
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                aria-label="Expand sidebar"
+                title="Expand sidebar"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--sidebar-border)] gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl p-2.5 shrink-0">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="font-bold text-base tracking-tight text-[var(--sidebar-text)] truncate">Porter Portal</h1>
+                  <p className="text-[10px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
+                    {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition shrink-0"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           <nav className={`flex-1 space-y-2 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? 'p-2' : 'p-4'}`} role="tablist" aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
             <NavItems />
@@ -522,32 +534,17 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               )}
             </div>
           ) : (
-            <div className="p-4 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
-              <div className="flex items-center justify-between mb-3">
-                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-inner border border-white/20">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate text-[var(--sidebar-text)]">
-                          {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
-                      </p>
-                      <p className="text-[10px] text-[var(--sidebar-text-muted)] truncate">{user.email}</p>
-                    </div>
-                 </div>
-                 <div className="flex items-center gap-1">
-                   <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
-                   <button
-                     onClick={() => setIsSettingsOpen(true)}
-                     className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                     aria-label="Open settings"
-                   >
-                     <Settings className="w-4 h-4" />
-                   </button>
-                 </div>
+            <div className="p-3 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
+              <div className="flex items-center gap-2 min-w-0 mb-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20 shrink-0">
+                  {user.name.charAt(0)}
+                </div>
+                <p className="text-xs font-semibold truncate text-[var(--sidebar-text)] flex-1 min-w-0">
+                  {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
+                </p>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 flex-wrap">
                 <button
                   onClick={onLogout}
                   className="p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
@@ -555,6 +552,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
+                </button>
+                <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                  aria-label="Open settings"
+                  title="Settings"
+                >
+                  <Settings className="w-4 h-4" />
                 </button>
                 {enabledFeatures.communications && (
                   <button
@@ -591,7 +597,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       </aside>
 
       {/* Main Content */}
-      <main id="main-content" className={`flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-20 lg:p-8 lg:pb-8 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
+      <main id="main-content" className={`flex-1 overflow-y-auto p-2 pb-20 md:p-4 md:pb-20 lg:p-4 lg:pb-4 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
         <div className="h-full">
           <Outlet />
         </div>

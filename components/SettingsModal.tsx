@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { User, UserSettings } from '../types';
-import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle, Sun, Moon } from 'lucide-react';
+import { Monitor, Cpu, Shield, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle, Sun, Moon } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './ToastProvider';
 import { useTheme } from '../lib/ThemeContext';
@@ -95,7 +95,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
     liveBackground: true,
     performanceMode: false,
     privacyMode: false,
-    compactView: false,
+    compactView: true,
     soundEffects: true,
     themeMode: 'dark'
   });
@@ -149,7 +149,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
       </div>
       <button
         onClick={onToggle}
-        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ring-offset)] ${value ? 'bg-[var(--accent)]' : 'bg-[var(--surface-glass-heavy)]'}`}
+        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ring-offset)] ${value ? 'bg-[var(--accent)]' : 'bg-[var(--toggle-off)]'}`}
       >
         <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
@@ -209,13 +209,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
         <div className="mb-6">
           <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Interface</label>
           <div className="space-y-2">
-            <SettingRow 
-              icon={LayoutIcon} 
-              title="Compact View" 
-              description="Reduce sidebar and dashboard padding for power users." 
-              value={localSettings.compactView} 
-              onToggle={() => handleToggle('compactView')} 
-            />
             <SettingRow
               icon={localSettings.soundEffects === false ? VolumeX : Volume2}
               title="Sound Effects"
@@ -238,7 +231,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                   max={100}
                   value={Math.round((localSettings.soundVolume ?? 0.5) * 100)}
                   onChange={e => setLocalSettings(prev => ({ ...prev, soundVolume: parseInt(e.target.value) / 100 }))}
-                  className="w-full h-1.5 bg-[var(--surface-glass-heavy)] rounded-full appearance-none cursor-pointer accent-[var(--accent)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
+                  className="w-full h-1.5 bg-[var(--toggle-off)] rounded-full appearance-none cursor-pointer accent-[var(--accent)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
                 />
               </div>
             )}
@@ -279,8 +272,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                   }}
                   disabled={getPushPermission() === 'denied'}
                   className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ring-offset)] ${
-                    getPushPermission() === 'denied' ? 'bg-[var(--surface-glass-heavy)] opacity-50 cursor-not-allowed' :
-                    localSettings.pushNotifications ? 'bg-[var(--accent)]' : 'bg-[var(--surface-glass-heavy)]'
+                    getPushPermission() === 'denied' ? 'bg-[var(--toggle-off)] opacity-50 cursor-not-allowed' :
+                    localSettings.pushNotifications ? 'bg-[var(--accent)]' : 'bg-[var(--toggle-off)]'
                   }`}
                 >
                   <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${localSettings.pushNotifications ? 'translate-x-5' : 'translate-x-0'}`} />

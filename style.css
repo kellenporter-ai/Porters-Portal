@@ -36,6 +36,7 @@
   --backdrop: rgba(30, 18, 51, 0.25);
   --panel-bg: rgba(255, 255, 255, 0.80);
   --glass-glow: 0 0 0 1px rgba(124, 58, 237, 0.15), 0 1px 8px rgba(124, 58, 237, 0.08);
+  --toggle-off: #d8d0e8;
   --success: #059669;
   --warning: #d97706;
   --error: #dc2626;
@@ -74,6 +75,7 @@
   --backdrop: rgba(0, 0, 0, 0.80);
   --panel-bg: rgba(0, 0, 0, 0.40);
   --glass-glow: none;
+  --toggle-off: rgba(255, 255, 255, 0.12);
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
