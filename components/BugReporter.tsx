@@ -45,17 +45,15 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
     }
   };
 
+  // Open via sidebar button event
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener('porters:openBugReport', handler);
+    return () => window.removeEventListener('porters:openBugReport', handler);
+  }, []);
+
   return (
     <>
-      {/* Floating button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 left-4 z-40 p-3 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-full text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-all shadow-lg backdrop-blur-md group"
-        title="Report a bug"
-      >
-        <Bug className="w-4 h-4 group-hover:text-amber-400 transition" />
-      </button>
-
       {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setIsOpen(false)}>

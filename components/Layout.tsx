@@ -503,7 +503,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 </button>
               )}
               <button
-                onClick={() => window.open('mailto:kellen.porter@gmail.com?subject=Bug Report', '_blank')}
+                onClick={() => window.dispatchEvent(new CustomEvent('porters:openBugReport'))}
                 className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
                 aria-label="Report a bug"
                 title="Report a bug"
@@ -567,7 +567,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   </button>
                 )}
                 <button
-                  onClick={() => window.open('mailto:kellen.porter@gmail.com?subject=Bug Report', '_blank')}
+                  onClick={() => window.dispatchEvent(new CustomEvent('porters:openBugReport'))}
                   className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
                   aria-label="Report a bug"
                   title="Report a bug"
