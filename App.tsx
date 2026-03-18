@@ -19,6 +19,7 @@ import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
 import { ThemeProvider } from './lib/ThemeContext';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
+import SongRequester from './components/SongRequester';
 import StreakDisplay from './components/StreakDisplay';
 import RouteSkeleton from './components/RouteSkeleton';
 import { AppDataProvider, useAppData, useAssignments, useClassConfig } from './lib/AppDataContext';
@@ -486,6 +487,7 @@ const App: React.FC = () => {
       </Routes>
 
       <BugReporter user={user} />
+      <SongRequester user={user} />
       {user.role === UserRole.STUDENT && (
         <div className="fixed top-3 right-48 z-30">
           <StreakDisplay userId={user.id} compact />

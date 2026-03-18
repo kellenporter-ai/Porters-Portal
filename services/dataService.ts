@@ -1,5 +1,5 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -1847,6 +1847,27 @@ export const dataService = {
 
   deleteBugReport: async (reportId: string) => {
     await deleteDoc(doc(db, 'bug_reports', reportId));
+  },
+
+  // ========================================
+  // SONG REQUESTS
+  // ========================================
+
+  submitSongRequest: async (request: Omit<SongRequest, 'id'>) => {
+    await addDoc(collection(db, 'song_requests'), request);
+  },
+
+  subscribeToSongRequests: (callback: (requests: SongRequest[]) => void) => {
+    const q = query(collection(db, 'song_requests'), orderBy('timestamp', 'desc'), limit(100));
+    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as SongRequest))));
+  },
+
+  updateSongRequest: async (requestId: string, data: Partial<SongRequest>) => {
+    await updateDoc(doc(db, 'song_requests', requestId), data);
+  },
+
+  deleteSongRequest: async (requestId: string) => {
+    await deleteDoc(doc(db, 'song_requests', requestId));
   },
 
   // ========================================

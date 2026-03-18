@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, MessageSquare, Bug, LineChart } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, MessageSquare, Bug, LineChart, Music } from 'lucide-react';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
@@ -528,6 +528,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               >
                 <Bug className="w-4 h-4" />
               </button>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('porters:openSongRequest'))}
+                className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                aria-label="Request a song"
+                title="Request a song"
+              >
+                <Music className="w-4 h-4" />
+              </button>
               {enabledFeatures.physicsTools && (
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('porters:openGrapher'))}
@@ -582,6 +590,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   title="Report a bug"
                 >
                   <Bug className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('porters:openSongRequest'))}
+                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                  aria-label="Request a song"
+                  title="Request a song"
+                >
+                  <Music className="w-4 h-4" />
                 </button>
                 {enabledFeatures.physicsTools && (
                   <button

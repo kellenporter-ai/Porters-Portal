@@ -1455,6 +1455,20 @@ export interface BugReport {
 }
 
 // ========================================
+// SONG REQUESTS
+// ========================================
+
+export interface SongRequest {
+  id?: string;
+  userId: string;
+  userName: string;
+  song: string;
+  artist: string;
+  timestamp: string;
+  status: 'pending' | 'played' | 'dismissed';
+}
+
+// ========================================
 // ENROLLMENT CODES
 // ========================================
 
