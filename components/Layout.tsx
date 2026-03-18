@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, MessageSquare, Bug, LineChart } from 'lucide-react';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
@@ -12,6 +12,7 @@ import SpaceBackground from './SpaceBackground';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
+import { useChat } from '../lib/ChatContext';
 
 interface LayoutProps {
   user: User;
@@ -25,6 +26,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
   const isLight = theme === 'light';
+  const { enabledFeatures } = useClassConfig();
+  const { isCommOpen, setIsCommOpen } = useChat();
 
   // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -489,10 +492,38 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               >
                 <LogOut className="w-4 h-4" />
               </button>
+              {enabledFeatures.communications && (
+                <button
+                  onClick={() => setIsCommOpen(!isCommOpen)}
+                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                  aria-label="Chat"
+                  title="Chat"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => window.open('mailto:kellen.porter@gmail.com?subject=Bug Report', '_blank')}
+                className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                aria-label="Report a bug"
+                title="Report a bug"
+              >
+                <Bug className="w-4 h-4" />
+              </button>
+              {enabledFeatures.physicsTools && (
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('porters:openGrapher'))}
+                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                  aria-label="Grapher"
+                  title="Grapher"
+                >
+                  <LineChart className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ) : (
-            <div className="p-6 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
-              <div className="flex items-center justify-between mb-4">
+            <div className="p-4 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
+              <div className="flex items-center justify-between mb-3">
                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-inner border border-white/20">
                       {user.name.charAt(0)}
@@ -516,13 +547,44 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                  </div>
               </div>
 
-              <button
-                onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all text-sm font-medium"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={onLogout}
+                  className="p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
+                  aria-label="Sign out"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+                {enabledFeatures.communications && (
+                  <button
+                    onClick={() => setIsCommOpen(!isCommOpen)}
+                    className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                    aria-label="Chat"
+                    title="Chat"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => window.open('mailto:kellen.porter@gmail.com?subject=Bug Report', '_blank')}
+                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                  aria-label="Report a bug"
+                  title="Report a bug"
+                >
+                  <Bug className="w-4 h-4" />
+                </button>
+                {enabledFeatures.physicsTools && (
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent('porters:openGrapher'))}
+                    className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
+                    aria-label="Grapher"
+                    title="Grapher"
+                  >
+                    <LineChart className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

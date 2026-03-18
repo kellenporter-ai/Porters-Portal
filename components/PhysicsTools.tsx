@@ -29,6 +29,16 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
     const [activeTool, setActiveTool] = useState<ToolType | null>(null);
     const [isMinimized, setIsMinimized] = useState(false);
 
+    // Listen for sidebar Grapher shortcut
+    useEffect(() => {
+        const handler = () => {
+            setActiveTool('GRAPHER');
+            setIsMinimized(false);
+        };
+        window.addEventListener('porters:openGrapher', handler);
+        return () => window.removeEventListener('porters:openGrapher', handler);
+    }, []);
+
     /* ── Draggable position (null = default bottom-right) ──── */
     const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
         try {
