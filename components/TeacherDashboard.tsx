@@ -8,7 +8,7 @@ import { dataService } from '../services/dataService';
 import { callTriggerDailyDigest, callReturnAssessment, callSubmitOnBehalf, callClassroomPushGrades } from '../lib/firebase';
 import { getClassroomAccessToken } from '../lib/classroomAuth';
 import ClassroomLinkModal from './ClassroomLinkModal';
-import { BUCKET_META, getBucketRecommendation } from '../lib/telemetry';
+import { BUCKET_META } from '../lib/telemetry';
 import { calculateRubricPercentage } from '../lib/rubricParser';
 import katex from 'katex';
 import { analyzeIntegrity, type IntegrityReport } from '../lib/integrityAnalysis';
@@ -23,6 +23,8 @@ import { downloadGradeCSV } from '../lib/csvGradeExport';
 
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
+import EarlyWarningPanel from './teacher/EarlyWarningPanel';
+import { useClassConfig } from '../lib/AppDataContext';
 
 interface TeacherDashboardProps {
   users: User[];
@@ -33,6 +35,7 @@ interface TeacherDashboardProps {
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments = [], submissions = [] }) => {
   const { confirm } = useConfirm();
   const toast = useToast();
+  const { classConfigs } = useClassConfig();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -133,6 +136,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   }, [assessmentStatusFilter]);
 
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
+  const warningThresholds = useMemo(
+    () => classConfigs.find(c => c.telemetryThresholds)?.telemetryThresholds,
+    [classConfigs]
+  );
   const availableSections = useMemo(() => {
     const sections = new Set<string>();
     students.forEach(s => { if (s.section) sections.add(s.section); });
@@ -2442,106 +2449,26 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
       </div>
 
-      {/* EARLY WARNING SYSTEM */}
-      {alerts.length > 0 && (
-        <div className="bg-amber-900/10 border border-amber-500/30 rounded-3xl p-6 backdrop-blur-md">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-amber-400 flex items-center gap-2">
-              <Activity className="w-5 h-5" aria-hidden="true" />
-              Early Warning System
-            </h3>
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-300">
-              {alerts.length} Alert{alerts.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <div className="space-y-3 max-h-72 overflow-y-auto custom-scrollbar pr-2">
-            {alerts.map(alert => {
-              const riskColors: Record<string, string> = {
-                CRITICAL: 'border-red-500/40 bg-red-900/20',
-                HIGH: 'border-orange-500/30 bg-orange-900/10',
-                MODERATE: 'border-yellow-500/20 bg-yellow-900/10',
-                LOW: 'border-blue-500/20 bg-blue-900/10',
-              };
-              const riskBadge: Record<string, string> = {
-                CRITICAL: 'bg-red-500 text-white',
-                HIGH: 'bg-orange-500 text-white',
-                MODERATE: 'bg-yellow-500/80 text-black',
-                LOW: 'bg-blue-500/60 text-white',
-              };
-              const bucketInfo = alert.bucket ? BUCKET_META[alert.bucket as TelemetryBucket] : null;
-              return (
-                <div key={alert.id} className={`border p-4 rounded-xl ${riskColors[alert.riskLevel] || riskColors.LOW}`}>
-                  <div className="flex justify-between items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${riskBadge[alert.riskLevel] || riskBadge.LOW}`}>
-                          {alert.riskLevel}
-                        </span>
-                        {bucketInfo && (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${bucketInfo.bgColor} ${bucketInfo.color} ${bucketInfo.borderColor} border`}>
-                            {bucketInfo.label}
-                          </span>
-                        )}
-                        <span className="text-sm font-bold text-[var(--text-primary)] truncate">{alert.studentName}</span>
-                        <span className="text-xs text-[var(--text-tertiary)]">{alert.classType}</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{alert.message}</p>
-                      {bucketInfo && (
-                        <p className="text-[10px] text-[var(--text-tertiary)] mt-1 italic">{bucketInfo.description}</p>
-                      )}
-                      {(() => {
-                        const rec = alert.bucket ? getBucketRecommendation(alert.bucket as TelemetryBucket) : null;
-                        return rec ? (
-                          <div className="mt-2 p-2 bg-[var(--surface-glass)] rounded-lg border border-[var(--border)]">
-                            <p className="text-[10px] text-amber-300 font-bold uppercase tracking-wider mb-1">Suggested Action</p>
-                            <p className="text-xs text-[var(--text-secondary)]">{rec.action}</p>
-                          </div>
-                        ) : null;
-                      })()}
-                      <div className="flex gap-4 mt-2 text-xs text-[var(--text-tertiary)]">
-                        <span>ES: {alert.engagementScore}</span>
-                        <span>Class Avg: {alert.classMean}</span>
-                        <span>{new Date(alert.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => setSelectedStudentId(alert.studentId)}
-                        className="px-2 py-1.5 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-[11px] font-bold transition"
-                      >
-                        View
-                      </button>
-                      <button
-                        onClick={() => {
-                          const rec = alert.bucket ? getBucketRecommendation(alert.bucket as TelemetryBucket) : null;
-                          const msg = rec?.studentTip || 'Your teacher wants to check in with you.';
-                          setNudgeTarget({
-                            studentId: alert.studentId,
-                            studentName: alert.studentName,
-                            defaultMessage: msg,
-                            classType: alert.classType,
-                          });
-                          setNudgeMessage(msg);
-                          setShowNudgeModal(true);
-                        }}
-                        className="px-2 py-1.5 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-400 rounded-lg text-[11px] font-bold transition"
-                      >
-                        Nudge
-                      </button>
-                      <button
-                        onClick={async () => { await dataService.dismissAlert(alert.id); }}
-                        className="px-2 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* EARLY WARNING PANEL */}
+      <EarlyWarningPanel
+        students={students}
+        alerts={alerts}
+        bucketProfiles={bucketProfiles}
+        thresholds={warningThresholds}
+        onMessage={(student) => {
+          setNudgeTarget({
+            studentId: student.id,
+            studentName: student.name,
+            defaultMessage: 'Your teacher wants to check in with you.',
+            classType: student.classType || '',
+          });
+          setNudgeMessage('Your teacher wants to check in with you.');
+          setShowNudgeModal(true);
+        }}
+        onViewProfile={(student) => {
+          setSelectedStudentId(student.id);
+        }}
+      />
 
       {/* TELEMETRY BUCKET DISTRIBUTION */}
       {students.length > 0 && (

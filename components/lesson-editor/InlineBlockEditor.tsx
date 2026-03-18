@@ -81,7 +81,12 @@ interface InlineBlockEditorProps {
 const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks, onUpdate }) => {
   switch (block.type) {
     case 'TEXT':
-      return <textarea aria-label="Text content" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Enter text content..." className={`${textareaClass} min-h-[80px]`} rows={3} />;
+      return (
+        <div>
+          <label htmlFor={`ibe-text-content-${block.id}`} className={labelClass}>Text Content</label>
+          <textarea id={`ibe-text-content-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Enter text content..." className={`${textareaClass} min-h-[80px]`} rows={3} />
+        </div>
+      );
     case 'SECTION_HEADER':
       return (
         <div className="space-y-2">
@@ -109,7 +114,8 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
           {items.map((item, idx) => (
             <div key={idx} className="flex gap-2">
               <Target className="w-4 h-4 text-emerald-400 mt-2 shrink-0" />
-              <input aria-label={`Objective ${idx + 1}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Objective ${idx + 1}`} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-objective-${block.id}-${idx}`} className="sr-only">{`Objective ${idx + 1}`}</label>
+              <input id={`ibe-objective-${block.id}-${idx}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Objective ${idx + 1}`} className={`flex-1 ${inputClass}`} />
               {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -129,7 +135,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
           <div><label htmlFor={`${block.id}-description`} className={labelClass}>Description</label><input id={`${block.id}-description`} type="text" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} className={inputClass} /></div>
           <div className="grid grid-cols-2 gap-2">
             <div><label htmlFor={`${block.id}-button-label`} className={labelClass}>Button Label</label><input id={`${block.id}-button-label`} type="text" value={block.buttonLabel || ''} onChange={e => onUpdate({ ...block, buttonLabel: e.target.value })} className={inputClass} /></div>
-            <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]"><input id={`${block.id}-new-tab`} type="checkbox" checked={block.openInNewTab ?? true} onChange={e => onUpdate({ ...block, openInNewTab: e.target.checked })} /> New tab</label></div>
+            <div className="flex items-end pb-1"><label htmlFor={`${block.id}-new-tab`} className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]"><input id={`${block.id}-new-tab`} type="checkbox" checked={block.openInNewTab ?? true} onChange={e => onUpdate({ ...block, openInNewTab: e.target.checked })} /> New tab</label></div>
           </div>
         </div>
       );
@@ -147,18 +153,21 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       return (
         <div className="space-y-2">
           <div className="flex gap-2">{(['tip', 'warning', 'note'] as const).map(v => <button key={v} type="button" onClick={() => onUpdate({ ...block, variant: v })} className={`px-3 py-1 rounded-lg border text-xs font-bold capitalize transition ${block.variant === v ? (v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-400' : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-blue-500/20 border-blue-500/30 text-blue-400') : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)]'}`}>{v}</button>)}</div>
-          <textarea aria-label="Info box content" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Content..." className={textareaClass} rows={2} />
+          <label htmlFor={`ibe-infobox-content-${block.id}`} className={labelClass}>Content</label>
+          <textarea id={`ibe-infobox-content-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Content..." className={textareaClass} rows={2} />
         </div>
       );
     case 'MC': {
       const options = block.options || ['', ''];
       return (
         <div className="space-y-2">
-          <textarea aria-label="Question" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question..." className={textareaClass} rows={2} />
+          <label htmlFor={`ibe-mc-question-${block.id}`} className={labelClass}>Question</label>
+          <textarea id={`ibe-mc-question-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question..." className={textareaClass} rows={2} />
           {options.map((opt, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <button type="button" onClick={() => onUpdate({ ...block, correctAnswer: idx })} className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${block.correctAnswer === idx ? 'border-green-500 bg-green-500' : 'border-gray-600'}`}>{block.correctAnswer === idx && <div className="w-2 h-2 bg-white rounded-full" />}</button>
-              <input aria-label={`Option ${String.fromCharCode(65 + idx)}`} type="text" value={opt} onChange={e => { const n = [...options]; n[idx] = e.target.value; onUpdate({ ...block, options: n }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-mc-option-${block.id}-${idx}`} className="sr-only">{`Option ${String.fromCharCode(65 + idx)}`}</label>
+              <input id={`ibe-mc-option-${block.id}-${idx}`} type="text" value={opt} onChange={e => { const n = [...options]; n[idx] = e.target.value; onUpdate({ ...block, options: n }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} className={`flex-1 ${inputClass}`} />
               {options.length > 2 && <button type="button" onClick={() => { const n = options.filter((_, i) => i !== idx); onUpdate({ ...block, options: n, correctAnswer: block.correctAnswer === idx ? 0 : (block.correctAnswer || 0) > idx ? (block.correctAnswer || 0) - 1 : block.correctAnswer }); }} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -170,11 +179,13 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       const answers = block.acceptedAnswers || [''];
       return (
         <div className="space-y-2">
-          <textarea aria-label="Question" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question..." className={textareaClass} rows={2} />
+          <label htmlFor={`ibe-sa-question-${block.id}`} className={labelClass}>Question</label>
+          <textarea id={`ibe-sa-question-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Question..." className={textareaClass} rows={2} />
           <label className={labelClass}>Accepted Answers</label>
           {answers.map((ans, idx) => (
             <div key={idx} className="flex gap-2">
-              <input aria-label={`Accepted answer ${idx + 1}`} type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} placeholder={`Answer ${idx + 1}`} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-sa-answer-${block.id}-${idx}`} className="sr-only">{`Accepted answer ${idx + 1}`}</label>
+              <input id={`ibe-sa-answer-${block.id}-${idx}`} type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} placeholder={`Answer ${idx + 1}`} className={`flex-1 ${inputClass}`} />
               {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -195,8 +206,10 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
         <div className="space-y-2">
           {terms.map((t, idx) => (
             <div key={idx} className="flex gap-2">
-              <input aria-label={`Term ${idx + 1}`} type="text" value={t.term} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], term: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Term" className={`flex-1 ${inputClass}`} />
-              <input aria-label={`Definition ${idx + 1}`} type="text" value={t.definition} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], definition: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Definition" className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-vocablist-term-${block.id}-${idx}`} className="sr-only">{`Term ${idx + 1}`}</label>
+              <input id={`ibe-vocablist-term-${block.id}-${idx}`} type="text" value={t.term} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], term: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Term" className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-vocablist-def-${block.id}-${idx}`} className="sr-only">{`Definition ${idx + 1}`}</label>
+              <input id={`ibe-vocablist-def-${block.id}-${idx}`} type="text" value={t.definition} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], definition: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Definition" className={`flex-1 ${inputClass}`} />
               {terms.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, terms: terms.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -208,10 +221,12 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       const items = block.items || [''];
       return (
         <div className="space-y-2">
-          <textarea aria-label="Checklist title" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Checklist title..." className={textareaClass} rows={1} />
+          <label htmlFor={`ibe-checklist-title-${block.id}`} className={labelClass}>Checklist Title</label>
+          <textarea id={`ibe-checklist-title-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Checklist title..." className={textareaClass} rows={1} />
           {items.map((item, idx) => (
             <div key={idx} className="flex gap-2"><div className="w-5 h-5 rounded border-2 border-[var(--text-muted)] shrink-0 mt-1.5" />
-              <input aria-label={`Checklist item ${idx + 1}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-checklist-item-${block.id}-${idx}`} className="sr-only">{`Checklist item ${idx + 1}`}</label>
+              <input id={`ibe-checklist-item-${block.id}-${idx}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
               {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -241,8 +256,10 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
           </div>
           {sortItems.map((item, idx) => (
             <div key={idx} className="flex gap-2">
-              <input aria-label={`Sort item ${idx + 1}`} type="text" value={item.text} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], text: e.target.value }; onUpdate({ ...block, sortItems: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              <select aria-label={`Category for item ${idx + 1}`} value={item.correct} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], correct: e.target.value as 'left' | 'right' }; onUpdate({ ...block, sortItems: n }); }} className={`w-28 ${inputClass}`}><option value="left">{block.leftLabel || 'Left'}</option><option value="right">{block.rightLabel || 'Right'}</option></select>
+              <label htmlFor={`ibe-sort-item-${block.id}-${idx}`} className="sr-only">{`Sort item ${idx + 1}`}</label>
+              <input id={`ibe-sort-item-${block.id}-${idx}`} type="text" value={item.text} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], text: e.target.value }; onUpdate({ ...block, sortItems: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-sort-category-${block.id}-${idx}`} className="sr-only">{`Category for item ${idx + 1}`}</label>
+              <select id={`ibe-sort-category-${block.id}-${idx}`} value={item.correct} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], correct: e.target.value as 'left' | 'right' }; onUpdate({ ...block, sortItems: n }); }} className={`w-28 ${inputClass}`}><option value="left">{block.leftLabel || 'Left'}</option><option value="right">{block.rightLabel || 'Right'}</option></select>
               {sortItems.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, sortItems: sortItems.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -260,8 +277,10 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
           </div>
           {columns.map((col, idx) => (
             <div key={idx} className="flex gap-2">
-              <input aria-label={`Column ${idx + 1} label`} type="text" value={col.label} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], label: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Label" className={`flex-1 ${inputClass}`} />
-              <input aria-label={`Column ${idx + 1} unit`} type="text" value={col.unit || ''} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], unit: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Unit" className={`w-20 ${inputClass}`} />
+              <label htmlFor={`ibe-col-label-${block.id}-${idx}`} className="sr-only">{`Column ${idx + 1} label`}</label>
+              <input id={`ibe-col-label-${block.id}-${idx}`} type="text" value={col.label} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], label: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Label" className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-col-unit-${block.id}-${idx}`} className="sr-only">{`Column ${idx + 1} unit`}</label>
+              <input id={`ibe-col-unit-${block.id}-${idx}`} type="text" value={col.unit || ''} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], unit: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Unit" className={`w-20 ${inputClass}`} />
               {columns.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, columns: columns.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -280,12 +299,14 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       const items = block.items || [''];
       return (
         <div className="space-y-2">
-          <textarea aria-label="Ranking question" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Ranking question..." className={textareaClass} rows={2} />
+          <label htmlFor={`ibe-ranking-question-${block.id}`} className={labelClass}>Ranking Question</label>
+          <textarea id={`ibe-ranking-question-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Ranking question..." className={textareaClass} rows={2} />
           <label className={labelClass}>Items (in correct order)</label>
           {items.map((item, idx) => (
             <div key={idx} className="flex gap-2">
               <span className="text-xs font-mono text-[var(--text-muted)] mt-2 w-5 text-right">{idx + 1}.</span>
-              <input aria-label={`Rank item ${idx + 1}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-rank-item-${block.id}-${idx}`} className="sr-only">{`Rank item ${idx + 1}`}</label>
+              <input id={`ibe-rank-item-${block.id}-${idx}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} className={`flex-1 ${inputClass}`} />
               {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
@@ -299,11 +320,13 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
       return (
         <div className="space-y-2">
           <div><label htmlFor={`${block.id}-linked-block`} className={labelClass}>Reference Block</label><select id={`${block.id}-linked-block`} value={block.linkedBlockId || ''} onChange={e => onUpdate({ ...block, linkedBlockId: e.target.value })} className={inputClass}><option value="">Select...</option>{linkable.map(b => <option key={b.id} value={b.id}>{b.type}: {(b.content || '').slice(0, 40)}</option>)}</select></div>
-          <textarea aria-label="Follow-up question" value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Follow-up question..." className={textareaClass} rows={2} />
+          <label htmlFor={`ibe-linked-question-${block.id}`} className={labelClass}>Follow-up Question</label>
+          <textarea id={`ibe-linked-question-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Follow-up question..." className={textareaClass} rows={2} />
           <label className={labelClass}>Accepted Answers</label>
           {answers.map((ans, idx) => (
             <div key={idx} className="flex gap-2">
-              <input aria-label={`Accepted answer ${idx + 1}`} type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} className={`flex-1 ${inputClass}`} />
+              <label htmlFor={`ibe-linked-answer-${block.id}-${idx}`} className="sr-only">{`Accepted answer ${idx + 1}`}</label>
+              <input id={`ibe-linked-answer-${block.id}-${idx}`} type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} className={`flex-1 ${inputClass}`} />
               {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}

@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, RPGItem, EquipmentSlot, ItemRarity, ItemSlot, ItemAffix, ItemEffect, CustomItem } from '../../types';
 import { Plus, X, Trash2, Edit3, Package, Sparkles, Copy, Wand2, Save } from 'lucide-react';
 import { getAssetColors, calculatePlayerStats, calculateGearScore, getRankDetails, getLevelProgress } from '../../lib/gamification';
@@ -259,45 +260,16 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                 </div>
 
                 {/* ═══ STORED GEAR ═══ */}
-                <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Stored Gear</h4>
-                        <div className="flex gap-1.5">
-                            {customItems.length > 0 && (
-                                <button onClick={() => { setShowLibrary(!showLibrary); setShowCreator(false); setEditingItem(null); }}
-                                    className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
-                                        showLibrary ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
-                                    }`}><Package className="w-3 h-3" /> Library</button>
-                            )}
-                            <button onClick={() => { setShowCreator(!showCreator); setShowLibrary(false); setEditingItem(null); }}
-                                className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
-                                    showCreator ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
-                                }`}><Wand2 className="w-3 h-3" /> Create Item</button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-8 gap-1.5">
-                        {profile.inventory.map((item) => {
-                            const colors = getAssetColors(item.rarity);
-                            const isSelected = selectedItem?.id === item.id;
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => setSelectedItem(isSelected ? null : item)}
-                                    className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-1 bg-[var(--surface-glass)] transition cursor-pointer ${colors.border} ${
-                                        isSelected ? 'ring-2 ring-purple-400 ring-offset-1 ring-offset-[var(--ring-offset)]' : 'hover:bg-[var(--surface-glass-heavy)]'
-                                    }`}
-                                >
-                                    <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-7 h-7" />
-                                    <div className={`text-[7px] font-bold ${colors.text} text-center truncate w-full leading-tight`}>{item.name}</div>
-                                </button>
-                            );
-                        })}
-                        {profile.inventory.length === 0 && (
-                            <div className="col-span-8 text-center py-6 text-[var(--text-muted)] text-[10px] italic">Inventory Empty</div>
-                        )}
-                    </div>
-                </div>
+                <StoredGearSection
+                    inventory={profile.inventory}
+                    selectedItem={selectedItem}
+                    onSelectItem={setSelectedItem}
+                    customItems={customItems}
+                    showLibrary={showLibrary}
+                    showCreator={showCreator}
+                    onToggleLibrary={() => { setShowLibrary(!showLibrary); setShowCreator(false); setEditingItem(null); }}
+                    onToggleCreator={() => { setShowCreator(!showCreator); setShowLibrary(false); setEditingItem(null); }}
+                />
 
                 {/* ═══ SELECTED ITEM DETAIL ═══ */}
                 {selectedItem && !editingItem && (
@@ -365,6 +337,158 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
 // ════════════════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
 // ════════════════════════════════════════════════════════════════════════════
+
+// ── Stored Gear Section (virtualized) ─────────────────────────────────────
+
+const GRID_COLS = 8;
+// Each item slot is roughly square. We pick a fixed row height in px that
+// matches the rendered size so the virtualizer can measure without layout
+// thrashing. At grid-cols-8 inside a max-w-5xl modal the cells are ~68 px
+// tall (icon 28 px + label 10 px + 2×padding + gap). Using 72 px gives a
+// small buffer and stays correct at typical font sizes.
+const ROW_HEIGHT_PX = 72;
+// Only engage the virtualizer once the inventory is large enough to matter.
+// Below this threshold we render everything directly (simpler, zero overhead).
+const VIRTUAL_THRESHOLD = 48;
+
+interface StoredGearSectionProps {
+    inventory: RPGItem[];
+    selectedItem: RPGItem | null;
+    onSelectItem: (item: RPGItem | null) => void;
+    customItems: CustomItem[];
+    showLibrary: boolean;
+    showCreator: boolean;
+    onToggleLibrary: () => void;
+    onToggleCreator: () => void;
+}
+
+const StoredGearSection: React.FC<StoredGearSectionProps> = ({
+    inventory, selectedItem, onSelectItem,
+    customItems, showLibrary, showCreator,
+    onToggleLibrary, onToggleCreator,
+}) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Chunk inventory into rows of GRID_COLS for the virtualizer.
+    const rows = useMemo<RPGItem[][]>(() => {
+        const result: RPGItem[][] = [];
+        for (let i = 0; i < inventory.length; i += GRID_COLS) {
+            result.push(inventory.slice(i, i + GRID_COLS));
+        }
+        return result;
+    }, [inventory]);
+
+    const hasVirtualizedRef = useRef(false);
+    if (inventory.length > VIRTUAL_THRESHOLD) hasVirtualizedRef.current = true;
+    const useVirtual = hasVirtualizedRef.current;
+
+    const rowVirtualizer = useVirtualizer({
+        count: rows.length,
+        getScrollElement: () => scrollRef.current,
+        estimateSize: () => ROW_HEIGHT_PX,
+        overscan: 3,
+    });
+
+    const renderItemButton = useCallback((item: RPGItem) => {
+        const colors = getAssetColors(item.rarity);
+        const isSelected = selectedItem?.id === item.id;
+        return (
+            <button
+                key={item.id}
+                onClick={() => onSelectItem(isSelected ? null : item)}
+                className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-1 bg-[var(--surface-glass)] transition cursor-pointer ${colors.border} ${
+                    isSelected ? 'ring-2 ring-purple-400 ring-offset-1 ring-offset-[var(--ring-offset)]' : 'hover:bg-[var(--surface-glass-heavy)]'
+                }`}
+            >
+                <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-7 h-7" />
+                <div className={`text-[7px] font-bold ${colors.text} text-center truncate w-full leading-tight`}>{item.name}</div>
+            </button>
+        );
+    }, [selectedItem, onSelectItem]);
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                    Stored Gear
+                    {inventory.length > 0 && (
+                        <span className="ml-2 text-[var(--text-muted)] font-mono normal-case">({inventory.length})</span>
+                    )}
+                </h4>
+                <div className="flex gap-1.5">
+                    {customItems.length > 0 && (
+                        <button
+                            onClick={onToggleLibrary}
+                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
+                                showLibrary ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                            }`}
+                        >
+                            <Package className="w-3 h-3" /> Library
+                        </button>
+                    )}
+                    <button
+                        onClick={onToggleCreator}
+                        className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
+                            showCreator ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                        }`}
+                    >
+                        <Wand2 className="w-3 h-3" /> Create Item
+                    </button>
+                </div>
+            </div>
+
+            {inventory.length === 0 && (
+                <div className="text-center py-6 text-[var(--text-muted)] text-[10px] italic">Inventory Empty</div>
+            )}
+
+            {inventory.length > 0 && !useVirtual && (
+                // Small inventory — render directly, no overhead
+                <div className="grid grid-cols-8 gap-1.5">
+                    {inventory.map(renderItemButton)}
+                </div>
+            )}
+
+            {inventory.length > 0 && useVirtual && (
+                // Large inventory — virtualize rows to keep the DOM lean
+                <div
+                    ref={scrollRef}
+                    className="overflow-y-auto custom-scrollbar"
+                    // Cap the visible area at ~6 rows so the modal doesn't grow
+                    // unboundedly on Chromebooks with limited screen real estate.
+                    style={{ maxHeight: ROW_HEIGHT_PX * 6 + 8 }}
+                >
+                    <div
+                        style={{
+                            height: rowVirtualizer.getTotalSize(),
+                            width: '100%',
+                            position: 'relative',
+                        }}
+                    >
+                        {rowVirtualizer.getVirtualItems().map(virtualRow => {
+                            const rowItems = rows[virtualRow.index];
+                            return (
+                                <div
+                                    key={virtualRow.key}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: `${virtualRow.size}px`,
+                                        transform: `translateY(${virtualRow.start}px)`,
+                                    }}
+                                    className="grid grid-cols-8 gap-1.5 pb-1.5"
+                                >
+                                    {rowItems.map(renderItemButton)}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // ── Item Detail Panel ──────────────────────────────────────────────────────
 
