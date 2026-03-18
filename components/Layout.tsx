@@ -286,6 +286,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         );
       }
 
+      const groupLightStyles: Record<NavGroup, { wrap: string; label: string }> = {
+        learning:   { wrap: 'bg-blue-50/80 border border-blue-100',    label: 'text-blue-500 hover:text-blue-600' },
+        operations: { wrap: 'bg-amber-50/70 border border-amber-100',  label: 'text-amber-600 hover:text-amber-700' },
+        intel:      { wrap: 'bg-emerald-50/70 border border-emerald-100', label: 'text-emerald-600 hover:text-emerald-700' },
+      };
+
       return (
         <>
           {ungrouped.map(i => renderNavButton(i))}
@@ -294,11 +300,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             if (groupItems.length === 0) return null;
             const isCollapsed = collapsedGroups.has(group);
             return (
-              <div key={group} className="mt-2">
+              <div key={group} className={`mt-2 rounded-xl overflow-hidden ${isLight ? groupLightStyles[group].wrap : ''}`}>
                 <button
                   onClick={() => toggleGroup(group)}
                   aria-expanded={!isCollapsed}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)] transition-colors"
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
                 >
                   <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                   {NAV_GROUP_LABELS[group]}
@@ -535,16 +541,13 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             </div>
           ) : (
             <div className="p-3 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
-              <div className="flex items-center gap-2 min-w-0 mb-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20 shrink-0">
+              <div className="flex items-center gap-0.5 flex-wrap">
+                <div
+                  className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20 shrink-0 mr-1"
+                  title={settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
+                >
                   {user.name.charAt(0)}
                 </div>
-                <p className="text-xs font-semibold truncate text-[var(--sidebar-text)] flex-1 min-w-0">
-                  {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-0.5 flex-wrap">
                 <button
                   onClick={onLogout}
                   className="p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
