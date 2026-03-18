@@ -583,6 +583,8 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Record<string, string>[] }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, savedResponse, onResponseChange, readOnly }) => {
   const columns = block.columns || [];
   const rowCount = block.trials || 3;
+  const rowLabels = block.rowLabels || [];
+  const hasCustomLabels = rowLabels.some(l => l && l.trim() !== '');
   const [data, setData] = useState<Record<string, string>[]>(() =>
     savedResponse?.data ?? Array.from({ length: rowCount }, () => Object.fromEntries(columns.map(c => [c.key, ''])))
   );
@@ -596,6 +598,11 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
     });
   };
 
+  const rowLabel = (rowIdx: number) => {
+    const custom = rowLabels[rowIdx]?.trim();
+    return custom || String(rowIdx + 1);
+  };
+
   return (
     <div className="space-y-2">
       {block.title && <BlockText text={block.title} tag="p" className="text-base text-[var(--text-primary)] font-medium" />}
@@ -603,9 +610,9 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
         <table className="w-full text-sm" aria-label={block.title || 'Data table'}>
           <thead>
             <tr className="bg-[var(--panel-bg)]">
-              <th scope="col" className="px-3 py-2 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left w-12">#</th>
+              <th scope="col" className="px-3 py-2.5 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left w-16">{hasCustomLabels ? 'Label' : '#'}</th>
               {columns.map(col => (
-                <th scope="col" key={col.key} className="px-3 py-2 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left">
+                <th scope="col" key={col.key} className="px-3 py-2.5 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left">
                   {col.label}{col.unit ? ` (${col.unit})` : ''}
                 </th>
               ))}
@@ -613,18 +620,18 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
           </thead>
           <tbody>
             {data.map((row, rowIdx) => (
-              <tr key={rowIdx} className="border-t border-[var(--border)]">
-                <td className="px-3 py-1 text-xs text-[var(--text-muted)] font-mono">{rowIdx + 1}</td>
+              <tr key={rowIdx} className="border-t border-[var(--border)] odd:bg-[var(--panel-bg)]/30">
+                <td className="px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] whitespace-nowrap">{rowLabel(rowIdx)}</td>
                 {columns.map(col => (
-                  <td key={col.key} className="px-1 py-1">
+                  <td key={col.key} className="px-2 py-1.5">
                     {col.editable !== false ? (
                       <input
                         type="text"
                         value={row[col.key] || ''}
                         onChange={e => updateCell(rowIdx, col.key, e.target.value)}
                         disabled={readOnly}
-                        aria-label={`${col.label} for trial ${rowIdx + 1}`}
-                        className={`w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded px-2 py-1 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition${readOnly ? ' opacity-80' : ''}`}
+                        aria-label={`${col.label} for ${rowLabel(rowIdx)}`}
+                        className={`w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-md px-2.5 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/20 transition${readOnly ? ' opacity-80' : ''}`}
                       />
                     ) : (
                       <span className="px-2 py-1 text-[var(--text-tertiary)]">{row[col.key]}</span>

@@ -674,6 +674,9 @@ const SortingEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
 
 const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => {
   const columns = block.columns || [{ key: 'col1', label: 'Column 1', editable: true }];
+  const rowCount = block.trials || 3;
+  const rowLabels = block.rowLabels || [];
+
   const addColumn = () => {
     const key = `col${columns.length + 1}`;
     onUpdate({ ...block, columns: [...columns, { key, label: '', editable: true }] });
@@ -687,6 +690,16 @@ const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
     next[idx] = { ...next[idx], [field]: val };
     onUpdate({ ...block, columns: next });
   };
+  const updateRowLabel = (idx: number, val: string) => {
+    const next = Array.from({ length: rowCount }, (_, i) => rowLabels[i] ?? '');
+    next[idx] = val;
+    onUpdate({ ...block, rowLabels: next });
+  };
+  const updateTrials = (n: number) => {
+    // trim or expand rowLabels to match new row count
+    const next = Array.from({ length: n }, (_, i) => rowLabels[i] ?? '');
+    onUpdate({ ...block, trials: n, rowLabels: next });
+  };
 
   return (
     <div className="space-y-3">
@@ -697,7 +710,22 @@ const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
         </div>
         <div>
           <label className={labelClass}>Number of Rows</label>
-          <input type="number" value={block.trials || 3} onChange={e => onUpdate({ ...block, trials: parseInt(e.target.value) || 3 })} min={1} max={20} className={inputClass} />
+          <input type="number" value={rowCount} onChange={e => updateTrials(parseInt(e.target.value) || 3)} min={1} max={20} className={inputClass} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <label className={labelClass}>Row Labels <span className="font-normal text-[var(--text-muted)] normal-case">(optional — leave blank for 1, 2, 3…)</span></label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {Array.from({ length: rowCount }, (_, i) => (
+            <input
+              key={i}
+              type="text"
+              value={rowLabels[i] ?? ''}
+              onChange={e => updateRowLabel(i, e.target.value)}
+              placeholder={`Row ${i + 1} label`}
+              className={inputClass}
+            />
+          ))}
         </div>
       </div>
       <div className="space-y-2">
