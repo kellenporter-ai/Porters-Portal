@@ -65,7 +65,7 @@ const StrengthsConcerns: React.FC<StrengthsConcernsProps> = ({ submissions, buck
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest print:text-gray-700">Strengths & Areas of Concern</h3>
+      <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest print:text-gray-700">Strengths & Areas of Concern</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Strengths */}
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 print:border-emerald-300 print:bg-emerald-50">
@@ -75,14 +75,14 @@ const StrengthsConcerns: React.FC<StrengthsConcernsProps> = ({ submissions, buck
           {strengths.length > 0 ? (
             <ul className="space-y-2">
               {strengths.map((s, i) => (
-                <li key={i} className="text-xs text-gray-300 print:text-gray-700 flex items-start gap-2">
+                <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
                   <span className="text-emerald-400 print:text-emerald-600 mt-0.5 shrink-0">+</span>
                   {s}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-gray-600 italic">No notable strengths identified in this period.</p>
+            <p className="text-xs text-[var(--text-muted)] italic">No notable strengths identified in this period.</p>
           )}
         </div>
 
@@ -94,14 +94,14 @@ const StrengthsConcerns: React.FC<StrengthsConcernsProps> = ({ submissions, buck
           {concerns.length > 0 ? (
             <ul className="space-y-2">
               {concerns.map((c, i) => (
-                <li key={i} className="text-xs text-gray-300 print:text-gray-700 flex items-start gap-2">
+                <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
                   <span className="text-red-400 print:text-red-600 mt-0.5 shrink-0">!</span>
                   {c}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-gray-600 italic">No concerns identified — student is performing well.</p>
+            <p className="text-xs text-[var(--text-muted)] italic">No concerns identified — student is performing well.</p>
           )}
         </div>
       </div>

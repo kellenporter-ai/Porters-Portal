@@ -24,7 +24,7 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({ student }) => {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-2xl font-bold text-white print:text-black">{student.name}</h2>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)] print:text-black">{student.name}</h2>
         <div className="flex items-center gap-2 mt-0.5">
           <span className={`text-xs font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]} print:text-gray-600`}>
             {rankDetails.rankName}

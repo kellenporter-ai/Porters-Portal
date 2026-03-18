@@ -86,13 +86,13 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                     <div className="flex gap-2">
                         <button
                             onClick={() => setBulkMode(false)}
-                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition border ${!bulkMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition border ${!bulkMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                         >
                             Single Operative
                         </button>
                         <button
                             onClick={() => setBulkMode(true)}
-                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition border flex items-center justify-center gap-1.5 ${bulkMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition border flex items-center justify-center gap-1.5 ${bulkMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                         >
                             <Users className="w-3.5 h-3.5" /> Bulk Award
                         </button>
@@ -101,12 +101,12 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
 
                 {/* Single user header */}
                 {!bulkMode && user && (
-                    <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
-                        <img src={user.avatarUrl} className="w-14 h-14 rounded-2xl border border-white/10" alt={user.name} loading="lazy" />
+                    <div className="flex items-center gap-4 bg-[var(--panel-bg)] p-4 rounded-2xl border border-[var(--border)]">
+                        <img src={user.avatarUrl} className="w-14 h-14 rounded-2xl border border-[var(--border)]" alt={user.name} loading="lazy" />
                         <div>
-                            <h3 className="font-bold text-white text-lg">{user.name}</h3>
-                            <p className="text-xs text-gray-500">{user.email}</p>
-                            <div className="text-[10px] font-black text-purple-400 mt-1 uppercase tracking-tighter">Current: {user.gamification?.xp || 0} XP</div>
+                            <h3 className="font-bold text-[var(--text-primary)] text-lg">{user.name}</h3>
+                            <p className="text-xs text-[var(--text-muted)]">{user.email}</p>
+                            <div className="text-[10px] font-black text-[var(--accent-text)] mt-1 uppercase tracking-tighter">Current: {user.gamification?.xp || 0} XP</div>
                         </div>
                     </div>
                 )}
@@ -116,44 +116,44 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                     <div className="space-y-3">
                         <div className="flex gap-2 items-center">
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
                                 <input
                                     type="text"
                                     placeholder="Search students..."
                                     aria-label="Search students"
                                     value={bulkSearch}
                                     onChange={e => setBulkSearch(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-sm text-white focus:outline-none focus:border-purple-500/50"
+                                    className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"
                                 />
                             </div>
                             <div className="relative">
-                                <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" />
+                                <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-muted)]" />
                                 <select
                                     value={bulkFilterClass}
                                     onChange={e => setBulkFilterClass(e.target.value)}
-                                    className="bg-black/40 border border-white/10 rounded-xl py-2 pl-8 pr-8 text-sm text-white font-bold appearance-none focus:outline-none focus:border-purple-500/50"
+                                    className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-8 text-sm text-[var(--text-primary)] font-bold appearance-none focus:outline-none focus:border-purple-500/50"
                                 >
                                     <option>All Classes</option>
                                     {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
                             </div>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{selectedIds.size} selected</span>
+                            <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{selectedIds.size} selected</span>
                             <div className="flex gap-2">
-                                <button onClick={selectAll} className="text-[10px] text-purple-400 hover:text-purple-300 font-bold transition">Select All ({filteredStudents.length})</button>
-                                <button onClick={selectNone} className="text-[10px] text-gray-500 hover:text-gray-300 font-bold transition">Clear</button>
+                                <button onClick={selectAll} className="text-[10px] text-[var(--accent-text)] hover:text-purple-300 font-bold transition">Select All ({filteredStudents.length})</button>
+                                <button onClick={selectNone} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] font-bold transition">Clear</button>
                             </div>
                         </div>
-                        <div className="max-h-48 overflow-y-auto space-y-1 border border-white/5 rounded-xl p-2 bg-black/20">
+                        <div className="max-h-48 overflow-y-auto space-y-1 border border-[var(--border)] rounded-xl p-2 bg-[var(--panel-bg)]">
                             {filteredStudents.map(s => (
-                                <label key={s.id} className={`flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer transition ${selectedIds.has(s.id) ? 'bg-purple-500/10 border border-purple-500/20' : 'hover:bg-white/5 border border-transparent'}`}>
-                                    <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleStudent(s.id)} className="rounded bg-black/40 border-white/10 text-purple-600" />
-                                    <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-white/10" alt={s.name} loading="lazy" />
+                                <label key={s.id} className={`flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer transition ${selectedIds.has(s.id) ? 'bg-purple-500/10 border border-purple-500/20' : 'hover:bg-[var(--surface-glass)] border border-transparent'}`}>
+                                    <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleStudent(s.id)} className="rounded bg-[var(--panel-bg)] border-[var(--border)] text-purple-600" />
+                                    <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-[var(--border)]" alt={s.name} loading="lazy" />
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-white truncate">{s.name}</div>
-                                        <div className="text-[10px] text-gray-500">{s.classType} — {s.gamification?.xp || 0} XP</div>
+                                        <div className="text-xs font-bold text-[var(--text-primary)] truncate">{s.name}</div>
+                                        <div className="text-[10px] text-[var(--text-muted)]">{s.classType} — {s.gamification?.xp || 0} XP</div>
                                     </div>
                                 </label>
                             ))}
@@ -170,7 +170,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                             className={`py-3 rounded-xl font-black transition-all border ${
                                 adjustAmount === val
                                 ? (val > 0 ? 'bg-green-600 border-green-500 text-white' : 'bg-red-600 border-red-500 text-white')
-                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
                             }`}
                         >
                             {val > 0 ? `+${val}` : val}
@@ -179,10 +179,10 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Precise Adjustment</label>
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest px-1">Precise Adjustment</label>
                     <input
                         type="number"
-                        className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-4 text-center text-2xl font-black text-white focus:outline-none focus:border-purple-500/50"
+                        className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-4 px-4 text-center text-2xl font-black text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"
                         value={adjustAmount}
                         onChange={(e) => setAdjustAmount(parseInt(e.target.value) || 0)}
                     />
@@ -191,7 +191,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                 <div className="flex gap-3">
                     <button
                         onClick={() => { setBulkMode(false); onClose(); }}
-                        className="flex-1 py-4 bg-white/5 border border-white/10 text-gray-400 font-bold rounded-2xl hover:bg-white/10 transition"
+                        className="flex-1 py-4 bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-tertiary)] font-bold rounded-2xl hover:bg-[var(--surface-glass-heavy)] transition"
                     >
                         Cancel
                     </button>

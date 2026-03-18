@@ -103,17 +103,17 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
 const BlockTypePalette: React.FC<{ onSelect: (type: BlockType) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
   const categories = ['Content', 'Interactive', 'Questions', 'Tools'];
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl p-3 z-50 w-full max-w-[480px] max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl p-3 z-50 w-full max-w-[480px] max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
       {categories.map(cat => (
         <div key={cat} className="mb-2 last:mb-0">
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
           <div className="grid grid-cols-2 gap-1">
             {BLOCK_TYPES.filter(bt => bt.category === cat).map(bt => (
-              <button key={bt.type} type="button" onClick={() => { onSelect(bt.type); onClose(); }} className="flex items-center gap-2 p-2 rounded-lg text-left hover:bg-white/5 transition group">
-                <span className="text-gray-500 group-hover:text-purple-400 transition">{bt.icon}</span>
+              <button key={bt.type} type="button" onClick={() => { onSelect(bt.type); onClose(); }} className="flex items-center gap-2 p-2 rounded-lg text-left hover:bg-[var(--surface-glass)] transition group">
+                <span className="text-[var(--text-muted)] group-hover:text-purple-400 transition">{bt.icon}</span>
                 <div>
-                  <div className="text-[11px] font-bold text-gray-300">{bt.label}</div>
-                  <div className="text-[9px] text-gray-600">{bt.description}</div>
+                  <div className="text-[11px] font-bold text-[var(--text-secondary)]">{bt.label}</div>
+                  <div className="text-[9px] text-[var(--text-muted)]">{bt.description}</div>
                 </div>
               </button>
             ))}
@@ -131,9 +131,9 @@ const InsertButton: React.FC<{ onInsert: (type: BlockType) => void }> = ({ onIns
   const [open, setOpen] = useState(false);
   return (
     <div className="relative flex items-center justify-center py-1 group">
-      <div className="absolute inset-x-0 top-1/2 h-px bg-white/5 group-hover:bg-purple-500/20 transition" />
-      <button type="button" onClick={() => setOpen(!open)} className="relative z-10 w-7 h-7 rounded-full bg-[#1a1b26] border border-white/10 hover:border-purple-500/40 hover:bg-purple-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-        <Plus className="w-3.5 h-3.5 text-gray-500 group-hover:text-purple-400" />
+      <div className="absolute inset-x-0 top-1/2 h-px bg-[var(--border)] group-hover:bg-purple-500/20 transition" />
+      <button type="button" onClick={() => setOpen(!open)} className="relative z-10 w-7 h-7 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] hover:border-purple-500/40 hover:bg-purple-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+        <Plus className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover:text-purple-400" />
       </button>
       {open && <BlockTypePalette onSelect={onInsert} onClose={() => setOpen(false)} />}
     </div>
@@ -197,9 +197,9 @@ const UnitSelector: React.FC<{ value: string; onChange: (val: string) => void; e
       <label className={labelClass}>Unit</label>
       <input type="text" value={value} onChange={e => { onChange(e.target.value); setFilter(e.target.value); }} onFocus={() => { setIsOpen(true); setFilter(''); }} placeholder="Select or type a unit..." className={inputClass} />
       {isOpen && existingUnits.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-2xl max-h-48 overflow-y-auto">
           {filtered.map(unit => (
-            <button key={unit} type="button" onClick={() => { onChange(unit); setIsOpen(false); }} className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-500/10 transition ${value === unit ? 'text-purple-300 bg-purple-500/5' : 'text-gray-300'}`}>
+            <button key={unit} type="button" onClick={() => { onChange(unit); setIsOpen(false); }} className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-500/10 transition ${value === unit ? 'text-purple-300 bg-purple-500/5' : 'text-[var(--text-secondary)]'}`}>
               {unit}
             </button>
           ))}
@@ -700,11 +700,11 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const isEditing = selectedAssignment !== null || isNewResource;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#0f0720] flex flex-col">
+    <div className="fixed inset-0 z-[9999] bg-[var(--surface-base)] flex flex-col">
       {/* Top bar */}
       <div className="bg-black/40 backdrop-blur-md border-b border-white/10 px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-lg font-black text-[var(--text-primary)] tracking-tight flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-purple-400" /> Resource Editor
           </h1>
           {isEditing && (
@@ -760,7 +760,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
         <div className="bg-black/60 border-b border-white/10 px-6 py-4 shrink-0">
           <div className="max-w-3xl mx-auto space-y-3">
             <div className="text-xs text-gray-400">Paste a JSON array of blocks or <code className="text-purple-300">{"{ blocks: [...] }"}</code></div>
-            <textarea value={jsonText} onChange={e => { setJsonText(e.target.value); setJsonError(''); }} placeholder='[{"type":"TEXT","content":"Hello"}]' className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-xs font-mono text-white placeholder-gray-600 resize-none focus:outline-none focus:border-purple-500/50 transition min-h-[120px]" />
+            <textarea value={jsonText} onChange={e => { setJsonText(e.target.value); setJsonError(''); }} placeholder='[{"type":"TEXT","content":"Hello"}]' className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-xs font-mono text-white placeholder-[var(--text-muted)] resize-none focus:outline-none focus:border-purple-500/50 transition min-h-[120px]" />
             {jsonError && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-2">{jsonError}</div>}
             <div className="flex gap-2">
               <button type="button" onClick={handleJsonImport} disabled={!jsonText.trim()} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition">Import</button>
@@ -927,7 +927,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                             }}
                             placeholder="Paste rubric markdown here..."
                             rows={4}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 font-mono resize-y focus:outline-none focus:border-purple-500/50 transition"
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-[var(--text-muted)] font-mono resize-y focus:outline-none focus:border-purple-500/50 transition"
                           />
                           {rubricErrors.length > 0 && (
                             <div className="mt-1 space-y-0.5">
@@ -1054,7 +1054,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                     {activeBlock ? (() => {
                       const typeInfo = getBlockTypeInfo(activeBlock.type);
                       return (
-                        <div className="border border-purple-500/40 rounded-2xl bg-[#0f0720]/95 backdrop-blur-sm shadow-xl shadow-purple-500/10">
+                        <div className="border border-purple-500/40 rounded-2xl bg-[var(--surface-overlay)] backdrop-blur-sm shadow-xl shadow-purple-500/10">
                           <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
                             <div className="p-1 -ml-2 text-purple-400">
                               <GripVertical className="w-3.5 h-3.5" />
@@ -1098,7 +1098,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           onClick={() => setShowBlockSearch(false)}
         >
           <div
-            className="w-full max-w-lg bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+            className="w-full max-w-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -1129,7 +1129,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   }
                 }}
                 placeholder="Search blocks by type or content..."
-                className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-white placeholder-[var(--text-muted)] focus:outline-none"
               />
               <kbd className="text-[9px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">ESC</kbd>
             </div>

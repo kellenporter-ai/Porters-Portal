@@ -103,9 +103,9 @@ const QuestionEditor: React.FC<{
   return (
     <div className="space-y-3">
       {questions.map((q, qi) => (
-        <div key={q.id} className="bg-black/20 rounded-xl p-3 border border-white/5 space-y-2">
+        <div key={q.id} className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase">Q{qi + 1}</span>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Q{qi + 1}</span>
             <button onClick={() => remove(qi)} className="text-gray-700 hover:text-red-400 transition">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -115,7 +115,7 @@ const QuestionEditor: React.FC<{
             onChange={e => update(qi, 'stem', e.target.value)}
             placeholder="Question text..."
             rows={2}
-            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 resize-none"
+            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none"
           />
           <div className="grid grid-cols-2 gap-2">
             {q.options.map((opt, oi) => (
@@ -124,29 +124,29 @@ const QuestionEditor: React.FC<{
                 value={opt}
                 onChange={e => updateOption(qi, oi, e.target.value)}
                 placeholder={`Option ${String.fromCharCode(65 + oi)}`}
-                className={`bg-black/30 border rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 ${
-                  q.correctAnswer === oi ? 'border-green-500/40' : 'border-white/10'
+                className={`bg-[var(--panel-bg)] border rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] ${
+                  q.correctAnswer === oi ? 'border-green-500/40' : 'border-[var(--border)]'
                 }`}
               />
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
               <span>Correct:</span>
               <select
                 value={q.correctAnswer}
                 onChange={e => update(qi, 'correctAnswer', Number(e.target.value))}
-                className="bg-black/40 border border-white/10 rounded px-1.5 py-0.5 text-white text-xs"
+                className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-0.5 text-[var(--text-primary)] text-xs"
               >
                 {[0, 1, 2, 3].map(i => <option key={i} value={i}>{String.fromCharCode(65 + i)}</option>)}
               </select>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
               <span>Diff:</span>
               <select
                 value={q.difficulty}
                 onChange={e => update(qi, 'difficulty', e.target.value)}
-                className="bg-black/40 border border-white/10 rounded px-1.5 py-0.5 text-white text-xs"
+                className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-0.5 text-[var(--text-primary)] text-xs"
               >
                 <option>EASY</option>
                 <option>MEDIUM</option>
@@ -158,7 +158,7 @@ const QuestionEditor: React.FC<{
       ))}
       <button
         onClick={add}
-        className="w-full py-2 rounded-xl border border-dashed border-white/10 text-xs text-gray-500 hover:text-gray-300 hover:border-white/20 transition flex items-center justify-center gap-1"
+        className="w-full py-2 rounded-xl border border-dashed border-[var(--border)] text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-strong)] transition flex items-center justify-center gap-1"
       >
         <Plus className="w-3.5 h-3.5" /> Add Question
       </button>
@@ -180,13 +180,13 @@ const RoomEditor: React.FC<{
   const needsEnemy = room.type === 'COMBAT' || room.type === 'BOSS';
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 overflow-hidden">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] overflow-hidden">
       {/* Room header row */}
       <div
-        className="flex items-center gap-2 p-3 cursor-pointer hover:bg-white/5 transition"
+        className="flex items-center gap-2 p-3 cursor-pointer hover:bg-[var(--surface-glass)] transition"
         onClick={() => setExpanded(e => !e)}
       >
-        <span className="text-[10px] font-black text-gray-600 w-5 text-center">{index + 1}</span>
+        <span className="text-[10px] font-black text-[var(--text-muted)] w-5 text-center">{index + 1}</span>
         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
           room.type === 'COMBAT' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
           room.type === 'BOSS'   ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
@@ -194,15 +194,15 @@ const RoomEditor: React.FC<{
           room.type === 'REST'   ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
                                    'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'
         }`}>{room.type}</span>
-        <span className="text-sm text-white flex-1 truncate">{room.name || 'Unnamed Room'}</span>
+        <span className="text-sm text-[var(--text-primary)] flex-1 truncate">{room.name || 'Unnamed Room'}</span>
         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-          <button disabled={index === 0} onClick={() => onMove(-1)} className="p-1 text-gray-600 hover:text-gray-300 disabled:opacity-30 transition">
+          <button disabled={index === 0} onClick={() => onMove(-1)} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] disabled:opacity-30 transition">
             <ChevronUp className="w-3.5 h-3.5" />
           </button>
-          <button disabled={index === total - 1} onClick={() => onMove(1)} className="p-1 text-gray-600 hover:text-gray-300 disabled:opacity-30 transition">
+          <button disabled={index === total - 1} onClick={() => onMove(1)} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] disabled:opacity-30 transition">
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onRemove} className="p-1 text-gray-600 hover:text-red-400 transition">
+          <button onClick={onRemove} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -210,23 +210,23 @@ const RoomEditor: React.FC<{
 
       {/* Room detail editor */}
       {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-white/5">
+        <div className="px-3 pb-3 space-y-3 border-t border-[var(--border)]">
           <div className="grid grid-cols-2 gap-2 pt-3">
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Name</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Name</label>
               <input
                 value={room.name}
                 onChange={e => onChange({ ...room, name: e.target.value })}
                 placeholder="Room name"
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)]"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Type</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Type</label>
               <select
                 value={room.type}
                 onChange={e => onChange({ ...room, type: e.target.value as DungeonRoomType })}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
               >
                 {ROOM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -235,32 +235,32 @@ const RoomEditor: React.FC<{
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Difficulty</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Difficulty</label>
               <select
                 value={room.difficulty}
                 onChange={e => onChange({ ...room, difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' })}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
               >
                 <option>EASY</option><option>MEDIUM</option><option>HARD</option>
               </select>
             </div>
             {room.type === 'REST' ? (
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Heal Amount</label>
+                <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Heal Amount</label>
                 <input
                   type="number" min={0} value={room.healAmount}
                   onChange={e => onChange({ ...room, healAmount: Number(e.target.value) })}
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white"
+                  className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
                 />
               </div>
             ) : needsEnemy ? (
               <>
                 <div>
-                  <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Enemy HP</label>
+                  <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Enemy HP</label>
                   <input
                     type="number" min={0} value={room.enemyHp}
                     onChange={e => onChange({ ...room, enemyHp: Number(e.target.value) })}
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white"
+                    className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
                   />
                 </div>
               </>
@@ -270,20 +270,20 @@ const RoomEditor: React.FC<{
           {needsEnemy && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Enemy Name</label>
+                <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Enemy Name</label>
                 <input
                   value={room.enemyName}
                   onChange={e => onChange({ ...room, enemyName: e.target.value })}
                   placeholder="e.g. Dark Golem"
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600"
+                  className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)]"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Enemy Damage</label>
+                <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Enemy Damage</label>
                 <input
                   type="number" min={0} value={room.enemyDamage}
                   onChange={e => onChange({ ...room, enemyDamage: Number(e.target.value) })}
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white"
+                  className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
                 />
               </div>
             </div>
@@ -292,7 +292,7 @@ const RoomEditor: React.FC<{
           {/* Questions */}
           {needsQuestions && (
             <div>
-              <div className="text-[10px] text-gray-500 font-bold uppercase mb-2">
+              <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase mb-2">
                 Questions ({room.questions.length})
               </div>
               <QuestionEditor
@@ -498,38 +498,38 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
 
         {/* Basic info */}
         <div className="space-y-3">
-          <div className="text-xs font-bold text-gray-500 uppercase">Dungeon Info</div>
+          <div className="text-xs font-bold text-[var(--text-muted)] uppercase">Dungeon Info</div>
           <input
             value={form.name}
             onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
             placeholder="Dungeon name *"
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600"
+            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)]"
           />
           <textarea
             value={form.description}
             onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Description..."
             rows={2}
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 resize-none"
+            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none"
           />
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Class</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Class</label>
               <select
                 value={form.classType}
                 onChange={e => setForm(prev => ({ ...prev, classType: e.target.value }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Sections (comma-sep)</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Target Sections (comma-sep)</label>
               <input
                 value={form.targetSections}
                 onChange={e => setForm(prev => ({ ...prev, targetSections: e.target.value }))}
                 placeholder="e.g. A1, B2"
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)]"
               />
             </div>
           </div>
@@ -537,30 +537,30 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
 
         {/* Requirements & schedule */}
         <div className="space-y-3">
-          <div className="text-xs font-bold text-gray-500 uppercase">Requirements</div>
+          <div className="text-xs font-bold text-[var(--text-muted)] uppercase">Requirements</div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Min Level</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Min Level</label>
               <input
                 type="number" min={0} value={form.minLevel}
                 onChange={e => setForm(prev => ({ ...prev, minLevel: Number(e.target.value) }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Min Gear Score</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Min Gear Score</label>
               <input
                 type="number" min={0} value={form.minGearScore}
                 onChange={e => setForm(prev => ({ ...prev, minGearScore: Number(e.target.value) }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Reset Schedule</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Reset Schedule</label>
               <select
                 value={form.resetsAt}
                 onChange={e => setForm(prev => ({ ...prev, resetsAt: e.target.value as '' | 'DAILY' | 'WEEKLY' }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="">Unlimited</option>
                 <option value="DAILY">Daily</option>
@@ -572,30 +572,30 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
 
         {/* Rewards */}
         <div className="space-y-3">
-          <div className="text-xs font-bold text-gray-500 uppercase">Completion Rewards</div>
+          <div className="text-xs font-bold text-[var(--text-muted)] uppercase">Completion Rewards</div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">XP</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">XP</label>
               <input
                 type="number" min={0} value={form.rewardXp}
                 onChange={e => setForm(prev => ({ ...prev, rewardXp: Number(e.target.value) }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Flux</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Flux</label>
               <input
                 type="number" min={0} value={form.rewardFlux}
                 onChange={e => setForm(prev => ({ ...prev, rewardFlux: Number(e.target.value) }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Item Rarity</label>
+              <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase block mb-1">Item Rarity</label>
               <select
                 value={form.rewardItemRarity}
                 onChange={e => setForm(prev => ({ ...prev, rewardItemRarity: e.target.value }))}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 {RARITIES.map(r => <option key={r} value={r}>{r || 'None'}</option>)}
               </select>
@@ -606,7 +606,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
         {/* Rooms */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-gray-500 uppercase">Rooms ({form.rooms.length})</div>
+            <div className="text-xs font-bold text-[var(--text-muted)] uppercase">Rooms ({form.rooms.length})</div>
             <button
               onClick={addRoom}
               className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition font-bold"
@@ -628,7 +628,7 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
         </div>
 
         {/* Active toggle + save */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
           <button
             onClick={() => setForm(prev => ({ ...prev, isActive: !prev.isActive }))}
             className="flex items-center gap-2 text-sm"
@@ -636,14 +636,14 @@ const DungeonFormModal: React.FC<DungeonFormModalProps> = ({ isOpen, onClose, ed
             <div className={`w-10 h-5 rounded-full relative transition-colors ${form.isActive ? 'bg-amber-600' : 'bg-gray-700'}`}>
               <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${form.isActive ? 'translate-x-5' : ''}`} />
             </div>
-            <span className={`text-xs font-bold ${form.isActive ? 'text-amber-400' : 'text-gray-500'}`}>
+            <span className={`text-xs font-bold ${form.isActive ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
               {form.isActive ? 'Active' : 'Inactive'}
             </span>
           </button>
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm font-bold bg-white/5 text-gray-400 hover:bg-white/10 transition"
+              className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)] transition"
             >
               Cancel
             </button>

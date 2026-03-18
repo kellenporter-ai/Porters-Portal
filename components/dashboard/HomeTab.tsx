@@ -47,7 +47,7 @@ function urgencyColor(iso: string): string {
   if (diffDays < 0) return 'text-red-400 bg-red-500/10 border-red-500/20';
   if (diffDays <= 1) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
   if (diffDays <= 3) return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
-  return 'text-gray-400 bg-white/5 border-white/10';
+  return 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border-[var(--border)]';
 }
 
 // ─── Section wrapper ─────────────────────────
@@ -61,14 +61,14 @@ const Section: React.FC<{
 }> = ({ title, icon, actionLabel, onAction, children }) => (
   <div>
     <div className="flex items-center justify-between mb-3">
-      <h3 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+      <h3 className="flex items-center gap-2 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">
         {icon}
         {title}
       </h3>
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition py-1.5 px-2 -my-1.5 -mx-2 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500"
+          className="text-xs font-bold text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition py-1.5 px-2 -my-1.5 -mx-2 rounded-lg focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           {actionLabel} <ChevronRight className="w-3 h-3" />
         </button>
@@ -214,18 +214,18 @@ const HomeTab: React.FC<HomeTabProps> = ({
             <Target className="w-6 h-6 text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-0.5">Up Next</div>
-            <div className="text-base font-bold text-white truncate">{upNextAssignment.title}</div>
+            <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-0.5">Up Next</div>
+            <div className="text-base font-bold text-[var(--text-primary)] truncate">{upNextAssignment.title}</div>
             <div className={`text-xs font-bold mt-0.5 ${
               new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 0 ? 'text-red-400' :
               new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 86400000 ? 'text-amber-400' :
-              'text-gray-400'
+              'text-[var(--text-tertiary)]'
             }`}>
               {relativeDate(upNextAssignment.dueDate!)}
-              {upNextAssignment.unit && <span className="text-gray-500 ml-2 font-normal">{upNextAssignment.unit}</span>}
+              {upNextAssignment.unit && <span className="text-[var(--text-muted)] ml-2 font-normal">{upNextAssignment.unit}</span>}
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-purple-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          <ChevronRight className="w-5 h-5 text-[var(--accent-text)] shrink-0 group-hover:translate-x-0.5 transition-transform" />
         </button>
       )}
 
@@ -289,7 +289,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           onAction={() => onNavigate('Calendar')}
         >
           {upcomingDue.length === 0 ? (
-            <div className="text-sm text-gray-500 italic py-6 text-center bg-black/10 rounded-xl border border-dashed border-white/15">
+            <div className="text-sm text-[var(--text-muted)] italic py-6 text-center bg-black/10 rounded-xl border border-dashed border-[var(--border)]">
               No upcoming due dates
             </div>
           ) : (
@@ -298,13 +298,13 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 <button
                   key={a.id}
                   onClick={() => onStartAssignment?.(a.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-white/5 text-left focus-visible:ring-2 focus-visible:ring-purple-500 ${urgencyColor(a.dueDate!)}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-[var(--surface-glass)] text-left focus-visible:ring-2 focus-visible:ring-purple-500 ${urgencyColor(a.dueDate!)}`}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white truncate">{a.title}</div>
+                    <div className="text-sm font-medium text-[var(--text-primary)] truncate">{a.title}</div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs font-bold">{relativeDate(a.dueDate!)}</span>
-                      {a.unit && <span className="text-xs text-gray-400">{a.unit}</span>}
+                      {a.unit && <span className="text-xs text-[var(--text-tertiary)]">{a.unit}</span>}
                     </div>
                   </div>
                   {a.isCompleted ? (
@@ -328,22 +328,22 @@ const HomeTab: React.FC<HomeTabProps> = ({
             onAction={() => onNavigate('Progress')}
           >
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
-                <div className="text-xl font-black text-white">{stats.completed}</div>
-                <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Completed</div>
-                <div className="text-xs text-gray-400">of {stats.total}</div>
+              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
+                <div className="text-xl font-black text-[var(--text-primary)]">{stats.completed}</div>
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Completed</div>
+                <div className="text-xs text-[var(--text-tertiary)]">of {stats.total}</div>
               </div>
-              <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
-                <div className="text-xl font-black text-white">
+              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
+                <div className="text-xl font-black text-[var(--text-primary)]">
                   {stats.totalTime >= 3600
                     ? `${(stats.totalTime / 3600).toFixed(1)}h`
                     : `${Math.round(stats.totalTime / 60)}m`}
                 </div>
-                <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Study Time</div>
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Study Time</div>
               </div>
-              <div className="bg-black/20 border border-white/5 rounded-xl p-3 text-center">
-                <div className="text-xl font-black text-white">{acceptedQuestCount}</div>
-                <div className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Active Quests</div>
+              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
+                <div className="text-xl font-black text-[var(--text-primary)]">{acceptedQuestCount}</div>
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Active Quests</div>
               </div>
             </div>
           </Section>
@@ -363,10 +363,10 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   </span>
                 )}
                 {newQuestCount > 0 && acceptedQuestCount > 0 && (
-                  <span className="text-gray-500">&middot;</span>
+                  <span className="text-[var(--text-muted)]">&middot;</span>
                 )}
                 {acceptedQuestCount > 0 && (
-                  <span className="text-xs text-purple-400 font-bold">
+                  <span className="text-xs text-[var(--accent-text)] font-bold">
                     {acceptedQuestCount} in progress
                   </span>
                 )}
@@ -389,24 +389,24 @@ const HomeTab: React.FC<HomeTabProps> = ({
               <button
                 key={s.id}
                 onClick={() => onStartAssignment?.(s.assignmentId)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition text-left focus-visible:ring-2 focus-visible:ring-purple-500"
+                className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] bg-white/[0.02] hover:bg-[var(--surface-glass)] transition text-left focus-visible:ring-2 focus-visible:ring-purple-500"
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                   s.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
                   s.status === 'FLAGGED' ? 'bg-red-500/20 text-red-400' :
-                  'bg-white/10 text-gray-400'
+                  'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'
                 }`}>
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <span className="sr-only">{s.status === 'SUCCESS' ? 'Completed' : s.status === 'FLAGGED' ? 'Flagged' : 'In progress'}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white font-medium truncate">{s.assignmentTitle}</div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-sm text-[var(--text-primary)] font-medium truncate">{s.assignmentTitle}</div>
+                  <div className="text-xs text-[var(--text-tertiary)]">
                     {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                     {s.score > 0 && <span className="ml-2 text-yellow-400">{s.score}%</span>}
                   </div>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
               </button>
             ))}
           </div>

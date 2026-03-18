@@ -63,8 +63,8 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white">Specialization</h3>
-          <p className="text-[10px] text-gray-500 mt-0.5">You earn 1 Skill Point every 2 levels</p>
+          <h3 className="text-xl font-bold text-[var(--text-primary)]">Specialization</h3>
+          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">You earn 1 Skill Point every 2 levels</p>
         </div>
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5">
           <Zap className="w-4 h-4 text-yellow-400" />
@@ -86,9 +86,9 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
       )}
 
       {hasChosen && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
           <CheckCircle2 className="w-4 h-4 text-green-400" />
-          <span className="text-xs text-gray-300">Specialization locked: <span className="font-bold text-white">{SKILL_TREES[specialization!].icon} {SKILL_TREES[specialization!].name}</span></span>
+          <span className="text-xs text-[var(--text-secondary)]">Specialization locked: <span className="font-bold text-[var(--text-primary)]">{SKILL_TREES[specialization!].icon} {SKILL_TREES[specialization!].name}</span></span>
         </div>
       )}
 
@@ -106,16 +106,16 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                 isSelected
                   ? `border-white/30 bg-gradient-to-br ${SPEC_COLORS[key]} bg-opacity-10`
                   : isLocked
-                  ? 'border-white/5 bg-white/2 opacity-40 cursor-not-allowed'
-                  : 'border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer'
+                  ? 'border-[var(--border)] bg-[var(--surface-glass)] opacity-40 cursor-not-allowed'
+                  : 'border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] cursor-pointer'
               }`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg">{spec.icon}</span>
-                <span className="font-bold text-sm text-white">{spec.name}</span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">{spec.name}</span>
                 {isLocked && <Lock className="w-3 h-3 text-gray-500 ml-auto" />}
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">{spec.description}</p>
+              <p className="text-[10px] text-[var(--text-tertiary)] mt-1">{spec.description}</p>
               {!hasChosen && isSelected && <p className="text-[9px] text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>}
             </button>
           );
@@ -128,7 +128,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
           const tierNodes = treeNodes.filter(n => n.tier === tier);
           return (
             <div key={tier}>
-              <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">Tier {tier}</p>
+              <p className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Tier {tier}</p>
               <div className="grid grid-cols-2 gap-2">
                 {tierNodes.map(node => {
                   const isUnlocked = unlockedSkills.includes(node.id);
@@ -143,24 +143,24 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                           ? 'border-green-500/30 bg-green-500/10'
                           : canUnlock
                           ? 'border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer'
-                          : 'border-white/5 bg-white/3 opacity-50'
+                          : 'border-[var(--border)] bg-[var(--surface-glass)] opacity-50'
                       }`}
                       onClick={() => canUnlock && handleUnlock(node.id)}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm">{node.icon}</span>
-                        <span className="text-xs font-bold text-white truncate">{node.name}</span>
+                        <span className="text-xs font-bold text-[var(--text-primary)] truncate">{node.name}</span>
                         {isUnlocked && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 ml-auto" />}
                         {!isUnlocked && !isUnlockable && <Lock className="w-3 h-3 text-gray-600 ml-auto" />}
                       </div>
-                      <p className="text-[10px] text-gray-400">{node.description}</p>
+                      <p className="text-[10px] text-[var(--text-tertiary)]">{node.description}</p>
                       {!isUnlocked && (
-                        <div className="mt-1 text-[9px] font-mono text-gray-600">
+                        <div className="mt-1 text-[9px] font-mono text-[var(--text-muted)]">
                           Cost: {node.cost} SP
                         </div>
                       )}
                       {unlocking === node.id && (
-                        <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+                        <div className="absolute inset-0 bg-[var(--backdrop)] rounded-xl flex items-center justify-center">
                           <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
                         </div>
                       )}

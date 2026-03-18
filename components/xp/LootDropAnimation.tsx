@@ -32,7 +32,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center"
+      className="fixed inset-0 bg-[var(--backdrop)] backdrop-blur-sm z-[60] flex items-center justify-center"
       onClick={phase === 'reveal' ? onClose : undefined}
     >
       <div className="text-center space-y-6">
@@ -53,7 +53,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
                 <animate attributeName="opacity" values="0.15;0.3;0.15" dur="1.5s" repeatCount="indefinite" />
               </circle>
             </svg>
-            <p className="text-sm text-gray-400 mt-4 animate-pulse">Opening...</p>
+            <p className="text-sm text-[var(--text-tertiary)] mt-4 animate-pulse">Opening...</p>
           </div>
         )}
 
@@ -106,7 +106,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
                 <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-12 h-12" />
                 <div>
                   <h3 className={`text-lg font-black ${colors.text}`}>{item.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{item.slot}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{item.slot}</p>
                 </div>
               </div>
 
@@ -116,7 +116,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
                   .filter(([, v]) => v && v > 0)
                   .map(([stat, value]) => (
                     <div key={stat} className="flex justify-between text-xs">
-                      <span className="text-gray-400 capitalize">{stat}</span>
+                      <span className="text-[var(--text-tertiary)] capitalize">{stat}</span>
                       <span className={`font-bold ${colors.text}`}>+{value}</span>
                     </div>
                   ))
@@ -125,9 +125,9 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
 
               {/* Affixes */}
               {item.affixes.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-white/5">
+                <div className="mt-2 pt-2 border-t border-[var(--border)]">
                   {item.affixes.map((affix, i) => (
-                    <div key={i} className="text-[10px] text-gray-400">
+                    <div key={i} className="text-[10px] text-[var(--text-tertiary)]">
                       {affix.name}: +{affix.value} {affix.stat} (T{affix.tier})
                     </div>
                   ))}
@@ -136,7 +136,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
 
               {/* Set indicator */}
               {item.setId && (
-                <div className="mt-2 text-[10px] text-purple-400 font-bold">
+                <div className="mt-2 text-[10px] text-[var(--accent-text)] font-bold">
                   Part of a set
                 </div>
               )}
@@ -145,13 +145,13 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
               {(item.sockets || 0) > 0 && (
                 <div className="mt-2 flex gap-1">
                   {Array.from({ length: item.sockets || 0 }).map((_, i) => (
-                    <div key={i} className="w-3 h-3 rounded-full border border-white/20 bg-black/30" />
+                    <div key={i} className="w-3 h-3 rounded-full border border-[var(--border-strong)] bg-[var(--panel-bg)]" />
                   ))}
                 </div>
               )}
             </div>
 
-            <p className="text-xs text-gray-500 animate-pulse">Click anywhere to close</p>
+            <p className="text-xs text-[var(--text-muted)] animate-pulse">Click anywhere to close</p>
           </div>
         )}
       </div>

@@ -94,11 +94,11 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
       <div className="p-4 space-y-4">
         {/* Tab switcher — hidden when 3D tab is disabled */}
         {ENABLE_3D_TAB && (
-        <div className="flex gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
+        <div className="flex gap-1 bg-[var(--surface-glass)] rounded-xl p-1 border border-[var(--border)]">
           <button
             onClick={() => setActiveTab('3d')}
             className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-              activeTab === '3d' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'
+              activeTab === '3d' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
             }`}
           >
             3D Model
@@ -106,7 +106,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
           <button
             onClick={() => setActiveTab('2d')}
             className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-              activeTab === '2d' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'
+              activeTab === '2d' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
             }`}
           >
             2D Classic
@@ -118,7 +118,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
           <>
             {/* 3D Model Preview */}
             <div className="sticky top-0 z-10 flex justify-center bg-[#0f0720]/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-1 rounded-b-2xl">
-              <div className="w-44 h-64 bg-black/40 rounded-3xl p-2 border border-purple-500/20 shadow-inner loadout-hex-bg">
+              <div className="w-44 h-64 bg-[var(--panel-bg)] rounded-3xl p-2 border border-purple-500/20 shadow-inner loadout-hex-bg">
                 <Avatar3D
                   characterModelId={current3DModel}
                   appearance={{
@@ -134,8 +134,8 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Character Model Selection */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Character Model</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Character Model</label>
               <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                 {CHARACTER_MODELS.map(model => {
                   const owned = availableModelIds.has(model.id);
@@ -149,17 +149,17 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                         isActive
                           ? 'border-purple-500 bg-purple-500/20'
                           : owned
-                            ? 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                            : 'border-white/5 opacity-40 cursor-not-allowed'
+                            ? 'border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-glass)]'
+                            : 'border-[var(--border)] opacity-40 cursor-not-allowed'
                       }`}
                     >
                       {/* Color indicator dot */}
                       <div
-                        className="w-5 h-5 rounded-full mb-1.5 border border-white/20"
+                        className="w-5 h-5 rounded-full mb-1.5 border border-[var(--border-strong)]"
                         style={{ backgroundColor: model.thumbnailColor }}
                       />
-                      <div className="text-xs font-bold text-white truncate">{model.name}</div>
-                      <div className="text-[9px] text-gray-400 truncate">{model.description}</div>
+                      <div className="text-xs font-bold text-[var(--text-primary)] truncate">{model.name}</div>
+                      <div className="text-[9px] text-[var(--text-tertiary)] truncate">{model.description}</div>
                       {/* Price tag */}
                       <div className={`absolute top-1.5 right-1.5 text-[8px] font-black px-1.5 py-0.5 rounded-full ${
                         model.cost === 0
@@ -175,16 +175,16 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                 })}
               </div>
               {/* Hint for locked models */}
-              <p className="text-[9px] text-gray-500 text-center mt-2">
+              <p className="text-[9px] text-[var(--text-muted)] text-center mt-2">
                 Locked models can be purchased in the Flux Shop
               </p>
             </div>
 
             {/* Skin Tone (3D) — gradient slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Skin Tone</label>
               <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                <div className="relative h-6 rounded-full overflow-hidden border border-[var(--border)]"
                   style={{ background: `linear-gradient(to right, ${SKIN_TONES.join(', ')})` }}>
                   <input
                     type="range"
@@ -208,10 +208,10 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Suit Color (3D) — hue slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Suit Color</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Suit Color</label>
               <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                <div className="relative h-6 rounded-full overflow-hidden border border-[var(--border)]"
                   style={{ background: 'linear-gradient(to right, hsl(0,55%,40%), hsl(30,55%,40%), hsl(60,55%,40%), hsl(120,55%,40%), hsl(180,55%,40%), hsl(240,55%,40%), hsl(300,55%,40%), hsl(360,55%,40%))' }}>
                   <input
                     type="range"
@@ -237,7 +237,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
           <>
             {/* 2D Classic Preview */}
             <div className="sticky top-0 z-10 flex justify-center bg-[#0f0720]/95 backdrop-blur-sm pb-3 -mx-4 px-4 pt-1 rounded-b-2xl">
-              <div className="w-44 h-64 bg-black/40 rounded-3xl p-3 border border-purple-500/20 shadow-inner loadout-hex-bg">
+              <div className="w-44 h-64 bg-[var(--panel-bg)] rounded-3xl p-3 border border-purple-500/20 shadow-inner loadout-hex-bg">
                 <OperativeAvatar equipped={equipped} appearance={{
                   ...appearance,
                   hue: previewHue ?? appearance?.hue ?? 0,
@@ -251,10 +251,10 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Skin Tone — gradient slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Skin Tone</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Skin Tone</label>
               <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                <div className="relative h-6 rounded-full overflow-hidden border border-[var(--border)]"
                   style={{ background: `linear-gradient(to right, ${SKIN_TONES.join(', ')})` }}>
                   <input
                     type="range"
@@ -277,14 +277,14 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Hair Style */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Style</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Hair Style</label>
               <div className="grid grid-cols-4 gap-2">
                 {HAIR_STYLE_NAMES.map((name, i) => {
                   const isActive = (previewHairStyle ?? appearance?.hairStyle ?? 1) === i;
                   return (
                     <button key={i} onClick={() => setPreviewHairStyle(i)}
-                      className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500/30 border-purple-500 text-white border-2' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'}`}>
+                      className={`px-2 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500/30 border-purple-500 text-white border-2' : 'bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-primary)]'}`}>
                       {name}
                     </button>
                   );
@@ -293,10 +293,10 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Hair Color — gradient slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Hair Color</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Hair Color</label>
               <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                <div className="relative h-6 rounded-full overflow-hidden border border-[var(--border)]"
                   style={{ background: `linear-gradient(to right, ${HAIR_COLORS.join(', ')})` }}>
                   <input
                     type="range"
@@ -319,14 +319,14 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Body Frame */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Body Frame</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Body Frame</label>
               <div className="flex justify-center gap-2">
                 {(['A', 'B', 'C'] as const).map(type => {
                   const isActive = (previewBodyType ?? appearance?.bodyType ?? 'A') === type;
                   return (
                     <button key={type} onClick={() => setPreviewBodyType(type)}
-                      className={`px-3 py-2 rounded-xl border-2 transition-all font-bold text-xs ${isActive ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 text-gray-500 hover:border-white/20'}`}>
+                      className={`px-3 py-2 rounded-xl border-2 transition-all font-bold text-xs ${isActive ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'}`}>
                       {type === 'A' ? 'Alpha' : type === 'B' ? 'Beta' : 'Femme'}
                     </button>
                   );
@@ -335,10 +335,10 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Suit Color — hue slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Suit Color</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Suit Color</label>
               <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                <div className="relative h-6 rounded-full overflow-hidden border border-[var(--border)]"
                   style={{ background: 'linear-gradient(to right, hsl(0,55%,40%), hsl(30,55%,40%), hsl(60,55%,40%), hsl(120,55%,40%), hsl(180,55%,40%), hsl(240,55%,40%), hsl(300,55%,40%), hsl(360,55%,40%))' }}>
                   <input
                     type="range"
@@ -361,10 +361,10 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             </div>
 
             {/* Eye Color — hue slider */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Eye Color</label>
+            <div className="bg-[var(--surface-glass)] p-4 rounded-2xl border border-[var(--border)]">
+              <label className="block text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest mb-3 text-center">Eye Color</label>
               <div className="px-2">
-                <div className="relative h-6 rounded-full overflow-hidden border border-white/10"
+                <div className="relative h-6 rounded-full overflow-hidden border border-[var(--border)]"
                   style={{ background: 'linear-gradient(to right, hsl(180,70%,50%), hsl(210,70%,50%), hsl(240,70%,50%), hsl(270,70%,50%), hsl(300,70%,50%), hsl(330,70%,50%), hsl(0,70%,50%), hsl(30,70%,50%), hsl(60,70%,50%), hsl(90,70%,50%), hsl(120,70%,50%), hsl(150,70%,50%), hsl(180,70%,50%))' }}>
                   <input
                     type="range"
@@ -391,7 +391,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
         {/* Actions */}
         <div className="flex gap-3">
           <button onClick={handleClose}
-            className="flex-1 py-3 bg-white/5 border border-white/10 text-gray-400 font-bold rounded-xl hover:bg-white/10 transition">
+            className="flex-1 py-3 bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-tertiary)] font-bold rounded-xl hover:bg-[var(--surface-glass-heavy)] transition">
             Cancel
           </button>
           <button onClick={handleSave}

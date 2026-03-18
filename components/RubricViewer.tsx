@@ -14,7 +14,7 @@ interface TierButtonStripProps {
 }
 
 const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, skillId, selectedTier, aiSuggestion, mode, flashTier, onTierClick }) => (
-  <div className="grid grid-cols-5 gap-px bg-white/5">
+  <div className="grid grid-cols-5 gap-px bg-[var(--surface-glass)]">
     {tiers.map((tier, tierIdx) => {
       const colors = RUBRIC_TIER_COLORS[tier.label];
       const isSelected = selectedTier === tierIdx;
@@ -31,10 +31,10 @@ const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, s
           className={`
             relative flex flex-col items-center px-1.5 py-2 transition-all text-center
             ${isSelected
-              ? `${colors.solid} text-white shadow-lg ring-2 ring-white/20`
+              ? `${colors.solid} text-white shadow-lg ring-2 ring-[var(--border)]`
               : isAISuggested && !isSelected
                 ? `${colors.bg} ${colors.text} ring-1 ring-amber-400/40`
-                : `bg-black/30 ${colors.text} hover:${colors.bg}`
+                : `bg-[var(--panel-bg)] ${colors.text} hover:${colors.bg}`
             }
             ${isClickable ? 'cursor-pointer' : 'cursor-default'}
             ${isFlashing ? 'ring-2 ring-green-400 scale-105' : ''}
@@ -44,7 +44,7 @@ const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, s
             <Sparkles className="absolute top-0.5 right-0.5 w-2 h-2 text-amber-400" />
           )}
           <span className="text-[9px] font-bold uppercase tracking-wider">{tier.label}</span>
-          <span className={`text-[9px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+          <span className={`text-[9px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>
             {tier.percentage}%
           </span>
         </button>
@@ -75,12 +75,12 @@ const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questio
           key={tier.label}
           className={`rounded-lg ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} border text-[10px] leading-relaxed transition-all ${
             isSelected
-              ? `${colors.bg} ${colors.border} ${colors.text} ring-1 ring-white/10`
-              : 'border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-400'
+              ? `${colors.bg} ${colors.border} ${colors.text} ring-1 ring-[var(--border)]`
+              : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-tertiary)]'
           } cursor-pointer`}
           onClick={() => onTierClick(questionId, skillId, tierIdx)}
         >
-          <span className={`font-bold ${isSelected ? colors.text : 'text-gray-400'}`}>
+          <span className={`font-bold ${isSelected ? colors.text : 'text-[var(--text-tertiary)]'}`}>
             {tier.label} ({tier.percentage}%):
           </span>{' '}
           {tier.descriptor}
@@ -171,7 +171,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
         const hasAISuggestionInQuestion = question.skills.some(s => getAISuggestion(question.id, s.id) !== null);
 
         return (
-          <div key={question.id} className={`border rounded-xl overflow-hidden transition-colors ${headerColors ? headerColors.border : 'border-white/10'}`}>
+          <div key={question.id} className={`border rounded-xl overflow-hidden transition-colors ${headerColors ? headerColors.border : 'border-[var(--border)]'}`}>
             {/* Question header */}
             <button
               type="button"
@@ -179,19 +179,19 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
               className={`w-full flex items-center gap-2 ${compact ? 'px-3 py-2' : 'px-4 py-3'} transition text-left ${
                 headerColors
                   ? `${headerColors.bg} hover:brightness-125`
-                  : 'bg-white/5 hover:bg-white/10'
+                  : 'bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)]'
               }`}
             >
               {isQuestionExpanded ? (
-                <ChevronDown className={`w-3.5 h-3.5 shrink-0 ${headerColors ? headerColors.text : 'text-gray-500'}`} />
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 ${headerColors ? headerColors.text : 'text-[var(--text-muted)]'}`} />
               ) : (
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${headerColors ? headerColors.text : 'text-gray-500'}`} />
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${headerColors ? headerColors.text : 'text-[var(--text-muted)]'}`} />
               )}
-              <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold ${headerColors ? headerColors.text : 'text-white'}`}>{question.questionLabel}</span>
+              <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold ${headerColors ? headerColors.text : 'text-[var(--text-primary)]'}`}>{question.questionLabel}</span>
               {hasAISuggestionInQuestion && !hasGrade && (
                 <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
               )}
-              <span className={`text-[10px] ml-auto shrink-0 ${headerColors ? headerColors.text + ' opacity-70' : 'text-gray-500'}`}>
+              <span className={`text-[10px] ml-auto shrink-0 ${headerColors ? headerColors.text + ' opacity-70' : 'text-[var(--text-muted)]'}`}>
                 {question.skills.length} skill{question.skills.length !== 1 ? 's' : ''}
               </span>
             </button>
@@ -208,15 +208,15 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                       key={skill.id}
                       tabIndex={mode === 'grade' ? 0 : undefined}
                       onKeyDown={(e) => handleSkillKeyDown(e, question.id, skill.id)}
-                      className={`bg-black/20 rounded-lg border overflow-hidden ${
+                      className={`bg-[var(--panel-bg)] rounded-lg border overflow-hidden ${
                         aiSuggestion && selectedTier === aiSuggestion.suggestedTier
                           ? 'border-amber-500/20'
-                          : 'border-white/5'
+                          : 'border-[var(--border)]'
                       } ${mode === 'grade' ? 'focus:ring-2 focus:ring-purple-500/50 focus:outline-none' : ''}`}
                     >
                       {/* Skill text */}
-                      <div className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} border-b border-white/5`}>
-                        <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-gray-300 italic leading-relaxed`}>{skill.skillText}</p>
+                      <div className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} border-b border-[var(--border)]`}>
+                        <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-[var(--text-secondary)] italic leading-relaxed`}>{skill.skillText}</p>
                       </div>
 
                       {/* Tier quick-select strip (always visible) */}
@@ -266,10 +266,10 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                             <button
                               type="button"
                               onClick={() => setExpandedSkill(isSkillExpanded ? null : skill.id)}
-                              className="w-full px-3 py-1.5 text-left hover:bg-white/5 transition flex items-center gap-1"
+                              className="w-full px-3 py-1.5 text-left hover:bg-[var(--surface-glass)] transition flex items-center gap-1"
                             >
-                              <ChevronRight className={`w-2.5 h-2.5 text-gray-600 transition-transform ${isSkillExpanded ? 'rotate-90' : ''}`} />
-                              <span className="text-[9px] text-gray-500">
+                              <ChevronRight className={`w-2.5 h-2.5 text-[var(--text-muted)] transition-transform ${isSkillExpanded ? 'rotate-90' : ''}`} />
+                              <span className="text-[9px] text-[var(--text-muted)]">
                                 {isSkillExpanded ? 'Hide' : 'Show'} tier descriptions
                               </span>
                             </button>
@@ -287,11 +287,11 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                                     className={`rounded-lg px-3 py-2 border text-[10px] leading-relaxed transition-all ${
                                       isSelected
                                         ? `${colors.bg} ${colors.border} ${colors.text}`
-                                        : 'border-white/5 text-gray-500'
+                                        : 'border-[var(--border)] text-[var(--text-muted)]'
                                     }`}
                                     onClick={() => handleTierClick(question.id, skill.id, tierIdx)}
                                   >
-                                    <span className={`font-bold ${isSelected ? colors.text : 'text-gray-400'}`}>
+                                    <span className={`font-bold ${isSelected ? colors.text : 'text-[var(--text-tertiary)]'}`}>
                                       {tier.label} ({tier.percentage}%):
                                     </span>{' '}
                                     {tier.descriptor}

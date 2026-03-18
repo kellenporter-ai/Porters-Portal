@@ -22,7 +22,7 @@ const StudyMaterial = lazyWithRetry(() => import('./StudyMaterial'));
 const LessonBlocks = lazyWithRetry(() => import('./LessonBlocks').then(m => ({ default: m.default })));
 
 const LazyFallback = () => (
-  <div className="flex items-center justify-center h-64 text-gray-500">
+  <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
     <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
   </div>
 );
@@ -356,12 +356,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   if (!activeAssignment) {
     // Still loading app data — show skeleton instead of "not found"
     if (appDataLoading) {
-      return <div className="flex items-center justify-center h-64 text-gray-500"><p>Loading...</p></div>;
+      return <div className="flex items-center justify-center h-64 text-[var(--text-muted)]"><p>Loading...</p></div>;
     }
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
         <p>Resource not found.</p>
-        <button onClick={() => navigate(-1)} className="ml-4 text-purple-400 hover:text-purple-300">Go back</button>
+        <button onClick={() => navigate(-1)} className="ml-4 text-[var(--accent-text)] hover:text-purple-300">Go back</button>
       </div>
     );
   }
@@ -370,15 +370,15 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   if (reviewMode && existingSubmission?.blockResponses && activeAssignment?.lessonBlocks) {
     return (
       <div className="fixed inset-0 z-50 bg-[#0a0416] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/30 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--panel-bg)] shrink-0">
           <button
             onClick={() => setReviewMode(false)}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition"
+            className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Results
           </button>
-          <h2 className="text-sm font-bold text-white">Your Submission</h2>
-          <span className="text-[10px] text-gray-500">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">Your Submission</h2>
+          <span className="text-[10px] text-[var(--text-muted)]">
             {existingSubmission.submittedAt
               ? new Date(existingSubmission.submittedAt).toLocaleDateString()
               : ''}
@@ -419,7 +419,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
     return (
       <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416]' : ''} flex items-center justify-center h-full`}>
-        <div className={`bg-white/5 border border-white/10 rounded-2xl p-8 w-full mx-4 backdrop-blur-md ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
+        <div className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-8 w-full mx-4 backdrop-blur-md ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
           {/* Header */}
           <div className="text-center mb-6">
             {showScore ? (
@@ -431,27 +431,27 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 <span className="text-3xl font-bold">{assessmentResult.percentage}%</span>
               </div>
             ) : (
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-purple-500/20 text-purple-400">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-purple-500/20 text-[var(--accent-text)]">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
             )}
-            <h2 className="text-xl font-bold text-white mb-1">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-1">
               {showScore ? 'Assessment Complete' : 'Assessment Submitted'}
             </h2>
             {/* Attempt tracker with remaining info */}
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-[var(--text-tertiary)]">
               {isUnlimited
                 ? `Attempt ${assessmentResult.attemptNumber}`
                 : `Attempt ${assessmentResult.attemptNumber} of ${config.maxAttempts}`
               }
             </p>
             {canRetake && !isUnlimited && (
-              <p className="text-xs text-purple-400 mt-1">
+              <p className="text-xs text-[var(--accent-text)] mt-1">
                 {attemptsRemaining === 1 ? '1 attempt remaining' : `${attemptsRemaining} attempts remaining`}
               </p>
             )}
             {!canRetake && config.allowResubmission !== false && (
-              <p className="text-xs text-gray-500 mt-1">No attempts remaining</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">No attempts remaining</p>
             )}
           </div>
 
@@ -480,17 +480,17 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           {showScore && (
             <>
               <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-black/30 rounded-xl p-3 text-center">
+                <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
                   <div className="text-2xl font-bold text-green-400">{assessmentResult.correct}</div>
-                  <div className="text-[10px] text-gray-500 uppercase font-bold">Correct</div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Correct</div>
                 </div>
-                <div className="bg-black/30 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-gray-300">{assessmentResult.total}</div>
-                  <div className="text-[10px] text-gray-500 uppercase font-bold">Total</div>
+                <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-[var(--text-secondary)]">{assessmentResult.total}</div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total</div>
                 </div>
-                <div className="bg-black/30 rounded-xl p-3 text-center">
+                <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
                   <div className="text-2xl font-bold text-amber-400">+{assessmentResult.xpEarned}</div>
-                  <div className="text-[10px] text-gray-500 uppercase font-bold">XP Earned</div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">XP Earned</div>
                 </div>
               </div>
 
@@ -520,9 +520,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
           {/* Score hidden message */}
           {!showScore && (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-6 text-center">
-              <p className="text-sm text-gray-300">Your responses have been recorded.</p>
-              <p className="text-xs text-gray-500 mt-1">Your teacher will review your submission and share results.</p>
+            <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-4 mb-6 text-center">
+              <p className="text-sm text-[var(--text-secondary)]">Your responses have been recorded.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Your teacher will review your submission and share results.</p>
             </div>
           )}
 
@@ -542,18 +542,18 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 </Suspense>
               </div>
               {existingSubmission?.rubricGrade ? (
-                <div className="mt-3 bg-white/5 border border-white/10 rounded-lg p-3 text-center">
-                  <span className="text-sm font-bold text-white">{existingSubmission.rubricGrade.overallPercentage}%</span>
-                  <span className="text-[10px] text-gray-500 ml-2">Rubric Score</span>
+                <div className="mt-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-3 text-center">
+                  <span className="text-sm font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</span>
+                  <span className="text-[10px] text-[var(--text-muted)] ml-2">Rubric Score</span>
                   {existingSubmission.rubricGrade.teacherFeedback && (
                     <div className="mt-3 bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 text-left">
-                      <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Teacher Feedback</div>
-                      <p className="text-xs text-gray-300 whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
+                      <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-1">Teacher Feedback</div>
+                      <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-[10px] text-gray-500 mt-2 text-center italic">
+                <p className="text-[10px] text-[var(--text-muted)] mt-2 text-center italic">
                   Your teacher will grade rubric-assessed questions. Check back for results.
                 </p>
               )}
@@ -592,7 +592,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             )}
             <button
               onClick={handleExit}
-              className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] font-bold py-3 rounded-xl transition text-sm"
             >
               <ArrowLeft className="w-4 h-4" /> {canRetake ? 'Review Later' : 'Exit'}
             </button>
@@ -606,13 +606,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416] flex flex-col' : 'gap-1 h-full flex flex-col'}`}>
       {/* Navigation blocker modal */}
       {showBlockerModal && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
           <div className="bg-[#1a0a2e] border border-red-500/30 rounded-2xl p-6 max-w-sm mx-4">
             <div className="flex items-center gap-2 text-red-400 mb-3">
               <Shield className="w-5 h-5" />
               <h3 className="font-bold text-sm">Assessment Active</h3>
             </div>
-            <p className="text-gray-300 text-xs mb-4">
+            <p className="text-[var(--text-secondary)] text-xs mb-4">
               You are in an active assessment. Leaving will be recorded and may affect your score. Are you sure you want to leave?
             </p>
             <div className="flex gap-2">
@@ -650,13 +650,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
       {/* Rubric modal */}
       {showRubric && activeAssignment?.rubric && (
-        <div className="fixed inset-0 z-[55] bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-[#0f0720]/95 backdrop-blur-xl border border-white/10 rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
-            <div className="flex justify-between items-center p-5 border-b border-white/10 shrink-0">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-[55] bg-[var(--backdrop)] flex items-center justify-center p-4">
+          <div className="bg-[var(--surface-base)]/95 backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border)] shrink-0">
+              <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}
               </h3>
-              <button onClick={() => setShowRubric(false)} className="text-gray-400 hover:text-white transition">
+              <button onClick={() => setShowRubric(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -669,20 +669,20 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 />
               </Suspense>
               {existingSubmission?.rubricGrade && (
-                <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-white">{existingSubmission.rubricGrade.overallPercentage}%</div>
-                  <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">Rubric Score</div>
-                  <div className="text-[10px] text-gray-600 mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
+                <div className="mt-4 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">Rubric Score</div>
+                  <div className="text-[10px] text-[var(--text-muted)] mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
                   {existingSubmission.rubricGrade.teacherFeedback && (
                     <div className="mt-3 bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 text-left">
-                      <div className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Teacher Feedback</div>
-                      <p className="text-xs text-gray-300 whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
+                      <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-1">Teacher Feedback</div>
+                      <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
                     </div>
                   )}
                 </div>
               )}
               {!existingSubmission?.rubricGrade && existingSubmission && (
-                <p className="text-[10px] text-gray-500 mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
               )}
             </div>
           </div>
@@ -691,7 +691,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
 
       {/* Header bar */}
-      <div className={`relative flex items-center justify-between text-white ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-[#0f0720] border-white/10'} px-4 py-1.5 ${isAssessment ? '' : 'rounded-xl'} border overflow-hidden`}>
+      <div className={`relative flex items-center justify-between text-[var(--text-primary)] ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-[var(--surface-base)] border-[var(--border)]'} px-4 py-1.5 ${isAssessment ? '' : 'rounded-xl'} border overflow-hidden`}>
         <div className="flex items-center gap-4 min-w-0">
           <h2 className="text-sm font-bold truncate flex items-center gap-2">
             {isAssessment && <Shield className="w-4 h-4 text-red-400 shrink-0" />}
@@ -706,12 +706,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           {/* Hide tab switchers during assessment */}
           {!isAssessment && (
             <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => setAssignViewMode('WORK')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${assignViewMode === 'WORK' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}>Resource</button>
+              <button onClick={() => setAssignViewMode('WORK')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${assignViewMode === 'WORK' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Resource</button>
               {hasQuestionBank && (
-                <button onClick={() => setAssignViewMode('REVIEW')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'REVIEW' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}><Brain className="w-3 h-3" /> Review</button>
+                <button onClick={() => setAssignViewMode('REVIEW')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'REVIEW' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}><Brain className="w-3 h-3" /> Review</button>
               )}
               {hasStudyMaterial && (
-                <button onClick={() => setAssignViewMode('STUDY')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'STUDY' ? 'bg-purple-500/20 text-white' : 'text-gray-400 hover:text-white'}`}><BookOpenIcon className="w-3 h-3" /> Study</button>
+                <button onClick={() => setAssignViewMode('STUDY')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'STUDY' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}><BookOpenIcon className="w-3 h-3" /> Study</button>
               )}
             </div>
           )}
@@ -719,9 +719,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
         <div className="flex items-center gap-2 shrink-0">
           {user.role === 'ADMIN' && (
-            <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/10 text-[9px] font-bold">
-              <button onClick={() => setAdminViewMode('STUDENT')} className={`px-2 py-1 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Student</button>
-              <button onClick={() => setAdminViewMode('ADMIN')} className={`px-2 py-1 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Admin</button>
+            <div className="flex bg-[var(--panel-bg)] rounded-lg p-0.5 border border-[var(--border)] text-[9px] font-bold">
+              <button onClick={() => setAdminViewMode('STUDENT')} className={`px-2 py-1 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Student</button>
+              <button onClick={() => setAdminViewMode('ADMIN')} className={`px-2 py-1 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Admin</button>
             </div>
           )}
           {/* Rubric button — visible during assessment and after for students who have a rubric */}
@@ -748,7 +748,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <Eye className="w-3.5 h-3.5" /> Submit (Preview)
             </span>
           ) : (
-            <button onClick={() => navigate(activeAssignment.unit ? '/resources' : '/home')} className="text-gray-400 hover:text-white transition flex items-center gap-1 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/10" title={activeAssignment.unit || 'Resources'}>
+            <button onClick={() => navigate(activeAssignment.unit ? '/resources' : '/home')} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition flex items-center gap-1 text-xs bg-[var(--surface-glass)] px-3 py-1.5 rounded-lg border border-[var(--border)]" title={activeAssignment.unit || 'Resources'}>
               <ArrowLeft className="w-3.5 h-3.5" /> {activeAssignment.unit || 'Back'}
             </button>
           )}
@@ -758,10 +758,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {/* AI Flag Banner — shown to students whose submission was flagged for AI */}
       {existingSubmission?.flaggedAsAI && user.role !== UserRole.ADMIN && (
         <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg mx-1 mt-2 p-3 flex items-start gap-3 text-xs text-purple-200 animate-in fade-in duration-300">
-          <Bot className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+          <Bot className="w-5 h-5 text-[var(--accent-text)] shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-purple-300 mb-1">Your submission has been flagged for suspected AI usage.</p>
-            <p className="text-purple-300/80">Your score is currently recorded as <span className="font-bold text-white">0%</span> until you either resubmit the assessment using your own work or provide a written defense to your teacher.</p>
+            <p className="text-purple-300/80">Your score is currently recorded as <span className="font-bold text-[var(--text-primary)]">0%</span> until you either resubmit the assessment using your own work or provide a written defense to your teacher.</p>
           </div>
         </div>
       )}
@@ -808,23 +808,23 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 />
               </div>
               {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (
-                <div className="w-full md:w-72 bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md animate-in slide-in-from-right duration-300 overflow-y-auto">
-                  <h3 className="font-bold text-white mb-4 flex items-center gap-2"><SettingsIcon className="w-4 h-4 text-purple-400" /> Admin Controls</h3>
+                <div className="w-full md:w-72 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md animate-in slide-in-from-right duration-300 overflow-y-auto">
+                  <h3 className="font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><SettingsIcon className="w-4 h-4 text-[var(--accent-text)]" /> Admin Controls</h3>
                   <div className="space-y-6">
-                    <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                      <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-2">Active Engagement</label>
+                    <div className="bg-[var(--panel-bg)] p-4 rounded-xl border border-[var(--border)]">
+                      <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-2">Active Engagement</label>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center text-purple-400">
+                        <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center text-[var(--accent-text)]">
                           <Users className="w-6 h-6" />
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-white">{liveCount}</div>
-                          <div className="text-[10px] text-gray-500">Live Operatives</div>
+                          <div className="text-2xl font-bold text-[var(--text-primary)]">{liveCount}</div>
+                          <div className="text-[10px] text-[var(--text-muted)]">Live Operatives</div>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                      <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-2">Collaboration</label>
+                    <div className="bg-[var(--panel-bg)] p-4 rounded-xl border border-[var(--border)]">
+                      <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-2">Collaboration</label>
                       <button
                         onClick={() => setIsCommOpen(true)}
                         className="w-full bg-indigo-600 border border-indigo-500 py-2 rounded-lg text-xs font-bold text-white hover:bg-indigo-500 transition"
@@ -838,12 +838,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </div>
           )}
           {assignViewMode === 'REVIEW' && !isAssessment && (
-            <div className="h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+            <div className="h-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
               <ReviewQuestions assignment={activeAssignment} />
             </div>
           )}
           {assignViewMode === 'STUDY' && !isAssessment && (
-            <div className="h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
+            <div className="h-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl overflow-hidden backdrop-blur-md" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
               <StudyMaterial assignment={activeAssignment} onComplete={handleEngagementComplete} />
             </div>
           )}
@@ -866,7 +866,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 }
               </div>
               {answeredBlocks < totalBlocks && totalBlocks > 0 && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-[var(--text-tertiary)]">
                   — you must click the green button to submit your assessment
                 </span>
               )}

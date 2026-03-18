@@ -50,7 +50,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="fixed inset-0 bg-[var(--backdrop)] backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
         <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -58,8 +58,8 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
 
   if (!player) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
-        <div className="text-gray-400">Player not found</div>
+      <div className="fixed inset-0 bg-[var(--backdrop)] backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
+        <div className="text-[var(--text-tertiary)]">Player not found</div>
       </div>
     );
   }
@@ -79,15 +79,15 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
   const activeSets = getActiveSetBonuses(equippedItems);
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Player inspection: ${displayName}`}>
+    <div className="fixed inset-0 bg-[var(--backdrop)] backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Player inspection: ${displayName}`}>
       <div
         ref={dialogRef}
-        className="bg-[#12131e]/95 border border-white/10 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative p-6 border-b border-white/5">
-          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition" aria-label="Close player inspection">
+        <div className="relative p-6 border-b border-[var(--border)]">
+          <button onClick={onClose} className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" aria-label="Close player inspection">
             <X className="w-5 h-5" />
           </button>
 
@@ -116,13 +116,13 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
             </div>
 
             <div>
-              <h2 className={`text-xl font-black ${isPrivate ? 'text-purple-300 italic' : 'text-white'}`}>
+              <h2 className={`text-xl font-black ${isPrivate ? 'text-purple-300 italic' : 'text-[var(--text-primary)]'}`}>
                 {displayName}
               </h2>
               <p className={`text-xs font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>
                 {rankDetails.rankName}
               </p>
-              <p className="text-[10px] text-gray-500 mt-1">{evolutionTier.name} - Level {level}</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-1">{evolutionTier.name} - Level {level}</p>
 
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-1">
@@ -139,17 +139,17 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
         </div>
 
         {/* Stats */}
-        <div className="p-6 border-b border-white/5">
-          <h3 className="text-xs font-mono uppercase tracking-widest text-gray-600 mb-3 flex items-center gap-1">
+        <div className="p-6 border-b border-[var(--border)]">
+          <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
             <Target className="w-3 h-3" /> Stats
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {STAT_LABELS.map(({ key, label, color, icon }) => {
               const value = stats[key as keyof typeof stats] || 0;
               return (
-                <div key={key} className="flex items-center gap-2 p-2 bg-white/3 rounded-lg">
+                <div key={key} className="flex items-center gap-2 p-2 bg-[var(--surface-glass)] rounded-lg">
                   <span className="text-sm">{icon}</span>
-                  <span className="text-xs text-gray-400">{label}</span>
+                  <span className="text-xs text-[var(--text-tertiary)]">{label}</span>
                   <span className={`text-sm font-bold ${color} ml-auto`}>{value}</span>
                 </div>
               );
@@ -158,8 +158,8 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
         </div>
 
         {/* Equipment */}
-        <div className="p-6 border-b border-white/5">
-          <h3 className="text-xs font-mono uppercase tracking-widest text-gray-600 mb-3 flex items-center gap-1">
+        <div className="p-6 border-b border-[var(--border)]">
+          <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
             <Shield className="w-3 h-3" /> Equipment
           </h3>
           <div className="grid grid-cols-2 gap-2">
@@ -167,9 +167,9 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               const item = equipped[slot] as RPGItem | undefined;
               if (!item) {
                 return (
-                  <div key={slot} className="p-2 bg-white/3 rounded-lg border border-white/5">
-                    <div className="text-[10px] text-gray-600 font-mono">{slot}</div>
-                    <div className="text-xs text-gray-700 italic">Empty</div>
+                  <div key={slot} className="p-2 bg-[var(--surface-glass)] rounded-lg border border-[var(--border)]">
+                    <div className="text-[10px] text-[var(--text-muted)] font-mono">{slot}</div>
+                    <div className="text-xs text-[var(--text-muted)] italic">Empty</div>
                   </div>
                 );
               }
@@ -179,7 +179,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
                   <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-6 h-6" />
                   <div className="min-w-0">
                     <div className={`text-xs font-bold truncate ${colors.text}`}>{item.name}</div>
-                    <div className="text-[9px] text-gray-500">{item.rarity}</div>
+                    <div className="text-[9px] text-[var(--text-muted)]">{item.rarity}</div>
                   </div>
                 </div>
               );
@@ -189,8 +189,8 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
 
         {/* Set bonuses */}
         {activeSets.length > 0 && (
-          <div className="p-6 border-b border-white/5">
-            <h3 className="text-xs font-mono uppercase tracking-widest text-gray-600 mb-3 flex items-center gap-1">
+          <div className="p-6 border-b border-[var(--border)]">
+            <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
               <Star className="w-3 h-3 text-purple-400" /> Set Bonuses
             </h3>
             {activeSets.map(({ set, activeBonus }) => (
@@ -205,7 +205,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
         {/* Achievements preview */}
         {(gam.unlockedAchievements?.length || 0) > 0 && (
           <div className="p-6">
-            <h3 className="text-xs font-mono uppercase tracking-widest text-gray-600 mb-3 flex items-center gap-1">
+            <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
               <Trophy className="w-3 h-3 text-yellow-400" /> Achievements ({gam.unlockedAchievements?.length})
             </h3>
             <div className="flex flex-wrap gap-1">

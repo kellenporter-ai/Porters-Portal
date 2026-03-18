@@ -75,9 +75,9 @@ const BossCard: React.FC<{
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-lg font-black text-red-400">{boss.name}</h4>
-            <p className="text-xs text-gray-500">{boss.description}</p>
+            <p className="text-xs text-[var(--text-muted)]">{boss.description}</p>
           </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+          <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
             <Clock className="w-3 h-3" />
             {hoursLeft > 0 ? `${hoursLeft}h left` : 'Expiring soon'}
           </div>
@@ -89,7 +89,7 @@ const BossCard: React.FC<{
             <span className="text-red-400 font-mono">{currentHp.toLocaleString()} HP</span>
             <span className="text-gray-600">{boss.maxHp.toLocaleString()}</span>
           </div>
-          <div className="w-full bg-white/5 rounded-full h-4 overflow-hidden">
+          <div className="w-full bg-[var(--surface-glass)] rounded-full h-4 overflow-hidden">
             <div
               className={`h-4 rounded-full transition-all duration-500 ${
                 hpPercent > 50 ? 'bg-gradient-to-r from-red-600 to-red-500' :
@@ -112,21 +112,21 @@ const BossCard: React.FC<{
 
         {/* My contribution */}
         {myDamage > 0 && (
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+          <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
             <Shield className="w-3 h-3" />
-            Your total damage: <span className="text-white font-bold">{myDamage}</span>
+            Your total damage: <span className="text-[var(--text-primary)] font-bold">{myDamage}</span>
           </div>
         )}
 
         {/* Mini leaderboard */}
         {leaderboard.length > 0 && (
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-[10px] text-gray-600 uppercase tracking-widest">
+            <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] uppercase tracking-widest">
               <Users className="w-3 h-3" /> Top Attackers
             </div>
             {leaderboard.map(([id, data], idx) => (
               <div key={id} className="flex items-center justify-between text-xs">
-                <span className={`${id === userId ? 'text-cyan-400 font-bold' : 'text-gray-400'}`}>
+                <span className={`${id === userId ? 'text-cyan-400 font-bold' : 'text-[var(--text-tertiary)]'}`}>
                   #{idx + 1} {data.name}
                 </span>
                 <span className="text-red-400 font-mono">{data.total} dmg</span>
@@ -136,7 +136,7 @@ const BossCard: React.FC<{
         )}
 
         {/* Rewards preview */}
-        <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-white/5 pt-3">
+        <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-[var(--border)] pt-3">
           <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400" /> {boss.completionRewards.xp} XP</span>
           <span className="flex items-center gap-1"><span className="text-cyan-400">~</span> {boss.completionRewards.flux} Flux</span>
           {boss.completionRewards.itemRarity && (
@@ -157,7 +157,7 @@ const BossCard: React.FC<{
           <Crosshair className="w-4 h-4" />
           {attacking === boss.id ? 'Attacking...' : 'Attack!'}
         </button>
-        <p className="text-[10px] text-gray-600 text-center">Damage scales with your equipped gear stats</p>
+        <p className="text-[10px] text-[var(--text-muted)] text-center">Damage scales with your equipped gear stats</p>
       </div>
     </div>
   );
@@ -214,8 +214,8 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
       </h3>
       <div className="text-center py-12 px-6">
         <Sword className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
-        <p className="text-sm text-gray-500 mb-1">No active boss encounters</p>
-        <p className="text-xs text-gray-600">Your teacher will deploy a boss when the time comes. Prepare your loadout.</p>
+        <p className="text-sm text-[var(--text-muted)] mb-1">No active boss encounters</p>
+        <p className="text-xs text-[var(--text-muted)]">Your teacher will deploy a boss when the time comes. Prepare your loadout.</p>
       </div>
     </div>
   );

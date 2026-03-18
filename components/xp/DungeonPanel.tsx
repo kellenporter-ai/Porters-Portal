@@ -92,10 +92,10 @@ const HpBar: React.FC<{
           {color === 'player' && <Heart className="w-3 h-3" aria-hidden="true" />}
           {label}: {current}
         </span>
-        <span className="text-gray-600">{max}</span>
+        <span className="text-[var(--text-muted)]">{max}</span>
       </div>
       <div
-        className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden"
+        className="w-full bg-[var(--surface-glass)] rounded-full h-2.5 overflow-hidden"
         /* Screen readers see the numeric label above; the bar is decorative */
         aria-hidden="true"
       >
@@ -144,7 +144,7 @@ const AgentStatusBar: React.FC<AgentStatusBarProps> = ({
     /* aria-label identifies this region to screen readers */
     <section
       aria-label="Agent status"
-      className="flex items-center gap-3 bg-black/30 border border-white/10 rounded-xl px-3 py-2"
+      className="flex items-center gap-3 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2"
     >
       {/* Tiny avatar — decorative complement to the text stats */}
       <div className="w-8 h-8 flex-shrink-0" aria-hidden="true">
@@ -161,7 +161,7 @@ const AgentStatusBar: React.FC<AgentStatusBarProps> = ({
       </div>
 
       {/* Compact combat stats — text so screen readers surface them */}
-      <div className="flex-shrink-0 text-[10px] font-mono text-gray-400 leading-tight text-right">
+      <div className="flex-shrink-0 text-[10px] font-mono text-[var(--text-tertiary)] leading-tight text-right">
         <span className="text-red-400 font-bold">ATK {atk}</span>
         {' | '}
         <span className="text-amber-400 font-bold">CRIT {critPct}%</span>
@@ -218,7 +218,7 @@ const DungeonMap: React.FC<{
                   ? 'border-emerald-500/50 bg-emerald-600/10 text-emerald-400'
                   : active
                   ? 'border-amber-400/70 bg-amber-500/15 text-amber-300 scale-105 shadow-[0_0_12px_rgba(251,191,36,0.25)] animate-pulse'
-                  : 'border-white/5 bg-black/20 text-gray-700 opacity-50'
+                  : 'border-[var(--border)] bg-[var(--panel-bg)] text-gray-700 opacity-50'
                 }
               `}
             >
@@ -420,12 +420,12 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
       {/* Room header */}
       <div className="flex items-center gap-2 flex-wrap">
         <span
-          className={`text-[10px] font-bold px-2 py-0.5 rounded border ${roomTypeBadge[room.type] ?? 'text-gray-500 bg-white/5 border-white/5'}`}
+          className={`text-[10px] font-bold px-2 py-0.5 rounded border ${roomTypeBadge[room.type] ?? 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}
           aria-label={`Room type: ${room.type}`}
         >
           {room.type}
         </span>
-        <h4 className="text-sm font-bold text-white">{room.name}</h4>
+        <h4 className="text-sm font-bold text-[var(--text-primary)]">{room.name}</h4>
         <span
           className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded ${
             room.difficulty === 'HARD'   ? 'bg-red-500/20 text-red-400' :
@@ -443,7 +443,7 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
         <>
           {/* BattleScene renders the full animated encounter visual */}
           <div
-            className="rounded-xl overflow-hidden bg-black/20 border border-white/5"
+            className="rounded-xl overflow-hidden bg-[var(--panel-bg)] border border-[var(--border)]"
             /* Announce battle events through the result text below, not the visual */
             aria-hidden="true"
           >
@@ -496,7 +496,7 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
           </div>
 
           <p className="relative z-10 text-sm font-bold text-emerald-400 mt-2">Rest Area</p>
-          <p className="relative z-10 text-xs text-gray-500 mt-0.5">
+          <p className="relative z-10 text-xs text-[var(--text-muted)] mt-0.5">
             {room.healAmount ? `Restoring +${room.healAmount} HP...` : 'Catching your breath...'}
           </p>
           {/* aria-live announces the heal result to screen readers */}
@@ -532,14 +532,14 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
           {/* aria-live announces loot discovery */}
           <div aria-live="polite" role="status">
             {lastResult?.loot ? (
-              <p className="relative z-10 text-xs text-gray-300 mt-1">
+              <p className="relative z-10 text-xs text-[var(--text-secondary)] mt-1">
                 Found:{' '}
                 <span className={`font-bold ${rarityColor[lastResult.loot.rarity] ?? 'text-gray-400'}`}>
                   {lastResult.loot.itemName}
                 </span>
               </p>
             ) : (
-              <p className="relative z-10 text-xs text-gray-500 mt-1">Searching for loot...</p>
+              <p className="relative z-10 text-xs text-[var(--text-muted)] mt-1">Searching for loot...</p>
             )}
           </div>
         </div>
@@ -548,7 +548,7 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
       {/* ── Question (COMBAT / PUZZLE / BOSS) ── */}
       {question && !isRestRoom && !isTreasureRoom && (
         <div className="space-y-3">
-          <p className="text-base text-white font-semibold leading-relaxed">{question.stem}</p>
+          <p className="text-base text-[var(--text-primary)] font-semibold leading-relaxed">{question.stem}</p>
 
           {/* Answer choices */}
           <fieldset>
@@ -576,11 +576,11 @@ const ActiveRoomView: React.FC<ActiveRoomViewProps> = ({
                       ${isCorrect  ? 'border-green-500/50 bg-green-500/10 text-green-400' :
                         isWrong    ? 'border-red-500/50 bg-red-500/10 text-red-400' :
                         isSelected ? 'border-amber-500/30 bg-amber-500/10' :
-                                     'border-white/10 bg-white/5 hover:bg-white/10 text-gray-300'}
+                                     'border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)]'}
                     `}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-mono text-gray-600 w-6" aria-hidden="true">
+                      <span className="text-sm font-mono text-[var(--text-muted)] w-6" aria-hidden="true">
                         {String.fromCharCode(65 + idx)}.
                       </span>
                       <span>{option}</span>
@@ -642,31 +642,31 @@ const CompletionView: React.FC<{
         <Trophy className="w-10 h-10 text-yellow-400 mx-auto mb-2" aria-hidden="true" />
         {/* h4 sits inside the panel which already has an h3 heading — correct hierarchy */}
         <h4 className="text-lg font-black text-yellow-400">Dungeon Cleared!</h4>
-        <p className="text-xs text-gray-500">{run.dungeonName} conquered</p>
+        <p className="text-xs text-[var(--text-muted)]">{run.dungeonName} conquered</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-          <div className="text-[9px] text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1 flex items-center gap-1">
             <MapPin className="w-3 h-3" aria-hidden="true" /> Rooms Cleared
           </div>
           <div className="text-lg font-black text-amber-400">{run.roomsCleared}</div>
         </div>
-        <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-          <div className="text-[9px] text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1 flex items-center gap-1">
             <Star className="w-3 h-3" aria-hidden="true" /> Accuracy
           </div>
           <div className="text-lg font-black text-green-400">{accuracy}%</div>
-          <div className="text-[10px] text-gray-500">{run.questionsCorrect}/{run.questionsAttempted}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">{run.questionsCorrect}/{run.questionsAttempted}</div>
         </div>
-        <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-          <div className="text-[9px] text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1 flex items-center gap-1">
             <Swords className="w-3 h-3" aria-hidden="true" /> Damage Dealt
           </div>
           <div className="text-lg font-black text-red-400">{run.totalDamageDealt.toLocaleString()}</div>
         </div>
-        <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-          <div className="text-[9px] text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1 flex items-center gap-1">
             <Heart className="w-3 h-3" aria-hidden="true" /> HP Remaining
           </div>
           <div className="text-lg font-black text-emerald-400">{run.playerHp}</div>
@@ -674,12 +674,12 @@ const CompletionView: React.FC<{
       </div>
 
       {run.lootCollected.length > 0 && (
-        <div className="bg-black/20 rounded-xl p-3 border border-white/5 space-y-1">
-          <div className="text-[10px] text-gray-500 uppercase font-bold mb-2">Loot Collected</div>
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] space-y-1">
+          <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold mb-2">Loot Collected</div>
           <ul className="space-y-1" aria-label="Collected loot">
             {run.lootCollected.map((item, i) => (
               <li key={i} className="flex items-center justify-between text-xs">
-                <span className="text-gray-300">{item.itemName}</span>
+                <span className="text-[var(--text-secondary)]">{item.itemName}</span>
                 <span className={`font-bold ${rarityColor[item.rarity] ?? 'text-gray-400'}`}>
                   {item.rarity}
                 </span>
@@ -723,33 +723,33 @@ const DungeonCard: React.FC<{
 
   return (
     <article
-      className={`rounded-2xl border p-4 space-y-3 ${locked ? 'border-white/5 bg-black/20 opacity-60' : 'border-white/10 bg-black/30'}`}
+      className={`rounded-2xl border p-4 space-y-3 ${locked ? 'border-[var(--border)] bg-[var(--panel-bg)] opacity-60' : 'border-[var(--border-strong)] bg-[var(--panel-bg)]'}`}
       aria-label={`Dungeon: ${dungeon.name}${locked ? ' — locked' : ''}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           {/* h4 inside the card; the outer panel has h3 — sequential hierarchy maintained */}
-          <h4 className="font-bold text-white text-base leading-snug">{dungeon.name}</h4>
-          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{dungeon.description}</p>
+          <h4 className="font-bold text-[var(--text-primary)] text-base leading-snug">{dungeon.name}</h4>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-2">{dungeon.description}</p>
         </div>
 
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-          <span className="text-[10px] font-bold text-gray-500">{dungeon.rooms.length} rooms</span>
-          <span className="text-[10px] text-gray-600">{resetLabel(dungeon.resetsAt)}</span>
+          <span className="text-[10px] font-bold text-[var(--text-muted)]">{dungeon.rooms.length} rooms</span>
+          <span className="text-[10px] text-[var(--text-muted)]">{resetLabel(dungeon.resetsAt)}</span>
         </div>
       </div>
 
       {/* Enemy preview thumbnail — decorative, so aria-hidden */}
       {previewBoss && (
         <div
-          className="flex items-center gap-2 bg-black/20 rounded-lg p-2 border border-white/5"
+          className="flex items-center gap-2 bg-[var(--panel-bg)] rounded-lg p-2 border border-[var(--border)]"
           aria-hidden="true"
         >
           <div className="w-10 h-12 flex-shrink-0">
             <BossAvatar bossType={previewBoss.bossType} hue={previewBoss.hue} size={48} />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] text-gray-600 uppercase font-bold">Enemies await</p>
+            <p className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Enemies await</p>
             <p className={`text-[10px] font-bold ${roomTypeBadge[previewRoom!.type]?.split(' ')[0] ?? 'text-gray-400'}`}>
               {previewRoom!.enemyName ?? previewBoss.bossType}
             </p>
@@ -761,7 +761,7 @@ const DungeonCard: React.FC<{
       <div className="flex flex-wrap gap-1.5">
         {dungeon.minLevel && (
           <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${levelLocked ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-gray-500 bg-white/5 border-white/5'}`}
+            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${levelLocked ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}
             aria-label={`Requires level ${dungeon.minLevel}${levelLocked ? ' — not met' : ''}`}
           >
             {levelLocked && <Lock className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />}
@@ -770,7 +770,7 @@ const DungeonCard: React.FC<{
         )}
         {dungeon.minGearScore && (
           <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${gearLocked ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-gray-500 bg-white/5 border-white/5'}`}
+            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${gearLocked ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}
             aria-label={`Requires gear score ${dungeon.minGearScore}${gearLocked ? ' — not met' : ''}`}
           >
             {gearLocked && <Lock className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />}
@@ -782,7 +782,7 @@ const DungeonCard: React.FC<{
           <span
             key={i}
             aria-hidden="true"
-            className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${roomTypeBadge[room.type] ?? 'text-gray-500 bg-white/5 border-white/5'}`}
+            className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${roomTypeBadge[room.type] ?? 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}
           >
             {room.type[0]}
           </span>
@@ -790,7 +790,7 @@ const DungeonCard: React.FC<{
       </div>
 
       {/* Rewards row */}
-      <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-white/5 pt-2" aria-label="Rewards">
+      <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] border-t border-[var(--border)] pt-2" aria-label="Rewards">
         <span className="text-yellow-400 font-bold">{dungeon.rewards.xp} XP</span>
         <span className="text-cyan-400 font-bold">{dungeon.rewards.flux} Flux</span>
         {dungeon.rewards.itemRarity && (
@@ -810,7 +810,7 @@ const DungeonCard: React.FC<{
           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
           focus-visible:outline-amber-400
           ${locked
-            ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+            ? 'bg-[var(--surface-raised)] text-[var(--text-muted)] cursor-not-allowed'
             : 'bg-amber-600 hover:bg-amber-500 text-white'
           }
         `}
@@ -989,7 +989,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
           <button
             type="button"
             onClick={() => { setActiveRun(null); setActiveDungeon(null); setLastResult(null); }}
-            className="text-xs text-gray-600 hover:text-gray-400 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 rounded"
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-tertiary)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 rounded"
           >
             Back to dungeon list
           </button>
@@ -1007,7 +1007,7 @@ const DungeonPanel: React.FC<DungeonPanelProps> = ({
         )}
 
         {/* Visual dungeon map */}
-        <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
           <DungeonMap rooms={activeDungeon.rooms} currentRoom={activeRun.currentRoom} />
         </div>
 

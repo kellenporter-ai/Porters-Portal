@@ -1069,10 +1069,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // Block assessment if session token request failed (skip in preview mode)
   if (isAssessment && sessionTokenError && !previewMode) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-black/20 border border-white/10 rounded-2xl p-8 text-center">
+      <div className="flex flex-col items-center justify-center h-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-8 text-center">
         <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
-        <h3 className="text-lg font-bold text-white mb-2">Cannot Start Assessment</h3>
-        <p className="text-gray-300 text-sm max-w-md mb-4">{sessionTokenError}</p>
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Cannot Start Assessment</h3>
+        <p className="text-[var(--text-secondary)] text-sm max-w-md mb-4">{sessionTokenError}</p>
         <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
@@ -1084,7 +1084,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   }
 
   return (
-    <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
+    <div className="flex flex-col h-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl overflow-hidden relative">
         {/* Preview Mode Banner */}
         {previewMode && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 text-center text-[10px] font-bold text-amber-300 tracking-widest uppercase z-20">
@@ -1093,14 +1093,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           </div>
         )}
         {/* HUD */}
-        <div className={`bg-[#0f0720] px-4 ${hasSidebar ? 'py-1' : 'py-2'} flex flex-wrap justify-between items-center gap-y-1 border-b border-white/5 z-20`}>
+        <div className={`bg-[var(--surface-base)] px-4 ${hasSidebar ? 'py-1' : 'py-2'} flex flex-wrap justify-between items-center gap-y-1 border-b border-[var(--border)] z-20`}>
             <div className="flex items-center gap-4 flex-wrap">
                 <div className={`flex items-center gap-2 ${hasSidebar ? 'text-xs' : 'text-sm'} font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
                     {isActive ? <PlayCircle className={hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} /> : <Clock className={`${hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} animate-pulse`} />}
                     {hasSidebar ? (isActive ? 'Active' : 'Paused') : (isActive ? 'Active Session' : 'Away (Paused)')}
                 </div>
                 {!hasSidebar && (
-                  <div className="text-xs text-gray-400 font-mono bg-black/40 px-2 py-1 rounded" translate="no">
+                  <div className="text-xs text-[var(--text-tertiary)] font-mono bg-[var(--panel-bg)] px-2 py-1 rounded" translate="no">
                       TIME: {Math.floor(displayTime / 60)}m {displayTime % 60}s
                   </div>
                 )}
@@ -1140,10 +1140,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 {/* Replay button for completed modules */}
                 {moduleCompleted && bridgeConnected && (
                     showReplayPrompt ? (
-                        <div className="flex items-center gap-2 bg-black/60 rounded-lg px-3 py-1 border border-white/10">
-                            <span className="text-[10px] text-gray-400">Replay from start?</span>
+                        <div className="flex items-center gap-2 bg-[var(--backdrop)] rounded-lg px-3 py-1 border border-[var(--border)]">
+                            <span className="text-[10px] text-[var(--text-tertiary)]">Replay from start?</span>
                             <button onClick={handleReplayClick} className="text-[10px] font-bold text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
-                            <button onClick={() => setShowReplayPrompt(false)} className="text-[10px] font-bold text-gray-500 hover:text-gray-300 px-2 py-0.5 rounded transition">Cancel</button>
+                            <button onClick={() => setShowReplayPrompt(false)} className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded transition">Cancel</button>
                         </div>
                     ) : (
                         <button
@@ -1219,18 +1219,18 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                     {/* Focus mode toggle bar */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className="flex items-center justify-center gap-1.5 bg-[#0f0720] py-0.5 px-2 z-10 shrink-0 border-y border-white/5">
+                        <div className="flex items-center justify-center gap-1.5 bg-[var(--surface-base)] py-0.5 px-2 z-10 shrink-0 border-y border-[var(--border)]">
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                                 title="Expand simulation"
                             >
                                 <ChevronUp className="w-3.5 h-3.5" /> Simulation
                             </button>
-                            <div className="w-6 h-0.5 bg-white/20 rounded-full" />
+                            <div className="w-6 h-0.5 bg-[var(--surface-glass-heavy)] rounded-full" />
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'lessons' ? 'balanced' : 'lessons')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-gray-400 bg-white/5 border border-white/10 hover:text-gray-200 hover:bg-white/10'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                                 title="Expand lessons"
                             >
                                 <ChevronDown className="w-3.5 h-3.5" /> Lessons
@@ -1239,9 +1239,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     )}
                     {/* Lesson Blocks as bottom panel alongside iframe */}
                     {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className={`${lessonFlex} min-h-0 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
+                        <div className={`${lessonFlex} min-h-0 bg-[var(--surface-base)]/95 border-t border-[var(--border)] overflow-y-auto p-6 text-[var(--text-secondary)] shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
                             {savedBlockResponses === undefined ? (
-                                <div className="flex items-center justify-center h-32 text-gray-500"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                                <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
                             ) : (
                                 <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
                             )}
@@ -1250,15 +1250,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 </>
             ) : lessonBlocks && lessonBlocks.length > 0 ? (
                 /* Lesson-only mode: blocks fill the entire content area */
-                <div className="flex-1 bg-[#0f0720]/95 overflow-y-auto p-6 text-gray-300 custom-scrollbar">
+                <div className="flex-1 bg-[var(--surface-base)]/95 overflow-y-auto p-6 text-[var(--text-secondary)] custom-scrollbar">
                     {savedBlockResponses === undefined ? (
-                        <div className="flex items-center justify-center h-32 text-gray-500"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                        <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
                     ) : (
                         <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
                     )}
                 </div>
             ) : (
-                <div className="flex-1 flex items-center justify-center text-gray-600 italic">
+                <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] italic">
                     <div className="text-center">
                         <Eye className="w-12 h-12 mx-auto mb-2 opacity-10" />
                         <p className="font-mono text-sm uppercase">No interactive link found.</p>
@@ -1267,10 +1267,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             )}
 
             {htmlContent && (
-                <div className="h-1/3 bg-[#0f0720]/95 border-t border-white/10 overflow-y-auto p-6 text-gray-300 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
+                <div className="h-1/3 bg-[var(--surface-base)]/95 border-t border-[var(--border)] overflow-y-auto p-6 text-[var(--text-secondary)] shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-white font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                            <Maximize2 className="w-4 h-4 text-purple-400" /> Operational Context
+                        <h3 className="text-[var(--text-primary)] font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                            <Maximize2 className="w-4 h-4 text-[var(--accent-text)]" /> Operational Context
                         </h3>
                         {ttsText && <ProctorTTS textContent={ttsText} />}
                     </div>

@@ -71,10 +71,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                         className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl animate-in slide-in-from-top-3 fade-in duration-300 ${STYLES[toast.type]}`}
                     >
                         {ICONS[toast.type]}
-                        <span className="text-sm text-white font-medium leading-snug flex-1">{toast.message}</span>
+                        <span className="text-sm text-[var(--text-primary)] font-medium leading-snug flex-1">{toast.message}</span>
                         <button
                             onClick={() => removeToast(toast.id)}
-                            className="text-gray-500 hover:text-white transition shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded"
+                            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded"
                             aria-label="Dismiss notification"
                         >
                             <X className="w-4 h-4" />

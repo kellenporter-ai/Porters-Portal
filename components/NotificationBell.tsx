@@ -143,7 +143,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="relative p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+        className="relative p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)] rounded-lg transition"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -156,7 +156,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
       {isOpen && createPortal(
         <div
           ref={panelRef}
-          className={`fixed w-80 max-h-[420px] bg-[#1a1b26]/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in duration-200 ${
+          className={`fixed w-80 max-h-[420px] bg-[var(--surface-raised)] backdrop-blur-xl border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in duration-200 ${
             dropUp ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'
           }`}
           style={{
@@ -166,12 +166,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
             ...(panelPos.right != null ? { right: panelPos.right } : {}),
           }}
         >
-          <div className="flex items-center justify-between p-3 border-b border-white/5">
-            <h4 className="text-sm font-bold text-white">Notifications</h4>
+          <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
+            <h4 className="text-sm font-bold text-[var(--text-primary)]">Notifications</h4>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-1 text-[10px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest transition"
+                className="flex items-center gap-1 text-[10px] text-[var(--accent-text)] hover:text-purple-300 font-bold uppercase tracking-widest transition"
               >
                 <CheckCheck className="w-3 h-3" /> Mark all read
               </button>
@@ -184,7 +184,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
               <div className="flex items-start gap-2">
                 <BellRing className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-gray-300 leading-tight">Get desktop alerts for quests, loot, and announcements?</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-tight">Get desktop alerts for quests, loot, and announcements?</p>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={async () => {
@@ -200,7 +200,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
                     </button>
                     <button
                       onClick={() => setShowPushPrompt(false)}
-                      className="px-2 py-1 bg-white/5 text-gray-400 text-[10px] font-bold rounded-lg hover:bg-white/10 transition"
+                      className="px-2 py-1 bg-[var(--surface-glass)] text-[var(--text-tertiary)] text-[10px] font-bold rounded-lg hover:bg-[var(--surface-glass-heavy)] transition"
                     >
                       Not now
                     </button>
@@ -212,7 +212,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
 
           <div className="overflow-y-auto max-h-[360px] custom-scrollbar">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-[var(--text-muted)]">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
                 <p className="text-xs">No notifications yet</p>
               </div>
@@ -221,17 +221,17 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
                 <div
                   key={n.id}
                   onClick={() => handleClickNotification(n)}
-                  className={`flex gap-3 p-3 border-b border-white/5 cursor-pointer transition ${
-                    n.isRead ? 'opacity-50 hover:opacity-70' : 'bg-purple-500/5 hover:bg-white/5'
+                  className={`flex gap-3 p-3 border-b border-[var(--border)] cursor-pointer transition ${
+                    n.isRead ? 'opacity-50 hover:opacity-70' : 'bg-purple-500/5 hover:bg-[var(--surface-glass)]'
                   }`}
                 >
                   <div className="mt-0.5 shrink-0">
-                    {ICON_MAP[n.type] || <Bell className="w-4 h-4 text-gray-400" />}
+                    {ICON_MAP[n.type] || <Bell className="w-4 h-4 text-[var(--text-tertiary)]" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-bold text-white ${expandedId === n.id ? '' : 'truncate'}`}>{n.title}</p>
-                    <p className={`text-[11px] text-gray-400 leading-tight mt-0.5 ${expandedId === n.id ? '' : 'line-clamp-2'}`}>{n.message}</p>
-                    <p className="text-[9px] text-gray-600 mt-1">{formatTime(n.timestamp)}</p>
+                    <p className={`text-xs font-bold text-[var(--text-primary)] ${expandedId === n.id ? '' : 'truncate'}`}>{n.title}</p>
+                    <p className={`text-[11px] text-[var(--text-tertiary)] leading-tight mt-0.5 ${expandedId === n.id ? '' : 'line-clamp-2'}`}>{n.message}</p>
+                    <p className="text-[9px] text-[var(--text-muted)] mt-1">{formatTime(n.timestamp)}</p>
                   </div>
                   {!n.isRead && (
                     <div className="w-2 h-2 rounded-full bg-purple-500 mt-1.5 shrink-0" />

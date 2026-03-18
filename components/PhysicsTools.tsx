@@ -148,7 +148,7 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
             : { right: 24, bottom: 24 };
 
         const btnBase = (hoverClasses: string) =>
-            `bg-white/10 ${isDragging ? '' : hoverClasses} text-white p-3 rounded-full shadow-lg backdrop-blur-md border border-white/20 transition-all group relative ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`;
+            `bg-[var(--surface-glass-heavy)] ${isDragging ? '' : hoverClasses} text-[var(--text-primary)] p-3 rounded-full shadow-lg backdrop-blur-md border border-[var(--border-strong)] transition-all group relative ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`;
 
         return (
             <div
@@ -166,7 +166,7 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
                     onDoubleClick={resetPosition}
                     title="Drag to move · Double-click to reset"
                 >
-                    <GripHorizontal className="w-5 h-3 text-white/40" />
+                    <GripHorizontal className="w-5 h-3 text-[var(--text-tertiary)]" />
                 </div>
 
                 <button
@@ -176,7 +176,7 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
                 >
                     <TrendingUp className="w-6 h-6" />
                     {!isDragging && (
-                        <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                        <span className="absolute right-full mr-2 bg-[var(--panel-bg)] px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
                             Grapher Pro
                         </span>
                     )}
@@ -193,7 +193,7 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
                             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#0f0720] animate-pulse" />
                         )}
                         {!isDragging && (
-                            <span className="absolute right-full mr-2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                            <span className="absolute right-full mr-2 bg-[var(--panel-bg)] px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">
                                 Class Comms
                             </span>
                         )}
@@ -207,19 +207,19 @@ const PhysicsTools: React.FC<PhysicsToolsProps> = ({ onToggleChat, hasUnreadChat
     const config = TOOL_CONFIG[activeTool];
 
     return (
-        <div className={`fixed z-50 bg-[#1e1e1e] border border-white/20 shadow-2xl transition-all duration-300 overflow-hidden flex flex-col ${isMinimized ? 'w-64 h-12 bottom-6 right-6 rounded-xl' : 'inset-4 md:inset-10 rounded-2xl'}`}>
-            <div className="bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-white/10">
+        <div className={`fixed z-50 bg-[var(--surface-raised)] border border-[var(--border-strong)] shadow-2xl transition-all duration-300 overflow-hidden flex flex-col ${isMinimized ? 'w-64 h-12 bottom-6 right-6 rounded-xl' : 'inset-4 md:inset-10 rounded-2xl'}`}>
+            <div className="bg-[var(--surface-raised)] p-3 flex justify-between items-center border-b border-[var(--border)]">
                 <div className="flex items-center gap-3">
                     <div className={`p-1.5 rounded-lg ${config.iconBg} ${config.iconText}`}>
                         {config.icon}
                     </div>
-                    <span className="font-bold text-white text-sm">{config.label}</span>
+                    <span className="font-bold text-[var(--text-primary)] text-sm">{config.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => setIsMinimized(!isMinimized)} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition">
+                    <button onClick={() => setIsMinimized(!isMinimized)} className="p-1.5 hover:bg-[var(--surface-glass-heavy)] rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition">
                         {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
                     </button>
-                    <button onClick={() => setActiveTool(null)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition">
+                    <button onClick={() => setActiveTool(null)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-[var(--text-tertiary)] hover:text-red-400 transition">
                         <X className="w-4 h-4" />
                     </button>
                 </div>

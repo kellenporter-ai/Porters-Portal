@@ -357,8 +357,8 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                 </div>
             </div>
             <div className="flex items-center gap-4">
-                <div className="bg-black/40 px-4 py-2 rounded-lg border border-emerald-500/20 text-center">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest block">Cycle ID</span>
+                <div className="bg-[var(--panel-bg)] px-4 py-2 rounded-lg border border-emerald-500/20 text-center">
+                    <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest block">Cycle ID</span>
                     <span className="font-mono text-emerald-400 font-bold">{currentWeekId}</span>
                 </div>
                 <button 
@@ -381,7 +381,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
         />
 
         {/* Tab Navigation */}
-        <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto custom-scrollbar">
+        <div className="flex items-center bg-[var(--surface-glass)] p-1 rounded-xl border border-[var(--border)] overflow-x-auto custom-scrollbar">
             {DAYS_OF_WEEK.map(day => {
                 const dayLog = getLogForDay(day);
                 const isActive = activeDay === day;
@@ -391,11 +391,11 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                         onClick={() => setActiveDay(day)}
                         className={`flex-1 min-w-[100px] flex flex-col items-center py-3 rounded-lg transition-all relative group ${
                             isActive 
-                                ? 'bg-emerald-600 text-white shadow-lg' 
-                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                ? 'bg-emerald-600 text-white shadow-lg'
+                                : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)]'
                         }`}
                     >
-                        <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isActive ? 'text-emerald-100' : 'text-gray-500 group-hover:text-gray-300'}`}>Day {DAYS_OF_WEEK.indexOf(day) + 1}</span>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isActive ? 'text-emerald-100' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>Day {DAYS_OF_WEEK.indexOf(day) + 1}</span>
                         <span className="font-bold text-sm">{day}</span>
                         {dayLog && (
                             <div className={`absolute top-2 right-2 ${isActive ? 'text-emerald-200' : 'text-emerald-500'}`}>
@@ -408,7 +408,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
         </div>
 
         {/* Main Active Day Content - Vertical Layout for Widescreen Images */}
-        <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col gap-6">
+        <div className="flex-1 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col gap-6">
             
             {/* Top: Image Upload Area (Takes available space) */}
             <div className="flex-1 flex flex-col min-h-0">
@@ -417,32 +417,32 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                         <ImageIcon className="w-4 h-4" /> Evidence Capture ({selectedClass})
                     </h3>
                     {activeLog && (
-                        <div className="text-[9px] bg-black/40 px-2 py-0.5 rounded border border-white/10 text-gray-400 font-mono flex items-center gap-1">
+                        <div className="text-[9px] bg-[var(--panel-bg)] px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-tertiary)] font-mono flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatExifDate(activeLog.exifDate) || formatExifDate(activeLog.timestamp)}
                         </div>
                     )}
                 </div>
 
-                <div className="flex-1 min-h-[180px] bg-black/40 rounded-xl border-2 border-dashed border-white/10 relative group overflow-hidden transition-all hover:border-emerald-500/30">
+                <div className="flex-1 min-h-[180px] bg-[var(--panel-bg)] rounded-xl border-2 border-dashed border-[var(--border)] relative group overflow-hidden transition-all hover:border-emerald-500/30">
                     {activeLog ? (
                         <>
                             <img src={activeLog.imageUrl} alt={activeDay} loading="lazy" className="w-full h-full object-contain bg-black/20" />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                            <div className="absolute inset-0 bg-[var(--backdrop)] opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="w-8 h-8 text-emerald-400" />
-                                <span className="text-white font-bold text-sm">Replace Evidence</span>
+                                <span className="text-[var(--text-primary)] font-bold text-sm">Replace Evidence</span>
                             </div>
                         </>
                     ) : (
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full h-full flex flex-col items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-white/5 transition gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full h-full flex flex-col items-center justify-center text-[var(--text-muted)] hover:text-emerald-400 hover:bg-[var(--surface-glass)] transition gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isUploading || !isOnline}
                         >
                             {isUploading ? (
                                 <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
                             ) : (
-                                <div className="p-4 bg-white/5 rounded-full mb-2 group-hover:scale-110 transition shadow-xl">
+                                <div className="p-4 bg-[var(--surface-glass)] rounded-full mb-2 group-hover:scale-110 transition shadow-xl">
                                     <Camera className="w-8 h-8" />
                                 </div>
                             )}
@@ -466,13 +466,13 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                 {activeLog ? (
                     <textarea 
                         key={activeDay}
-                        className="flex-1 w-full bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-gray-200 resize-none focus:outline-none focus:border-emerald-500/50 focus:bg-black/40 transition placeholder-gray-600 leading-relaxed custom-scrollbar"
+                        className="flex-1 w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-4 text-sm text-[var(--text-secondary)] resize-none focus:outline-none focus:border-emerald-500/50 focus:bg-[var(--panel-bg)] transition placeholder-[var(--text-muted)] leading-relaxed custom-scrollbar"
                         placeholder={`Document your findings for ${activeDay} in ${selectedClass}...`}
                         defaultValue={activeLog.reflection}
                         onBlur={(e) => handleReflectionChange(activeDay, e.target.value)}
                     />
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-600 italic text-center px-10 border border-white/5 rounded-xl bg-white/5">
+                    <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-muted)] italic text-center px-10 border border-[var(--border)] rounded-xl bg-[var(--surface-glass)]">
                         <div className="mb-2 opacity-30">
                             <ChevronRight className="w-6 h-6" />
                         </div>

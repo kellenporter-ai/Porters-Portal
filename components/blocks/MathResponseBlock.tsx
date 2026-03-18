@@ -325,18 +325,18 @@ const StructureForm: React.FC<{
   };
 
   return (
-    <div className="flex items-center gap-2 bg-black/40 border border-purple-500/30 rounded-lg px-3 py-2">
+    <div className="flex items-center gap-2 bg-[var(--panel-bg)] border border-purple-500/30 rounded-lg px-3 py-2">
       <span className="text-xs text-purple-300 font-medium shrink-0">
         {config.label}:
       </span>
       {config.fields.map((field, i) => (
         <React.Fragment key={field.key}>
           {i > 0 && type === 'fraction' && (
-            <span className="text-gray-500 text-sm font-bold">/</span>
+            <span className="text-[var(--text-muted)] text-sm font-bold">/</span>
           )}
           <div className="flex flex-col gap-0.5">
             <label
-              className="text-[9px] text-gray-500 uppercase tracking-wider"
+              className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider"
               htmlFor={`struct-${type}-${field.key}`}
             >
               {field.label}
@@ -354,7 +354,7 @@ const StructureForm: React.FC<{
                 if (e.key === 'Enter') handleInsert();
                 if (e.key === 'Escape') onClose();
               }}
-              className="w-24 bg-black/30 border border-white/10 rounded px-2 py-1 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
+              className="w-24 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-2 py-1 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50"
             />
           </div>
         </React.Fragment>
@@ -369,7 +369,7 @@ const StructureForm: React.FC<{
       <button
         type="button"
         onClick={onClose}
-        className="p-1 text-gray-500 hover:text-gray-300 transition"
+        className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
         aria-label="Close structure form"
       >
         <X className="w-3.5 h-3.5" />
@@ -555,12 +555,12 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       {/* Question / Prompt */}
       <div className="space-y-1">
         {block.title && (
-          <div className="text-sm text-white font-medium flex items-center gap-2">
+          <div className="text-sm text-[var(--text-primary)] font-medium flex items-center gap-2">
             <Calculator className="w-4 h-4 text-purple-400 shrink-0" />
             <BlockText text={block.title} />
           </div>
         )}
-        <BlockText text={block.content} tag="p" className="text-sm text-gray-300 leading-relaxed" />
+        <BlockText text={block.content} tag="p" className="text-sm text-[var(--text-secondary)] leading-relaxed" />
       </div>
 
       {/* Read-only display: just rendered LaTeX per step */}
@@ -571,15 +571,15 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
               <span className="text-xs text-purple-300 font-medium">
                 {step.label}
               </span>
-              <div className="bg-white/5 rounded-lg px-3 py-2 overflow-x-auto">
+              <div className="bg-[var(--surface-glass)] rounded-lg px-3 py-2 overflow-x-auto">
                 {step.latex.trim() ? (
                   <div className="space-y-1">
                     {step.latex.split(' \\\\ ').map((line, li) => (
                       <div
                         key={li}
-                        className="text-white katex-preview flex items-center gap-2"
+                        className="text-[var(--text-primary)] katex-preview flex items-center gap-2"
                       >
-                        <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
+                        <span className="text-[var(--text-muted)] text-[10px] select-none">{'\u2022'}</span>
                         <div
                           dangerouslySetInnerHTML={{
                             __html: renderLatex(line.trim()),
@@ -589,7 +589,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-xs italic">No response</p>
+                  <p className="text-[var(--text-muted)] text-xs italic">No response</p>
                 )}
               </div>
             </div>
@@ -609,7 +609,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   type="button"
                   onClick={() => moveStep(index, -1)}
                   disabled={index === 0 || submitted}
-                  className="p-0.5 text-gray-500 hover:text-purple-400 disabled:opacity-20 transition"
+                  className="p-0.5 text-[var(--text-muted)] hover:text-purple-400 disabled:opacity-20 transition"
                   title="Move step up"
                   aria-label={`Move step ${index + 1} up`}
                 >
@@ -619,7 +619,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   type="button"
                   onClick={() => moveStep(index, 1)}
                   disabled={index === steps.length - 1 || submitted}
-                  className="p-0.5 text-gray-500 hover:text-purple-400 disabled:opacity-20 transition"
+                  className="p-0.5 text-[var(--text-muted)] hover:text-purple-400 disabled:opacity-20 transition"
                   title="Move step down"
                   aria-label={`Move step ${index + 1} down`}
                 >
@@ -638,7 +638,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   value={step.label}
                   onChange={e => updateStepLabel(index, e.target.value)}
                   disabled={submitted}
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-purple-300 font-medium placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
+                  className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-purple-300 font-medium placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
                   placeholder="Label"
                 />
                 <datalist id={`step-labels-${index}`}>
@@ -684,7 +684,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                       ? 'List what you need to find, one per line:\nv_f = ?\nd = ?'
                       : 'Type math naturally — one expression per line\ne.g. v = d/t\nF = m × a'
                   }
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-y"
+                  className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-y"
                 />
               </div>
 
@@ -693,7 +693,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                 <button
                   type="button"
                   onClick={() => removeStep(index)}
-                  className="p-1.5 text-gray-500 hover:text-red-400 transition shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="p-1.5 text-[var(--text-muted)] hover:text-red-400 transition shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                   title="Remove this step"
                   aria-label={`Remove step ${index + 1}`}
                 >
@@ -706,7 +706,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
             <div className="ml-10">
               {step.latex.trim() ? (
                 <div
-                  className="bg-white/5 rounded-lg px-3 py-2 overflow-x-auto"
+                  className="bg-[var(--surface-glass)] rounded-lg px-3 py-2 overflow-x-auto"
                   aria-live="polite"
                   aria-label={`Preview for step ${index + 1}`}
                 >
@@ -714,9 +714,9 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                     {step.latex.split(' \\\\ ').map((line, li) => (
                       <div
                         key={li}
-                        className="text-white katex-preview flex items-center gap-2"
+                        className="text-[var(--text-primary)] katex-preview flex items-center gap-2"
                       >
-                        <span className="text-gray-500 text-[10px] select-none">{'\u2022'}</span>
+                        <span className="text-[var(--text-muted)] text-[10px] select-none">{'\u2022'}</span>
                         <div
                           dangerouslySetInnerHTML={{
                             __html: renderLatex(line.trim()),
@@ -727,7 +727,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-600 text-xs italic px-3 py-1">
+                <p className="text-[var(--text-muted)] text-xs italic px-3 py-1">
                   Preview appears here as you type
                 </p>
               )}
@@ -750,10 +750,10 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
 
       {/* Math Keyboard */}
       {block.showLatexHelp !== false && !readOnly && !submitted && (
-        <div className="space-y-2.5 border-t border-white/5 pt-3">
+        <div className="space-y-2.5 border-t border-[var(--border)] pt-3">
           {/* Structure buttons */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider mr-1 shrink-0">
+            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mr-1 shrink-0">
               Build
             </span>
             {STRUCTURE_KEYS.map(type => {
@@ -770,7 +770,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   className={`px-2.5 py-1.5 text-xs rounded-lg border transition font-medium ${
                     activeStructure === type
                       ? 'bg-purple-600/30 border-purple-500/50 text-purple-300'
-                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-purple-500/20 hover:text-white'
+                      : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-purple-500/20 hover:text-[var(--text-primary)]'
                   }`}
                   title={config.title}
                 >
@@ -793,7 +793,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {TOOLBAR_GROUPS.map(group => (
               <div key={group.label} className="flex items-center gap-1">
-                <span className="text-[10px] text-gray-500 mr-1 shrink-0 uppercase tracking-wider">
+                <span className="text-[10px] text-[var(--text-muted)] mr-1 shrink-0 uppercase tracking-wider">
                   {group.label}
                 </span>
                 <div className="flex flex-wrap gap-0.5">
@@ -803,7 +803,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                       type="button"
                       onClick={() => insertAtCursor(btn.insert)}
                       title={btn.title}
-                      className="px-1.5 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded transition whitespace-nowrap"
+                      className="px-1.5 py-0.5 text-xs bg-[var(--surface-glass)] hover:bg-purple-500/20 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded transition whitespace-nowrap"
                     >
                       {btn.display}
                     </button>
@@ -817,7 +817,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           <div className="space-y-1.5">
             {Array.from(new Set(TEMPLATES.map(t => t.category))).map(cat => (
               <div key={cat} className="flex items-center gap-1 flex-wrap">
-                <span className="text-[10px] text-gray-500 mr-1 shrink-0 uppercase tracking-wider w-20">
+                <span className="text-[10px] text-[var(--text-muted)] mr-1 shrink-0 uppercase tracking-wider w-20">
                   {cat}
                 </span>
                 {TEMPLATES.filter(t => t.category === cat).map((tmpl, i) => (
@@ -826,7 +826,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                     type="button"
                     onClick={() => insertAtCursor(tmpl.insert)}
                     title={tmpl.title}
-                    className="px-2 py-0.5 text-xs bg-white/5 hover:bg-purple-500/20 text-gray-300 hover:text-white rounded-lg border border-white/5 transition whitespace-nowrap"
+                    className="px-2 py-0.5 text-xs bg-[var(--surface-glass)] hover:bg-purple-500/20 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg border border-[var(--border)] transition whitespace-nowrap"
                   >
                     {tmpl.display}
                   </button>
@@ -857,7 +857,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
             <button
               type="button"
               onClick={handleEdit}
-              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+              className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
             >
               <Pencil className="w-3 h-3" /> Edit
             </button>

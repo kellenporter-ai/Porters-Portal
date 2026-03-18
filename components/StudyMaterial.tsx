@@ -63,7 +63,7 @@ function renderContent(raw: string): string {
     text = text.replace(/\\n|\n/g, '<br/>');
 
     // Step 8: Bold
-    text = text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white">$1</strong>');
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[var(--text-primary)]">$1</strong>');
 
     return `<p>${text}</p>`;
 }
@@ -144,7 +144,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
         return (
             <div className="flex flex-col items-center justify-center h-full gap-4">
                 <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-                <p className="text-gray-400 text-sm">Loading study material...</p>
+                <p className="text-[var(--text-tertiary)] text-sm">Loading study material...</p>
             </div>
         );
     }
@@ -152,9 +152,9 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
     if (isEmpty || !material) {
         return (
             <div className="flex flex-col items-center justify-center h-full gap-4">
-                <BookOpen className="w-12 h-12 text-gray-600" />
-                <p className="text-gray-400 font-bold">No Study Material Available</p>
-                <p className="text-gray-600 text-sm text-center max-w-sm">
+                <BookOpen className="w-12 h-12 text-[var(--text-muted)]" />
+                <p className="text-[var(--text-tertiary)] font-bold">No Study Material Available</p>
+                <p className="text-[var(--text-muted)] text-sm text-center max-w-sm">
                     Your teacher hasn&apos;t uploaded reading material for this resource yet.
                 </p>
             </div>
@@ -162,21 +162,21 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
     }
 
     return (
-        <div className="flex flex-col h-full bg-black/20 border border-white/10 rounded-2xl overflow-hidden relative">
+        <div className="flex flex-col h-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl overflow-hidden relative">
             {/* HUD */}
-            <div className="bg-black/40 backdrop-blur-md px-4 py-2 flex justify-between items-center border-b border-white/5 z-20 shrink-0">
+            <div className="bg-[var(--panel-bg)] backdrop-blur-md px-4 py-2 flex justify-between items-center border-b border-[var(--border)] z-20 shrink-0">
                 <div className="flex items-center gap-4">
                     <div className={`flex items-center gap-2 text-sm font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
                         {isActive ? <PlayCircle className="w-4 h-4" /> : <Clock className="w-4 h-4 animate-pulse" />}
                         {isActive ? 'Reading Active' : 'Away (Paused)'}
                     </div>
-                    <div className="text-xs text-gray-400 font-mono bg-black/40 px-2 py-1 rounded">
+                    <div className="text-xs text-[var(--text-tertiary)] font-mono bg-[var(--panel-bg)] px-2 py-1 rounded">
                         TIME: {Math.floor(displayTime / 60)}m {displayTime % 60}s
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     {material.estimatedMinutes && (
-                        <span className="text-[10px] text-gray-500 font-mono">~{material.estimatedMinutes} min read</span>
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono">~{material.estimatedMinutes} min read</span>
                     )}
                     {!isActive && (
                         <div className="flex items-center gap-2 text-[10px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
@@ -190,9 +190,9 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
             <div className="flex-1 overflow-y-auto custom-scrollbar" onScroll={handleInteraction}>
                 <div className="max-w-3xl mx-auto px-6 py-8">
                     <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-white mb-2">{material.title}</h1>
+                        <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{material.title}</h1>
                         {material.description && (
-                            <p className="text-sm text-gray-400 leading-relaxed">{material.description}</p>
+                            <p className="text-sm text-[var(--text-tertiary)] leading-relaxed">{material.description}</p>
                         )}
                     </div>
 
@@ -204,7 +204,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
                                     {section.title}
                                 </h2>
                                 <div
-                                    className="study-content text-sm text-gray-300 leading-relaxed pl-10"
+                                    className="study-content text-sm text-[var(--text-secondary)] leading-relaxed pl-10"
                                     dangerouslySetInnerHTML={{ __html: section.html }}
                                 />
                             </div>

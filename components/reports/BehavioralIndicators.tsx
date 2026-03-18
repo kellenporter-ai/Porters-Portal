@@ -40,8 +40,8 @@ const BehavioralIndicators: React.FC<BehavioralIndicatorsProps> = ({ submissions
   if (!metrics) {
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest print:text-gray-700">Behavioral Indicators</h3>
-        <div className="text-center py-8 text-gray-600 italic text-xs">No submission data available.</div>
+        <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest print:text-gray-700">Behavioral Indicators</h3>
+        <div className="text-center py-8 text-[var(--text-muted)] italic text-xs">No submission data available.</div>
       </div>
     );
   }
@@ -102,12 +102,12 @@ const BehavioralIndicators: React.FC<BehavioralIndicatorsProps> = ({ submissions
           return (
             <div key={ind.label} className={`${colors.bg} border ${colors.border} rounded-xl p-3 print:border-gray-300 print:bg-gray-50`}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-gray-400 print:text-gray-500">{ind.icon}</span>
+                <span className="text-[var(--text-tertiary)] print:text-gray-500">{ind.icon}</span>
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
               </div>
               <div className={`text-lg font-bold ${colors.text}`}>{ind.value}</div>
-              <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">{ind.label}</div>
-              <div className="text-[10px] text-gray-500 mt-1">{ind.detail}</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{ind.label}</div>
+              <div className="text-[10px] text-[var(--text-muted)] mt-1">{ind.detail}</div>
             </div>
           );
         })}

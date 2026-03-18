@@ -94,32 +94,32 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
   return (
     <Modal isOpen={!!quiz} onClose={onClose} title={quiz ? `Endgame: ${quiz.bossName}` : 'Endgame'} maxWidth="max-w-4xl w-[95vw]">
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading endgame data...</div>
+        <div className="text-center py-12 text-[var(--text-muted)]">Loading endgame data...</div>
       ) : quiz && (
         <div className="space-y-6 p-2 max-h-[75vh] overflow-y-auto">
           {/* Summary + Export */}
           <div className="flex items-center justify-between">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
-              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
-                <div className="text-2xl font-black text-white">{progress.length}</div>
-                <div className="text-[10px] text-gray-500 uppercase font-bold">Participants</div>
+              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
+                <div className="text-2xl font-black text-[var(--text-primary)]">{progress.length}</div>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Participants</div>
               </div>
-              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-amber-400">{progress.reduce((s, p) => s + (p.combatStats?.totalDamageDealt || 0), 0).toLocaleString()}</div>
-                <div className="text-[10px] text-gray-500 uppercase font-bold">Total Damage</div>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total Damage</div>
               </div>
-              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-green-400">{progress.reduce((s, p) => s + (p.combatStats?.questionsCorrect || 0), 0)}</div>
-                <div className="text-[10px] text-gray-500 uppercase font-bold">Total Correct</div>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total Correct</div>
               </div>
-              <div className="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
+              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-red-400">{progress.reduce((s, p) => s + (p.combatStats?.criticalHits || 0), 0)}</div>
-                <div className="text-[10px] text-gray-500 uppercase font-bold">Total Crits</div>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total Crits</div>
               </div>
             </div>
             <button
               onClick={handleExportCSV}
-              className="ml-3 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 flex-shrink-0"
+              className="ml-3 px-4 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition flex items-center gap-1.5 flex-shrink-0"
               title="Export to CSV"
             >
               <Download className="w-3.5 h-3.5" /> CSV
@@ -140,12 +140,12 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                   const participated = (stats?.questionsAttempted || 0) >= BOSS_PARTICIPATION_MIN_ATTEMPTS && (stats?.questionsCorrect || 0) >= BOSS_PARTICIPATION_MIN_CORRECT;
                   const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-400', 'text-purple-400'];
                   return (
-                    <div key={prog.userId} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-black/20 border-white/5'}`}>
-                      <div className={`text-xl font-black w-8 text-center ${medalColors[idx] || 'text-gray-500'}`}>#{idx + 1}</div>
-                      {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-white/10" alt="" loading="lazy" />}
+                    <div key={prog.userId} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-[var(--panel-bg)] border-[var(--border)]'}`}>
+                      <div className={`text-xl font-black w-8 text-center ${medalColors[idx] || 'text-[var(--text-muted)]'}`}>#{idx + 1}</div>
+                      {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-[var(--border)]" alt="" loading="lazy" />}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-white truncate">{student?.name || prog.userId}</div>
-                        <div className="flex gap-2 text-[10px] text-gray-500">
+                        <div className="text-sm font-bold text-[var(--text-primary)] truncate">{student?.name || prog.userId}</div>
+                        <div className="flex gap-2 text-[10px] text-[var(--text-muted)]">
                           <span className="text-amber-400 font-bold">{stats?.totalDamageDealt?.toLocaleString() || 0} dmg</span>
                           <span>{stats?.questionsCorrect || 0}/{stats?.questionsAttempted || 0} correct</span>
                           <span>{stats?.criticalHits || 0} crits</span>
@@ -154,7 +154,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                       </div>
                       <div className="text-right flex-shrink-0">
                         {participated ? (
-                          <span className={`text-xs font-bold ${idx < 5 ? medalColors[idx] : 'text-gray-400'}`}>{multiplier}x</span>
+                          <span className={`text-xs font-bold ${idx < 5 ? medalColors[idx] : 'text-[var(--text-tertiary)]'}`}>{multiplier}x</span>
                         ) : (
                           <span className="text-[10px] text-red-400 font-bold">DNQ</span>
                         )}
@@ -168,8 +168,8 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
           {/* Per-Question Analytics */}
           {quiz.questions.length > 0 && (
             <div>
-              <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-3"><AlertTriangle className="w-4 h-4 text-orange-400" /> Question Analytics</h4>
-              <div className="text-[10px] text-gray-500 mb-3">Accuracy rates based on per-difficulty aggregation across all participants.</div>
+              <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><AlertTriangle className="w-4 h-4 text-orange-400" /> Question Analytics</h4>
+              <div className="text-[10px] text-[var(--text-muted)] mb-3">Accuracy rates based on per-difficulty aggregation across all participants.</div>
 
               {/* Most Missed */}
               {mostMissed.length > 0 && mostMissed[0].estimatedAccuracy < 70 && (
@@ -180,10 +180,10 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                       <div key={q.id} className="flex items-start gap-2">
                         <span className="text-[10px] text-red-400 font-bold mt-0.5">Q{quiz.questions.indexOf(q) + 1}</span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-white truncate">{q.stem}</div>
+                          <div className="text-xs text-[var(--text-primary)] truncate">{q.stem}</div>
                           <div className="flex gap-2 mt-0.5">
                             <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${q.difficulty === 'EASY' ? 'bg-green-500/10 text-green-400' : q.difficulty === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>{q.difficulty}</span>
-                            <span className="text-[9px] text-gray-500">{q.estimatedAccuracy}% accuracy</span>
+                            <span className="text-[9px] text-[var(--text-muted)]">{q.estimatedAccuracy}% accuracy</span>
                             <span className="text-[9px] text-green-400">Answer: {q.options[q.correctAnswer]}</span>
                           </div>
                         </div>
@@ -196,18 +196,18 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
               {/* Full Question Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead><tr className="text-[9px] text-gray-500 uppercase font-bold border-b border-white/5">
+                  <thead><tr className="text-[9px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
                     <th className="pb-2 pl-2">#</th>
                     <th className="pb-2">Question</th>
                     <th className="pb-2 text-center">Difficulty</th>
                     <th className="pb-2 text-center">Est. Accuracy</th>
                     <th className="pb-2">Correct Answer</th>
                   </tr></thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-[var(--border)]">
                     {questionAnalytics.map((q, idx) => (
-                      <tr key={q.id} className={`hover:bg-white/5 ${q.estimatedAccuracy < 50 ? 'bg-red-500/5' : ''}`}>
-                        <td className="py-2 pl-2 font-bold text-gray-500">{idx + 1}</td>
-                        <td className="py-2 text-white max-w-[300px] truncate">{q.stem}</td>
+                      <tr key={q.id} className={`hover:bg-[var(--surface-glass)] ${q.estimatedAccuracy < 50 ? 'bg-red-500/5' : ''}`}>
+                        <td className="py-2 pl-2 font-bold text-[var(--text-muted)]">{idx + 1}</td>
+                        <td className="py-2 text-[var(--text-primary)] max-w-[300px] truncate">{q.stem}</td>
                         <td className="py-2 text-center">
                           <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${q.difficulty === 'EASY' ? 'bg-green-500/10 text-green-400' : q.difficulty === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>{q.difficulty}</span>
                         </td>
@@ -216,7 +216,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                             {q.estimatedAccuracy}%
                           </span>
                         </td>
-                        <td className="py-2 text-gray-400 max-w-[200px] truncate">{q.options[q.correctAnswer]}</td>
+                        <td className="py-2 text-[var(--text-tertiary)] max-w-[200px] truncate">{q.options[q.correctAnswer]}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -231,8 +231,8 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                     {questionAnalytics
                       .filter(q => (q.difficulty === 'EASY' && q.estimatedAccuracy < 50) || (q.difficulty === 'HARD' && q.estimatedAccuracy > 80))
                       .map(q => (
-                        <div key={q.id} className="text-[10px] text-gray-400 flex items-center gap-2">
-                          <span className="font-bold text-white">Q{quiz.questions.indexOf(q) + 1}:</span>
+                        <div key={q.id} className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-2">
+                          <span className="font-bold text-[var(--text-primary)]">Q{quiz.questions.indexOf(q) + 1}:</span>
                           {q.difficulty === 'EASY' && q.estimatedAccuracy < 50 && (
                             <span>Marked as <span className="text-green-400">EASY</span> but only {q.estimatedAccuracy}% accuracy — consider upgrading to <span className="text-yellow-400">MEDIUM</span></span>
                           )}
@@ -249,10 +249,10 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
 
           {/* Full Participant Table */}
           <div>
-            <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-3"><Eye className="w-4 h-4" /> All Participants</h4>
+            <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><Eye className="w-4 h-4" /> All Participants</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead><tr className="text-[9px] text-gray-500 uppercase font-bold border-b border-white/5">
+                <thead><tr className="text-[9px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
                   <th className="pb-2 pl-2">#</th>
                   <th className="pb-2">Student</th>
                   <th className="pb-2 text-center">Damage</th>
@@ -264,7 +264,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                   <th className="pb-2 text-center">Mitigated</th>
                   <th className="pb-2 text-center">Status</th>
                 </tr></thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-[var(--border)]">
                   {[...progress]
                     .sort((a, b) => (b.combatStats?.totalDamageDealt || 0) - (a.combatStats?.totalDamageDealt || 0))
                     .map((prog, idx) => {
@@ -275,13 +275,13 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                       const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
                       const participated = attempted >= BOSS_PARTICIPATION_MIN_ATTEMPTS && correct >= BOSS_PARTICIPATION_MIN_CORRECT;
                       return (
-                        <tr key={prog.userId} className="hover:bg-white/5">
-                          <td className="py-2 pl-2 font-bold text-gray-500">{idx + 1}</td>
-                          <td className="py-2 font-bold text-white">{student?.name || prog.userId.slice(0, 8)}</td>
+                        <tr key={prog.userId} className="hover:bg-[var(--surface-glass)]">
+                          <td className="py-2 pl-2 font-bold text-[var(--text-muted)]">{idx + 1}</td>
+                          <td className="py-2 font-bold text-[var(--text-primary)]">{student?.name || prog.userId.slice(0, 8)}</td>
                           <td className="py-2 text-center text-amber-400 font-bold">{(s?.totalDamageDealt || 0).toLocaleString()}</td>
                           <td className="py-2 text-center text-green-400">{correct}</td>
-                          <td className="py-2 text-center text-gray-400">{attempted}</td>
-                          <td className="py-2 text-center text-gray-300">{accuracy}%</td>
+                          <td className="py-2 text-center text-[var(--text-tertiary)]">{attempted}</td>
+                          <td className="py-2 text-center text-[var(--text-secondary)]">{accuracy}%</td>
                           <td className="py-2 text-center text-red-400">{s?.criticalHits || 0}</td>
                           <td className="py-2 text-center text-purple-400">{s?.longestStreak || 0}</td>
                           <td className="py-2 text-center text-cyan-400">{s?.damageReduced || 0}</td>
@@ -299,7 +299,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
 
           {/* Difficulty Breakdown */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-3">Performance by Difficulty</h4>
+            <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3">Performance by Difficulty</h4>
             <div className="grid grid-cols-3 gap-3">
               {(['EASY', 'MEDIUM', 'HARD'] as const).map(diff => {
                 const totalCorrect = progress.reduce((s, p) => s + (p.combatStats?.correctByDifficulty?.[diff] || 0), 0);
@@ -310,8 +310,8 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                 return (
                   <div key={diff} className={`bg-${color}-500/5 border border-${color}-500/20 rounded-xl p-3 text-center`}>
                     <div className={`text-[10px] font-bold text-${color}-400 uppercase mb-1`}>{diff}</div>
-                    <div className="text-lg font-black text-white">{accuracy}%</div>
-                    <div className="text-[10px] text-gray-500">{totalCorrect}/{total} correct</div>
+                    <div className="text-lg font-black text-[var(--text-primary)]">{accuracy}%</div>
+                    <div className="text-[10px] text-[var(--text-muted)]">{totalCorrect}/{total} correct</div>
                   </div>
                 );
               })}

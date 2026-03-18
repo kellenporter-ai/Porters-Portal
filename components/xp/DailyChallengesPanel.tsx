@@ -62,18 +62,18 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
         className={`p-3 rounded-xl border transition-all ${
           isClaimed ? 'border-green-500/20 bg-green-500/5 opacity-60' :
           isCompleted ? 'border-yellow-500/30 bg-yellow-500/5' :
-          'border-white/10 bg-white/5'
+          'border-[var(--border)] bg-[var(--surface-glass)]'
         }`}
       >
         <div className="flex items-start gap-3">
-          <div className={`mt-0.5 p-1.5 rounded-lg ${isCompleted ? 'bg-yellow-500/20' : 'bg-white/5'}`}>
+          <div className={`mt-0.5 p-1.5 rounded-lg ${isCompleted ? 'bg-yellow-500/20' : 'bg-[var(--surface-glass)]'}`}>
             {isClaimed ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
              isCompleted ? <Gift className="w-4 h-4 text-yellow-400" /> :
              <Target className="w-4 h-4 text-gray-400" />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-white">{challenge.title}</span>
+              <span className="text-sm font-bold text-[var(--text-primary)]">{challenge.title}</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-yellow-400 font-bold">+{challenge.xpReward} XP</span>
                 {challenge.fluxReward && (
@@ -81,11 +81,11 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
                 )}
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">{challenge.description}</p>
+            <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">{challenge.description}</p>
 
             {!isClaimed && (
               <div className="mt-2 flex items-center gap-2">
-                <div className="flex-1 bg-white/5 rounded-full h-1.5">
+                <div className="flex-1 bg-[var(--surface-glass)] rounded-full h-1.5">
                   <div
                     className={`h-1.5 rounded-full transition-all ${
                       isCompleted
@@ -95,7 +95,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
-                <span className="text-[9px] text-gray-600 font-mono">{current}/{challenge.target}</span>
+                <span className="text-[9px] text-[var(--text-muted)] font-mono">{current}/{challenge.target}</span>
               </div>
             )}
 
@@ -116,7 +116,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+      <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
         <Calendar className="w-5 h-5 text-purple-400" /> Daily Challenges
       </h3>
 
@@ -126,7 +126,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
 
       {weeklyChallenges.length > 0 && (
         <>
-          <h4 className="text-xs font-mono uppercase tracking-widest text-gray-600 mt-4 flex items-center gap-1">
+          <h4 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mt-4 flex items-center gap-1">
             <Zap className="w-3 h-3 text-cyan-400" /> Weekly Challenge
           </h4>
           <div className="space-y-2">

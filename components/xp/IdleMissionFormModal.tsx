@@ -151,8 +151,8 @@ const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onC
     }
   };
 
-  const inputCls = 'w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500/50';
-  const labelCls = 'block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1';
+  const inputCls = 'w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-purple-500/50';
+  const labelCls = 'block text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingMission ? 'Edit Idle Mission' : 'Create Idle Mission'}>
@@ -203,8 +203,8 @@ const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onC
         </div>
 
         {/* Rewards */}
-        <div className="rounded-xl border border-white/5 bg-white/2 p-3 space-y-3">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Rewards</div>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] p-3 space-y-3">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Rewards</div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>XP</label>
@@ -232,7 +232,7 @@ const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onC
             </button>
           </div>
           {form.statBonuses.map((bonus, idx) => (
-            <div key={idx} className="rounded-xl border border-white/5 bg-black/30 p-3 space-y-2">
+            <div key={idx} className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] p-3 space-y-2">
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className={labelCls}>Stat</label>
@@ -267,17 +267,17 @@ const IdleMissionFormModal: React.FC<IdleMissionFormModalProps> = ({ isOpen, onC
           >
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </div>
-          <span className="text-sm text-gray-300">Active (visible to students)</span>
+          <span className="text-sm text-[var(--text-secondary)]">Active (visible to students)</span>
         </label>
 
       </div>
 
       {/* Footer */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-400 hover:text-white transition-colors">
+      <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
           Cancel
         </button>
-        <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold bg-purple-500/20 border border-purple-500/30 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold bg-[var(--accent-muted)] border border-purple-500/30 text-[var(--accent-text)] hover:bg-purple-500/30 transition-colors disabled:opacity-50">
           {saving ? 'Saving...' : editingMission ? 'Save Changes' : 'Create Mission'}
         </button>
       </div>

@@ -53,61 +53,61 @@ const AcademicPerformance: React.FC<AcademicPerformanceProps> = ({ submissions, 
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest print:text-gray-700">Academic Performance</h3>
+      <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest print:text-gray-700">Academic Performance</h3>
 
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Completion Rate</div>
-          <div className="text-lg font-bold text-white print:text-black">{completionStats.rate}%</div>
-          <div className="text-[10px] text-gray-500">{completionStats.attempted}/{completionStats.total} resources</div>
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Completion Rate</div>
+          <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{completionStats.rate}%</div>
+          <div className="text-[10px] text-[var(--text-muted)]">{completionStats.attempted}/{completionStats.total} resources</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Avg Assessment</div>
-          <div className={`text-lg font-bold ${avgScore !== null ? (avgScore >= 75 ? 'text-emerald-400 print:text-emerald-600' : avgScore >= 50 ? 'text-yellow-400 print:text-yellow-600' : 'text-red-400 print:text-red-600') : 'text-gray-500'}`}>
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Avg Assessment</div>
+          <div className={`text-lg font-bold ${avgScore !== null ? (avgScore >= 75 ? 'text-emerald-400 print:text-emerald-600' : avgScore >= 50 ? 'text-yellow-400 print:text-yellow-600' : 'text-red-400 print:text-red-600') : 'text-[var(--text-muted)]'}`}>
             {avgScore !== null ? `${avgScore}%` : 'N/A'}
           </div>
-          <div className="text-[10px] text-gray-500">{assessmentResults.length} assessment{assessmentResults.length !== 1 ? 's' : ''}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">{assessmentResults.length} assessment{assessmentResults.length !== 1 ? 's' : ''}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Total Submissions</div>
-          <div className="text-lg font-bold text-white print:text-black">{submissions.filter(s => s.status !== 'STARTED').length}</div>
-          <div className="text-[10px] text-gray-500">completed</div>
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total Submissions</div>
+          <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{submissions.filter(s => s.status !== 'STARTED').length}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">completed</div>
         </div>
       </div>
 
       {/* Assessment scores table */}
       {assessmentResults.length > 0 && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden print:border-gray-300">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl overflow-hidden print:border-gray-300">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-white/10 print:border-gray-300">
-                <th className="text-left px-4 py-2.5 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Assessment</th>
-                <th className="text-left px-4 py-2.5 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Class</th>
-                <th className="text-center px-4 py-2.5 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Score</th>
-                <th className="text-right px-4 py-2.5 text-gray-500 font-bold uppercase tracking-widest text-[10px]">Date</th>
+              <tr className="border-b border-[var(--border)] print:border-gray-300">
+                <th className="text-left px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Assessment</th>
+                <th className="text-left px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Class</th>
+                <th className="text-center px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Score</th>
+                <th className="text-right px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Date</th>
               </tr>
             </thead>
             <tbody>
               {assessmentResults.map(r => (
-                <tr key={r.id} className="border-b border-white/5 last:border-0 print:border-gray-200">
-                  <td className="px-4 py-2.5 text-white print:text-black font-medium truncate max-w-[200px]">
+                <tr key={r.id} className="border-b border-[var(--border)] last:border-0 print:border-gray-200">
+                  <td className="px-4 py-2.5 text-[var(--text-primary)] print:text-black font-medium truncate max-w-[200px]">
                     <div className="flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                      <BookOpen className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
                       {r.title}
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-gray-400 print:text-gray-600">{r.classType}</td>
+                  <td className="px-4 py-2.5 text-[var(--text-tertiary)] print:text-gray-600">{r.classType}</td>
                   <td className="px-4 py-2.5 text-center">
                     {r.percentage !== null ? (
                       <span className={`font-bold ${r.percentage >= 75 ? 'text-emerald-400' : r.percentage >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
                         {Math.round(r.percentage)}%
                       </span>
                     ) : (
-                      <span className="text-gray-500">—</span>
+                      <span className="text-[var(--text-muted)]">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-gray-500">
+                  <td className="px-4 py-2.5 text-right text-[var(--text-muted)]">
                     {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '—'}
                   </td>
                 </tr>
@@ -118,7 +118,7 @@ const AcademicPerformance: React.FC<AcademicPerformanceProps> = ({ submissions, 
       )}
 
       {assessmentResults.length === 0 && (
-        <div className="text-center py-8 text-gray-600 italic text-xs">No assessment submissions yet.</div>
+        <div className="text-center py-8 text-[var(--text-muted)] italic text-xs">No assessment submissions yet.</div>
       )}
     </div>
   );

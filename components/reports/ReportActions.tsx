@@ -100,8 +100,8 @@ const ReportActions: React.FC<ReportActionsProps> = ({
   return (
     <div className="flex items-center gap-3 print:hidden">
       {/* Date range selector */}
-      <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl p-1">
-        <Calendar className="w-4 h-4 text-gray-500 ml-2" />
+      <div className="flex items-center gap-1.5 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-1">
+        <Calendar className="w-4 h-4 text-[var(--text-muted)] ml-2" />
         {RANGE_OPTIONS.map(opt => (
           <button
             key={opt.value}
@@ -109,7 +109,7 @@ const ReportActions: React.FC<ReportActionsProps> = ({
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
               daysRange === opt.value
                 ? 'bg-purple-500/30 text-purple-300 border border-purple-500/30'
-                : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
             }`}
           >
             {opt.label}
@@ -122,7 +122,7 @@ const ReportActions: React.FC<ReportActionsProps> = ({
       {/* Copy */}
       <button
         onClick={handleCopy}
-        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-300 hover:text-white hover:bg-white/10 transition"
+        className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition"
       >
         {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
         {copied ? 'Copied!' : 'Copy as Text'}

@@ -41,7 +41,7 @@ const GoogleLogin: React.FC = () => {
   const isApiKeyError = errorMessage && errorMessage.includes("api-key-not-valid");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--surface-raised)] p-6 relative overflow-hidden font-sans">
       {/* Background decoration */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-3xl"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-3xl"></div>
@@ -52,7 +52,7 @@ const GoogleLogin: React.FC = () => {
              <span className="text-3xl">⚛️</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-500 mb-8">Porter's Physics & Forensics Portal</p>
+          <p className="text-[var(--text-muted)] mb-8">Porter's Physics & Forensics Portal</p>
           
           {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm text-left animate-in slide-in-from-top-2">
@@ -99,7 +99,7 @@ const GoogleLogin: React.FC = () => {
             )}
           </button>
           
-          <div className="flex items-center gap-4 justify-center text-xs text-gray-400">
+          <div className="flex items-center gap-4 justify-center text-xs text-[var(--text-tertiary)]">
             <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full"></span> Secure Connection</span>
             <span>•</span>
             <span>Firebase Auth</span>

@@ -429,10 +429,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
               <div key={a.id} className={`border rounded-2xl p-4 flex items-start gap-3 ${styles[a.priority]}`} {...(a.priority === 'URGENT' ? { role: 'alert' } : {})}>
                 <AnnouncementIcon className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-sm text-white"><span className="sr-only">{a.priority === 'URGENT' ? 'Urgent: ' : a.priority === 'WARNING' ? 'Warning: ' : 'Info: '}</span>{a.title}</h3>
+                  <h3 className="font-bold text-sm text-[var(--text-primary)]"><span className="sr-only">{a.priority === 'URGENT' ? 'Urgent: ' : a.priority === 'WARNING' ? 'Warning: ' : 'Info: '}</span>{a.title}</h3>
                   <div className="text-xs mt-0.5 text-inherit">{a.content}</div>
                 </div>
-                <button onClick={() => handleDismissAnnouncement(a.id)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-white transition shrink-0 focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg" aria-label="Dismiss announcement">
+                <button onClick={() => handleDismissAnnouncement(a.id)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition shrink-0 focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg" aria-label="Dismiss announcement">
                   <XIcon className="w-4 h-4" />
                 </button>
               </div>
@@ -450,11 +450,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <Zap className="w-5 h-5 fill-current" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-lg uppercase tracking-wider">{activeEvent.title} ACTIVE</h3>
+                <h3 className="text-[var(--text-primary)] font-bold text-lg uppercase tracking-wider">{activeEvent.title} ACTIVE</h3>
                 <p className="text-blue-300 text-xs font-mono">Protocol engaged. Gaining {activeEvent.multiplier}x XP on all tasks.</p>
               </div>
             </div>
-            <div className="text-3xl font-black text-white/90 font-mono tracking-tighter">
+            <div className="text-3xl font-black text-[var(--text-primary)] font-mono tracking-tighter">
               {activeEvent.multiplier}x
             </div>
           </div>
@@ -463,7 +463,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* --- LEFT COLUMN: OPERATIVE STATUS --- */}
       <aside aria-label="Player status" className="lg:col-span-3 space-y-6">
-        <div className={`bg-white/5 border rounded-3xl p-6 backdrop-blur-md relative overflow-hidden group ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
+        <div className={`bg-[var(--surface-glass)] border rounded-3xl p-6 backdrop-blur-md relative overflow-hidden group ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>
             <div className="relative z-10 flex flex-col items-center">
                 <div className={`w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-white/10 to-white/5 mb-4 ${rankDetails.tierGlow} shadow-xl`}>
@@ -489,18 +489,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                             value={activeClass}
                             onChange={handleClassChange}
                             aria-label="Switch active class"
-                            className="w-full bg-black/40 border border-white/20 text-white text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
+                            className="w-full bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
                         >
                             {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
                     </div>
                 )}
 
-                <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-white/5 relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
+                <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-[var(--border)] relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
                     <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                 </div>
-                <div className="flex justify-between w-full text-xs text-gray-400 mt-2 font-mono font-bold relative">
+                <div className="flex justify-between w-full text-xs text-[var(--text-tertiary)] mt-2 font-mono font-bold relative">
                     <span>{displayXp.toLocaleString()} XP ({activeClass})</span>
                     <span>{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
                     {xpFloatAmount && (
@@ -512,14 +512,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             </div>
         </div>
 
-        <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
                     <Hexagon className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
-                    <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Cyber-Flux</div>
-                    <div className="text-xl font-black text-white leading-none">{displayCurrency}</div>
+                    <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Cyber-Flux</div>
+                    <div className="text-xl font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
                 </div>
             </div>
         </div>
@@ -535,12 +535,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                             <Flame className="w-6 h-6" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
-                            <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Streak</div>
+                            <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
                             <div className="text-xl font-black text-orange-400 leading-none">{streak}w</div>
                         </div>
                         {multiplier > 1 && (
                             <div className="text-right">
-                                <div className="text-xs text-gray-400 uppercase">XP Bonus</div>
+                                <div className="text-xs text-[var(--text-tertiary)] uppercase">XP Bonus</div>
                                 <div className="text-sm font-black text-yellow-400">+{Math.round((multiplier - 1) * 100)}%</div>
                             </div>
                         )}
@@ -554,7 +554,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-3 flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-purple-400" aria-hidden="true" />
                 <div>
-                    <div className="text-xs text-gray-400 uppercase font-bold">Daily Login</div>
+                    <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
                     <div className="text-sm font-black text-purple-400">{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
@@ -563,19 +563,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         {/* Profile Showcase Button */}
         <button
             onClick={() => setShowProfile(true)}
-            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-2xl flex items-center justify-center gap-2 transition text-gray-400 hover:text-white text-sm font-bold focus-visible:ring-2 focus-visible:ring-purple-500"
+            className="w-full bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] p-3 rounded-2xl flex items-center justify-center gap-2 transition text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm font-bold focus-visible:ring-2 focus-visible:ring-purple-500"
         >
             <Eye className="w-4 h-4" aria-hidden="true" /> View Profile
         </button>
 
         <div className="space-y-2">
-             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Access Nodes</h3>
+             <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest px-2">Access Nodes</h3>
              {enabledFeatures.evidenceLocker && (
                  <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-4 rounded-2xl flex items-center justify-between transition group focus-visible:ring-2 focus-visible:ring-purple-500">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400 shadow-inner"><Microscope className="w-5 h-5" aria-hidden="true" /></div>
                         <div className="text-left">
-                            <div className="font-bold text-gray-200 text-sm">Evidence Log</div>
+                            <div className="font-bold text-[var(--text-secondary)] text-sm">Evidence Log</div>
                             <div className="text-xs text-emerald-300/70 uppercase font-bold tracking-tight">Weekly Portfolio</div>
                         </div>
                     </div>
@@ -587,7 +587,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* --- MIDDLE: CONTENT --- */}
       <main className="lg:col-span-9 space-y-6">
-          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
+          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
            <div className={`flex-1 transition-all ${reducedMotion ? 'duration-0' : 'duration-150'} ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (
@@ -802,7 +802,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* BOSS ENCOUNTERS — Full-width panel */}
       {enabledFeatures.bossFights && (
       <div className="lg:col-span-12">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md space-y-6">
+          <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md space-y-6">
               <FeatureErrorBoundary feature="Boss Encounters">
                 <React.Suspense fallback={<GamificationSkeleton />}>
                 <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
@@ -856,30 +856,30 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                   {!reducedMotion && <div className="absolute inset-[-6px] rounded-full border border-yellow-400/20 animate-pulse" />}
                   {/* Main badge */}
                   <div className="level-up-burst w-28 h-28 mx-auto bg-gradient-to-tr from-yellow-400 via-amber-500 to-yellow-600 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.6)] relative">
-                      <span className="text-5xl font-black text-white drop-shadow-lg">{level}</span>
+                      <span className="text-5xl font-black text-[var(--text-primary)] drop-shadow-lg">{level}</span>
                   </div>
               </div>
 
               {/* Rank reveal */}
               <div className="mb-2 overflow-hidden inline-block">
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tight" style={reducedMotion ? { display: 'inline-block' } : { animation: 'typeReveal 0.8s steps(20) 0.4s both', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                  <h2 className="text-2xl font-black text-[var(--text-primary)] uppercase tracking-tight" style={reducedMotion ? { display: 'inline-block' } : { animation: 'typeReveal 0.8s steps(20) 0.4s both', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block' }}>
                       {rankDetails.rankName}
                   </h2>
               </div>
-              <p className="text-gray-400 mb-8 animate-in fade-in duration-500" style={reducedMotion ? {} : { animationDelay: '0.6s', animationFillMode: 'both' }}>
+              <p className="text-[var(--text-tertiary)] mb-8 animate-in fade-in duration-500" style={reducedMotion ? {} : { animationDelay: '0.6s', animationFillMode: 'both' }}>
                   Clearance Level Increased. New capabilities unlocked.
               </p>
 
               {newlyAcquiredItem && (
-                  <div className={`${getAssetColors(newlyAcquiredItem.rarity).shimmer} bg-white/5 border rounded-xl p-5 mb-6 relative overflow-hidden ${getAssetColors(newlyAcquiredItem.rarity).border}`}
+                  <div className={`${getAssetColors(newlyAcquiredItem.rarity).shimmer} bg-[var(--surface-glass)] border rounded-xl p-5 mb-6 relative overflow-hidden ${getAssetColors(newlyAcquiredItem.rarity).border}`}
                        style={reducedMotion ? {} : { animation: 'levelUpBurst 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both' }}>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-transparent opacity-50" />
                       <div className="relative z-10">
-                          <div className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mb-2">⚡ Supply Drop Received</div>
+                          <div className="text-xs text-[var(--text-tertiary)] font-bold uppercase tracking-[0.2em] mb-2">⚡ Supply Drop Received</div>
                           <div className={`text-xl font-bold ${getAssetColors(newlyAcquiredItem.rarity).text}`}>
                               {newlyAcquiredItem.name}
                           </div>
-                          <div className="text-xs text-gray-400 uppercase font-mono mt-1">{newlyAcquiredItem.rarity} {newlyAcquiredItem.slot}</div>
+                          <div className="text-xs text-[var(--text-tertiary)] uppercase font-mono mt-1">{newlyAcquiredItem.rarity} {newlyAcquiredItem.slot}</div>
                           <div className="flex justify-center gap-5 mt-3 text-xs font-mono">
                               {Object.entries(newlyAcquiredItem.stats).map(([key, val]) => (
                                   <span key={key} className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">+{val} {key.toUpperCase()}</span>

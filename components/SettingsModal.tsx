@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { User, UserSettings } from '../types';
-import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle } from 'lucide-react';
+import { Monitor, Cpu, Shield, Layout as LayoutIcon, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle, Sun, Moon } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './ToastProvider';
+import { useTheme } from '../lib/ThemeContext';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
 
 import { dataService } from '../services/dataService';
@@ -46,9 +47,9 @@ const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <div className="mb-6">
-      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Enrollment</label>
-      <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-        <label className="flex items-center gap-2 text-xs font-bold text-white mb-2">
+      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Enrollment</label>
+      <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)]">
+        <label className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)] mb-2">
           <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
           Join Another Class
         </label>
@@ -59,7 +60,7 @@ const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
             onChange={e => handleCodeChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
             placeholder="XXXX-XXXX"
-            className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-400 tracking-widest placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
+            className="flex-1 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-400 tracking-widest placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
             maxLength={9}
             disabled={isRedeeming}
           />
@@ -95,11 +96,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
     performanceMode: false,
     privacyMode: false,
     compactView: false,
-    soundEffects: true
+    soundEffects: true,
+    themeMode: 'dark'
   });
   const [codename, setCodename] = React.useState(user.gamification?.codename || '');
   const [isSaving, setIsSaving] = React.useState(false);
   const toast = useToast();
+  const { theme, setTheme } = useTheme();
 
   const handleToggle = (key: keyof UserSettings) => {
     setLocalSettings(prev => ({ ...prev, [key]: !prev[key] }));
@@ -134,19 +137,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
     value: boolean, 
     onToggle: () => void 
   }) => (
-    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition">
+    <div className="flex items-center justify-between p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)] hover:border-[var(--border-accent)] transition">
       <div className="flex items-start gap-4">
-        <div className={`p-2 rounded-xl ${value ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-500'}`}>
+        <div className={`p-2 rounded-xl ${value ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>
           <Icon className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-bold text-white text-sm">{title}</h4>
-          <p className="text-xs text-gray-500 leading-tight mt-0.5">{description}</p>
+          <h4 className="font-bold text-[var(--text-primary)] text-sm">{title}</h4>
+          <p className="text-xs text-[var(--text-tertiary)] leading-tight mt-0.5">{description}</p>
         </div>
       </div>
       <button
         onClick={onToggle}
-        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0f0720] ${value ? 'bg-purple-600' : 'bg-white/20'}`}
+        className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ring-offset)] ${value ? 'bg-[var(--accent)]' : 'bg-[var(--surface-glass-heavy)]'}`}
       >
         <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
@@ -157,7 +160,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
     <Modal isOpen={isOpen} onClose={onClose} title="User Control Center" maxWidth="max-w-md">
       <div className="space-y-3">
         <div className="mb-4">
-          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Visuals & Performance</label>
+          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Visuals & Performance</label>
           <div className="space-y-2">
             <SettingRow 
               icon={Monitor} 
@@ -177,7 +180,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
         </div>
 
         <div className="mb-4">
-          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Privacy & Identity</label>
+          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Privacy & Identity</label>
           <div className="space-y-2">
             <SettingRow 
               icon={Shield} 
@@ -187,24 +190,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               onToggle={() => handleToggle('privacyMode')} 
             />
             {localSettings.privacyMode && (
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                <label className="text-xs font-bold text-gray-300 block mb-2">Operative Codename</label>
+              <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)]">
+                <label className="text-xs font-bold text-[var(--text-secondary)] block mb-2">Operative Codename</label>
                 <input
                   type="text"
                   value={codename}
                   onChange={(e) => setCodename(e.target.value.slice(0, 24))}
                   placeholder="Enter codename..."
-                  className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
+                  className="w-full bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-purple-400 transition"
                   maxLength={24}
                 />
-                <p className="text-[10px] text-gray-500 mt-1">{codename.length}/24 characters</p>
+                <p className="text-[10px] text-[var(--text-tertiary)] mt-1">{codename.length}/24 characters</p>
               </div>
             )}
           </div>
         </div>
 
         <div className="mb-6">
-          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Interface</label>
+          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Interface</label>
           <div className="space-y-2">
             <SettingRow 
               icon={LayoutIcon} 
@@ -221,9 +224,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               onToggle={() => setLocalSettings(prev => ({ ...prev, soundEffects: prev.soundEffects === false ? true : false }))}
             />
             {localSettings.soundEffects !== false && (
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)]">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-gray-300 flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] flex items-center gap-2">
                     <Volume2 className="w-3.5 h-3.5 text-purple-400" />
                     Master Volume
                   </label>
@@ -235,7 +238,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                   max={100}
                   value={Math.round((localSettings.soundVolume ?? 0.5) * 100)}
                   onChange={e => setLocalSettings(prev => ({ ...prev, soundVolume: parseInt(e.target.value) / 100 }))}
-                  className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-purple-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
+                  className="w-full h-1.5 bg-[var(--surface-glass-heavy)] rounded-full appearance-none cursor-pointer accent-[var(--accent)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
                 />
               </div>
             )}
@@ -243,17 +246,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
         </div>
 
         <div className="mb-6">
-          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Notifications</label>
+          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Notifications</label>
           <div className="space-y-2">
             {isPushSupported() ? (
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition">
+              <div className="flex items-center justify-between p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)] hover:border-[var(--border-accent)] transition">
                 <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-xl ${localSettings.pushNotifications ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-500'}`}>
+                  <div className={`p-2 rounded-xl ${localSettings.pushNotifications ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>
                     <BellRing className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-white text-sm">Push Notifications</h4>
-                    <p className="text-xs text-gray-500 leading-tight mt-0.5">
+                    <h4 className="font-bold text-[var(--text-primary)] text-sm">Push Notifications</h4>
+                    <p className="text-xs text-[var(--text-tertiary)] leading-tight mt-0.5">
                       {getPushPermission() === 'denied'
                         ? 'Blocked by your browser. Allow notifications in browser settings to enable.'
                         : 'Get desktop alerts for quests, loot drops, and announcements when the tab is in the background.'}
@@ -275,19 +278,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                     }
                   }}
                   disabled={getPushPermission() === 'denied'}
-                  className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0f0720] ${
-                    getPushPermission() === 'denied' ? 'bg-white/10 opacity-50 cursor-not-allowed' :
-                    localSettings.pushNotifications ? 'bg-purple-600' : 'bg-white/20'
+                  className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ring-offset)] ${
+                    getPushPermission() === 'denied' ? 'bg-[var(--surface-glass-heavy)] opacity-50 cursor-not-allowed' :
+                    localSettings.pushNotifications ? 'bg-[var(--accent)]' : 'bg-[var(--surface-glass-heavy)]'
                   }`}
                 >
                   <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${localSettings.pushNotifications ? 'translate-x-5' : 'translate-x-0'}`} />
                 </button>
               </div>
             ) : (
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-xs text-gray-500">
+              <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)] text-xs text-[var(--text-tertiary)]">
                 Push notifications are not supported in this browser.
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ─── Appearance ─── */}
+        <div className="mb-6">
+          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Appearance</label>
+          <div className="flex gap-2 p-1.5 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
+            <button
+              onClick={() => setTheme('light')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-bold transition ${
+                theme === 'light'
+                  ? 'bg-[var(--accent)] text-white shadow-lg'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--surface-glass-heavy)]'
+              }`}
+            >
+              <Sun className="w-4 h-4" />
+              Light
+            </button>
+            <button
+              onClick={() => setTheme('dark')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-bold transition ${
+                theme === 'dark'
+                  ? 'bg-[var(--accent)] text-white shadow-lg'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--surface-glass-heavy)]'
+              }`}
+            >
+              <Moon className="w-4 h-4" />
+              Dark
+            </button>
           </div>
         </div>
 
@@ -299,7 +331,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-2xl font-bold transition shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2"
+          className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white py-3 rounded-2xl font-bold transition shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2"
         >
           {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
           Apply Changes

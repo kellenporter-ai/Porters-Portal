@@ -104,7 +104,7 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
       <div className="mb-8 print:mb-4">
         <div className="flex items-center gap-3 mb-4 print:hidden">
           <FileBarChart className="w-6 h-6 text-purple-400" />
-          <h1 className="text-2xl font-bold text-white">Student Reports</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Student Reports</h1>
         </div>
 
         {/* Print header */}
@@ -123,14 +123,14 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
               onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
               onFocus={() => setShowDropdown(true)}
               placeholder="Search for a student by name or email..."
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition text-sm"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition text-sm"
             />
           </div>
 
           {showDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
-              <div className="absolute top-full mt-1 left-0 right-0 z-20 bg-[#1a1b2e] border border-white/10 rounded-xl shadow-2xl max-h-72 overflow-y-auto custom-scrollbar">
+              <div className="absolute top-full mt-1 left-0 right-0 z-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-2xl max-h-72 overflow-y-auto custom-scrollbar">
                 {searchResults.length === 0 ? (
                   <div className="px-4 py-6 text-center text-gray-600 text-xs">No students found</div>
                 ) : (

@@ -77,13 +77,13 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
     : streak.currentStreak >= 14 ? 'text-orange-400'
     : streak.currentStreak >= 7 ? 'text-amber-400'
     : streak.currentStreak >= 3 ? 'text-yellow-400'
-    : 'text-gray-500';
+    : 'text-[var(--text-muted)]';
 
   if (compact) {
     return (
       <div className="flex items-center gap-1.5">
         <Flame className={`w-4 h-4 ${flameIntensity}`} />
-        <span className={`text-sm font-bold ${streak.currentStreak > 0 ? 'text-amber-300' : 'text-gray-500'}`}>
+        <span className={`text-sm font-bold ${streak.currentStreak > 0 ? 'text-amber-300' : 'text-[var(--text-muted)]'}`}>
           {streak.currentStreak}
         </span>
         {streak.freezeTokens > 0 && (
@@ -121,16 +121,16 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
         </div>
       )}
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+      <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5 backdrop-blur-md">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Flame className={`w-7 h-7 ${flameIntensity}`} />
             <div>
-              <div className={`text-2xl font-bold ${streak.currentStreak > 0 ? 'text-amber-300' : 'text-gray-400'}`}>
+              <div className={`text-2xl font-bold ${streak.currentStreak > 0 ? 'text-amber-300' : 'text-[var(--text-tertiary)]'}`}>
                 {streak.currentStreak} Day{streak.currentStreak !== 1 ? 's' : ''}
               </div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">
                 Current Streak | Best: {streak.longestStreak}
               </div>
             </div>
@@ -146,13 +146,13 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
         <div className="flex gap-1.5">
           {last7Days.map(day => (
             <div key={day.date} className="flex-1 text-center">
-              <div className="text-[9px] text-gray-500 mb-1">{day.dayLabel}</div>
+              <div className="text-[9px] text-[var(--text-muted)] mb-1">{day.dayLabel}</div>
               <div className={`w-full aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition ${
                 day.isActive
                   ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20'
                   : day.isToday
                     ? 'border-2 border-dashed border-amber-500/40 text-amber-500/40'
-                    : 'bg-white/5 text-gray-700'
+                    : 'bg-[var(--surface-glass)] text-gray-700'
               }`}>
                 {day.isActive ? <Flame className="w-3.5 h-3.5" /> : ''}
               </div>
@@ -162,9 +162,9 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
 
         {/* Milestones */}
         {(streak.milestones?.length || 0) > 0 && (
-          <div className="flex gap-2 mt-3 pt-3 border-t border-white/5">
+          <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--border)]">
             {streak.milestones?.map(m => (
-              <span key={m} className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/10 ${MILESTONE_COLORS[m] || 'text-white'}`}>
+              <span key={m} className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] ${MILESTONE_COLORS[m] || 'text-[var(--text-primary)]'}`}>
                 {m}d
               </span>
             ))}

@@ -20,7 +20,7 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-gray-500 mb-2">
+      <p className="text-xs text-[var(--text-muted)] mb-2">
         Monitor peer tutoring sessions. Verify completed sessions to award XP and Flux to tutors.
       </p>
 
@@ -31,7 +31,7 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
           className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
             activeTab === 'pending'
               ? 'bg-amber-600 text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
           }`}
         >
           Pending ({pendingTutoringSessions.length})
@@ -41,7 +41,7 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
           className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
             activeTab === 'all'
               ? 'bg-purple-600 text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
           }`}
         >
           All Sessions ({allSessions.length})
@@ -50,7 +50,7 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
 
       {/* Empty state */}
       {displayedSessions.length === 0 && (
-        <div className="text-center py-14 text-gray-500">
+        <div className="text-center py-14 text-[var(--text-muted)]">
           <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p className="font-bold">
             {activeTab === 'pending' ? 'No pending sessions.' : 'No tutoring sessions yet.'}
@@ -69,15 +69,15 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
                 ? 'bg-purple-600/5 border-purple-500/20'
                 : session.status === 'OPEN'
                   ? 'bg-blue-600/5 border-blue-500/20'
-                  : 'bg-black/20 border-white/10'
+                  : 'bg-[var(--panel-bg)] border-[var(--border)]'
           }`}
         >
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1 min-w-0">
               {/* Topic + status badge */}
               <div className="flex items-center gap-2 mb-1">
-                <MessageCircle className="w-4 h-4 text-gray-500" />
-                <h4 className="font-bold text-white text-sm truncate">{session.topic}</h4>
+                <MessageCircle className="w-4 h-4 text-[var(--text-muted)]" />
+                <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">{session.topic}</h4>
                 <span
                   className={`text-[9px] px-2 py-0.5 rounded-full border font-bold ${
                     session.status === 'OPEN'
@@ -96,9 +96,9 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
               </div>
 
               {/* Session metadata */}
-              <div className="flex flex-wrap gap-3 text-[10px] text-gray-500">
+              <div className="flex flex-wrap gap-3 text-[10px] text-[var(--text-muted)]">
                 <span>
-                  Requester: <span className="text-gray-300 font-bold">{session.requesterName}</span>
+                  Requester: <span className="text-[var(--text-secondary)] font-bold">{session.requesterName}</span>
                 </span>
                 {session.tutorName && (
                   <span>
@@ -118,7 +118,7 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
               {(session.requesterFeedback || session.tutorFeedback) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                   {session.requesterFeedback && (
-                    <div className="p-2 bg-black/20 rounded-lg border border-white/5">
+                    <div className="p-2 bg-[var(--panel-bg)] rounded-lg border border-[var(--border)]">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[9px] font-bold text-cyan-400 uppercase">
                           Student Feedback
@@ -127,17 +127,17 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
                           {'★'.repeat(session.requesterFeedback.rating)}
                           {'☆'.repeat(5 - session.requesterFeedback.rating)}
                         </span>
-                        <span className="text-[9px] text-gray-500">
+                        <span className="text-[9px] text-[var(--text-muted)]">
                           Comm: {session.requesterFeedback.communicationRating}/5
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                      <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">
                         {session.requesterFeedback.response}
                       </p>
                     </div>
                   )}
                   {session.tutorFeedback && (
-                    <div className="p-2 bg-black/20 rounded-lg border border-white/5">
+                    <div className="p-2 bg-[var(--panel-bg)] rounded-lg border border-[var(--border)]">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[9px] font-bold text-green-400 uppercase">
                           Tutor Feedback
@@ -146,11 +146,11 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
                           {'★'.repeat(session.tutorFeedback.rating)}
                           {'☆'.repeat(5 - session.tutorFeedback.rating)}
                         </span>
-                        <span className="text-[9px] text-gray-500">
+                        <span className="text-[9px] text-[var(--text-muted)]">
                           Engage: {session.tutorFeedback.communicationRating}/5
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                      <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">
                         {session.tutorFeedback.response}
                       </p>
                     </div>

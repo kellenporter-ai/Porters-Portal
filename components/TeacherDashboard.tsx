@@ -8,7 +8,7 @@ import { dataService } from '../services/dataService';
 import { callTriggerDailyDigest, callReturnAssessment, callSubmitOnBehalf, callClassroomPushGrades } from '../lib/firebase';
 import { getClassroomAccessToken } from '../lib/classroomAuth';
 import ClassroomLinkModal from './ClassroomLinkModal';
-import { BUCKET_META } from '../lib/telemetry';
+import { BUCKET_META, getBucketRecommendation } from '../lib/telemetry';
 import { calculateRubricPercentage } from '../lib/rubricParser';
 import katex from 'katex';
 import { analyzeIntegrity, type IntegrityReport } from '../lib/integrityAnalysis';
@@ -74,6 +74,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [draftLoading, setDraftLoading] = useState(false);
   const [classroomLinkModalOpen, setClassroomLinkModalOpen] = useState(false);
   const [pushingToClassroom, setPushingToClassroom] = useState(false);
+  const [showNudgeModal, setShowNudgeModal] = useState(false);
+  const [nudgeTarget, setNudgeTarget] = useState<{ studentId: string; studentName: string; defaultMessage: string; classType: string } | null>(null);
+  const [nudgeMessage, setNudgeMessage] = useState('');
+  const [nudgeSending, setNudgeSending] = useState(false);
 
   const handleSort = useCallback((col: string) => {
     setSortCol(prev => {
@@ -283,13 +287,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   };
   
   const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-white/20 transition-all duration-300" aria-label={label}>
+    <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] p-6 rounded-2xl relative overflow-hidden group hover:border-[var(--border-strong)] transition-all duration-300" aria-label={label}>
       <div className={`absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity ${color}`}>
         {icon}
       </div>
       <div className="relative z-10">
-        <div className="text-4xl font-bold text-white mb-2">{value}</div>
-        <div className="text-sm font-medium text-gray-400 uppercase tracking-wider">{label}</div>
+        <div className="text-4xl font-bold text-[var(--text-primary)] mb-2">{value}</div>
+        <div className="text-sm font-medium text-[var(--text-tertiary)] uppercase tracking-wider">{label}</div>
       </div>
       <div className={`absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r ${color}`}></div>
     </div>
@@ -320,20 +324,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     <div className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 transition-[padding] duration-300 ${selectedStudentId ? 'xl:pr-[520px]' : ''}`}>
       <div className="flex justify-between items-end">
         <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Teacher Dashboard</h1>
-            <p className="text-gray-400">Engagement analytics and operational overview.</p>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Teacher Dashboard</h1>
+            <p className="text-[var(--text-tertiary)]">Engagement analytics and operational overview.</p>
         </div>
-        <div className="flex bg-black/30 rounded-xl p-1 border border-white/10" role="tablist" aria-label="Dashboard sections">
-          <button id="tab-dashboard" role="tab" aria-selected={adminTab === 'dashboard'} aria-controls="tabpanel-dashboard" onClick={() => setAdminTab('dashboard')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+        <div className="flex bg-[var(--panel-bg)] rounded-xl p-1 border border-[var(--border)]" role="tablist" aria-label="Dashboard sections">
+          <button id="tab-dashboard" role="tab" aria-selected={adminTab === 'dashboard'} aria-controls="tabpanel-dashboard" onClick={() => setAdminTab('dashboard')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <Activity className="w-3.5 h-3.5" aria-hidden="true" /> Overview
           </button>
-          <button id="tab-analytics" role="tab" aria-selected={adminTab === 'analytics'} aria-controls="tabpanel-analytics" onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+          <button id="tab-analytics" role="tab" aria-selected={adminTab === 'analytics'} aria-controls="tabpanel-analytics" onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Analytics
           </button>
-          <button id="tab-assessments" role="tab" aria-selected={adminTab === 'assessments'} aria-controls="tabpanel-assessments" onClick={() => setAdminTab('assessments')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'assessments' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+          <button id="tab-assessments" role="tab" aria-selected={adminTab === 'assessments'} aria-controls="tabpanel-assessments" onClick={() => setAdminTab('assessments')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'assessments' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <Shield className="w-3.5 h-3.5" aria-hidden="true" /> Assessments
           </button>
-          <button id="tab-digest" role="tab" aria-selected={adminTab === 'digest'} aria-controls="tabpanel-digest" onClick={() => setAdminTab('digest')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'digest' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+          <button id="tab-digest" role="tab" aria-selected={adminTab === 'digest'} aria-controls="tabpanel-digest" onClick={() => setAdminTab('digest')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'digest' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <Newspaper className="w-3.5 h-3.5" aria-hidden="true" /> Daily Digest
           </button>
         </div>
@@ -529,13 +533,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         return (
           <div className="space-y-6">
             {/* Assessment Selector */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+            <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
                   <Shield className="w-5 h-5 text-red-400" aria-hidden="true" />
                   Assessment Review
                 </h3>
-                <span className="text-xs text-gray-400 uppercase font-bold tracking-widest">
+                <span className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">
                   {assessmentAssignments.length} assessment{assessmentAssignments.length !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -544,7 +548,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 aria-label="Select assessment"
                 value={selectedAssessmentId || ''}
                 onChange={e => { setSelectedAssessmentId(e.target.value || null); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setFeedbackDraft(''); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setViewingDraftUserId(null); setDraftResponses(null); }}
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition"
               >
                 <option value="">Select an assessment...</option>
                 {[...assessmentAssignments].sort((a, b) => {
@@ -559,7 +563,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               </select>
 
               {selectedAssessment && (
-                <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                <div className="flex items-center gap-4 mt-3 text-xs text-[var(--text-tertiary)]">
                   {selectedAssessment.createdAt && (
                     <span title={new Date(selectedAssessment.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                       Posted {new Date(selectedAssessment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -580,14 +584,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               {selectedAssessment && gradedCount > 0 && (
                 <div className="mt-3 flex items-center gap-2">
-                  <label className="text-xs text-gray-400 whitespace-nowrap">Max pts:</label>
+                  <label className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">Max pts:</label>
                   <input
                     type="number"
                     min={1}
                     aria-label="Maximum points for CSV export"
                     value={csvMaxPoints}
                     onChange={e => setCsvMaxPoints(Math.max(1, Number(e.target.value) || 1))}
-                    className="w-16 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                    className="w-16 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"
                   />
                   <button
                     onClick={() => {
@@ -609,7 +613,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       });
                       toast.success(`Exported ${gradedStudents.length} grades as CSV`);
                     }}
-                    className="text-xs text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg px-3 py-1.5 transition bg-white/5 hover:bg-white/10 flex items-center gap-1.5"
+                    className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-lg px-3 py-1.5 transition bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] flex items-center gap-1.5"
                   >
                     <Download className="w-3 h-3" aria-hidden="true" />
                     Export Grades ({gradedCount})
@@ -649,7 +653,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               {!selectedAssessmentId && assessmentAssignments.length > 0 && (
                 <div className="mt-4 space-y-1.5">
-                  <h4 className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Grading Progress</h4>
+                  <h4 className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Grading Progress</h4>
                   {[...assessmentAssignments].sort((a, b) => {
                     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                     const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -666,22 +670,22 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       <button
                         key={assignment.id}
                         onClick={() => { setSelectedAssessmentId(assignment.id); setGradingStudentId(null); setGradingAttemptId(null); setRubricDraft({}); setAssessmentSearch(''); setAssessmentStatusFilter(''); setAssessmentSectionFilter(''); setIntegrityReport(null); setShowIntegrityPanel(false); setExpandedPairIdx(null); setViewingDraftUserId(null); setDraftResponses(null); }}
-                        className="w-full text-left bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-xl px-4 py-3 transition group"
+                        className="w-full text-left bg-[var(--panel-bg)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-xl px-4 py-3 transition group"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-white group-hover:text-purple-300 transition truncate mr-3 flex items-center gap-1.5">
+                          <span className="text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-text)] transition truncate mr-3 flex items-center gap-1.5">
                             {assignment.title}
                             {assignment.classroomLink && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20 flex-shrink-0" title={`Linked to ${assignment.classroomLink.courseName}`}>GC</span>
                             )}
                           </span>
-                          <span className="text-xs text-gray-400 whitespace-nowrap">{assignment.classType}</span>
+                          <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">{assignment.classType}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1.5">
-                          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1.5 bg-[var(--surface-glass-heavy)] rounded-full overflow-hidden">
                             <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-purple-500'}`} style={{ width: `${pct}%` }} />
                           </div>
-                          <span className={`text-[10px] font-bold tabular-nums ${pct === 100 ? 'text-green-400' : 'text-gray-400'}`}>{gradedStudents}/{uniqueStudents}</span>
+                          <span className={`text-[10px] font-bold tabular-nums ${pct === 100 ? 'text-green-400' : 'text-[var(--text-tertiary)]'}`}>{gradedStudents}/{uniqueStudents}</span>
                         </div>
                       </button>
                     );
@@ -690,7 +694,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               )}
 
               {assessmentAssignments.length === 0 && (
-                <div className="text-center py-8 text-gray-500 italic mt-4">
+                <div className="text-center py-8 text-[var(--text-muted)] italic mt-4">
                   <Shield className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
                   No assessments created yet. Toggle &quot;Assessment Mode&quot; in the Resource Editor to create one.
                 </div>
@@ -700,26 +704,26 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             {/* Summary Stats */}
             {selectedAssessmentId && (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" role="group" aria-label="Assessment summary statistics">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                  <div className="text-3xl font-bold text-white">{avgScore}%</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Average Score</div>
+                <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5">
+                  <div className="text-3xl font-bold text-[var(--text-primary)]">{avgScore}%</div>
+                  <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">Average Score</div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                  <div className="text-3xl font-bold text-white">{allStudentGroups.length}</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Students</div>
+                <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5">
+                  <div className="text-3xl font-bold text-[var(--text-primary)]">{allStudentGroups.length}</div>
+                  <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">Students</div>
                 </div>
-                <div className={`border rounded-2xl p-5 ${flaggedCount > 0 ? 'bg-amber-900/10 border-amber-500/30' : 'bg-white/5 border-white/10'}`}>
-                  <div className={`text-3xl font-bold ${flaggedCount > 0 ? 'text-amber-400' : 'text-white'}`}>{flaggedCount}</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Auto Flagged</div>
+                <div className={`border rounded-2xl p-5 ${flaggedCount > 0 ? 'bg-amber-900/10 border-amber-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
+                  <div className={`text-3xl font-bold ${flaggedCount > 0 ? 'text-amber-400' : 'text-[var(--text-primary)]'}`}>{flaggedCount}</div>
+                  <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">Auto Flagged</div>
                 </div>
-                <div className={`border rounded-2xl p-5 ${aiFlaggedCount > 0 ? 'bg-purple-900/10 border-purple-500/30' : 'bg-white/5 border-white/10'}`}>
-                  <div className={`text-3xl font-bold ${aiFlaggedCount > 0 ? 'text-purple-400' : 'text-white'}`}>{aiFlaggedCount}</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Flagged</div>
+                <div className={`border rounded-2xl p-5 ${aiFlaggedCount > 0 ? 'bg-purple-900/10 border-purple-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
+                  <div className={`text-3xl font-bold ${aiFlaggedCount > 0 ? 'text-purple-400' : 'text-[var(--text-primary)]'}`}>{aiFlaggedCount}</div>
+                  <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">AI Flagged</div>
                 </div>
                 {selectedAssessment?.rubric && (
-                  <div className={`border rounded-2xl p-5 ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'bg-green-900/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
-                    <div className={`text-3xl font-bold ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'text-green-400' : 'text-white'}`}>{gradedCount}/{allStudentGroups.length}</div>
-                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Graded</div>
+                  <div className={`border rounded-2xl p-5 ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'bg-green-900/10 border-green-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
+                    <div className={`text-3xl font-bold ${gradedCount === allStudentGroups.length && allStudentGroups.length > 0 ? 'text-green-400' : 'text-[var(--text-primary)]'}`}>{gradedCount}/{allStudentGroups.length}</div>
+                    <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">Graded</div>
                   </div>
                 )}
                 {selectedAssessment?.rubric && aiSuggestedCount > 0 && (
@@ -727,7 +731,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <div className="text-3xl font-bold text-amber-400 flex items-center gap-2">
                       <Sparkles className="w-6 h-6" aria-hidden="true" />{aiSuggestedCount}
                     </div>
-                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">AI Suggested</div>
+                    <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">AI Suggested</div>
                     <button
                       disabled={batchAcceptingAI}
                       onClick={async () => {
@@ -790,7 +794,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   return inProgressCount > 0 ? (
                     <div className="border rounded-2xl p-5 bg-blue-900/10 border-blue-500/30">
                       <div className="text-3xl font-bold text-blue-400">{inProgressCount}</div>
-                      <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">In Progress</div>
+                      <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">In Progress</div>
                     </div>
                   ) : null;
                 })()}
@@ -798,13 +802,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 {hasDraftStudents.length > 0 && (
                   <div className="border rounded-2xl p-5 bg-cyan-900/10 border-cyan-500/30">
                     <div className="text-3xl font-bold text-cyan-400">{hasDraftStudents.length}</div>
-                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Has Draft</div>
+                    <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">Has Draft</div>
                   </div>
                 )}
                 {/* Not Started stat */}
-                <div className={`border rounded-2xl p-5 ${notStartedStudents.length > 0 ? 'bg-orange-900/10 border-orange-500/30' : 'bg-white/5 border-white/10'}`}>
-                  <div className={`text-3xl font-bold ${notStartedStudents.length > 0 ? 'text-orange-400' : 'text-white'}`}>{notStartedStudents.length}</div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">Not Started</div>
+                <div className={`border rounded-2xl p-5 ${notStartedStudents.length > 0 ? 'bg-orange-900/10 border-orange-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
+                  <div className={`text-3xl font-bold ${notStartedStudents.length > 0 ? 'text-orange-400' : 'text-[var(--text-primary)]'}`}>{notStartedStudents.length}</div>
+                  <div className="text-sm text-[var(--text-tertiary)] uppercase tracking-wider mt-1">Not Started</div>
                 </div>
               </div>
             )}
@@ -813,21 +817,21 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             {selectedAssessmentId && (sectionFilteredSubs.length > 0 || notStartedStudents.length > 0) && (
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
                   <input
                     type="text"
                     placeholder="Search students..."
                     aria-label="Search students in assessment"
                     value={assessmentSearch}
                     onChange={e => setAssessmentSearch(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+                    className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
                   />
                 </div>
                 <select
                   aria-label="Filter by status"
                   value={assessmentStatusFilter}
                   onChange={e => setAssessmentStatusFilter(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
+                  className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition"
                 >
                   <option value="">All Statuses</option>
                   <option value="flagged">Auto Flagged</option>
@@ -844,7 +848,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     aria-label="Filter by section"
                     value={assessmentSectionFilter}
                     onChange={e => setAssessmentSectionFilter(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition"
+                    className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition"
                   >
                     <option value="">All Sections</option>
                     {availableSections.map(sec => (
@@ -879,11 +883,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <Fingerprint className="w-5 h-5" aria-hidden="true" />
                     Integrity Analysis
                   </h4>
-                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                  <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
                     <span>{integrityReport.totalStudents} students</span>
-                    <span className="text-gray-600">&bull;</span>
+                    <span className="text-[var(--text-muted)]">&bull;</span>
                     <span>{integrityReport.pairsAnalyzed} pairs compared</span>
-                    <span className="text-gray-600">&bull;</span>
+                    <span className="text-[var(--text-muted)]">&bull;</span>
                     <span>{new Date(integrityReport.analyzedAt).toLocaleTimeString()}</span>
                   </div>
                 </div>
@@ -892,7 +896,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <div className="text-center py-6">
                     <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400 opacity-40" aria-hidden="true" />
                     <p className="text-sm text-green-400 font-bold">No suspicious similarity detected</p>
-                    <p className="text-xs text-gray-500 mt-1">All student responses appear to be independently written.</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">All student responses appear to be independently written.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -905,7 +909,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                       return (
                         <div key={idx} className={`border rounded-2xl overflow-hidden transition ${isHigh ? 'bg-red-900/10 border-red-500/20' : 'bg-amber-900/10 border-amber-500/15'}`}>
                           <div
-                            className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition"
+                            className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[var(--surface-glass)] transition"
                             role="button"
                             tabIndex={0}
                             aria-expanded={isExpanded}
@@ -915,12 +919,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <div className={`px-2 py-1 rounded-lg text-xs font-bold ${isHigh ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
                               {pair.overallSimilarity > 0 ? `${pair.overallSimilarity}%` : 'MC'}
                             </div>
-                            <div className="flex-1 text-sm text-white">
+                            <div className="flex-1 text-sm text-[var(--text-primary)]">
                               <span className="font-bold">{pair.studentA.userName}</span>
-                              <span className="text-gray-500 mx-2">&harr;</span>
+                              <span className="text-[var(--text-muted)] mx-2">&harr;</span>
                               <span className="font-bold">{pair.studentB.userName}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                            <div className="flex items-center gap-3 text-[10px] text-[var(--text-tertiary)]">
                               {pair.flaggedBlocks.length > 0 && (
                                 <span>{pair.flaggedBlocks.length} similar response{pair.flaggedBlocks.length !== 1 ? 's' : ''}</span>
                               )}
@@ -928,32 +932,32 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 <span className="text-amber-400">{pair.mcMatchCount}/{pair.mcTotalWrong} shared wrong MC</span>
                               )}
                             </div>
-                            <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            <ChevronRight className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                           </div>
 
                           {isExpanded && (
-                            <div className="border-t border-white/5 p-4 space-y-3 bg-black/20">
+                            <div className="border-t border-[var(--border)] p-4 space-y-3 bg-[var(--panel-bg)]">
                               {pair.flaggedBlocks.length > 0 ? pair.flaggedBlocks.map((block, bi) => (
                                 <div key={bi} className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${block.similarity >= 90 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
                                       {block.similarity}%
                                     </span>
-                                    <span className="text-xs text-gray-400">{block.question.length > 120 ? block.question.slice(0, 120) + '...' : block.question}</span>
+                                    <span className="text-xs text-[var(--text-tertiary)]">{block.question.length > 120 ? block.question.slice(0, 120) + '...' : block.question}</span>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-white/5 rounded-lg p-3">
-                                      <div className="text-xs text-gray-400 font-bold mb-1">{pair.studentA.userName}</div>
-                                      <div className="text-xs text-gray-300 whitespace-pre-wrap break-words">{block.textA}</div>
+                                    <div className="bg-[var(--surface-glass)] rounded-lg p-3">
+                                      <div className="text-xs text-[var(--text-tertiary)] font-bold mb-1">{pair.studentA.userName}</div>
+                                      <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words">{block.textA}</div>
                                     </div>
-                                    <div className="bg-white/5 rounded-lg p-3">
-                                      <div className="text-xs text-gray-400 font-bold mb-1">{pair.studentB.userName}</div>
-                                      <div className="text-xs text-gray-300 whitespace-pre-wrap break-words">{block.textB}</div>
+                                    <div className="bg-[var(--surface-glass)] rounded-lg p-3">
+                                      <div className="text-xs text-[var(--text-tertiary)] font-bold mb-1">{pair.studentB.userName}</div>
+                                      <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words">{block.textB}</div>
                                     </div>
                                   </div>
                                 </div>
                               )) : (
-                                <div className="text-xs text-gray-500 italic">
+                                <div className="text-xs text-[var(--text-muted)] italic">
                                   Flagged based on shared wrong MC answers only &mdash; no comparable text responses.
                                 </div>
                               )}
@@ -1060,7 +1064,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
               return (
               <div
-                className="flex flex-col lg:flex-row gap-0 bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md"
+                className="flex flex-col lg:flex-row gap-0 bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl overflow-hidden backdrop-blur-md"
                 onKeyDown={(e) => {
                   // Keyboard navigation: arrow keys when not focused on input/select/textarea
                   const tag = (e.target as HTMLElement).tagName;
@@ -1071,16 +1075,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 tabIndex={0}
               >
                 {/* Left Panel: Student List Sidebar */}
-                <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col">
-                  <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Students</h4>
-                    <span className="text-xs text-gray-500">
+                <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-[var(--border)] flex flex-col">
+                  <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
+                    <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Students</h4>
+                    <span className="text-xs text-[var(--text-muted)]">
                       {studentGroups.length} submitted
                       {hasDraftStudents.length > 0 && <span className="text-cyan-400"> · {hasDraftStudents.length} draft{hasDraftStudents.length !== 1 ? 's' : ''}</span>}
                       {notStartedStudents.length > 0 && <span className="text-orange-400"> · {notStartedStudents.length} not started</span>}
                     </span>
                   </div>
-                  <div className="flex items-center border-b border-white/5 bg-white/[0.01]">
+                  <div className="flex items-center border-b border-[var(--border)] bg-[var(--surface-glass)]">
                     {([['name', 'Name'], ['score', 'Score'], ['submitted', 'Time'], ['attempt', '#']] as const).map(([key, label]) => (
                       <button
                         key={key}
@@ -1088,7 +1092,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           if (assessmentSortKey === key) setAssessmentSortDesc(d => !d);
                           else { setAssessmentSortKey(key); setAssessmentSortDesc(key === 'submitted' || key === 'score'); }
                         }}
-                        className={`flex-1 text-center py-1.5 min-h-[44px] text-[9px] font-bold uppercase tracking-wider transition hover:bg-white/5 ${assessmentSortKey === key ? 'text-purple-400' : 'text-gray-600 hover:text-gray-400'}`}
+                        className={`flex-1 text-center py-1.5 min-h-[44px] text-[9px] font-bold uppercase tracking-wider transition hover:bg-[var(--surface-glass)] ${assessmentSortKey === key ? 'text-purple-400' : 'text-[var(--text-muted)] hover:text-[var(--text-tertiary)]'}`}
                       >
                         {label}
                         {assessmentSortKey === key && (
@@ -1117,20 +1121,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             aria-label={`${group.userName}${group.hasRubricGrade ? ', graded' : ', ungraded'}${group.isInProgress ? ', in progress' : `, ${displayPct}%`}`}
                             onClick={() => selectStudent(group.userId)}
                             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStudent(group.userId); } }}
-                            className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
-                              isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-white/5 border-l-2 border-l-transparent'
+                            className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-[var(--border)] focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
+                              isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-[var(--surface-glass)] border-l-2 border-l-transparent'
                             } ${group.latest.flaggedAsAI ? 'bg-purple-900/5' : ''}`}
                           >
                             <div className="shrink-0">
                               {group.hasRubricGrade ? (
                                 <CheckCircle className="w-3.5 h-3.5 text-green-400" aria-hidden="true" />
                               ) : (
-                                <div className="w-3.5 h-3.5 rounded-full border border-gray-600 bg-transparent" />
+                                <div className="w-3.5 h-3.5 rounded-full border border-[var(--border-strong)] bg-transparent" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                <span className={`text-xs font-bold truncate ${isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
                                   {group.userName}
                                 </span>
                                 {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" aria-hidden="true" />}
@@ -1161,10 +1165,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                               </div>
                               <div className="flex items-center gap-1">
                                 {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                                  <span className="text-xs text-gray-500">{group.userSection}</span>
+                                  <span className="text-xs text-[var(--text-muted)]">{group.userSection}</span>
                                 )}
                                 {group.latest.submittedAt && !group.isInProgress && (
-                                  <span className="text-xs text-gray-500">{formatLastSeen(group.latest.submittedAt)}</span>
+                                  <span className="text-xs text-[var(--text-muted)]">{formatLastSeen(group.latest.submittedAt)}</span>
                                 )}
                               </div>
                             </div>
@@ -1188,22 +1192,22 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           aria-label={`${entryName}, ${isDraft ? 'has draft' : 'not started'}`}
                           onClick={() => isDraft ? selectDraftStudent(entryId) : selectNotStartedStudent(entryId)}
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isDraft ? selectDraftStudent(entryId) : selectNotStartedStudent(entryId); } }}
-                          className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
+                          className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-[var(--border)] focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
                             isSelected
                               ? isDraft ? 'bg-cyan-500/15 border-l-2 border-l-cyan-500' : 'bg-orange-500/10 border-l-2 border-l-orange-500'
-                              : 'hover:bg-white/5 border-l-2 border-l-transparent'
+                              : 'hover:bg-[var(--surface-glass)] border-l-2 border-l-transparent'
                           }`}
                         >
                           <div className="shrink-0">
                             {isDraft ? (
                               <Eye className="w-3.5 h-3.5 text-cyan-400/60" />
                             ) : (
-                              <div className="w-3.5 h-3.5 rounded-full border border-gray-700 bg-transparent opacity-30" />
+                              <div className="w-3.5 h-3.5 rounded-full border border-[var(--border)] bg-transparent opacity-30" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : isDraft ? 'text-gray-300' : 'text-gray-500'}`}>
+                              <span className={`text-xs font-bold truncate ${isSelected ? 'text-[var(--text-primary)]' : isDraft ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}`}>
                                 {entryName}
                               </span>
                               {isDraft ? (
@@ -1214,14 +1218,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             </div>
                             <div className="flex items-center gap-1">
                               {studentSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                                <span className="text-xs text-gray-500">{studentSection}</span>
+                                <span className="text-xs text-[var(--text-muted)]">{studentSection}</span>
                               )}
                               {isDraft && entry.startedAt && (
                                 <span className="text-[9px] text-cyan-400/50">started {formatLastSeen(entry.startedAt)}</span>
                               )}
                             </div>
                           </div>
-                          <span className="text-[11px] font-bold tabular-nums shrink-0 text-gray-700">
+                          <span className="text-[11px] font-bold tabular-nums shrink-0 text-[var(--text-muted)]">
                             —
                           </span>
                         </div>
@@ -1238,29 +1242,29 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     const isNotStarted = !draftUserIds.has(viewingDraftUserId);
                     return (
                       <>
-                        <div className={`px-4 py-3 border-b border-white/10 flex items-center gap-3 ${isNotStarted ? 'bg-orange-500/[0.03]' : 'bg-cyan-500/[0.03]'}`}>
+                        <div className={`px-4 py-3 border-b border-[var(--border)] flex items-center gap-3 ${isNotStarted ? 'bg-orange-500/[0.03]' : 'bg-cyan-500/[0.03]'}`}>
                           {/* Prev/Next navigation */}
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => navigateUnified(-1)}
                               disabled={currentUnifiedIndex <= 0}
-                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--surface-glass-heavy)] transition disabled:opacity-20 disabled:cursor-not-allowed"
                               aria-label="Previous student"
                             >
-                              <ChevronLeft className="w-4 h-4 text-gray-400" />
+                              <ChevronLeft className="w-4 h-4 text-[var(--text-tertiary)]" />
                             </button>
-                            <span className="text-xs text-gray-500 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
+                            <span className="text-xs text-[var(--text-muted)] tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
                             <button
                               onClick={() => navigateUnified(1)}
                               disabled={currentUnifiedIndex >= unifiedList.length - 1}
-                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--surface-glass-heavy)] transition disabled:opacity-20 disabled:cursor-not-allowed"
                               aria-label="Next student"
                             >
-                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                              <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)]" />
                             </button>
                           </div>
                           {isNotStarted ? <Users className="w-4 h-4 text-orange-400" /> : <Eye className="w-4 h-4 text-cyan-400" />}
-                          <h4 className="text-sm font-bold text-white">{draftStudentName}</h4>
+                          <h4 className="text-sm font-bold text-[var(--text-primary)]">{draftStudentName}</h4>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isNotStarted ? 'bg-orange-500/20 text-orange-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
                             {isNotStarted ? 'NOT STARTED' : 'DRAFT'}
                           </span>
@@ -1339,21 +1343,21 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         <div className="overflow-y-auto custom-scrollbar p-4" style={{ maxHeight: 'calc(100vh - 470px)' }}>
                           {draftLoading ? (
                             <div className="flex items-center justify-center py-12">
-                              <div className="text-gray-500 text-sm">Loading draft...</div>
+                              <div className="text-[var(--text-muted)] text-sm">Loading draft...</div>
                             </div>
                           ) : !draftResponses ? (
                             <div className="flex items-center justify-center py-12">
                               <div className="text-center">
-                                <FileText className="w-12 h-12 mx-auto mb-3 text-gray-700 opacity-30" />
+                                <FileText className="w-12 h-12 mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
                                 {isNotStarted ? (
                                   <>
                                     <p className="text-orange-400/80 text-sm font-bold">Not Started</p>
-                                    <p className="text-gray-600 text-xs mt-1">This student hasn't opened the assessment yet.</p>
+                                    <p className="text-[var(--text-muted)] text-xs mt-1">This student hasn't opened the assessment yet.</p>
                                   </>
                                 ) : (
                                   <>
-                                    <p className="text-gray-500 text-sm">No draft responses found</p>
-                                    <p className="text-gray-600 text-xs mt-1">The student opened the assessment but may not have answered any questions yet.</p>
+                                    <p className="text-[var(--text-muted)] text-sm">No draft responses found</p>
+                                    <p className="text-[var(--text-muted)] text-xs mt-1">The student opened the assessment but may not have answered any questions yet.</p>
                                   </>
                                 )}
                               </div>
@@ -1390,9 +1394,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                         richRenderer = (
                                           <div className="mt-1 space-y-1">
                                             {steps.map((step, i) => (
-                                              <div key={i} className="flex items-start gap-2 bg-white/5 rounded px-2 py-1">
-                                                <span className="text-xs text-gray-400 font-bold shrink-0 mt-0.5">{step.label}</span>
-                                                <span className="text-xs text-gray-300">{step.input || step.latex || '\u2014'}</span>
+                                              <div key={i} className="flex items-start gap-2 bg-[var(--surface-glass)] rounded px-2 py-1">
+                                                <span className="text-xs text-[var(--text-tertiary)] font-bold shrink-0 mt-0.5">{step.label}</span>
+                                                <span className="text-xs text-[var(--text-secondary)]">{step.input || step.latex || '\u2014'}</span>
                                               </div>
                                             ))}
                                           </div>
@@ -1411,17 +1415,17 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   }
 
                                   return (
-                                    <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${hasAnswer ? 'bg-cyan-900/10 border-cyan-500/20' : 'bg-white/5 border-white/5'}`}>
-                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasAnswer ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-500/20 text-gray-500'}`}>
+                                    <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${hasAnswer ? 'bg-cyan-900/10 border-cyan-500/20' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasAnswer ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-500/20 text-[var(--text-muted)]'}`}>
                                         {qi + 1}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs text-gray-300 mb-1">
-                                          <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
+                                        <div className="text-xs text-[var(--text-secondary)] mb-1">
+                                          <span className="font-bold text-[var(--text-tertiary)]">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
                                         </div>
-                                        <div className="text-[11px] text-gray-500">
+                                        <div className="text-[11px] text-[var(--text-muted)]">
                                           <span className="font-bold">Draft Answer:</span>{' '}
-                                          <span className={hasAnswer ? 'text-cyan-400' : 'text-gray-600 italic'}>{displayAnswer}</span>
+                                          <span className={hasAnswer ? 'text-cyan-400' : 'text-[var(--text-muted)] italic'}>{displayAnswer}</span>
                                         </div>
                                         {richRenderer}
                                       </div>
@@ -1439,7 +1443,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 return (
                                   <div key={blockId} className="flex items-center gap-3 p-2 rounded-lg border bg-cyan-900/10 border-cyan-500/20">
                                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-cyan-500/20 text-cyan-400">?</div>
-                                    <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
+                                    <span className="text-xs text-[var(--text-tertiary)] font-mono truncate">{blockId.slice(0, 12)}...</span>
                                     <span className="text-xs text-cyan-300 truncate flex-1">{answerText}</span>
                                   </div>
                                 );
@@ -1452,9 +1456,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   })() : !selectedGroup || !selectedSub ? (
                     <div className="flex-1 flex items-center justify-center p-12" style={{ minHeight: 'calc(100vh - 420px)' }}>
                       <div className="text-center">
-                        <FileText className="w-16 h-16 mx-auto mb-4 text-gray-700 opacity-30" />
-                        <p className="text-gray-500 text-sm font-bold">Select a student to begin grading</p>
-                        <p className="text-gray-600 text-xs mt-1">Use the list on the left or arrow keys to navigate</p>
+                        <FileText className="w-16 h-16 mx-auto mb-4 text-[var(--text-muted)] opacity-30" />
+                        <p className="text-[var(--text-muted)] text-sm font-bold">Select a student to begin grading</p>
+                        <p className="text-[var(--text-muted)] text-xs mt-1">Use the list on the left or arrow keys to navigate</p>
                       </div>
                     </div>
                   ) : (() => {
@@ -1467,32 +1471,32 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     return (
                       <>
                         {/* Center panel header */}
-                        <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02] flex items-center gap-3 flex-wrap">
+                        <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)] flex items-center gap-3 flex-wrap">
                           {/* Prev/Next navigation */}
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => navigateUnified(-1)}
                               disabled={currentUnifiedIndex <= 0}
-                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--surface-glass-heavy)] transition disabled:opacity-20 disabled:cursor-not-allowed"
                               aria-label="Previous student"
                             >
-                              <ChevronLeft className="w-4 h-4 text-gray-400" />
+                              <ChevronLeft className="w-4 h-4 text-[var(--text-tertiary)]" />
                             </button>
-                            <span className="text-xs text-gray-500 tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
+                            <span className="text-xs text-[var(--text-muted)] tabular-nums">{currentUnifiedIndex + 1}/{unifiedList.length}</span>
                             <button
                               onClick={() => navigateUnified(1)}
                               disabled={currentUnifiedIndex >= unifiedList.length - 1}
-                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition disabled:opacity-20 disabled:cursor-not-allowed"
+                              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--surface-glass-heavy)] transition disabled:opacity-20 disabled:cursor-not-allowed"
                               aria-label="Next student"
                             >
-                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                              <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)]" />
                             </button>
                           </div>
 
                           {/* Student name */}
-                          <h4 className="text-sm font-bold text-white">{selectedGroup.userName}</h4>
+                          <h4 className="text-sm font-bold text-[var(--text-primary)]">{selectedGroup.userName}</h4>
                           {selectedGroup.userSection && (
-                            <span className="text-xs text-gray-400 bg-white/5 px-2 py-0.5 rounded">{selectedGroup.userSection}</span>
+                            <span className="text-xs text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-2 py-0.5 rounded">{selectedGroup.userSection}</span>
                           )}
 
                           {/* Attempt selector */}
@@ -1508,7 +1512,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   setFeedbackDraft(newSub.rubricGrade?.teacherFeedback || '');
                                 }
                               }}
-                              className="bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/50 transition"
+                              className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition"
                             >
                               {selectedGroup.submissions.map(s => (
                                 <option key={s.id} value={s.id}>
@@ -1520,10 +1524,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                           <div className="ml-auto flex items-center gap-2">
                             {/* Metrics badges */}
-                            <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
+                            <div className="hidden md:flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
                               <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
                               <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
-                              <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-gray-600'}>{formatEngagementTime(inactiveTime)} idle</span>
+                              <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-[var(--text-muted)]'}>{formatEngagementTime(inactiveTime)} idle</span>
                               <span>{sub.metrics?.pasteCount || 0} pastes</span>
                               {(sub.metrics?.wordCount != null && sub.metrics.wordCount > 0) && (
                                 <span className="text-blue-400">{sub.metrics.wordCount} words</span>
@@ -1627,7 +1631,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                         const vbH = Math.ceil(maxY + 20);
                                         // Render SVG preview of drawing elements
                                         richRenderer = (
-                                          <svg viewBox={`0 0 ${vbW} ${vbH}`} className="w-full max-w-2xl h-auto bg-white rounded mt-1 border border-white/10">
+                                          <svg viewBox={`0 0 ${vbW} ${vbH}`} className="w-full max-w-2xl h-auto bg-white rounded mt-1 border border-[var(--border)]">
                                             {elements.map((el, i) => {
                                               if (el.type === 'arrow') {
                                                 const sx = el.start as { x: number; y: number }, ex = el.end as { x: number; y: number };
@@ -1671,12 +1675,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                         richRenderer = (
                                           <div className="mt-1 space-y-1">
                                             {steps.map((step, i) => (
-                                              <div key={i} className="flex items-start gap-2 bg-white/5 rounded px-2 py-1">
-                                                <span className="text-xs text-gray-400 font-bold shrink-0 mt-0.5">{step.label}</span>
+                                              <div key={i} className="flex items-start gap-2 bg-[var(--surface-glass)] rounded px-2 py-1">
+                                                <span className="text-xs text-[var(--text-tertiary)] font-bold shrink-0 mt-0.5">{step.label}</span>
                                                 {step.latex ? (
-                                                  <span className="text-xs text-gray-200" dangerouslySetInnerHTML={{ __html: (() => { try { return katex.renderToString(step.latex, { throwOnError: false }); } catch { return step.input || step.latex; } })() }} />
+                                                  <span className="text-xs text-[var(--text-secondary)]" dangerouslySetInnerHTML={{ __html: (() => { try { return katex.renderToString(step.latex, { throwOnError: false }); } catch { return step.input || step.latex; } })() }} />
                                                 ) : (
-                                                  <span className="text-xs text-gray-300">{step.input || '—'}</span>
+                                                  <span className="text-xs text-[var(--text-secondary)]">{step.input || '—'}</span>
                                                 )}
                                               </div>
                                             ))}
@@ -1695,12 +1699,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                               const bars = chartData[section];
                                               if (!bars || bars.every(b => b.value === 0)) return null;
                                               return (
-                                                <div key={section} className="bg-white/5 rounded px-2 py-1">
-                                                  <span className="text-xs text-gray-400 font-bold uppercase">{section}</span>
+                                                <div key={section} className="bg-[var(--surface-glass)] rounded px-2 py-1">
+                                                  <span className="text-xs text-[var(--text-tertiary)] font-bold uppercase">{section}</span>
                                                   <div className="flex gap-2 mt-0.5">
                                                     {bars.map((bar, i) => (
                                                       <div key={i} className="flex flex-col items-center">
-                                                        <div className="text-[10px] text-gray-300 font-mono">{bar.value}</div>
+                                                        <div className="text-[10px] text-[var(--text-secondary)] font-mono">{bar.value}</div>
                                                         <div
                                                           className="w-6 rounded-t"
                                                           style={{
@@ -1709,7 +1713,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                                             opacity: 0.7,
                                                           }}
                                                         />
-                                                        <div className="text-xs text-gray-400 truncate max-w-[40px]" dangerouslySetInnerHTML={{ __html: bar.labelHTML || `${i + 1}` }} />
+                                                        <div className="text-xs text-[var(--text-tertiary)] truncate max-w-[40px]" dangerouslySetInnerHTML={{ __html: bar.labelHTML || `${i + 1}` }} />
                                                       </div>
                                                     ))}
                                                   </div>
@@ -1740,10 +1744,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                         {isPending ? <Clock className="w-3.5 h-3.5" /> : blockResult?.correct ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs text-gray-300 mb-1">
-                                          <span className="font-bold text-gray-400">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
+                                        <div className="text-xs text-[var(--text-secondary)] mb-1">
+                                          <span className="font-bold text-[var(--text-tertiary)]">Q{qi + 1}:</span> {block.content.slice(0, 100)}{block.content.length > 100 ? '...' : ''}
                                         </div>
-                                        <div className="text-[11px] text-gray-500">
+                                        <div className="text-[11px] text-[var(--text-muted)]">
                                           {isPending ? (
                                             <span className="text-amber-400 font-bold">Pending Review</span>
                                           ) : (
@@ -1758,7 +1762,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                             </>
                                           )}
                                           {isPending && displayAnswer !== 'No answer' && !richRenderer && (
-                                            <div className="mt-1 text-gray-300 bg-white/5 rounded px-2 py-1.5 whitespace-pre-wrap">{displayAnswer}</div>
+                                            <div className="mt-1 text-[var(--text-secondary)] bg-[var(--surface-glass)] rounded px-2 py-1.5 whitespace-pre-wrap">{displayAnswer}</div>
                                           )}
                                           {richRenderer}
                                         </div>
@@ -1780,24 +1784,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
                                   : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
                                   : blockResult ? 'bg-red-900/10 border-red-500/20'
-                                  : 'bg-white/5 border-white/5';
+                                  : 'bg-[var(--surface-glass)] border-white/5';
                                 const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
                                   : blockResult?.correct ? 'bg-green-500/20 text-green-400'
                                   : blockResult ? 'bg-red-500/20 text-red-400'
-                                  : 'bg-gray-500/20 text-gray-400';
+                                  : 'bg-gray-500/20 text-[var(--text-tertiary)]';
                                 return (
                                   <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${borderClass}`}>
                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${iconClass}`}>
                                       {isPending ? <Clock className="w-3 h-3" /> : blockResult?.correct ? <CheckCircle className="w-3 h-3" /> : blockResult ? <AlertTriangle className="w-3 h-3" /> : '?'}
                                     </div>
-                                    <span className="text-xs text-gray-400 font-mono truncate">{blockId.slice(0, 12)}...</span>
-                                    <span className="text-xs text-gray-300 truncate flex-1">{answerText}</span>
+                                    <span className="text-xs text-[var(--text-tertiary)] font-mono truncate">{blockId.slice(0, 12)}...</span>
+                                    <span className="text-xs text-[var(--text-secondary)] truncate flex-1">{answerText}</span>
                                   </div>
                                 );
                               })}
                             </div>
                           ) : (
-                            <div className="text-xs text-gray-500 italic">No per-question data available for this submission.</div>
+                            <div className="text-xs text-[var(--text-muted)] italic">No per-question data available for this submission.</div>
                           )}
                         </div>
                       </>
@@ -1809,8 +1813,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 {viewingDraftUserId && !selectedGroup && (() => {
                   const isNotStartedRight = !draftUserIds.has(viewingDraftUserId);
                   return (
-                    <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
-                      <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                    <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-[var(--border)] flex flex-col">
+                      <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
                         <h5 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isNotStartedRight ? 'text-orange-400' : 'text-cyan-400'}`}>
                           {isNotStartedRight ? <><Users className="w-3.5 h-3.5" /> Not Started</> : <><Eye className="w-3.5 h-3.5" /> Draft Preview</>}
                         </h5>
@@ -1821,14 +1825,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           {isNotStartedRight ? (
                             <>
                               <p className="text-orange-400 text-sm font-bold mb-1">Not yet started</p>
-                              <p className="text-gray-500 text-xs leading-relaxed max-w-[250px]">
+                              <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-[250px]">
                                 This student hasn't opened the assessment. Use Nudge to send them a reminder.
                               </p>
                             </>
                           ) : (
                             <>
                               <p className="text-cyan-400 text-sm font-bold mb-1">Draft — not yet submitted</p>
-                              <p className="text-gray-500 text-xs leading-relaxed max-w-[250px]">
+                              <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-[250px]">
                                 This student's work is still in progress. You can nudge them to submit, or submit on their behalf using the header buttons.
                               </p>
                             </>
@@ -1849,8 +1853,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   const isReturnedAttempt = sub.status === 'RETURNED';
 
                   return (
-                    <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
-                      <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                    <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-[var(--border)] flex flex-col">
+                      <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
                         <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
                           <BookOpen className="w-3.5 h-3.5" /> Rubric Grading
                           {isAlreadyGraded && (
@@ -1891,7 +1895,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     reportError(err, { method: 'dismissAISuggestedGrade' });
                                   }
                                 }}
-                                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition"
+                                className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] px-2 py-1 rounded-lg hover:bg-[var(--surface-glass-heavy)] transition"
                               >
                                 <X className="w-3 h-3" /> Dismiss
                               </button>
@@ -1904,7 +1908,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             <span className="text-[11px] text-amber-300">This attempt was returned. Grades shown are from the prior review.</span>
                           </div>
                         )}
-                        <React.Suspense fallback={<div className="text-xs text-gray-400">Loading rubric...</div>}>
+                        <React.Suspense fallback={<div className="text-xs text-[var(--text-tertiary)]">Loading rubric...</div>}>
                           <RubricViewer
                             rubric={selectedAssessment.rubric}
                             mode="grade"
@@ -1952,24 +1956,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                       {/* Teacher feedback */}
                       {!isReturnedAttempt && (
-                      <div className="px-4 py-2 border-t border-white/10">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Teacher Feedback</label>
+                      <div className="px-4 py-2 border-t border-[var(--border)]">
+                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1 block">Teacher Feedback</label>
                         <textarea
                           value={feedbackDraft}
                           onChange={e => setFeedbackDraft(e.target.value)}
                           placeholder="Optional feedback for the student..."
                           rows={2}
-                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none"
+                          className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
                         />
                       </div>
                       )}
 
                       {/* Save bar — sticky at bottom */}
                       {!isReturnedAttempt && (
-                      <div className="border-t border-white/10 p-3 bg-white/[0.02]">
+                      <div className="border-t border-[var(--border)] p-3 bg-[var(--surface-glass)]">
                         <div className="flex items-center justify-between">
-                          <div className="text-xs text-gray-400">
-                            Rubric Score: <span className="font-bold text-white text-sm">{rubricPct}%</span>
+                          <div className="text-xs text-[var(--text-tertiary)]">
+                            Rubric Score: <span className="font-bold text-[var(--text-primary)] text-sm">{rubricPct}%</span>
                           </div>
                           {/* Return to Student button */}
                           {sub.status !== 'RETURNED' && sub.status !== 'STARTED' && (
@@ -2111,7 +2115,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                           })()}
                         </div>
                         {isAlreadyGraded && sub.rubricGrade && (
-                          <div className="text-xs text-gray-500 mt-1.5">
+                          <div className="text-xs text-[var(--text-muted)] mt-1.5">
                             Last graded by {sub.rubricGrade.gradedBy} on {new Date(sub.rubricGrade.gradedAt).toLocaleDateString()}
                           </div>
                         )}
@@ -2126,17 +2130,17 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
             {/* Empty state when assessment selected but no submissions */}
             {selectedAssessmentId && completedSubs.length === 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
-                <FileText className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
-                <p className="text-gray-500 text-sm">No submissions yet for this assessment.</p>
+              <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-8 text-center">
+                <FileText className="w-12 h-12 mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
+                <p className="text-[var(--text-muted)] text-sm">No submissions yet for this assessment.</p>
               </div>
             )}
 
             {/* No results from search/filter */}
             {selectedAssessmentId && completedSubs.length > 0 && studentGroups.length === 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
-                <Search className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
-                <p className="text-gray-500 text-sm">No students match your search or filter.</p>
+              <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-8 text-center">
+                <Search className="w-12 h-12 mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
+                <p className="text-[var(--text-muted)] text-sm">No students match your search or filter.</p>
               </div>
             )}
           </div>
@@ -2145,9 +2149,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {adminTab === 'digest' && (<div role="tabpanel" id="tabpanel-digest" aria-labelledby="tab-digest"><FeatureErrorBoundary feature="Daily Digest">
         <div className="space-y-6">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+          <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <Newspaper className="w-5 h-5 text-blue-400" aria-hidden="true" />
                 Daily Activity Digest
               </h3>
@@ -2171,7 +2175,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             </div>
 
             {dailyDigests.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-20" aria-hidden="true" />
                 <p className="text-sm font-bold">No digest reports yet</p>
                 <p className="text-xs mt-1">Daily digests are generated automatically each morning at 6:30 AM.</p>
@@ -2179,69 +2183,69 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             ) : (
               <div className="space-y-4">
                 {dailyDigests.map(digest => (
-                  <div key={digest.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+                  <div key={digest.id} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5 space-y-4">
                     {/* Date Header */}
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-white">
+                      <h4 className="text-sm font-bold text-[var(--text-primary)]">
                         {new Date(digest.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                       </h4>
-                      <span className="text-xs text-gray-400">Generated {new Date(digest.generatedAt).toLocaleTimeString()}</span>
+                      <span className="text-xs text-[var(--text-tertiary)]">Generated {new Date(digest.generatedAt).toLocaleTimeString()}</span>
                     </div>
 
                     {/* Summary Stats Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
                         <div className="text-2xl font-bold text-green-400">{digest.summary.totalSubmissions}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wider">Submissions</div>
+                        <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Submissions</div>
                       </div>
                       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
                         <div className="text-2xl font-bold text-blue-400">{digest.summary.totalResubmissions}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wider">Resubmissions</div>
+                        <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Resubmissions</div>
                       </div>
                       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
                         <div className="text-2xl font-bold text-emerald-400">{digest.summary.totalGraded}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wider">Graded</div>
+                        <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Graded</div>
                       </div>
                       {digest.summary.totalAutoFlagged > 0 && (
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-amber-400">{digest.summary.totalAutoFlagged}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Auto Flagged</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Auto Flagged</div>
                         </div>
                       )}
                       {digest.summary.totalAIFlagged > 0 && (
                         <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-purple-400">{digest.summary.totalAIFlagged}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">AI Flagged</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">AI Flagged</div>
                         </div>
                       )}
                       {digest.summary.totalEWSAlerts > 0 && (
                         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-red-400">{digest.summary.totalEWSAlerts}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">EWS Alerts</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">EWS Alerts</div>
                         </div>
                       )}
                       {digest.summary.totalLevelUps > 0 && (
                         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-yellow-400">{digest.summary.totalLevelUps}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Level Ups</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Level Ups</div>
                         </div>
                       )}
                       {digest.summary.totalQuestsCompleted > 0 && (
                         <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-cyan-400">{digest.summary.totalQuestsCompleted}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Quests Done</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Quests Done</div>
                         </div>
                       )}
                       {digest.summary.totalBossDefeated > 0 && (
                         <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-orange-400">{digest.summary.totalBossDefeated}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">Bosses Defeated</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Bosses Defeated</div>
                         </div>
                       )}
                       {digest.summary.totalNewEnrollments > 0 && (
                         <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
                           <div className="text-2xl font-bold text-indigo-400">{digest.summary.totalNewEnrollments}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">New Students</div>
+                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">New Students</div>
                         </div>
                       )}
                     </div>
@@ -2249,7 +2253,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     {/* Event Feed */}
                     {digest.events.length > 0 && (
                       <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
-                        <div className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-2">Activity Feed</div>
+                        <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest mb-2">Activity Feed</div>
                         {digest.events.map((event, idx) => {
                           const eventColors: Record<string, string> = {
                             SUBMISSION: 'text-green-400',
@@ -2276,18 +2280,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             NEW_ENROLLMENT: 'Enrolled',
                           };
                           return (
-                            <div key={idx} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white/5 transition text-xs">
-                              <span className={`font-bold text-[10px] uppercase tracking-wider w-24 shrink-0 ${eventColors[event.type] || 'text-gray-400'}`}>
+                            <div key={idx} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-[var(--surface-glass)] transition text-xs">
+                              <span className={`font-bold text-[10px] uppercase tracking-wider w-24 shrink-0 ${eventColors[event.type] || 'text-[var(--text-tertiary)]'}`}>
                                 {eventLabels[event.type] || event.type}
                               </span>
-                              <span className="text-gray-300 font-medium truncate">{event.studentName || 'System'}</span>
+                              <span className="text-[var(--text-secondary)] font-medium truncate">{event.studentName || 'System'}</span>
                               {event.assignmentTitle && (
-                                <span className="text-gray-500 truncate">{event.assignmentTitle}</span>
+                                <span className="text-[var(--text-muted)] truncate">{event.assignmentTitle}</span>
                               )}
                               {event.detail && (
-                                <span className="text-gray-600 text-[10px] shrink-0">{event.detail}</span>
+                                <span className="text-[var(--text-muted)] text-[10px] shrink-0">{event.detail}</span>
                               )}
-                              <span className="text-gray-600 text-[10px] ml-auto shrink-0">
+                              <span className="text-[var(--text-muted)] text-[10px] ml-auto shrink-0">
                                 {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
@@ -2298,7 +2302,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
                     {/* Empty day message */}
                     {digest.events.length === 0 && (
-                      <div className="text-center py-4 text-gray-600 text-xs italic">No activity recorded for this day.</div>
+                      <div className="text-center py-4 text-[var(--text-muted)] text-xs italic">No activity recorded for this day.</div>
                     )}
                   </div>
                 ))}
@@ -2321,10 +2325,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       {/* MODERATION SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Active Flags */}
-          <div className={`border rounded-3xl p-6 backdrop-blur-md transition-colors ${flags.length > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-white/5 border-white/10'}`}>
+          <div className={`border rounded-3xl p-6 backdrop-blur-md transition-colors ${flags.length > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
               <div className="flex justify-between items-center mb-6">
-                  <h3 className={`text-xl font-bold flex items-center gap-2 ${flags.length > 0 ? 'text-red-400' : 'text-white'}`}>
-                      {flags.length > 0 ? <AlertTriangle className="w-5 h-5" aria-hidden="true" /> : <ShieldAlert className="w-5 h-5 text-gray-400" aria-hidden="true" />}
+                  <h3 className={`text-xl font-bold flex items-center gap-2 ${flags.length > 0 ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
+                      {flags.length > 0 ? <AlertTriangle className="w-5 h-5" aria-hidden="true" /> : <ShieldAlert className="w-5 h-5 text-[var(--text-tertiary)]" aria-hidden="true" />}
                       Moderation Queue
                   </h3>
                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${flags.length > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-green-500/20 text-green-400'}`}>
@@ -2333,20 +2337,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               </div>
               
               {flags.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 italic">
+                  <div className="text-center py-8 text-[var(--text-muted)] italic">
                       <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
                       No active alerts. Comms channels are clear.
                   </div>
               ) : (
                   <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                       {flags.map(flag => (
-                          <div key={flag.id} className="bg-black/20 border border-red-500/20 p-3 rounded-xl">
+                          <div key={flag.id} className="bg-[var(--panel-bg)] border border-red-500/20 p-3 rounded-xl">
                               <div className="flex justify-between items-start mb-2">
                                   <div>
-                                      <div className="text-sm font-bold text-white">{flag.senderName} <span className="text-xs text-gray-500 font-normal">in {flag.classType}</span></div>
+                                      <div className="text-sm font-bold text-[var(--text-primary)]">{flag.senderName} <span className="text-xs text-[var(--text-muted)] font-normal">in {flag.classType}</span></div>
                                       <div className="text-xs text-red-300 italic mt-1">"{flag.content}"</div>
                                   </div>
-                                  <div className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                                  <div className="text-xs text-[var(--text-tertiary)] whitespace-nowrap ml-2">
                                       {new Date(flag.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                   </div>
                               </div>
@@ -2362,8 +2366,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                           <MicOff className="w-3 h-3" aria-hidden="true" />
                                       </button>
                                       {muteMenuFlagId === flag.id && (
-                                          <div role="menu" className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap" onKeyDown={e => { if (e.key === 'Escape') setMuteMenuFlagId(null); }}>
-                                              <div className="text-xs text-gray-400 px-2 py-1 font-bold uppercase">Mute {flag.senderName}</div>
+                                          <div role="menu" className="absolute bottom-full mb-1 right-0 bg-[var(--surface-overlay)] border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap" onKeyDown={e => { if (e.key === 'Escape') setMuteMenuFlagId(null); }}>
+                                              <div className="text-xs text-[var(--text-tertiary)] px-2 py-1 font-bold uppercase">Mute {flag.senderName}</div>
                                               {MUTE_DURATIONS.map(d => (
                                                   <button key={d.minutes} role="menuitem" onClick={() => handleMuteFromFlag(flag.senderId, d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
                                               ))}
@@ -2378,14 +2382,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
 
           {/* Muted Students */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
                   <MicOff className="w-5 h-5 text-orange-400" aria-hidden="true" />
                   Silenced Operatives
               </h3>
               
               {mutedStudents.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 italic">
+                  <div className="text-center py-8 text-[var(--text-muted)] italic">
                       <Users className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
                       No active silence sanctions.
                   </div>
@@ -2393,18 +2397,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <div className="overflow-x-auto">
                       <table className="w-full text-left">
                           <thead>
-                              <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-gray-500">
+                              <tr className="border-b border-[var(--border)] text-[10px] uppercase font-bold text-[var(--text-muted)]">
                                   <th scope="col" className="pb-2">Operative</th>
                                   <th scope="col" className="pb-2">Remaining</th>
                                   <th scope="col" className="pb-2 text-right">Protocol</th>
                               </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/5">
+                          <tbody className="divide-y divide-[var(--border)]">
                               {mutedStudents.map(s => (
-                                  <tr key={s.id} className="group hover:bg-white/5 transition">
+                                  <tr key={s.id} className="group hover:bg-[var(--surface-glass)] transition">
                                       <td className="py-3">
-                                          <div className="text-sm font-bold text-white">{s.name}</div>
-                                          <div className="text-xs text-gray-400">{s.classType}</div>
+                                          <div className="text-sm font-bold text-[var(--text-primary)]">{s.name}</div>
+                                          <div className="text-xs text-[var(--text-tertiary)]">{s.classType}</div>
                                       </td>
                                       <td className="py-3">
                                           <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded text-xs font-mono">
@@ -2415,7 +2419,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                           <div className="flex justify-end gap-2">
                                               <button
                                                   onClick={() => handleExtendMute(s.id, s.mutedUntil!)}
-                                                  className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition"
+                                                  className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
                                                   aria-label="Extend mute 1 hour"
                                               >
                                                   <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
@@ -2478,14 +2482,23 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                             {bucketInfo.label}
                           </span>
                         )}
-                        <span className="text-sm font-bold text-white truncate">{alert.studentName}</span>
-                        <span className="text-xs text-gray-400">{alert.classType}</span>
+                        <span className="text-sm font-bold text-[var(--text-primary)] truncate">{alert.studentName}</span>
+                        <span className="text-xs text-[var(--text-tertiary)]">{alert.classType}</span>
                       </div>
-                      <p className="text-xs text-gray-300 leading-relaxed">{alert.message}</p>
+                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{alert.message}</p>
                       {bucketInfo && (
-                        <p className="text-[10px] text-gray-400 mt-1 italic">{bucketInfo.description}</p>
+                        <p className="text-[10px] text-[var(--text-tertiary)] mt-1 italic">{bucketInfo.description}</p>
                       )}
-                      <div className="flex gap-4 mt-2 text-xs text-gray-400">
+                      {(() => {
+                        const rec = alert.bucket ? getBucketRecommendation(alert.bucket as TelemetryBucket) : null;
+                        return rec ? (
+                          <div className="mt-2 p-2 bg-[var(--surface-glass)] rounded-lg border border-[var(--border)]">
+                            <p className="text-[10px] text-amber-300 font-bold uppercase tracking-wider mb-1">Suggested Action</p>
+                            <p className="text-xs text-[var(--text-secondary)]">{rec.action}</p>
+                          </div>
+                        ) : null;
+                      })()}
+                      <div className="flex gap-4 mt-2 text-xs text-[var(--text-tertiary)]">
                         <span>ES: {alert.engagementScore}</span>
                         <span>Class Avg: {alert.classMean}</span>
                         <span>{new Date(alert.createdAt).toLocaleDateString()}</span>
@@ -2494,9 +2507,26 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <div className="flex gap-2 shrink-0">
                       <button
                         onClick={() => setSelectedStudentId(alert.studentId)}
-                        className="px-2 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-lg text-[11px] font-bold transition"
+                        className="px-2 py-1.5 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-[11px] font-bold transition"
                       >
                         View
+                      </button>
+                      <button
+                        onClick={() => {
+                          const rec = alert.bucket ? getBucketRecommendation(alert.bucket as TelemetryBucket) : null;
+                          const msg = rec?.studentTip || 'Your teacher wants to check in with you.';
+                          setNudgeTarget({
+                            studentId: alert.studentId,
+                            studentName: alert.studentName,
+                            defaultMessage: msg,
+                            classType: alert.classType,
+                          });
+                          setNudgeMessage(msg);
+                          setShowNudgeModal(true);
+                        }}
+                        className="px-2 py-1.5 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-400 rounded-lg text-[11px] font-bold transition"
+                      >
+                        Nudge
                       </button>
                       <button
                         onClick={async () => { await dataService.dismissAlert(alert.id); }}
@@ -2515,13 +2545,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {/* TELEMETRY BUCKET DISTRIBUTION */}
       {students.length > 0 && (
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Activity className="w-5 h-5 text-cyan-400" aria-hidden="true" />
               Student Engagement Buckets
             </h3>
-            <span className="text-xs text-gray-400 uppercase font-bold tracking-widest">
+            <span className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">
               {students.length} student{students.length !== 1 ? 's' : ''} ({bucketProfiles.length} profiled)
             </span>
           </div>
@@ -2533,9 +2563,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 <div key={bucket} className={`border rounded-xl p-3 ${meta.borderColor} ${meta.bgColor} transition hover:scale-[1.02]`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
-                    <span className="text-lg font-bold text-white">{count}</span>
+                    <span className="text-lg font-bold text-[var(--text-primary)]">{count}</span>
                   </div>
-                  <p className="text-[9px] text-gray-400 leading-tight">{meta.description}</p>
+                  <p className="text-[9px] text-[var(--text-tertiary)] leading-tight">{meta.description}</p>
                 </div>
               );
             })}
@@ -2545,7 +2575,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             const total = Object.values(bucketDistribution).reduce((a, b) => a + b, 0);
             if (total === 0) return null;
             return (
-              <div className="mt-4 flex h-3 rounded-full overflow-hidden bg-white/5">
+              <div className="mt-4 flex h-3 rounded-full overflow-hidden bg-[var(--surface-glass)]">
                 {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(bucket => {
                   const pct = (bucketDistribution[bucket] / total) * 100;
                   if (pct === 0) return null;
@@ -2575,9 +2605,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       </div>
 
       {/* ENGAGEMENT RANKING TABLE */}
-      <div className="mt-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8">
+      <div className="mt-8 bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">Student Engagement Ranking</h3>
+            <h3 className="text-xl font-bold text-[var(--text-primary)]">Student Engagement Ranking</h3>
+
             <button
               onClick={() => setShowBehaviorAward(true)}
               className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition"
@@ -2587,21 +2618,21 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           </div>
           <div className="flex flex-col md:flex-row gap-3 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search students..."
                 aria-label="Search students"
                 value={engagementSearch}
                 onChange={e => setEngagementSearch(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
               />
             </div>
             <select
               aria-label="Filter by engagement bucket"
               value={bucketFilter}
               onChange={e => setBucketFilter(e.target.value as TelemetryBucket | '')}
-              className="bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50"
+              className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"
             >
               <option value="">All Buckets</option>
               {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(b => (
@@ -2615,20 +2646,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             <div className="flex items-center gap-3 mb-4 p-3 bg-purple-900/30 border border-purple-500/30 rounded-xl animate-in slide-in-from-top-2">
               <span className="text-sm font-bold text-purple-300">{selectedIds.size} selected</span>
               <div className="flex-1" />
-              <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-lg text-xs font-bold transition">
+              <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg text-xs font-bold transition">
                 <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export CSV
               </button>
               <button onClick={() => { setShowBehaviorAward(true); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 border border-amber-500/30 text-white rounded-lg text-xs font-bold transition">
                 <Zap className="w-3.5 h-3.5" aria-hidden="true" /> Bulk XP
               </button>
-              <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-gray-400 hover:text-white text-xs transition">Clear</button>
+              <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-xs transition">Clear</button>
             </div>
           )}
 
           {/* Header row */}
           <div role="table" aria-label="Student engagement">
           <div role="rowgroup">
-          <div className="flex items-center border-b border-white/10 text-[10px] uppercase font-bold text-gray-500" role="row">
+          <div className="flex items-center border-b border-[var(--border)] text-[10px] uppercase font-bold text-[var(--text-muted)]" role="row">
             <div className="p-3 w-10 shrink-0" role="columnheader">
               <input type="checkbox" checked={selectedIds.size === sortedStudents.length && sortedStudents.length > 0} onChange={toggleSelectAll} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label="Select all students" />
             </div>
@@ -2636,8 +2667,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="flex items-center gap-1">
                 <span>Student</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'name' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'name' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'name' && sortDir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'name' && sortDir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -2645,8 +2676,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="flex items-center gap-1">
                 <span>Class</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'class' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'class' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'class' && sortDir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'class' && sortDir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -2654,8 +2685,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="flex items-center gap-1 justify-center">
                 <span>Last Seen</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'lastSeen' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'lastSeen' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'lastSeen' && sortDir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'lastSeen' && sortDir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -2663,8 +2694,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="flex items-center gap-1 justify-center">
                 <span>Total Time</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'time' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'time' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'time' && sortDir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'time' && sortDir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -2672,8 +2703,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="flex items-center gap-1 justify-center">
                 <span>Resources</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'resources' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'resources' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'resources' && sortDir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'resources' && sortDir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -2681,8 +2712,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               <div className="flex items-center gap-1 justify-end">
                 <span>XP</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'xp' && sortDir === 'asc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'xp' && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === 'xp' && sortDir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === 'xp' && sortDir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -2702,7 +2733,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                 const lastSeenColor = msSinceLogin < 3600000 ? 'text-green-400'
                   : msSinceLogin < 86400000 ? 'text-yellow-400'
                   : msSinceLogin < Infinity ? 'text-red-400'
-                  : 'text-gray-500';
+                  : 'text-[var(--text-muted)]';
                 const activityDot = msSinceLogin < 3600000 ? 'bg-green-500'
                   : msSinceLogin < 86400000 ? 'bg-yellow-500'
                   : msSinceLogin < Infinity ? 'bg-red-500'
@@ -2721,7 +2752,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     role="row"
                     tabIndex={0}
                     aria-label={`${student.name}, ${student.classType}, ${xp} XP`}
-                    className={`absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition cursor-pointer border-b border-white/5 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
+                    className={`absolute top-0 left-0 w-full flex items-center hover:bg-[var(--surface-glass)] transition cursor-pointer border-b border-[var(--border)] focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${studentAlert?.riskLevel === 'CRITICAL' ? 'bg-red-900/5' : ''} ${isSelected ? 'bg-purple-900/10' : ''}`}
                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                     onClick={() => setSelectedStudentId(student.id)}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStudentId(student.id); } }}
@@ -2729,15 +2760,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     <div className="p-3 w-10 shrink-0" role="cell">
                       <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(student.id)} onClick={e => e.stopPropagation()} className="accent-purple-500 w-4 h-4 cursor-pointer" aria-label={`Select ${student.name}`} />
                     </div>
-                    <div className="p-3 font-bold text-white flex-[2] min-w-0" role="cell">
+                    <div className="p-3 font-bold text-[var(--text-primary)] flex-[2] min-w-0" role="cell">
                       <div className="flex items-center gap-2">
                         <div className="relative shrink-0">
                           {student.avatarUrl ? (
-                            <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
+                            <img src={student.avatarUrl} alt={student.name} loading="lazy" className="w-8 h-8 rounded-full border border-[var(--border)] object-cover" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">{student.name.charAt(0)}</div>
                           )}
-                          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f0720] ${activityDot}`} aria-label={msSinceLogin < 3600000 ? 'Active' : msSinceLogin < 86400000 ? 'Idle' : msSinceLogin < Infinity ? 'Inactive' : 'Never seen'} />
+                          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface-base)] ${activityDot}`} aria-label={msSinceLogin < 3600000 ? 'Active' : msSinceLogin < 86400000 ? 'Idle' : msSinceLogin < Infinity ? 'Inactive' : 'Never seen'} />
                         </div>
                         <span className="truncate max-w-[120px]">{student.name}</span>
                         {studentAlert && riskDot[studentAlert.riskLevel] && (
@@ -2748,13 +2779,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         )}
                       </div>
                     </div>
-                    <div className="p-3 text-sm text-gray-400 flex-1" role="cell">{student.classType}</div>
+                    <div className="p-3 text-sm text-[var(--text-tertiary)] flex-1" role="cell">{student.classType}</div>
                     <div className={`p-3 text-center text-xs font-mono flex-1 ${lastSeenColor}`} role="cell">{formatLastSeen(student.lastLoginAt)}</div>
-                    <div className="p-3 text-center text-white flex-1" role="cell">{student.stats?.totalTime || 0}m</div>
-                    <div className="p-3 text-center text-white flex-1" role="cell">{student.stats?.problemsCompleted || 0}</div>
+                    <div className="p-3 text-center text-[var(--text-primary)] flex-1" role="cell">{student.stats?.totalTime || 0}m</div>
+                    <div className="p-3 text-center text-[var(--text-primary)] flex-1" role="cell">{student.stats?.problemsCompleted || 0}</div>
                     <div className="p-3 text-right flex-1" role="cell">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="w-16 h-1.5 bg-[var(--surface-glass-heavy)] rounded-full overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" role="progressbar" aria-valuenow={xpPct} aria-valuemin={0} aria-valuemax={100} aria-label="XP progress" style={{ width: `${xpPct}%` }} />
                         </div>
                         <span className="text-purple-400 font-bold text-sm min-w-[3rem] text-right">{xp}</span>
@@ -2824,6 +2855,75 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           />
         );
       })()}
+
+      {/* EWS Nudge Modal */}
+      {showNudgeModal && nudgeTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--backdrop)] backdrop-blur-sm"
+          onClick={() => setShowNudgeModal(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowNudgeModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="nudge-modal-title"
+            className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-md shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="nudge-modal-title" className="text-lg font-bold text-[var(--text-primary)] mb-1">
+              Send Nudge to {nudgeTarget.studentName}
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)] mb-4">This sends a private notification only visible to this student.</p>
+            <textarea
+              ref={(el) => { if (el) el.focus(); }}
+              aria-label="Nudge message"
+              className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-secondary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              rows={4}
+              value={nudgeMessage}
+              onChange={(e) => setNudgeMessage(e.target.value)}
+              placeholder="Write a message..."
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setShowNudgeModal(false)}
+                className="px-4 py-2 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-bold transition"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={nudgeSending || !nudgeMessage.trim()}
+                onClick={async () => {
+                  setNudgeSending(true);
+                  try {
+                    await dataService.createAnnouncement({
+                      title: 'Check-in from your teacher',
+                      content: nudgeMessage.trim(),
+                      classType: nudgeTarget.classType,
+                      priority: 'INFO',
+                      createdAt: new Date().toISOString(),
+                      createdBy: 'Admin',
+                      targetStudentIds: [nudgeTarget.studentId],
+                    });
+                    toast.success(`Nudge sent to ${nudgeTarget.studentName}`);
+                    setShowNudgeModal(false);
+                    setNudgeTarget(null);
+                    setNudgeMessage('');
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to send nudge');
+                    reportError(err, { context: 'EWS nudge send' });
+                  } finally {
+                    setNudgeSending(false);
+                  }
+                }}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition flex items-center gap-2"
+              >
+                {nudgeSending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Send Nudge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

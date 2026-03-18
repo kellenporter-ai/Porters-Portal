@@ -333,12 +333,12 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
     <div className="space-y-6 pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Admin System</h1>
-        <p className="text-gray-400">Operational oversight, bug triage, and AI tools.</p>
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2 tracking-tight">Admin System</h1>
+        <p className="text-[var(--text-tertiary)]">Operational oversight, bug triage, and AI tools.</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-1.5">
+      <div className="flex items-center gap-1 bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-1.5">
         {([
           { key: 'ACTIVITY' as MainTab, icon: <Activity className="w-4 h-4" />, label: 'Student Activity', badge: engagementLogs.length > 0 ? String(engagementLogs.length) : undefined },
           { key: 'BUGS' as MainTab, icon: <Bug className="w-4 h-4" />, label: 'Bug Reports', badge: unresolvedCount > 0 ? String(unresolvedCount) : undefined },
@@ -350,13 +350,13 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition cursor-pointer ${
               tab === t.key
                 ? 'bg-purple-600/50 text-white shadow-lg shadow-purple-500/10'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'
             }`}
           >
             {t.icon} {t.label}
             {t.badge && (
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                tab === t.key ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'
+                tab === t.key ? 'bg-[var(--surface-glass-heavy)] text-white' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'
               }`}>{t.badge}</span>
             )}
           </button>
@@ -374,39 +374,39 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
               { label: 'Total XP Earned', value: engagementStats.totalXP.toLocaleString(), icon: <TrendingUp className="w-5 h-5" />, color: 'emerald' },
               { label: 'Avg XP / Submission', value: engagementStats.avgXP, icon: <Activity className="w-5 h-5" />, color: 'amber' },
             ].map(stat => (
-              <div key={stat.label} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5">
+              <div key={stat.label} className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className={`text-${stat.color}-400`}>{stat.icon}</span>
-                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">{stat.label}</span>
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{stat.label}</span>
                 </div>
-                <div className="text-2xl font-black text-white">{stat.value}</div>
+                <div className="text-2xl font-black text-[var(--text-primary)]">{stat.value}</div>
               </div>
             ))}
           </div>
 
           {/* Activity Feed */}
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-purple-400" /> Recent Engagement
+          <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6">
+            <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[var(--accent-text)]" /> Recent Engagement
             </h3>
             {engagementLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Clock className="w-12 h-12 text-gray-700 mb-4" />
-                <p className="text-gray-500 text-sm font-medium">No engagement data yet</p>
-                <p className="text-gray-600 text-xs mt-1 max-w-sm">Activity will appear here as students complete resources.</p>
+                <p className="text-[var(--text-muted)] text-sm font-medium">No engagement data yet</p>
+                <p className="text-[var(--text-muted)] text-xs mt-1 max-w-sm">Activity will appear here as students complete resources.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-1">
                 {engagementLogs.map((sub: Submission) => (
-                  <div key={sub.id} className="bg-black/30 border border-white/5 p-4 rounded-2xl hover:border-purple-500/20 transition group">
+                  <div key={sub.id} className="bg-[var(--panel-bg)] border border-[var(--border)] p-4 rounded-2xl hover:border-purple-500/20 transition group">
                     <div className="flex justify-between items-start mb-3">
                       <div className="min-w-0">
-                        <span className="font-bold text-gray-200 text-sm block truncate">{sub.userName}</span>
-                        <span className="text-[10px] text-gray-500 font-medium uppercase tracking-tight line-clamp-1">{sub.assignmentTitle}</span>
+                        <span className="font-bold text-[var(--text-secondary)] text-sm block truncate">{sub.userName}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-tight line-clamp-1">{sub.assignmentTitle}</span>
                       </div>
                       <span className="text-[10px] font-bold text-blue-400 bg-blue-900/30 px-2.5 py-1 rounded-full shrink-0 ml-2">{Math.round(sub.score)} XP</span>
                     </div>
-                    <div className="text-[10px] text-gray-600 border-t border-white/5 pt-2 flex justify-between">
+                    <div className="text-[10px] text-[var(--text-muted)] border-t border-[var(--border)] pt-2 flex justify-between">
                       <span>{Math.round(sub.metrics.engagementTime / 60)}m active</span>
                       <span className="opacity-0 group-hover:opacity-100 transition">{new Date(sub.submittedAt || '').toLocaleDateString()}</span>
                     </div>
@@ -424,10 +424,10 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
           {/* Bug stats & controls */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-400">
-                <span className="font-bold text-white">{unresolvedCount}</span> open
+              <span className="text-sm text-[var(--text-tertiary)]">
+                <span className="font-bold text-[var(--text-primary)]">{unresolvedCount}</span> open
                 {bugReports.length - unresolvedCount > 0 && (
-                  <span className="ml-2 text-gray-600">/ {bugReports.length - unresolvedCount} resolved</span>
+                  <span className="ml-2 text-[var(--text-muted)]">/ {bugReports.length - unresolvedCount} resolved</span>
                 )}
               </span>
             </div>
@@ -435,12 +435,12 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
               {selectedBugs.size > 0 && (
                 <button
                   onClick={() => { setTab('AI'); setAiMode('fix'); }}
-                  className="flex items-center gap-1.5 text-xs font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-3 py-2 rounded-xl hover:bg-purple-500/20 transition cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--accent-text)] bg-[var(--accent-muted)] border border-purple-500/20 px-3 py-2 rounded-xl hover:bg-purple-500/20 transition cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" /> Send {selectedBugs.size} to AI Lab
                 </button>
               )}
-              <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none bg-white/5 px-3 py-2 rounded-xl border border-white/10">
+              <label className="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none bg-[var(--surface-glass)] px-3 py-2 rounded-xl border border-[var(--border)]">
                 <input
                   type="checkbox"
                   checked={showResolved}
@@ -453,12 +453,12 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
           </div>
 
           {/* Bug list */}
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6">
+          <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6">
             {visibleReports.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Bug className="w-12 h-12 text-gray-700 mb-4" />
-                <p className="text-gray-500 text-sm font-medium">No reports yet</p>
-                <p className="text-gray-600 text-xs mt-1 max-w-sm">Bug reports and feature requests submitted by users will appear here.</p>
+                <p className="text-[var(--text-muted)] text-sm font-medium">No reports yet</p>
+                <p className="text-[var(--text-muted)] text-xs mt-1 max-w-sm">Bug reports and feature requests submitted by users will appear here.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-1">
@@ -469,9 +469,9 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
                   return (
                     <div
                       key={report.id}
-                      className={`bg-black/30 border rounded-2xl p-4 transition ${
+                      className={`bg-[var(--panel-bg)] border rounded-2xl p-4 transition ${
                         report.resolved ? 'border-green-500/10 opacity-50' :
-                        isSelected ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/5 hover:border-white/10'
+                        isSelected ? 'border-purple-500/30 bg-purple-500/5' : 'border-[var(--border)] hover:border-[var(--border-strong)]'
                       }`}
                     >
                       <div className="flex items-start gap-3 mb-3">
@@ -479,7 +479,7 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
                           <button
                             onClick={() => toggleBugSelect(report.id!)}
                             className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition cursor-pointer ${
-                              isSelected ? 'bg-purple-600 border-purple-500' : 'border-white/20 hover:border-purple-500/50'
+                              isSelected ? 'bg-purple-600 border-purple-500' : 'border-[var(--border-strong)] hover:border-purple-500/50'
                             }`}
                           >
                             {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -488,7 +488,7 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${badge.color}`}>{badge.label}</span>
-                            <span className="text-xs text-gray-500 truncate">{report.userName}</span>
+                            <span className="text-xs text-[var(--text-muted)] truncate">{report.userName}</span>
                             {report.resolved && <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />}
                           </div>
                           {isEditing ? (
@@ -497,36 +497,36 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
                                 value={editText}
                                 onChange={e => setEditText(e.target.value)}
                                 rows={3}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none"
+                                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
                                 autoFocus
                               />
                               <div className="flex items-center gap-2">
                                 <button onClick={() => saveEdit(report.id!)} className="flex items-center gap-1 text-xs font-bold text-green-300 bg-green-500/10 px-3 py-1.5 rounded-lg hover:bg-green-500/20 transition cursor-pointer">
                                   <Check className="w-3 h-3" /> Save
                                 </button>
-                                <button onClick={() => setEditingReport(null)} className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg transition cursor-pointer">
+                                <button onClick={() => setEditingReport(null)} className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">
                                   Cancel
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-300 leading-relaxed">{report.description}</p>
+                            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{report.description}</p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                        <span className="text-[10px] text-gray-600 font-mono">
+                      <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono">
                           {new Date(report.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                         {!report.resolved && !isEditing && (
                           <div className="flex items-center gap-1">
-                            <button onClick={() => startEdit(report)} className="p-1.5 text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Edit description">
+                            <button onClick={() => startEdit(report)} className="p-1.5 text-[var(--text-muted)] hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Edit description">
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => resolveReport(report.id!)} className="p-1.5 text-gray-500 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition cursor-pointer" title="Mark resolved">
+                            <button onClick={() => resolveReport(report.id!)} className="p-1.5 text-[var(--text-muted)] hover:text-green-400 hover:bg-green-500/10 rounded-lg transition cursor-pointer" title="Mark resolved">
                               <CheckCircle className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => deleteReport(report.id!)} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Delete">
+                            <button onClick={() => deleteReport(report.id!)} className="p-1.5 text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Delete">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -548,37 +548,37 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
           <div className="lg:col-span-4 space-y-4">
             {/* Mode selector */}
             <div className="space-y-1.5">
-              <div className="text-[9px] font-bold text-gray-600 uppercase tracking-widest px-1">Prompt Generator</div>
+              <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest px-1">Prompt Generator</div>
               <button
                 onClick={() => setAiMode('fix')}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition cursor-pointer ${
-                  aiMode === 'fix' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/5 border-white/10 hover:border-white/20'
+                  aiMode === 'fix' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)] hover:border-[var(--border-strong)]'
                 }`}
               >
-                <Wrench className={`w-4 h-4 ${aiMode === 'fix' ? 'text-amber-400' : 'text-gray-500'}`} />
-                <div><div className={`text-xs font-bold ${aiMode === 'fix' ? 'text-white' : 'text-gray-300'}`}>Fix Bugs</div><div className="text-[9px] text-gray-500">From selected bug reports</div></div>
+                <Wrench className={`w-4 h-4 ${aiMode === 'fix' ? 'text-amber-400' : 'text-[var(--text-muted)]'}`} />
+                <div><div className={`text-xs font-bold ${aiMode === 'fix' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Fix Bugs</div><div className="text-[9px] text-[var(--text-muted)]">From selected bug reports</div></div>
               </button>
               <button
                 onClick={() => setAiMode('create_multiplayer')}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition cursor-pointer ${
-                  aiMode === 'create_multiplayer' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10 hover:border-white/20'
+                  aiMode === 'create_multiplayer' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)] hover:border-[var(--border-strong)]'
                 }`}
               >
-                <Gamepad2 className={`w-4 h-4 ${aiMode === 'create_multiplayer' ? 'text-blue-400' : 'text-gray-500'}`} />
-                <div><div className={`text-xs font-bold ${aiMode === 'create_multiplayer' ? 'text-white' : 'text-gray-300'}`}>Multiplayer App</div><div className="text-[9px] text-gray-500">Real-time multiplayer game via RTDB</div></div>
+                <Gamepad2 className={`w-4 h-4 ${aiMode === 'create_multiplayer' ? 'text-blue-400' : 'text-[var(--text-muted)]'}`} />
+                <div><div className={`text-xs font-bold ${aiMode === 'create_multiplayer' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Multiplayer App</div><div className="text-[9px] text-[var(--text-muted)]">Real-time multiplayer game via RTDB</div></div>
               </button>
             </div>
 
             {/* Selected bugs (fix mode) */}
             {aiMode === 'fix' && selectedBugs.size > 0 && (
               <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4">
-                <span className="text-[10px] font-bold text-purple-300 uppercase tracking-widest">{selectedBugs.size} report{selectedBugs.size !== 1 ? 's' : ''} selected</span>
+                <span className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest">{selectedBugs.size} report{selectedBugs.size !== 1 ? 's' : ''} selected</span>
                 <div className="mt-2 space-y-1.5">
                   {bugReports.filter(r => selectedBugs.has(r.id!)).map(r => (
-                    <div key={r.id} className="flex items-center gap-2 text-xs text-gray-400 bg-black/20 rounded-lg px-3 py-2">
+                    <div key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] bg-[var(--panel-bg)] rounded-lg px-3 py-2">
                       <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${CATEGORY_BADGES[r.category].color}`}>{r.category}</span>
                       <span className="truncate flex-1">{r.description.slice(0, 80)}{r.description.length > 80 ? '...' : ''}</span>
-                      <button onClick={() => toggleBugSelect(r.id!)} className="shrink-0 p-0.5 text-gray-600 hover:text-red-400 transition cursor-pointer">
+                      <button onClick={() => toggleBugSelect(r.id!)} className="shrink-0 p-0.5 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer">
                         <XIcon className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -589,7 +589,7 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
 
             {/* Context input */}
             <div>
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block">
+              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 block">
                 {aiMode === 'fix' ? 'Additional Context' : 'Game / Activity Description'}
               </label>
               <textarea
@@ -600,7 +600,7 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
                   aiMode === 'fix' ? 'Extra context about the bugs or how to reproduce them...'
                   : 'Describe the multiplayer game (e.g., Battleship, Quiz Duel, Word Race)...'
                 }
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none"
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
               />
             </div>
 
@@ -615,10 +615,10 @@ Output ONLY the complete HTML file — no explanation or commentary.`;
 
           {/* Prompt preview */}
           <div className="lg:col-span-8">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 h-full">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 block">Generated Prompt Preview</label>
-              <div className="bg-black/30 border border-white/5 rounded-2xl p-5 h-[calc(100%-2rem)] max-h-[600px] overflow-y-auto custom-scrollbar">
-                <pre className="text-xs text-gray-400 whitespace-pre-wrap font-mono leading-relaxed">{generatePrompt()}</pre>
+            <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6 h-full">
+              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-3 block">Generated Prompt Preview</label>
+              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-5 h-[calc(100%-2rem)] max-h-[600px] overflow-y-auto custom-scrollbar">
+                <pre className="text-xs text-[var(--text-tertiary)] whitespace-pre-wrap font-mono leading-relaxed">{generatePrompt()}</pre>
               </div>
             </div>
           </div>

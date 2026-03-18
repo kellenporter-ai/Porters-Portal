@@ -38,7 +38,7 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
 
   return (
     <div className="space-y-1">
-      <div className="text-[9px] text-gray-600 uppercase font-bold tracking-widest flex items-center gap-1">
+      <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest flex items-center gap-1">
         <Zap className="w-2.5 h-2.5" /> Live Battle Feed
       </div>
       <div ref={containerRef} className="max-h-24 overflow-y-auto custom-scrollbar space-y-0.5">
@@ -52,7 +52,7 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
             <span className="w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-[8px] font-bold text-purple-400 shrink-0">
               {entry.userName.charAt(0)}
             </span>
-            <span className="text-gray-400 truncate flex-1">{entry.userName}</span>
+            <span className="text-[var(--text-tertiary)] truncate flex-1">{entry.userName}</span>
             <span className={`font-bold ${entry.isCrit ? 'text-yellow-300' : 'text-amber-400'}`}>
               -{entry.damage}{entry.isCrit ? '!' : ''}
             </span>

@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Assignment, Submission, User, StudentBucketProfile, TelemetryBucket } from '../../types';
 import { BUCKET_META } from '../../lib/telemetry';
+import { useChartTheme } from '../../lib/useChartTheme';
 import { BarChart3, TrendingUp, PieChart as PieChartIcon, Activity } from 'lucide-react';
 
 interface AnalyticsTabProps {
@@ -26,6 +27,8 @@ const BUCKET_COLORS: Record<TelemetryBucket, string> = {
 };
 
 const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submissions, bucketProfiles }) => {
+  const chartTheme = useChartTheme();
+
   // ─── Engagement Trends (submissions over last 30 days) ───
   const engagementTrends = useMemo(() => {
     const now = new Date();
@@ -120,38 +123,38 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── Engagement Trends ─── */}
-      <section className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-        <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+      <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-cyan-400" />
           Engagement Trends
         </h3>
-        <p className="text-xs text-gray-500 mb-4">Submissions and average engagement time over the last 30 days</p>
+        <p className="text-xs text-[var(--text-muted)] mb-4">Submissions and average engagement time over the last 30 days</p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={engagementTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: '#6b7280', fontSize: 10 }}
+                tick={{ fill: chartTheme.tickColor, fontSize: 10 }}
                 interval={4}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                axisLine={{ stroke: chartTheme.axisColor }}
               />
               <YAxis
                 yAxisId="left"
-                tick={{ fill: '#6b7280', fontSize: 10 }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                label={{ value: 'Submissions', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 10 }}
+                tick={{ fill: chartTheme.tickColor, fontSize: 10 }}
+                axisLine={{ stroke: chartTheme.axisColor }}
+                label={{ value: 'Submissions', angle: -90, position: 'insideLeft', fill: chartTheme.tickColor, fontSize: 10 }}
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                tick={{ fill: '#6b7280', fontSize: 10 }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                label={{ value: 'Avg Time (min)', angle: 90, position: 'insideRight', fill: '#6b7280', fontSize: 10 }}
+                tick={{ fill: chartTheme.tickColor, fontSize: 10 }}
+                axisLine={{ stroke: chartTheme.axisColor }}
+                label={{ value: 'Avg Time (min)', angle: 90, position: 'insideRight', fill: chartTheme.tickColor, fontSize: 10 }}
               />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a1b2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: 12 }}
-                labelStyle={{ color: '#9ca3af' }}
+                contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }}
+                labelStyle={{ color: chartTheme.tickColor }}
               />
               <Line yAxisId="left" type="monotone" dataKey="submissions" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Submissions" />
               <Line yAxisId="right" type="monotone" dataKey="avgTime" stroke="#06b6d4" strokeWidth={2} dot={false} name="Avg Time (min)" />
@@ -162,33 +165,33 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ─── Completion Rates by Unit ─── */}
-        <section className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-          <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+        <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
+          <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-emerald-400" />
             Completion by Unit
           </h3>
-          <p className="text-xs text-gray-500 mb-4">Percentage of students who completed each unit&rsquo;s assignments</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">Percentage of students who completed each unit&rsquo;s assignments</p>
           {completionByUnit.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={completionByUnit} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
                   <XAxis
                     type="number"
                     domain={[0, 100]}
-                    tick={{ fill: '#6b7280', fontSize: 10 }}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                    tick={{ fill: chartTheme.tickColor, fontSize: 10 }}
+                    axisLine={{ stroke: chartTheme.axisColor }}
                     tickFormatter={v => `${v}%`}
                   />
                   <YAxis
                     type="category"
                     dataKey="unit"
                     width={120}
-                    tick={{ fill: '#d1d5db', fontSize: 10 }}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                    tick={{ fill: chartTheme.labelColor, fontSize: 10 }}
+                    axisLine={{ stroke: chartTheme.axisColor }}
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1b2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: 12 }}
+                    contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }}
                     formatter={(value: number) => [`${value}%`, 'Completion']}
                   />
                   <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
@@ -200,38 +203,38 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-600 italic">No assignment data available</div>
+            <div className="text-center py-12 text-[var(--text-muted)] italic">No assignment data available</div>
           )}
         </section>
 
         {/* ─── XP Distribution ─── */}
-        <section className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-          <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-purple-400" />
+        <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
+          <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-[var(--accent-text)]" />
             XP Distribution
           </h3>
-          <p className="text-xs text-gray-500 mb-4">Student XP histogram across all classes</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">Student XP histogram across all classes</p>
           {xpDistribution.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={xpDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
                   <XAxis
                     dataKey="range"
-                    tick={{ fill: '#6b7280', fontSize: 9 }}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                    tick={{ fill: chartTheme.tickColor, fontSize: 9 }}
+                    axisLine={{ stroke: chartTheme.axisColor }}
                     interval={0}
                     angle={-30}
                     textAnchor="end"
                     height={50}
                   />
                   <YAxis
-                    tick={{ fill: '#6b7280', fontSize: 10 }}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                    tick={{ fill: chartTheme.tickColor, fontSize: 10 }}
+                    axisLine={{ stroke: chartTheme.axisColor }}
                     allowDecimals={false}
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1b2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: 12 }}
+                    contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }}
                     formatter={(value: number) => [value, 'Students']}
                   />
                   <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
@@ -239,18 +242,18 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-600 italic">No XP data available</div>
+            <div className="text-center py-12 text-[var(--text-muted)] italic">No XP data available</div>
           )}
         </section>
       </div>
 
       {/* ─── Telemetry Bucket Breakdown ─── */}
-      <section className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
-        <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+      <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
           <Activity className="w-5 h-5 text-amber-400" />
           Engagement Bucket Breakdown
         </h3>
-        <p className="text-xs text-gray-500 mb-4">Distribution of students across behavioral engagement buckets</p>
+        <p className="text-xs text-[var(--text-muted)] mb-4">Distribution of students across behavioral engagement buckets</p>
         {bucketBreakdown.length > 0 ? (
           <div className="flex flex-col lg:flex-row items-center gap-8">
             <div className="w-64 h-64">
@@ -271,7 +274,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1b2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: 12 }}
+                    contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }}
                     formatter={(value: number, name: string) => [`${value} (${Math.round((value / totalProfiled) * 100)}%)`, name]}
                   />
                 </PieChart>
@@ -284,9 +287,9 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
                   <div key={b.bucket} className={`${meta.bgColor} border ${meta.borderColor} rounded-xl p-3`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
-                      <span className="text-lg font-bold text-white">{b.value}</span>
+                      <span className="text-lg font-bold text-[var(--text-primary)]">{b.value}</span>
                     </div>
-                    <div className="text-[10px] text-gray-400">
+                    <div className="text-[10px] text-[var(--text-tertiary)]">
                       {totalProfiled > 0 ? Math.round((b.value / totalProfiled) * 100) : 0}% of class
                     </div>
                   </div>
@@ -295,7 +298,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-600 italic flex flex-col items-center gap-2">
+          <div className="text-center py-12 text-[var(--text-muted)] italic flex flex-col items-center gap-2">
             <PieChartIcon className="w-8 h-8 opacity-20" />
             No bucket profile data available yet
           </div>

@@ -27,28 +27,28 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest print:text-gray-700">Overall Standing</h3>
+      <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest print:text-gray-700">Overall Standing</h3>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1 print:text-purple-600" />
-          <div className="text-lg font-bold text-white print:text-black">{xp.toLocaleString()}</div>
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Total XP</div>
+          <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{xp.toLocaleString()}</div>
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Shield className="w-5 h-5 text-cyan-400 mx-auto mb-1 print:text-cyan-600" />
-          <div className="text-lg font-bold text-white print:text-black">Lv. {level}</div>
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Level</div>
+          <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">Lv. {level}</div>
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Level</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Flame className="w-5 h-5 text-orange-400 mx-auto mb-1 print:text-orange-600" />
-          <div className="text-lg font-bold text-white print:text-black">{loginStreak}</div>
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Login Streak</div>
+          <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{loginStreak}</div>
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Login Streak</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Zap className="w-5 h-5 text-yellow-400 mx-auto mb-1 print:text-yellow-600" />
-          <div className="text-lg font-bold text-white print:text-black">{currency}</div>
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Cyber-Flux</div>
+          <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{currency}</div>
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
         </div>
       </div>
 
@@ -56,9 +56,9 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
       {enrolledClasses.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {enrolledClasses.map(cls => (
-            <div key={cls} className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs print:border-gray-300">
-              <span className="text-gray-400 print:text-gray-600">{cls}:</span>{' '}
-              <span className="text-white font-bold print:text-black">{(classXp[cls] || 0).toLocaleString()} XP</span>
+            <div key={cls} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl px-3 py-1.5 text-xs print:border-gray-300">
+              <span className="text-[var(--text-tertiary)] print:text-gray-600">{cls}:</span>{' '}
+              <span className="text-[var(--text-primary)] font-bold print:text-black">{(classXp[cls] || 0).toLocaleString()} XP</span>
             </div>
           ))}
         </div>
@@ -68,9 +68,9 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
       <div className="flex flex-wrap gap-3">
         {bucketMeta && (
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${bucketMeta.borderColor} ${bucketMeta.bgColor}`}>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Bucket:</span>
+            <span className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Bucket:</span>
             <span className={`text-sm font-bold ${bucketMeta.color}`}>{bucketMeta.label}</span>
-            {bucket && <span className="text-[10px] text-gray-500">ES: {bucket.engagementScore}</span>}
+            {bucket && <span className="text-[10px] text-[var(--text-muted)]">ES: {bucket.engagementScore}</span>}
           </div>
         )}
         {highestAlert && (
@@ -85,8 +85,8 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
               highestAlert.riskLevel === 'HIGH' ? 'text-orange-400' :
               highestAlert.riskLevel === 'MODERATE' ? 'text-yellow-400' : 'text-blue-400'
             }`} />
-            <span className="text-xs font-bold text-white print:text-black">{highestAlert.riskLevel}</span>
-            <span className="text-[10px] text-gray-400 print:text-gray-600">{highestAlert.reason.replace(/_/g, ' ')}</span>
+            <span className="text-xs font-bold text-[var(--text-primary)] print:text-black">{highestAlert.riskLevel}</span>
+            <span className="text-[10px] text-[var(--text-tertiary)] print:text-gray-600">{highestAlert.reason.replace(/_/g, ' ')}</span>
           </div>
         )}
       </div>

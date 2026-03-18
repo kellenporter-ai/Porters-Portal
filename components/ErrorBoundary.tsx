@@ -52,12 +52,12 @@ class ErrorBoundary extends React.Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-[#0f0720] p-6">
+                <div className="min-h-screen flex items-center justify-center bg-[var(--surface-base)] p-6">
                     <div className="max-w-md w-full bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl text-center shadow-2xl">
                         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
                             <span className="text-3xl">⚠️</span>
                         </div>
-                        <h1 className="text-2xl font-bold text-white mb-3">System Malfunction</h1>
+                        <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-3">System Malfunction</h1>
                         <p className="text-gray-400 mb-6 text-sm">
                             Something unexpected happened. Your data is safe — try reloading.
                         </p>

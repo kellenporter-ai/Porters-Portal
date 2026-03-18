@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot, ItemSlot } from '../../types';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { useChartTheme } from '../../lib/useChartTheme';
 import { User as UserIcon, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
@@ -42,6 +43,7 @@ const LEFT_SLOTS: EquipmentSlot[] = ['HEAD', 'HANDS', 'RING1', 'AMULET'];
 const RIGHT_SLOTS: EquipmentSlot[] = ['CHEST', 'BELT', 'FEET', 'RING2'];
 
 const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, level }) => {
+  const chartTheme = useChartTheme();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
@@ -253,7 +255,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
   // --- Droppable Equipment Slot ---
   const SlotRender: React.FC<{ slot: EquipmentSlot }> = ({ slot }) => {
     const item = equipped[slot];
-    const colors = item ? getAssetColors(item.rarity) : { border: 'border-white/10', bg: 'bg-black/20', text: 'text-gray-600', glow: '', shimmer: '' };
+    const colors = item ? getAssetColors(item.rarity) : { border: 'border-[var(--border)]', bg: 'bg-[var(--panel-bg)]', text: 'text-[var(--text-muted)]', glow: '', shimmer: '' };
 
     const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `slot-${slot}` });
     const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
@@ -281,7 +283,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
               <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
               {!isDragging && (
-                <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
+                <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
                   <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
                   <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
                   <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
@@ -306,7 +308,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
 
             {/* LEFT: CHARACTER VISUALIZER WITH SLOTS */}
-            <div className="bg-black/30 rounded-2xl border border-white/10 relative flex flex-col items-center justify-center p-4 min-h-[400px]">
+            <div className="bg-[var(--surface-sunken)] rounded-2xl border border-[var(--border)] relative flex flex-col items-center justify-center p-4 min-h-[400px]">
               <div className="absolute inset-0 rounded-2xl overflow-hidden loadout-hex-bg pointer-events-none"></div>
               <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
 
@@ -351,7 +353,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
 
             {/* RIGHT: STATS */}
             <div className="flex flex-col gap-4">
-              <div className="bg-black/20 rounded-2xl p-4 border border-white/5 flex-1 min-h-[200px]">
+              <div className="bg-[var(--surface-sunken)] rounded-2xl p-4 border border-[var(--border)] flex-1 min-h-[200px]">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Performance Radar</h4>
                 <div className="h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -362,8 +364,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                           <stop offset="100%" stopColor="#a855f7" stopOpacity={0.3} />
                         </linearGradient>
                       </defs>
-                      <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 700 }} />
+                      <PolarGrid stroke={chartTheme.gridColor} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: chartTheme.tickColor, fontSize: 10, fontWeight: 700 }} />
                       <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
                       <Radar name="Stats" dataKey="A" stroke="#a855f7" strokeWidth={2} fill="url(#radarGradient)" fillOpacity={0.5} animationDuration={800} />
                     </RadarChart>
@@ -375,7 +377,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               {(() => {
                 const combat = deriveCombatStats(playerStats);
                 return (
-                  <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-3">
+                  <div className="bg-[var(--surface-sunken)] rounded-2xl p-4 border border-[var(--border)] space-y-3">
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div className="group relative flex items-center gap-2 cursor-help">
                         <div className="w-2 h-2 rounded-full bg-blue-400"></div>
@@ -410,7 +412,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] pt-2 border-t border-white/5">
+                    <div className="grid grid-cols-3 gap-2 text-[10px] pt-2 border-t border-[var(--border)]">
                       <div className="text-center"><span className="text-gray-600 block">HP</span><span className="text-emerald-400 font-bold">{combat.maxHp}</span></div>
                       <div className="text-center"><span className="text-gray-600 block">Armor</span><span className="text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span></div>
                       <div className="text-center"><span className="text-gray-600 block">Crit</span><span className="text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span></div>
@@ -503,8 +505,8 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
   return (
     <div
       ref={setNodeRef}
-      className={`mt-6 flex-1 min-h-[250px] bg-black/40 border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
-        isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-white/10'
+      className={`mt-6 flex-1 min-h-[250px] bg-[var(--surface-sunken)] border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
+        isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-[var(--border)]'
       }`}
     >
       <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
@@ -540,7 +542,7 @@ const DroppableEmptyCell: React.FC<{ index: number; isDroppingEquipped: boolean 
           ? 'border-purple-500/60 bg-purple-500/15 scale-105 shadow-lg shadow-purple-500/20'
           : isDroppingEquipped
             ? 'border-purple-500/20 bg-purple-500/5'
-            : 'border-white/5 bg-white/5'
+            : 'border-[var(--border)] bg-[var(--surface-glass)]'
       }`}
     />
   );
@@ -572,7 +574,7 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
         <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg"></div>
       )}
       {!isDragging && (
-        <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-black/95 border border-white/15 px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
+        <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
           <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
           <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
           <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>

@@ -41,7 +41,7 @@ const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKIN
 // ──────────────────────────────────────────────
 
 const TextBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
-  <BlockText text={block.content} tag="div" className="text-base text-gray-200 leading-relaxed" />
+  <BlockText text={block.content} tag="div" className="text-base text-[var(--text-secondary)] leading-relaxed" />
 ));
 
 const InfoBoxBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
@@ -56,7 +56,7 @@ const InfoBoxBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) =>
       <div className="font-bold text-xs uppercase tracking-widest mb-1">
         {block.variant === 'tip' ? 'Tip' : block.variant === 'warning' ? 'Warning' : 'Note'}
       </div>
-      <BlockText text={block.content} tag="div" className="text-gray-200" />
+      <BlockText text={block.content} tag="div" className="text-[var(--text-secondary)]" />
     </div>
   );
 });
@@ -81,7 +81,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
 
   return (
     <div className="space-y-3">
-      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
         <HelpCircle className="w-4 h-4 text-purple-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
@@ -96,19 +96,19 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
               readOnly
                 ? selected === idx
-                  ? 'border-purple-500/30 bg-purple-500/10 text-white'
-                  : 'border-white/10 bg-white/5 text-gray-300'
+                  ? 'border-purple-500/30 bg-purple-500/10 text-[var(--text-primary)]'
+                  : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)]'
                 : answered && idx === block.correctAnswer
                 ? 'border-green-500/50 bg-green-500/10 text-green-400'
                 : answered && idx === selected && !isCorrect
                 ? 'border-red-500/50 bg-red-500/10 text-red-400'
                 : selected === idx
-                ? 'border-purple-500/30 bg-purple-500/10 text-white'
-                : 'border-white/10 bg-white/5 hover:bg-white/10 text-gray-300'
+                ? 'border-purple-500/30 bg-purple-500/10 text-[var(--text-primary)]'
+                : 'border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)]'
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-gray-500 w-5">{String.fromCharCode(65 + idx)}.</span>
+              <span className="text-xs font-mono text-[var(--text-muted)] w-5">{String.fromCharCode(65 + idx)}.</span>
               <BlockText text={opt} />
               {!readOnly && answered && idx === block.correctAnswer && <CheckCircle2 className="w-4 h-4 text-green-400 ml-auto" />}
               {!readOnly && answered && idx === selected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 ml-auto" />}
@@ -133,13 +133,13 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
                 setSelected(null);
                 onResponseChange?.({ selected: null, answered: false });
               }}
-              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+              className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
             >
               <Pencil className="w-3 h-3" /> Edit
             </button>
           </div>
           {block.explanation && (
-            <BlockText text={block.explanation} tag="div" className="text-sm text-gray-300 bg-white/5 border border-white/10 rounded-lg px-3 py-2" />
+            <BlockText text={block.explanation} tag="div" className="text-sm text-[var(--text-secondary)] bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg px-3 py-2" />
           )}
         </div>
       )}
@@ -164,7 +164,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
 
   return (
     <div className="space-y-3">
-      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
         <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
@@ -179,7 +179,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
           disabled={answered || readOnly}
           placeholder="Type your answer... (Ctrl+Enter to lock in)"
           aria-label={block.content || 'Short answer'}
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
+          className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
           rows={2}
           onKeyDown={e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -204,7 +204,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
               setAnswered(false);
               onResponseChange?.({ answer, answered: false, isCorrect: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -220,16 +220,16 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block })
   return (
     <button
       onClick={() => setFlipped(!flipped)}
-      className="w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+      className="w-full text-left p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition cursor-pointer"
     >
       <div className="flex items-start gap-3">
         <BookOpen className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
         <div>
-          <BlockText text={block.term} tag="div" className="text-sm font-bold text-white" />
+          <BlockText text={block.term} tag="div" className="text-sm font-bold text-[var(--text-primary)]" />
           {flipped ? (
-            <BlockText text={block.definition} tag="div" className="text-base text-gray-200 mt-1 animate-in fade-in duration-200" />
+            <BlockText text={block.definition} tag="div" className="text-base text-[var(--text-secondary)] mt-1 animate-in fade-in duration-200" />
           ) : (
-            <div className="text-xs text-gray-500 mt-1">Tap to reveal definition</div>
+            <div className="text-xs text-[var(--text-muted)] mt-1">Tap to reveal definition</div>
           )}
         </div>
       </div>
@@ -257,7 +257,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 
   return (
     <div className="space-y-3">
-      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
         <ListChecks className="w-4 h-4 text-green-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
@@ -273,10 +273,10 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
               readOnly
                 ? checked.has(idx)
                   ? 'border-purple-500/30 bg-purple-500/5 text-purple-400 line-through cursor-default'
-                  : 'border-white/10 bg-white/5 text-gray-300 cursor-default'
+                  : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)] cursor-default'
                 : checked.has(idx)
                 ? 'border-green-500/30 bg-green-500/5 text-green-400 line-through'
-                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+                : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'
             }`}
           >
             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition ${
@@ -306,8 +306,8 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 const SectionHeaderBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="text-center py-2">
     {block.icon && <div className="text-3xl mb-2">{block.icon}</div>}
-    <BlockText text={block.title} tag="div" className="text-xl font-black text-white tracking-tight" />
-    {block.subtitle && <BlockText text={block.subtitle} tag="p" className="text-sm text-gray-400 mt-1" />}
+    <BlockText text={block.title} tag="div" className="text-xl font-black text-[var(--text-primary)] tracking-tight" />
+    {block.subtitle && <BlockText text={block.subtitle} tag="p" className="text-sm text-[var(--text-tertiary)] mt-1" />}
   </div>
 ));
 
@@ -316,9 +316,9 @@ const ImageBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const [imgError, setImgError] = useState(false);
   return (
     <div className="space-y-2">
-      <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20">
+      <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--panel-bg)]">
         {imgError ? (
-          <div className="w-full h-[200px] flex items-center justify-center text-sm text-gray-500">Image failed to load</div>
+          <div className="w-full h-[200px] flex items-center justify-center text-sm text-[var(--text-muted)]">Image failed to load</div>
         ) : (
           <img
             src={driveUrl !== block.url ? driveUrl : block.url}
@@ -329,7 +329,7 @@ const ImageBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
           />
         )}
       </div>
-      {block.caption && <BlockText text={block.caption} tag="p" className="text-xs text-gray-500 text-center italic" />}
+      {block.caption && <BlockText text={block.caption} tag="p" className="text-xs text-[var(--text-muted)] text-center italic" />}
     </div>
   );
 });
@@ -341,14 +341,14 @@ const VideoBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   };
   const embedUrl = getEmbedUrl(block.url || '');
 
-  if (!embedUrl) return <div className="text-sm text-gray-500 italic">Invalid video URL</div>;
+  if (!embedUrl) return <div className="text-sm text-[var(--text-muted)] italic">Invalid video URL</div>;
 
   return (
     <div className="space-y-2">
-      <div className="rounded-xl overflow-hidden border border-white/10 aspect-video bg-black">
+      <div className="rounded-xl overflow-hidden border border-[var(--border)] aspect-video bg-black">
         <iframe src={embedUrl} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" title={block.caption || 'Video'} />
       </div>
-      {block.caption && <div className="text-xs text-gray-500 text-center italic flex items-center justify-center gap-1"><Play className="w-3 h-3" /> <BlockText text={block.caption} /></div>}
+      {block.caption && <div className="text-xs text-[var(--text-muted)] text-center italic flex items-center justify-center gap-1"><Play className="w-3 h-3" /> <BlockText text={block.caption} /></div>}
     </div>
   );
 });
@@ -361,7 +361,7 @@ const ObjectivesBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block })
     </div>
     <ul className="space-y-1">
       {(block.items || []).map((item, idx) => (
-        <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
+        <li key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
           <span className="text-emerald-400 mt-0.5 shrink-0">•</span>
           <BlockText text={item} />
         </li>
@@ -384,7 +384,7 @@ const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block 
     <div className="flex items-center justify-between">
       <div className="flex-1 min-w-0">
         <BlockText text={block.title || block.url} tag="div" className="text-sm font-bold text-purple-300 group-hover:text-purple-200 transition" />
-        {block.content && <BlockText text={block.content} tag="div" className="text-xs text-gray-400 mt-0.5" />}
+        {block.content && <BlockText text={block.content} tag="div" className="text-xs text-[var(--text-tertiary)] mt-0.5" />}
       </div>
       <div className="flex items-center gap-1 text-xs text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg shrink-0 ml-3">
         {block.buttonLabel || 'Open'} <ExternalLink className="w-3 h-3" />
@@ -409,9 +409,9 @@ const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const [embedError, setEmbedError] = useState(false);
   return (
     <div className="space-y-2">
-      <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20" style={{ height: block.height || 500 }}>
+      <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--panel-bg)]" style={{ height: block.height || 500 }}>
         {embedError ? (
-          <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Embed failed to load</div>
+          <div className="w-full h-full flex items-center justify-center text-sm text-[var(--text-muted)]">Embed failed to load</div>
         ) : (
           <iframe
             src={embedUrl}
@@ -423,7 +423,7 @@ const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
           />
         )}
       </div>
-      {block.caption && <BlockText text={block.caption} tag="p" className="text-xs text-gray-500 text-center italic" />}
+      {block.caption && <BlockText text={block.caption} tag="p" className="text-xs text-[var(--text-muted)] text-center italic" />}
     </div>
   );
 });
@@ -437,16 +437,16 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) 
         <button
           key={idx}
           onClick={() => setRevealed(prev => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; })}
-          className="w-full text-left p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+          className="w-full text-left p-3 rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition cursor-pointer"
         >
           <div className="flex items-start gap-3">
             <BookOpen className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <BlockText text={t.term} tag="div" className="text-sm font-bold text-white" />
+              <BlockText text={t.term} tag="div" className="text-sm font-bold text-[var(--text-primary)]" />
               {revealed.has(idx) ? (
-                <BlockText text={t.definition} tag="div" className="text-sm text-gray-300 mt-1 animate-in fade-in duration-200" />
+                <BlockText text={t.definition} tag="div" className="text-sm text-[var(--text-secondary)] mt-1 animate-in fade-in duration-200" />
               ) : (
-                <div className="text-xs text-gray-500 mt-1">Tap to reveal</div>
+                <div className="text-xs text-[var(--text-muted)] mt-1">Tap to reveal</div>
               )}
             </div>
           </div>
@@ -462,7 +462,7 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) =
       {block.icon && <span className="text-lg">{block.icon}</span>}
       <BlockText text={block.title || 'Activity'} />
     </div>
-    <BlockText text={block.instructions} tag="div" className="text-sm text-gray-300" />
+    <BlockText text={block.instructions} tag="div" className="text-sm text-[var(--text-secondary)]" />
   </div>
 ));
 
@@ -506,16 +506,16 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3" role="region" aria-label={block.title || block.content || 'Sorting activity'}>
-      {block.title && <BlockText text={block.title} tag="p" className="text-base text-white font-medium" />}
-      {block.instructions && <BlockText text={block.instructions} tag="p" className="text-xs text-gray-400" />}
+      {block.title && <BlockText text={block.title} tag="p" className="text-base text-[var(--text-primary)] font-medium" />}
+      {block.instructions && <BlockText text={block.instructions} tag="p" className="text-xs text-[var(--text-tertiary)]" />}
 
       {/* Unplaced items */}
       {!readOnly && unplaced.length > 0 && (
         <div className="space-y-1">
-          <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Sort these items</div>
+          <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Sort these items</div>
           <div className="flex flex-wrap gap-2" role="listbox" aria-label="Items to sort" translate="no">
             {unplaced.map(idx => (
-              <div key={idx} role="option" className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300">
+              <div key={idx} role="option" className="flex items-center gap-1 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)]">
                 <BlockText text={items[idx].text} />
                 <button onClick={() => placeItem(idx, 'left')} aria-label={`Place ${items[idx].text} in ${block.leftLabel || 'Category A'}`} className="ml-1 text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-500/30 transition">{block.leftLabel || 'L'}</button>
                 <button onClick={() => placeItem(idx, 'right')} aria-label={`Place ${items[idx].text} in ${block.rightLabel || 'Category B'}`} className="text-[10px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition">{block.rightLabel || 'R'}</button>
@@ -531,9 +531,9 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
           <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">{block.leftLabel || 'Category A'}</div>
           <div className="space-y-1">
             {leftItems.map(idx => (
-              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-gray-300 bg-black/20' : submitted ? (items[idx].correct === 'left' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
+              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-[var(--text-secondary)] bg-[var(--panel-bg)]' : submitted ? (items[idx].correct === 'left' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-[var(--text-secondary)] bg-[var(--panel-bg)]'}`}>
                 <BlockText text={items[idx].text} />
-                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
+                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-[var(--text-muted)] hover:text-red-400 text-xs">×</button>}
                 {!readOnly && submitted && items[idx].correct === 'left' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
                 {!readOnly && submitted && items[idx].correct !== 'left' && <XCircle className="w-3 h-3 text-red-400" />}
               </div>
@@ -544,9 +544,9 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
           <div className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">{block.rightLabel || 'Category B'}</div>
           <div className="space-y-1">
             {rightItems.map(idx => (
-              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-gray-300 bg-black/20' : submitted ? (items[idx].correct === 'right' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-gray-300 bg-black/20'}`}>
+              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-[var(--text-secondary)] bg-[var(--panel-bg)]' : submitted ? (items[idx].correct === 'right' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-[var(--text-secondary)] bg-[var(--panel-bg)]'}`}>
                 <BlockText text={items[idx].text} />
-                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-gray-500 hover:text-red-400 text-xs">×</button>}
+                {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-[var(--text-muted)] hover:text-red-400 text-xs">×</button>}
                 {!readOnly && submitted && items[idx].correct === 'right' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
                 {!readOnly && submitted && items[idx].correct !== 'right' && <XCircle className="w-3 h-3 text-red-400" />}
               </div>
@@ -570,7 +570,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
               setSubmitted(false);
               onResponseChange?.({ placements, submitted: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -598,14 +598,14 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
 
   return (
     <div className="space-y-2">
-      {block.title && <BlockText text={block.title} tag="p" className="text-base text-white font-medium" />}
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      {block.title && <BlockText text={block.title} tag="p" className="text-base text-[var(--text-primary)] font-medium" />}
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
         <table className="w-full text-sm" aria-label={block.title || 'Data table'}>
           <thead>
-            <tr className="bg-black/30">
-              <th scope="col" className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left w-12">#</th>
+            <tr className="bg-[var(--panel-bg)]">
+              <th scope="col" className="px-3 py-2 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left w-12">#</th>
               {columns.map(col => (
-                <th scope="col" key={col.key} className="px-3 py-2 text-[10px] text-gray-500 uppercase font-bold text-left">
+                <th scope="col" key={col.key} className="px-3 py-2 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left">
                   {col.label}{col.unit ? ` (${col.unit})` : ''}
                 </th>
               ))}
@@ -613,8 +613,8 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
           </thead>
           <tbody>
             {data.map((row, rowIdx) => (
-              <tr key={rowIdx} className="border-t border-white/5">
-                <td className="px-3 py-1 text-xs text-gray-600 font-mono">{rowIdx + 1}</td>
+              <tr key={rowIdx} className="border-t border-[var(--border)]">
+                <td className="px-3 py-1 text-xs text-[var(--text-muted)] font-mono">{rowIdx + 1}</td>
                 {columns.map(col => (
                   <td key={col.key} className="px-1 py-1">
                     {col.editable !== false ? (
@@ -624,10 +624,10 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
                         onChange={e => updateCell(rowIdx, col.key, e.target.value)}
                         disabled={readOnly}
                         aria-label={`${col.label} for trial ${rowIdx + 1}`}
-                        className={`w-full bg-black/20 border border-white/5 rounded px-2 py-1 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 transition${readOnly ? ' opacity-80' : ''}`}
+                        className={`w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded px-2 py-1 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition${readOnly ? ' opacity-80' : ''}`}
                       />
                     ) : (
-                      <span className="px-2 py-1 text-gray-400">{row[col.key]}</span>
+                      <span className="px-2 py-1 text-[var(--text-tertiary)]">{row[col.key]}</span>
                     )}
                   </td>
                 ))}
@@ -671,11 +671,11 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
 
   return (
     <div className="space-y-2">
-      {block.title && <BlockText text={block.title} tag="p" className="text-base text-white font-medium text-center" />}
+      {block.title && <BlockText text={block.title} tag="p" className="text-base text-[var(--text-primary)] font-medium text-center" />}
       <iframe
         ref={iframeRef}
         src="/tools/bar-chart.html?embedded=true"
-        className="w-full rounded-lg border border-white/10"
+        className="w-full rounded-lg border border-[var(--border)]"
         style={{ height: chartHeight, background: 'transparent', pointerEvents: readOnly ? 'none' : isResizing ? 'none' : 'auto' }}
         title="Bar Chart Tool"
       />
@@ -779,7 +779,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
 
   return (
     <div className="space-y-3" role="list" aria-label={block.content || 'Ranking activity'}>
-      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
         <GripVertical className="w-4 h-4 text-purple-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
@@ -795,25 +795,25 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             onDrop={() => { if (dragIdx !== null) moveItem(dragIdx, idx); setDragIdx(null); }}
             className={`flex items-center gap-2 p-3 rounded-xl border text-sm transition ${readOnly ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} ${
               readOnly
-                ? 'border-white/10 bg-white/5 text-gray-300'
+                ? 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)]'
                 : submitted
                 ? item.origIdx === idx
                   ? 'border-green-500/30 bg-green-500/5 text-green-400'
                   : 'border-red-500/30 bg-red-500/5 text-red-400'
                 : dragIdx === idx
-                ? 'border-purple-500/30 bg-purple-500/10 text-white'
-                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+                ? 'border-purple-500/30 bg-purple-500/10 text-[var(--text-primary)]'
+                : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'
             }`}
           >
-            <GripVertical className="w-4 h-4 text-gray-600 shrink-0" />
-            <span className="text-xs font-mono text-gray-500 w-5">{idx + 1}.</span>
+            <GripVertical className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+            <span className="text-xs font-mono text-[var(--text-muted)] w-5">{idx + 1}.</span>
             <BlockText text={item.item} className="flex-1" />
             {!readOnly && submitted && item.origIdx === idx && <CheckCircle2 className="w-4 h-4 text-green-400" />}
             {!readOnly && submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-400" />}
             {!readOnly && !submitted && (
               <div className="flex gap-0.5">
-                <button onClick={() => idx > 0 && moveItem(idx, idx - 1)} disabled={idx === 0} aria-label="Move up" className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 -rotate-90" /></button>
-                <button onClick={() => idx < order.length - 1 && moveItem(idx, idx + 1)} disabled={idx === order.length - 1} aria-label="Move down" className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20"><ChevronRight className="w-3 h-3 rotate-90" /></button>
+                <button onClick={() => idx > 0 && moveItem(idx, idx - 1)} disabled={idx === 0} aria-label="Move up" className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20"><ChevronRight className="w-3 h-3 -rotate-90" /></button>
+                <button onClick={() => idx < order.length - 1 && moveItem(idx, idx + 1)} disabled={idx === order.length - 1} aria-label="Move down" className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20"><ChevronRight className="w-3 h-3 rotate-90" /></button>
               </div>
             )}
           </div>
@@ -834,7 +834,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
               setSubmitted(false);
               onResponseChange?.({ order, submitted: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -863,14 +863,14 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
   return (
     <div className="space-y-3">
       {linkedBlock && (
-        <div className="border border-white/10 bg-white/5 rounded-xl p-3">
-          <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
+        <div className="border border-[var(--border)] bg-[var(--surface-glass)] rounded-xl p-3">
+          <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
             <Link className="w-3 h-3" /> Referenced question
           </div>
-          <BlockText text={linkedBlock.content} tag="p" className="text-xs text-gray-400" />
+          <BlockText text={linkedBlock.content} tag="p" className="text-xs text-[var(--text-tertiary)]" />
         </div>
       )}
-      <div className="text-base text-white font-medium flex items-center gap-2" translate="no">
+      <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
         <Link className="w-4 h-4 text-purple-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
@@ -885,7 +885,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
           disabled={answered || readOnly}
           placeholder="Type your answer... (Ctrl+Enter to lock in)"
           aria-label={block.content || 'Linked question answer'}
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
+          className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition resize-y min-h-[38px]"
           rows={2}
           onKeyDown={e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -910,7 +910,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
               setAnswered(false);
               onResponseChange?.({ answer, answered: false, isCorrect: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -1112,9 +1112,9 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'RANKING': return <RankingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'LINKED': return <LinkedBlock block={block} allBlocks={blocks} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
-      case 'DRAWING': return <React.Suspense fallback={<div className="h-[400px] bg-white/5 rounded-xl animate-pulse flex items-center justify-center text-gray-500 text-sm">Loading drawing tool...</div>}><DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} /></React.Suspense>;
-      case 'MATH_RESPONSE': return <React.Suspense fallback={<div className="h-[200px] bg-white/5 rounded-xl animate-pulse flex items-center justify-center text-gray-500 text-sm">Loading math tool...</div>}><MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} /></React.Suspense>;
-      default: return <div className="text-sm text-gray-500 italic">Unknown block type: {block.type}</div>;
+      case 'DRAWING': return <React.Suspense fallback={<div className="h-[400px] bg-[var(--surface-glass)] rounded-xl animate-pulse flex items-center justify-center text-[var(--text-muted)] text-sm">Loading drawing tool...</div>}><DrawingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} /></React.Suspense>;
+      case 'MATH_RESPONSE': return <React.Suspense fallback={<div className="h-[200px] bg-[var(--surface-glass)] rounded-xl animate-pulse flex items-center justify-center text-[var(--text-muted)] text-sm">Loading math tool...</div>}><MathResponseBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} /></React.Suspense>;
+      default: return <div className="text-sm text-[var(--text-muted)] italic">Unknown block type: {block.type}</div>;
     }
   };
 
@@ -1131,13 +1131,13 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       {/* Progress bar + actions */}
       {!readOnly && <div className={`flex items-center gap-2 ${showSidebar && blocks.length >= 3 ? 'mb-1 justify-end' : 'mb-3'} shrink-0`}>
         {!(showSidebar && blocks.length >= 3) && <>
-          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+          <div className="flex-1 bg-[var(--surface-glass)] rounded-full h-1.5 overflow-hidden">
             <div
               className="h-1.5 rounded-full bg-purple-500 transition-all duration-500"
               style={{ width: `${completionProgress}%` }}
             />
           </div>
-          <span className="text-[10px] text-gray-500 font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
+          <span className="text-[10px] text-[var(--text-muted)] font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
         </>}
 
         {/* Actions menu */}
@@ -1145,18 +1145,18 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           <div ref={actionsRef} className="relative">
             <button
               onClick={() => setShowActionsMenu(prev => !prev)}
-              className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] p-1 rounded-lg hover:bg-[var(--surface-glass-heavy)] transition cursor-pointer"
               title="Progress options"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
 
             {showActionsMenu && !showClearConfirm && (
-              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a0a2e] border border-white/10 rounded-xl shadow-2xl min-w-[200px] py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-2xl min-w-[200px] py-1 animate-in fade-in slide-in-from-top-2 duration-200">
                 {onExportPdf && (
                   <button
                     onClick={() => { onExportPdf(); setShowActionsMenu(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-300 hover:text-white hover:bg-white/5 transition text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)] transition text-left cursor-pointer"
                   >
                     <FileDown className="w-3.5 h-3.5 text-blue-400" /> Export to PDF
                   </button>
@@ -1164,14 +1164,14 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                 {onExportPdf && onClearResponses && (
                   <button
                     onClick={() => setShowClearConfirm('export-clear')}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-300 hover:text-white hover:bg-white/5 transition text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)] transition text-left cursor-pointer"
                   >
                     <FileDown className="w-3.5 h-3.5 text-amber-400" /> Export & Clear
                   </button>
                 )}
                 {onClearResponses && hasAnyResponses && (
                   <>
-                    <div className="border-t border-white/5 my-1" />
+                    <div className="border-t border-[var(--border)] my-1" />
                     <button
                       onClick={() => setShowClearConfirm('clear')}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/5 transition text-left cursor-pointer"
@@ -1185,8 +1185,8 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
 
             {/* Confirmation dialog */}
             {showClearConfirm && (
-              <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a0a2e] border border-white/10 rounded-xl shadow-2xl min-w-[240px] p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                <p className="text-xs text-gray-300 mb-3">
+              <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-2xl min-w-[240px] p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-xs text-[var(--text-secondary)] mb-3">
                   {showClearConfirm === 'export-clear'
                     ? 'Export your progress, then clear all responses? This cannot be undone.'
                     : 'Clear all your responses? This cannot be undone.'}
@@ -1194,7 +1194,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                 <div className="flex items-center gap-2 justify-end">
                   <button
                     onClick={() => { setShowClearConfirm(null); setShowActionsMenu(false); }}
-                    className="text-[10px] text-gray-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition font-bold cursor-pointer"
+                    className="text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1228,7 +1228,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
               key={block.id}
               ref={(el) => { if (el) blockRefs.current.set(block.id, el); else blockRefs.current.delete(block.id); }}
               tabIndex={-1}
-              className={`block-reveal ${block.type === 'DIVIDER' ? '' : 'bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5'}`}
+              className={`block-reveal ${block.type === 'DIVIDER' ? '' : 'bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5'}`}
               data-stagger={index % 4}
               style={{ scrollMarginTop: 20 }}
             >
@@ -1242,13 +1242,13 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
 
   const shortcutsOverlay = showShortcutsHelp ? (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" role="dialog" aria-modal="true" onClick={() => setShowShortcutsHelp(false)} onKeyDown={e => { if (e.key === 'Tab') e.preventDefault(); }}>
-      <div className="bg-[#1a1b26] border border-white/10 rounded-2xl p-6 max-w-xs w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-        <h3 className="text-sm font-bold text-white mb-4">Keyboard Shortcuts</h3>
+      <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6 max-w-xs w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Keyboard Shortcuts</h3>
         <div className="space-y-2 text-xs">
-          <div className="flex justify-between text-gray-300"><span>Next block</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">j</kbd></div>
-          <div className="flex justify-between text-gray-300"><span>Previous block</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">k</kbd></div>
-          <div className="flex justify-between text-gray-300"><span>Lock in answer</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">Ctrl+Enter</kbd></div>
-          <div className="flex justify-between text-gray-300"><span>Toggle this help</span><kbd className="bg-white/10 px-2 py-0.5 rounded font-mono">?</kbd></div>
+          <div className="flex justify-between text-[var(--text-secondary)]"><span>Next block</span><kbd className="bg-[var(--surface-glass-heavy)] px-2 py-0.5 rounded font-mono">j</kbd></div>
+          <div className="flex justify-between text-[var(--text-secondary)]"><span>Previous block</span><kbd className="bg-[var(--surface-glass-heavy)] px-2 py-0.5 rounded font-mono">k</kbd></div>
+          <div className="flex justify-between text-[var(--text-secondary)]"><span>Lock in answer</span><kbd className="bg-[var(--surface-glass-heavy)] px-2 py-0.5 rounded font-mono">Ctrl+Enter</kbd></div>
+          <div className="flex justify-between text-[var(--text-secondary)]"><span>Toggle this help</span><kbd className="bg-[var(--surface-glass-heavy)] px-2 py-0.5 rounded font-mono">?</kbd></div>
         </div>
         <button autoFocus onClick={() => setShowShortcutsHelp(false)} className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-bold text-white transition">
           Got it

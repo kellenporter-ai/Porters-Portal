@@ -88,28 +88,28 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     aria-modal="true"
                     aria-label="Confirmation dialog"
                 >
-                    <div 
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-                        onClick={handleCancel} 
+                    <div
+                        className="absolute inset-0 bg-[var(--backdrop)] backdrop-blur-sm"
+                        onClick={handleCancel}
                     />
-                    <div className={`relative bg-gray-900 border ${variantStyles.border} rounded-2xl p-6 max-w-sm w-full shadow-2xl`}
+                    <div className={`relative bg-[var(--surface-raised)] border ${variantStyles.border} rounded-2xl p-6 max-w-sm w-full shadow-2xl`}
                         style={{ animation: 'confirmIn 150ms ease-out' }}
                     >
                         <div className="flex items-start gap-4 mb-5">
-                            <div className={`p-2 rounded-xl bg-white/5 ${variantStyles.icon} shrink-0`}>
+                            <div className={`p-2 rounded-xl bg-[var(--surface-glass)] ${variantStyles.icon} shrink-0`}>
                                 <AlertTriangle className="w-5 h-5" />
                             </div>
                             <div>
                                 {state.options.title && (
-                                    <h3 className="font-bold text-white text-sm mb-1">{state.options.title}</h3>
+                                    <h3 className="font-bold text-[var(--text-primary)] text-sm mb-1">{state.options.title}</h3>
                                 )}
-                                <p className="text-gray-300 text-sm leading-relaxed">{state.options.message}</p>
+                                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{state.options.message}</p>
                             </div>
                         </div>
                         <div className="flex gap-3">
                             <button
                                 onClick={handleCancel}
-                                className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl text-sm font-bold hover:bg-white/10 transition"
+                                className="flex-1 py-2.5 bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-bold hover:bg-[var(--surface-glass-heavy)] transition"
                             >
                                 {state.options.cancelLabel || 'Cancel'}
                             </button>

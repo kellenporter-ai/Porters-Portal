@@ -22,7 +22,7 @@ const SectionPicker: React.FC<SectionPickerProps> = ({ availableSections, select
 
   return (
     <div>
-      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 px-1">{label}</label>
+      <label className="block text-[10px] font-bold text-[var(--text-tertiary)] uppercase mb-1.5 px-1">{label}</label>
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
@@ -30,7 +30,7 @@ const SectionPicker: React.FC<SectionPickerProps> = ({ availableSections, select
           className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${
             allSelected
               ? 'bg-purple-600 border-purple-600 text-white'
-              : 'bg-black/30 border-white/10 text-gray-400 hover:border-white/20'
+              : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)] hover:border-[var(--border-strong)]'
           }`}
         >
           All Sections
@@ -43,7 +43,7 @@ const SectionPicker: React.FC<SectionPickerProps> = ({ availableSections, select
             className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition ${
               selectedSections.includes(s)
                 ? 'bg-purple-600 border-purple-600 text-white'
-                : 'bg-black/30 border-white/10 text-gray-400 hover:border-white/20'
+                : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)] hover:border-[var(--border-strong)]'
             }`}
           >
             {s}

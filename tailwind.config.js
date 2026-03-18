@@ -1,6 +1,7 @@
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./*.{js,ts,jsx,tsx}",
@@ -10,6 +11,39 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        surface: {
+          base: 'var(--surface-base)',
+          raised: 'var(--surface-raised)',
+          sunken: 'var(--surface-sunken)',
+          overlay: 'var(--surface-overlay)',
+          glass: 'var(--surface-glass)',
+          'glass-heavy': 'var(--surface-glass-heavy)',
+        },
+        theme: {
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          tertiary: 'var(--text-tertiary)',
+          muted: 'var(--text-muted)',
+          inverted: 'var(--text-inverted)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          hover: 'var(--accent-hover)',
+          muted: 'var(--accent-muted)',
+          text: 'var(--accent-text)',
+        },
+        'theme-border': {
+          DEFAULT: 'var(--border)',
+          strong: 'var(--border-strong)',
+          accent: 'var(--border-accent)',
+        },
+        sidebar: {
+          bg: 'var(--sidebar-bg)',
+          text: 'var(--sidebar-text)',
+          border: 'var(--sidebar-border)',
+        },
+      },
       keyframes: {
         'glass-turn': {
           '0%': { opacity: '0', transform: 'perspective(1000px) rotateY(-30deg) translateX(-50px) scale(0.9)' },

@@ -24,17 +24,17 @@ const StatBar: React.FC<{ label: string; value: number; max: number; color: stri
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 text-xs">
           <span className={color}>{icon}</span>
-          <span className="text-gray-400 font-bold uppercase tracking-wider">{label}</span>
+          <span className="text-[var(--text-tertiary)] font-bold uppercase tracking-wider">{label}</span>
         </div>
         <span className={`text-sm font-black ${color}`}>{value}</span>
       </div>
-      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-2 bg-[var(--surface-glass)] rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ease-out ${color.replace('text-', 'bg-').replace('400', '500/60')}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="absolute -top-10 left-0 hidden group-hover:block z-20 w-56 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+      <div className="absolute -top-10 left-0 hidden group-hover:block z-20 w-56 p-2 bg-[var(--backdrop)] border border-[var(--border-strong)] rounded-lg text-[10px] text-[var(--text-secondary)] shadow-xl">
         {description}
       </div>
     </div>
@@ -43,15 +43,15 @@ const StatBar: React.FC<{ label: string; value: number; max: number; color: stri
 
 // ─── Mini metric card ──────────────────────────────────
 const MetricCard: React.FC<{ label: string; value: string | number; sub?: string; color?: string; icon: React.ReactNode }> = ({
-  label, value, sub, color = 'text-white', icon
+  label, value, sub, color = 'text-[var(--text-primary)]', icon
 }) => (
-  <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+  <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
     <div className="flex items-center gap-2 mb-1">
-      <span className="text-gray-600">{icon}</span>
-      <span className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">{label}</span>
+      <span className="text-[var(--text-muted)]">{icon}</span>
+      <span className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{label}</span>
     </div>
     <div className={`text-lg font-black ${color} leading-tight`}>{value}</div>
-    {sub && <div className="text-[10px] text-gray-600 mt-0.5">{sub}</div>}
+    {sub && <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{sub}</div>}
   </div>
 );
 
@@ -189,15 +189,15 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-400" />
+          <h2 className="text-xl font-black text-[var(--text-primary)] flex items-center gap-2">
+            <Brain className="w-5 h-5 text-[var(--accent-text)]" />
             Intel Dossier
           </h2>
-          <p className="text-xs text-gray-500 mt-1">Classified operative analysis — {activeClass}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">Classified operative analysis — {activeClass}</p>
         </div>
         <div className="text-right">
           <div className={`text-sm font-black ${rankDetails.tierColor.split(' ')[1]}`}>{rankDetails.rankName}</div>
-          <div className="text-[10px] text-gray-500">Level {level}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">Level {level}</div>
         </div>
       </div>
 
@@ -211,11 +211,11 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ═══════════════ COMBAT STATS DEEP DIVE ═══════════════ */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-2xl p-5 space-y-4">
+          <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-2">
             <Swords className="w-4 h-4 text-red-400" /> Combat Analysis
           </h3>
-          <p className="text-[11px] text-gray-500 -mt-2">How your character stats translate to boss fight performance</p>
+          <p className="text-[11px] text-[var(--text-muted)] -mt-2">How your character stats translate to boss fight performance</p>
 
           <div className="space-y-3">
             <StatBar label="Tech" value={playerStats.tech} max={100} color="text-blue-400" icon={<Zap className="w-3 h-3" />} description="Attack Power — Increases base damage dealt to bosses in quiz events." />
@@ -225,31 +225,31 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           </div>
 
           {/* Derived combat readouts */}
-          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-white/5">
+          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-[var(--border)]">
             <div className="text-center">
-              <div className="text-[9px] text-gray-600 uppercase font-bold">Max HP</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Max HP</div>
               <div className="text-sm font-black text-emerald-400">{combat.maxHp}</div>
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-gray-600 uppercase font-bold">Armor</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Armor</div>
               <div className="text-sm font-black text-yellow-400">{combat.armorPercent.toFixed(0)}%</div>
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-gray-600 uppercase font-bold">Crit %</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Crit %</div>
               <div className="text-sm font-black text-green-400">{(combat.critChance * 100).toFixed(0)}%</div>
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-gray-600 uppercase font-bold">Crit Dmg</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Crit Dmg</div>
               <div className="text-sm font-black text-red-400">{combat.critMultiplier.toFixed(2)}x</div>
             </div>
           </div>
 
           {/* Stat source breakdown */}
           {(Object.keys(gemStats).length > 0 || Object.keys(runewordStats).length > 0 || Object.keys(setBonusStats).length > 0) && (
-            <div className="pt-3 border-t border-white/5 space-y-2">
-              <div className="text-[9px] text-gray-600 uppercase font-bold tracking-widest">Stat Sources</div>
+            <div className="pt-3 border-t border-[var(--border)] space-y-2">
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Stat Sources</div>
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                <div className="flex justify-between text-gray-500"><span>Base Stats</span><span className="text-gray-400">10 each</span></div>
+                <div className="flex justify-between text-[var(--text-muted)]"><span>Base Stats</span><span className="text-[var(--text-tertiary)]">10 each</span></div>
                 {Object.keys(gemStats).length > 0 && (
                   <div className="flex justify-between text-cyan-400/70"><span>Gems</span><span>+{Object.values(gemStats).reduce((a, b) => a + b, 0)}</span></div>
                 )}
@@ -265,11 +265,11 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         </div>
 
         {/* ═══════════════ XP BREAKDOWN ═══════════════ */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-2xl p-5 space-y-4">
+          <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-400" /> XP Sources
           </h3>
-          <p className="text-[11px] text-gray-500 -mt-2">Where your {classXp.toLocaleString()} XP in {activeClass} came from</p>
+          <p className="text-[11px] text-[var(--text-muted)] -mt-2">Where your {classXp.toLocaleString()} XP in {activeClass} came from</p>
 
           <div className="space-y-2">
             {[
@@ -283,10 +283,10 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
                 <div className={`w-2 h-2 rounded-full ${source.color}`} />
                 <div className="flex-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-300">{source.label}</span>
+                    <span className="text-[var(--text-secondary)]">{source.label}</span>
                     <span className={`font-bold ${source.textColor}`}>~{source.xp.toLocaleString()} XP</span>
                   </div>
-                  <div className="text-[10px] text-gray-600">{source.desc}</div>
+                  <div className="text-[10px] text-[var(--text-muted)]">{source.desc}</div>
                 </div>
               </div>
             ))}
@@ -300,14 +300,14 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
                 <span className="text-orange-400 font-bold">Streak Bonus Active</span>
                 <span className="ml-auto text-sm font-black text-yellow-400">+{Math.round((streakMultiplier - 1) * 100)}%</span>
               </div>
-              <div className="text-[10px] text-gray-500 mt-1">{streak}-week engagement streak &middot; All XP earnings boosted</div>
+              <div className="text-[10px] text-[var(--text-muted)] mt-1">{streak}-week engagement streak &middot; All XP earnings boosted</div>
             </div>
           )}
 
           {/* Login streak */}
           {loginStreak > 1 && (
-            <div className="flex items-center gap-2 text-xs text-gray-500 pt-2 border-t border-white/5">
-              <Star className="w-3.5 h-3.5 text-purple-400" />
+            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] pt-2 border-t border-[var(--border)]">
+              <Star className="w-3.5 h-3.5 text-[var(--accent-text)]" />
               <span>{loginStreak}-day daily login streak</span>
             </div>
           )}
@@ -318,49 +318,49 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         {/* ═══════════════ TELEMETRY BUCKET ═══════════════ */}
         <div className={`border rounded-2xl p-5 space-y-4 ${bucketInfo.meta.bgColor} ${bucketInfo.meta.borderColor}`}>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-2">
               <Activity className="w-4 h-4" /> Engagement Status
             </h3>
             <span className={`text-sm font-black ${bucketInfo.meta.color}`}>{bucketInfo.meta.label}</span>
           </div>
 
-          <p className="text-sm text-gray-300">{bucketInfo.meta.description}</p>
+          <p className="text-sm text-[var(--text-secondary)]">{bucketInfo.meta.description}</p>
 
           {/* Why this bucket */}
-          <div className="bg-black/20 rounded-xl p-3 border border-white/5 space-y-2">
-            <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Why this classification</div>
+          <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] space-y-2">
+            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Why this classification</div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-gray-500">Active time (7d)</span>
-                <span className="text-gray-300 font-mono">{Math.round(bucketInfo.metrics.totalTime / 60)}m</span>
+                <span className="text-[var(--text-muted)]">Active time (7d)</span>
+                <span className="text-[var(--text-secondary)] font-mono">{Math.round(bucketInfo.metrics.totalTime / 60)}m</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Resources (7d)</span>
-                <span className="text-gray-300 font-mono">{bucketInfo.metrics.submissionCount}</span>
+                <span className="text-[var(--text-muted)]">Resources (7d)</span>
+                <span className="text-[var(--text-secondary)] font-mono">{bucketInfo.metrics.submissionCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Active days</span>
-                <span className="text-gray-300 font-mono">{bucketInfo.metrics.activityDays}/7</span>
+                <span className="text-[var(--text-muted)]">Active days</span>
+                <span className="text-[var(--text-secondary)] font-mono">{bucketInfo.metrics.activityDays}/7</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Keystrokes</span>
-                <span className="text-gray-300 font-mono">{bucketInfo.metrics.totalKeystrokes}</span>
+                <span className="text-[var(--text-muted)]">Keystrokes</span>
+                <span className="text-[var(--text-secondary)] font-mono">{bucketInfo.metrics.totalKeystrokes}</span>
               </div>
             </div>
           </div>
 
           {/* Recommendation */}
-          <div className="bg-black/20 rounded-xl p-3 border border-white/5">
-            <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-1">How to level up your status</div>
-            <p className="text-sm text-gray-300">{bucketInfo.recommendation.studentTip}</p>
+          <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
+            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-1">How to level up your status</div>
+            <p className="text-sm text-[var(--text-secondary)]">{bucketInfo.recommendation.studentTip}</p>
           </div>
 
           {/* Recommended resources */}
           <div>
-            <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Recommended for you</div>
+            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Recommended for you</div>
             <div className="flex flex-wrap gap-1.5">
               {bucketInfo.recommendation.categories.map(cat => (
-                <span key={cat} className="text-[10px] bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-gray-300 font-medium">
+                <span key={cat} className="text-[10px] bg-[var(--surface-glass)] border border-[var(--border-strong)] px-2.5 py-1 rounded-full text-[var(--text-secondary)] font-medium">
                   {cat}
                 </span>
               ))}
@@ -369,61 +369,61 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         </div>
 
         {/* ═══════════════ WEEKLY ACTIVITY CHART ═══════════════ */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+        <div className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-2xl p-5 space-y-4">
+          <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-cyan-400" /> 7-Day Activity
           </h3>
 
           <div className="flex items-end gap-2 h-32">
             {activityTimeline.map((day, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="text-[9px] text-gray-600 font-mono">{day.minutes}m</div>
-                <div className="w-full bg-white/5 rounded-t-lg relative flex-1 flex items-end">
+                <div className="text-[9px] text-[var(--text-muted)] font-mono">{day.minutes}m</div>
+                <div className="w-full bg-[var(--surface-glass)] rounded-t-lg relative flex-1 flex items-end">
                   <div
                     className={`w-full rounded-t-lg transition-all duration-500 ${
-                      day.minutes > 0 ? 'bg-purple-500/50 border border-purple-500/30' : 'bg-white/5'
+                      day.minutes > 0 ? 'bg-purple-500/50 border border-purple-500/30' : 'bg-[var(--surface-glass)]'
                     }`}
                     style={{ height: `${Math.max(day.minutes > 0 ? 8 : 0, (day.minutes / maxDayMinutes) * 100)}%` }}
                   />
                 </div>
-                <div className="text-[9px] text-gray-500 font-bold">{day.label}</div>
+                <div className="text-[9px] text-[var(--text-muted)] font-bold">{day.label}</div>
                 {day.count > 0 && (
-                  <div className="text-[8px] text-gray-600">{day.count} res</div>
+                  <div className="text-[8px] text-[var(--text-muted)]">{day.count} res</div>
                 )}
               </div>
             ))}
           </div>
 
           {/* Submission status breakdown */}
-          <div className="pt-3 border-t border-white/5">
-            <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Submission Quality</div>
+          <div className="pt-3 border-t border-[var(--border)]">
+            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Submission Quality</div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               {statusBreakdown.SUCCESS > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-gray-400">Excellent</span>
+                  <span className="text-[var(--text-tertiary)]">Excellent</span>
                   <span className="text-emerald-400 font-bold ml-auto">{statusBreakdown.SUCCESS}</span>
                 </div>
               )}
               {statusBreakdown.NORMAL > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="text-gray-400">Normal</span>
+                  <span className="text-[var(--text-tertiary)]">Normal</span>
                   <span className="text-blue-400 font-bold ml-auto">{statusBreakdown.NORMAL}</span>
                 </div>
               )}
               {statusBreakdown.SUPPORT_NEEDED > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="text-gray-400">Needs Support</span>
+                  <span className="text-[var(--text-tertiary)]">Needs Support</span>
                   <span className="text-amber-400 font-bold ml-auto">{statusBreakdown.SUPPORT_NEEDED}</span>
                 </div>
               )}
               {statusBreakdown.STARTED > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-gray-500" />
-                  <span className="text-gray-400">Started</span>
-                  <span className="text-gray-400 font-bold ml-auto">{statusBreakdown.STARTED}</span>
+                  <span className="text-[var(--text-tertiary)]">Started</span>
+                  <span className="text-[var(--text-tertiary)] font-bold ml-auto">{statusBreakdown.STARTED}</span>
                 </div>
               )}
             </div>
@@ -432,35 +432,35 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
       </div>
 
       {/* ═══════════════ BOSS FIGHT READINESS ═══════════════ */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+      <div className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-2xl p-5 space-y-4">
+        <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-2">
           <Swords className="w-4 h-4 text-red-400" /> Boss Fight Readiness
         </h3>
-        <p className="text-[11px] text-gray-500 -mt-2">How your equipment and stats prepare you for boss quiz encounters</p>
+        <p className="text-[11px] text-[var(--text-muted)] -mt-2">How your equipment and stats prepare you for boss quiz encounters</p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Offense */}
-          <div className="bg-black/20 rounded-xl p-4 border border-red-500/10 space-y-2">
+          <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-red-500/10 space-y-2">
             <div className="text-[10px] text-red-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
               <Swords className="w-3 h-3" /> Offense
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-sm text-[var(--text-secondary)]">
               Your <span className="text-blue-400 font-bold">{playerStats.tech} Tech</span> powers your base attack.
               {playerStats.tech > 20 && <span className="text-emerald-400"> Strong offensive capability.</span>}
               {playerStats.tech <= 20 && playerStats.tech > 10 && <span className="text-yellow-400"> Moderate damage output.</span>}
               {playerStats.tech <= 10 && <span className="text-red-400"> Low damage — equip Tech gear to improve.</span>}
             </div>
-            <div className="text-[10px] text-gray-500">
+            <div className="text-[10px] text-[var(--text-muted)]">
               Crit chance: <span className="text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span> (from {playerStats.focus} Focus)
             </div>
           </div>
 
           {/* Defense */}
-          <div className="bg-black/20 rounded-xl p-4 border border-yellow-500/10 space-y-2">
+          <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-yellow-500/10 space-y-2">
             <div className="text-[10px] text-yellow-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
               <Shield className="w-3 h-3" /> Defense
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-sm text-[var(--text-secondary)]">
               <span className="text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}% Armor</span> from {playerStats.analysis} Analysis reduces boss damage.
               {combat.armorPercent >= 30 && <span className="text-emerald-400"> Excellent damage mitigation.</span>}
               {combat.armorPercent < 30 && combat.armorPercent >= 15 && <span className="text-yellow-400"> Decent protection.</span>}
@@ -469,11 +469,11 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           </div>
 
           {/* Survivability */}
-          <div className="bg-black/20 rounded-xl p-4 border border-emerald-500/10 space-y-2">
+          <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-emerald-500/10 space-y-2">
             <div className="text-[10px] text-emerald-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
               <Heart className="w-3 h-3" /> Survivability
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-sm text-[var(--text-secondary)]">
               <span className="text-emerald-400 font-bold">{combat.maxHp} HP</span> from {playerStats.charisma} Charisma.
               {combat.maxHp >= 150 && <span className="text-emerald-400"> Large health pool — can absorb many hits.</span>}
               {combat.maxHp < 150 && combat.maxHp >= 120 && <span className="text-yellow-400"> Average survivability.</span>}
@@ -483,29 +483,29 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         </div>
 
         {/* Improvement tips */}
-        <div className="bg-black/20 rounded-xl p-3 border border-white/5">
-          <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Recommendations</div>
+        <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
+          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Recommendations</div>
           <div className="space-y-1.5">
             {gearScore < 100 && (
-              <div className="flex items-start gap-2 text-[11px] text-gray-400">
+              <div className="flex items-start gap-2 text-[11px] text-[var(--text-tertiary)]">
                 <ArrowUpRight className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
                 <span>Your Gear Score is <span className="text-amber-400 font-bold">{gearScore}</span>. Complete more missions and level up to earn better equipment drops.</span>
               </div>
             )}
             {playerStats.tech <= 15 && (
-              <div className="flex items-start gap-2 text-[11px] text-gray-400">
+              <div className="flex items-start gap-2 text-[11px] text-[var(--text-tertiary)]">
                 <ArrowUpRight className="w-3 h-3 text-blue-400 mt-0.5 shrink-0" />
                 <span>Equip items with <span className="text-blue-400 font-bold">Tech</span> stats to increase boss damage output.</span>
               </div>
             )}
             {combat.critChance < 0.1 && (
-              <div className="flex items-start gap-2 text-[11px] text-gray-400">
+              <div className="flex items-start gap-2 text-[11px] text-[var(--text-tertiary)]">
                 <ArrowUpRight className="w-3 h-3 text-green-400 mt-0.5 shrink-0" />
                 <span>Socket <span className="text-green-400 font-bold">Focus</span> gems to boost critical hit chance beyond {(combat.critChance * 100).toFixed(0)}%.</span>
               </div>
             )}
             {combat.armorPercent < 10 && (
-              <div className="flex items-start gap-2 text-[11px] text-gray-400">
+              <div className="flex items-start gap-2 text-[11px] text-[var(--text-tertiary)]">
                 <ArrowUpRight className="w-3 h-3 text-yellow-400 mt-0.5 shrink-0" />
                 <span>Your armor is low. <span className="text-yellow-400 font-bold">Analysis</span> items will reduce boss damage significantly.</span>
               </div>

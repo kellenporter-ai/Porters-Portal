@@ -148,21 +148,21 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Calendar</h2>
-            <p className="text-xs text-gray-500">Assignment due dates for {activeClass}</p>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">Calendar</h2>
+            <p className="text-xs text-[var(--text-muted)]">Assignment due dates for {activeClass}</p>
           </div>
         </div>
-        <div className="flex bg-black/30 rounded-lg p-0.5 border border-white/10">
+        <div className="flex bg-[var(--panel-bg)] rounded-lg p-0.5 border border-[var(--border-strong)]">
           <button
             onClick={() => setViewMode('month')}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition ${viewMode === 'month' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition ${viewMode === 'month' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
             aria-label="Month view"
           >
             <LayoutGrid className="w-3.5 h-3.5" /> Month
           </button>
           <button
             onClick={() => { setViewMode('week'); setViewDate(new Date()); }}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition ${viewMode === 'week' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition ${viewMode === 'week' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
             aria-label="Week view"
           >
             <List className="w-3.5 h-3.5" /> Week
@@ -172,14 +172,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ─── Calendar Grid ─── */}
-        <div className="lg:col-span-2 bg-black/20 border border-white/5 rounded-2xl p-4">
+        <div className="lg:col-span-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <button onClick={viewMode === 'month' ? prevMonth : prevWeek} className="p-2 hover:bg-white/5 rounded-lg transition" aria-label={viewMode === 'month' ? 'Previous month' : 'Previous week'}>
-              <ChevronLeft className="w-4 h-4 text-gray-400" />
+            <button onClick={viewMode === 'month' ? prevMonth : prevWeek} className="p-2 hover:bg-[var(--surface-glass)] rounded-lg transition" aria-label={viewMode === 'month' ? 'Previous month' : 'Previous week'}>
+              <ChevronLeft className="w-4 h-4 text-[var(--text-tertiary)]" />
             </button>
             <div className="flex items-center gap-3">
-              <h3 className="text-white font-bold">
+              <h3 className="text-[var(--text-primary)] font-bold">
                 {viewMode === 'month'
                   ? `${MONTHS[viewDate.getMonth()]} ${viewDate.getFullYear()}`
                   : (() => {
@@ -198,8 +198,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                 Today
               </button>
             </div>
-            <button onClick={viewMode === 'month' ? nextMonth : nextWeek} className="p-2 hover:bg-white/5 rounded-lg transition" aria-label={viewMode === 'month' ? 'Next month' : 'Next week'}>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+            <button onClick={viewMode === 'month' ? nextMonth : nextWeek} className="p-2 hover:bg-[var(--surface-glass)] rounded-lg transition" aria-label={viewMode === 'month' ? 'Next month' : 'Next week'}>
+              <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)]" />
             </button>
           </div>
 
@@ -208,7 +208,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
               {/* Weekday headers */}
               <div className="grid grid-cols-7 gap-1 mb-1">
                 {WEEKDAYS.map(d => (
-                  <div key={d} className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-wider py-1">
+                  <div key={d} className="text-center text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider py-1">
                     {d}
                   </div>
                 ))}
@@ -226,10 +226,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                       onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
                       className={`
                         relative min-h-[48px] p-1 rounded-lg text-center transition text-xs
-                        ${day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}
+                        ${day.isCurrentMonth ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}
                         ${day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''}
-                        ${isSelected ? 'bg-white/10 ring-1 ring-white/20' : ''}
-                        ${hasAssignments ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'}
+                        ${isSelected ? 'bg-[var(--surface-glass-heavy)] ring-1 ring-[var(--border-strong)]' : ''}
+                        ${hasAssignments ? 'hover:bg-[var(--surface-glass)] cursor-pointer' : 'cursor-default'}
                       `}
                     >
                       <span className={`text-[11px] font-bold ${day.isToday ? 'text-purple-400' : ''}`}>
@@ -247,7 +247,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                             />
                           ))}
                           {day.assignments.length > 3 && (
-                            <span className="text-[8px] text-gray-500">+{day.assignments.length - 3}</span>
+                            <span className="text-[8px] text-[var(--text-muted)]">+{day.assignments.length - 3}</span>
                           )}
                         </div>
                       )}
@@ -268,11 +268,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
                     className={`w-full flex items-center gap-4 p-3 rounded-xl text-left transition ${
                       day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''
-                    } ${isSelected ? 'bg-white/10 ring-1 ring-white/20' : ''} ${hasAssignments ? 'hover:bg-white/5' : ''}`}
+                    } ${isSelected ? 'bg-[var(--surface-glass-heavy)] ring-1 ring-[var(--border-strong)]' : ''} ${hasAssignments ? 'hover:bg-[var(--surface-glass)]' : ''}`}
                   >
                     <div className="w-14 text-center">
-                      <div className="text-[10px] text-gray-500 font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
-                      <div className={`text-lg font-bold ${day.isToday ? 'text-purple-400' : 'text-gray-300'}`}>{day.date.getDate()}</div>
+                      <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
+                      <div className={`text-lg font-bold ${day.isToday ? 'text-purple-400' : 'text-[var(--text-secondary)]'}`}>{day.date.getDate()}</div>
                     </div>
                     <div className="flex-1 min-w-0">
                       {hasAssignments ? (
@@ -280,14 +280,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                           {day.assignments.map(a => (
                             <div key={a.id} className="flex items-center gap-2 text-xs">
                               <div className={`w-2 h-2 rounded-full shrink-0 ${a.isCompleted ? 'bg-emerald-400' : a.isOverdue ? 'bg-red-400' : a.classColor}`} />
-                              <span className={`truncate ${a.isCompleted ? 'text-gray-500 line-through' : a.isOverdue ? 'text-red-400' : 'text-gray-300'}`}>
+                              <span className={`truncate ${a.isCompleted ? 'text-[var(--text-muted)] line-through' : a.isOverdue ? 'text-red-400' : 'text-[var(--text-secondary)]'}`}>
                                 {a.title}
                               </span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-700 italic">No assignments due</span>
+                        <span className="text-xs text-[var(--text-muted)] italic">No assignments due</span>
                       )}
                     </div>
                   </button>
@@ -297,14 +297,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           )}
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5">
-            <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--border)]">
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
               <div className={`w-2 h-2 rounded-full ${getClassColor(activeClass, allEnrolled)}`} /> {activeClass}
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
               <div className="w-2 h-2 rounded-full bg-emerald-400" /> Completed
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
               <div className="w-2 h-2 rounded-full bg-red-400" /> Overdue
             </div>
           </div>
@@ -314,8 +314,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
         <div className="space-y-4">
           {/* Selected day details */}
           {selectedDay && selectedDay.assignments.length > 0 && (
-            <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
-              <h4 className="text-sm font-bold text-white mb-3">
+            <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+              <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3">
                 {MONTHS[selectedDay.date.getMonth()]} {selectedDay.date.getDate()}
               </h4>
               <div className="space-y-2">
@@ -323,7 +323,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                   <button
                     key={a.id}
                     onClick={() => onStartAssignment?.(a.id)}
-                    className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 transition"
+                    className="w-full text-left bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] rounded-xl p-3 transition"
                   >
                     <div className="flex items-start gap-2">
                       {a.isCompleted ? (
@@ -334,8 +334,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                         <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                       )}
                       <div className="min-w-0">
-                        <div className="text-sm text-gray-200 font-medium truncate">{a.title}</div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">
+                        <div className="text-sm text-[var(--text-secondary)] font-medium truncate">{a.title}</div>
+                        <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
                           {a.unit || 'General'} · {a.category || 'Resource'}
                         </div>
                       </div>
@@ -347,8 +347,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           )}
 
           {/* Upcoming due dates */}
-          <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
-            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+            <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-400" />
               Upcoming Due Dates
             </h4>
@@ -361,19 +361,19 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     <button
                       key={a.id}
                       onClick={() => onStartAssignment?.(a.id)}
-                      className="w-full text-left hover:bg-white/5 rounded-lg p-2 transition"
+                      className="w-full text-left hover:bg-[var(--surface-glass)] rounded-lg p-2 transition"
                     >
-                      <div className="text-sm text-gray-300 truncate">{a.title}</div>
+                      <div className="text-sm text-[var(--text-secondary)] truncate">{a.title}</div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className={`text-[10px] font-bold ${
                           daysLeft <= 1 ? 'text-red-400' :
-                          daysLeft <= 3 ? 'text-yellow-400' : 'text-gray-500'
+                          daysLeft <= 3 ? 'text-yellow-400' : 'text-[var(--text-muted)]'
                         }`}>
                           {daysLeft === 0 ? 'Due today' :
                            daysLeft === 1 ? 'Due tomorrow' :
                            `${daysLeft} days left`}
                         </span>
-                        <span className="text-[10px] text-gray-600">
+                        <span className="text-[10px] text-[var(--text-muted)]">
                           {due.getMonth() + 1}/{due.getDate()}
                         </span>
                       </div>
@@ -382,23 +382,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                 })}
               </div>
             ) : (
-              <div className="text-sm text-gray-600 text-center py-4">
+              <div className="text-sm text-[var(--text-muted)] text-center py-4">
                 No upcoming due dates
               </div>
             )}
           </div>
 
           {/* Summary stats */}
-          <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
+          <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
-                <div className="text-2xl font-black text-white">
+                <div className="text-2xl font-black text-[var(--text-primary)]">
                   {classAssignments.filter(a => {
                     const sub = submissions.find(s => s.assignmentId === a.id && s.status !== 'STARTED');
                     return !sub && new Date(a.dueDate!) >= new Date();
                   }).length}
                 </div>
-                <div className="text-[10px] text-gray-500 font-bold uppercase">Pending</div>
+                <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Pending</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-black text-red-400">
@@ -407,7 +407,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     return !sub && new Date(a.dueDate!) < new Date();
                   }).length}
                 </div>
-                <div className="text-[10px] text-gray-500 font-bold uppercase">Overdue</div>
+                <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Overdue</div>
               </div>
             </div>
           </div>

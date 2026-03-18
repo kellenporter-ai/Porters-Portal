@@ -63,9 +63,9 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
   const inactiveCodes = codes.filter(c => !c.isActive);
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md">
+    <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+        <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
           <KeyRound className="w-5 h-5 text-emerald-400" />
           Enrollment Codes
         </h3>
@@ -75,46 +75,46 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
       </div>
 
       {showCreate && (
-        <div className="mb-5 p-4 bg-black/20 border border-white/10 rounded-xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
+        <div className="mb-5 p-4 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
           <div className="flex gap-3">
-            <select value={newClass} onChange={e => setNewClass(e.target.value)} aria-label="Class" className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+            <select value={newClass} onChange={e => setNewClass(e.target.value)} aria-label="Class" className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)]">
               {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select value={newSection} onChange={e => setNewSection(e.target.value)} aria-label="Section" className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+            <select value={newSection} onChange={e => setNewSection(e.target.value)} aria-label="Section" className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)]">
               <option value="">No Section</option>
               {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="flex gap-3 items-center">
-            <input type="number" min="1" placeholder="Max uses (unlimited if empty)" aria-label="Max uses" value={newMaxUses} onChange={e => setNewMaxUses(e.target.value)} className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" />
+            <input type="number" min="1" placeholder="Max uses (unlimited if empty)" aria-label="Max uses" value={newMaxUses} onChange={e => setNewMaxUses(e.target.value)} className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50" />
             <button onClick={handleCreate} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">Create</button>
-            <button onClick={() => setShowCreate(false)} className="p-2 text-gray-400 hover:text-white transition"><X className="w-4 h-4" /></button>
+            <button onClick={() => setShowCreate(false)} className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"><X className="w-4 h-4" /></button>
           </div>
         </div>
       )}
 
       {activeCodes.length === 0 && !showCreate ? (
-        <div className="text-center py-6 text-gray-500 italic">
+        <div className="text-center py-6 text-[var(--text-muted)] italic">
           <KeyRound className="w-10 h-10 mx-auto mb-2 opacity-20" />
           No active enrollment codes. Generate one to let students self-enroll.
         </div>
       ) : (
         <div className="space-y-2">
           {activeCodes.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-3 bg-black/20 border border-white/10 rounded-xl group hover:border-emerald-500/20 transition">
+            <div key={c.id} className="flex items-center justify-between p-3 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl group hover:border-emerald-500/20 transition">
               <div className="flex items-center gap-4">
                 <code className="text-lg font-mono font-bold text-emerald-400 tracking-widest">{c.code}</code>
-                <span className="text-xs text-gray-500">{c.classType}</span>
-                {c.section && <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded">{c.section}</span>}
+                <span className="text-xs text-[var(--text-muted)]">{c.classType}</span>
+                {c.section && <span className="text-[10px] bg-[var(--accent-muted)] text-[var(--accent-text)] px-2 py-0.5 rounded">{c.section}</span>}
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-gray-500">
+                <span className="text-[10px] text-[var(--text-muted)]">
                   {c.usedCount} used{c.maxUses ? ` / ${c.maxUses}` : ''}
                 </span>
-                <button onClick={() => handleCopy(c.code, c.id)} className="p-1.5 text-gray-500 hover:text-white transition" title="Copy code">
+                <button onClick={() => handleCopy(c.code, c.id)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" title="Copy code">
                   {copiedId === c.id ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
-                <button onClick={() => handleDeactivate(c.id)} className="p-1.5 text-gray-500 hover:text-red-400 transition" title="Deactivate">
+                <button onClick={() => handleDeactivate(c.id)} className="p-1.5 text-[var(--text-muted)] hover:text-red-400 transition" title="Deactivate">
                   <Ban className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -125,14 +125,14 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
 
       {inactiveCodes.length > 0 && (
         <details className="mt-4">
-          <summary className="text-[10px] text-gray-500 cursor-pointer hover:text-gray-300 uppercase tracking-widest font-bold">
+          <summary className="text-[10px] text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-secondary)] uppercase tracking-widest font-bold">
             {inactiveCodes.length} expired code{inactiveCodes.length !== 1 ? 's' : ''}
           </summary>
           <div className="mt-2 space-y-1">
             {inactiveCodes.map(c => (
-              <div key={c.id} className="flex items-center justify-between p-2 bg-black/10 border border-white/5 rounded-lg opacity-50">
-                <code className="text-sm font-mono text-gray-500">{c.code}</code>
-                <span className="text-[10px] text-gray-600">{c.classType} | {c.usedCount} used</span>
+              <div key={c.id} className="flex items-center justify-between p-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg opacity-50">
+                <code className="text-sm font-mono text-[var(--text-muted)]">{c.code}</code>
+                <span className="text-[10px] text-[var(--text-muted)]">{c.classType} | {c.usedCount} used</span>
               </div>
             ))}
           </div>

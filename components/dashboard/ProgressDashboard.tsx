@@ -4,6 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Cell,
 } from 'recharts';
 import { TrendingUp, CheckCircle2, Clock, Target, Activity, BarChart3 } from 'lucide-react';
+import { useChartTheme } from '../../lib/useChartTheme';
 
 interface ProgressDashboardProps {
   assignments: Assignment[];
@@ -19,13 +20,13 @@ const StatCard: React.FC<{
   icon: React.ReactNode;
   color: string;
 }> = ({ label, value, sub, icon, color }) => (
-  <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
+  <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
     <div className="flex items-center gap-2 mb-2">
       <div className={`p-2 rounded-lg ${color}`}>{icon}</div>
-      <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">{label}</span>
+      <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{label}</span>
     </div>
-    <div className="text-2xl font-black text-white leading-tight">{value}</div>
-    {sub && <div className="text-[10px] text-gray-500 mt-1">{sub}</div>}
+    <div className="text-2xl font-black text-[var(--text-primary)] leading-tight">{value}</div>
+    {sub && <div className="text-[10px] text-[var(--text-muted)] mt-1">{sub}</div>}
   </div>
 );
 
@@ -35,14 +36,16 @@ const ChartTooltip: React.FC<{ active?: boolean; payload?: { value: number }[]; 
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-black/90 border border-white/10 rounded-lg px-3 py-2 text-xs shadow-xl">
-      <div className="text-gray-400 mb-1">{label}</div>
-      <div className="text-white font-bold">{valueLabel}: {Math.round(payload[0].value)}{valueSuffix}</div>
+    <div className="bg-[var(--backdrop)] border border-[var(--border-strong)] rounded-lg px-3 py-2 text-xs shadow-xl">
+      <div className="text-[var(--text-tertiary)] mb-1">{label}</div>
+      <div className="text-[var(--text-primary)] font-bold">{valueLabel}: {Math.round(payload[0].value)}{valueSuffix}</div>
     </div>
   );
 };
 
 const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, submissions, activeClass }) => {
+  const chartTheme = useChartTheme();
+
   // Filter to active class
   const classAssignments = useMemo(
     () => assignments.filter(a => a.classType === activeClass && a.status === 'ACTIVE'),
@@ -163,12 +166,12 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
   return (
     <div style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-purple-500/20 rounded-xl text-purple-400">
+        <div className="p-2 bg-[var(--accent-muted)] rounded-xl text-[var(--accent-text)]">
           <BarChart3 className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-white">Progress Dashboard</h2>
-          <p className="text-xs text-gray-500">Academic overview for {activeClass}</p>
+          <h2 className="text-lg font-bold text-[var(--text-primary)]">Progress Dashboard</h2>
+          <p className="text-xs text-[var(--text-muted)]">Academic overview for {activeClass}</p>
         </div>
       </div>
 
@@ -208,17 +211,17 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* ─── Scores Over Time ─── */}
-        <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
-          <h3 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+          <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-cyan-400" />
             Scores Over Time
           </h3>
           {scoresOverTime.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={scoresOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#6b7280' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
                 <Tooltip content={<ChartTooltip valueLabel="Score" valueSuffix="%" />} />
                 <Line
                   type="monotone"
@@ -231,24 +234,24 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-gray-600 text-sm">
+            <div className="h-[200px] flex items-center justify-center text-[var(--text-muted)] text-sm">
               No scored submissions yet
             </div>
           )}
         </div>
 
         {/* ─── Engagement Trends ─── */}
-        <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
-          <h3 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+          <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
             <Activity className="w-4 h-4 text-emerald-400" />
             Engagement by Week
           </h3>
           {engagementByWeek.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={engagementByWeek}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+                <XAxis dataKey="week" tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
+                <YAxis tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
                 <Tooltip content={<ChartTooltip valueLabel="Minutes" valueSuffix="m" />} />
                 <Bar dataKey="minutes" radius={[6, 6, 0, 0]}>
                   {engagementByWeek.map((_, i) => (
@@ -258,7 +261,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-gray-600 text-sm">
+            <div className="h-[200px] flex items-center justify-center text-[var(--text-muted)] text-sm">
               No engagement data yet
             </div>
           )}
@@ -267,8 +270,8 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
 
       {/* ─── Unit Completion Breakdown ─── */}
       {unitBreakdown.length > 0 && (
-        <div className="bg-black/20 border border-white/5 rounded-2xl p-4 mb-6">
-          <h3 className="text-sm font-bold text-gray-300 mb-4 flex items-center gap-2">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 mb-6">
+          <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-4 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-blue-400" />
             Completion by Unit
           </h3>
@@ -276,10 +279,10 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
             {unitBreakdown.map((u, i) => (
               <div key={u.fullUnit}>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-400 font-medium">{u.unit}</span>
-                  <span className="text-gray-500">{u.completed}/{u.completed + u.remaining} ({u.pct}%)</span>
+                  <span className="text-[var(--text-tertiary)] font-medium">{u.unit}</span>
+                  <span className="text-[var(--text-muted)]">{u.completed}/{u.completed + u.remaining} ({u.pct}%)</span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-2 bg-[var(--surface-glass)] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
@@ -296,19 +299,19 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
 
       {/* ─── Recent Activity ─── */}
       {recentActivity.length > 0 && (
-        <div className="bg-black/20 border border-white/5 rounded-2xl p-4">
-          <h3 className="text-sm font-bold text-gray-300 mb-3">Recent Activity</h3>
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+          <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-3">Recent Activity</h3>
           <div className="space-y-2">
             {recentActivity.map((a, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
+              <div key={i} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${
                   a.status === 'SUCCESS' ? 'bg-emerald-400' :
                   a.status === 'FLAGGED' ? 'bg-red-400' :
                   a.status === 'SUPPORT_NEEDED' ? 'bg-yellow-400' : 'bg-gray-500'
                 }`} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-gray-300 truncate">{a.title}</div>
-                  <div className="text-[10px] text-gray-600">{a.ago} · {a.engagementMin}m engagement</div>
+                  <div className="text-sm text-[var(--text-secondary)] truncate">{a.title}</div>
+                  <div className="text-[10px] text-[var(--text-muted)]">{a.ago} · {a.engagementMin}m engagement</div>
                 </div>
                 {a.score > 0 && (
                   <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-400' : a.score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>

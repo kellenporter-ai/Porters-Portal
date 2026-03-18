@@ -353,13 +353,13 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Communications panel" className="fixed bottom-0 right-0 md:bottom-6 md:right-6 w-full md:w-[420px] h-[650px] max-h-[calc(100vh-24px)] z-[60] font-sans animate-in slide-in-from-bottom-10 duration-500 shadow-2xl flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 md:rounded-3xl overflow-hidden focus:outline-none">
+    <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Communications panel" className="fixed bottom-0 right-0 md:bottom-6 md:right-6 w-full md:w-[420px] h-[650px] max-h-[calc(100vh-24px)] z-[60] font-sans animate-in slide-in-from-bottom-10 duration-500 shadow-2xl flex flex-col bg-[var(--panel-bg)] backdrop-blur-xl border border-[var(--border)] md:rounded-3xl overflow-hidden focus:outline-none">
       
       {/* HEADER */}
-      <div className="flex items-center justify-between p-4 bg-white/5 border-b border-white/5 backdrop-blur-md z-10">
+      <div className="flex items-center justify-between p-4 bg-[var(--surface-glass)] border-b border-[var(--border)] backdrop-blur-md z-10">
         <div className="flex items-center gap-3 overflow-hidden">
             {(activeTab === 'Resources' && selectedResourceId) || (activeTab === 'Groups' && selectedGroupId) ? (
-                <button onClick={() => { setSelectedResourceId(null); setSelectedGroupId(null); }} className="p-2 hover:bg-white/10 rounded-full transition text-gray-300">
+                <button onClick={() => { setSelectedResourceId(null); setSelectedGroupId(null); }} className="p-2 hover:bg-[var(--surface-glass-heavy)] rounded-full transition text-[var(--text-secondary)]">
                     <ChevronLeft className="w-5 h-5" />
                 </button>
             ) : (
@@ -368,13 +368,13 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 </div>
             )}
             <div className="min-w-0">
-                <h3 className="font-bold text-white text-sm truncate leading-tight">
+                <h3 className="font-bold text-[var(--text-primary)] text-sm truncate leading-tight">
                     {activeTab === 'Moderation' ? 'Moderation Queue' : activeTab === 'Groups' ? (selectedGroupId ? myGroups.find(g => g.id === selectedGroupId)?.name : 'My Groups') : activeTab === 'Resources' ? (selectedResourceId ? resourceRooms.find(r => r.id === selectedResourceId)?.title : "Class Resources") : selectedClass}
                 </h3>
                 {activeTab !== 'Resources' && activeTab !== 'Moderation' && activeTab !== 'Groups' && chatEnabledClasses.length > 1 && (
                     <div className="relative group flex items-center cursor-pointer">
-                        <span className="text-xs text-gray-400 font-medium uppercase tracking-wider truncate">{selectedClass}</span>
-                        <ChevronDown className="w-3 h-3 text-gray-500 ml-1" />
+                        <span className="text-xs text-[var(--text-tertiary)] font-medium uppercase tracking-wider truncate">{selectedClass}</span>
+                        <ChevronDown className="w-3 h-3 text-[var(--text-muted)] ml-1" />
                         <select className="absolute inset-0 opacity-0 cursor-pointer focus:opacity-100 focus:bg-black/80 focus:text-white focus:rounded-md focus:text-xs" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} aria-label="Select class channel">
                             {chatEnabledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
@@ -382,22 +382,22 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 )}
             </div>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition text-gray-400 hover:text-white" aria-label="Close chat"><X className="w-5 h-5" /></button>
+        <button onClick={onClose} className="p-2 hover:bg-[var(--surface-glass-heavy)] rounded-full transition text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Close chat"><X className="w-5 h-5" /></button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* NAV */}
-        <div className="w-16 bg-black/20 border-r border-white/5 flex flex-col items-center py-4 gap-4">
-            <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+        <div className="w-16 bg-[var(--panel-bg)] border-r border-[var(--border)] flex flex-col items-center py-4 gap-4">
+            <button onClick={() => setActiveTab('Main')} aria-label="Main chat" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Main' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                 <MessageSquare className="w-5 h-5" />
                 {hasUnreadMain && activeTab !== 'Main' && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
             </button>
-            <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('Resources')} aria-label="Resource channels" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Resources' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                 <BookOpen className="w-5 h-5" />
                 {hasUnreadResources && activeTab !== 'Resources' && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
             </button>
             {(myGroups.length > 0 || user.role === 'ADMIN') && (
-                <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <button onClick={() => { setActiveTab('Groups'); setSelectedGroupId(null); }} aria-label="Group chats" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Groups' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400/50' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                     <Users className="w-5 h-5" />
                     {hasUnreadGroups && activeTab !== 'Groups' ? (
                         <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
@@ -406,9 +406,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                     )}
                 </button>
             )}
-            <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}><Bookmark className="w-5 h-5" /></button>
+            <button onClick={() => setActiveTab('Bookmarks')} aria-label="Bookmarked messages" className={`p-3 rounded-2xl transition-all relative ${activeTab === 'Bookmarks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/50' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}><Bookmark className="w-5 h-5" /></button>
             {user.role === 'ADMIN' && (
-                <button onClick={() => setActiveTab('Moderation')} aria-label="Moderation queue" className={`mt-auto p-3 rounded-2xl transition-all relative ${activeTab === 'Moderation' ? 'bg-red-600 text-white shadow-lg shadow-red-500/20 ring-2 ring-red-400/50' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <button onClick={() => setActiveTab('Moderation')} aria-label="Moderation queue" className={`mt-auto p-3 rounded-2xl transition-all relative ${activeTab === 'Moderation' ? 'bg-red-600 text-white shadow-lg shadow-red-500/20 ring-2 ring-red-400/50' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                     <Shield className="w-5 h-5" />
                     {flaggedMessages.length > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">{flaggedMessages.length}</span>
@@ -422,18 +422,18 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
                     <div className="space-y-2">
                         {resourceRooms.map(room => (
-                            <div key={room.id} role="button" tabIndex={0} onClick={() => setSelectedResourceId(room.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedResourceId(room.id); } }} aria-label={`Open resource channel: ${room.title}`} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer flex justify-between items-center focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded ${unreadChannels?.has(`res_${room.id}`) ? 'border-indigo-500/40' : 'border-white/5'}`}>
+                            <div key={room.id} role="button" tabIndex={0} onClick={() => setSelectedResourceId(room.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedResourceId(room.id); } }} aria-label={`Open resource channel: ${room.title}`} className={`group p-4 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border rounded-2xl transition-all cursor-pointer flex justify-between items-center focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded ${unreadChannels?.has(`res_${room.id}`) ? 'border-indigo-500/40' : 'border-[var(--border)]'}`}>
                                 <div className="flex items-center gap-3 overflow-hidden">
                                     <div className="relative p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition shadow-inner">
                                         <Hash className="w-5 h-5" />
                                         {unreadChannels?.has(`res_${room.id}`) && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="font-bold text-gray-200 text-sm truncate group-hover:text-white transition">{room.title}</h4>
-                                        <span className="text-[10px] text-gray-500 uppercase tracking-widest">{room.unit}</span>
+                                        <h4 className="font-bold text-[var(--text-secondary)] text-sm truncate group-hover:text-[var(--text-primary)] transition">{room.title}</h4>
+                                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">{room.unit}</span>
                                     </div>
                                 </div>
-                                <button onClick={(e) => { e.stopPropagation(); onOpenResource?.(room.id); onClose(); }} className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition"><ExternalLink className="w-4 h-4" /></button>
+                                <button onClick={(e) => { e.stopPropagation(); onOpenResource?.(room.id); onClose(); }} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] rounded-lg transition"><ExternalLink className="w-4 h-4" /></button>
                             </div>
                         ))}
                     </div>
@@ -444,21 +444,21 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                 <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
                     <div className="space-y-2">
                         {myGroups.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                            <div className="flex flex-col items-center justify-center h-48 text-[var(--text-muted)]">
                                 <Users className="w-10 h-10 mb-3 opacity-30" />
                                 <p className="text-sm">No groups yet</p>
-                                <p className="text-[10px] text-gray-600 mt-1">Your teacher will assign you to a group.</p>
+                                <p className="text-[10px] text-[var(--text-muted)] mt-1">Your teacher will assign you to a group.</p>
                             </div>
                         ) : myGroups.map(group => (
-                            <div key={group.id} role="button" tabIndex={0} onClick={() => setSelectedGroupId(group.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedGroupId(group.id); } }} aria-label={`Open group chat: ${group.name}`} className={`group p-4 bg-white/5 hover:bg-white/10 border rounded-2xl transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded ${unreadChannels?.has(`group_${group.id}`) ? 'border-cyan-500/40' : 'border-white/5'}`}>
+                            <div key={group.id} role="button" tabIndex={0} onClick={() => setSelectedGroupId(group.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedGroupId(group.id); } }} aria-label={`Open group chat: ${group.name}`} className={`group p-4 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border rounded-2xl transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded ${unreadChannels?.has(`group_${group.id}`) ? 'border-cyan-500/40' : 'border-[var(--border)]'}`}>
                                 <div className="flex items-center gap-3">
                                     <div className="relative p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition shadow-inner">
                                         <Users className="w-5 h-5" />
                                         {unreadChannels?.has(`group_${group.id}`) && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="font-bold text-gray-200 text-sm truncate group-hover:text-white transition">{group.name}</h4>
-                                        <span className="text-[10px] text-gray-500">{group.members.length} member{group.members.length !== 1 ? 's' : ''} · {group.classType}</span>
+                                        <h4 className="font-bold text-[var(--text-secondary)] text-sm truncate group-hover:text-[var(--text-primary)] transition">{group.name}</h4>
+                                        <span className="text-[10px] text-[var(--text-muted)]">{group.members.length} member{group.members.length !== 1 ? 's' : ''} · {group.classType}</span>
                                     </div>
                                 </div>
                             </div>
@@ -472,10 +472,10 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                     <div className="flex items-center gap-2 mb-4">
                         <AlertTriangle className="w-4 h-4 text-red-400" />
                         <span className="text-sm font-bold text-red-400 uppercase tracking-widest">Flagged Messages</span>
-                        <span className="ml-auto text-xs text-gray-500">{flaggedMessages.length} item{flaggedMessages.length !== 1 ? 's' : ''}</span>
+                        <span className="ml-auto text-xs text-[var(--text-muted)]">{flaggedMessages.length} item{flaggedMessages.length !== 1 ? 's' : ''}</span>
                     </div>
                     {flaggedMessages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                        <div className="flex flex-col items-center justify-center h-48 text-[var(--text-muted)]">
                             <Shield className="w-10 h-10 mb-3 opacity-30" />
                             <p className="text-sm">Queue clear — no flagged messages</p>
                         </div>
@@ -484,12 +484,12 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                             {flaggedMessages.map(msg => (
                                 <div key={msg.id} className="p-3 bg-red-900/20 border border-red-500/30 rounded-2xl">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-gray-300">{msg.senderName}</span>
-                                        <span className="text-[10px] text-gray-500">{new Date(msg.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="text-xs font-bold text-[var(--text-secondary)]">{msg.senderName}</span>
+                                        <span className="text-[10px] text-[var(--text-muted)]">{new Date(msg.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
-                                    <p className="text-sm text-gray-200 mb-1">{DOMPurify.sanitize(msg.content, { ALLOWED_TAGS: [] })}</p>
+                                    <p className="text-sm text-[var(--text-secondary)] mb-1">{DOMPurify.sanitize(msg.content, { ALLOWED_TAGS: [] })}</p>
                                     {msg.systemNote && <p className="text-[10px] text-red-400 mb-2 italic">{msg.systemNote}</p>}
-                                    <div className="text-[10px] text-gray-500 mb-3">{
+                                    <div className="text-[10px] text-[var(--text-muted)] mb-3">{
                                         msg.channelId?.startsWith('group_')
                                             ? `Group: ${allGroups.find(g => g.id === msg.channelId!.replace('group_', ''))?.name || msg.channelId.replace('group_', '')}`
                                             : msg.channelId?.replace('class_', '').replace('res_', 'Resource: ').replace(/_/g, ' ') || 'unknown channel'
@@ -507,7 +507,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                             </button>
                                             {muteMenuTarget?.id === `flag-${msg.id}` && (
                                                 <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
-                                                    <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
+                                                    <div className="text-[9px] text-[var(--text-muted)] px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
                                                     {MUTE_DURATIONS.map(d => (
                                                         <button key={d.minutes} onClick={() => handleMuteUser(d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
                                                     ))}
@@ -529,18 +529,18 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                         {isLoading && displayMessages.length === 0 && (
                             <div className="px-4 pt-6 space-y-4" role="status" aria-label="Loading">
                                 {/* Skeleton message bubbles — alternating left/right */}
-                                <div className="flex items-start"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tl-sm h-10 w-48" /></div>
-                                <div className="flex justify-end"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tr-sm h-10 w-56" /></div>
-                                <div className="flex items-start"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tl-sm h-10 w-36" /></div>
-                                <div className="flex justify-end"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tr-sm h-10 w-44" /></div>
-                                <div className="flex items-start"><div className="animate-pulse bg-white/10 rounded-2xl rounded-tl-sm h-10 w-52" /></div>
+                                <div className="flex items-start"><div className="animate-pulse bg-[var(--surface-glass-heavy)] rounded-2xl rounded-tl-sm h-10 w-48" /></div>
+                                <div className="flex justify-end"><div className="animate-pulse bg-[var(--surface-glass-heavy)] rounded-2xl rounded-tr-sm h-10 w-56" /></div>
+                                <div className="flex items-start"><div className="animate-pulse bg-[var(--surface-glass-heavy)] rounded-2xl rounded-tl-sm h-10 w-36" /></div>
+                                <div className="flex justify-end"><div className="animate-pulse bg-[var(--surface-glass-heavy)] rounded-2xl rounded-tr-sm h-10 w-44" /></div>
+                                <div className="flex items-start"><div className="animate-pulse bg-[var(--surface-glass-heavy)] rounded-2xl rounded-tl-sm h-10 w-52" /></div>
                             </div>
                         )}
                         {!isLoading && displayMessages.length === 0 && (
-                            <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                            <div className="flex flex-col items-center justify-center h-48 text-[var(--text-muted)]">
                                 <MessageSquare className="w-10 h-10 mb-3 opacity-30" />
                                 <p className="text-sm">{activeTab === 'Bookmarks' ? 'No bookmarked messages' : 'No messages yet'}</p>
-                                <p className="text-xs text-gray-600 mt-1">{activeTab === 'Bookmarks' ? 'Bookmark messages to find them here.' : 'Be the first to send a message!'}</p>
+                                <p className="text-xs text-[var(--text-muted)] mt-1">{activeTab === 'Bookmarks' ? 'Bookmark messages to find them here.' : 'Be the first to send a message!'}</p>
                             </div>
                         )}
                         <div style={{ height: `${msgVirtualizer.getTotalSize()}px`, position: 'relative', paddingTop: 32 }}>
@@ -563,27 +563,27 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                     >
                                         {!isContinuation && (
                                             <div className="flex items-center gap-2 mb-1 px-1">
-                                                <span className={`text-xs font-bold ${isMe ? 'text-indigo-400' : 'text-gray-300'}`}>{msg.senderName}</span>
-                                                <span className="text-[10px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                                <span className={`text-xs font-bold ${isMe ? 'text-indigo-400' : 'text-[var(--text-secondary)]'}`}>{msg.senderName}</span>
+                                                <span className="text-[10px] text-[var(--text-muted)]">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                                 {msg.isGlobalPinned && <Pin className="w-3 h-3 text-yellow-500 fill-current" />}
                                             </div>
                                         )}
 
                                         <div className="relative max-w-[85%]">
                                             {/* Action Toolbar */}
-                                            <div className={`flex items-center bg-black/80 backdrop-blur rounded-full px-2 py-1 gap-1 border border-white/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all absolute -top-10 ${isMe ? 'right-0' : 'left-0'} z-30`}>
-                                                <button onClick={() => setShowMessageEmojiPickerId(msg.id)} className="p-2 hover:bg-white/10 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Add reaction"><Smile className="w-4 h-4 text-yellow-400" /></button>
-                                                <button onClick={() => handleTogglePin(msg.id)} className={`p-2 hover:bg-white/10 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center ${msg.pinnedBy?.includes(user.id) ? 'text-purple-400' : 'text-gray-400'}`} aria-label="Bookmark message"><Bookmark className="w-4 h-4" /></button>
+                                            <div className={`flex items-center bg-black/80 backdrop-blur rounded-full px-2 py-1 gap-1 border border-[var(--border)] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all absolute -top-10 ${isMe ? 'right-0' : 'left-0'} z-30`}>
+                                                <button onClick={() => setShowMessageEmojiPickerId(msg.id)} className="p-2 hover:bg-[var(--surface-glass-heavy)] rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Add reaction"><Smile className="w-4 h-4 text-yellow-400" /></button>
+                                                <button onClick={() => handleTogglePin(msg.id)} className={`p-2 hover:bg-[var(--surface-glass-heavy)] rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center ${msg.pinnedBy?.includes(user.id) ? 'text-purple-400' : 'text-[var(--text-tertiary)]'}`} aria-label="Bookmark message"><Bookmark className="w-4 h-4" /></button>
                                                 {user.role === 'ADMIN' && (
                                                     <>
-                                                        <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-2 hover:bg-white/10 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-gray-400'}`} aria-label="Pin for everyone"><Pin className="w-4 h-4" /></button>
-                                                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Delete message"><Trash2 className="w-4 h-4" /></button>
+                                                        <button onClick={() => handleToggleGlobalPin(msg.id, !!msg.isGlobalPinned)} className={`p-2 hover:bg-[var(--surface-glass-heavy)] rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center ${msg.isGlobalPinned ? 'text-yellow-400' : 'text-[var(--text-tertiary)]'}`} aria-label="Pin for everyone"><Pin className="w-4 h-4" /></button>
+                                                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 hover:bg-red-500/20 text-[var(--text-tertiary)] hover:text-red-400 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Delete message"><Trash2 className="w-4 h-4" /></button>
                                                         {msg.senderId !== user.id && (
                                                             <div className="relative">
-                                                                <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-2 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Mute user"><MicOff className="w-4 h-4" /></button>
+                                                                <button onClick={() => setMuteMenuTarget(muteMenuTarget?.id === msg.id ? null : { id: msg.id, senderId: msg.senderId, senderName: msg.senderName })} className="p-2 hover:bg-orange-500/20 text-[var(--text-tertiary)] hover:text-orange-400 rounded-full transition min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Mute user"><MicOff className="w-4 h-4" /></button>
                                                                 {muteMenuTarget?.id === msg.id && (
                                                                     <div ref={muteMenuRef} className="absolute bottom-full mb-1 right-0 bg-black/95 border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap">
-                                                                        <div className="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
+                                                                        <div className="text-[9px] text-[var(--text-muted)] px-2 py-1 font-bold uppercase">Mute {msg.senderName}</div>
                                                                         {MUTE_DURATIONS.map(d => (
                                                                             <button key={d.minutes} onClick={() => handleMuteUser(d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
                                                                         ))}
@@ -597,9 +597,9 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
 
                                             {/* Quick Emoji Picker Submenu */}
                                             {showMessageEmojiPickerId === msg.id && (
-                                                <div ref={msgEmojiPickerRef} className={`absolute z-40 bottom-full mb-2 bg-black/95 border border-white/20 rounded-xl p-1 shadow-2xl flex gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-0'}`}>
+                                                <div ref={msgEmojiPickerRef} className={`absolute z-40 bottom-full mb-2 bg-black/95 border border-[var(--border-strong)] rounded-xl p-1 shadow-2xl flex gap-1 animate-in zoom-in-95 ${isMe ? 'right-0' : 'left-0'}`}>
                                                     {QUICK_REACTIONS.map(({ emoji, label }) => (
-                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="p-2 hover:bg-white/10 rounded-lg transition text-sm min-w-[36px] min-h-[36px]" aria-label={`React with ${label}`}>{emoji}</button>
+                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="p-2 hover:bg-[var(--surface-glass-heavy)] rounded-lg transition text-sm min-w-[36px] min-h-[36px]" aria-label={`React with ${label}`}>{emoji}</button>
                                                     ))}
                                                 </div>
                                             )}
@@ -607,7 +607,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                             <div className={`px-4 py-2.5 text-sm leading-relaxed shadow-lg backdrop-blur-sm border ${
                                                 isMe
                                                     ? 'bg-indigo-600/80 text-white rounded-2xl rounded-tr-sm border-indigo-500/30'
-                                                    : `bg-white/10 text-gray-100 rounded-2xl rounded-tl-sm border-white/5 ${msg.isFlagged ? 'border-red-500/50 bg-red-900/20' : ''}`
+                                                    : `bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm border-[var(--border)] ${msg.isFlagged ? 'border-red-500/50 bg-red-900/20' : ''}`
                                             } ${msg.isGlobalPinned ? 'ring-1 ring-yellow-500/50 bg-yellow-900/10' : ''}`}>
                                                 {DOMPurify.sanitize(msg.content, { ALLOWED_TAGS: [] })}
                                             </div>
@@ -616,7 +616,7 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                                                 {msg.reactions && Object.entries(msg.reactions).map(([emoji, users]) => {
                                                     const userList = users as string[];
                                                     return userList.length > 0 && (
-                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`text-xs px-1.5 py-0.5 rounded-full border transition ${userList.includes(user.id) ? 'bg-indigo-500/30 border-indigo-500/50 text-white' : 'bg-black/30 border-white/5 text-gray-300 hover:bg-white/10'}`}>
+                                                        <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`text-xs px-1.5 py-0.5 rounded-full border transition ${userList.includes(user.id) ? 'bg-indigo-500/30 border-indigo-500/50 text-white' : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}>
                                                             {emoji} {userList.length}
                                                         </button>
                                                     );
@@ -630,20 +630,20 @@ const Communications: React.FC<CommunicationsProps> = ({ user, isOpen, onClose, 
                     </div>
 
                     {/* INPUT AREA */}
-                    <div className="p-4 bg-black/20 backdrop-blur-md border-t border-white/5">
+                    <div className="p-4 bg-[var(--panel-bg)] backdrop-blur-md border-t border-[var(--border)]">
                         {sendError && (
                             <p className="text-red-400 text-xs mb-2 px-1" role="alert">{sendError}</p>
                         )}
                         <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
                             {showEmojiPicker && (
-                                <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-4 bg-[#1a1b1e] border border-white/10 rounded-2xl p-3 shadow-2xl grid grid-cols-6 gap-2 w-64 animate-in slide-in-from-bottom-2 z-50">
-                                    {EMOJI_GRID.map(({ emoji, label }) => <button key={emoji} type="button" onClick={() => setInputText(prev => prev + emoji)} className="p-2 hover:bg-white/10 rounded-lg text-xl transition" aria-label={`Insert ${label} emoji`}>{emoji}</button>)}
+                                <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-4 bg-[#1a1b1e] border border-[var(--border)] rounded-2xl p-3 shadow-2xl grid grid-cols-6 gap-2 w-64 animate-in slide-in-from-bottom-2 z-50">
+                                    {EMOJI_GRID.map(({ emoji, label }) => <button key={emoji} type="button" onClick={() => setInputText(prev => prev + emoji)} className="p-2 hover:bg-[var(--surface-glass-heavy)] rounded-lg text-xl transition" aria-label={`Insert ${label} emoji`}>{emoji}</button>)}
                                 </div>
                             )}
-                            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-3 text-gray-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition" aria-label="Open emoji picker"><Smile className="w-5 h-5" /></button>
+                            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-3 text-[var(--text-tertiary)] hover:text-yellow-400 hover:bg-[var(--surface-glass)] rounded-xl transition" aria-label="Open emoji picker"><Smile className="w-5 h-5" /></button>
                             <div className="flex-1 relative">
-                                <input type="text" value={inputText} onChange={e => setInputText(e.target.value.slice(0, 2000))} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? mutePlaceholder : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} maxLength={2000} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition disabled:opacity-70 disabled:text-gray-300" />
-                                {inputText.length > 1800 && <span className={`absolute right-2 top-1 text-[10px] ${inputText.length > 1950 ? 'text-red-400' : 'text-gray-500'}`}>{inputText.length}/2000</span>}
+                                <input type="text" value={inputText} onChange={e => setInputText(e.target.value.slice(0, 2000))} placeholder={!isOnline ? "Offline — reconnect to send" : isMuted ? mutePlaceholder : "Type message..."} disabled={!activeChannelId || isMuted || !isOnline} maxLength={2000} className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500/50 focus:bg-[var(--surface-glass-heavy)] transition disabled:opacity-70 disabled:text-[var(--text-secondary)]" />
+                                {inputText.length > 1800 && <span className={`absolute right-2 top-1 text-[10px] ${inputText.length > 1950 ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>{inputText.length}/2000</span>}
                             </div>
                             <button type="submit" disabled={!activeChannelId || isMuted || !inputText.trim() || !isOnline} className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message"><Send className="w-5 h-5" /></button>
                         </form>

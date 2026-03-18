@@ -284,7 +284,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
       {/* First-time annotation warning dialog */}
       {showWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+          <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/20 rounded-lg">
                 <Info className="w-5 h-5 text-purple-400" />
@@ -359,7 +359,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
 
       {/* Annotation toolbar */}
       {isActive && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-[#1a1b26]/95 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-[var(--surface-overlay)] backdrop-blur-md px-4 py-2 rounded-xl border border-[var(--border)] shadow-2xl">
           {/* Pen */}
           <button
             onClick={() => setTool('pen')}
@@ -391,7 +391,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
               <div className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
             </button>
             {showColorPicker && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex gap-1.5 bg-[#1a1b26] border border-white/10 rounded-lg p-2 shadow-lg">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex gap-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg p-2 shadow-lg">
                 {PEN_COLORS.map(c => (
                   <button
                     key={c}
@@ -414,7 +414,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
               <Minus className="w-4 h-4" />
             </button>
             {showWidthPicker && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex gap-2 bg-[#1a1b26] border border-white/10 rounded-lg p-2 shadow-lg">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex gap-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg p-2 shadow-lg">
                 {PEN_WIDTHS.map(w => (
                   <button
                     key={w}

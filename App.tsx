@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, Outlet } from 'react-router-dom';
 import { User, UserRole, Submission, DefaultClassTypes, Assignment, isValidUser } from './types';
 import { dataService, clearDeniedCollections } from './services/dataService';
@@ -16,6 +16,7 @@ import ErrorBoundary, { FeatureErrorBoundary } from './components/ErrorBoundary'
 import { reportError } from './lib/errorReporting';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
+import { ThemeProvider } from './lib/ThemeContext';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import StreakDisplay from './components/StreakDisplay';
@@ -76,14 +77,14 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f0720] p-6">
-      <div className="max-w-md w-full bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl text-center shadow-2xl relative z-10">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--surface-base)] p-6">
+      <div className="max-w-md w-full bg-[var(--surface-glass)] backdrop-blur-xl border border-[var(--border)] p-10 rounded-3xl text-center shadow-2xl relative z-10">
         <ShieldAlert className="w-16 h-16 text-amber-500 mx-auto mb-6" />
-        <h1 className="text-3xl font-bold text-white mb-4">Access Pending</h1>
-        <p className="text-gray-300 mb-6">Hi {userName}! Your account is not yet enrolled in a class.</p>
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Access Pending</h1>
+        <p className="text-[var(--text-secondary)] mb-6">Hi {userName}! Your account is not yet enrolled in a class.</p>
 
-        <div className="bg-black/20 border border-white/10 rounded-2xl p-6 mb-6 text-left">
-          <label className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+        <div className="bg-[var(--surface-sunken)] border border-[var(--border)] rounded-2xl p-6 mb-6 text-left">
+          <label className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] mb-3">
             <KeyRound className="w-4 h-4 text-emerald-400" />
             Have an enrollment code?
           </label>
@@ -94,7 +95,7 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
               onChange={e => handleCodeChange(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
               placeholder="XXXX-XXXX"
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-center text-lg font-mono font-bold text-emerald-400 tracking-[0.2em] placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 transition"
+              className="flex-1 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-4 py-3 text-center text-lg font-mono font-bold text-emerald-400 tracking-[0.2em] placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50 transition"
               maxLength={9}
               disabled={isRedeeming || !!success}
             />
@@ -115,10 +116,10 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
           )}
         </div>
 
-        <p className="text-xs text-gray-500 mb-6">
+        <p className="text-xs text-[var(--text-muted)] mb-6">
           No code? Ask {TEACHER_DISPLAY_NAME} for one, or wait for manual authorization.
         </p>
-        <button onClick={onLogout} className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-red-500/20 transition-all font-bold">Sign Out</button>
+        <button onClick={onLogout} className="w-full py-4 bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl hover:bg-red-500/20 transition-all font-bold">Sign Out</button>
       </div>
     </div>
   );
@@ -319,7 +320,7 @@ const App: React.FC = () => {
             createdAt: new Date().toISOString(),
             lastLoginAt: new Date().toISOString(),
             gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
-            settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false }
+            settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' }
           });
         } else {
           const existingData = userSnap.data();
@@ -347,7 +348,13 @@ const App: React.FC = () => {
 
   const handleLogout = async () => { await signOut(auth); setUser(null); };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#0f0720] text-white font-mono">ESTABLISHING CONNECTION...</div>;
+  const handleThemeSettingsUpdate = useCallback(async (newSettings: Partial<import('./types').UserSettings>) => {
+    if (!user) return;
+    const current = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' as const };
+    await dataService.updateUserSettings(user.id, { ...current, ...newSettings });
+  }, [user?.id, user?.settings]);
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[var(--surface-base)] text-[var(--text-primary)] font-mono">ESTABLISHING CONNECTION...</div>;
   if (!user) return <GoogleLogin />;
 
   if (!user.isWhitelisted && user.role !== UserRole.ADMIN) {
@@ -361,6 +368,7 @@ const App: React.FC = () => {
     <ErrorBoundary>
     <ConfirmProvider>
     <ToastProvider>
+    <ThemeProvider userSettings={user.settings} onUpdateSettings={handleThemeSettingsUpdate}>
     <AppDataProvider user={user}>
     <ChatProvider user={user}>
     <>
@@ -486,6 +494,7 @@ const App: React.FC = () => {
     </>
     </ChatProvider>
     </AppDataProvider>
+    </ThemeProvider>
     </ToastProvider>
     </ConfirmProvider>
     </ErrorBoundary>

@@ -242,7 +242,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--backdrop)] backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
@@ -251,19 +251,19 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="bg-gray-800 rounded-xl border border-white/10 shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto focus:outline-none"
+        className="bg-[var(--surface-raised)] rounded-xl border border-[var(--border)] shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto focus:outline-none"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
             <Link className="w-5 h-5 text-green-400" aria-hidden="true" />
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">
               {isLinked ? 'Google Classroom Link' : 'Link to Google Classroom'}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-white/10"
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition p-1 rounded-lg hover:bg-[var(--surface-glass-heavy)]"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -279,11 +279,11 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
                   Currently Linked
                 </div>
-                <div className="text-sm text-gray-300">
-                  <div><span className="text-gray-500">Course:</span> {assignment.classroomLink.courseName}</div>
-                  <div><span className="text-gray-500">Assignment:</span> {assignment.classroomLink.courseWorkTitle}</div>
-                  <div><span className="text-gray-500">Max Points:</span> {assignment.classroomLink.maxPoints}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                <div className="text-sm text-[var(--text-secondary)]">
+                  <div><span className="text-[var(--text-muted)]">Course:</span> {assignment.classroomLink.courseName}</div>
+                  <div><span className="text-[var(--text-muted)]">Assignment:</span> {assignment.classroomLink.courseWorkTitle}</div>
+                  <div><span className="text-[var(--text-muted)]">Max Points:</span> {assignment.classroomLink.maxPoints}</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">
                     Linked {new Date(assignment.classroomLink.linkedAt).toLocaleDateString()} by {assignment.classroomLink.linkedBy}
                   </div>
                 </div>
@@ -303,7 +303,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
           {!isLinked && !accessToken && (
             <div className="space-y-3">
               {authLoading && (
-                <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+                <div className="flex items-center justify-center gap-2 py-8 text-[var(--text-tertiary)]">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span className="text-sm">Authorizing with Google Classroom...</span>
                 </div>
@@ -330,11 +330,11 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
             <div className="space-y-4">
               {/* Step 1: Select course */}
               <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-wider font-bold mb-1.5">
+                <label className="block text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-bold mb-1.5">
                   1. Select Course
                 </label>
                 {coursesLoading ? (
-                  <div className="flex items-center gap-2 py-3 text-gray-400 text-sm">
+                  <div className="flex items-center gap-2 py-3 text-[var(--text-tertiary)] text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading courses...
                   </div>
@@ -351,7 +351,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                     <select
                       value={selectedCourseId || ''}
                       onChange={e => handleCourseSelect(e.target.value)}
-                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-green-500/50 cursor-pointer"
+                      className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] appearance-none focus:outline-none focus:border-green-500/50 cursor-pointer"
                       aria-label="Select a Google Classroom course"
                     >
                       {courses.length > 1 && (
@@ -363,7 +363,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
                   </div>
                 )}
               </div>
@@ -371,11 +371,11 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
               {/* Step 2: Select or create coursework */}
               {selectedCourseId && (
                 <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-wider font-bold mb-1.5">
+                  <label className="block text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-bold mb-1.5">
                     2. Select or Create Assignment
                   </label>
                   {courseWorkLoading ? (
-                    <div className="flex items-center gap-2 py-3 text-gray-400 text-sm">
+                    <div className="flex items-center gap-2 py-3 text-[var(--text-tertiary)] text-sm">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Loading Classroom assignments...
                     </div>
@@ -390,7 +390,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                           <select
                             value={selectedCourseWorkId || ''}
                             onChange={e => setSelectedCourseWorkId(e.target.value)}
-                            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-green-500/50 cursor-pointer"
+                            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] appearance-none focus:outline-none focus:border-green-500/50 cursor-pointer"
                             aria-label="Select existing Classroom assignment"
                           >
                             <option value="" disabled>Choose an assignment...</option>
@@ -400,7 +400,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                               </option>
                             ))}
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
                         </div>
                       )}
 
@@ -413,36 +413,36 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                           Create new assignment in Classroom
                         </button>
                       ) : (
-                        <div className="bg-black/20 border border-white/5 rounded-lg p-4 space-y-3">
+                        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-4 space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-green-400 font-medium">New Assignment</span>
                             {courseWork.length > 0 && (
                               <button
                                 onClick={() => { setCreateNew(false); }}
-                                className="text-xs text-gray-500 hover:text-gray-300 transition"
+                                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
                               >
                                 Use existing instead
                               </button>
                             )}
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 mb-1">Title</label>
+                            <label className="block text-xs text-[var(--text-muted)] mb-1">Title</label>
                             <input
                               type="text"
                               value={newTitle}
                               onChange={e => setNewTitle(e.target.value)}
-                              className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50"
+                              className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-green-500/50"
                               aria-label="New assignment title"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 mb-1">Max Points</label>
+                            <label className="block text-xs text-[var(--text-muted)] mb-1">Max Points</label>
                             <input
                               type="number"
                               min={1}
                               value={newMaxPoints}
                               onChange={e => setNewMaxPoints(Math.max(1, Number(e.target.value) || 1))}
-                              className="w-24 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50"
+                              className="w-24 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-green-500/50"
                               aria-label="Max points"
                             />
                           </div>

@@ -102,9 +102,9 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
 // Shared input helpers
 // ──────────────────────────────────────────────
 
-const inputClass = "w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition";
-const textareaClass = "w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-purple-500/50 transition";
-const labelClass = "text-[10px] text-gray-500 uppercase font-bold tracking-widest block mb-1";
+const inputClass = "w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition";
+const textareaClass = "w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none focus:outline-none focus:border-purple-500/50 transition";
+const labelClass = "text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-1";
 
 // ──────────────────────────────────────────────
 // Original block editors
@@ -153,7 +153,7 @@ const MCBlockEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
               type="button"
               onClick={() => onUpdate({ ...block, correctAnswer: idx })}
               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${
-                block.correctAnswer === idx ? 'border-green-500 bg-green-500' : 'border-gray-600 hover:border-gray-400'
+                block.correctAnswer === idx ? 'border-green-500 bg-green-500' : 'border-[var(--text-muted)] hover:border-[var(--text-tertiary)]'
               }`}
             >
               {block.correctAnswer === idx && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -173,7 +173,7 @@ const MCBlockEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
           </div>
         ))}
         {options.length < 6 && (
-          <button type="button" onClick={addOption} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+          <button type="button" onClick={addOption} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
             <Plus className="w-3 h-3" /> Add Option
           </button>
         )}
@@ -223,7 +223,7 @@ const ShortAnswerEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBloc
             )}
           </div>
         ))}
-        <button type="button" onClick={addAnswer} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={addAnswer} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Accepted Answer
         </button>
       </div>
@@ -271,7 +271,7 @@ const ChecklistEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
         <label className={labelClass}>Items</label>
         {items.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded border-2 border-gray-600 shrink-0" />
+            <div className="w-5 h-5 rounded border-2 border-[var(--text-muted)] shrink-0" />
             <input type="text" value={item} onChange={e => updateItem(idx, e.target.value)} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
             {items.length > 1 && (
               <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition">
@@ -280,7 +280,7 @@ const ChecklistEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
             )}
           </div>
         ))}
-        <button type="button" onClick={addItem} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={addItem} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Item
         </button>
       </div>
@@ -303,7 +303,7 @@ const InfoBoxEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
                 ? v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-400'
                   : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
                   : 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                : 'bg-black/30 border-white/10 text-gray-400 hover:text-white'
+                : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
             }`}
           >
             {v}
@@ -374,18 +374,18 @@ const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => 
   return (
     <div className="space-y-3">
       {/* Mode toggle */}
-      <div className="flex gap-1 p-0.5 bg-white/5 rounded-lg w-fit">
+      <div className="flex gap-1 p-0.5 bg-[var(--surface-glass)] rounded-lg w-fit">
         <button
           type="button"
           onClick={() => setMode('url')}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'url' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}
+          className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'url' ? 'bg-[var(--surface-glass-heavy)] text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
         >
           <Link className="w-3 h-3 inline mr-1" />URL
         </button>
         <button
           type="button"
           onClick={() => setMode('upload')}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'upload' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}
+          className={`px-3 py-1 text-xs rounded-md transition-colors ${mode === 'upload' ? 'bg-[var(--surface-glass-heavy)] text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
         >
           <Upload className="w-3 h-3 inline mr-1" />Upload
         </button>
@@ -411,18 +411,18 @@ const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className={`w-full border-2 border-dashed border-white/20 rounded-xl p-6 text-center transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'hover:border-white/40 hover:bg-white/5 cursor-pointer'}`}
+            className={`w-full border-2 border-dashed border-[var(--border-strong)] rounded-xl p-6 text-center transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'hover:border-[var(--border-strong)] hover:bg-[var(--surface-glass)] cursor-pointer'}`}
           >
             {uploading ? (
-              <div className="flex flex-col items-center gap-2 text-gray-400">
-                <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              <div className="flex flex-col items-center gap-2 text-[var(--text-tertiary)]">
+                <div className="w-6 h-6 border-2 border-[var(--text-tertiary)] border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm">Uploading...</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2 text-gray-400">
+              <div className="flex flex-col items-center gap-2 text-[var(--text-tertiary)]">
                 <Upload className="w-6 h-6" />
                 <span className="text-sm">Click to select an image</span>
-                <span className="text-xs text-gray-500">PNG, JPG, GIF, WebP — max 10 MB</span>
+                <span className="text-xs text-[var(--text-muted)]">PNG, JPG, GIF, WebP — max 10 MB</span>
               </div>
             )}
           </button>
@@ -431,8 +431,8 @@ const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => 
       )}
 
       {block.url && (
-        <div className="rounded-xl overflow-hidden border border-white/10 max-h-48">
-          <img src={block.url} alt={block.alt || ''} className="w-full h-full object-contain bg-black/30" onError={e => (e.currentTarget.style.display = 'none')} />
+        <div className="rounded-xl overflow-hidden border border-[var(--border)] max-h-48">
+          <img src={block.url} alt={block.alt || ''} className="w-full h-full object-contain bg-[var(--panel-bg)]" onError={e => (e.currentTarget.style.display = 'none')} />
         </div>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -463,7 +463,7 @@ const VideoEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => 
         <input type="text" value={block.url || ''} onChange={e => onUpdate({ ...block, url: e.target.value })} placeholder="https://youtube.com/watch?v=..." className={inputClass} />
       </div>
       {embedUrl && (
-        <div className="rounded-xl overflow-hidden border border-white/10 aspect-video">
+        <div className="rounded-xl overflow-hidden border border-[var(--border)] aspect-video">
           <iframe src={embedUrl} className="w-full h-full" allowFullScreen title="Video preview" />
         </div>
       )}
@@ -505,7 +505,7 @@ const ObjectivesEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock
             )}
           </div>
         ))}
-        <button type="button" onClick={addItem} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={addItem} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Objective
         </button>
       </div>
@@ -535,7 +535,7 @@ const ExternalLinkEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlo
         <input type="text" value={block.buttonLabel || ''} onChange={e => onUpdate({ ...block, buttonLabel: e.target.value })} placeholder="Open" className={inputClass} />
       </div>
       <div className="flex items-end pb-1">
-        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] cursor-pointer">
           <input type="checkbox" checked={block.openInNewTab ?? true} onChange={e => onUpdate({ ...block, openInNewTab: e.target.checked })} className="rounded" />
           Open in new tab
         </label>
@@ -581,7 +581,7 @@ const VocabListEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
       <label className={labelClass}>Terms & Definitions</label>
       {terms.map((t, idx) => (
         <div key={idx} className="flex items-start gap-2">
-          <span className="text-xs font-mono text-gray-600 mt-2.5 w-5 text-right shrink-0">{idx + 1}.</span>
+          <span className="text-xs font-mono text-[var(--text-muted)] mt-2.5 w-5 text-right shrink-0">{idx + 1}.</span>
           <div className="flex-1 grid grid-cols-2 gap-2">
             <input type="text" value={t.term} onChange={e => updateTerm(idx, 'term', e.target.value)} placeholder="Term" className={inputClass} />
             <input type="text" value={t.definition} onChange={e => updateTerm(idx, 'definition', e.target.value)} placeholder="Definition" className={inputClass} />
@@ -591,7 +591,7 @@ const VocabListEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
           )}
         </div>
       ))}
-      <button type="button" onClick={addTerm} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+      <button type="button" onClick={addTerm} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
         <Plus className="w-3 h-3" /> Add Term
       </button>
     </div>
@@ -664,7 +664,7 @@ const SortingEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
             )}
           </div>
         ))}
-        <button type="button" onClick={addItem} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={addItem} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Item
         </button>
       </div>
@@ -706,7 +706,7 @@ const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
           <div key={idx} className="flex items-center gap-2">
             <input type="text" value={col.label} onChange={e => updateColumn(idx, 'label', e.target.value)} placeholder={`Column label`} className={`flex-1 ${inputClass}`} />
             <input type="text" value={col.unit || ''} onChange={e => updateColumn(idx, 'unit', e.target.value)} placeholder="Unit" className={`w-24 ${inputClass}`} />
-            <label className="flex items-center gap-1 text-[10px] text-gray-400 whitespace-nowrap">
+            <label className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] whitespace-nowrap">
               <input type="checkbox" checked={col.editable !== false} onChange={e => updateColumn(idx, 'editable', e.target.checked)} />
               Editable
             </label>
@@ -715,7 +715,7 @@ const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
             )}
           </div>
         ))}
-        <button type="button" onClick={addColumn} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={addColumn} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Column
         </button>
       </div>
@@ -733,7 +733,7 @@ const BarChartEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) 
       <label className={labelClass}>Chart Height (px)</label>
       <input type="number" value={block.height || 450} onChange={e => onUpdate({ ...block, height: parseInt(e.target.value) || 450 })} className={inputClass} />
     </div>
-    <p className="text-xs text-gray-500 italic">Students use the full bar chart tool with draggable bars, physics labels, and Initial/Δ/Final sections.</p>
+    <p className="text-xs text-[var(--text-muted)] italic">Students use the full bar chart tool with draggable bars, physics labels, and Initial/Δ/Final sections.</p>
   </div>
 );
 
@@ -757,14 +757,14 @@ const RankingEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
         <label className={labelClass}>Items (in correct order — students will see them shuffled)</label>
         {items.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <span className="text-xs font-mono text-gray-600 w-5 text-right shrink-0">{idx + 1}.</span>
+            <span className="text-xs font-mono text-[var(--text-muted)] w-5 text-right shrink-0">{idx + 1}.</span>
             <input type="text" value={item} onChange={e => updateItem(idx, e.target.value)} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
             {items.length > 1 && (
               <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
             )}
           </div>
         ))}
-        <button type="button" onClick={addItem} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={addItem} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Item
         </button>
       </div>
@@ -809,7 +809,7 @@ const LinkedEditor: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onU
             )}
           </div>
         ))}
-        <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: [...(block.acceptedAnswers || ['']), ''] })} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+        <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: [...(block.acceptedAnswers || ['']), ''] })} className="text-xs text-[var(--accent-text)] hover:text-[var(--accent-text)] flex items-center gap-1 transition">
           <Plus className="w-3 h-3" /> Add Answer
         </button>
       </div>
@@ -833,7 +833,7 @@ const BlockEditor: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onUp
     case 'IMAGE': return <ImageEditor block={block} onUpdate={onUpdate} />;
     case 'VIDEO': return <VideoEditor block={block} onUpdate={onUpdate} />;
     case 'OBJECTIVES': return <ObjectivesEditor block={block} onUpdate={onUpdate} />;
-    case 'DIVIDER': return <div className="text-xs text-gray-500 italic">Horizontal divider — no configuration needed.</div>;
+    case 'DIVIDER': return <div className="text-xs text-[var(--text-muted)] italic">Horizontal divider — no configuration needed.</div>;
     case 'EXTERNAL_LINK': return <ExternalLinkEditor block={block} onUpdate={onUpdate} />;
     case 'EMBED': return <EmbedEditor block={block} onUpdate={onUpdate} />;
     case 'VOCAB_LIST': return <VocabListEditor block={block} onUpdate={onUpdate} />;
@@ -896,18 +896,18 @@ const JsonImportModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--backdrop)] backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-bold text-white">Import Blocks from JSON</h3>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Import Blocks from JSON</h3>
           </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white transition"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-6 flex-1 overflow-auto space-y-4">
-          <div className="text-xs text-gray-400 space-y-1">
+          <div className="text-xs text-[var(--text-tertiary)] space-y-1">
             <p>Paste a JSON array of blocks, or an object with <code className="text-purple-300">{"{ blocks: [...] }"}</code>.</p>
             <p>Each block needs at minimum a <code className="text-purple-300">type</code> field. IDs will be auto-generated if missing.</p>
           </div>
@@ -917,14 +917,14 @@ const JsonImportModal: React.FC<{
               <button
                 type="button"
                 onClick={() => setMode('append')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${mode === 'append' ? 'bg-purple-600/20 border-purple-500/30 text-purple-300' : 'bg-black/30 border-white/10 text-gray-400'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${mode === 'append' ? 'bg-purple-600/20 border-purple-500/30 text-purple-300' : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)]'}`}
               >
                 Append to existing
               </button>
               <button
                 type="button"
                 onClick={() => setMode('replace')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${mode === 'replace' ? 'bg-red-600/20 border-red-500/30 text-red-300' : 'bg-black/30 border-white/10 text-gray-400'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${mode === 'replace' ? 'bg-red-600/20 border-red-500/30 text-red-300' : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)]'}`}
               >
                 Replace all
               </button>
@@ -944,8 +944,8 @@ const JsonImportModal: React.FC<{
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Cancel</button>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--border)]">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition">Cancel</button>
           <button
             type="button"
             onClick={handleImport}
@@ -1090,14 +1090,14 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
     <div className="space-y-4" ref={containerRef}>
       {/* Header with preview toggle + JSON import */}
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
           Lesson Blocks ({blocks.length})
         </label>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowJsonImport(true)}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border bg-white/5 border-white/10 text-gray-400 hover:text-white transition"
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"
           >
             <Upload className="w-3.5 h-3.5" />
             Paste JSON
@@ -1109,7 +1109,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
                 previewMode
                   ? 'bg-purple-600/20 border-purple-500/30 text-purple-300'
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                  : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {previewMode ? <Edit2 className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -1121,7 +1121,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
 
       {/* Preview mode */}
       {previewMode && blocks.length > 0 ? (
-        <div className="bg-[#0f0720]/80 border border-white/10 rounded-2xl p-6">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-6">
           <LessonBlocks blocks={blocks} />
         </div>
       ) : (
@@ -1135,27 +1135,27 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
                 return (
                   <DraggableBlock key={block.id} id={block.id} isFocused={isFocused}>
                     <div
-                      className={`bg-white/5 border rounded-2xl overflow-hidden transition ${isFocused ? 'border-purple-500/40 ring-1 ring-purple-500/20' : 'border-white/10 hover:border-white/20'} ${activeDragId === block.id ? 'opacity-40' : ''}`}
+                      className={`bg-[var(--surface-glass)] border rounded-2xl overflow-hidden transition ${isFocused ? 'border-purple-500/40 ring-1 ring-purple-500/20' : 'border-[var(--border)] hover:border-[var(--border-strong)]'} ${activeDragId === block.id ? 'opacity-40' : ''}`}
                       onClick={() => setFocusedIndex(index)}
                     >
                       {/* Block header */}
-                      <div className="flex items-center gap-2 px-4 py-2 bg-black/20 border-b border-white/5">
-                        <GripVertical className="w-4 h-4 text-gray-600 shrink-0 cursor-grab active:cursor-grabbing" />
-                        <span className="text-gray-500">{typeInfo?.icon}</span>
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--panel-bg)] border-b border-[var(--border)]">
+                        <GripVertical className="w-4 h-4 text-[var(--text-muted)] shrink-0 cursor-grab active:cursor-grabbing" />
+                        <span className="text-[var(--text-muted)]">{typeInfo?.icon}</span>
+                        <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider flex-1">
                           {typeInfo?.label || block.type} #{index + 1}
                         </span>
                         <div className="flex items-center gap-0.5">
-                          <button type="button" onClick={(e) => { e.stopPropagation(); moveBlock(index, -1); }} disabled={index === 0} className="p-1 text-gray-500 hover:text-white disabled:opacity-20 transition" title="Move up (Ctrl+↑)">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); moveBlock(index, -1); }} disabled={index === 0} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition" title="Move up (Ctrl+↑)">
                             <ChevronUp className="w-3.5 h-3.5" />
                           </button>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); moveBlock(index, 1); }} disabled={index === blocks.length - 1} className="p-1 text-gray-500 hover:text-white disabled:opacity-20 transition" title="Move down (Ctrl+↓)">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); moveBlock(index, 1); }} disabled={index === blocks.length - 1} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition" title="Move down (Ctrl+↓)">
                             <ChevronDown className="w-3.5 h-3.5" />
                           </button>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); duplicateBlock(index); }} className="p-1 text-gray-500 hover:text-blue-400 transition" title="Duplicate">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); duplicateBlock(index); }} className="p-1 text-[var(--text-muted)] hover:text-blue-400 transition" title="Duplicate">
                             <Copy className="w-3.5 h-3.5" />
                           </button>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); removeBlock(index); }} className="p-1 text-gray-500 hover:text-red-400 transition" title="Delete block (Del)">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); removeBlock(index); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition" title="Delete block (Del)">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -1175,7 +1175,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
                 <div className="bg-purple-900/60 border border-purple-500/40 rounded-2xl p-3 shadow-2xl backdrop-blur-md">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 text-purple-400" />
-                    <span className="text-gray-400">{draggedTypeInfo.icon}</span>
+                    <span className="text-[var(--text-tertiary)]">{draggedTypeInfo.icon}</span>
                     <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">{draggedTypeInfo.label}</span>
                   </div>
                 </div>
@@ -1188,30 +1188,30 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
             <button
               type="button"
               onClick={() => setShowAddMenu(!showAddMenu)}
-              className="w-full py-3 border-2 border-dashed border-white/10 rounded-2xl text-gray-500 hover:text-purple-400 hover:border-purple-500/30 transition flex items-center justify-center gap-2 text-sm font-bold"
+              className="w-full py-3 border-2 border-dashed border-[var(--border)] rounded-2xl text-[var(--text-muted)] hover:text-purple-400 hover:border-purple-500/30 transition flex items-center justify-center gap-2 text-sm font-bold"
             >
               <Plus className="w-4 h-4" /> Add Block
             </button>
 
             {showAddMenu && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1b26] border border-white/10 rounded-2xl shadow-2xl p-3 z-50 max-h-[60vh] overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl p-3 z-50 max-h-[60vh] overflow-y-auto">
                 {categories.map(cat => {
                   const catTypes = BLOCK_TYPES.filter(bt => bt.category === cat);
                   return (
                     <div key={cat} className="mb-3 last:mb-0">
-                      <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
+                      <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
                       <div className="grid grid-cols-2 gap-1">
                         {catTypes.map(bt => (
                           <button
                             key={bt.type}
                             type="button"
                             onClick={() => addBlock(bt.type)}
-                            className="flex items-center gap-3 p-3 rounded-xl text-left hover:bg-white/5 transition group"
+                            className="flex items-center gap-3 p-3 rounded-xl text-left hover:bg-[var(--surface-glass)] transition group"
                           >
-                            <span className="text-gray-500 group-hover:text-purple-400 transition">{bt.icon}</span>
+                            <span className="text-[var(--text-muted)] group-hover:text-purple-400 transition">{bt.icon}</span>
                             <div>
-                              <div className="text-xs font-bold text-gray-300">{bt.label}</div>
-                              <div className="text-[10px] text-gray-600">{bt.description}</div>
+                              <div className="text-xs font-bold text-[var(--text-secondary)]">{bt.label}</div>
+                              <div className="text-[10px] text-[var(--text-muted)]">{bt.description}</div>
                             </div>
                           </button>
                         ))}

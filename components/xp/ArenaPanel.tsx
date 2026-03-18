@@ -38,7 +38,7 @@ function getRatingBracket(rating: number) {
 const HpBar: React.FC<{ current: number; max: number; color: 'blue' | 'red' }> = ({ current, max, color }) => {
   const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
   return (
-    <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+    <div className="w-full h-2 bg-[var(--panel-bg)] rounded-full overflow-hidden border border-[var(--border)]">
       <div
         className={`h-full rounded-full transition-all duration-500 ${color === 'blue' ? 'bg-blue-500' : 'bg-red-500'}`}
         style={{ width: `${pct}%` }}
@@ -52,34 +52,34 @@ const RoundRow: React.FC<{ round: ArenaRound; p1Name: string; p2Name: string; p1
   round, p1Name, p2Name, p1MaxHp, p2MaxHp, visible
 }) => (
   <div className={`transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-    <div className="flex items-center gap-2 text-xs py-1.5 border-b border-white/5">
-      <span className="text-gray-600 w-14 flex-shrink-0 font-mono">Rnd {round.roundNumber}</span>
+    <div className="flex items-center gap-2 text-xs py-1.5 border-b border-[var(--border)]">
+      <span className="text-[var(--text-muted)] w-14 flex-shrink-0 font-mono">Rnd {round.roundNumber}</span>
       {/* P1 action */}
       <span className="text-blue-400 flex-1 truncate">
         {p1Name}: <span className={`font-bold ${round.p1Action.isCrit ? 'text-yellow-400' : 'text-blue-300'}`}>
           {round.p1Action.damage} dmg{round.p1Action.isCrit ? ' CRIT' : ''}
         </span>
-        {round.p1Action.blocked > 0 && <span className="text-gray-500"> (-{round.p1Action.blocked} blocked)</span>}
+        {round.p1Action.blocked > 0 && <span className="text-[var(--text-muted)]"> (-{round.p1Action.blocked} blocked)</span>}
       </span>
       {/* P2 HP after */}
       <div className="w-16 flex-shrink-0">
         <HpBar current={round.p2HpAfter} max={p2MaxHp} color="red" />
-        <span className="text-[9px] text-gray-600">{round.p2HpAfter}/{p2MaxHp}</span>
+        <span className="text-[9px] text-[var(--text-muted)]">{round.p2HpAfter}/{p2MaxHp}</span>
       </div>
     </div>
-    <div className="flex items-center gap-2 text-xs py-1.5 border-b border-white/5">
-      <span className="text-gray-600 w-14 flex-shrink-0" />
+    <div className="flex items-center gap-2 text-xs py-1.5 border-b border-[var(--border)]">
+      <span className="text-[var(--text-muted)] w-14 flex-shrink-0" />
       {/* P2 action */}
       <span className="text-red-400 flex-1 truncate">
         {p2Name}: <span className={`font-bold ${round.p2Action.isCrit ? 'text-yellow-400' : 'text-red-300'}`}>
           {round.p2Action.damage} dmg{round.p2Action.isCrit ? ' CRIT' : ''}
         </span>
-        {round.p2Action.blocked > 0 && <span className="text-gray-500"> (-{round.p2Action.blocked} blocked)</span>}
+        {round.p2Action.blocked > 0 && <span className="text-[var(--text-muted)]"> (-{round.p2Action.blocked} blocked)</span>}
       </span>
       {/* P1 HP after */}
       <div className="w-16 flex-shrink-0">
         <HpBar current={round.p1HpAfter} max={p1MaxHp} color="blue" />
-        <span className="text-[9px] text-gray-600">{round.p1HpAfter}/{p1MaxHp}</span>
+        <span className="text-[9px] text-[var(--text-muted)]">{round.p1HpAfter}/{p1MaxHp}</span>
       </div>
     </div>
   </div>
@@ -94,7 +94,7 @@ const MatchHistoryRow: React.FC<{ match: ArenaMatch; userId: string }> = ({ matc
   const ratingChange = tied ? 0 : won ? 15 : -10;
 
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-white/5 text-xs">
+    <div className="flex items-center gap-3 py-2 border-b border-[var(--border)] text-xs">
       <span className={`w-10 text-center font-black text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0 ${
         tied ? 'text-gray-400 bg-gray-500/10 border-gray-500/20' :
         won  ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
@@ -102,8 +102,8 @@ const MatchHistoryRow: React.FC<{ match: ArenaMatch; userId: string }> = ({ matc
       }`}>
         {tied ? 'TIE' : won ? 'WIN' : 'LOSS'}
       </span>
-      <span className="text-gray-300 flex-1 truncate">vs {opponent?.name || 'Unknown'}</span>
-      <span className={`font-bold flex-shrink-0 ${ratingChange > 0 ? 'text-emerald-400' : ratingChange < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+      <span className="text-[var(--text-secondary)] flex-1 truncate">vs {opponent?.name || 'Unknown'}</span>
+      <span className={`font-bold flex-shrink-0 ${ratingChange > 0 ? 'text-emerald-400' : ratingChange < 0 ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
         {ratingChange > 0 ? `+${ratingChange}` : ratingChange}
       </span>
     </div>
@@ -309,23 +309,23 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
     return (
       <div className="space-y-4">
         {/* Header stats */}
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-3">
+        <div className="rounded-2xl border border-[var(--border-strong)] bg-[var(--panel-bg)] p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Swords className="w-5 h-5 text-amber-400" />
-            <h3 className="text-sm font-black text-white uppercase tracking-widest">PvP Arena</h3>
+            <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-widest">PvP Arena</h3>
           </div>
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
               <div className="text-xl font-black text-amber-400">{arenaProfile.rating}</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-widest">Rating</div>
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Rating</div>
             </div>
             <div>
               <div className="text-xl font-black text-emerald-400">{arenaProfile.wins}</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-widest">Wins</div>
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Wins</div>
             </div>
             <div>
               <div className="text-xl font-black text-red-400">{arenaProfile.losses}</div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-widest">Losses</div>
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Losses</div>
             </div>
           </div>
           {/* Rating bracket card */}
@@ -343,7 +343,7 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
                   <span className={`text-sm font-black ${bracket.color} flex items-center gap-1.5`}>
                     <BracketIcon className="w-4 h-4" />{bracket.name}
                   </span>
-                  <span className="text-xs font-mono text-gray-400">{arenaProfile.rating} SR</span>
+                  <span className="text-xs font-mono text-[var(--text-tertiary)]">{arenaProfile.rating} SR</span>
                 </div>
                 {nextBracket && (
                   <div className="mt-2">
@@ -353,7 +353,7 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
                         style={{ width: `${progressInBracket}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
+                    <div className="flex justify-between text-[9px] text-[var(--text-muted)] mt-0.5">
                       <span>{bracket.min}</span>
                       <span>{nextBracket.min} ({nextBracket.name})</span>
                     </div>
@@ -364,16 +364,16 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
           })()}
 
           {/* Daily matches remaining */}
-          <div className="flex items-center justify-between text-xs border-t border-white/5 pt-2">
-            <span className="text-gray-500">Daily matches</span>
-            <span className={`font-bold ${matchesRemaining === 0 ? 'text-red-400' : 'text-gray-300'}`}>
+          <div className="flex items-center justify-between text-xs border-t border-[var(--border)] pt-2">
+            <span className="text-[var(--text-muted)]">Daily matches</span>
+            <span className={`font-bold ${matchesRemaining === 0 ? 'text-red-400' : 'text-[var(--text-secondary)]'}`}>
               {dailyMatchesUsed}/{dailyLimit} used
             </span>
           </div>
           {/* Gear score bracket info */}
-          <div className="text-[10px] text-gray-600 text-center">
-            Gear Score: <span className="text-gray-400 font-bold">{gearScore}</span>
-            {' '}&mdash; Bracket: <span className="text-gray-400">{Math.max(0, gearScore - 100)} &ndash; {gearScore + 100}</span>
+          <div className="text-[10px] text-[var(--text-muted)] text-center">
+            Gear Score: <span className="text-[var(--text-tertiary)] font-bold">{gearScore}</span>
+            {' '}&mdash; Bracket: <span className="text-[var(--text-tertiary)]">{Math.max(0, gearScore - 100)} &ndash; {gearScore + 100}</span>
           </div>
         </div>
 
@@ -383,7 +383,7 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
           disabled={limitReached || loading}
           className={`w-full py-3 rounded-xl font-black text-sm transition ${
             limitReached
-              ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+              ? 'bg-[var(--surface-raised)] text-[var(--text-muted)] cursor-not-allowed'
               : loading
               ? 'bg-amber-700/50 text-amber-300 cursor-wait'
               : 'bg-amber-600 hover:bg-amber-500 text-white'
@@ -399,17 +399,17 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
         </button>
 
         {/* Match history */}
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Recent Matches</h4>
+        <div className="rounded-2xl border border-[var(--border-strong)] bg-[var(--panel-bg)] p-4">
+          <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">Recent Matches</h4>
           {history.length > 0 ? (
             history.map((m) => (
               <MatchHistoryRow key={m.id} match={m} userId={userId} />
             ))
           ) : (
             <div className="text-center py-12">
-              <Swords className="w-10 h-10 mx-auto mb-3 text-gray-600 opacity-40" />
-              <p className="text-sm text-gray-400">No arena matches yet</p>
-              <p className="text-xs text-gray-500 mt-1">Challenge a classmate to climb the ranks!</p>
+              <Swords className="w-10 h-10 mx-auto mb-3 text-[var(--text-muted)] opacity-40" />
+              <p className="text-sm text-[var(--text-tertiary)]">No arena matches yet</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Challenge a classmate to climb the ranks!</p>
             </div>
           )}
         </div>
@@ -426,15 +426,15 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 text-center space-y-4">
           <Loader2 className="w-10 h-10 text-amber-400 animate-spin mx-auto" />
           <div>
-            <p className="text-white font-bold">Searching for opponent...</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-[var(--text-primary)] font-bold">Searching for opponent...</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
               Gear Score bracket: {Math.max(0, gearScore - 100)} &ndash; {gearScore + 100}
             </p>
           </div>
-          <div className="text-xs text-gray-600">Bracket expands to &plusmn;150 after 30s</div>
+          <div className="text-xs text-[var(--text-muted)]">Bracket expands to &plusmn;150 after 30s</div>
           <button
             onClick={handleCancelQueue}
-            className="flex items-center gap-2 mx-auto text-xs text-gray-400 hover:text-red-400 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-red-500/20"
+            className="flex items-center gap-2 mx-auto text-xs text-[var(--text-tertiary)] hover:text-red-400 transition px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-red-500/20"
           >
             <X className="w-3.5 h-3.5" />Cancel
           </button>
@@ -496,32 +496,32 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
         </div>
 
         {/* Combatant row */}
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+        <div className="rounded-2xl border border-[var(--border-strong)] bg-[var(--panel-bg)] p-4">
           <div className="flex items-center gap-3">
             {/* My card */}
             <div className="flex-1 text-center space-y-1">
               <div className="text-xs font-bold text-blue-300 truncate">{me?.name || 'You'}</div>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${ROLE_COLORS[me?.role || ''] || 'text-gray-500 bg-white/5 border-white/10'}`}>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${ROLE_COLORS[me?.role || ''] || 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}>
                 {me?.role || '—'}
               </span>
-              <div className="text-[10px] text-gray-500">GS {me?.gearScore || 0}</div>
+              <div className="text-[10px] text-[var(--text-muted)]">GS {me?.gearScore || 0}</div>
             </div>
-            <div className="text-xs font-black text-gray-600">VS</div>
+            <div className="text-xs font-black text-[var(--text-muted)]">VS</div>
             {/* Opponent card */}
             <div className="flex-1 text-center space-y-1">
               <div className="text-xs font-bold text-red-300 truncate">{opponent?.name || 'Opponent'}</div>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${ROLE_COLORS[opponent?.role || ''] || 'text-gray-500 bg-white/5 border-white/10'}`}>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${ROLE_COLORS[opponent?.role || ''] || 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}>
                 {opponent?.role || '—'}
               </span>
-              <div className="text-[10px] text-gray-500">GS {opponent?.gearScore || 0}</div>
+              <div className="text-[10px] text-[var(--text-muted)]">GS {opponent?.gearScore || 0}</div>
             </div>
           </div>
         </div>
 
         {/* Round replay */}
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2">
+        <div className="rounded-2xl border border-[var(--border-strong)] bg-[var(--panel-bg)] p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Combat Log</h4>
+            <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Combat Log</h4>
             {!replaying && visibleRounds < rounds.length && (
               <button
                 onClick={handlePlayReplay}
@@ -534,11 +534,11 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
               <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
             )}
             {!replaying && visibleRounds === rounds.length && rounds.length > 0 && (
-              <span className="text-[10px] text-gray-600">Complete</span>
+              <span className="text-[10px] text-[var(--text-muted)]">Complete</span>
             )}
           </div>
           {rounds.length === 0 ? (
-            <p className="text-xs text-gray-600 text-center py-4">No combat rounds recorded.</p>
+            <p className="text-xs text-[var(--text-muted)] text-center py-4">No combat rounds recorded.</p>
           ) : (
             <div className="space-y-0 max-h-64 overflow-y-auto pr-1">
               {rounds.map((round, i) => (
@@ -558,7 +558,7 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
 
         <button
           onClick={handleBackToLobby}
-          className="w-full py-2.5 rounded-xl text-sm font-bold bg-black/40 border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition"
+          className="w-full py-2.5 rounded-xl text-sm font-bold bg-[var(--panel-bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition"
         >
           Back to Arena Lobby
         </button>

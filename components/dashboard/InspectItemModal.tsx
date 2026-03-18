@@ -34,7 +34,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
 
   return (
     <Modal isOpen={!!inspectItem} onClose={onClose} title="Nano-Fabricator Terminal" maxWidth="max-w-xl">
-      <div className="space-y-6 text-gray-100">
+      <div className="space-y-6 text-[var(--text-primary)]">
         {/* Item Header */}
         <div className={`p-5 rounded-xl border ${inspectItem.runewordActive ? 'border-amber-500/40 runeword-active' : colors.border} ${colors.bg} ${colors.shimmer} relative overflow-hidden`}>
           <div className="flex items-start gap-4 relative z-10">
@@ -43,7 +43,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
             </div>
             <div className="flex-1">
               <div className={`text-lg font-bold ${inspectItem.runewordActive ? 'text-amber-300' : colors.text}`}>{inspectItem.name}</div>
-              <div className="text-xs text-gray-300 font-mono uppercase">{inspectItem.rarity} {inspectItem.slot}</div>
+              <div className="text-xs text-[var(--text-secondary)] font-mono uppercase">{inspectItem.rarity} {inspectItem.slot}</div>
               {inspectItem.runewordActive && (
                 <div className="text-[10px] font-bold text-amber-400 mt-0.5">{runeword?.name}</div>
               )}
@@ -52,8 +52,8 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
 
           <div className="mt-4 space-y-1">
             {Object.entries(inspectItem.stats).map(([stat, val]) => (
-              <div key={stat} className="flex justify-between text-sm text-gray-200 border-b border-white/5 pb-1">
-                <span className="uppercase text-xs text-gray-400 font-bold">{stat}</span>
+              <div key={stat} className="flex justify-between text-sm text-[var(--text-primary)] border-b border-[var(--border)] pb-1">
+                <span className="uppercase text-xs text-[var(--text-tertiary)] font-bold">{stat}</span>
                 <span className="font-mono font-bold">+{val}</span>
               </div>
             ))}
@@ -61,7 +61,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
 
           <div className="mt-4 flex gap-2 flex-wrap">
             {inspectItem.affixes.map((aff, i) => (
-              <span key={i} className="text-[9px] bg-black/40 px-2 py-1 rounded border border-white/10 text-gray-400">
+              <span key={i} className="text-[9px] bg-[var(--panel-bg)] px-2 py-1 rounded border border-[var(--border)] text-[var(--text-tertiary)]">
                 {aff.name} (T{aff.tier})
               </span>
             ))}
@@ -75,7 +75,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           const emptySlots = sockets - gems.length;
 
           return (
-            <div className={`p-4 rounded-xl border ${runeword ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/30 to-black/50' : 'border-white/10 bg-black/20'}`}>
+            <div className={`p-4 rounded-xl border ${runeword ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/30 to-[var(--panel-bg)]' : 'border-[var(--border)] bg-[var(--panel-bg)]'}`}>
               {/* Runeword banner */}
               {runeword && (
                 <div className="mb-3 text-center">
@@ -100,7 +100,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               )}
 
               {/* Socket visualization */}
-              <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2">
+              <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-2">
                 <Hexagon className="w-3 h-3" /> Gem Sockets ({gems.length}/{sockets})
               </div>
               <div className="flex gap-2">
@@ -114,7 +114,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                       >
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
                       </div>
-                      <span className="text-[9px] text-gray-400">{gem.name}</span>
+                      <span className="text-[9px] text-[var(--text-tertiary)]">{gem.name}</span>
                       <button
                         onClick={() => onUnsocketGem(i)}
                         disabled={isProcessing || currency < unsocketFlux}
@@ -127,27 +127,27 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                   );
                 })}
                 {Array.from({ length: emptySlots }).map((_, i) => (
-                  <div key={`empty-${i}`} className="w-8 h-8 rounded-lg border-2 border-dashed border-white/20 bg-black/30 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-white/10" />
+                  <div key={`empty-${i}`} className="w-8 h-8 rounded-lg border-2 border-dashed border-[var(--border-strong)] bg-[var(--panel-bg)] flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-[var(--surface-glass-heavy)]" />
                   </div>
                 ))}
               </div>
 
               {/* Gem socketing UI */}
               {emptySlots > 0 && gemsInventory.length > 0 && (
-                <div className="mt-3 border-t border-white/10 pt-3">
-                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Socket a Gem ({FLUX_COSTS.ENCHANT} Flux)</div>
+                <div className="mt-3 border-t border-[var(--border)] pt-3">
+                  <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mb-2">Socket a Gem ({FLUX_COSTS.ENCHANT} Flux)</div>
                   <div className="flex flex-wrap gap-2">
                     {gemsInventory.map((gem: ItemGem & { id?: string }) => (
                       <button
                         key={(gem as any).id}
                         onClick={() => onSocketGem((gem as any).id)}
                         disabled={isProcessing || currency < FLUX_COSTS.ENCHANT}
-                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-white/10 bg-black/30 hover:bg-white/10 transition text-xs disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--panel-bg)] hover:bg-[var(--surface-glass-heavy)] transition text-xs disabled:opacity-50"
                       >
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
-                        <span className="text-gray-300">{gem.name}</span>
-                        <span className="text-gray-600 font-mono">+{gem.value}</span>
+                        <span className="text-[var(--text-secondary)]">{gem.name}</span>
+                        <span className="text-[var(--text-muted)] font-mono">+{gem.value}</span>
                       </button>
                     ))}
                   </div>
@@ -179,7 +179,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           <button
             onClick={onAddSocket}
             disabled={isProcessing || currency < FLUX_COSTS.SOCKET}
-            className="w-full py-2 bg-black/20 hover:bg-purple-900/20 border border-white/10 hover:border-purple-500/50 rounded-xl text-sm text-gray-300 hover:text-purple-300 font-bold transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2 bg-[var(--panel-bg)] hover:bg-purple-900/20 border border-[var(--border)] hover:border-purple-500/50 rounded-xl text-sm text-[var(--text-secondary)] hover:text-purple-300 font-bold transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Hexagon className="w-4 h-4" />
             Add Socket ({FLUX_COSTS.SOCKET} Flux) — {inspectItem.sockets || 0}/3
@@ -198,18 +198,18 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
             const allStats = new Set([...Object.keys(inspectItem.stats), ...Object.keys(currentlyEquipped.stats)]);
 
             return (
-              <div className="col-span-2 bg-black/30 border border-white/10 rounded-xl p-3 mb-1">
-                <div className="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-2">Replacing Currently Equipped</div>
+              <div className="col-span-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 mb-1">
+                <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Replacing Currently Equipped</div>
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-xs font-bold ${ceColors.text}`}>{currentlyEquipped.name}</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{currentlyEquipped.rarity}</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono">{currentlyEquipped.rarity}</span>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {Array.from(allStats).map(stat => {
                     const newVal = (inspectItem.stats as Record<string, number>)[stat] || 0;
                     const oldVal = (currentlyEquipped.stats as Record<string, number>)[stat] || 0;
                     const diff = newVal - oldVal;
-                    if (diff === 0) return <span key={stat} className="text-[10px] text-gray-600 font-mono">{stat.slice(0, 3).toUpperCase()}: ±0</span>;
+                    if (diff === 0) return <span key={stat} className="text-[10px] text-[var(--text-muted)] font-mono">{stat.slice(0, 3).toUpperCase()}: ±0</span>;
                     return (
                       <span key={stat} className={`text-[10px] font-mono font-bold ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {stat.slice(0, 3).toUpperCase()}: {diff > 0 ? '▲' : '▼'}{Math.abs(diff)}
@@ -242,47 +242,47 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
             );
           })()}
 
-          <div className="col-span-2 border-t border-white/10 my-2"></div>
-          <div className="col-span-2 text-center text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Fabrication Protocols</div>
+          <div className="col-span-2 border-t border-[var(--border)] my-2"></div>
+          <div className="col-span-2 text-center text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest mb-1">Fabrication Protocols</div>
 
           {/* Crafting Options */}
           <button
             onClick={() => onCraft('RECALIBRATE')}
             disabled={isProcessing || currency < FLUX_COSTS.RECALIBRATE}
-            className="bg-black/20 hover:bg-purple-900/20 border border-white/10 hover:border-purple-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
+            className="bg-[var(--panel-bg)] hover:bg-purple-900/20 border border-[var(--border)] hover:border-purple-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
           >
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-bold text-gray-300 group-hover:text-purple-300">Recalibrate</span>
+              <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-purple-300">Recalibrate</span>
               <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.RECALIBRATE} Flux</span>
             </div>
-            <p className="text-[9px] text-gray-500">Reroll numeric values within current tier.</p>
+            <p className="text-[9px] text-[var(--text-muted)]">Reroll numeric values within current tier.</p>
           </button>
 
           <button
             onClick={() => onCraft('REFORGE')}
             disabled={isProcessing || currency < FLUX_COSTS.REFORGE || inspectItem.rarity === 'UNIQUE'}
-            className="bg-black/20 hover:bg-red-900/20 border border-white/10 hover:border-red-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
+            className="bg-[var(--panel-bg)] hover:bg-red-900/20 border border-[var(--border)] hover:border-red-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
           >
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-bold text-gray-300 group-hover:text-red-300">Reforge</span>
+              <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-red-300">Reforge</span>
               <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.REFORGE} Flux</span>
             </div>
-            <p className="text-[9px] text-gray-500">Reroll all affixes. Keeps Rarity.</p>
+            <p className="text-[9px] text-[var(--text-muted)]">Reroll all affixes. Keeps Rarity.</p>
           </button>
 
           <button
             onClick={() => onCraft('OPTIMIZE')}
             disabled={isProcessing || currency < FLUX_COSTS.OPTIMIZE}
-            className="col-span-2 bg-black/20 hover:bg-yellow-900/20 border border-white/10 hover:border-yellow-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
+            className="col-span-2 bg-[var(--panel-bg)] hover:bg-yellow-900/20 border border-[var(--border)] hover:border-yellow-500/50 p-3 rounded-xl text-left transition group disabled:opacity-50"
           >
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-bold text-gray-300 group-hover:text-yellow-300">Optimize Tier</span>
+              <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-yellow-300">Optimize Tier</span>
               <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.OPTIMIZE} Flux</span>
             </div>
-            <p className="text-[9px] text-gray-500">Upgrade affix tiers to match current operative level.</p>
+            <p className="text-[9px] text-[var(--text-muted)]">Upgrade affix tiers to match current operative level.</p>
           </button>
 
-          <div className="col-span-2 border-t border-white/10 my-2"></div>
+          <div className="col-span-2 border-t border-[var(--border)] my-2"></div>
 
           <button
             onClick={onDisenchant}

@@ -6,6 +6,7 @@ import {
 import { User, Quest, XPEvent, BossQuizEvent } from '../../types';
 import { BarChart3, TrendingUp, Users, Trophy, Zap, Target } from 'lucide-react';
 import { getRankDetails } from '../../lib/gamification';
+import { useChartTheme } from '../../lib/useChartTheme';
 
 interface GamificationAnalyticsTabProps {
   students: User[];
@@ -17,14 +18,16 @@ interface GamificationAnalyticsTabProps {
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
 const StatCard = ({ label, value, sub, icon }: { label: string; value: string | number; sub?: string; icon: React.ReactNode }) => (
-  <div className="bg-black/30 rounded-xl p-4 border border-white/5">
-    <div className="flex items-center gap-2 mb-2 text-gray-400">{icon}<span className="text-[10px] font-bold uppercase tracking-widest">{label}</span></div>
-    <div className="text-2xl font-black text-white">{value}</div>
-    {sub && <div className="text-[10px] text-gray-500 mt-1">{sub}</div>}
+  <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-[var(--border)]">
+    <div className="flex items-center gap-2 mb-2 text-[var(--text-tertiary)]">{icon}<span className="text-[10px] font-bold uppercase tracking-widest">{label}</span></div>
+    <div className="text-2xl font-black text-[var(--text-primary)]">{value}</div>
+    {sub && <div className="text-[10px] text-[var(--text-muted)] mt-1">{sub}</div>}
   </div>
 );
 
 const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ students, quests, events, quizBosses }) => {
+  const chartTheme = useChartTheme();
+
   // --- XP Distribution ---
   const xpDistribution = useMemo(() => {
     const brackets = [
@@ -151,28 +154,28 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* XP Distribution */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-purple-400" /> XP Distribution</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-[var(--accent-text)]" /> XP Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={xpDistribution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-              <Tooltip contentStyle={{ background: '#1a1b26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+              <XAxis dataKey="label" tick={{ fill: chartTheme.tickColor, fontSize: 10 }} />
+              <YAxis tick={{ fill: chartTheme.tickColor, fontSize: 10 }} />
+              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} />
               <Bar dataKey="count" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Level Distribution */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-cyan-400" /> Level Distribution</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-cyan-400" /> Level Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={levelDistribution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="level" tick={{ fill: '#6b7280', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-              <Tooltip contentStyle={{ background: '#1a1b26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+              <XAxis dataKey="level" tick={{ fill: chartTheme.tickColor, fontSize: 10 }} />
+              <YAxis tick={{ fill: chartTheme.tickColor, fontSize: 10 }} />
+              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} />
               <Bar dataKey="count" fill="#06b6d4" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -182,40 +185,40 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Class XP Breakdown */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4">Class XP Breakdown</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Class XP Breakdown</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={classXpData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
                 {classXpData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: '#1a1b26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }} formatter={(value: number) => value.toLocaleString()} />
+              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} formatter={(value: number) => value.toLocaleString()} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
         {/* Quest Type Distribution */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4">Quest Types</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Quest Types</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={questTypeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, value }) => `${name} (${value})`} labelLine={false}>
                 {questTypeData.map((_, i) => <Cell key={i} fill={COLORS[(i + 2) % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: '#1a1b26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }} />
+              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
         {/* Engagement Streaks */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4">Engagement Streaks</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Engagement Streaks</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={engagementData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-              <Tooltip contentStyle={{ background: '#1a1b26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+              <XAxis dataKey="label" tick={{ fill: chartTheme.tickColor, fontSize: 10 }} />
+              <YAxis tick={{ fill: chartTheme.tickColor, fontSize: 10 }} />
+              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} />
               <Bar dataKey="count" fill="#10b981" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -225,30 +228,30 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Flux Economy */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4">Flux Economy</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Flux Economy</h3>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center">
               <div className="text-xl font-black text-cyan-400">{fluxStats.total.toLocaleString()}</div>
-              <div className="text-[9px] text-gray-500 uppercase font-bold">Total in Circulation</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Total in Circulation</div>
             </div>
             <div className="text-center">
               <div className="text-xl font-black text-cyan-400">{fluxStats.avg.toLocaleString()}</div>
-              <div className="text-[9px] text-gray-500 uppercase font-bold">Avg per Student</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Avg per Student</div>
             </div>
             <div className="text-center">
               <div className="text-xl font-black text-cyan-400">{fluxStats.max.toLocaleString()}</div>
-              <div className="text-[9px] text-gray-500 uppercase font-bold">Max Holdings</div>
+              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Max Holdings</div>
             </div>
           </div>
-          <div className="text-[10px] text-gray-500">
+          <div className="text-[10px] text-[var(--text-muted)]">
             Quest completions: {questStats.totalCompletions} total ({questStats.avgCompletionsPerStudent} avg/student)
           </div>
         </div>
 
         {/* Top 5 Performers */}
-        <div className="bg-black/20 rounded-2xl border border-white/5 p-5">
-          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-400" /> Top 5 Operatives</h3>
+        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-400" /> Top 5 Operatives</h3>
           <div className="space-y-2">
             {topPerformers.map((s, idx) => {
               const xp = s.gamification?.xp || 0;
@@ -256,16 +259,16 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
               const rd = getRankDetails(lvl);
               const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-400', 'text-purple-400'];
               return (
-                <div key={s.id} className="flex items-center gap-3 p-2 rounded-xl bg-black/20 border border-white/5">
+                <div key={s.id} className="flex items-center gap-3 p-2 rounded-xl bg-[var(--panel-bg)] border border-[var(--border)]">
                   <span className={`text-sm font-black w-6 text-center ${medalColors[idx]}`}>#{idx + 1}</span>
-                  {s.avatarUrl && <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-white/10" alt={s.name} loading="lazy" />}
+                  {s.avatarUrl && <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-[var(--border-strong)]" alt={s.name} loading="lazy" />}
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white truncate">{s.name}</div>
+                    <div className="text-xs font-bold text-[var(--text-primary)] truncate">{s.name}</div>
                     <div className={`text-[9px] font-mono ${rd.tierColor.split(' ')[1]}`}>{rd.rankName}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-black text-purple-400">{xp.toLocaleString()}</div>
-                    <div className="text-[9px] text-gray-500">Lv{lvl}</div>
+                    <div className="text-sm font-black text-[var(--accent-text)]">{xp.toLocaleString()}</div>
+                    <div className="text-[9px] text-[var(--text-muted)]">Lv{lvl}</div>
                   </div>
                 </div>
               );

@@ -144,7 +144,7 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
   const progress = totalSentences > 0 ? ((currentSentence + 1) / totalSentences) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-2 bg-black/40 rounded-xl px-3 py-2 border border-white/10">
+    <div className="flex items-center gap-2 bg-[var(--panel-bg)] rounded-xl px-3 py-2 border border-[var(--border)]">
       {/* Play/Pause */}
       <button
         onClick={handlePlayPause}
@@ -154,15 +154,15 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       </button>
 
       {/* Prev/Next */}
-      <button onClick={handlePrev} disabled={currentSentence === 0} className="p-1 text-gray-500 hover:text-white disabled:opacity-30 transition">
+      <button onClick={handlePrev} disabled={currentSentence === 0} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 transition">
         <SkipBack className="w-3.5 h-3.5" />
       </button>
-      <button onClick={handleNext} disabled={currentSentence >= totalSentences - 1} className="p-1 text-gray-500 hover:text-white disabled:opacity-30 transition">
+      <button onClick={handleNext} disabled={currentSentence >= totalSentences - 1} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 transition">
         <SkipForward className="w-3.5 h-3.5" />
       </button>
 
       {/* Progress bar */}
-      <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+      <div className="flex-1 bg-[var(--surface-glass)] rounded-full h-1.5 overflow-hidden">
         <div
           className="h-1.5 rounded-full bg-purple-500 transition-all duration-300"
           style={{ width: `${progress}%` }}
@@ -170,7 +170,7 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       </div>
 
       {/* Sentence counter */}
-      <span className="text-[9px] text-gray-500 font-mono min-w-[3rem] text-center">
+      <span className="text-[9px] text-[var(--text-muted)] font-mono min-w-[3rem] text-center">
         {currentSentence + 1}/{totalSentences}
       </span>
 
@@ -178,19 +178,19 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       <div className="relative">
         <button
           onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white bg-white/5 px-2 py-1 rounded-lg border border-white/10 transition"
+          className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] bg-[var(--surface-glass)] px-2 py-1 rounded-lg border border-[var(--border)] transition"
         >
           <Gauge className="w-3 h-3" />
           {speed}x
         </button>
         {showSpeedMenu && (
-          <div className="absolute bottom-full right-0 mb-1 bg-[#1a1b26] border border-white/10 rounded-lg shadow-lg overflow-hidden z-50">
+          <div className="absolute bottom-full right-0 mb-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden z-50">
             {SPEED_OPTIONS.map(s => (
               <button
                 key={s}
                 onClick={() => handleSpeedChange(s)}
                 className={`block w-full text-left px-3 py-1.5 text-xs transition ${
-                  speed === s ? 'bg-purple-600/30 text-purple-300' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  speed === s ? 'bg-purple-600/30 text-purple-300' : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 {s}x

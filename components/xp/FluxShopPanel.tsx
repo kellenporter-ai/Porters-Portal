@@ -250,15 +250,15 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border border-[var(--border)] rounded-2xl p-6 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-black text-white tracking-tight">Flux Shop</h2>
-            <p className="text-sm text-gray-400 mt-1">Spend your Cyber-Flux on boosts, tokens, and cosmetics</p>
+            <h2 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Flux Shop</h2>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1">Spend your Cyber-Flux on boosts, tokens, and cosmetics</p>
           </div>
-          <div className="flex items-center gap-2 bg-black/30 px-4 py-2 rounded-xl border border-cyan-500/20">
+          <div className="flex items-center gap-2 bg-[var(--panel-bg)] px-4 py-2 rounded-xl border border-cyan-500/20">
             <Hexagon className="w-5 h-5 text-cyan-400" />
-            <span className="text-lg font-black text-white">{currency.toLocaleString()}</span>
+            <span className="text-lg font-black text-[var(--text-primary)]">{currency.toLocaleString()}</span>
           </div>
         </div>
 
@@ -285,10 +285,10 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
             </div>
           )}
           {nameColor && (
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+            <div className="flex items-center gap-2 bg-[var(--surface-glass)] border border-[var(--border)] px-3 py-1.5 rounded-lg">
               {/* Color swatch: paired with text so color is never the sole indicator */}
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: nameColor }} aria-hidden="true" />
-              <span className="text-xs font-bold text-gray-300">Active Name Color</span>
+              <span className="text-xs font-bold text-[var(--text-secondary)]">Active Name Color</span>
             </div>
           )}
           {/* Show all equipped cosmetics (one per slot) */}
@@ -327,7 +327,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
               shopTab === tab.key
                 ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300'
-                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                : 'bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-primary)]'
             }`}
           >
             {tab.icon}
@@ -338,15 +338,15 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
 
       {/* Agent Preview Panel */}
       {playerEquipped && (
-        <div className="bg-black/30 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-teal-400" aria-hidden="true" />
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Agent Preview</h3>
+            <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Agent Preview</h3>
             {previewCosmeticId && (
               <button
                 type="button"
                 onClick={clearPreview}
-                className="ml-auto flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400"
+                className="ml-auto flex items-center gap-1.5 text-xs font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] px-2.5 py-1 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400"
                 aria-label="Clear preview and show equipped cosmetic"
               >
                 <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
@@ -356,7 +356,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           </div>
           <div className="flex items-center gap-4">
             {/* 3D Avatar Preview */}
-            <div className="w-28 h-44 flex-shrink-0 bg-black/40 rounded-xl border border-white/10 overflow-hidden relative">
+            <div className="w-28 h-44 flex-shrink-0 bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] overflow-hidden relative">
               <Avatar3D
                 characterModelId={selectedCharacterModel}
                 appearance={playerAppearance}
@@ -365,7 +365,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
               />
             </div>
             {/* 2D Avatar fallback (smaller) */}
-            <div className="w-16 h-24 flex-shrink-0 bg-black/30 rounded-lg border border-white/5 overflow-hidden relative opacity-60"
+            <div className="w-16 h-24 flex-shrink-0 bg-[var(--panel-bg)] rounded-lg border border-white/5 overflow-hidden relative opacity-60"
                  title="Classic 2D avatar"
                  style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(playerAppearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, rgba(0,0,0,0.4) 70%)` }}>
               <OperativeAvatar
@@ -379,32 +379,32 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
               {previewCosmeticDef ? (
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-white">{previewCosmeticDef.name}</span>
+                    <span className="text-sm font-bold text-[var(--text-primary)]">{previewCosmeticDef.name}</span>
                     <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                       Preview
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{previewCosmeticDef.description}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-1">{previewCosmeticDef.description}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: previewCosmeticDef.color }} aria-hidden="true" />
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{previewCosmeticDef.visualType}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{previewCosmeticDef.visualType}</span>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <span className="text-sm font-bold text-gray-300">Equipped Cosmetics</span>
+                  <span className="text-sm font-bold text-[var(--text-secondary)]">Equipped Cosmetics</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {(['aura', 'particle', 'frame', 'trail'] as const).map(slot => {
                       const id = activeCosmetics?.[slot];
                       const def = id ? cosmeticDefMap[id] : null;
                       return def ? (
-                        <span key={slot} className="text-[10px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">
+                        <span key={slot} className="text-[10px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-1.5 py-0.5 rounded">
                           {def.name}
                         </span>
                       ) : null;
                     })}
                     {!activeCosmetics?.aura && !activeCosmetics?.particle && !activeCosmetics?.frame && !activeCosmetics?.trail && (
-                      <p className="text-xs text-gray-500">Tap the eye icon on any cosmetic to preview it.</p>
+                      <p className="text-xs text-[var(--text-muted)]">Tap the eye icon on any cosmetic to preview it.</p>
                     )}
                   </div>
                 </div>
@@ -425,7 +425,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           <div key={type} className="space-y-3">
             <div className="flex items-center gap-2 px-1">
               <span className={colors.text} aria-hidden="true">{getCategoryIcon(type)}</span>
-              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">{getCategoryLabel(type)}</h3>
+              <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">{getCategoryLabel(type)}</h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -456,10 +456,10 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-white text-sm">{item.name}</h4>
-                        <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
+                        <h4 className="font-bold text-[var(--text-primary)] text-sm">{item.name}</h4>
+                        <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{item.description}</p>
                         {item.dailyLimit > 0 && (
-                          <p className="text-xs text-gray-400 mt-1 font-mono">
+                          <p className="text-xs text-[var(--text-tertiary)] mt-1 font-mono">
                             {dailyCount}/{item.dailyLimit} today
                           </p>
                         )}
@@ -473,7 +473,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                       aria-label={atLimit ? `${item.name}: daily limit reached` : `Purchase ${item.name} for ${item.cost} Flux`}
                       className={`mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent ${
                         atLimit
-                          ? 'bg-gray-500/20 text-gray-500 cursor-not-allowed'
+                          ? 'bg-gray-500/20 text-[var(--text-muted)] cursor-not-allowed'
                           : !affordable
                           ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
                           : isPurchasing
@@ -508,9 +508,9 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
             <CuboidIcon className="w-5 h-5 text-violet-400" aria-hidden="true" />
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">3D Character Models</h3>
+            <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">3D Character Models</h3>
           </div>
-          <p className="text-xs text-gray-500 px-1">Upgrade your operative with a new 3D character model. Free starters are always available.</p>
+          <p className="text-xs text-[var(--text-muted)] px-1">Upgrade your operative with a new 3D character model. Free starters are always available.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {CHARACTER_MODELS.map(model => {
@@ -532,13 +532,13 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                   <div className="flex items-start gap-3">
                     {/* Color indicator */}
                     <div
-                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-white/10"
+                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-[var(--border)]"
                       style={{ backgroundColor: model.thumbnailColor }}
                       aria-hidden="true"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-bold text-white text-sm">{model.name}</h4>
+                        <h4 className="font-bold text-[var(--text-primary)] text-sm">{model.name}</h4>
                         {model.cost === 0 && (
                           <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                             Free
@@ -550,8 +550,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">{model.description}</p>
-                      <p className="text-[10px] text-gray-500 mt-1">{model.fileSizeKB}KB</p>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{model.description}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">{model.fileSizeKB}KB</p>
                     </div>
                   </div>
 
@@ -613,9 +613,9 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
       <div className="space-y-2">
         <div className="flex items-center gap-2 px-1">
           <span className="text-teal-400" aria-hidden="true"><User className="w-5 h-5" /></span>
-          <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Agent Cosmetics</h3>
+          <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Agent Cosmetics</h3>
         </div>
-        <p className="text-xs text-gray-500 px-1">Customize your operative with auras, particles, frames, and trails. Equip one of each type simultaneously.</p>
+        <p className="text-xs text-[var(--text-muted)] px-1">Customize your operative with auras, particles, frames, and trails. Equip one of each type simultaneously.</p>
       </div>
       )}
 
@@ -628,8 +628,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           <div key={visualType} className="space-y-3">
             <div className="flex items-center gap-2 px-1 ml-2">
               <span className={subColors.text} aria-hidden="true">{getCosmeticSubIcon(visualType)}</span>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{getCosmeticSubLabel(visualType)}</h4>
-              <span className="text-[10px] text-gray-500 font-mono ml-auto">{subColors.price} Flux each</span>
+              <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">{getCosmeticSubLabel(visualType)}</h4>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono ml-auto">{subColors.price} Flux each</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -651,7 +651,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className="flex-shrink-0 w-10 h-10 rounded-lg border border-white/10 overflow-hidden"
+                          className="flex-shrink-0 w-10 h-10 rounded-lg border border-[var(--border)] overflow-hidden"
                           aria-hidden="true"
                         >
                           {def ? (
@@ -672,12 +672,12 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-bold text-white text-sm">{item.name}</h4>
+                            <h4 className="font-bold text-[var(--text-primary)] text-sm">{item.name}</h4>
                             <span className={`text-[10px] font-bold ${subColors.text} ${subColors.bg} border ${subColors.border} px-1.5 py-0.5 rounded`}>
                               Owned
                             </span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
+                          <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{item.description}</p>
                         </div>
                         {/* Preview toggle */}
                         {playerEquipped && (
@@ -689,7 +689,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                             className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400 ${
                               previewCosmeticId === item.id
                                 ? 'bg-amber-500/20 text-amber-400'
-                                : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                                : 'bg-[var(--surface-glass)] text-[var(--text-muted)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-secondary)]'
                             }`}
                           >
                             {previewCosmeticId === item.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -753,8 +753,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-white text-sm">{item.name}</h4>
-                        <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
+                        <h4 className="font-bold text-[var(--text-primary)] text-sm">{item.name}</h4>
+                        <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{item.description}</p>
                       </div>
                       {/* Preview toggle */}
                       {playerEquipped && (
@@ -766,7 +766,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                           className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400 ${
                             previewCosmeticId === item.id
                               ? 'bg-amber-500/20 text-amber-400'
-                              : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                              : 'bg-[var(--surface-glass)] text-[var(--text-muted)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-secondary)]'
                           }`}
                         >
                           {previewCosmeticId === item.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

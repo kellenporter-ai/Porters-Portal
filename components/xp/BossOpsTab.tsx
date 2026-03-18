@@ -36,7 +36,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
           className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
             subTab === 'bosses'
               ? 'bg-amber-600 text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
           }`}
         >
           <Swords className="w-3 h-3 inline mr-1" /> Active Bosses ({quizBosses.length})
@@ -46,7 +46,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
           className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
             subTab === 'banks'
               ? 'bg-purple-600 text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
           }`}
         >
           <Database className="w-3 h-3 inline mr-1" /> Question Banks ({questionBanks.length})
@@ -56,13 +56,13 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
       {/* Bosses Sub-tab */}
       {subTab === 'bosses' && (
         <>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--text-muted)]">
             Students deal damage by answering questions correctly. Deploy quiz bosses that require
             mastery of class material to defeat.
           </p>
 
           {quizBosses.length === 0 && (
-            <div className="text-center py-14 text-gray-500">
+            <div className="text-center py-14 text-[var(--text-muted)]">
               <Brain className="w-12 h-12 mx-auto mb-3 opacity-20" />
               <p className="font-bold">No quiz bosses deployed.</p>
               <p className="text-sm mt-1">
@@ -85,7 +85,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                 className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center gap-4 transition-all mb-3 ${
                   quiz.isActive && !isExpired
                     ? 'bg-amber-600/10 border-amber-500/30'
-                    : 'bg-black/20 border-white/10 opacity-60'
+                    : 'bg-[var(--panel-bg)] border-[var(--border)] opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -93,14 +93,14 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                       quiz.isActive && !isExpired
                         ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40'
-                        : 'bg-gray-800 text-gray-400'
+                        : 'bg-[var(--surface-raised)] text-[var(--text-tertiary)]'
                     }`}
                   >
                     <Brain className="w-7 h-7" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-lg text-white truncate">{quiz.bossName}</h4>
-                    <p className="text-sm text-gray-500 truncate">{quiz.description}</p>
+                    <h4 className="font-bold text-lg text-[var(--text-primary)] truncate">{quiz.bossName}</h4>
+                    <p className="text-sm text-[var(--text-muted)] truncate">{quiz.description}</p>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">
                         {quiz.questions.length} Questions
@@ -164,7 +164,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                         </span>
                       )}
                     </div>
-                    <div className="mt-2 w-full max-w-xs h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                    <div className="mt-2 w-full max-w-xs h-2 bg-[var(--panel-bg)] rounded-full overflow-hidden border border-[var(--border)]">
                       <div
                         className={`h-full rounded-full transition-all ${
                           hpPercent > 50
@@ -209,7 +209,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                   </button>
                   <button
                     onClick={() => onDeleteQuizBoss(quiz)}
-                    className="p-2 text-gray-600 hover:text-red-400 transition"
+                    className="p-2 text-[var(--text-muted)] hover:text-red-400 transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -224,7 +224,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
       {subTab === 'banks' && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[var(--text-muted)]">
               Reusable question banks that can be imported into any boss fight.
             </p>
             <button
@@ -236,7 +236,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
           </div>
 
           {questionBanks.length === 0 && (
-            <div className="text-center py-14 text-gray-500">
+            <div className="text-center py-14 text-[var(--text-muted)]">
               <Database className="w-12 h-12 mx-auto mb-3 opacity-20" />
               <p className="font-bold">No question banks yet.</p>
               <p className="text-sm mt-1">
@@ -254,9 +254,9 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                 <Database className="w-5 h-5 text-purple-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-white text-sm truncate">{bank.name}</h4>
+                <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">{bank.name}</h4>
                 {bank.description && (
-                  <p className="text-xs text-gray-500 truncate">{bank.description}</p>
+                  <p className="text-xs text-[var(--text-muted)] truncate">{bank.description}</p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-1">
                   <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">
@@ -265,7 +265,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                   <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
                     {bank.classType}
                   </span>
-                  <span className="text-[10px] text-gray-600">
+                  <span className="text-[10px] text-[var(--text-muted)]">
                     {new Date(bank.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -280,7 +280,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                 </button>
                 <button
                   onClick={() => onDeleteBank(bank)}
-                  className="p-2 text-gray-600 hover:text-red-400 transition"
+                  className="p-2 text-[var(--text-muted)] hover:text-red-400 transition"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

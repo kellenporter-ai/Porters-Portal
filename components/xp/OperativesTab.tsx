@@ -114,42 +114,42 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
             placeholder="Search by name or email..."
-            className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition"
+            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex gap-2 items-center">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap">
             {filteredStudents.length} operatives
           </span>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
             <select
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
-              className="bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50"
+              className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-3 pl-10 pr-10 text-[var(--text-primary)] text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50"
             >
               <option>All Classes</option>
               {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
           </div>
           {availableSections.length > 0 && (
             <div className="relative">
               <select
                 value={filterSection}
                 onChange={(e) => setFilterSection(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50"
+                className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-3 px-4 text-[var(--text-primary)] text-sm font-bold appearance-none focus:outline-none focus:border-purple-500/50"
               >
                 <option>All Sections</option>
                 {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
             </div>
           )}
         </div>
@@ -158,7 +158,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
         {/* Fixed header */}
         <table className="w-full text-left">
           <thead>
-            <tr className="text-[10px] text-gray-500 uppercase font-black tracking-widest border-b border-white/5">
+            <tr className="text-[10px] text-[var(--text-muted)] uppercase font-black tracking-widest border-b border-[var(--border)]">
               <OpSortHeader label="Operative" col="name" className="pl-4" />
               <OpSortHeader label="Class" col="class" />
               <OpSortHeader label="Level" col="level" className="text-center" />
@@ -182,14 +182,14 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                   key={student.id}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
-                  className="absolute top-0 left-0 w-full flex items-center hover:bg-white/5 transition-colors border-b border-white/5"
+                  className="absolute top-0 left-0 w-full flex items-center hover:bg-[var(--surface-glass)] transition-colors border-b border-[var(--border)]"
                   style={{ transform: `translateY(${virtualRow.start}px)` }}
                 >
                   <div className="flex-[2] py-3 pl-4">
                     <div className="flex items-center gap-3">
-                      <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-white/10" alt={student.name} loading="lazy" />
+                      <img src={student.avatarUrl} className="w-9 h-9 rounded-lg border border-[var(--border)]" alt={student.name} loading="lazy" />
                       <div>
-                        <div className="font-bold text-sm text-gray-200">{student.name}</div>
+                        <div className="font-bold text-sm text-[var(--text-secondary)]">{student.name}</div>
                         {editingCodename === student.id ? (
                           <div className="flex items-center gap-1">
                             <input
@@ -201,12 +201,12 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                                 if (e.key === 'Enter') handleSaveCodename(student.id);
                                 if (e.key === 'Escape') setEditingCodename(null);
                               }}
-                              className="bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-[10px] text-white font-mono w-28 focus:outline-none focus:border-purple-500"
+                              className="bg-[var(--backdrop)] border border-purple-500/30 rounded px-1.5 py-0.5 text-[10px] text-[var(--text-primary)] font-mono w-28 focus:outline-none focus:border-purple-500"
                             />
                             <button onClick={() => handleSaveCodename(student.id)} className="text-green-400 hover:text-green-300" title="Save">
                               <Check className="w-3 h-3" />
                             </button>
-                            <button onClick={() => setEditingCodename(null)} className="text-gray-500 hover:text-gray-300" title="Cancel">
+                            <button onClick={() => setEditingCodename(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]" title="Cancel">
                               <X className="w-3 h-3" />
                             </button>
                           </div>
@@ -214,7 +214,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => { setEditingCodename(student.id); setCodenameValue(student.gamification?.codename || ''); }}
-                              className="text-[10px] font-mono text-gray-500 uppercase hover:text-purple-400 transition flex items-center gap-1 group/cn"
+                              className="text-[10px] font-mono text-[var(--text-muted)] uppercase hover:text-[var(--accent-text)] transition flex items-center gap-1 group/cn"
                             >
                               {student.gamification?.codename || 'UNASSIGNED'}
                               <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/cn:opacity-100 transition" />
@@ -239,10 +239,10 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                     </div>
                   </div>
                   <div className="w-16 py-3 text-center">
-                    <span className="text-lg font-black text-white">{level}</span>
+                    <span className="text-lg font-black text-[var(--text-primary)]">{level}</span>
                   </div>
                   <div className="w-20 py-3 text-center">
-                    <span className="text-sm font-bold text-gray-300">
+                    <span className="text-sm font-bold text-[var(--text-secondary)]">
                       {(filterClass !== 'All Classes' ? (student.gamification?.classXp?.[filterClass] || 0) : (student.gamification?.xp || 0)).toLocaleString()}
                     </span>
                   </div>

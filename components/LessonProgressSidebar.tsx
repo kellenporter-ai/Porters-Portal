@@ -109,7 +109,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
       <div className="w-12 flex-shrink-0 flex flex-col items-center gap-2 py-3">
         <button
           onClick={() => setCollapsed(false)}
-          className="p-1 text-gray-500 hover:text-purple-400 transition cursor-pointer"
+          className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-text)] transition cursor-pointer"
           title="Expand sidebar"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
@@ -126,12 +126,12 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-[11px] font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
+            <span className={`text-[11px] font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-[var(--text-primary)]'}`}>
               {safePercent}
             </span>
           </div>
         </div>
-        <span className="text-[11px] text-gray-500 font-mono">{minutes}:{String(seconds).padStart(2, '0')}</span>
+        <span className="text-[11px] text-[var(--text-muted)] font-mono">{minutes}:{String(seconds).padStart(2, '0')}</span>
         {/* Mini block dots — only visible types */}
         <div className="flex flex-col gap-0.5 items-center mt-1">
           {blocks.map((block, index) => {
@@ -148,7 +148,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
                 } ${
                   isCurrent ? 'bg-purple-400 ring-1 ring-purple-400/50' :
                   isComplete ? 'bg-emerald-400/80' :
-                  isXP ? 'bg-amber-500/30 hover:bg-amber-500/50' : 'bg-white/10 hover:bg-white/20'
+                  isXP ? 'bg-amber-500/30 hover:bg-amber-500/50' : 'bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass-heavy)]'
                 }`}
                 title={`${BLOCK_TYPE_LABEL[block.type] || block.type}${isXP ? ' (XP)' : ''}`}
               />
@@ -164,10 +164,10 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
     <div className="w-44 flex-shrink-0 flex flex-col gap-3 overflow-y-auto custom-scrollbar py-2 pr-1">
       {/* Header with collapse button */}
       <div className="flex items-center justify-between px-2">
-        <span className="text-[11px] text-gray-500 uppercase font-bold tracking-widest">Progress</span>
+        <span className="text-[11px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Progress</span>
         <button
           onClick={() => setCollapsed(true)}
-          className="p-1 text-gray-500 hover:text-purple-400 transition cursor-pointer"
+          className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-text)] transition cursor-pointer"
           title="Collapse sidebar"
         >
           <ChevronRight className="w-3 h-3" />
@@ -175,7 +175,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
       </div>
 
       {/* Progress ring + stats */}
-      <div className="flex flex-col items-center gap-1.5 bg-black/30 rounded-xl p-3 border border-white/5">
+      <div className="flex flex-col items-center gap-1.5 bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
         <div className="relative">
           <svg width={size} height={size} className="transform -rotate-90">
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} />
@@ -187,23 +187,23 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-sm font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-white'}`}>
+            <span className={`text-sm font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-[var(--text-primary)]'}`}>
               {safePercent}%
             </span>
           </div>
         </div>
-        <div className="text-[11px] text-gray-500 font-bold">
+        <div className="text-[11px] text-[var(--text-muted)] font-bold">
           {completedInteractive}/{totalInteractive} complete
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono">
+        <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
           <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {minutes}:{String(seconds).padStart(2, '0')}</span>
           {xpEarned > 0 && <span className="text-amber-400">+{xpEarned}</span>}
         </div>
       </div>
 
       {/* Block navigation — filtered to useful types */}
-      <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex flex-col gap-0.5">
-        <div className="text-[11px] text-gray-500 uppercase font-bold tracking-widest px-1.5 mb-0.5">Contents</div>
+      <div className="bg-[var(--panel-bg)] rounded-xl p-2 border border-[var(--border)] flex flex-col gap-0.5">
+        <div className="text-[11px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-1.5 mb-0.5">Contents</div>
         {blocks.map((block, index) => {
           if (!VISIBLE_TYPES.has(block.type)) return null;
           const isCurrent = index === currentBlockIndex;
@@ -218,7 +218,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
                 key={block.id}
                 onClick={() => onNavigateToBlock(index)}
                 className={`flex items-center gap-1.5 px-1.5 py-1 mt-1 first:mt-0 text-left text-[11px] font-bold uppercase tracking-wider cursor-pointer transition ${
-                  isCurrent ? 'text-purple-300' : 'text-gray-500 hover:text-gray-300'
+                  isCurrent ? 'text-purple-300' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 <span className="truncate">{block.icon || ''} {block.title || 'Section'}</span>
@@ -235,14 +235,14 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
                   ? 'bg-purple-500/20 text-purple-300'
                   : isComplete
                   ? 'text-emerald-400/70 hover:bg-emerald-500/10'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'
               }`}
             >
               <span className="shrink-0 w-3.5 h-3.5 flex items-center justify-center">
                 {isComplete ? (
                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                 ) : (
-                  <span className={isCurrent ? 'text-purple-400' : 'text-gray-500'}>
+                  <span className={isCurrent ? 'text-purple-400' : 'text-[var(--text-muted)]'}>
                     {BLOCK_TYPE_ICON[block.type] || <FileText className="w-3 h-3" />}
                   </span>
                 )}

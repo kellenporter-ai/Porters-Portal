@@ -11,6 +11,7 @@ import NotificationBell from './NotificationBell';
 import SpaceBackground from './SpaceBackground';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
+import { useTheme } from '../lib/ThemeContext';
 
 interface LayoutProps {
   user: User;
@@ -22,6 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -45,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     if (typeof navigator === 'undefined') return;
     const isCrOS = /CrOS/.test(navigator.userAgent);
     const alreadySuggested = localStorage.getItem('perfModeSuggested');
-    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false };
+    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' };
     if (isCrOS && !alreadySuggested && !currentSettings.performanceMode) {
       setShowCrosBanner(true);
     }
@@ -57,7 +60,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   const enablePerfMode = useCallback(async () => {
-    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false };
+    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' };
     await dataService.updateUserSettings(user.id, { ...currentSettings, performanceMode: true });
     dismissCrosBanner();
   }, [user.id, user.settings, dismissCrosBanner]);
@@ -70,7 +73,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     liveBackground: true,
     performanceMode: false,
     privacyMode: false,
-    compactView: false
+    compactView: false,
+    themeMode: 'dark'
   };
 
   const handleUpdateSettings = async (newSettings: UserSettings) => {
@@ -172,11 +176,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               aria-current={isActive && !item.children ? 'page' : undefined}
               className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
                 isActive
-                  ? 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] shadow-md border border-[var(--accent)]/30'
+                  : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)]'
               }`}
             >
-              <span className={isActive ? 'text-white' : 'text-gray-500 hover:text-purple-400'}>
+              <span className={isActive ? 'text-[var(--sidebar-text-active)]' : ''}>
                 {item.icon}
               </span>
               {showUrgencyDot && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
@@ -212,11 +216,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             aria-expanded={item.children ? expandedParent === item.name : undefined}
             className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
               isActive
-                ? item.children ? 'bg-purple-500/10 text-white border border-purple-500/20' : 'bg-purple-600/80 text-white shadow-lg border border-purple-500/50'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white hover:pl-7'
+                ? item.children ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] border border-[var(--accent)]/20' : 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] shadow-md border border-[var(--accent)]/30'
+                : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)] hover:pl-7'
             }`}
           >
-            <span className={`${isActive ? 'text-white' : 'text-gray-500 group-hover:text-purple-400'}`}>
+            <span className={`${isActive ? 'text-[var(--sidebar-text-active)]' : 'text-[var(--sidebar-text-muted)] group-hover:text-[var(--sidebar-text-active)]'}`}>
               {item.icon}
             </span>
             <span className="font-medium text-sm flex-1 text-left flex items-center gap-2">
@@ -224,11 +228,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
             </span>
             {item.children && (
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-purple-400' : 'text-gray-600'}`} />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-[var(--accent-text)]' : 'text-[var(--sidebar-text-muted)]'}`} />
             )}
           </button>
           {item.children && expandedParent === item.name && (
-            <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3" role="group" aria-label={`${item.name} sub-navigation`}>
+            <div className="ml-6 mt-1 space-y-0.5 border-l border-[var(--sidebar-border)] pl-3" role="group" aria-label={`${item.name} sub-navigation`}>
               {item.children.map(child => {
                 const childTab = `${item.name}:${child.name}`;
                 const childActive = activeTab === childTab;
@@ -240,11 +244,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                     aria-current={childActive ? 'page' : undefined}
                     className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                       childActive
-                        ? 'bg-purple-600/60 text-white'
-                        : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                        ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)]'
+                        : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)]'
                     }`}
                   >
-                    <span className={childActive ? 'text-white' : 'text-gray-600'}>{child.icon}</span>
+                    <span className={childActive ? 'text-[var(--sidebar-text-active)]' : ''}>{child.icon}</span>
                     {child.name}
                   </button>
                 );
@@ -270,7 +274,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               if (groupItems.length === 0) return null;
               return (
                 <React.Fragment key={group}>
-                  <div className="h-px bg-white/5 my-2" />
+                  <div className="h-px bg-[var(--sidebar-border)] my-2" />
                   {groupItems.map(i => renderNavButton(i, true))}
                 </React.Fragment>
               );
@@ -291,11 +295,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 <button
                   onClick={() => toggleGroup(group)}
                   aria-expanded={!isCollapsed}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-500 hover:text-gray-300 transition-colors"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)] transition-colors"
                 >
                   <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                   {NAV_GROUP_LABELS[group]}
-                  <span className="flex-1 h-px bg-white/5 ml-1" />
+                  <span className="flex-1 h-px bg-[var(--sidebar-border)] ml-1" />
                 </button>
                 {!isCollapsed && (
                   <div className="space-y-1" role="group" aria-label={`${NAV_GROUP_LABELS[group]} navigation`}>
@@ -326,20 +330,27 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   return (
-    <div className={`flex flex-col lg:flex-row h-screen overflow-hidden text-gray-100 relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
+    <div className={`flex flex-col lg:flex-row h-screen overflow-hidden text-[var(--text-primary)] relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
       {/* Skip to main content link */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:bg-purple-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">
         Skip to main content
       </a>
 
-      {/* 1. Static Purple Background (Base Layer) */}
-      <div className="fixed inset-0 z-[-3] bg-[#0f0720] static-purple-bg"></div>
+      {/* 1. Static Background (Base Layer) */}
+      <div className={`fixed inset-0 z-[-3] bg-[var(--surface-base)] ${isLight ? '' : 'static-purple-bg'}`}></div>
 
-      {/* 2. Animated Space Background (Canvas — conditional on liveBackground and not perf-mode) */}
-      {settings.liveBackground && !settings.performanceMode && <SpaceBackground />}
+      {/* 2a. Light mode: Tech circuit background image */}
+      {isLight && (
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
+      )}
 
-      {/* 3. Dark Glass Overlay */}
-      <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[#0f0720]/55' : 'bg-[#0f0720]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
+      {/* 2b. Dark mode: Animated Space Background (Canvas — conditional on liveBackground and not perf-mode) */}
+      {!isLight && settings.liveBackground && !settings.performanceMode && <SpaceBackground />}
+
+      {/* 3. Glass Overlay (semi-transparent in dark, hidden in light since base layer is solid) */}
+      {!isLight && (
+        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[var(--surface-base)]/55' : 'bg-[var(--surface-base)]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
+      )}
 
       {/* ChromeOS performance mode suggestion banner */}
       {showCrosBanner && (
@@ -356,18 +367,18 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       )}
 
       {/* Mobile/Tablet Header — visible below lg breakpoint */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-30">
+      <header className="lg:hidden flex items-center justify-between p-4 bg-[var(--surface-overlay)] backdrop-blur-md border-b border-[var(--border)] z-30">
           <div className="flex items-center gap-3">
               <div className="bg-purple-600 p-2 rounded-lg">
                   <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <h1 className="font-bold text-white text-lg">Porter Portal</h1>
+              <h1 className="font-bold text-[var(--text-primary)] text-lg">Porter Portal</h1>
           </div>
           <div className="flex items-center gap-1">
               <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} />
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+                className="p-2 text-[var(--text-primary)] hover:bg-[var(--surface-glass)]/10 rounded-lg transition"
                 aria-label="Open navigation menu"
               >
                   <Menu className="w-6 h-6" />
@@ -382,18 +393,18 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setIsMobileMenuOpen(false)}></div>
 
               {/* Drawer Content */}
-              <div className="relative w-4/5 max-w-xs bg-[#1a1b26] border-r border-white/10 h-full flex flex-col p-6 animate-in slide-in-from-left duration-300 shadow-2xl">
+              <div className="relative w-4/5 max-w-xs bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] h-full flex flex-col p-6 animate-in slide-in-from-left duration-300 shadow-2xl">
                   <div className="flex justify-between items-center mb-8">
                       <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-inner border border-white/20">
                               {user.name.charAt(0)}
                           </div>
                           <div>
-                              <p className="text-sm font-bold text-white">{settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}</p>
-                              <p className="text-[10px] text-gray-500">{user.role}</p>
+                              <p className="text-sm font-bold text-[var(--sidebar-text)]">{settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}</p>
+                              <p className="text-[10px] text-[var(--sidebar-text-muted)]">{user.role}</p>
                           </div>
                       </div>
-                      <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white" aria-label="Close navigation menu">
+                      <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]" aria-label="Close navigation menu">
                           <X className="w-6 h-6" />
                       </button>
                   </div>
@@ -402,10 +413,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                       <NavItems />
                   </nav>
 
-                  <div className="pt-6 border-t border-white/10 space-y-3">
+                  <div className="pt-6 border-t border-[var(--sidebar-border)] space-y-3">
                       <button
                           onClick={() => { setIsSettingsOpen(true); setIsMobileMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition"
+                          className="w-full flex items-center gap-3 p-3 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-xl transition"
                       >
                           <Settings className="w-5 h-5" />
                           <span className="font-medium">Settings</span>
@@ -424,16 +435,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Desktop Sidebar — visible at lg breakpoint and above */}
       <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-60' : 'w-72'}`}>
-        <div className={`h-full bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl animate-glass-turn ${settings.performanceMode ? '' : 'backdrop-blur-2xl'}`}>
+        <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn ${settings.performanceMode ? '' : 'backdrop-blur-2xl'}`}>
           {/* Header */}
-          <div className={`flex items-center border-b border-white/5 ${sidebarCollapsed ? 'p-4 justify-center' : 'p-8 gap-4'}`}>
+          <div className={`flex items-center border-b border-[var(--sidebar-border)] ${sidebarCollapsed ? 'p-4 justify-center' : 'p-8 gap-4'}`}>
             <div className={`bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl ${sidebarCollapsed ? 'p-2' : 'p-3'}`}>
               <GraduationCap className={sidebarCollapsed ? 'w-5 h-5 text-white' : 'w-6 h-6 text-white'} />
             </div>
             {!sidebarCollapsed && (
               <div>
-                <h1 className="font-bold text-lg tracking-tight text-white">Porter Portal</h1>
-                <p className="text-xs text-purple-300 font-medium tracking-widest uppercase">
+                <h1 className="font-bold text-lg tracking-tight text-[var(--sidebar-text)]">Porter Portal</h1>
+                <p className="text-xs text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
                   {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
                 </p>
               </div>
@@ -444,7 +455,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
           <div className={`flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} px-3 pt-3`}>
             <button
               onClick={toggleSidebar}
-              className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition"
+              className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
               aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
@@ -458,13 +469,13 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
           {/* Profile / Footer */}
           {sidebarCollapsed ? (
-            <div className="p-3 border-t border-white/5 bg-black/10 rounded-b-3xl flex flex-col items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold shadow-inner border border-white/20" title={settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}>
+            <div className="p-3 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl flex flex-col items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20" title={settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}>
                 {user.name.charAt(0)}
               </div>
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
                 aria-label="Open settings"
                 title="Settings"
               >
@@ -480,24 +491,24 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               </button>
             </div>
           ) : (
-            <div className="p-6 border-t border-white/5 bg-black/10 rounded-b-3xl">
+            <div className="p-6 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
               <div className="flex items-center justify-between mb-4">
                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-inner border border-white/20">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-inner border border-white/20">
                       {user.name.charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate text-white">
+                      <p className="text-sm font-semibold truncate text-[var(--sidebar-text)]">
                           {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
                       </p>
-                      <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+                      <p className="text-[10px] text-[var(--sidebar-text-muted)] truncate">{user.email}</p>
                     </div>
                  </div>
                  <div className="flex items-center gap-1">
                    <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} dropUp />
                    <button
                      onClick={() => setIsSettingsOpen(true)}
-                     className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                     className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
                      aria-label="Open settings"
                    >
                      <Settings className="w-4 h-4" />
@@ -526,7 +537,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Mobile bottom nav — quick access to key pages (below lg breakpoint) */}
       {user.role === UserRole.STUDENT && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-around px-2" role="tablist" aria-label="Quick navigation">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-[var(--surface-overlay)] backdrop-blur-md border-t border-[var(--border)] flex items-center justify-around px-2" role="tablist" aria-label="Quick navigation">
           {([
             { name: 'Home', icon: <Home className="w-5 h-5" />, tab: 'Home' },
             { name: 'Resources', icon: <Layers className="w-5 h-5" />, tab: 'Resources' },
@@ -543,7 +554,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 onClick={() => handleNavigate(item.tab)}
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
-                  isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'
+                  isActive ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
                 {item.icon}

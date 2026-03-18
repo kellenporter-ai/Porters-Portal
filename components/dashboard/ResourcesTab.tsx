@@ -136,7 +136,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
     const dueDate = resource.dueDate ? new Date(resource.dueDate) : null;
     const now = new Date();
     const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / 86400000) : Infinity;
-    const dueColor = daysUntilDue <= 0 ? 'text-red-400' : daysUntilDue <= 2 ? 'text-yellow-400' : 'text-gray-500';
+    const dueColor = daysUntilDue <= 0 ? 'text-red-400' : daysUntilDue <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]';
     const engMin = Math.floor(resource.engagementTime / 60);
     const isSubstantial = engMin >= 5;
     const completion = practiceCompletion[resource.id];
@@ -161,7 +161,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         className={`border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${
           resource.isAssessment
             ? 'bg-red-500/5 border-red-500/25 ring-1 ring-red-500/10 hover:border-red-400/50'
-            : `bg-white/5 ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-white/5'}`
+            : `bg-[var(--surface-glass)] ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-[var(--border)]'}`
         }`}
         onClick={() => onStartAssignment && onStartAssignment(resource.id)}
       >
@@ -197,7 +197,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                 Assessment
               </span>
             )}
-            <h4 className="font-bold text-white text-sm truncate">{resource.title}</h4>
+            <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">{resource.title}</h4>
             {isModuleCompleted && (
               <span className="text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">
                 <CheckCircle2 className="w-2.5 h-2.5" />
@@ -206,7 +206,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-xs text-gray-500 truncate">{resource.description}</p>
+            <p className="text-xs text-[var(--text-muted)] truncate">{resource.description}</p>
           </div>
           {/* Assessment submission status row */}
           {resource.isAssessment && latestSub && (
@@ -224,7 +224,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                   </span>
                 ) : null;
               })()}
-              <span className="text-[9px] text-gray-500 font-bold">
+              <span className="text-[9px] text-[var(--text-muted)] font-bold">
                 {isUnlimitedAttempts
                   ? `Attempt ${latestSub.attemptNumber || 1}`
                   : `Attempt ${latestSub.attemptNumber || 1} of ${maxAttempts}`
@@ -236,7 +236,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                 </span>
               )}
               {!canStillRetake && (
-                <span className="text-[9px] text-gray-500 font-bold">
+                <span className="text-[9px] text-[var(--text-muted)] font-bold">
                   {assessmentConfig.allowResubmission === false ? 'No retakes allowed' : 'No retakes left'}
                 </span>
               )}
@@ -254,7 +254,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           )}
           <div className="flex items-center gap-3 mt-1">
             {resource.createdAt && (
-              <span className="text-[9px] text-gray-500 font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+              <span className="text-[9px] text-[var(--text-muted)] font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                 <Calendar size={10} /> Posted {formatRelativeDate(resource.createdAt)}
               </span>
             )}
@@ -278,7 +278,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           </div>
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition">
-          <Play className="w-4 h-4 text-purple-400 fill-current" />
+          <Play className="w-4 h-4 text-[var(--accent-text)] fill-current" />
         </div>
       </div>
     );
@@ -288,21 +288,21 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
     <div key="resources" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       {/* Search bar */}
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
         <input
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search resources by title, description, or unit..."
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-20 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition"
+          className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl pl-10 pr-20 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 focus:bg-[var(--surface-glass-heavy)] transition"
           aria-label="Search resources"
         />
         {searchQuery && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <span className="text-[10px] text-gray-500 font-mono">
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">
               {Object.values(filteredUnitGroups).reduce((a, b) => a + b.length, 0)} results
             </span>
-            <button onClick={() => setSearchQuery('')} className="text-gray-500 hover:text-white transition" aria-label="Clear search">
+            <button onClick={() => setSearchQuery('')} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" aria-label="Clear search">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -311,15 +311,15 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
 
       {/* Sort controls */}
       <div className="flex items-center gap-1.5 mb-3">
-        <ArrowUpDown size={12} className="text-gray-500" />
+        <ArrowUpDown size={12} className="text-[var(--text-muted)]" />
         {(['newest', 'oldest', 'alpha', 'type'] as const).map(option => (
           <button
             key={option}
             onClick={() => setSortBy(option)}
             className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-colors ${
               sortBy === option
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                ? 'bg-[var(--accent-muted)] text-[var(--accent-text)] border border-purple-500/30'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
             }`}
           >
             {option === 'newest' ? 'Newest' : option === 'oldest' ? 'Oldest' : option === 'alpha' ? 'A-Z' : 'By Type'}
@@ -328,7 +328,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
       </div>
 
       {Object.entries(filteredUnitGroups).length === 0 ? (
-        <div className="text-center py-20 text-gray-500 italic">
+        <div className="text-center py-20 text-[var(--text-muted)] italic">
           {searchQuery ? `No resources matching "${searchQuery}".` : 'No resources have been posted yet. Check back soon!'}
         </div>
       ) : (
@@ -338,13 +338,13 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
             const sortedKeys = sortUnitKeys(Object.keys(filteredUnitGroups), unitOrder);
             return sortedKeys.map(unit => [unit, filteredUnitGroups[unit]] as [string, typeof filteredUnitGroups[string]]);
           })().map(([unit, items]) => (
-            <div key={unit} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-              <button onClick={() => onToggleUnit(unit)} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition">
+            <div key={unit} className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] overflow-hidden">
+              <button onClick={() => onToggleUnit(unit)} className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-glass)] transition">
                 <div className="flex items-center gap-3">
-                  {expandedUnits.has(unit) ? <ChevronDown className="w-4 h-4 text-purple-400" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
-                  <span className="font-bold text-sm text-gray-300 uppercase tracking-wider">{unit}</span>
+                  {expandedUnits.has(unit) ? <ChevronDown className="w-4 h-4 text-[var(--accent-text)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
+                  <span className="font-bold text-sm text-[var(--text-secondary)] uppercase tracking-wider">{unit}</span>
                 </div>
-                <span className="text-[10px] bg-white/5 text-gray-500 px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
+                <span className="text-[10px] bg-[var(--surface-glass)] text-[var(--text-muted)] px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
               </button>
 
               {expandedUnits.has(unit) && (
@@ -363,9 +363,9 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                       if (category !== lastCategory) {
                         result.push(
                           <div key={`subheader-${category}`} className="flex items-center gap-2 py-1.5 px-2">
-                            <div className="h-px flex-1 bg-gray-800" />
-                            <span className="text-[8px] text-gray-600 font-bold tracking-wider uppercase">{category}</span>
-                            <div className="h-px flex-1 bg-gray-800" />
+                            <div className="h-px flex-1 bg-[var(--border)]" />
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold tracking-wider uppercase">{category}</span>
+                            <div className="h-px flex-1 bg-[var(--border)]" />
                           </div>
                         );
                         lastCategory = category;

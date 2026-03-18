@@ -133,12 +133,12 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
     <div className="space-y-4">
       {/* Slot indicator */}
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
           <Briefcase className="w-3.5 h-3.5 text-purple-400" />
-          <span>Mission Slots: <span className={slotsUsed >= maxSlots ? 'text-red-400 font-bold' : 'text-white font-bold'}>{slotsUsed}/{maxSlots}</span></span>
+          <span>Mission Slots: <span className={slotsUsed >= maxSlots ? 'text-red-400 font-bold' : 'text-[var(--text-primary)] font-bold'}>{slotsUsed}/{maxSlots}</span></span>
         </div>
         {playerLevel < 25 && (
-          <span className="text-[10px] text-gray-600">Lv 25 = 2 slots · Lv 50 = 3 slots</span>
+          <span className="text-[10px] text-[var(--text-muted)]">Lv 25 = 2 slots · Lv 50 = 3 slots</span>
         )}
       </div>
 
@@ -152,11 +152,11 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
             const isClaiming = loading === `claim-${active.missionId}`;
             return (
               <div key={`${active.missionId}-${active.deployedAt}`}
-                className={`rounded-2xl border p-4 flex flex-col gap-3 ${ready ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/10 bg-black/30'}`}>
+                className={`rounded-2xl border p-4 flex flex-col gap-3 ${ready ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-[var(--border)] bg-[var(--panel-bg)]'}`}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-white text-sm truncate">{active.missionName}</div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">GS {active.gearScore} · {active.classType}</div>
+                    <div className="font-bold text-[var(--text-primary)] text-sm truncate">{active.missionName}</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mt-0.5">GS {active.gearScore} · {active.classType}</div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {ready ? (
@@ -164,7 +164,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
                     ) : (
                       <Clock className="w-4 h-4 text-gray-500" />
                     )}
-                    <span className={`text-sm font-bold ${ready ? 'text-emerald-400' : 'text-gray-300'}`}>
+                    <span className={`text-sm font-bold ${ready ? 'text-emerald-400' : 'text-[var(--text-secondary)]'}`}>
                       {cd?.label ?? formatCountdown(active.completesAt)}
                     </span>
                   </div>
@@ -187,7 +187,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
 
       {/* Available missions */}
       {missions.length === 0 ? (
-        <div className="text-gray-500 italic text-center py-12 bg-black/20 rounded-2xl border border-white/5 text-sm">
+        <div className="text-[var(--text-muted)] italic text-center py-12 bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] text-sm">
           No missions available for this class.
         </div>
       ) : (
@@ -205,19 +205,19 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
 
             return (
               <div key={mission.id}
-                className={`rounded-2xl border p-4 space-y-3 ${alreadyActive ? 'border-purple-500/20 bg-purple-500/5' : levelLocked ? 'border-white/5 bg-black/20 opacity-60' : 'border-white/10 bg-black/30'}`}>
+                className={`rounded-2xl border p-4 space-y-3 ${alreadyActive ? 'border-purple-500/20 bg-purple-500/5' : levelLocked ? 'border-white/5 bg-black/20 opacity-60' : 'border-[var(--border)] bg-[var(--panel-bg)]'}`}>
 
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-white text-sm">{mission.name}</span>
+                      <span className="font-bold text-[var(--text-primary)] text-sm">{mission.name}</span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFFICULTY_COLORS[mission.difficulty] || DIFFICULTY_COLORS.EASY}`}>
                         {mission.difficulty}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{mission.description}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-2">{mission.description}</p>
                   </div>
-                  <div className="text-[10px] text-gray-600 flex-shrink-0 text-right">
+                  <div className="text-[10px] text-[var(--text-muted)] flex-shrink-0 text-right">
                     <Timer className="w-3 h-3 inline mr-0.5" />
                     {DURATION_LABEL[mission.duration] ?? `${mission.duration}m`}
                   </div>
@@ -227,7 +227,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
                 {(mission.minLevel || statBonuses.length > 0) && (
                   <div className="flex flex-wrap gap-1.5">
                     {mission.minLevel && (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${levelLocked ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-gray-500 bg-white/5 border-white/5'}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${levelLocked ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-[var(--text-muted)] bg-[var(--surface-glass)] border-[var(--border)]'}`}>
                         {levelLocked && <Lock className="w-2.5 h-2.5 inline mr-0.5" />}
                         Lv. {mission.minLevel}+
                       </span>
@@ -236,7 +236,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
                 )}
 
                 {/* Rewards */}
-                <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-white/5 pt-2">
+                <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] border-t border-[var(--border)] pt-2">
                   <span className="text-yellow-400 font-bold"><Zap className="w-3 h-3 inline mr-0.5" />{mission.rewards.xp} XP</span>
                   <span className="text-blue-400 font-bold"><Star className="w-3 h-3 inline mr-0.5" />{mission.rewards.flux} Flux</span>
                   {mission.rewards.itemRarity && (
@@ -251,9 +251,9 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
                       const playerStat = playerStats[bonus.stat] || 10;
                       const qualifies = playerStat >= bonus.threshold;
                       return (
-                        <div key={i} className={`text-[10px] px-2 py-1 rounded-lg ${qualifies ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-600 bg-white/5'}`}>
+                        <div key={i} className={`text-[10px] px-2 py-1 rounded-lg ${qualifies ? 'text-emerald-400 bg-emerald-500/10' : 'text-[var(--text-muted)] bg-[var(--surface-glass)]'}`}>
                           {qualifies ? '✓' : '○'} {bonus.description}
-                          {!qualifies && <span className="ml-1 text-gray-700">(need {bonus.threshold} {bonus.stat}, have {playerStat})</span>}
+                          {!qualifies && <span className="ml-1 text-[var(--text-muted)]">(need {bonus.threshold} {bonus.stat}, have {playerStat})</span>}
                         </div>
                       );
                     })}
@@ -262,7 +262,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
 
                 {/* Gear score indicator */}
                 {gearScore > 0 && (
-                  <div className="text-[10px] text-gray-600">
+                  <div className="text-[10px] text-[var(--text-muted)]">
                     Your GS {gearScore} → +{Math.round((gearScore / 1000) * 100)}% reward bonus
                   </div>
                 )}
@@ -276,7 +276,7 @@ const IdleMissionsPanel: React.FC<IdleMissionsPanelProps> = ({
                     disabled={disabled}
                     className={`w-full py-2 rounded-xl font-bold text-sm transition-colors ${
                       disabled
-                        ? 'bg-white/5 border border-white/10 text-gray-600 cursor-not-allowed'
+                        ? 'bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)] cursor-not-allowed'
                         : 'bg-purple-500/20 border border-purple-500/30 text-purple-400 hover:bg-purple-500/30'
                     }`}
                   >

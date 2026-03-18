@@ -210,30 +210,30 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
     const allAnswered = useMemo(() => selectedQuestions.length > 0 && selectedQuestions.every(q => answers[q.id]?.submitted), [selectedQuestions, answers]);
 
     if (isLoading) {
-        return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Loader2 className="w-8 h-8 text-purple-400 animate-spin" /><p className="text-gray-400 text-sm">Loading questions...</p></div>);
+        return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Loader2 className="w-8 h-8 text-purple-400 animate-spin" /><p className="text-[var(--text-tertiary)] text-sm">Loading questions...</p></div>);
     }
     if (bankEmpty) {
-        return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Brain className="w-12 h-12 text-gray-600" /><p className="text-gray-400 font-bold">No Questions Available</p><p className="text-gray-600 text-sm text-center max-w-sm">Your teacher hasn&apos;t uploaded review questions for this resource yet.</p></div>);
+        return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Brain className="w-12 h-12 text-[var(--text-muted)]" /><p className="text-[var(--text-tertiary)] font-bold">No Questions Available</p><p className="text-[var(--text-muted)] text-sm text-center max-w-sm">Your teacher hasn&apos;t uploaded review questions for this resource yet.</p></div>);
     }
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-black/40 border-b border-white/10">
+            <div className="flex items-center justify-between px-4 py-3 bg-[var(--panel-bg)] border-b border-[var(--border)]">
                 <div className="flex items-center gap-3">
                     <Brain className="w-5 h-5 text-purple-400" />
-                    <span className="font-bold text-white text-sm">Conceptual Review</span>
-                    <span className="text-[10px] bg-white/10 text-gray-400 px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
+                    <span className="font-bold text-[var(--text-primary)] text-sm">Conceptual Review</span>
+                    <span className="text-[10px] bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)] px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[10px] text-gray-500">/ {totalPossibleXP} XP</span></div>
+                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[10px] text-[var(--text-muted)]">/ {totalPossibleXP} XP</span></div>
                     <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
                 </div>
             </div>
-            <div className="flex gap-2 px-4 py-3 border-b border-white/5 bg-black/20" role="tablist" aria-label="Question difficulty tiers">
+            <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)] bg-[var(--panel-bg)]" role="tablist" aria-label="Question difficulty tiers">
                 {[1, 2, 3].map(tier => { const t = TIER_LABELS[tier]; const tQs = selectedQuestions.filter(q => q.tier === tier); const ans = tQs.filter(q => answers[q.id]?.submitted).length; const cor = tQs.filter(q => answers[q.id]?.correct).length; return (
-                    <button key={tier} role="tab" aria-selected={activeTier === tier} aria-controls="review-question-panel" onClick={() => setActiveTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTier === tier ? `${t.bg} ${t.color} ${t.border} border` : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                    <button key={tier} role="tab" aria-selected={activeTier === tier} aria-controls="review-question-panel" onClick={() => setActiveTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTier === tier ? `${t.bg} ${t.color} ${t.border} border` : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                         {t.icon}<span className="hidden sm:inline">{t.name}</span><span className="sm:hidden">Tier {tier}</span>
-                        {ans > 0 && <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-400'}`}>{cor}/{tQs.length}</span>}
+                        {ans > 0 && <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>{cor}/{tQs.length}</span>}
                     </button>);
                 })}
             </div>
@@ -247,7 +247,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                 {tierQuestions.map((question, idx) => {
                     const answer = answers[question.id]; const isExpanded = expandedQuestion === question.id; const isSubmitted = answer?.submitted; const isCorrect = answer?.correct; const ts = TIER_LABELS[question.tier];
                     return (
-                        <div key={question.id} className={`rounded-2xl border transition-all ${isSubmitted ? isCorrect ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5' : isExpanded ? `${ts.border} ${ts.bg}` : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                        <div key={question.id} className={`rounded-2xl border transition-all ${isSubmitted ? isCorrect ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5' : isExpanded ? `${ts.border} ${ts.bg}` : 'border-[var(--border)] bg-[var(--surface-glass)] hover:border-[var(--border)]'}`}>
                             <button onClick={() => setExpandedQuestion(isExpanded ? null : question.id)} className="w-full p-4 flex items-start gap-3 text-left">
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-black ${isSubmitted ? isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500/20 text-red-400' : `${ts.bg} ${ts.color}`}`}>
                                     {isSubmitted ? (isCorrect ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />) : idx + 1}
@@ -255,40 +255,40 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                                         <span className={`text-[9px] font-bold uppercase tracking-wider ${ts.color}`}>{question.bloomsLevel}</span>
-                                        <span className="text-[9px] text-gray-600">·</span>
-                                        <span className="text-[9px] text-gray-500 font-mono">{TYPE_LABELS[question.type] || question.type}</span>
+                                        <span className="text-[9px] text-[var(--text-muted)]">·</span>
+                                        <span className="text-[9px] text-[var(--text-muted)] font-mono">{TYPE_LABELS[question.type] || question.type}</span>
                                         <span className="text-[9px] text-yellow-500 font-bold ml-auto flex items-center gap-0.5"><Zap className="w-3 h-3" />{question.xp} XP</span>
                                         <span className="text-[9px] text-red-400/60 font-bold flex items-center gap-0.5">-{Math.ceil(question.xp / 2)} if wrong</span>
                                     </div>
-                                    <p className="text-sm text-gray-200 font-medium leading-snug">{question.stem}</p>
+                                    <p className="text-sm text-[var(--text-secondary)] font-medium leading-snug">{question.stem}</p>
                                 </div>
-                                <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 mt-1 ${isExpanded ? 'rotate-90' : ''}`} />
+                                <ChevronRight className={`w-4 h-4 text-[var(--text-muted)] transition-transform flex-shrink-0 mt-1 ${isExpanded ? 'rotate-90' : ''}`} />
                             </button>
                             {isExpanded && (
                                 <div className="px-4 pb-4 space-y-3">
-                                    {question.context && <div className="bg-black/30 border border-white/10 rounded-xl p-3 text-xs text-gray-400 italic leading-relaxed">{question.context}</div>}
+                                    {question.context && <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-xs text-[var(--text-tertiary)] italic leading-relaxed">{question.context}</div>}
                                     {question.type === 'ranking' ? <RankingInput question={question} answer={answer} onSelect={handleSelect} />
                                      : question.type === 'multiple_select' ? <MultiSelectInput question={question} answer={answer} onSelect={handleSelect} />
                                      : <MCInput question={question} answer={answer} onSelect={handleSelect} />}
                                     {question.type === 'linked_mc' && question.linkedFollowUp && (
-                                        <div className="mt-3 pt-3 border-t border-white/10">
-                                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-2">Follow-Up</p>
-                                            <p className="text-sm text-gray-200 font-medium mb-3">{question.linkedFollowUp.stem}</p>
+                                        <div className="mt-3 pt-3 border-t border-[var(--border)]">
+                                            <p className="text-xs text-[var(--text-tertiary)] font-bold uppercase tracking-widest mb-2">Follow-Up</p>
+                                            <p className="text-sm text-[var(--text-secondary)] font-medium mb-3">{question.linkedFollowUp.stem}</p>
                                             <div className="space-y-2">{question.linkedFollowUp.options.map(opt => {
                                                 const isSel = answer?.linkedSelected === opt.id; const show = isSubmitted; const right = opt.id === question.linkedFollowUp!.correctAnswer;
                                                 return (<button key={opt.id} onClick={() => handleLinkedSelect(question.id, opt.id)} disabled={isSubmitted}
-                                                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : isSel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-white/5 text-gray-500') : isSel ? 'border-purple-500/50 bg-purple-500/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
+                                                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : isSel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-[var(--border)] text-[var(--text-muted)]') : isSel ? 'border-purple-500/50 bg-purple-500/10 text-[var(--text-primary)]' : 'border-[var(--border)] hover:border-[var(--border)] text-[var(--text-secondary)]'}`}>
                                                     <span className="font-mono font-bold mr-2 text-xs">{opt.id.toUpperCase()}.</span> {opt.text}</button>);
                                             })}</div>
                                         </div>
                                     )}
                                     {!isSubmitted ? (
                                         <button onClick={() => handleSubmit(question)} disabled={!answer?.selected || (Array.isArray(answer?.selected) && answer.selected.length === 0) || submittingId === question.id} aria-busy={submittingId === question.id}
-                                            className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold rounded-xl transition">{submittingId === question.id ? 'Submitting...' : 'Submit Answer'}</button>
+                                            className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-[var(--text-muted)] text-white font-bold rounded-xl transition">{submittingId === question.id ? 'Submitting...' : 'Submit Answer'}</button>
                                     ) : (
                                         <div role="alert" className={`p-4 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
                                             <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : `Incorrect — ${answer?.penalty || Math.ceil(question.xp / 2)} XP penalty`}</span></div>
-                                            <p className="text-xs text-gray-400 leading-relaxed">{question.explanation}</p>
+                                            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">{question.explanation}</p>
                                         </div>
                                     )}
                                 </div>
@@ -296,7 +296,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                         </div>
                     );
                 })}
-                {tierQuestions.length === 0 && <div className="text-center py-12 text-gray-500 italic"><Lock className="w-8 h-8 mx-auto mb-2 opacity-20" />No questions for this tier.</div>}
+                {tierQuestions.length === 0 && <div className="text-center py-12 text-[var(--text-muted)] italic"><Lock className="w-8 h-8 mx-auto mb-2 opacity-20" />No questions for this tier.</div>}
             </div>
         </div>
     );
@@ -306,18 +306,18 @@ const MCInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSele
     <div className="space-y-2" role="radiogroup" aria-label="Answer options">{question.options.map(opt => {
         const sel = answer?.selected === opt.id; const show = answer?.submitted; const right = opt.id === question.correctAnswer;
         return (<button key={opt.id} role="radio" aria-checked={sel} onClick={() => onSelect(question.id, opt.id, question.type)} disabled={answer?.submitted}
-            className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : sel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-white/5 text-gray-500') : sel ? 'border-purple-500/50 bg-purple-500/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
+            className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : sel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-[var(--border)] text-[var(--text-muted)]') : sel ? 'border-purple-500/50 bg-purple-500/10 text-[var(--text-primary)]' : 'border-[var(--border)] hover:border-[var(--border)] text-[var(--text-secondary)]'}`}>
             <span className="font-mono font-bold mr-2 text-xs">{opt.id.toUpperCase()}.</span> {opt.text}</button>);
     })}</div>
 );
 
 const MultiSelectInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSelect: (q: string, o: string, t: string) => void }> = ({ question, answer, onSelect }) => {
     const selected = (answer?.selected as string[]) || []; const correctIds = question.correctAnswer as string[];
-    return (<div className="space-y-2" role="group" aria-label="Select all that apply"><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Select all that apply</p>{question.options.map(opt => {
+    return (<div className="space-y-2" role="group" aria-label="Select all that apply"><p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">Select all that apply</p>{question.options.map(opt => {
         const isSel = selected.includes(opt.id); const show = answer?.submitted; const right = correctIds.includes(opt.id);
         return (<button key={opt.id} role="checkbox" aria-checked={isSel} onClick={() => onSelect(question.id, opt.id, 'multiple_select')} disabled={answer?.submitted}
-            className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : isSel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-white/5 text-gray-500') : isSel ? 'border-purple-500/50 bg-purple-500/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
-            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${isSel ? 'border-purple-500 bg-purple-500' : 'border-gray-600'}`}>{isSel && <CheckCircle2 className="w-3 h-3 text-white" />}</div>
+            className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : isSel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-[var(--border)] text-[var(--text-muted)]') : isSel ? 'border-purple-500/50 bg-purple-500/10 text-[var(--text-primary)]' : 'border-[var(--border)] hover:border-[var(--border)] text-[var(--text-secondary)]'}`}>
+            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${isSel ? 'border-purple-500 bg-purple-500' : 'border-[var(--text-muted)]'}`}>{isSel && <CheckCircle2 className="w-3 h-3 text-white" />}</div>
             <span><span className="font-mono font-bold mr-1 text-xs">{opt.id.toUpperCase()}.</span> {opt.text}</span></button>);
     })}</div>);
 };
@@ -325,7 +325,7 @@ const MultiSelectInput: React.FC<{ question: ReviewQuestion; answer?: AnswerStat
 const RankingInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSelect: (q: string, o: string, t: string) => void }> = ({ question, answer, onSelect }) => {
     const selected = (answer?.selected as string[]) || []; const show = answer?.submitted; const correctOrder = question.correctAnswer as string[];
     return (<div className="space-y-2">
-        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1"><ArrowUpDown className="w-3 h-3" /> Click in order (first to last)</p>
+        <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest flex items-center gap-1"><ArrowUpDown className="w-3 h-3" /> Click in order (first to last)</p>
         {selected.length > 0 && <div className="flex gap-1 flex-wrap mb-2">{selected.map((id, i) => {
             const opt = question.options.find(o => o.id === id); const rightPos = show && correctOrder[i] === id;
             return (<span key={id} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${show ? (rightPos ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30') : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>{i + 1}. {opt?.text.slice(0, 30)}{(opt?.text.length || 0) > 30 ? '...' : ''}</span>);
@@ -333,8 +333,8 @@ const RankingInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; o
         <div role="group" aria-label="Ranking options">{question.options.map(opt => {
             const isSel = selected.includes(opt.id); const pos = selected.indexOf(opt.id);
             return (<button key={opt.id} onClick={() => onSelect(question.id, opt.id, 'ranking')} disabled={answer?.submitted} aria-pressed={isSel} aria-label={`${opt.text}${isSel ? `, ranked ${pos + 1}` : ''}`}
-                className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${isSel ? 'border-purple-500/50 bg-purple-500/10 text-purple-300 opacity-60' : 'border-white/10 hover:border-white/20 text-gray-300'}`}>
-                {isSel ? <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-bold flex items-center justify-center">{pos + 1}</span> : <span className="w-6 h-6 rounded-full border-2 border-gray-600 text-xs flex items-center justify-center text-gray-600">?</span>}
+                className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${isSel ? 'border-purple-500/50 bg-purple-500/10 text-purple-300 opacity-60' : 'border-[var(--border)] hover:border-[var(--border)] text-[var(--text-secondary)]'}`}>
+                {isSel ? <span className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-bold flex items-center justify-center">{pos + 1}</span> : <span className="w-6 h-6 rounded-full border-2 border-[var(--text-muted)] text-xs flex items-center justify-center text-[var(--text-muted)]">?</span>}
                 {opt.text}</button>);
         })}</div>
     </div>);

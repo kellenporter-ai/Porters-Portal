@@ -148,22 +148,22 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   }, [pendingOrder, filterClass, classConfigs, toast]);
 
   return (
-    <div className="w-80 border-r border-white/10 bg-black/20 flex flex-col shrink-0">
+    <div className="w-80 border-r border-[var(--border)] bg-[var(--panel-bg)] flex flex-col shrink-0">
       {/* Top controls */}
-      <div className="p-3 border-b border-white/5 space-y-2">
+      <div className="p-3 border-b border-[var(--border)] space-y-2">
         <button onClick={onStartNew} className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer">
           <Plus className="w-4 h-4" /> New Resource
         </button>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-          <input type="text" value={searchFilter} onChange={e => setSearchFilter(e.target.value)} placeholder="Search resources..." className="w-full pl-9 pr-3 py-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
+          <input type="text" value={searchFilter} onChange={e => setSearchFilter(e.target.value)} placeholder="Search resources..." className="w-full pl-9 pr-3 py-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition" />
         </div>
         {/* Class & Category Filters */}
         <div className="grid grid-cols-2 gap-1.5">
           <select
             value={filterClass}
             onChange={e => setFilterClass(e.target.value)}
-            className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-gray-300 font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
+            className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
           >
             <option value="All Classes">All Classes</option>
             {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
@@ -171,7 +171,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-gray-300 font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
+            className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
           >
             <option value="All Categories">All Categories</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -188,7 +188,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
               setShowUnitOrder(!showUnitOrder);
             }}
             className={`w-full flex items-center justify-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-              showUnitOrder ? 'text-amber-300 bg-amber-500/20 border-amber-500/30' : 'text-gray-400 bg-white/5 border-white/10 hover:text-white'
+              showUnitOrder ? 'text-amber-300 bg-amber-500/20 border-amber-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border-[var(--border)] hover:text-[var(--text-primary)]'
             }`}
           >
             <ArrowUpDown className="w-3 h-3" /> Reorder Units
@@ -198,22 +198,22 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
 
       {/* Unit Order Panel */}
       {showUnitOrder && pendingOrder && (
-        <div className="border-b border-white/5 p-3 bg-amber-500/5 space-y-2">
+        <div className="border-b border-[var(--border)] p-3 bg-amber-500/5 space-y-2">
           <div className="text-[9px] font-bold text-amber-300 uppercase tracking-widest">Unit Order — {filterClass}</div>
           <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
             {pendingOrder.map((unit, idx) => (
-              <div key={unit} className="flex items-center gap-1.5 bg-black/30 border border-white/5 rounded-lg px-2 py-1.5">
-                <span className="text-[9px] text-gray-600 font-mono w-4 text-right">{idx + 1}</span>
-                <span className="text-[10px] text-gray-300 truncate flex-1">{unit}</span>
+              <div key={unit} className="flex items-center gap-1.5 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5">
+                <span className="text-[9px] text-[var(--text-muted)] font-mono w-4 text-right">{idx + 1}</span>
+                <span className="text-[10px] text-[var(--text-secondary)] truncate flex-1">{unit}</span>
                 <button
                   disabled={idx === 0}
                   onClick={() => { const n = [...pendingOrder]; [n[idx], n[idx - 1]] = [n[idx - 1], n[idx]]; setPendingOrder(n); }}
-                  className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20 transition cursor-pointer"
+                  className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition cursor-pointer"
                 ><ChevronUp className="w-3 h-3" /></button>
                 <button
                   disabled={idx === pendingOrder.length - 1}
                   onClick={() => { const n = [...pendingOrder]; [n[idx], n[idx + 1]] = [n[idx + 1], n[idx]]; setPendingOrder(n); }}
-                  className="p-0.5 text-gray-600 hover:text-white disabled:opacity-20 transition cursor-pointer"
+                  className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition cursor-pointer"
                 ><ChevronDown className="w-3 h-3" /></button>
               </div>
             ))}
@@ -222,7 +222,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
             <button onClick={handleSaveUnitOrder} disabled={isSavingOrder} className="flex-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
               {isSavingOrder ? 'Saving...' : 'Save Order'}
             </button>
-            <button onClick={() => { setShowUnitOrder(false); setPendingOrder(null); }} className="text-[10px] text-gray-500 hover:text-white px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
+            <button onClick={() => { setShowUnitOrder(false); setPendingOrder(null); }} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
           </div>
         </div>
       )}
@@ -232,7 +232,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
         {filterClass === 'All Classes' && filteredByClass ? (
           // All Classes view: class -> unit -> resources
           Object.keys(filteredByClass).sort().length === 0 ? (
-            <div className="text-center py-8 text-gray-600 text-xs">
+            <div className="text-center py-8 text-[var(--text-muted)] text-xs">
               <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
               No resources match filters
             </div>
@@ -263,11 +263,11 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                           <div key={unit}>
                             <button
                               onClick={() => setExpandedAllClassUnits(prev => { const n = new Set(prev); n.has(compositeKey) ? n.delete(compositeKey) : n.add(compositeKey); return n; })}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer"
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-[var(--surface-glass)] rounded-lg transition cursor-pointer"
                             >
-                              {isUnitExpanded ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
-                              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
-                              <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
+                              {isUnitExpanded ? <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
+                              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
+                              <span className="text-[9px] text-[var(--text-muted)] font-mono">{items.length}</span>
                             </button>
                             {isUnitExpanded && items.map(a => {
                               const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
@@ -289,26 +289,26 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                   className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${
                                     selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30'
                                     : a.isAssessment ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10'
-                                    : 'hover:bg-white/5 border border-transparent'
+                                    : 'hover:bg-[var(--surface-glass)] border border-transparent'
                                   }`}
                                 >
                                   <button
                                     onClick={() => onSelectResource(a.id)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-gray-400 hover:text-gray-200'}`}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}
                                   >
-                                    {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                                    {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                                     <span className="truncate flex-1">{a.title}</span>
                                     <div className="flex items-center gap-1 shrink-0">
                                       {a.dueDate && (
-                                        <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-gray-500'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                                        <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                                           due {formatDueCompact(a.dueDate)}
                                         </span>
                                       )}
                                       {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
                                       {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
-                                      {compactDate && <span className="text-[8px] text-gray-600 font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
+                                      {compactDate && <span className="text-[8px] text-[var(--text-muted)] font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
                                       {wasEdited && (
-                                        <span className="text-[7px] text-gray-600 font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+                                        <span className="text-[7px] text-[var(--text-muted)] font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                                           edited
                                         </span>
                                       )}
@@ -320,16 +320,16 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                     </div>
                                   </button>
                                   {isHovered && (
-                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
+                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10">
                                       {isDraft && (
-                                        <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
+                                        <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
                                           <Rocket className="w-3 h-3" />
                                         </button>
                                       )}
-                                      <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
+                                      <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
                                         {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
                                       </button>
-                                      <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
+                                      <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer" title="Delete">
                                         <Trash2 className="w-3 h-3" />
                                       </button>
                                     </div>
@@ -354,10 +354,10 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
               return sortedKeys.map(k => [k, filteredUnits[k]] as [string, Assignment[]]);
             })().map(([unit, items]) => (
               <div key={unit}>
-                <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5 rounded-lg transition cursor-pointer">
-                  {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-gray-500" /> : <ChevronRight className="w-3 h-3 text-gray-500" />}
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate flex-1">{unit}</span>
-                  <span className="text-[9px] text-gray-600 font-mono">{items.length}</span>
+                <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-[var(--surface-glass)] rounded-lg transition cursor-pointer">
+                  {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
+                  <span className="text-[9px] text-[var(--text-muted)] font-mono">{items.length}</span>
                 </button>
                 {expandedUnits.has(unit) && items.map(a => {
                   const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
@@ -379,26 +379,26 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                       className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${
                         selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30'
                         : a.isAssessment ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10'
-                        : 'hover:bg-white/5 border border-transparent'
+                        : 'hover:bg-[var(--surface-glass)] border border-transparent'
                       }`}
                     >
                       <button
                         onClick={() => onSelectResource(a.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-gray-400 hover:text-gray-200'}`}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}
                       >
-                        {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-gray-500">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                        {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate flex-1">{a.title}</span>
                         <div className="flex items-center gap-1 shrink-0">
                           {a.dueDate && (
-                            <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-gray-500'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                            <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                               due {formatDueCompact(a.dueDate)}
                             </span>
                           )}
                           {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
                           {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
-                          {compactDate && <span className="text-[8px] text-gray-600 font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
+                          {compactDate && <span className="text-[8px] text-[var(--text-muted)] font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
                           {wasEdited && (
-                            <span className="text-[7px] text-gray-600 font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+                            <span className="text-[7px] text-[var(--text-muted)] font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                               edited
                             </span>
                           )}
@@ -410,16 +410,16 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                         </div>
                       </button>
                       {isHovered && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[#1a1b26]/95 border border-white/10 rounded-lg px-1 py-0.5 shadow-xl z-10">
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10">
                           {isDraft && (
-                            <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-gray-500 hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
+                            <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
                               <Rocket className="w-3 h-3" />
                             </button>
                           )}
-                          <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-gray-500 hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
+                          <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
                             {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-gray-500 hover:text-red-400 transition cursor-pointer" title="Delete">
+                          <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer" title="Delete">
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
@@ -430,7 +430,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
               </div>
             ))}
             {Object.keys(filteredUnits).length === 0 && (
-              <div className="text-center py-8 text-gray-600 text-xs">
+              <div className="text-center py-8 text-[var(--text-muted)] text-xs">
                 <Filter className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 No resources match filters
               </div>
@@ -439,7 +439,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
         )}
       </div>
       {/* Sidebar footer stats */}
-      <div className="border-t border-white/5 px-3 py-2 text-[9px] text-gray-600 flex items-center justify-between">
+      <div className="border-t border-[var(--border)] px-3 py-2 text-[9px] text-[var(--text-muted)] flex items-center justify-between">
         {filterClass === 'All Classes' && filteredByClass ? (
           <>
             <span>{Object.values(filteredByClass).reduce((sum, units) => sum + Object.values(units).reduce((s, items) => s + items.length, 0), 0)} resources</span>

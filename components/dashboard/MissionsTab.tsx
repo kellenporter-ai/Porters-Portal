@@ -35,7 +35,7 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
         {newQuests.map(quest => (
           <div key={quest.id} className="bg-black/20 border border-indigo-500/30 p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/60 transition">
             <div className="flex justify-between items-start mb-2">
-              <h4 className="text-lg font-bold text-white">{quest.title}</h4>
+              <h4 className="text-lg font-bold text-[var(--text-primary)]">{quest.title}</h4>
               <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{quest.type.replace('_', ' ')}</span>
             </div>
             <p className="text-sm text-gray-400 mb-4 pr-16">{quest.description}</p>
@@ -77,14 +77,14 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
           const isManual = quest.type === 'CUSTOM';
 
           return (
-            <div key={quest.id} className="bg-[#0f0720]/80 border border-purple-500/30 p-6 rounded-3xl relative group hover:border-purple-500/60 transition-all shadow-[0_0_30px_rgba(168,85,247,0.1)]">
+            <div key={quest.id} className="bg-[var(--panel-bg)] border border-purple-500/30 p-6 rounded-3xl relative group hover:border-purple-500/60 transition-all shadow-[0_0_30px_rgba(168,85,247,0.1)]">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/20 shadow-inner">
                     <Target className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="text-white font-bold text-lg leading-tight">{quest.title}</h4>
+                    <h4 className="text-[var(--text-primary)] font-bold text-lg leading-tight">{quest.title}</h4>
                     <div className="text-[10px] text-gray-500 uppercase font-black tracking-[0.1em]">{quest.type} MISSION</div>
                   </div>
                 </div>
