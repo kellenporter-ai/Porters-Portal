@@ -353,7 +353,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
       )}
 
-      {/* 2b. Dark mode: Animated Space Background (Canvas — conditional on liveBackground and not perf-mode) */}
+      {/* 2b. Dark mode: Circuit board background image */}
+      {!isLight && (
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
+      )}
+
+      {/* 2c. Dark mode: Animated Space Background (Canvas — conditional on liveBackground and not perf-mode) */}
       {!isLight && settings.liveBackground && !settings.performanceMode && <SpaceBackground />}
 
       {/* 3. Glass Overlay (semi-transparent in dark, hidden in light since base layer is solid) */}
