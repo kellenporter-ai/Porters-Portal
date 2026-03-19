@@ -356,7 +356,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
       )}
 
-      {/* 3. Glass Overlay (semi-transparent in dark, hidden in light since base layer is solid) */}
+      {/* 3. Glass Overlay */}
+      {isLight && (
+        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-white/20 ${settings.performanceMode ? '' : 'backdrop-blur-sm'}`}></div>
+      )}
       {!isLight && (
         <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/40 ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
       )}
