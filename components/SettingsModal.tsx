@@ -9,6 +9,7 @@ import { isPushSupported, getPushPermission, requestPushPermission } from '../li
 
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
+import { setSfxEnabled, setSfxVolume } from '../lib/sfx';
 
 // ─── Inline component for joining another class via enrollment code ───
 const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
@@ -103,12 +104,37 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
   const toast = useToast();
   const { theme, setTheme } = useTheme();
 
+  // Re-sync localSettings from persisted user.settings every time modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalSettings(user.settings || {
+        performanceMode: false,
+        privacyMode: false,
+        compactView: true,
+        soundEffects: true,
+        themeMode: 'dark'
+      });
+      setCodename(user.gamification?.codename || '');
+    }
+  }, [isOpen, user.settings, user.gamification?.codename]);
+
+  // Revert sfx to persisted settings when modal closes (handles cancel without save)
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSfxEnabled(user.settings?.soundEffects !== false);
+      setSfxVolume(user.settings?.soundVolume ?? 0.5);
+    }
+  }, [isOpen, user.settings?.soundEffects, user.settings?.soundVolume]);
+
   const handleToggle = (key: keyof UserSettings) => {
     setLocalSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleSave = async () => {
     setIsSaving(true);
+    // Apply sound settings immediately (don't wait for Firestore round-trip)
+    setSfxEnabled(localSettings.soundEffects !== false);
+    setSfxVolume(localSettings.soundVolume ?? 0.5);
     try {
       await onSaveSettings(localSettings);
       if (codename !== (user.gamification?.codename || '')) {
@@ -206,7 +232,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               title="Sound Effects"
               description="Play audio feedback for XP gains, level ups, and actions."
               value={localSettings.soundEffects !== false}
-              onToggle={() => setLocalSettings(prev => ({ ...prev, soundEffects: prev.soundEffects === false ? true : false }))}
+              onToggle={() => setLocalSettings(prev => {
+                const next = prev.soundEffects === false;
+                setSfxEnabled(next);
+                return { ...prev, soundEffects: next };
+              })}
             />
             {localSettings.soundEffects !== false && (
               <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)]">
@@ -222,7 +252,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
                   min={0}
                   max={100}
                   value={Math.round((localSettings.soundVolume ?? 0.5) * 100)}
-                  onChange={e => setLocalSettings(prev => ({ ...prev, soundVolume: parseInt(e.target.value) / 100 }))}
+                  onChange={e => {
+                    const vol = parseInt(e.target.value) / 100;
+                    setSfxVolume(vol);
+                    setLocalSettings(prev => ({ ...prev, soundVolume: vol }));
+                  }}
                   className="w-full h-1.5 bg-[var(--toggle-off)] rounded-full appearance-none cursor-pointer accent-[var(--accent)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
                 />
               </div>
