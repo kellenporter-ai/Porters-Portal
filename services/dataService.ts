@@ -667,6 +667,23 @@ export const dataService = {
     return (data.responses as Record<string, unknown>) || null;
   },
 
+  /** Draft responses — fetches userIds who have saved draft work for an assignment. Admin-only read. */
+  subscribeToDraftResponseUsers: (assignmentId: string, callback: (userIds: Set<string>) => void) => {
+    const q = query(collection(db, 'lesson_block_responses'), where('assignmentId', '==', assignmentId), limit(500));
+    return onSnapshot(q, (snapshot) => {
+      const ids = new Set<string>();
+      snapshot.docs.forEach(d => {
+        const data = d.data();
+        // Only count as draft if there are actual responses
+        const responses = data.responses as Record<string, unknown> | undefined;
+        if (responses && Object.keys(responses).length > 0) {
+          ids.add(data.userId as string);
+        }
+      });
+      callback(ids);
+    }, (error: unknown) => reportError(error, { subscription: 'draftResponseUsers', assignmentId }));
+  },
+
   /** Assessment sessions — fetches open (unused) sessions for draft tracking. Admin-only read. */
   subscribeToAssessmentSessions: (assignmentId: string, callback: (sessions: Array<{ userId: string; startedAt: string }>) => void) => {
     const q = query(collection(db, 'assessment_sessions'), where('assignmentId', '==', assignmentId), where('used', '==', false), limit(500));

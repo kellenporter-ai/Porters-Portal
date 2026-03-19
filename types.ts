@@ -321,6 +321,10 @@ export interface User {
     // === ACHIEVEMENTS ===
     unlockedAchievements?: string[]; // Achievement IDs
     achievementProgress?: { [achievementId: string]: number }; // Progress tracking
+    // Server-authoritative counters for achievement tracking
+    bossesDefeated?: number; // Incremented each time a boss is killed while student contributed
+    wheelSpins?: number; // Incremented each successful spinFortuneWheel call
+    itemsCrafted?: number; // Incremented each successful craftItem call
 
     // === DAILY ENGAGEMENT ===
     lastLoginRewardDate?: string; // ISO date of last daily login reward

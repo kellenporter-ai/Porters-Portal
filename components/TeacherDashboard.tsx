@@ -54,6 +54,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [assessmentSortKey, setAssessmentSortKey] = useState<string>('submitted');
   const [assessmentSortDesc, setAssessmentSortDesc] = useState(true);
   const [draftSessions, setDraftSessions] = useState<Array<{ userId: string; startedAt: string }>>([]);
+  const [draftResponseUserIds, setDraftResponseUserIds] = useState<Set<string>>(new Set());
   const [rubricDraft, setRubricDraft] = useState<Record<string, Record<string, RubricSkillGrade>>>({});
   const [feedbackDraft, setFeedbackDraft] = useState('');
   const [isSavingRubric, setIsSavingRubric] = useState(false);
@@ -124,6 +125,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       return;
     }
     const unsub = dataService.subscribeToAssessmentSessions(selectedAssessmentId, setDraftSessions);
+    return () => unsub();
+  }, [selectedAssessmentId]);
+
+  // Subscribe to draft responses (catches drafts whose session tokens were cleaned up after 7 days)
+  useEffect(() => {
+    if (!selectedAssessmentId) {
+      setDraftResponseUserIds(new Set());
+      return;
+    }
+    const unsub = dataService.subscribeToDraftResponseUsers(selectedAssessmentId, setDraftResponseUserIds);
     return () => unsub();
   }, [selectedAssessmentId]);
 
@@ -450,7 +461,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             })
           : enrolledInClass;
         const submittedUserIds = new Set(sectionFilteredSubs.map(s => s.userId));
-        const draftUserIds = new Set(draftSessions.map(s => s.userId));
+        // Merge session-based drafts with response-based drafts (catches drafts whose session tokens expired after 7 days)
+        const sessionDraftUserIds = new Set(draftSessions.map(s => s.userId));
+        const draftUserIds = new Set([...sessionDraftUserIds, ...draftResponseUserIds]);
         const draftSessionMap = new Map(draftSessions.map(s => [s.userId, s.startedAt]));
         const hasDraftStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id) && draftUserIds.has(s.id));
         const notStartedStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id) && !draftUserIds.has(s.id));
