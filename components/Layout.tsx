@@ -358,7 +358,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 3. Glass Overlay */}
       {isLight && (
-        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-white/20 ${settings.performanceMode ? '' : 'backdrop-blur-sm'}`}></div>
+        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-purple-50/10 ${settings.performanceMode ? '' : 'backdrop-blur-sm'}`}></div>
       )}
       {!isLight && (
         <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/40 ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
