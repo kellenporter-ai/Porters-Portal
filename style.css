@@ -9,8 +9,8 @@
   --surface-raised: #ffffff;
   --surface-sunken: #f0eef5;
   --surface-overlay: rgba(255, 255, 255, 0.92);
-  --surface-glass: rgba(250, 249, 255, 0.12);
-  --surface-glass-heavy: rgba(250, 249, 255, 0.28);
+  --surface-glass: rgba(250, 249, 255, 0.06);
+  --surface-glass-heavy: rgba(250, 249, 255, 0.15);
   --text-primary: #1e1233;
   --text-secondary: #4a4560;
   --text-tertiary: #6a6580;
@@ -34,7 +34,7 @@
   --focus-ring: #7c3aed;
   --ring-offset: #f8f7fc;
   --backdrop: rgba(30, 18, 51, 0.25);
-  --panel-bg: rgba(250, 249, 255, 0.20);
+  --panel-bg: rgba(250, 249, 255, 0.10);
   --glass-glow: 0 0 0 1px rgba(255, 255, 255, 0.70), 0 4px 12px rgba(90, 70, 120, 0.08), 0 1px 3px rgba(90, 70, 120, 0.04);
   --toggle-off: #d8d0e8;
   --success: #059669;
@@ -151,6 +151,20 @@ textarea:focus:not(:focus-visible) {
 .static-purple-bg {
   background: radial-gradient(circle at 50% 50%, #1e0b3b 0%, #0f0720 100%);
   background-attachment: fixed;
+}
+
+/* Light mode: reduce heavy blurs so circuit board traces stay visible through panels */
+html:not(.dark) .backdrop-blur-md {
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+html:not(.dark) .backdrop-blur-xl {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+html:not(.dark) .backdrop-blur-2xl {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 /* Performance Mode Tweaks */
