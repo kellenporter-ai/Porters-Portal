@@ -42,19 +42,19 @@ function resetLabel(resetsAt?: string): string {
 
 // Rarity display color for loot text
 const rarityColor: Record<string, string> = {
-  UNIQUE:   'text-yellow-400',
-  RARE:     'text-purple-400',
-  UNCOMMON: 'text-blue-400',
-  COMMON:   'text-gray-400',
+  UNIQUE:   'text-yellow-700 dark:text-yellow-400',
+  RARE:     'text-purple-700 dark:text-purple-400',
+  UNCOMMON: 'text-blue-700 dark:text-blue-400',
+  COMMON:   'text-gray-600 dark:text-gray-400',
 };
 
 // Room type badge color classes
 const roomTypeBadge: Record<string, string> = {
-  COMBAT:   'text-red-400 bg-red-500/10 border-red-500/20',
-  PUZZLE:   'text-blue-400 bg-blue-500/10 border-blue-500/20',
-  BOSS:     'text-amber-400 bg-amber-500/10 border-amber-500/20',
-  REST:     'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-  TREASURE: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+  COMBAT:   'text-red-700 dark:text-red-400 bg-red-500/10 border-red-500/20',
+  PUZZLE:   'text-blue-700 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
+  BOSS:     'text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+  REST:     'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+  TREASURE: 'text-yellow-700 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
 };
 
 // Icon per room type — used in the map tiles

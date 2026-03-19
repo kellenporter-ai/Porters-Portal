@@ -475,10 +475,10 @@ export const getRunewordForItem = (item: RPGItem) => {
 
 export const getAssetColors = (rarity: ItemRarity): { border: string; text: string; bg: string; glow: string; shimmer: string } => {
     switch(rarity) {
-        case 'COMMON': return { border: 'border-slate-500', text: 'text-slate-300', bg: 'bg-slate-500/10', glow: 'shadow-none', shimmer: '' };
-        case 'UNCOMMON': return { border: 'border-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10', glow: 'shadow-emerald-500/20', shimmer: 'rarity-shimmer-uncommon' };
-        case 'RARE': return { border: 'border-yellow-400', text: 'text-yellow-300', bg: 'bg-yellow-500/10', glow: 'shadow-yellow-500/30', shimmer: 'rarity-shimmer-rare' };
-        case 'UNIQUE': return { border: 'border-orange-500', text: 'text-orange-400', bg: 'bg-orange-500/10', glow: 'shadow-orange-500/40', shimmer: 'rarity-shimmer-unique' };
-        default: return { border: 'border-slate-500', text: 'text-slate-300', bg: 'bg-slate-500/10', glow: 'shadow-none', shimmer: '' };
+        case 'COMMON': return { border: 'border-slate-500', text: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-500/10', glow: 'shadow-none', shimmer: '' };
+        case 'UNCOMMON': return { border: 'border-emerald-500', text: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/10', glow: 'shadow-emerald-500/20', shimmer: 'rarity-shimmer-uncommon' };
+        case 'RARE': return { border: 'border-yellow-400', text: 'text-yellow-700 dark:text-yellow-300', bg: 'bg-yellow-500/10', glow: 'shadow-yellow-500/30', shimmer: 'rarity-shimmer-rare' };
+        case 'UNIQUE': return { border: 'border-orange-500', text: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-500/10', glow: 'shadow-orange-500/40', shimmer: 'rarity-shimmer-unique' };
+        default: return { border: 'border-slate-500', text: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-500/10', glow: 'shadow-none', shimmer: '' };
     }
 };

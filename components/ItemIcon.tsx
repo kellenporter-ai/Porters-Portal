@@ -32,7 +32,7 @@ const ItemIcon: React.FC<ItemIconProps> = ({
   if (failed) {
     // Fallback: render a simple text label
     return (
-      <span className={`${size} flex items-center justify-center text-[8px] font-bold text-gray-500 uppercase ${className}`}>
+      <span className={`${size} flex items-center justify-center text-[8px] font-bold text-gray-600 dark:text-gray-500 uppercase ${className}`}>
         {slot.slice(0, 4)}
       </span>
     );

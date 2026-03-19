@@ -190,20 +190,20 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
 
   const getCosmeticSubColor = (visualType: CosmeticVisualType) => {
     switch (visualType) {
-      case 'AURA': return { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', glow: 'shadow-amber-500/10', price: '150' };
-      case 'PARTICLE': return { bg: 'bg-pink-500/10', border: 'border-pink-500/20', text: 'text-pink-400', glow: 'shadow-pink-500/10', price: '200' };
-      case 'FRAME': return { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-400', glow: 'shadow-indigo-500/10', price: '250' };
-      case 'TRAIL': return { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', glow: 'shadow-emerald-500/10', price: '300' };
+      case 'AURA': return { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-700 dark:text-amber-400', glow: 'shadow-amber-500/10', price: '150' };
+      case 'PARTICLE': return { bg: 'bg-pink-500/10', border: 'border-pink-500/20', text: 'text-pink-700 dark:text-pink-400', glow: 'shadow-pink-500/10', price: '200' };
+      case 'FRAME': return { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-600 dark:text-indigo-400', glow: 'shadow-indigo-500/10', price: '250' };
+      case 'TRAIL': return { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-400', glow: 'shadow-emerald-500/10', price: '300' };
     }
   };
 
   const getCategoryColor = (type: string) => {
     switch (type) {
-      case 'XP_BOOST': return { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', glow: 'shadow-yellow-500/10' };
-      case 'REROLL_TOKEN': return { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', glow: 'shadow-blue-500/10' };
-      case 'NAME_COLOR': return { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', glow: 'shadow-purple-500/10' };
-      case 'AGENT_COSMETIC': return { bg: 'bg-teal-500/10', border: 'border-teal-500/20', text: 'text-teal-400', glow: 'shadow-teal-500/10' };
-      default: return { bg: 'bg-gray-500/10', border: 'border-gray-500/20', text: 'text-gray-400', glow: 'shadow-gray-500/10' };
+      case 'XP_BOOST': return { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-700 dark:text-yellow-400', glow: 'shadow-yellow-500/10' };
+      case 'REROLL_TOKEN': return { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-700 dark:text-blue-400', glow: 'shadow-blue-500/10' };
+      case 'NAME_COLOR': return { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-700 dark:text-purple-400', glow: 'shadow-purple-500/10' };
+      case 'AGENT_COSMETIC': return { bg: 'bg-teal-500/10', border: 'border-teal-500/20', text: 'text-teal-700 dark:text-teal-400', glow: 'shadow-teal-500/10' };
+      default: return { bg: 'bg-gray-500/10', border: 'border-gray-500/20', text: 'text-gray-600 dark:text-gray-400', glow: 'shadow-gray-500/10' };
     }
   };
 
@@ -303,7 +303,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                   style={{ backgroundColor: def.color }}
                   aria-hidden="true"
                 />
-                <span className="text-xs font-bold text-teal-300">
+                <span className="text-xs font-bold text-teal-700 dark:text-teal-300">
                   {def.name}
                 </span>
               </div>
@@ -326,7 +326,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
             onClick={() => setShopTab(tab.key as typeof shopTab)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
               shopTab === tab.key
-                ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300'
+                ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300'
                 : 'bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -380,7 +380,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-[var(--text-primary)]">{previewCosmeticDef.name}</span>
-                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                       Preview
                     </span>
                   </div>
@@ -477,8 +477,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                           : !affordable
                           ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
                           : isPurchasing
-                          ? 'bg-cyan-500/20 text-cyan-300 cursor-wait'
-                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 hover:text-white active:scale-95'
+                          ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 cursor-wait'
+                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:text-white active:scale-95'
                       }`}
                     >
                       {atLimit ? (
@@ -540,12 +540,12 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-bold text-[var(--text-primary)] text-sm">{model.name}</h4>
                         {model.cost === 0 && (
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                             Free
                           </span>
                         )}
                         {isOwned && model.cost > 0 && (
-                          <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-bold text-violet-700 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded">
                             Owned
                           </span>
                         )}
@@ -587,8 +587,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         !affordable
                           ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
                           : isPurchasing
-                          ? 'bg-cyan-500/20 text-cyan-300 cursor-wait'
-                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 hover:text-white active:scale-95'
+                          ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 cursor-wait'
+                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:text-white active:scale-95'
                       }`}
                     >
                       {isPurchasing ? (
@@ -612,7 +612,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
       {(shopTab === 'all' || shopTab === 'cosmetics') && (
       <div className="space-y-2">
         <div className="flex items-center gap-2 px-1">
-          <span className="text-teal-400" aria-hidden="true"><User className="w-5 h-5" /></span>
+          <span className="text-teal-700 dark:text-teal-400" aria-hidden="true"><User className="w-5 h-5" /></span>
           <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Agent Cosmetics</h3>
         </div>
         <p className="text-xs text-[var(--text-muted)] px-1">Customize your operative with auras, particles, frames, and trails. Equip one of each type simultaneously.</p>
@@ -705,10 +705,10 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         aria-pressed={isEquipped}
                         className={`mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent ${
                           isEquipped
-                            ? 'bg-teal-500/30 text-teal-200 hover:bg-red-500/20 hover:text-red-300'
+                            ? 'bg-teal-500/30 text-teal-800 dark:text-teal-200 hover:bg-red-500/20 hover:text-red-700 dark:hover:text-red-300'
                             : isEquipping
-                            ? 'bg-teal-500/20 text-teal-300 cursor-wait'
-                            : 'bg-teal-500/15 hover:bg-teal-500/30 text-teal-300 hover:text-white active:scale-95'
+                            ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300 cursor-wait'
+                            : 'bg-teal-500/15 hover:bg-teal-500/30 text-teal-700 dark:text-teal-300 hover:text-white active:scale-95'
                         }`}
                       >
                         {isEquipped ? (
@@ -783,8 +783,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         !affordable
                           ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
                           : isPurchasing
-                          ? 'bg-cyan-500/20 text-cyan-300 cursor-wait'
-                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 hover:text-white active:scale-95'
+                          ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 cursor-wait'
+                          : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:text-white active:scale-95'
                       }`}
                     >
                       {isPurchasing ? (
