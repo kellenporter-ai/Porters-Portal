@@ -487,28 +487,28 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                             {rankDetails.rankName} (Lvl {level})
                         </span>
                     </div>
-                    <span className={`text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 font-bold uppercase tracking-widest mt-1 hidden lg:hidden xl:inline ${isLight ? 'text-yellow-700' : 'text-yellow-400'}`}>
+                    <span className={`text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 font-bold uppercase tracking-widest mt-1 hidden xl:inline ${isLight ? 'text-yellow-700' : 'text-yellow-400'}`}>
                         Gear Score: {gearScore}
                     </span>
 
                     {enrolledClasses.length > 1 && (
-                        <div className="mt-3 hidden xl:block xl:mt-3 relative w-full">
+                        <div className="mt-3 hidden lg:block lg:mt-0 lg:ml-2 xl:mt-3 xl:ml-0 relative w-full lg:w-auto xl:w-full">
                             <select
                                 value={activeClass}
                                 onChange={handleClassChange}
                                 aria-label="Switch active class"
-                                className="w-full bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
+                                className="w-full lg:w-[160px] xl:w-full bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs lg:text-[11px] xl:text-xs font-bold py-2 lg:py-1 xl:py-2 px-4 lg:px-2 xl:px-4 rounded-xl lg:rounded-lg xl:rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
                             >
                                 {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
+                            <ChevronDown className="absolute right-3 lg:right-2 xl:right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
                         </div>
                     )}
 
                     <div className="w-full lg:w-[140px] xl:w-full h-2 lg:h-1.5 xl:h-2 bg-black/60 rounded-full mt-4 lg:mt-1 xl:mt-4 overflow-hidden border border-[var(--border)] relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
                         <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                     </div>
-                    <div className="flex justify-between w-full text-xs text-[var(--text-tertiary)] mt-2 font-mono font-bold relative hidden lg:hidden xl:flex">
+                    <div className="flex justify-between w-full text-xs text-[var(--text-tertiary)] mt-2 font-mono font-bold relative hidden xl:flex">
                         <span className="truncate">{displayXp.toLocaleString()} XP ({activeClass})</span>
                         <span className="shrink-0 ml-2">{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
                         {xpFloatAmount && (
