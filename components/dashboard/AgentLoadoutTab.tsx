@@ -305,10 +305,10 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[snapCenterToCursor]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div key="loadout" className="flex flex-col h-full" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 xl:gap-6 flex-1 min-h-0">
 
             {/* LEFT: CHARACTER VISUALIZER WITH SLOTS */}
-            <div className="bg-[var(--surface-sunken)] rounded-2xl border border-[var(--border)] relative flex flex-col items-center justify-center p-4 min-h-[400px]">
+            <div className="bg-[var(--surface-sunken)] rounded-2xl border border-[var(--border)] relative flex flex-col items-center justify-center p-4 min-h-[300px] lg:min-h-[320px] xl:min-h-[380px] 2xl:min-h-[400px]">
               <div className="absolute inset-0 rounded-2xl overflow-hidden loadout-hex-bg pointer-events-none"></div>
               <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
 
@@ -355,7 +355,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
             <div className="flex flex-col gap-4">
               <div className="bg-[var(--surface-sunken)] rounded-2xl p-4 border border-[var(--border)] flex-1 min-h-[200px]">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Performance Radar</h4>
-                <div className="h-[200px]">
+                <div className="h-[160px] lg:h-[170px] xl:h-[190px] 2xl:h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                       <defs>
@@ -505,7 +505,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
   return (
     <div
       ref={setNodeRef}
-      className={`mt-6 flex-1 min-h-[250px] bg-[var(--surface-sunken)] border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
+      className={`mt-6 flex-1 min-h-[180px] xl:min-h-[220px] 2xl:min-h-[250px] bg-[var(--surface-sunken)] border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
         isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-[var(--border)]'
       }`}
     >
@@ -515,7 +515,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
           <GripVertical className="w-3 h-3" /> Drag to equip
         </span>
       </h4>
-      <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 content-start">
+      <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2 md:gap-3 content-start">
         {inventory.map((item) => (
           <DraggableInventoryItem
             key={item.id}

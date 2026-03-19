@@ -82,10 +82,9 @@
   --info: #3b82f6;
 }
 
-/* Light mode: purple neon edges on glass panels and cards */
+/* Light mode: purple neon edges on glass panels (top-level only, not nested cards) */
 :root:not(.dark) .rounded-2xl,
-:root:not(.dark) .rounded-3xl,
-:root:not(.dark) .rounded-xl {
+:root:not(.dark) .rounded-3xl {
   box-shadow: var(--glass-glow);
 }
 

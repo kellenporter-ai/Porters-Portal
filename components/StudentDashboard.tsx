@@ -416,11 +416,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, [user.id, confirm, toast, questActionLoading]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full pb-6 lg:pb-12">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 lg:gap-5 xl:gap-6 2xl:gap-8 h-full pb-6 lg:pb-8 xl:pb-10 2xl:pb-12">
 
       {/* ANNOUNCEMENTS BANNER */}
       {visibleAnnouncements.length > 0 && (
-        <section aria-label="Announcements" className="lg:col-span-12 space-y-2">
+        <section aria-label="Announcements" className="xl:col-span-12 space-y-2">
           {visibleAnnouncements.map(a => {
             const styles = {
               INFO: 'bg-blue-600/10 border-blue-500/30 text-blue-300',
@@ -446,7 +446,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* ACTIVE EVENT BANNER */}
       {activeEvent && (
-        <div className="lg:col-span-12">
+        <div className="xl:col-span-12">
           <div className={`bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)]${reducedMotion ? '' : ' animate-pulse'}`} role="status" aria-live="polite">
             <div className="flex items-center gap-3">
               <div className="bg-blue-500 text-white p-2 rounded-lg">
@@ -464,69 +464,71 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         </div>
       )}
 
-      {/* --- LEFT COLUMN: OPERATIVE STATUS --- */}
-      <aside aria-label="Player status" className="lg:col-span-3 space-y-6">
-        <div className={`bg-[var(--surface-glass)] border rounded-3xl p-6 backdrop-blur-md relative overflow-hidden group ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
+      {/* --- OPERATIVE STATUS: horizontal strip at lg (Chromebook), vertical sidebar at xl+ --- */}
+      <aside aria-label="Player status" className="xl:col-span-3 2xl:col-span-2 flex flex-col lg:flex-row xl:flex-col lg:flex-wrap lg:items-center xl:items-stretch gap-3 lg:gap-3 xl:gap-3 2xl:gap-4">
+        {/* Identity card — avatar, name, rank, XP */}
+        <div className={`bg-[var(--surface-glass)] border rounded-3xl lg:rounded-xl xl:rounded-3xl p-4 lg:py-2 lg:px-3 xl:p-4 backdrop-blur-md relative overflow-hidden group lg:flex-1 xl:flex-none ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>
-            <div className="relative z-10 flex flex-col items-center">
-                <div className={`w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-white/10 to-white/5 mb-4 ${rankDetails.tierGlow} shadow-xl`}>
+            <div className="relative z-10 flex flex-col items-center lg:flex-row lg:items-center lg:gap-2 xl:flex-col xl:items-center">
+                <div className={`w-20 h-20 lg:w-8 lg:h-8 xl:w-20 xl:h-20 rounded-full p-1 lg:p-0.5 xl:p-1 bg-gradient-to-tr from-white/10 to-white/5 mb-3 lg:mb-0 xl:mb-3 shrink-0 ${rankDetails.tierGlow} shadow-xl`}>
                     <img
                       src={user.avatarUrl}
                       alt={`${user.gamification?.codename || user.name}'s avatar`}
-                      className={`w-full h-full rounded-full border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
+                      className={`w-full h-full rounded-full border-4 lg:border-2 xl:border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
                     />
                 </div>
-                <h2
-                  className={`text-xl font-bold tracking-tight ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
-                  style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : undefined}
-                >{user.gamification?.codename || user.name}</h2>
-                <div className="flex flex-col items-center gap-1">
-                    <span className={`font-mono text-xs uppercase tracking-[0.2em] mt-1 font-bold ${rankDetails.tierColor.split(' ')[1]}`}>
-                    {rankDetails.rankName} (Lvl {level})
-                    </span>
-                    <span className={`text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 font-bold uppercase tracking-widest ${isLight ? 'text-yellow-700' : 'text-yellow-400'}`}>
+                <div className="flex flex-col items-center lg:items-start xl:items-center lg:flex-1 lg:min-w-0">
+                    <div className="flex flex-col items-center lg:flex-row lg:items-baseline lg:gap-2 xl:flex-col xl:items-center">
+                        <h2
+                          className={`text-xl lg:text-sm xl:text-xl font-bold tracking-tight lg:truncate lg:max-w-full ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
+                          style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : undefined}
+                        >{user.gamification?.codename || user.name}</h2>
+                        <span className={`font-mono text-xs lg:text-[10px] xl:text-xs uppercase tracking-[0.2em] mt-1 lg:mt-0 xl:mt-1 font-bold ${rankDetails.tierColor.split(' ')[1]}`}>
+                            {rankDetails.rankName} (Lvl {level})
+                        </span>
+                    </div>
+                    <span className={`text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 font-bold uppercase tracking-widest mt-1 hidden lg:hidden xl:inline ${isLight ? 'text-yellow-700' : 'text-yellow-400'}`}>
                         Gear Score: {gearScore}
                     </span>
-                </div>
 
-                {enrolledClasses.length > 1 && (
-                    <div className="mt-4 relative w-full">
-                        <select
-                            value={activeClass}
-                            onChange={handleClassChange}
-                            aria-label="Switch active class"
-                            className="w-full bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
-                        >
-                            {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
-                    </div>
-                )}
-
-                <div className="w-full h-2 bg-black/60 rounded-full mt-6 overflow-hidden border border-[var(--border)] relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
-                    <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
-                </div>
-                <div className="flex justify-between w-full text-xs text-[var(--text-tertiary)] mt-2 font-mono font-bold relative">
-                    <span>{displayXp.toLocaleString()} XP ({activeClass})</span>
-                    <span>{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
-                    {xpFloatAmount && (
-                        <span className={`${reducedMotion ? '' : 'xp-float-anim'} absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap`} aria-live="polite" role="status">
-                            +{xpFloatAmount} XP
-                        </span>
+                    {enrolledClasses.length > 1 && (
+                        <div className="mt-3 hidden xl:block xl:mt-3 relative w-full">
+                            <select
+                                value={activeClass}
+                                onChange={handleClassChange}
+                                aria-label="Switch active class"
+                                className="w-full bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-bold py-2 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
+                            >
+                                {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
+                        </div>
                     )}
+
+                    <div className="w-full lg:w-[140px] xl:w-full h-2 lg:h-1.5 xl:h-2 bg-black/60 rounded-full mt-4 lg:mt-1 xl:mt-4 overflow-hidden border border-[var(--border)] relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
+                        <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <div className="flex justify-between w-full text-xs text-[var(--text-tertiary)] mt-2 font-mono font-bold relative hidden lg:hidden xl:flex">
+                        <span className="truncate">{displayXp.toLocaleString()} XP ({activeClass})</span>
+                        <span className="shrink-0 ml-2">{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
+                        {xpFloatAmount && (
+                            <span className={`${reducedMotion ? '' : 'xp-float-anim'} absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap`} aria-live="polite" role="status">
+                                +{xpFloatAmount} XP
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
-                    <Hexagon className="w-6 h-6" aria-hidden="true" />
-                </div>
-                <div>
-                    <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Cyber-Flux</div>
-                    <div className="text-xl font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
-                </div>
+        {/* Stat badges — compact inline at lg, stacked cards at xl+ */}
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-3 lg:py-2 lg:px-3 xl:p-3 flex items-center gap-2">
+            <div className="w-8 h-8 lg:w-6 lg:h-6 xl:w-8 xl:h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                <Hexagon className="w-5 h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5" aria-hidden="true" />
+            </div>
+            <div className="flex items-baseline gap-1.5 lg:gap-1 xl:flex-col xl:gap-0">
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest lg:text-[10px] xl:text-xs">Cyber-Flux</div>
+                <div className="text-lg lg:text-base xl:text-lg font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
             </div>
         </div>
 
@@ -535,51 +537,49 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             const streak = user.gamification?.engagementStreak || 0;
             const multiplier = getStreakMultiplier(streak);
             return (
-                <div className={`border rounded-2xl p-4 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-400'}`}>
-                            <Flame className="w-6 h-6" aria-hidden="true" />
-                        </div>
-                        <div className="flex-1">
-                            <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
-                            <div className={`text-xl font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
-                        </div>
-                        {multiplier > 1 && (
-                            <div className="text-right">
-                                <div className="text-xs text-[var(--text-tertiary)] uppercase">XP Bonus</div>
-                                <div className={`text-sm font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
-                            </div>
-                        )}
+                <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 xl:p-3 flex items-center gap-2 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
+                    <div className={`w-8 h-8 lg:w-6 lg:h-6 xl:w-8 xl:h-8 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-400'}`}>
+                        <Flame className="w-5 h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5" aria-hidden="true" />
                     </div>
+                    <div className="flex items-baseline gap-1.5 lg:gap-1 xl:flex-col xl:gap-0 flex-1 min-w-0">
+                        <div className="text-xs lg:text-[10px] xl:text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
+                        <div className={`text-lg lg:text-base xl:text-lg font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
+                    </div>
+                    {multiplier > 1 && (
+                        <div className="text-right shrink-0">
+                            <div className="text-xs lg:text-[10px] xl:text-xs text-[var(--text-tertiary)] uppercase">XP Bonus</div>
+                            <div className={`text-sm lg:text-xs xl:text-sm font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
+                        </div>
+                    )}
                 </div>
             );
         })()}
 
         {/* Login Streak */}
         {(user.gamification?.loginStreak || 0) > 1 && (
-            <div className={`border rounded-2xl p-3 flex items-center gap-3 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
-                <Sparkles className={`w-5 h-5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
-                <div>
-                    <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
-                    <div className={`text-sm font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
+            <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 xl:p-3 flex items-center gap-2 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
+                <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
+                <div className="flex items-baseline gap-1.5 lg:gap-1 xl:flex-col xl:gap-0">
+                    <div className="text-xs lg:text-[10px] xl:text-xs text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
+                    <div className={`text-sm lg:text-xs xl:text-sm font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
         )}
 
-        {/* Profile Showcase Button */}
+        {/* Profile + Access Nodes — hidden in horizontal strip, shown in vertical sidebar */}
         <button
             onClick={() => setShowProfile(true)}
-            className="w-full bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] p-3 rounded-2xl flex items-center justify-center gap-2 transition text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm font-bold focus-visible:ring-2 focus-visible:ring-purple-500"
+            className="hidden xl:flex w-full bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] p-3 rounded-2xl items-center justify-center gap-2 transition text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm font-bold focus-visible:ring-2 focus-visible:ring-purple-500"
         >
             <Eye className="w-4 h-4" aria-hidden="true" /> View Profile
         </button>
 
-        <div className="space-y-2">
+        <div className="hidden xl:block space-y-2">
              <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest px-2">Access Nodes</h3>
              {enabledFeatures.evidenceLocker && (
-                 <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-4 rounded-2xl flex items-center justify-between transition group focus-visible:ring-2 focus-visible:ring-purple-500">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400 shadow-inner"><Microscope className="w-5 h-5" aria-hidden="true" /></div>
+                 <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-3 rounded-2xl flex items-center justify-between transition group focus-visible:ring-2 focus-visible:ring-purple-500">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400 shadow-inner"><Microscope className="w-4 h-4" aria-hidden="true" /></div>
                         <div className="text-left">
                             <div className="font-bold text-[var(--text-secondary)] text-sm">Evidence Log</div>
                             <div className={`text-xs uppercase font-bold tracking-tight ${isLight ? 'text-emerald-600' : 'text-emerald-300/70'}`}>Weekly Portfolio</div>
@@ -592,8 +592,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       </aside>
 
       {/* --- MIDDLE: CONTENT --- */}
-      <main className="lg:col-span-9 space-y-6">
-          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md min-h-[600px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
+      <main className="xl:col-span-9 2xl:col-span-10 space-y-4 xl:space-y-5 2xl:space-y-6">
+          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-4 xl:p-5 2xl:p-6 backdrop-blur-md min-h-[400px] xl:min-h-[500px] 2xl:min-h-[600px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
            <div className={`flex-1 transition-all ${reducedMotion ? 'duration-0' : 'duration-150'} ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (
@@ -807,7 +807,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* BOSS ENCOUNTERS — Full-width panel */}
       {enabledFeatures.bossFights && (
-      <div className="lg:col-span-12">
+      <div className="xl:col-span-12">
           <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md space-y-6">
               <FeatureErrorBoundary feature="Boss Encounters">
                 <React.Suspense fallback={<GamificationSkeleton />}>

@@ -294,7 +294,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   };
   
   const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
-    <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] p-6 rounded-2xl relative overflow-hidden group hover:border-[var(--border-strong)] transition-all duration-300" aria-label={label}>
+    <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] p-6 rounded-3xl relative overflow-hidden group hover:border-[var(--border-strong)] transition-all duration-300" aria-label={label}>
       <div className={`absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity ${color}`}>
         {icon}
       </div>
@@ -2319,7 +2319,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         </div>
       </FeatureErrorBoundary></div>)}
 
-      <div className={adminTab === 'dashboard' ? '' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
+      <div className={adminTab === 'dashboard' ? 'space-y-6' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
       <FeatureErrorBoundary feature="Dashboard Overview">
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2487,7 +2487,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
               const meta = BUCKET_META[bucket];
               const count = bucketDistribution[bucket];
               return (
-                <div key={bucket} className={`border rounded-xl p-3 ${meta.borderColor} ${meta.bgColor} transition hover:scale-[1.02]`}>
+                <div key={bucket} className={`border rounded-2xl p-3 ${meta.borderColor} ${meta.bgColor} transition hover:scale-[1.02]`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
                     <span className="text-lg font-bold text-[var(--text-primary)]">{count}</span>
@@ -2527,12 +2527,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       )}
 
       {/* ANNOUNCEMENTS */}
-      <div className="mt-8">
+      <div>
           <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
       </div>
 
       {/* ENGAGEMENT RANKING TABLE */}
-      <div className="mt-8 bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-8">
+      <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-[var(--text-primary)]">Student Engagement Ranking</h3>
 
