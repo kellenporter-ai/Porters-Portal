@@ -321,7 +321,7 @@ const App: React.FC = () => {
             createdAt: new Date().toISOString(),
             lastLoginAt: new Date().toISOString(),
             gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
-            settings: { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' }
+            settings: { performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' }
           });
         } else {
           const existingData = userSnap.data();

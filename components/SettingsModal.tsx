@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { User, UserSettings } from '../types';
-import { Monitor, Cpu, Shield, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle, Sun, Moon } from 'lucide-react';
+import { Cpu, Shield, Loader2, Save, Volume2, VolumeX, BellRing, KeyRound, CheckCircle, Sun, Moon } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './ToastProvider';
 import { useTheme } from '../lib/ThemeContext';
@@ -92,7 +92,6 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, onSaveSettings }) => {
   const [localSettings, setLocalSettings] = React.useState<UserSettings>(user.settings || {
-    liveBackground: true,
     performanceMode: false,
     privacyMode: false,
     compactView: true,
@@ -162,14 +161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
         <div className="mb-4">
           <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Visuals & Performance</label>
           <div className="space-y-2">
-            <SettingRow 
-              icon={Monitor} 
-              title="Live Neon Background" 
-              description="Toggle the video loop background. Disable to save GPU." 
-              value={localSettings.liveBackground} 
-              onToggle={() => handleToggle('liveBackground')} 
-            />
-            <SettingRow 
+            <SettingRow
               icon={Cpu} 
               title="Performance Mode" 
               description="Disable blurs and heavy animations for older hardware." 

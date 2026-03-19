@@ -8,7 +8,6 @@ import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, Pa
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
-import SpaceBackground from './SpaceBackground';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
@@ -51,7 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     if (typeof navigator === 'undefined') return;
     const isCrOS = /CrOS/.test(navigator.userAgent);
     const alreadySuggested = localStorage.getItem('perfModeSuggested');
-    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
+    const currentSettings: UserSettings = user.settings || { performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
     if (isCrOS && !alreadySuggested && !currentSettings.performanceMode) {
       setShowCrosBanner(true);
     }
@@ -63,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, []);
 
   const enablePerfMode = useCallback(async () => {
-    const currentSettings: UserSettings = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
+    const currentSettings: UserSettings = user.settings || { performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
     await dataService.updateUserSettings(user.id, { ...currentSettings, performanceMode: true });
     dismissCrosBanner();
   }, [user.id, user.settings, dismissCrosBanner]);
@@ -73,7 +72,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
   // Derived settings with defaults
   const settings: UserSettings = user.settings || {
-    liveBackground: true,
     performanceMode: false,
     privacyMode: false,
     compactView: true,
@@ -358,12 +356,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
       )}
 
-      {/* 2c. Dark mode: Animated Space Background (Canvas — conditional on liveBackground and not perf-mode) */}
-      {!isLight && settings.liveBackground && !settings.performanceMode && <SpaceBackground />}
-
       {/* 3. Glass Overlay (semi-transparent in dark, hidden in light since base layer is solid) */}
       {!isLight && (
-        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 ${settings.liveBackground ? 'bg-[var(--surface-base)]/55' : 'bg-[var(--surface-base)]/40'} ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
+        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/40 ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
       )}
 
       {/* ChromeOS performance mode suggestion banner */}

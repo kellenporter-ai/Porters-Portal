@@ -14,7 +14,6 @@ export const DefaultClassTypes = {
 };
 
 export interface UserSettings {
-  liveBackground: boolean;
   performanceMode: boolean;
   privacyMode: boolean;
   compactView: boolean;

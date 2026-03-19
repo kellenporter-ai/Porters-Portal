@@ -269,11 +269,30 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
     }
     case 'DATA_TABLE': {
       const columns = block.columns || [{ key: 'col1', label: 'Column 1', editable: true }];
+      const rowCount = block.trials || 3;
+      const rowLabels = block.rowLabels || [];
+      const updateRowLabel = (i: number, val: string) => {
+        const next = Array.from({ length: rowCount }, (_, j) => rowLabels[j] ?? '');
+        next[i] = val;
+        onUpdate({ ...block, rowLabels: next });
+      };
+      const updateTrials = (n: number) => {
+        const next = Array.from({ length: n }, (_, i) => rowLabels[i] ?? '');
+        onUpdate({ ...block, trials: n, rowLabels: next });
+      };
       return (
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div><label htmlFor={`${block.id}-title`} className={labelClass}>Title</label><input id={`${block.id}-title`} type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
-            <div><label htmlFor={`${block.id}-rows`} className={labelClass}>Rows</label><input id={`${block.id}-rows`} type="number" value={block.trials || 3} onChange={e => onUpdate({ ...block, trials: parseInt(e.target.value) || 3 })} className={inputClass} /></div>
+            <div><label htmlFor={`${block.id}-rows`} className={labelClass}>Rows</label><input id={`${block.id}-rows`} type="number" value={rowCount} onChange={e => updateTrials(parseInt(e.target.value) || 3)} className={inputClass} /></div>
+          </div>
+          <div>
+            <label className={labelClass}>Row Labels <span className="font-normal text-[var(--text-muted)] normal-case">(optional)</span></label>
+            <div className="grid grid-cols-2 gap-1 mt-1">
+              {Array.from({ length: rowCount }, (_, i) => (
+                <input key={i} type="text" value={rowLabels[i] ?? ''} onChange={e => updateRowLabel(i, e.target.value)} placeholder={`Row ${i + 1}`} className={inputClass} />
+              ))}
+            </div>
           </div>
           {columns.map((col, idx) => (
             <div key={idx} className="flex gap-2">
