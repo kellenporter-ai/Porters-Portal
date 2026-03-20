@@ -1105,8 +1105,17 @@ export const craftItem = onCall(async (request) => {
     if (item.rarity === "UNIQUE" && action === "REFORGE") throw new HttpsError("failed-precondition", "Cannot reforge unique items.");
 
     if (action === "RECALIBRATE") {
+      if (!item.affixes || item.affixes.length === 0) {
+        throw new HttpsError("failed-precondition", "This artifact cannot be modified — it has no reconfigurable matrix.");
+      }
+      // Snapshot stats not derived from affixes (intrinsic/custom stats)
+      const affixStatKeys = new Set(item.affixes.map((a: Affix) => a.stat));
+      const intrinsicStats: Record<string, number> = {};
+      for (const [k, v] of Object.entries(item.stats || {})) {
+        if (!affixStatKeys.has(k)) intrinsicStats[k] = v as number;
+      }
       item.affixes.forEach((aff: Affix) => { aff.value = rollValue(aff.tier); });
-      item.stats = {};
+      item.stats = { ...intrinsicStats };
       item.affixes.forEach((aff: Affix) => { item.stats[aff.stat] = (item.stats[aff.stat] || 0) + aff.value; });
       if (item.rarity === "UNIQUE") {
         const template = UNIQUES.find((u) => u.name === item.name);
@@ -1165,7 +1174,16 @@ export const craftItem = onCall(async (request) => {
       if (ps) newName = `${newName} ${ps.name}`;
       item.name = newName;
     } else if (action === "OPTIMIZE") {
-      item.stats = {};
+      if (!item.affixes || item.affixes.length === 0) {
+        throw new HttpsError("failed-precondition", "This artifact cannot be modified — it has no reconfigurable matrix.");
+      }
+      // Snapshot stats not derived from affixes (intrinsic/custom stats)
+      const affixStatKeys = new Set(item.affixes.map((a: Affix) => a.stat));
+      const intrinsicStats: Record<string, number> = {};
+      for (const [k, v] of Object.entries(item.stats || {})) {
+        if (!affixStatKeys.has(k)) intrinsicStats[k] = v as number;
+      }
+      item.stats = { ...intrinsicStats };
       item.affixes.forEach((aff: Affix) => {
         const newTier = rollTier(playerLevel, item.rarity);
         aff.tier = Math.max(aff.tier, newTier);
