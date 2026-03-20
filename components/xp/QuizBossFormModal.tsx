@@ -104,6 +104,8 @@ RULES:
 - Each question must have exactly 4 options
 - Distractors must be plausible and educational
 - Questions must be specific to the class material
+- CRITICAL: All 4 options must be similar in length and detail. Do NOT make the correct answer longer or more detailed than the distractors. Add qualifying phrases to shorter options so all 4 are within 80-120% of each other's word count.
+- Randomize the position of the correct answer — distribute correctAnswer indices roughly evenly across 0, 1, 2, 3
 - Output ONLY the JSON array — no markdown fences, no commentary`;
 
 const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
