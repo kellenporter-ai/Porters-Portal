@@ -4181,8 +4181,8 @@ export const answerBossQuiz = onCall(async (request) => {
     if (hasMod(mods, "PLAYER_DAMAGE_BOOST")) damage += modVal(mods, "PLAYER_DAMAGE_BOOST", 25);
     // Modifier: double or nothing
     if (hasMod(mods, "DOUBLE_OR_NOTHING")) damage *= 2;
-    // Modifier: glass cannon
-    if (hasMod(mods, "GLASS_CANNON")) damage *= 2;
+    // Modifier: glass cannon (mutually exclusive with double or nothing for damage)
+    else if (hasMod(mods, "GLASS_CANNON")) damage *= 2;
     // Modifier: streak bonus
     if (hasMod(mods, "STREAK_BONUS") && cs.currentStreak > 1) {
       damage += modVal(mods, "STREAK_BONUS", 10) * (cs.currentStreak - 1);
@@ -4347,7 +4347,8 @@ export const answerBossQuiz = onCall(async (request) => {
     if (ability.trigger === 'EVERY_N_QUESTIONS' && totalQuestions % ability.triggerValue === 0) shouldTrigger = true;
     if (ability.trigger === 'HP_THRESHOLD' && newHp > 0) {
       const hpPct = (newHp / effectiveMaxHp) * 100;
-      if (hpPct <= ability.triggerValue) shouldTrigger = true;
+      const alreadyTriggered = (quiz.triggeredAbilityIds || []).includes(ability.id);
+      if (hpPct <= ability.triggerValue && !alreadyTriggered) shouldTrigger = true;
     }
     if (ability.trigger === 'RANDOM_CHANCE' && Math.random() * 100 < ability.triggerValue) shouldTrigger = true;
     if (ability.trigger === 'ON_PHASE' && phaseTransition && phaseTransition.phase === ability.triggerValue) shouldTrigger = true;
@@ -4380,6 +4381,13 @@ export const answerBossQuiz = onCall(async (request) => {
           { abilityId: ability.id, effect: ability.effect, value: ability.value, remainingQuestions: ability.duration },
         ];
         await quizRef.update({ activeAbilities: updatedAbilities });
+      }
+
+      // Persist HP_THRESHOLD triggers so they don't re-fire
+      if (ability.trigger === 'HP_THRESHOLD') {
+        await quizRef.update({
+          triggeredAbilityIds: admin.firestore.FieldValue.arrayUnion(ability.id),
+        });
       }
 
       break; // Only trigger one ability per answer

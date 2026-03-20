@@ -418,7 +418,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
       };
       await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
-      toast.success(editingQuizBoss ? 'Quiz boss updated.' : 'Quiz boss deployed!');
+      toast.success(editingQuizBoss?.id ? 'Quiz boss updated.' : 'Quiz boss deployed!');
       onClose();
     } catch (err) {
       reportError(err, { component: 'QuizBossFormModal' });
@@ -690,6 +690,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               );
             })}
           </div>
+          {formModifiers.some(m => m.type === 'DOUBLE_OR_NOTHING') && formModifiers.some(m => m.type === 'GLASS_CANNON') && (
+            <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs">
+              ⚠ Double or Nothing and Glass Cannon cannot both multiply damage. Only Double or Nothing's 2× will apply.
+            </div>
+          )}
         </div>
 
         {/* Boss Phases */}

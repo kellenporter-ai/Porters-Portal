@@ -916,6 +916,7 @@ export interface BossQuizEvent {
   activeAbilities?: { abilityId: string; effect: BossAbilityEffect; value: number; remainingQuestions: number }[];
   lootTable?: BossLootEntry[];
   totalQuestionsAnswered?: number; // Global counter for ability triggers
+  triggeredAbilityIds?: string[];  // HP_THRESHOLD abilities that already fired (prevent re-trigger)
 }
 
 export interface BossQuizQuestion {

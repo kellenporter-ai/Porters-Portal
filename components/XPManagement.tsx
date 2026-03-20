@@ -454,6 +454,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
               quizBosses={quizBosses}
               questionBanks={questionBanks}
               onEditQuizBoss={(quiz) => { setEditingQuizBoss(quiz); setIsQuizBossModalOpen(true); }}
+              onCloneQuizBoss={(clonedQuiz) => { setEditingQuizBoss(clonedQuiz); setIsQuizBossModalOpen(true); }}
               onToggleQuizBoss={handleToggleQuizBoss}
               onDeleteQuizBoss={handleDeleteQuizBoss}
               onEditBank={(bank) => { setEditingBank(bank); setIsQuestionBankModalOpen(true); }}

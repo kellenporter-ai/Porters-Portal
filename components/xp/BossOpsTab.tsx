@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { BossQuizEvent, BossQuestionBank, DIFFICULTY_TIER_DEFS } from '../../types';
-import { Brain, Trash2, Pencil, Plus, Swords, Database, BarChart3 } from 'lucide-react';
+import { Brain, Trash2, Pencil, Plus, Swords, Database, BarChart3, Copy } from 'lucide-react';
 
 interface BossOpsTabProps {
   quizBosses: BossQuizEvent[];
   questionBanks: BossQuestionBank[];
   onEditQuizBoss: (quiz: BossQuizEvent) => void;
+  onCloneQuizBoss: (quiz: BossQuizEvent) => void;
   onToggleQuizBoss: (quiz: BossQuizEvent) => void;
   onDeleteQuizBoss: (quiz: BossQuizEvent) => void;
   onEditBank: (bank: BossQuestionBank) => void;
@@ -18,6 +19,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
   quizBosses,
   questionBanks,
   onEditQuizBoss,
+  onCloneQuizBoss,
   onToggleQuizBoss,
   onDeleteQuizBoss,
   onEditBank,
@@ -194,6 +196,32 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                   >
                     <Pencil className="w-3 h-3 inline mr-1" />
                     Edit
+                  </button>
+                  <button
+                    aria-label="Clone boss"
+                    onClick={() => {
+                      const deadline = new Date();
+                      deadline.setDate(deadline.getDate() + 7);
+                      const cloned: BossQuizEvent = {
+                        ...JSON.parse(JSON.stringify(quiz)),
+                        id: '',
+                        bossName: `Copy of ${quiz.bossName}`,
+                        isActive: false,
+                        currentHp: quiz.maxHp,
+                        targetSections: [],
+                        deadline: deadline.toISOString().slice(0, 16),
+                        totalQuestionsAnswered: 0,
+                        activeAbilities: [],
+                        currentPhase: 0,
+                        triggeredAbilityIds: [],
+                        scaledMaxHp: undefined,
+                      };
+                      onCloneQuizBoss(cloned);
+                    }}
+                    className="px-3 py-1.5 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 transition border border-purple-500/20 text-[10px] font-bold uppercase tracking-wide"
+                  >
+                    <Copy className="w-3 h-3 inline mr-1" />
+                    Clone
                   </button>
                   <button
                     onClick={() => onToggleQuizBoss(quiz)}
