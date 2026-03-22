@@ -28,6 +28,27 @@ export const functionName = onCall(
 );
 ```
 
+## Firestore Write Safety (CRITICAL — silent production failures)
+
+Before implementing ANY client-side Firestore write, verify the target field is in the security rules allowlist. Writes to non-allowlisted fields succeed in the emulator but **fail silently in production** — no error, no log, false success in the UI.
+
+**Checkpoint (every write):**
+1. Identify the exact field path being written (e.g., `gamification.activeCosmetic`)
+2. Check `firestore.rules` allowlist for that collection's update rule (`hasOnly([...])`)
+3. If the field is NOT in the allowlist → use a Cloud Function
+4. If adding a new allowlisted field → update the `hasOnly` set in `firestore.rules` AND document it
+
+**Student self-write allowlist (user profiles):** `codename`, `privacyMode`, `lastLevelSeen`, `appearance`, `classProfiles`, `activeQuests` — everything else requires a Cloud Function.
+
+**Query bounds (mandatory):** Every `onSnapshot` and CF `.get()` must include `.limit()`. Unbounded queries cause OOM/timeout at scale. Defaults: submissions 500, users 500, leaderboard 200, CF gets `.limit(499)` with pagination.
+
+### Pre-Submit Safety Gate (MANDATORY — do not skip)
+Before reporting work as complete, verify ALL of the following:
+- [ ] Every new client-side Firestore write targets a field in the `hasOnly([...])` allowlist in `firestore.rules`
+- [ ] New gamification/economy fields use **Cloud Functions**, NOT client writes
+- [ ] All new queries include `.limit()` (submissions 500, users 500, leaderboard 200, CF gets 499)
+- [ ] If you added a field to the allowlist, the `firestore.rules` file is in your changeset
+
 ## Conventions
 - `HttpsError` for all errors (not generic throws).
 - Transactions for multi-document atomicity (XP + inventory + currency).

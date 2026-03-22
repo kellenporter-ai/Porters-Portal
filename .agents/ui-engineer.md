@@ -52,6 +52,62 @@ All student input components must use `usePersistentSave` hook or `persistentWri
 - `aria-live="polite"` for dynamic status updates
 - Sidebar collapse: admin nav must pass `sidebarCollapsed` to `renderNavButton`
 
+## Portal Theming System
+
+The Portal supports light and dark modes via CSS custom properties (`:root` for light, `.dark` for dark) mapped to semantic Tailwind tokens (e.g., `bg-surface-base` → `var(--surface-base)`). Programmatic access via `ThemeContext` / `useTheme()`. Recharts consumers use `useChartTheme()`.
+
+### Sidebar vs Content Tokens
+- **Sidebar** uses `--sidebar-*` tokens (e.g., `bg-[var(--sidebar-bg)]`, `text-[var(--sidebar-text)]`). These are static — the sidebar stays dark-purple in both modes.
+- **Content area** uses `--surface-*` and `--text-*` tokens (e.g., `bg-surface-base`, `text-[var(--text-primary)]`). These switch between light and dark.
+- **Never use switching content tokens inside the sidebar.** Doing so makes text invisible when the content palette flips but the sidebar doesn't.
+
+### `text-white` Conversion Rule
+- **Keep `text-white`** on buttons with colored backgrounds (purple, green, red, amber) — the background provides contrast in both modes.
+- **Convert to `text-[var(--text-primary)]`** for content text on surface backgrounds that switch between modes.
+
+### Light Mode Color Rules
+
+When a component must render correctly in both light and dark modes, apply these concrete rules. Access the current theme via `const { isLight } = useTheme()`.
+
+**1. Colored text on light backgrounds**
+Tailwind 400-series accent colors (`text-orange-400`, `text-yellow-400`, etc.) fail WCAG contrast on light/white/tinted surfaces. Use 600 or 700 variants in light mode. Pre-existing code using 400-series colors is not exempt — flag it.
+
+Pattern:
+```tsx
+className={isLight ? 'text-orange-600' : 'text-orange-400'}
+```
+
+**2. Tinted card backgrounds**
+`bg-X-500/10 border-X-500/20` wash out in light mode. Use solid low-saturation variants.
+
+Pattern:
+```tsx
+className={isLight
+  ? 'bg-orange-50 border-orange-200'
+  : 'bg-orange-500/10 border-orange-500/20'}
+```
+
+**3. Inline style color fallbacks**
+Never use `style={{ color: 'white' }}` as a no-value fallback. Use className conditional.
+
+Pattern:
+```tsx
+className={!nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}
+style={nameColor ? { color: nameColor } : undefined}
+```
+
+**4. School MDM extensions override CSS custom properties**
+MDM-deployed browser extensions can override CSS custom properties. Fix with two layers: `!important` on `:root` variables + direct property rules bypassing variable resolution.
+
+**5. Dark mode borders must be purple-tinted, not white-tinted**
+`rgba(255,255,255,X)` borders composite as visible white edges on Chromebook GPU. Use purple-derived rgba (e.g., `rgba(147, 51, 234, 0.12)`).
+
+**6. Hardcoded hex backgrounds in modals/overlays**
+Replace hardcoded dark hex values with `useTheme()` conditionals.
+
+**7. Glassmorphism over textured backgrounds**
+Reduce blur first, then tune opacity. High blur destroys detail even at near-zero opacity. Override blur globally for light mode: `backdrop-filter: blur(4px)`.
+
 ## Gamification UI Notes
 - Leaderboard, TeacherDashboard, UserManagement, OperativesTab, Communications: all virtualized with `useVirtualizer` + `measureElement`
 - Boss ability animations: shake + flash + HP threshold markers
