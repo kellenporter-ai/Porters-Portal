@@ -108,6 +108,31 @@ Replace hardcoded dark hex values with `useTheme()` conditionals.
 **7. Glassmorphism over textured backgrounds**
 Reduce blur first, then tune opacity. High blur destroys detail even at near-zero opacity. Override blur globally for light mode: `backdrop-filter: blur(4px)`.
 
+## Type Safety & Library Gotchas
+
+### Discriminated Union Variant Naming
+
+**High-risk phonetic pairs** — verify explicitly when any of these appear together in the same feature:
+- `PAUSE` vs `PASTE` (time gap vs clipboard action)
+- `COUNT` vs `AMOUNT` (integer quantity vs numeric value)
+- `FLAG` vs `FLAT` (boolean marker vs data shape)
+- `INPUT` vs `INSET` (event vs layout)
+
+### Tailwind Opacity Modifiers
+
+Only use values from Tailwind's default opacity scale: **5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 95**. Arbitrary integers (e.g., `/8`, `/12`, `/18`) silently produce no output.
+
+**If you need a non-standard value**, use arbitrary syntax: `bg-yellow-900/[8%]`.
+
+### @tanstack/react-virtual v3 — No `enabled` Option
+
+`useVirtualizer` does **not** accept `enabled`. Gate virtualization with conditional rendering:
+```tsx
+{useVirtual ? <VirtualList virtualizer={virtualizer} items={items} /> : <FlatList items={items} />}
+```
+
+Other non-existent options: `suspense`, `staleTime`, `cacheTime`.
+
 ## Gamification UI Notes
 - Leaderboard, TeacherDashboard, UserManagement, OperativesTab, Communications: all virtualized with `useVirtualizer` + `measureElement`
 - Boss ability animations: shake + flash + HP threshold markers
