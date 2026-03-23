@@ -1721,13 +1721,13 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     <div className="space-y-3">
       {/* Title / prompt */}
       {block.title && (
-        <BlockText text={block.title} tag="p" style={{ fontSize: '14px', fontWeight: 600, color: '#fff', margin: '0 0 4px 0' }} />
+        <BlockText text={block.title} tag="p" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px 0' }} />
       )}
       {block.content && (
-        <BlockText text={block.content} tag="p" style={{ fontSize: '14px', color: '#d1d5db', lineHeight: 1.6, margin: '0 0 4px 0' }} />
+        <BlockText text={block.content} tag="p" style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 4px 0' }} />
       )}
       {block.instructions && (
-        <BlockText text={block.instructions} tag="p" style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic', margin: '0 0 4px 0' }} />
+        <BlockText text={block.instructions} tag="p" style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontStyle: 'italic', margin: '0 0 4px 0' }} />
       )}
 
       {/* Toolbar */}
