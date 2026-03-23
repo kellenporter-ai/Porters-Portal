@@ -492,11 +492,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
           {/* FLAGGED banner — shown regardless of showScore setting */}
           {assessmentResult.status === 'FLAGGED' && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 flex items-start gap-2 text-xs text-amber-300">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold mb-0.5">Submission flagged for review</p>
-                <p className="text-amber-300/80">Your teacher will follow up. You may retake the assessment if attempts are available.</p>
+                <p className="text-amber-700 dark:text-amber-300/80">Your teacher will follow up. You may retake the assessment if attempts are available.</p>
               </div>
             </div>
           )}
@@ -513,7 +513,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total</div>
                 </div>
                 <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-amber-400">+{assessmentResult.xpEarned}</div>
+                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">+{assessmentResult.xpEarned}</div>
                   <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">XP Earned</div>
                 </div>
               </div>
@@ -524,7 +524,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   const isPending = result.needsReview;
                   return (
                     <div key={blockId} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
-                      isPending ? 'bg-amber-500/10 text-amber-300'
+                      isPending ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                         : result.correct ? 'bg-green-500/10 text-green-300'
                         : 'bg-red-500/10 text-red-300'
                     }`}>
@@ -553,7 +553,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           {/* Rubric section in results */}
           {activeAssignment.rubric && (
             <div className="mb-6">
-              <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5" /> Assessment Rubric
               </h4>
               <div className="max-h-64 overflow-y-auto custom-scrollbar">
@@ -664,7 +664,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {showSaveFailedModal && (
         <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
           <div className="bg-[var(--surface-raised)] border border-amber-500/30 rounded-2xl p-6 max-w-sm mx-4">
-            <div className="flex items-center gap-2 text-amber-400 mb-3">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-3">
               <AlertTriangle className="w-5 h-5" />
               <h3 className="font-bold text-sm">Couldn't Sync to Server</h3>
             </div>
@@ -680,7 +680,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
               <button
                 onClick={() => { setShowSaveFailedModal(false); handleExit(); }}
-                className="flex-1 bg-amber-600/20 text-amber-300 text-xs font-bold py-2 rounded-lg border border-amber-500/30 hover:bg-amber-600/30 transition"
+                className="flex-1 bg-amber-600/20 text-amber-700 dark:text-amber-300 text-xs font-bold py-2 rounded-lg border border-amber-500/30 hover:bg-amber-600/30 transition"
               >
                 Exit Anyway
               </button>
@@ -710,7 +710,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           <div className="bg-[var(--surface-base)]/95 backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center p-5 border-b border-[var(--border)] shrink-0">
               <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}
+                <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}
               </h3>
               <button onClick={() => setShowRubric(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition">
                 <X className="w-5 h-5" />
@@ -835,13 +835,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {existingSubmission?.status === 'RETURNED' && (
         <div className="mx-4 mt-4 mb-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-            <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4 text-amber-700 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
           </div>
           <div>
-            <p className="text-sm font-bold text-amber-300">Assessment Returned</p>
-            <p className="text-xs text-amber-400/70">Your teacher returned this assessment for revision. Review your answers and submit when ready.</p>
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Assessment Returned</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400/70">Your teacher returned this assessment for revision. Review your answers and submit when ready.</p>
           </div>
         </div>
       )}
@@ -922,7 +922,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[var(--surface-base)] via-[var(--surface-base)]/95 to-transparent pt-4 pb-3 px-4">
           <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm">
-              <div className={`flex items-center gap-1.5 font-bold ${answeredBlocks === totalBlocks && totalBlocks > 0 ? 'text-green-400' : 'text-amber-400'}`}>
+              <div className={`flex items-center gap-1.5 font-bold ${answeredBlocks === totalBlocks && totalBlocks > 0 ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
                 {answeredBlocks === totalBlocks && totalBlocks > 0
                   ? <CheckCircle2 className="w-4 h-4" />
                   : <AlertTriangle className="w-4 h-4" />
