@@ -663,7 +663,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {/* Save Failed modal */}
       {showSaveFailedModal && (
         <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
-          <div className="bg-[#1a0a2e] border border-amber-500/30 rounded-2xl p-6 max-w-sm mx-4">
+          <div className="bg-[var(--surface-raised)] border border-amber-500/30 rounded-2xl p-6 max-w-sm mx-4">
             <div className="flex items-center gap-2 text-amber-400 mb-3">
               <AlertTriangle className="w-5 h-5" />
               <h3 className="font-bold text-sm">Couldn't Sync to Server</h3>
@@ -919,7 +919,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
       {/* Sticky bottom banner for assessments — always-visible submit CTA (hidden in admin preview) */}
       {isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && !reviewMode && assignViewMode === 'WORK' && (
-        <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[#0a0118] via-[#0a0118]/95 to-transparent pt-4 pb-3 px-4">
+        <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[var(--surface-base)] via-[var(--surface-base)]/95 to-transparent pt-4 pb-3 px-4">
           <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm">
               <div className={`flex items-center gap-1.5 font-bold ${answeredBlocks === totalBlocks && totalBlocks > 0 ? 'text-green-400' : 'text-amber-400'}`}>
