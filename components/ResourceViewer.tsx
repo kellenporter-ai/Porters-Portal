@@ -13,6 +13,7 @@ import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, U
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
+import { useTheme } from '../lib/ThemeContext';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 
 const Proctor = lazyWithRetry(() => import('./Proctor'));
@@ -36,6 +37,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const navigate = useNavigate();
   const { assignments, loading: appDataLoading } = useAssignments();
   const { setIsCommOpen } = useChat();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const toast = useToast();
   const { confirm } = useConfirm();
 
@@ -781,7 +784,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           {activeAssignment?.rubric && (activeAssignment.isAssessment || existingSubmission?.rubricGrade) && (
             <button
               onClick={() => setShowRubric(prev => !prev)}
-              className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg transition"
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition ${isLight ? 'text-amber-700 hover:text-amber-800 bg-amber-100 border border-amber-300' : 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20'}`}
             >
               <BookOpen className="w-3.5 h-3.5" /> Rubric
             </button>
@@ -807,7 +810,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
             </div>
           ) : isAssessment && isPreview ? (
-            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 px-4 py-1.5 rounded-lg border border-amber-500/20">
+            <span className={`flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-lg border ${isLight ? 'text-amber-700 bg-amber-100 border-amber-300' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
               <Eye className="w-3.5 h-3.5" /> Submit (Preview)
             </span>
           ) : (
