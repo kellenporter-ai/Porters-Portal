@@ -390,7 +390,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   // Review mode — read-only view of submitted answers
   if (reviewMode && existingSubmission?.blockResponses && activeAssignment?.lessonBlocks) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#0a0416] flex flex-col">
+      <div className="fixed inset-0 z-50 bg-[var(--surface-base)] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--panel-bg)] shrink-0">
           <button
             onClick={() => setReviewMode(false)}
@@ -439,7 +439,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       : 'This material needs more review. Study the content and retake when ready.';
 
     return (
-      <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416]' : ''} flex items-center justify-center h-full`}>
+      <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[var(--surface-base)]' : ''} flex items-center justify-center h-full`}>
         <div className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-8 w-full mx-4 backdrop-blur-md ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
           {/* Header */}
           <div className="text-center mb-6">
@@ -624,12 +624,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }
 
   return (
-    <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[#0a0416] flex flex-col' : 'gap-1 h-full flex flex-col'}`}>
+    <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[var(--surface-base)] flex flex-col' : 'gap-1 h-full flex flex-col'}`}>
       {/* Navigation blocker modal */}
       {showBlockerModal && (
         <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
-          <div className="bg-[#1a0a2e] border border-purple-500/20 rounded-2xl p-6 max-w-sm mx-4">
-            <div className="flex items-center gap-2 text-purple-400 mb-3">
+          <div className="bg-[var(--surface-raised)] border border-red-500/30 rounded-2xl p-6 max-w-sm mx-4">
+            <div className="flex items-center gap-2 text-red-400 mb-3">
               <Shield className="w-5 h-5" />
               <h3 className="font-bold text-sm">Pause Assessment?</h3>
             </div>
