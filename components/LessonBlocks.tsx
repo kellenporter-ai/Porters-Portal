@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { LessonBlock } from '../types';
 import LessonProgressSidebar from './LessonProgressSidebar';
+import { useTheme } from '../lib/ThemeContext';
 import { FeatureErrorBoundary } from './ErrorBoundary';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { BlockText } from '../lib/blockText';
@@ -656,6 +657,8 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
   onResponseChangeRef.current = onResponseChange;
   const resizeRef = useRef<{ startY: number; startH: number } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
@@ -694,12 +697,14 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           height: '16px', cursor: 'row-resize', userSelect: 'none',
           borderRadius: '0 0 8px 8px',
-          background: isResizing ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)', borderTop: 'none',
+          background: isResizing
+            ? (isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)')
+            : (isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'),
+          border: `1px solid ${isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)'}`, borderTop: 'none',
           transition: 'background 0.15s',
         }}
-        onMouseEnter={e => { if (!isResizing) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-        onMouseLeave={e => { if (!isResizing) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+        onMouseEnter={e => { if (!isResizing) e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)'; }}
+        onMouseLeave={e => { if (!isResizing) e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'; }}
         onMouseDown={e => {
           e.preventDefault();
           resizeRef.current = { startY: e.clientY, startH: chartHeight };
@@ -740,7 +745,7 @@ const BarChartBlock: React.FC<{ block: LessonBlock; savedResponse?: { initial: A
         }}
         title="Drag to resize chart"
       >
-        <GripHorizontal size={14} color="rgba(255,255,255,0.4)" />
+        <GripHorizontal size={14} color={isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'} />
       </div>}
     </div>
   );

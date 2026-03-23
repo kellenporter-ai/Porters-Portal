@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { LessonBlock } from '../types';
+import { useTheme } from '../lib/ThemeContext';
 import {
   CheckCircle2, HelpCircle, MessageSquare, ListChecks, BookOpen, FileText,
   Heading, Play, Target, Zap,
@@ -79,6 +80,9 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
   xpEarned = 0,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const ringTrackColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
 
   const safeIndex = Math.max(0, Math.min(currentBlockIndex, blocks.length - 1));
   const interactiveBlocks = blocks.filter(b => ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'].includes(b.type));
@@ -117,7 +121,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
         {/* Mini progress ring */}
         <div className="relative">
           <svg width={size} height={size} className="transform -rotate-90">
-            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} />
+            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={ringTrackColor} strokeWidth={strokeWidth} />
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
               stroke={safePercent === 100 ? '#34d399' : '#a855f7'}
               strokeWidth={strokeWidth} strokeLinecap="round"
@@ -178,7 +182,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
       <div className="flex flex-col items-center gap-1.5 bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
         <div className="relative">
           <svg width={size} height={size} className="transform -rotate-90">
-            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} />
+            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={ringTrackColor} strokeWidth={strokeWidth} />
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
               stroke={safePercent === 100 ? '#34d399' : '#a855f7'}
               strokeWidth={strokeWidth} strokeLinecap="round"

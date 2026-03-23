@@ -516,6 +516,12 @@ html:not(.dark) .backdrop-blur-2xl {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+html:not(.dark) .proctor-content code {
+  background: var(--accent-muted);
+  border: 1px solid var(--border-accent);
+  color: var(--accent-text);
+}
+
 .proctor-content pre {
   background: rgba(0, 0, 0, 0.4);
   padding: 1.25rem;
@@ -523,6 +529,16 @@ html:not(.dark) .backdrop-blur-2xl {
   overflow-x: auto;
   margin-bottom: 1.5em;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+html:not(.dark) .proctor-content pre {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+html:not(.dark) .proctor-content pre code {
+  background: none;
+  color: var(--text-primary);
 }
 
 .proctor-content pre code {
@@ -554,6 +570,20 @@ html:not(.dark) .backdrop-blur-2xl {
   box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
+html:not(.dark) .proctor-content input,
+html:not(.dark) .proctor-content textarea,
+html:not(.dark) .proctor-content select {
+  color: var(--text-primary) !important;
+  background-color: var(--surface-raised) !important;
+  border: 1px solid var(--border-strong) !important;
+}
+
+html:not(.dark) .proctor-content input:focus,
+html:not(.dark) .proctor-content textarea:focus,
+html:not(.dark) .proctor-content select:focus {
+  background-color: var(--surface-raised) !important;
+}
+
 .proctor-content label {
   color: var(--text-secondary) !important;
   font-weight: 600;
@@ -566,6 +596,10 @@ html:not(.dark) .backdrop-blur-2xl {
   border: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin: 2em 0;
+}
+
+html:not(.dark) .proctor-content hr {
+  border-top: 1px solid var(--border-strong);
 }
 
 /* Study Material Content Styles */
