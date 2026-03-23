@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, Check, AlertTriangle } from 'lucide-react';
 import type { WriteStatus } from '../lib/persistentWrite';
 
+// Augment Window for custom portal events
+declare global {
+  interface WindowEventMap {
+    'portal-storage-unavailable': CustomEvent<{ message: string }>;
+  }
+}
+
 interface SaveStatusIndicatorProps {
   status: WriteStatus;
   isOnline?: boolean;
@@ -15,6 +22,13 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
 }) => {
   const [visible, setVisible] = useState(false);
   const [fadeTimer, setFadeTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [storageUnavailable, setStorageUnavailable] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setStorageUnavailable(true);
+    window.addEventListener('portal-storage-unavailable', handler);
+    return () => window.removeEventListener('portal-storage-unavailable', handler);
+  }, []);
 
   useEffect(() => {
     if (fadeTimer) clearTimeout(fadeTimer);
@@ -26,18 +40,19 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
 
     setVisible(true);
 
-    // Auto-fade "saved" after 3 seconds
-    if (status === 'saved') {
+    // Auto-fade "saved" after 3 seconds (skip during assessments — keep visible for reassurance)
+    if (status === 'saved' && !isAssessment) {
       const timer = setTimeout(() => setVisible(false), 3000);
       setFadeTimer(timer);
       return () => clearTimeout(timer);
     }
+    // If assessment + saved, stay visible indefinitely (next status change will update it)
 
     return () => {
       if (fadeTimer) clearTimeout(fadeTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [status, isAssessment]);
 
   if (!visible && status !== 'error' && status !== 'retrying') return null;
 
@@ -84,6 +99,15 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
         >
           <AlertTriangle className="w-3 h-3" />
           Offline — work saved locally
+        </div>
+      )}
+      {storageUnavailable && isAssessment && (
+        <div
+          role="alert"
+          className="flex items-center gap-1.5 text-[10px] font-bold text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest"
+        >
+          <Loader2 className="w-3 h-3" />
+          Saving to server only
         </div>
       )}
     </>

@@ -8,8 +8,8 @@ import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnap
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
-import { draftKey, clearDraft } from '../lib/persistentWrite';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye } from 'lucide-react';
+import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye, LogOut } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -49,6 +49,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [, setBlockProgress] = useState(0);
   const [answeredBlocks, setAnsweredBlocks] = useState(0);
   const [totalBlocks, setTotalBlocks] = useState(0);
+
+  // Save & Exit state
+  const [isSavingExit, setIsSavingExit] = useState(false);
+  const [showSaveFailedModal, setShowSaveFailedModal] = useState(false);
+  const flushRef = useRef<(() => Promise<WriteStatus> | undefined) | null>(null);
 
   // Assessment state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -318,6 +323,28 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     }
   };
 
+  const handleSaveAndExit = async () => {
+    setIsSavingExit(true);
+    blockerProceedRef.current = true;
+    try {
+      const flushPromise = flushRef.current?.();
+      const timeoutPromise = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), 3000));
+      const result = await Promise.race([flushPromise ?? Promise.resolve('timeout'), timeoutPromise]);
+      if (result === 'saved') {
+        setIsSavingExit(false);
+        handleExit();
+      } else {
+        setIsSavingExit(false);
+        blockerProceedRef.current = false;
+        setShowSaveFailedModal(true);
+      }
+    } catch {
+      setIsSavingExit(false);
+      blockerProceedRef.current = false;
+      setShowSaveFailedModal(true);
+    }
+  };
+
   // Navigation guard for assessments — prevent leaving during active assessment
   // Uses popstate + history.pushState since useBlocker requires a data router
   const blockerProceedRef = useRef(false);
@@ -337,15 +364,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       setShowBlockerModal(true);
     };
 
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (guardHistoryPushedRef.current) {
         window.history.go(-1);
         guardHistoryPushedRef.current = false;
@@ -607,26 +628,58 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {/* Navigation blocker modal */}
       {showBlockerModal && (
         <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
-          <div className="bg-[#1a0a2e] border border-red-500/30 rounded-2xl p-6 max-w-sm mx-4">
-            <div className="flex items-center gap-2 text-red-400 mb-3">
+          <div className="bg-[#1a0a2e] border border-purple-500/20 rounded-2xl p-6 max-w-sm mx-4">
+            <div className="flex items-center gap-2 text-purple-400 mb-3">
               <Shield className="w-5 h-5" />
-              <h3 className="font-bold text-sm">Assessment Active</h3>
+              <h3 className="font-bold text-sm">Pause Assessment?</h3>
             </div>
-            <p className="text-[var(--text-secondary)] text-xs mb-4">
-              You are in an active assessment. Leaving will be recorded and may affect your score. Are you sure you want to leave?
+            <p className="text-[var(--text-secondary)] text-xs mb-1">
+              Your progress is automatically saved. You can return to finish this assessment anytime before the due date.
+            </p>
+            <p className="text-[var(--text-tertiary)] text-[10px] mb-4">
+              Ready to pause?
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowBlockerModal(false); }}
                 className="flex-1 bg-purple-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-purple-500 transition"
               >
-                Stay
+                Keep Working
               </button>
               <button
-                onClick={() => { setShowBlockerModal(false); blockerProceedRef.current = true; navigate(-1); }}
-                className="flex-1 bg-red-600/20 text-red-300 text-xs font-bold py-2 rounded-lg border border-red-500/30 hover:bg-red-600/30 transition"
+                onClick={() => { setShowBlockerModal(false); handleSaveAndExit(); }}
+                className="flex-1 bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] text-xs font-bold py-2 rounded-lg border border-[var(--border)] hover:text-[var(--text-primary)] transition"
               >
-                Leave Anyway
+                Save & Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Failed modal */}
+      {showSaveFailedModal && (
+        <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
+          <div className="bg-[#1a0a2e] border border-amber-500/30 rounded-2xl p-6 max-w-sm mx-4">
+            <div className="flex items-center gap-2 text-amber-400 mb-3">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="font-bold text-sm">Couldn't Sync to Server</h3>
+            </div>
+            <p className="text-[var(--text-secondary)] text-xs mb-4">
+              Your answers are backed up on this device. You can keep working, or exit now and resume later on this same device.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowSaveFailedModal(false); blockerProceedRef.current = false; }}
+                className="flex-1 bg-purple-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-purple-500 transition"
+              >
+                Keep Working
+              </button>
+              <button
+                onClick={() => { setShowSaveFailedModal(false); handleExit(); }}
+                className="flex-1 bg-amber-600/20 text-amber-300 text-xs font-bold py-2 rounded-lg border border-amber-500/30 hover:bg-amber-600/30 transition"
+              >
+                Exit Anyway
               </button>
             </div>
           </div>
@@ -733,16 +786,26 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <BookOpen className="w-3.5 h-3.5" /> Rubric
             </button>
           )}
-          {/* Assessment: Submit button instead of Exit */}
+          {/* Assessment: Save & Exit + Submit buttons */}
           {isAssessment && !isPreview ? (
-            <button
-              onClick={handleAssessmentSubmit}
-              disabled={isSubmitting}
-              className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveAndExit}
+                disabled={isSavingExit || isSubmitting}
+                className="flex items-center gap-1.5 text-xs font-bold bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSavingExit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+                {isSavingExit ? 'Saving...' : 'Save & Exit'}
+              </button>
+              <button
+                onClick={handleAssessmentSubmit}
+                disabled={isSubmitting || isSavingExit}
+                className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
+              </button>
+            </div>
           ) : isAssessment && isPreview ? (
             <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 px-4 py-1.5 rounded-lg border border-amber-500/20">
               <Eye className="w-3.5 h-3.5" /> Submit (Preview)
@@ -786,6 +849,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             <div className="h-full flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <Proctor
+                  flushRef={flushRef}
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {
                     const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];

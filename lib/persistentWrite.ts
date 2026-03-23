@@ -54,8 +54,13 @@ export function writeDraft<T = unknown>(key: string, data: T, dirty: boolean): v
       window.dispatchEvent(new CustomEvent('portal-storage-full', {
         detail: { key, message: 'Storage full — your work is being saved to the server only' },
       }));
+    } else if (err instanceof DOMException) {
+      // localStorage fully unavailable (strict private browsing, security policy, etc.)
+      window.dispatchEvent(new CustomEvent('portal-storage-unavailable', {
+        detail: { message: 'Local storage is unavailable — saving to server only' },
+      }));
     }
-    // Other errors (localStorage unavailable, private browsing) — silent fail
+    // Other non-DOMException errors — silent fail (e.g., SecurityError in some contexts)
   }
 }
 

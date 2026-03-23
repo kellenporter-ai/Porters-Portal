@@ -13,7 +13,7 @@ import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
-import { persistentWrite, draftKey, clearDraft, syncDirtyDraft } from '../lib/persistentWrite';
+import { persistentWrite, draftKey, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -43,6 +43,8 @@ interface ProctorProps {
   previewMode?: boolean;
   /** Whether LessonProgressSidebar is visible — hides redundant HUD badges */
   hasSidebar?: boolean;
+  /** Ref exposed upward so ResourceViewer can call flushNow() for Save & Exit flow. */
+  flushRef?: React.MutableRefObject<(() => Promise<WriteStatus> | undefined) | null>;
 }
 
 // ============================================================
@@ -103,7 +105,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode, hasSidebar }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode, hasSidebar, flushRef }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
@@ -151,6 +153,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     collection: 'lesson_block_responses',
     disabled: previewMode,
   });
+
+  // Expose flushNow upward so ResourceViewer can call it for Save & Exit flow
+  useEffect(() => {
+    if (flushRef) flushRef.current = flushNow;
+    return () => { if (flushRef) flushRef.current = null; };
+  }, [flushRef, flushNow]);
 
   // Sync dirty practice drafts from localStorage on mount and online recovery
   useEffect(() => {
