@@ -148,7 +148,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
         <button
           type="button"
           onClick={onAcceptAllAI}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[11px] font-bold text-amber-300 transition"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-300 transition"
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
           Accept All AI Suggestions

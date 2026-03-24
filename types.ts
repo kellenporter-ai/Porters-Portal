@@ -446,11 +446,11 @@ export interface GradingCorrection {
 }
 
 export const RUBRIC_TIER_COLORS: Record<RubricTierLabel, { bg: string; text: string; border: string; solid: string }> = {
-  Missing:     { bg: 'bg-red-500/20',    text: 'text-red-400',    border: 'border-red-500/40',    solid: 'bg-red-600' },
-  Emerging:    { bg: 'bg-orange-500/20',  text: 'text-orange-400', border: 'border-orange-500/40', solid: 'bg-orange-600' },
-  Approaching: { bg: 'bg-yellow-500/20',  text: 'text-yellow-400', border: 'border-yellow-500/40', solid: 'bg-yellow-600' },
-  Developing:  { bg: 'bg-green-500/20',   text: 'text-green-400',  border: 'border-green-500/40',  solid: 'bg-green-600' },
-  Refining:    { bg: 'bg-blue-500/20',    text: 'text-blue-400',   border: 'border-blue-500/40',   solid: 'bg-blue-600' },
+  Missing:     { bg: 'bg-red-500/10 dark:bg-red-500/20',       text: 'text-red-700 dark:text-red-400',       border: 'border-red-500/30 dark:border-red-500/40',       solid: 'bg-red-600' },
+  Emerging:    { bg: 'bg-orange-500/10 dark:bg-orange-500/20',  text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-500/30 dark:border-orange-500/40', solid: 'bg-orange-600' },
+  Approaching: { bg: 'bg-yellow-500/10 dark:bg-yellow-500/20',  text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-500/30 dark:border-yellow-500/40', solid: 'bg-yellow-600' },
+  Developing:  { bg: 'bg-green-500/10 dark:bg-green-500/20',    text: 'text-green-700 dark:text-green-400',   border: 'border-green-500/30 dark:border-green-500/40',  solid: 'bg-green-600' },
+  Refining:    { bg: 'bg-blue-500/10 dark:bg-blue-500/20',      text: 'text-blue-700 dark:text-blue-400',     border: 'border-blue-500/30 dark:border-blue-500/40',    solid: 'bg-blue-600' },
 };
 
 export interface Assignment {
