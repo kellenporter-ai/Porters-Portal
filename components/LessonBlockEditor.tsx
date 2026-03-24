@@ -11,6 +11,7 @@ import { LessonBlock, BlockType } from '../types';
 import LessonBlocks from './LessonBlocks';
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
+import { normalizeBlocks } from '../lib/normalizeBlocks';
 
 interface LessonBlockEditorProps {
   blocks: LessonBlock[];
@@ -906,13 +907,15 @@ const JsonImportModal: React.FC<{
         return;
       }
 
-      // Validate and assign IDs
-      blocks = blocks.map(b => {
-        if (!b.type) {
-          throw new Error(`Block missing "type" field: ${JSON.stringify(b).slice(0, 80)}`);
-        }
-        return { ...b, id: b.id || generateId(), content: b.content ?? '' };
+      // Validate types, normalize property names, then assign ID/content defaults
+      blocks.forEach(b => {
+        if (!b.type) throw new Error(`Block missing "type" field: ${JSON.stringify(b).slice(0, 80)}`);
       });
+      blocks = normalizeBlocks(blocks).map(b => ({
+        ...b,
+        id: b.id || generateId(),
+        content: b.content ?? '',
+      }));
 
       onImport(blocks, mode);
       setJson('');

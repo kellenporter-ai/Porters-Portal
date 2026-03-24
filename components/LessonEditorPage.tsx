@@ -27,6 +27,7 @@ const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
 const QuestionBankManager = lazyWithRetry(() => import('./QuestionBankManager'));
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
+import { normalizeBlocks } from '../lib/normalizeBlocks';
 import { useToast } from './ToastProvider';
 import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
 import ResourceSidebar from './lesson-editor/ResourceSidebar';
@@ -659,10 +660,12 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       if (Array.isArray(parsed)) imported = parsed;
       else if (parsed?.blocks && Array.isArray(parsed.blocks)) imported = parsed.blocks;
       else { setJsonError('JSON must be an array of blocks or { blocks: [...] }'); return; }
-      imported = imported.map(b => {
-        if (!b.type) throw new Error('Block missing "type" field');
-        return { ...b, id: b.id || generateId(), content: b.content ?? '' };
-      });
+      imported.forEach(b => { if (!b.type) throw new Error('Block missing "type" field'); });
+      imported = normalizeBlocks(imported).map(b => ({
+        ...b,
+        id: b.id || generateId(),
+        content: b.content ?? '',
+      }));
       updateBlocks([...blocks, ...imported]);
       setShowJsonImport(false);
       setJsonText('');

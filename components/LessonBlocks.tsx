@@ -37,6 +37,12 @@ interface LessonBlocksProps {
 // ──────────────────────────────────────────────
 const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
 
+// Reject javascript: and data: URIs to prevent XSS via href injection
+function safeUrl(url: string | undefined): string {
+  if (!url) return '#';
+  return /^https?:\/\//i.test(url) ? url : '#';
+}
+
 // ──────────────────────────────────────────────
 // Original block renderers
 // ──────────────────────────────────────────────
@@ -307,7 +313,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
 const SectionHeaderBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="text-center py-2">
     {block.icon && <div className="text-3xl mb-2">{block.icon}</div>}
-    <BlockText text={block.title} tag="div" className="text-xl font-black text-[var(--text-primary)] tracking-tight" />
+    <BlockText text={block.title || block.content} tag="div" className="text-xl font-black text-[var(--text-primary)] tracking-tight" />
     {block.subtitle && <BlockText text={block.subtitle} tag="p" className="text-sm text-[var(--text-tertiary)] mt-1" />}
   </div>
 ));
@@ -358,7 +364,7 @@ const ObjectivesBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block })
   <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 space-y-2">
     <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
       <Target className="w-4 h-4" />
-      {block.title || 'Learning Objectives'}
+      {block.title || block.content || 'Learning Objectives'}
     </div>
     <ul className="space-y-1">
       {(block.items || []).map((item, idx) => (
@@ -377,7 +383,7 @@ const DividerBlock: React.FC = React.memo(() => (
 
 const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <a
-    href={block.url}
+    href={safeUrl(block.url)}
     target={block.openInNewTab !== false ? '_blank' : '_self'}
     rel="noopener noreferrer"
     className="block p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition group"
@@ -463,7 +469,12 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) =
       {block.icon && <span className="text-lg">{block.icon}</span>}
       <BlockText text={block.title || 'Activity'} />
     </div>
-    <BlockText text={block.instructions} tag="div" className="text-sm text-[var(--text-secondary)]" />
+    <BlockText text={block.instructions || block.content} tag="div" className="text-sm text-[var(--text-secondary)]" />
+    {block.url && (
+      <a href={safeUrl(block.url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition mt-1">
+        {block.buttonLabel || 'Open Activity'} <span aria-hidden="true">↗</span>
+      </a>
+    )}
   </div>
 ));
 
