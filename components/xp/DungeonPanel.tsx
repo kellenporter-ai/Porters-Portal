@@ -166,7 +166,7 @@ const AgentStatusBar: React.FC<AgentStatusBarProps> = ({
         {' | '}
         <span className="text-amber-400 font-bold">CRIT {critPct}%</span>
         {' | '}
-        <span className="text-cyan-400 font-bold">ARM {armPct}%</span>
+        <span className="text-cyan-700 dark:text-cyan-400 font-bold">ARM {armPct}%</span>
       </div>
     </section>
   );

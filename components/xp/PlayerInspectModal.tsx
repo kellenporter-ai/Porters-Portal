@@ -119,7 +119,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               <h2 className={`text-xl font-black ${isPrivate ? 'text-purple-300 italic' : 'text-[var(--text-primary)]'}`}>
                 {displayName}
               </h2>
-              <p className={`text-xs font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>
+              <p className={`text-xs font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                 {rankDetails.rankName}
               </p>
               <p className="text-[10px] text-[var(--text-muted)] mt-1">{evolutionTier.name} - Level {level}</p>
@@ -127,7 +127,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-1">
                   <Zap className="w-3 h-3 text-cyan-400" />
-                  <span className="text-xs text-cyan-400 font-bold">{classXP.toLocaleString()} XP</span>
+                  <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold">{classXP.toLocaleString()} XP</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Shield className="w-3 h-3 text-yellow-400" />

@@ -116,7 +116,7 @@ const StudentEndgame: React.FC<{
           )}
           <div className="flex items-center justify-center gap-4 mt-2 text-sm">
             <span className="text-yellow-400 font-bold">{Math.round((quiz.rewards?.xp || 0) * (rewardMultiplier || 1))} XP</span>
-            <span className="text-cyan-400 font-bold">{Math.round((quiz.rewards?.flux || 0) * (rewardMultiplier || 1))} Flux</span>
+            <span className="text-cyan-700 dark:text-cyan-400 font-bold">{Math.round((quiz.rewards?.flux || 0) * (rewardMultiplier || 1))} Flux</span>
             {rewardMultiplier && rewardMultiplier > 1 && (
               <span className="text-pink-400 font-bold text-xs">({rewardMultiplier}x bonus!)</span>
             )}
@@ -147,7 +147,7 @@ const StudentEndgame: React.FC<{
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><Shield className="w-3 h-3" /> Damage Mitigated</div>
-            <div className="text-lg font-black text-cyan-400">{stats.damageReduced}</div>
+            <div className="text-lg font-black text-cyan-700 dark:text-cyan-400">{stats.damageReduced}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> Longest Streak</div>
@@ -577,7 +577,7 @@ const QuizBossCard: React.FC<{
                 </div>
               )}
               {answerResult && !answerResult.correct && answerResult.shieldBlocked && (
-                <div role="status" aria-live="polite" className="text-center text-sm text-cyan-400 font-bold animate-bounce">
+                <div role="status" aria-live="polite" className="text-center text-sm text-cyan-700 dark:text-cyan-400 font-bold animate-bounce">
                   <Shield className="w-4 h-4 inline mr-1" />
                   Shield blocked the attack!
                 </div>
@@ -613,7 +613,7 @@ const QuizBossCard: React.FC<{
           <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] border-t border-white/5 pt-3">
             <span>Defeat rewards:</span>
             <span className="text-yellow-400">{quiz.rewards.xp} XP</span>
-            <span className="text-cyan-400">{quiz.rewards.flux} Flux</span>
+            <span className="text-cyan-700 dark:text-cyan-400">{quiz.rewards.flux} Flux</span>
             {quiz.rewards.itemRarity && <span className="text-purple-400">{quiz.rewards.itemRarity} item</span>}
           </div>
         </>

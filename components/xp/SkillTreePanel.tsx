@@ -26,7 +26,7 @@ const SYNERGY_DEFINITIONS: SynergyDefinition[] = [
     specs: ['THEORIST', 'EXPERIMENTALIST'],
     label: 'Theorist × Experimentalist',
     bonus: '+10% experiment XP',
-    color: 'text-cyan-400',
+    color: 'text-cyan-700 dark:text-cyan-400',
   },
   {
     specs: ['THEORIST', 'ANALYST'],

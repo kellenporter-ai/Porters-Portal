@@ -120,7 +120,7 @@ const XPTutoringTab: React.FC<XPTutoringTabProps> = ({ allSessions, onVerify, on
                   {session.requesterFeedback && (
                     <div className="p-2 bg-[var(--panel-bg)] rounded-lg border border-[var(--border)]">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] font-bold text-cyan-400 uppercase">
+                        <span className="text-[9px] font-bold text-cyan-700 dark:text-cyan-400 uppercase">
                           Student Feedback
                         </span>
                         <span className="text-[9px] text-yellow-400">

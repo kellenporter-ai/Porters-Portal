@@ -247,7 +247,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                     </span>
                   </div>
                   <div className="w-16 py-3 text-center">
-                    <span className="text-sm font-bold text-cyan-400">{flux}</span>
+                    <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">{flux}</span>
                   </div>
                   <div className="w-16 py-3 text-center">
                     <span className="text-sm font-bold text-yellow-400">{getAggregateGearScore(student)}</span>

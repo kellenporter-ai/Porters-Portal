@@ -483,7 +483,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                           className={`text-xl lg:text-sm xl:text-xl font-bold tracking-tight lg:truncate lg:max-w-full ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
                           style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : undefined}
                         >{user.gamification?.codename || user.name}</h2>
-                        <span className={`font-mono text-xs lg:text-[10px] xl:text-xs uppercase tracking-[0.2em] mt-1 lg:mt-0 xl:mt-1 font-bold ${rankDetails.tierColor.split(' ')[1]}`}>
+                        <span className={`font-mono text-xs lg:text-[10px] xl:text-xs uppercase tracking-[0.2em] mt-1 lg:mt-0 xl:mt-1 font-bold ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                             {rankDetails.rankName} (Lvl {level})
                         </span>
                     </div>
@@ -582,7 +582,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400 shadow-inner"><Microscope className="w-4 h-4" aria-hidden="true" /></div>
                         <div className="text-left">
                             <div className="font-bold text-[var(--text-secondary)] text-sm">Evidence Log</div>
-                            <div className={`text-xs uppercase font-bold tracking-tight ${isLight ? 'text-emerald-600' : 'text-emerald-300/70'}`}>Weekly Portfolio</div>
+                            <div className={`text-xs uppercase font-bold tracking-tight ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Weekly Portfolio</div>
                         </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition" />

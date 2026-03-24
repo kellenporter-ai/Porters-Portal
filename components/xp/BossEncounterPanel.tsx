@@ -74,7 +74,7 @@ const BossCard: React.FC<{
         {/* Boss header */}
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-lg font-black text-red-400">{boss.name}</h4>
+            <h4 className="text-lg font-black text-red-700 dark:text-red-400">{boss.name}</h4>
             <p className="text-xs text-[var(--text-muted)]">{boss.description}</p>
           </div>
           <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
@@ -86,7 +86,7 @@ const BossCard: React.FC<{
         {/* HP bar — driven by distributed shard aggregation */}
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-red-400 font-mono">{currentHp.toLocaleString()} HP</span>
+            <span className="text-red-600 dark:text-red-400 font-mono">{currentHp.toLocaleString()} HP</span>
             <span className="text-gray-600">{boss.maxHp.toLocaleString()}</span>
           </div>
           <div className="w-full bg-[var(--surface-glass)] rounded-full h-4 overflow-hidden">
@@ -126,7 +126,7 @@ const BossCard: React.FC<{
             </div>
             {leaderboard.map(([id, data], idx) => (
               <div key={id} className="flex items-center justify-between text-xs">
-                <span className={`${id === userId ? 'text-cyan-400 font-bold' : 'text-[var(--text-tertiary)]'}`}>
+                <span className={`${id === userId ? 'text-cyan-700 dark:text-cyan-400 font-bold' : 'text-[var(--text-tertiary)]'}`}>
                   #{idx + 1} {data.name}
                 </span>
                 <span className="text-red-400 font-mono">{data.total} dmg</span>
@@ -138,7 +138,7 @@ const BossCard: React.FC<{
         {/* Rewards preview */}
         <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-[var(--border)] pt-3">
           <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400" /> {boss.completionRewards.xp} XP</span>
-          <span className="flex items-center gap-1"><span className="text-cyan-400">~</span> {boss.completionRewards.flux} Flux</span>
+          <span className="flex items-center gap-1"><span className="text-cyan-700 dark:text-cyan-400">~</span> {boss.completionRewards.flux} Flux</span>
           {boss.completionRewards.itemRarity && (
             <span className="text-purple-400">{boss.completionRewards.itemRarity} item</span>
           )}
@@ -209,7 +209,7 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
 
   if (bosses.length === 0) return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+      <h3 className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
         <Sword className="w-5 h-5" /> Active Threats
       </h3>
       <div className="text-center py-12 px-6">
@@ -222,7 +222,7 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold text-red-400 flex items-center gap-2">
+      <h3 className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
         <Sword className="w-5 h-5" /> Active Threats
       </h3>
 

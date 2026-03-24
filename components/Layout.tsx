@@ -285,9 +285,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       }
 
       const groupLightStyles: Record<NavGroup, { wrap: string; label: string }> = {
-        learning:   { wrap: 'bg-blue-50/80 border border-blue-100',    label: 'text-blue-500 hover:text-blue-600' },
-        operations: { wrap: 'bg-amber-50/70 border border-amber-100',  label: 'text-amber-600 hover:text-amber-700' },
-        intel:      { wrap: 'bg-emerald-50/70 border border-emerald-100', label: 'text-emerald-600 hover:text-emerald-700' },
+        learning:   { wrap: 'bg-blue-50/80 border border-blue-100',    label: 'text-blue-700 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-600' },
+        operations: { wrap: 'bg-amber-50/70 border border-amber-100',  label: 'text-amber-800 dark:text-amber-600 hover:text-amber-900 dark:hover:text-amber-700' },
+        intel:      { wrap: 'bg-emerald-50/70 border border-emerald-100', label: 'text-emerald-700 dark:text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-700' },
       };
 
       return (

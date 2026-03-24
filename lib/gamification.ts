@@ -91,19 +91,19 @@ const ROMANS = ['I', 'II', 'III', 'IV', 'V'];
 
 const getElementStyle = (atomicNumber: number) => {
   // Noble gases
-  if ([2, 10, 18, 36, 54, 86].includes(atomicNumber)) return { color: 'border-fuchsia-500 text-fuchsia-400', glow: 'shadow-fuchsia-500/50' };
+  if ([2, 10, 18, 36, 54, 86].includes(atomicNumber)) return { color: 'border-fuchsia-500 text-fuchsia-700 dark:text-fuchsia-400', glow: 'shadow-fuchsia-500/50' };
   // Halogens
-  if ([9, 17, 35, 53, 85].includes(atomicNumber)) return { color: 'border-yellow-400 text-yellow-400', glow: 'shadow-yellow-400/40' };
+  if ([9, 17, 35, 53, 85].includes(atomicNumber)) return { color: 'border-yellow-400 text-yellow-700 dark:text-yellow-400', glow: 'shadow-yellow-400/40' };
   // Alkali metals
-  if ([3, 11, 19, 37, 55, 87].includes(atomicNumber)) return { color: 'border-red-500 text-red-500', glow: 'shadow-red-500/40' };
+  if ([3, 11, 19, 37, 55, 87].includes(atomicNumber)) return { color: 'border-red-500 text-red-700 dark:text-red-500', glow: 'shadow-red-500/40' };
   // Precious metals (special styling for late-game prestige)
-  if ([44, 45, 46, 47, 76, 77, 78, 79].includes(atomicNumber)) return { color: 'border-amber-400 text-amber-300', glow: 'shadow-amber-400/50' };
+  if ([44, 45, 46, 47, 76, 77, 78, 79].includes(atomicNumber)) return { color: 'border-amber-400 text-amber-700 dark:text-amber-300', glow: 'shadow-amber-400/50' };
   // Actinides (endgame prestige)
-  if (atomicNumber >= 89) return { color: 'border-rose-500 text-rose-400', glow: 'shadow-rose-500/50' };
+  if (atomicNumber >= 89) return { color: 'border-rose-500 text-rose-700 dark:text-rose-400', glow: 'shadow-rose-500/50' };
   // Lanthanides
-  if (atomicNumber >= 57 && atomicNumber <= 71) return { color: 'border-indigo-400 text-indigo-300', glow: 'shadow-indigo-400/40' };
+  if (atomicNumber >= 57 && atomicNumber <= 71) return { color: 'border-indigo-400 text-indigo-700 dark:text-indigo-300', glow: 'shadow-indigo-400/40' };
   // Default transition metals
-  return { color: 'border-cyan-400 text-cyan-400', glow: 'shadow-cyan-400/30' };
+  return { color: 'border-cyan-400 text-cyan-700 dark:text-cyan-400', glow: 'shadow-cyan-400/30' };
 };
 
 export const getRankDetails = (level: number) => {

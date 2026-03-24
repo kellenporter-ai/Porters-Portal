@@ -77,7 +77,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-yellow-400 font-bold">+{challenge.xpReward} XP</span>
                 {challenge.fluxReward && (
-                  <span className="text-[10px] text-cyan-400 font-bold">+{challenge.fluxReward}</span>
+                  <span className="text-[10px] text-cyan-700 dark:text-cyan-400 font-bold">+{challenge.fluxReward}</span>
                 )}
               </div>
             </div>

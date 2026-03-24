@@ -113,7 +113,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-              <p className={`text-sm font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>
+              <p className={`text-sm font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                 {rankDetails.rankName}
               </p>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">{evolutionTier.name} — Level {level}</p>
@@ -261,7 +261,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                 <div className="flex items-center gap-2 text-xs">
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />
                   <span className="text-[var(--text-tertiary)]">Total XP:</span>
-                  <span className="text-cyan-400 font-bold">{(gam.xp || 0).toLocaleString()}</span>
+                  <span className="text-cyan-700 dark:text-cyan-400 font-bold">{(gam.xp || 0).toLocaleString()}</span>
                 </div>
               </div>
             </div>

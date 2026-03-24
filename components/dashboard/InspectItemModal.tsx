@@ -253,7 +253,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-purple-300">Recalibrate</span>
-              <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.RECALIBRATE} Flux</span>
+              <span className="text-[10px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.RECALIBRATE} Flux</span>
             </div>
             <p className="text-[9px] text-[var(--text-muted)]">Reroll numeric values within current tier.</p>
           </button>
@@ -265,7 +265,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-red-300">Reforge</span>
-              <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.REFORGE} Flux</span>
+              <span className="text-[10px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.REFORGE} Flux</span>
             </div>
             <p className="text-[9px] text-[var(--text-muted)]">Reroll all affixes. Keeps Rarity.</p>
           </button>
@@ -277,7 +277,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-yellow-300">Optimize Tier</span>
-              <span className="text-[10px] bg-cyan-900/30 text-cyan-400 px-1.5 rounded">{FLUX_COSTS.OPTIMIZE} Flux</span>
+              <span className="text-[10px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.OPTIMIZE} Flux</span>
             </div>
             <p className="text-[9px] text-[var(--text-muted)]">Upgrade affix tiers to match current operative level.</p>
           </button>

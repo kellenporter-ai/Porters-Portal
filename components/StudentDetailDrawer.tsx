@@ -167,7 +167,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               <div>
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">{student.name}</h2>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>{rankDetails.rankName}</span>
+                  <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>{rankDetails.rankName}</span>
                   <span className="text-[10px] text-[var(--text-muted)]">· Lv.{level}</span>
                 </div>
                 {student.gamification?.codename && (

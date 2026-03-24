@@ -84,7 +84,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   return (
     <div className="max-w-4xl mx-auto pt-8">
         <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 dark:from-purple-400 to-pink-700 dark:to-pink-600 mb-2">
                 Class Rankings
             </h1>
             <p className="text-[var(--text-tertiary)] mb-6">Top operatives by XP accumulated.</p>
@@ -142,9 +142,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                 </div>
                                 <div className={`text-center ${isFirst ? 'mt-2' : 'mt-1'}`}>
                                     <div className={`font-bold truncate max-w-[100px] ${isFirst ? 'text-sm text-[var(--text-primary)]' : 'text-xs text-[var(--text-secondary)]'} ${isPrivate ? 'italic' : ''}`}>{displayName}</div>
-                                    <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
-                                    <div className={`text-[9px] font-mono uppercase ${rd.tierColor.split(' ')[1]}`}>{rd.rankName}</div>
-                                    <button onClick={() => handleInspect(u.id)} className="mt-1 text-[10px] text-[var(--text-muted)] hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
+                                    <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
+                                    <div className={`text-[9px] font-mono uppercase ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
+                                    <button onClick={() => handleInspect(u.id)} className="mt-1 text-[10px] text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
                                         <Eye className="w-3 h-3" /> Inspect
                                     </button>
                                 </div>
@@ -204,24 +204,24 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <h3 className={`text-base font-bold truncate ${isPrivate ? 'text-purple-300 italic' : 'text-[var(--text-primary)]'}`}>
+                                        <h3 className={`text-base font-bold truncate ${isPrivate ? 'text-purple-700 dark:text-purple-300 italic' : 'text-[var(--text-primary)]'}`}>
                                             {displayName}
                                             {isPrivate && <Lock className="w-3 h-3 text-[var(--text-muted)] inline ml-1" />}
                                         </h3>
-                                        <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ')[1]}`}>
+                                        <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                                             {rankDetails.rankName}
                                         </span>
                                     </div>
 
                                     <div className="text-right">
-                                        <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                        <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500">
                                             {classXP.toLocaleString()}
                                         </div>
                                         <div className="text-[9px] text-[var(--text-muted)] font-mono tracking-widest">CLASS XP</div>
                                     </div>
                                     <button
                                         onClick={() => handleInspect(u.id)}
-                                        className="p-2 text-[var(--text-muted)] hover:text-purple-400 transition rounded-lg hover:bg-[var(--surface-glass)]"
+                                        className="p-2 text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition rounded-lg hover:bg-[var(--surface-glass)]"
                                         aria-label={`Inspect ${displayName}`}
                                     >
                                         <Eye className="w-4 h-4" />

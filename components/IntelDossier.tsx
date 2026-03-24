@@ -196,7 +196,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           <p className="text-xs text-[var(--text-muted)] mt-1">Classified operative analysis — {activeClass}</p>
         </div>
         <div className="text-right">
-          <div className={`text-sm font-black ${rankDetails.tierColor.split(' ')[1]}`}>{rankDetails.rankName}</div>
+          <div className={`text-sm font-black ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>{rankDetails.rankName}</div>
           <div className="text-[10px] text-[var(--text-muted)]">Level {level}</div>
         </div>
       </div>
@@ -206,7 +206,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         <MetricCard label="Class XP" value={classXp.toLocaleString()} sub={`${totalXp.toLocaleString()} total across all classes`} color="text-amber-400" icon={<Zap className="w-3.5 h-3.5" />} />
         <MetricCard label="Gear Score" value={gearScore} sub={`${Object.values(equipped).filter(Boolean).length}/8 slots filled`} color="text-purple-400" icon={<Shield className="w-3.5 h-3.5" />} />
         <MetricCard label="Resources Accessed" value={classSubmissions.length} sub={`${statusBreakdown.SUCCESS} scored well`} color="text-emerald-400" icon={<Target className="w-3.5 h-3.5" />} />
-        <MetricCard label="Cyber-Flux" value={currency} sub="crafting currency" color="text-cyan-400" icon={<Sparkles className="w-3.5 h-3.5" />} />
+        <MetricCard label="Cyber-Flux" value={currency} sub="crafting currency" color="text-cyan-700 dark:text-cyan-400" icon={<Sparkles className="w-3.5 h-3.5" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -251,7 +251,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                 <div className="flex justify-between text-[var(--text-muted)]"><span>Base Stats</span><span className="text-[var(--text-tertiary)]">10 each</span></div>
                 {Object.keys(gemStats).length > 0 && (
-                  <div className="flex justify-between text-cyan-400/70"><span>Gems</span><span>+{Object.values(gemStats).reduce((a, b) => a + b, 0)}</span></div>
+                  <div className="flex justify-between text-cyan-700/70 dark:text-cyan-400/70"><span>Gems</span><span>+{Object.values(gemStats).reduce((a, b) => a + b, 0)}</span></div>
                 )}
                 {Object.keys(runewordStats).length > 0 && (
                   <div className="flex justify-between text-orange-400/70"><span>Runewords</span><span>+{Object.values(runewordStats).reduce((a, b) => a + b, 0)}</span></div>

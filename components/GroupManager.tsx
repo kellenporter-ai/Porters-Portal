@@ -264,7 +264,7 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, fullPage }) => {
                       {group.section && (
                         <>
                           <span className="mx-2 text-[var(--text-muted)]">|</span>
-                          <span className="text-cyan-400 font-semibold">{group.section}</span>
+                          <span className="text-cyan-700 dark:text-cyan-400 font-semibold">{group.section}</span>
                         </>
                       )}
                     </p>

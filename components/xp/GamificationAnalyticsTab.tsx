@@ -232,15 +232,15 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
           <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Flux Economy</h3>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center">
-              <div className="text-xl font-black text-cyan-400">{fluxStats.total.toLocaleString()}</div>
+              <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.total.toLocaleString()}</div>
               <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Total in Circulation</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-black text-cyan-400">{fluxStats.avg.toLocaleString()}</div>
+              <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.avg.toLocaleString()}</div>
               <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Avg per Student</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-black text-cyan-400">{fluxStats.max.toLocaleString()}</div>
+              <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.max.toLocaleString()}</div>
               <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Max Holdings</div>
             </div>
           </div>
@@ -264,7 +264,7 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
                   {s.avatarUrl && <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-[var(--border-strong)]" alt={s.name} loading="lazy" />}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-[var(--text-primary)] truncate">{s.name}</div>
-                    <div className={`text-[9px] font-mono ${rd.tierColor.split(' ')[1]}`}>{rd.rankName}</div>
+                    <div className={`text-[9px] font-mono ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-black text-[var(--accent-text)]">{xp.toLocaleString()}</div>

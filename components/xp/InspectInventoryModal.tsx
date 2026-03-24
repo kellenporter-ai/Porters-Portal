@@ -166,7 +166,7 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Cyber-Flux</div>
-                                        <div className="text-2xl font-black text-cyan-400">{(user.gamification?.currency || 0).toLocaleString()}</div>
+                                        <div className="text-2xl font-black text-cyan-700 dark:text-cyan-400">{(user.gamification?.currency || 0).toLocaleString()}</div>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <input

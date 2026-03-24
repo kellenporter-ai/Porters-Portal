@@ -132,10 +132,10 @@ const MissionsTab: React.FC<MissionsTabProps> = ({ newQuests, myAcceptedQuests, 
                         </div>
                       </div>
                     </div>
-                    <div className="h-10 w-px bg-white/5"></div>
+                    <div className="h-10 w-px bg-black/10 dark:bg-white/5"></div>
                     <div className="text-right">
                       <div className="text-[9px] text-gray-500 uppercase font-bold">Node</div>
-                      <div className="text-xs font-bold text-purple-300">HQ_CENTRAL</div>
+                      <div className="text-xs font-bold text-purple-700 dark:text-purple-300">HQ_CENTRAL</div>
                     </div>
                   </div>
 

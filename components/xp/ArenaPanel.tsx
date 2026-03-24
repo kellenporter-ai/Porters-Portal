@@ -485,7 +485,7 @@ const ArenaPanel: React.FC<ArenaPanelProps> = ({ userId, classType }) => {
             <span className="text-yellow-400 font-bold flex items-center gap-1">
               <Star className="w-3.5 h-3.5" />+{matchResult.xpEarned} XP
             </span>
-            <span className="text-cyan-400 font-bold flex items-center gap-1">
+            <span className="text-cyan-700 dark:text-cyan-400 font-bold flex items-center gap-1">
               <Zap className="w-3.5 h-3.5" />+{matchResult.fluxEarned} Flux
             </span>
             <span className={`font-bold flex items-center gap-1 ${ratingChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>

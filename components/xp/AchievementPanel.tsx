@@ -116,7 +116,7 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                       <div className="text-right shrink-0">
                         <div className="text-[10px] text-yellow-500 font-bold">+{achievement.xpReward} XP</div>
                         {achievement.fluxReward && (
-                          <div className="text-[9px] text-cyan-400 font-bold">+{achievement.fluxReward} Flux</div>
+                          <div className="text-[9px] text-cyan-700 dark:text-cyan-400 font-bold">+{achievement.fluxReward} Flux</div>
                         )}
                       </div>
                     )}
