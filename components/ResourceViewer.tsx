@@ -707,7 +707,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {/* Rubric modal */}
       {showRubric && activeAssignment?.rubric && (
         <div className="fixed inset-0 z-[55] bg-[var(--backdrop)] flex items-center justify-center p-4">
-          <div className="bg-[var(--surface-base)]/95 backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+          <div className="bg-[var(--surface-raised)] dark:bg-[#1a0d35]/95 dark:backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-[var(--border)] shrink-0">
               <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}

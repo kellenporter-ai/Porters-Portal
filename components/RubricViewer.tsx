@@ -14,7 +14,7 @@ interface TierButtonStripProps {
 }
 
 const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, skillId, selectedTier, aiSuggestion, mode, flashTier, onTierClick }) => (
-  <div className="grid grid-cols-5 gap-px bg-[var(--surface-glass)]">
+  <div className="grid grid-cols-5 gap-px bg-gray-200 dark:bg-[var(--surface-glass)]">
     {tiers.map((tier, tierIdx) => {
       const colors = RUBRIC_TIER_COLORS[tier.label];
       const isSelected = selectedTier === tierIdx;
@@ -34,7 +34,7 @@ const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, s
               ? `${colors.solid} text-white shadow-lg ring-2 ring-[var(--border)]`
               : isAISuggested && !isSelected
                 ? `${colors.bg} ${colors.text} ring-1 ring-amber-400/40`
-                : `bg-[var(--panel-bg)] ${colors.text} hover:${colors.bg}`
+                : `bg-gray-100 dark:bg-[var(--panel-bg)] ${colors.text} hover:${colors.bg}`
             }
             ${isClickable ? 'cursor-pointer' : 'cursor-default'}
             ${isFlashing ? 'ring-2 ring-green-400 scale-105' : ''}
@@ -208,7 +208,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                       key={skill.id}
                       tabIndex={mode === 'grade' ? 0 : undefined}
                       onKeyDown={(e) => handleSkillKeyDown(e, question.id, skill.id)}
-                      className={`bg-[var(--panel-bg)] rounded-lg border overflow-hidden ${
+                      className={`bg-white dark:bg-[var(--panel-bg)] rounded-lg border overflow-hidden ${
                         aiSuggestion && selectedTier === aiSuggestion.suggestedTier
                           ? 'border-amber-500/20'
                           : 'border-[var(--border)]'
