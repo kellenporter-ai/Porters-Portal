@@ -1206,7 +1206,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 relative overflow-clip flex flex-col">
+        <div className="flex-1 relative overflow-hidden flex flex-col">
             {contentUrl ? (
                 <>
                     <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative min-h-0 overflow-hidden transition-all duration-300 ${
