@@ -1101,7 +1101,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           </div>
         )}
         {/* HUD */}
-        <div className={`bg-[var(--surface-base)] px-4 ${hasSidebar ? 'py-1' : 'py-2'} flex flex-wrap justify-between items-center gap-y-1 border-b border-[var(--border)] z-20`}>
+        <div className={`bg-[var(--surface-base)] px-4 ${hasSidebar ? 'py-1' : 'py-2'} flex flex-wrap justify-between items-center gap-y-1 border-b border-[var(--border)] z-20 shrink-0`}>
             <div className="flex items-center gap-4 flex-wrap">
                 <div className={`flex items-center gap-2 ${hasSidebar ? 'text-xs' : 'text-sm'} font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
                     {isActive ? <PlayCircle className={hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} /> : <Clock className={`${hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} animate-pulse`} />}
@@ -1209,7 +1209,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         <div className="flex-1 relative overflow-clip flex flex-col">
             {contentUrl ? (
                 <>
-                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative min-h-0 transition-all duration-300 ${
+                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative min-h-0 overflow-hidden transition-all duration-300 ${
                         isFullscreen && !document.fullscreenElement
                             ? 'fixed inset-0 z-50'
                             : lessonBlocks && lessonBlocks.length > 0 ? iframeFlex : 'flex-1'
@@ -1217,7 +1217,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         <iframe
                             ref={iframeRef}
                             src={resolvedContentUrl || ''}
-                            className="w-full flex-1 border-none bg-white"
+                            className="w-full h-full min-h-0 border-none bg-white"
                             title="Resource Viewer"
                             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
                             allow="fullscreen"
