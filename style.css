@@ -96,6 +96,14 @@
   border-color: rgba(147, 51, 234, 0.12) !important;
 }
 
+/* Ensure lesson text content is selectable — overrides MDM extension user-select injections */
+.proctor-content,
+.block-reveal p,
+.block-reveal span:not([class*="select-none"]),
+.block-reveal div:not([class*="select-none"]):not([role="columnheader"]) {
+  user-select: text !important;
+}
+
 /* Respect OS-level reduced motion preference (mirrors .perf-mode behavior) */
 @media (prefers-reduced-motion: reduce) {
   *,

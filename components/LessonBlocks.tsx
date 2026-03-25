@@ -1150,7 +1150,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
   const hasAnyResponses = savedResponses && Object.keys(savedResponses).length > 0;
 
   const contentArea = (
-    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+    <div className="flex-1 min-w-0 flex flex-col overflow-clip">
       {/* Progress bar + actions */}
       {!readOnly && <div className={`flex items-center gap-2 ${showSidebar && blocks.length >= 3 ? 'mb-1 justify-end' : 'mb-3'} shrink-0`}>
         {!(showSidebar && blocks.length >= 3) && <>
@@ -1242,7 +1242,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       {/* Scrollable block container */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto custom-scrollbar"
+        className="flex-1 overflow-y-auto custom-scrollbar select-text"
         style={{ scrollBehavior: 'smooth' }}
       >
         <div className="flex flex-col gap-6 pb-16 px-1">
