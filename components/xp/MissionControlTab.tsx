@@ -1,6 +1,6 @@
 import React from 'react';
 import { Quest, User } from '../../types';
-import { Target, X, Check, Dice5 } from 'lucide-react';
+import { Target, X, Check, Dice5, Compass } from 'lucide-react';
 
 interface Deployment {
     user: User;
@@ -21,8 +21,13 @@ const MissionControlTab: React.FC<MissionControlTabProps> = ({ deployments, onRe
         <div className="space-y-4">
             <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-4 px-2">Active Field Deployments</h3>
             {deployments.length === 0 && (
-                <div className="text-[var(--text-muted)] italic text-center py-20 bg-[var(--panel-bg)] rounded-3xl border border-[var(--border)]">
-                    No active agents in the field.
+                <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
+                        <Compass className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Active Field Deployments</h3>
+                    <p className="text-sm text-[var(--text-muted)] mb-1">Field deployments appear here when students are actively working on quests.</p>
+                    <p className="text-xs text-[var(--text-muted)]">Assign quests from the Missions tab to see deployments in action.</p>
                 </div>
             )}
             {deployments.map((deployment, i) => {

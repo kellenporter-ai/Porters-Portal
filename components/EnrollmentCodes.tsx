@@ -94,9 +94,16 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
       )}
 
       {activeCodes.length === 0 && !showCreate ? (
-        <div className="text-center py-6 text-[var(--text-muted)] italic">
-          <KeyRound className="w-10 h-10 mx-auto mb-2 opacity-20" />
-          No active enrollment codes. Generate one to let students self-enroll.
+        <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
+            <KeyRound className="w-8 h-8 text-emerald-400" />
+          </div>
+          <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Active Enrollment Codes</h3>
+          <p className="text-sm text-[var(--text-muted)] mb-1">Enrollment codes let students join specific classes and sections without manual approval.</p>
+          <p className="text-xs text-[var(--text-muted)] mb-6">Each code can be limited by section, usage count, and expiration date.</p>
+          <button onClick={() => setShowCreate(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition shadow-lg cursor-pointer">
+            <Plus className="w-4 h-4" /> Generate Your First Code
+          </button>
         </div>
       ) : (
         <div className="space-y-2">

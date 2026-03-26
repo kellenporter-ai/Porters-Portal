@@ -156,21 +156,21 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
       </div>
       <div className="overflow-x-auto">
         {/* Fixed header */}
-        <table className="w-full text-left">
+        <table className="w-full text-left min-w-[900px]">
           <thead>
             <tr className="text-[10px] text-[var(--text-muted)] uppercase font-black tracking-widest border-b border-[var(--border)]">
               <OpSortHeader label="Operative" col="name" className="pl-4" />
               <OpSortHeader label="Class" col="class" />
               <OpSortHeader label="Level" col="level" className="text-center" />
               <OpSortHeader label={filterClass !== 'All Classes' ? "Class XP" : "XP"} col="xp" className="text-center" />
-              <OpSortHeader label="Flux" col="flux" className="text-center" />
-              <OpSortHeader label="Gear" col="gear" className="text-center" />
+              <OpSortHeader label="Flux" col="flux" className="hidden lg:table-cell text-center" />
+              <OpSortHeader label="Gear" col="gear" className="hidden xl:table-cell text-center" />
               <th className="pb-4 text-right pr-4">Actions</th>
             </tr>
           </thead>
         </table>
         {/* Virtualized rows */}
-        <div ref={listParentRef} className="max-h-[600px] overflow-auto">
+        <div ref={listParentRef} className="max-h-[600px] overflow-auto min-w-[900px]">
           <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
             {rowVirtualizer.getVirtualItems().map(virtualRow => {
               const student = filteredStudents[virtualRow.index];
@@ -246,10 +246,10 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                       {(filterClass !== 'All Classes' ? (student.gamification?.classXp?.[filterClass] || 0) : (student.gamification?.xp || 0)).toLocaleString()}
                     </span>
                   </div>
-                  <div className="w-16 py-3 text-center">
+                  <div className="w-16 py-3 text-center hidden lg:block">
                     <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">{flux}</span>
                   </div>
-                  <div className="w-16 py-3 text-center">
+                  <div className="w-16 py-3 text-center hidden xl:block">
                     <span className="text-sm font-bold text-yellow-400">{getAggregateGearScore(student)}</span>
                   </div>
                   <div className="w-40 py-3 text-right pr-4">
@@ -258,13 +258,13 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                         onClick={() => onInspect(student)}
                         className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
                       >
-                        <Briefcase className="w-3 h-3" /> Inventory
+                        <Briefcase className="w-3 h-3" /><span className="hidden lg:inline"> Inventory</span>
                       </button>
                       <button
                         onClick={() => onAdjustXP(student)}
                         className="px-2.5 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> XP
+                        <Plus className="w-3 h-3" /><span className="hidden lg:inline"> XP</span>
                       </button>
                     </div>
                   </div>

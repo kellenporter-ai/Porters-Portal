@@ -88,7 +88,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                   </div>
                 </div>
               </div>
-              <div className="p-4 text-center w-32 shrink-0">
+              <div className="p-4 text-center w-36 shrink-0">
                 {editingSectionId === student.id ? (
                   <div className="flex flex-col items-center gap-2">
                     {(student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean)).map(cls => {
@@ -104,7 +104,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                               if (val === '__custom__') { setSectionInput('__custom__'); setCustomSectionInput(''); }
                               else handleSetSection(student.id, val, cls);
                             }}
-                            className="bg-[var(--panel-bg)] border border-purple-500/50 rounded-lg px-1.5 py-1 text-[11px] text-[var(--text-primary)] font-bold focus:outline-none w-24"
+                            className="bg-[var(--panel-bg)] border border-purple-500/50 rounded-lg px-1.5 py-1 text-[11px] text-[var(--text-primary)] font-bold focus:outline-none min-w-[100px]"
                           >
                             <option value="">None</option>
                             {knownSections.map(s => <option key={s} value={s}>{s}</option>)}
@@ -131,7 +131,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                 ) : (
                   <button
                     onClick={() => { setEditingSectionId(student.id); setSectionInput(''); setCustomSectionInput(''); }}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-[var(--surface-glass)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'}`}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition text-wrap ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-[var(--surface-glass)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'}`}
                   >
                     {student.classSections && Object.keys(student.classSections).length > 0
                       ? [...new Set(Object.values(student.classSections).filter(Boolean))].join(', ') || 'Assign'
@@ -140,15 +140,20 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                 )}
               </div>
               <div className="p-4 text-center w-32 shrink-0">
-                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                  {student.isWhitelisted ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
-                  {student.isWhitelisted ? 'Authorized' : 'Restricted'}
-                </span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                    {student.isWhitelisted ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                    {student.isWhitelisted ? 'Authorized' : 'Restricted'}
+                  </span>
+                  {!student.isWhitelisted && (
+                    <span className="text-[8px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-500/30">PENDING</span>
+                  )}
+                </div>
               </div>
-              <div className="p-4 text-center w-12 shrink-0">
+              <div className="p-2 text-center w-16 shrink-0 flex items-center justify-center">
                 <button
                   onClick={() => isUncategorized ? handleDeleteUser(student.id, student.name) : handleRemoveSingleUserFromClass(student, classType)}
-                  className="text-[var(--text-muted)] hover:text-red-400 transition p-2 rounded-lg hover:bg-[var(--surface-glass)]"
+                  className="text-[var(--text-muted)] hover:text-red-400 transition p-2 rounded-lg hover:bg-[var(--surface-glass)] min-w-[32px] min-h-[32px] flex items-center justify-center"
                   title={isUncategorized ? "Permanently Delete" : "Remove from this Class"}
                 >
                   <X className="w-4 h-4" />
@@ -566,7 +571,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
               </div>
             </div>
             <div
-              className="w-32 p-4 text-center shrink-0 cursor-pointer select-none group focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded"
+              className="w-36 p-4 text-center shrink-0 cursor-pointer select-none group focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none rounded"
               onClick={() => handleClassSort(type, 'section')}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClassSort(type, 'section'); } }}
               role="columnheader"
@@ -599,7 +604,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 </span>
               </div>
             </div>
-            <div className="w-12 p-4 text-center shrink-0">Action</div>
+            <div className="w-16 p-4 text-center shrink-0">Action</div>
           </div>
           {/* Virtualized student rows */}
           <VirtualizedStudentRows
