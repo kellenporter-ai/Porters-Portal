@@ -769,7 +769,7 @@ export const dataService = {
         classType: assignment.classType,
         status: assignment.status,
         unit: assignment.unit || 'Unassigned Unit',
-        category: assignment.category || 'Textbook',
+        category: assignment.category || 'Lesson',
         htmlContent: assignment.htmlContent || '',
         contentUrl: assignment.contentUrl || null,
         resources: assignment.resources || [],

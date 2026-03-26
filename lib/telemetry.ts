@@ -270,49 +270,49 @@ export function getBucketRecommendation(bucket: TelemetryBucket): BucketRecommen
   switch (bucket) {
     case 'THRIVING':
       return {
-        categories: ['Simulation', 'Supplemental', 'Article'],
+        categories: ['Simulation', 'Supplemental', 'Lesson'],
         action: 'Challenge with advanced or supplemental material. Consider peer-tutoring role.',
         studentTip: 'You\'re crushing it! Try the simulations and supplemental resources to push further.',
       };
     case 'ON_TRACK':
       return {
-        categories: ['Practice Set', 'Textbook', 'Video Lesson'],
+        categories: ['Practice', 'Lesson'],
         action: 'Continue current approach. Provide enrichment if interest is shown.',
         studentTip: 'Solid work — keep the momentum going with practice sets and readings.',
       };
     case 'COASTING':
       return {
-        categories: ['Practice Set', 'Simulation', 'Video Lesson'],
+        categories: ['Practice', 'Simulation', 'Lesson'],
         action: 'Increase engagement with interactive resources. Check in on motivation.',
         studentTip: 'Try a simulation or practice set to boost your skills — small steps add up!',
       };
     case 'SPRINTING':
       return {
-        categories: ['Textbook', 'Video Lesson', 'Practice Set'],
+        categories: ['Lesson', 'Practice'],
         action: 'Encourage consistent daily engagement instead of cramming. Set micro-goals.',
         studentTip: 'Spreading your study across the week helps retention — try a bit each day.',
       };
     case 'STRUGGLING':
       return {
-        categories: ['Video Lesson', 'Lab Guide', 'Practice Set'],
+        categories: ['Lesson', 'Lab', 'Practice'],
         action: 'Offer direct support. Recommend foundational resources and check understanding.',
         studentTip: 'Your effort shows! Try video lessons for a fresh perspective on tricky topics.',
       };
     case 'DISENGAGING':
       return {
-        categories: ['Video Lesson', 'Simulation', 'Article'],
+        categories: ['Lesson', 'Simulation'],
         action: 'Reach out personally. Low-friction resources to re-establish habit.',
         studentTip: 'We miss seeing you active — a quick video or sim is a great way to jump back in.',
       };
     case 'INACTIVE':
       return {
-        categories: ['Video Lesson', 'Article'],
+        categories: ['Lesson'],
         action: 'Immediate outreach required. Check for external factors. Lowest-barrier resources.',
         studentTip: 'Start small — even watching one video lesson counts. We\'re here to help!',
       };
     case 'COPYING':
       return {
-        categories: ['Practice Set', 'Textbook', 'Lab Guide'],
+        categories: ['Practice', 'Lesson', 'Lab'],
         action: 'Discuss academic integrity. Redirect to original-work resources.',
         studentTip: 'Working through problems yourself builds the strongest understanding — give it a try!',
       };

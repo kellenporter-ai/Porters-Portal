@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { Assignment, ClassConfig, Submission } from '../../types';
-import { ChevronRight, ChevronDown, Play, BookOpen, FlaskConical, Target, Newspaper, Video, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown } from 'lucide-react';
+import { Assignment, ClassConfig, Submission, migrateResourceCategory } from '../../types';
+import { ChevronRight, ChevronDown, Play, FlaskConical, Target, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
 
 function formatRelativeDate(isoString: string): string {
@@ -17,50 +17,38 @@ function formatRelativeDate(isoString: string): string {
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  'Textbook': <BookOpen className="w-5 h-5" />,
-  'Simulation': <Play className="w-5 h-5 fill-current" />,
-  'Lab Guide': <FlaskConical className="w-5 h-5" />,
-  'Practice Set': <Target className="w-5 h-5" />,
-  'Article': <Newspaper className="w-5 h-5" />,
-  'Video Lesson': <Video className="w-5 h-5" />,
-  'Supplemental': <Layers className="w-5 h-5" />,
   'Lesson': <GraduationCap className="w-5 h-5" />,
+  'Lab': <FlaskConical className="w-5 h-5" />,
+  'Simulation': <Play className="w-5 h-5 fill-current" />,
+  'Practice': <Target className="w-5 h-5" />,
+  'Supplemental': <Layers className="w-5 h-5" />,
 };
 
 /** Badge-sized (w-2.5 h-2.5) icon variants for use inside category badge pills. */
 const CATEGORY_BADGE_ICONS: Record<string, React.ReactNode> = {
-  'Textbook': <BookOpen className="w-2.5 h-2.5" />,
-  'Simulation': <Play className="w-2.5 h-2.5 fill-current" />,
-  'Lab Guide': <FlaskConical className="w-2.5 h-2.5" />,
-  'Practice Set': <Target className="w-2.5 h-2.5" />,
-  'Article': <Newspaper className="w-2.5 h-2.5" />,
-  'Video Lesson': <Video className="w-2.5 h-2.5" />,
-  'Supplemental': <Layers className="w-2.5 h-2.5" />,
   'Lesson': <GraduationCap className="w-2.5 h-2.5" />,
+  'Lab': <FlaskConical className="w-2.5 h-2.5" />,
+  'Simulation': <Play className="w-2.5 h-2.5 fill-current" />,
+  'Practice': <Target className="w-2.5 h-2.5" />,
+  'Supplemental': <Layers className="w-2.5 h-2.5" />,
 };
 
 /** Tailwind classes for the colored category badge pill. Fallback applied when key is missing. */
 const CATEGORY_COLORS: Record<string, string> = {
-  'Textbook':     'bg-blue-500/15 text-blue-400 border-blue-500/25',
-  'Simulation':   'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-  'Lab Guide':    'bg-amber-500/15 text-amber-400 border-amber-500/25',
-  'Practice Set': 'bg-orange-500/15 text-orange-400 border-orange-500/25',
-  'Article':      'bg-cyan-500/15 text-cyan-400 border-cyan-500/25',
-  'Video Lesson': 'bg-pink-500/15 text-pink-400 border-pink-500/25',
-  'Supplemental': 'bg-gray-500/15 text-gray-400 border-gray-500/25',
   'Lesson':       'bg-purple-500/15 text-purple-400 border-purple-500/25',
+  'Lab':          'bg-amber-500/15 text-amber-400 border-amber-500/25',
+  'Simulation':   'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+  'Practice':     'bg-orange-500/15 text-orange-400 border-orange-500/25',
+  'Supplemental': 'bg-gray-500/15 text-gray-400 border-gray-500/25',
 };
 
 /** Tailwind classes for the left icon square on unstarted resources (bg + text + hover shadow). */
 const CATEGORY_ICON_COLORS: Record<string, string> = {
-  'Textbook':     'bg-blue-500/10 text-blue-400 group-hover:shadow-blue-500/20',
-  'Simulation':   'bg-emerald-500/10 text-emerald-400 group-hover:shadow-emerald-500/20',
-  'Lab Guide':    'bg-amber-500/10 text-amber-400 group-hover:shadow-amber-500/20',
-  'Practice Set': 'bg-orange-500/10 text-orange-400 group-hover:shadow-orange-500/20',
-  'Article':      'bg-cyan-500/10 text-cyan-400 group-hover:shadow-cyan-500/20',
-  'Video Lesson': 'bg-pink-500/10 text-pink-400 group-hover:shadow-pink-500/20',
-  'Supplemental': 'bg-gray-500/10 text-gray-400 group-hover:shadow-gray-500/20',
   'Lesson':       'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20',
+  'Lab':          'bg-amber-500/10 text-amber-400 group-hover:shadow-amber-500/20',
+  'Simulation':   'bg-emerald-500/10 text-emerald-400 group-hover:shadow-emerald-500/20',
+  'Practice':     'bg-orange-500/10 text-orange-400 group-hover:shadow-orange-500/20',
+  'Supplemental': 'bg-gray-500/10 text-gray-400 group-hover:shadow-gray-500/20',
 };
 
 type EnrichedAssignment = Assignment & { lastEngagement: string | null; engagementTime: number };
@@ -105,7 +93,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
       case 'alpha':
         return sorted.sort((a, b) => a.title.localeCompare(b.title));
       case 'type':
-        return sorted.sort((a, b) => (a.category || '').localeCompare(b.category || '') || a.title.localeCompare(b.title));
+        return sorted.sort((a, b) => (migrateResourceCategory(a.category) || '').localeCompare(migrateResourceCategory(b.category) || '') || a.title.localeCompare(b.title));
       default:
         return sorted;
     }
@@ -172,18 +160,18 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
           isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110 shadow-lg group-hover:shadow-indigo-500/20' :
-          `${CATEGORY_ICON_COLORS[resource.category || ''] ?? 'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20'} group-hover:scale-110 shadow-lg`
+          `${CATEGORY_ICON_COLORS[migrateResourceCategory(resource.category) || ''] ?? 'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20'} group-hover:scale-110 shadow-lg`
         }`}>
           {isModuleCompleted ? <CheckCircle2 className="w-6 h-6" /> :
             isSubstantial ? <CheckCircle2 className="w-6 h-6" /> :
             resource.lastEngagement ? <CheckCircle2 className="w-5 h-5 opacity-60" /> :
             isLessonOnly ? <GraduationCap className="w-6 h-6" /> :
-            CATEGORY_ICONS[resource.category || 'Supplemental']}
+            CATEGORY_ICONS[migrateResourceCategory(resource.category) || 'Supplemental']}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {(() => {
-              const badgeLabel = isLessonOnly ? 'Lesson' : (resource.category ?? 'Supplemental');
+              const badgeLabel = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) ?? 'Supplemental');
               const badgeColors = CATEGORY_COLORS[badgeLabel] ?? 'bg-gray-500/15 text-gray-400 border-gray-500/25';
               return (
                 <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${badgeColors}`}>
@@ -359,7 +347,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                     let lastCategory: string | null = null;
                     sortedItems.forEach(resource => {
                       const isLessonOnly = !!(resource.lessonBlocks && resource.lessonBlocks.length > 0 && !resource.contentUrl);
-                      const category = isLessonOnly ? 'Lesson' : (resource.category || 'Supplemental');
+                      const category = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) || 'Supplemental');
                       if (category !== lastCategory) {
                         result.push(
                           <div key={`subheader-${category}`} className="flex items-center gap-2 py-1.5 px-2">

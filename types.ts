@@ -26,7 +26,8 @@ export interface UserSettings {
 export interface ClassConfig {
   id: string;
   className: string;
-  unitOrder?: string[]; 
+  unitOrder?: string[];
+  resourceOrder?: Record<string, string[]>;
   features: {
     evidenceLocker: boolean;
     leaderboard: boolean;
@@ -370,7 +371,24 @@ export interface WhitelistedUser {
   classTypes?: ClassType[]; // All enrolled classes
 }
 
-export type ResourceCategory = 'Textbook' | 'Supplemental' | 'Lab Guide' | 'Practice Set' | 'Simulation' | 'Article' | 'Video Lesson';
+export type ResourceCategory = 'Lesson' | 'Lab' | 'Simulation' | 'Practice' | 'Supplemental';
+
+/** Map legacy Firestore category values to the current ResourceCategory set. */
+export function migrateResourceCategory(raw: string | undefined): ResourceCategory {
+  const map: Record<string, ResourceCategory> = {
+    'Textbook': 'Lesson',
+    'Article': 'Lesson',
+    'Video Lesson': 'Lesson',
+    'Lab Guide': 'Lab',
+    'Practice Set': 'Practice',
+    'Lesson': 'Lesson',
+    'Lab': 'Lab',
+    'Simulation': 'Simulation',
+    'Practice': 'Practice',
+    'Supplemental': 'Supplemental',
+  };
+  return map[raw ?? ''] ?? 'Lesson';
+}
 
 // Rubric types
 export type RubricTierLabel = 'Missing' | 'Emerging' | 'Approaching' | 'Developing' | 'Refining';

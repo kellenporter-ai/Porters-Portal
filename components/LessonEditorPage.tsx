@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDebounce } from '../lib/rateLimiting';
-import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass } from '../types';
+import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass, migrateResourceCategory } from '../types';
 import { parseRubricMarkdown, validateRubric } from '../lib/rubricParser';
 import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
@@ -174,7 +174,7 @@ const getBlockSummary = (block: LessonBlock): string => {
 
 const getBlockTypeInfo = (type: BlockType) => BLOCK_TYPES.find(bt => bt.type === type);
 
-const CATEGORIES: ResourceCategory[] = ['Textbook', 'Simulation', 'Lab Guide', 'Practice Set', 'Article', 'Video Lesson', 'Supplemental'];
+const CATEGORIES: ResourceCategory[] = ['Lesson', 'Lab', 'Simulation', 'Practice', 'Supplemental'];
 
 // ──────────────────────────────────────────────
 // Smart Unit Selector (combobox)
@@ -314,7 +314,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   // Resource settings state
   const [resTitle, setResTitle] = useState('');
   const [resUnit, setResUnit] = useState('Unit 1: Overview');
-  const [resCategory, setResCategory] = useState<ResourceCategory>('Textbook');
+  const [resCategory, setResCategory] = useState<ResourceCategory>('Lesson');
   const [resDescription, setResDescription] = useState('');
   const [resContentUrl, setResContentUrl] = useState<string | null>(null);
   const [resClasses, setResClasses] = useState<Set<string>>(new Set([availableClasses[0] || DefaultClassTypes.AP_PHYSICS]));
@@ -420,7 +420,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setBlocks(assignment.lessonBlocks || []);
       setResTitle(assignment.title);
       setResUnit(assignment.unit || 'Unit 1: Overview');
-      setResCategory((assignment.category || 'Textbook') as ResourceCategory);
+      setResCategory(migrateResourceCategory(assignment.category));
       setResDescription(assignment.description || '');
       setResContentUrl(assignment.contentUrl || null);
       setResClasses(new Set([assignment.classType]));
@@ -448,7 +448,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     setBlocks([]);
     setResTitle('');
     setResUnit('Unit 1: Overview');
-    setResCategory('Textbook');
+    setResCategory('Lesson');
     setResDescription('');
     setResContentUrl(null);
     setResClasses(new Set([availableClasses[0] || DefaultClassTypes.AP_PHYSICS]));
@@ -848,7 +848,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2"><label className={labelClass}>Title</label><input type="text" value={resTitle} onChange={e => { setResTitle(e.target.value); setHasUnsavedChanges(true); }} placeholder="Resource title..." className={inputClass} /></div>
                     <UnitSelector value={resUnit} onChange={(val) => { setResUnit(val); setHasUnsavedChanges(true); }} existingUnits={existingUnits} />
-                    <div><label className={labelClass}>Category</label><select value={resCategory} onChange={e => { setResCategory(e.target.value as ResourceCategory); setHasUnsavedChanges(true); }} className={inputClass}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                    <div><label className={labelClass}>Category</label><select value={resCategory} onChange={e => { setResCategory(e.target.value as ResourceCategory); setHasUnsavedChanges(true); }} className={inputClass}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>{isAssessment && (<p className="text-[10px] text-[var(--text-muted)] mt-1">Assessment mode is active — category is used for admin organization only.</p>)}</div>
                   </div>
 
                   <div>

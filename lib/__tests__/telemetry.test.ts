@@ -312,13 +312,13 @@ describe('getBucketRecommendation', () => {
 
   it('recommends low-barrier resources for INACTIVE students', () => {
     const rec = getBucketRecommendation('INACTIVE');
-    expect(rec.categories).toContain('Video Lesson');
+    expect(rec.categories).toContain('Lesson');
     expect(rec.action).toContain('outreach');
   });
 
   it('recommends original-work resources for COPYING students', () => {
     const rec = getBucketRecommendation('COPYING');
-    expect(rec.categories).toContain('Practice Set');
+    expect(rec.categories).toContain('Practice');
     expect(rec.action).toContain('integrity');
   });
 });

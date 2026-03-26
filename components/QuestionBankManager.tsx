@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Assignment } from '../types';
+import { Assignment, migrateResourceCategory } from '../types';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Upload, Copy, CheckCircle2, Loader2, FileJson, AlertTriangle, Trash2, Database, ChevronRight, Search, Plus, XCircle, Zap, BookOpen } from 'lucide-react';
@@ -132,7 +132,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
     const [isSaving, setIsSaving] = useState(false);
 
     // UI state
-    const [tab, setTab] = useState<Tab>(assignment.category === 'Practice Set' ? 'reading' : 'manage');
+    const [tab, setTab] = useState<Tab>(migrateResourceCategory(assignment.category) === 'Practice' ? 'reading' : 'manage');
     const [filterTier, setFilterTier] = useState<number | null>(null);
     const [filterType, setFilterType] = useState<string | null>(null);
     const [searchText, setSearchText] = useState('');
@@ -152,7 +152,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
     const [copiedReading, setCopiedReading] = useState(false);
     const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
     const readingFileRef = useRef<HTMLInputElement>(null);
-    const isPracticeSet = assignment.category === 'Practice Set';
+    const isPracticeSet = migrateResourceCategory(assignment.category) === 'Practice';
     useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
     // Load existing bank and reading material

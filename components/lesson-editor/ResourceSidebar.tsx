@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Assignment, AssignmentStatus, ClassConfig, ResourceCategory } from '../../types';
+import { Assignment, AssignmentStatus, ClassConfig, ResourceCategory, migrateResourceCategory } from '../../types';
 import {
   Plus, ChevronDown, ChevronRight, Search, Filter, ArrowUpDown,
-  ChevronUp, Rocket, Archive, Eye, Trash2, CalendarClock, Layers,
-  BookOpen, PlayCircle, FlaskConical, Target, Newspaper, Video, Shield
+  ChevronUp, Rocket, Archive, Eye, EyeOff, Trash2, CalendarClock, Layers,
+  BookOpen, PlayCircle, FlaskConical, Target, Shield
 } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
 import { dataService } from '../../services/dataService';
@@ -35,16 +35,14 @@ function formatDueCompact(isoString: string): string {
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  'Textbook': <BookOpen className="w-3 h-3" />,
+  'Lesson': <BookOpen className="w-3 h-3" />,
   'Simulation': <PlayCircle className="w-3 h-3" />,
-  'Lab Guide': <FlaskConical className="w-3 h-3" />,
-  'Practice Set': <Target className="w-3 h-3" />,
-  'Article': <Newspaper className="w-3 h-3" />,
-  'Video Lesson': <Video className="w-3 h-3" />,
+  'Lab': <FlaskConical className="w-3 h-3" />,
+  'Practice': <Target className="w-3 h-3" />,
   'Supplemental': <Layers className="w-3 h-3" />,
 };
 
-const CATEGORIES: ResourceCategory[] = ['Textbook', 'Simulation', 'Lab Guide', 'Practice Set', 'Article', 'Video Lesson', 'Supplemental'];
+const CATEGORIES: ResourceCategory[] = ['Lesson', 'Lab', 'Simulation', 'Practice', 'Supplemental'];
 
 interface ResourceSidebarProps {
   assignments: Assignment[];
@@ -82,6 +80,9 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [hoverResourceId, setHoverResourceId] = useState<string | null>(null);
+  const [showResourceOrder, setShowResourceOrder] = useState<string | null>(null); // unit name being reordered
+  const [pendingResourceOrder, setPendingResourceOrder] = useState<string[] | null>(null); // ordered assignment IDs
+  const [isSavingResourceOrder, setIsSavingResourceOrder] = useState(false);
   const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set());
   const [expandedAllClassUnits, setExpandedAllClassUnits] = useState<Set<string>>(new Set());
 
@@ -129,6 +130,45 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
     return classConfigs?.find(c => c.className === filterClass)?.unitOrder;
   }, [filterClass, classConfigs]);
 
+  // Returns resource IDs in the configured order for a given class+unit
+  const getResourceOrder = useCallback((unit: string) => {
+    if (filterClass === 'All Classes') return undefined;
+    return classConfigs?.find(c => c.className === filterClass)?.resourceOrder?.[unit];
+  }, [filterClass, classConfigs]);
+
+  // Sort assignments within a unit according to saved resourceOrder, then alpha fallback
+  const sortResources = useCallback((items: Assignment[], unit: string): Assignment[] => {
+    const order = getResourceOrder(unit);
+    if (!order || order.length === 0) return [...items].sort((a, b) => a.title.localeCompare(b.title));
+    return [...items].sort((a, b) => {
+      const ai = order.indexOf(a.id);
+      const bi = order.indexOf(b.id);
+      if (ai === -1 && bi === -1) return a.title.localeCompare(b.title);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, [getResourceOrder]);
+
+  // Save resource order handler
+  const handleSaveResourceOrder = useCallback(async (unit: string) => {
+    if (!pendingResourceOrder || filterClass === 'All Classes') return;
+    setIsSavingResourceOrder(true);
+    try {
+      const existing = classConfigs?.find(c => c.className === filterClass);
+      const newResourceOrder = { ...(existing?.resourceOrder ?? {}), [unit]: pendingResourceOrder };
+      if (existing) {
+        await dataService.saveClassConfig({ ...existing, resourceOrder: newResourceOrder });
+      } else {
+        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: undefined, resourceOrder: newResourceOrder, features: { evidenceLocker: false, leaderboard: false, physicsTools: false, communications: false, dungeons: true, pvpArena: true, bossFights: true } } as ClassConfig);
+      }
+      toast.success('Resource order saved!');
+      setPendingResourceOrder(null);
+      setShowResourceOrder(null);
+    } catch { toast.error('Failed to save resource order.'); }
+    finally { setIsSavingResourceOrder(false); }
+  }, [pendingResourceOrder, filterClass, classConfigs, toast]);
+
   // Save unit order handler
   const handleSaveUnitOrder = useCallback(async () => {
     if (!pendingOrder || filterClass === 'All Classes') return;
@@ -162,7 +202,11 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
         <div className="grid grid-cols-2 gap-1.5">
           <select
             value={filterClass}
-            onChange={e => setFilterClass(e.target.value)}
+            onChange={e => {
+              setFilterClass(e.target.value);
+              setShowResourceOrder(null);
+              setPendingResourceOrder(null);
+            }}
             className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
           >
             <option value="All Classes">All Classes</option>
@@ -276,7 +320,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               const isDraft = a.status === AssignmentStatus.DRAFT;
                               const isArchived = a.status === AssignmentStatus.ARCHIVED;
                               const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
-                              const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
+                              const catIcon = a.category ? CATEGORY_ICONS[migrateResourceCategory(a.category)] : null;
                               const compactDate = a.createdAt ? formatCompactDate(a.createdAt) : null;
                               const wasEdited = a.updatedAt && a.createdAt &&
                                 Math.abs(new Date(a.updatedAt).getTime() - new Date(a.createdAt).getTime()) > 60000;
@@ -298,6 +342,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                   >
                                     {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                                     <span className="truncate flex-1">{a.title}</span>
+                                    {a.status === AssignmentStatus.ACTIVE && <span title="Visible to students" className="shrink-0 flex items-center"><Eye className="w-2.5 h-2.5 text-emerald-400/60" /></span>}
                                     <div className="flex items-center gap-1 shrink-0">
                                       {a.dueDate && (
                                         <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
@@ -324,6 +369,11 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                       {isDraft && (
                                         <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
                                           <Rocket className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                      {a.status === AssignmentStatus.ACTIVE && (
+                                        <button onClick={(e) => { e.stopPropagation(); dataService.updateAssignmentStatus(a.id, AssignmentStatus.DRAFT).then(() => toast.success('Set to Draft')).catch(() => toast.error('Failed to update status')); }} className="p-1 text-[var(--text-muted)] hover:text-yellow-400 transition cursor-pointer" title="Hide from students (set to Draft)" aria-label="Hide from students (set to Draft)">
+                                          <EyeOff className="w-3 h-3" />
                                         </button>
                                       )}
                                       <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
@@ -354,19 +404,66 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
               return sortedKeys.map(k => [k, filteredUnits[k]] as [string, Assignment[]]);
             })().map(([unit, items]) => (
               <div key={unit}>
-                <button onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })} className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-[var(--surface-glass)] rounded-lg transition cursor-pointer">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; })}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedUnits(prev => { const n = new Set(prev); n.has(unit) ? n.delete(unit) : n.add(unit); return n; }); } }}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-[var(--surface-glass)] rounded-lg transition cursor-pointer"
+                >
                   {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
                   <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
                   <span className="text-[9px] text-[var(--text-muted)] font-mono">{items.length}</span>
-                </button>
-                {expandedUnits.has(unit) && items.map(a => {
+                  {filterClass !== 'All Classes' && items.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (showResourceOrder !== unit) {
+                          setPendingResourceOrder(sortResources(items, unit).map(a => a.id));
+                        }
+                        setShowResourceOrder(showResourceOrder === unit ? null : unit);
+                      }}
+                      className={`p-0.5 shrink-0 transition cursor-pointer ${showResourceOrder === unit ? 'text-amber-300' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                      title="Reorder resources in this unit"
+                      aria-label="Reorder resources in this unit"
+                    >
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {showResourceOrder === unit && pendingResourceOrder && (
+                  <div className="mx-2 mb-1 border border-amber-500/20 rounded-lg bg-amber-500/5 p-2 space-y-1.5">
+                    <div className="text-[9px] font-bold text-amber-300 uppercase tracking-widest">Resource Order</div>
+                    <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                      {pendingResourceOrder.map((id, idx) => {
+                        const a = items.find(x => x.id === id);
+                        if (!a) return null;
+                        return (
+                          <div key={id} className="flex items-center gap-1.5 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1">
+                            <span className="text-[9px] text-[var(--text-muted)] font-mono w-4 text-right">{idx + 1}</span>
+                            <span className="text-[10px] text-[var(--text-secondary)] truncate flex-1">{a.title}</span>
+                            <button disabled={idx === 0} onClick={() => { const n = [...pendingResourceOrder]; [n[idx], n[idx-1]] = [n[idx-1], n[idx]]; setPendingResourceOrder(n); }} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition cursor-pointer"><ChevronUp className="w-3 h-3" /></button>
+                            <button disabled={idx === pendingResourceOrder.length - 1} onClick={() => { const n = [...pendingResourceOrder]; [n[idx], n[idx+1]] = [n[idx+1], n[idx]]; setPendingResourceOrder(n); }} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition cursor-pointer"><ChevronDown className="w-3 h-3" /></button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleSaveResourceOrder(unit)} disabled={isSavingResourceOrder} className="flex-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
+                        {isSavingResourceOrder ? 'Saving...' : 'Save Order'}
+                      </button>
+                      <button onClick={() => { setShowResourceOrder(null); setPendingResourceOrder(null); }} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
+                    </div>
+                  </div>
+                )}
+                {expandedUnits.has(unit) && sortResources(items, unit).map(a => {
                   const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
                   const hasHtml = !!a.contentUrl;
                   const isHovered = hoverResourceId === a.id;
                   const isDraft = a.status === AssignmentStatus.DRAFT;
                   const isArchived = a.status === AssignmentStatus.ARCHIVED;
                   const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
-                  const catIcon = a.category ? CATEGORY_ICONS[a.category] : null;
+                  const catIcon = a.category ? CATEGORY_ICONS[migrateResourceCategory(a.category)] : null;
                   const compactDate = a.createdAt ? formatCompactDate(a.createdAt) : null;
                   const wasEdited = a.updatedAt && a.createdAt &&
                     Math.abs(new Date(a.updatedAt).getTime() - new Date(a.createdAt).getTime()) > 60000;
@@ -388,6 +485,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                       >
                         {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate flex-1">{a.title}</span>
+                        {a.status === AssignmentStatus.ACTIVE && <span title="Visible to students" className="shrink-0 flex items-center"><Eye className="w-2.5 h-2.5 text-emerald-400/60" /></span>}
                         <div className="flex items-center gap-1 shrink-0">
                           {a.dueDate && (
                             <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
@@ -414,6 +512,11 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                           {isDraft && (
                             <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
                               <Rocket className="w-3 h-3" />
+                            </button>
+                          )}
+                          {a.status === AssignmentStatus.ACTIVE && (
+                            <button onClick={(e) => { e.stopPropagation(); dataService.updateAssignmentStatus(a.id, AssignmentStatus.DRAFT).then(() => toast.success('Set to Draft')).catch(() => toast.error('Failed to update status')); }} className="p-1 text-[var(--text-muted)] hover:text-yellow-400 transition cursor-pointer" title="Hide from students (set to Draft)" aria-label="Hide from students (set to Draft)">
+                              <EyeOff className="w-3 h-3" />
                             </button>
                           )}
                           <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
