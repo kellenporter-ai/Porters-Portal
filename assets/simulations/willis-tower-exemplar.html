@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Willis Tower — Exemplar Solution</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1a3a6b;
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-size: 20px;
+            color: #1a3a6b;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .given-section {
+            background-color: #e8f0ff;
+            border: 2px solid #1a3a6b;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .given-section h3 {
+            color: #1a3a6b;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .given-item {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .part-section {
+            margin-bottom: 24px;
+        }
+
+        .part-header {
+            color: #1a3a6b;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1a3a6b;
+        }
+
+        .equation {
+            font-family: 'Times New Roman', serif;
+            font-size: 16px;
+            margin: 8px 0;
+            text-align: center;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .answer-box {
+            display: inline-block;
+            background-color: #e8f0ff;
+            border: 2px solid #1a3a6b;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .answer-label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .answer-value {
+            font-size: 18px;
+            color: #1a3a6b;
+        }
+
+        .sig-fig-note {
+            font-size: 13px;
+            color: #555;
+            font-style: italic;
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .assumptions-section {
+            margin-bottom: 24px;
+        }
+
+        .assumptions-section h3 {
+            color: #1a3a6b;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .assumption-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            padding-left: 12px;
+        }
+
+        .reasonableness-section {
+            margin-bottom: 24px;
+        }
+
+        .reasonableness-section h3 {
+            color: #1a3a6b;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .reasonableness-calc {
+            font-family: 'Times New Roman', serif;
+            font-size: 15px;
+            text-align: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .reasonableness-conclusion {
+            font-size: 14px;
+            color: #333;
+            padding: 10px;
+            background-color: #e8f0ff;
+            border-left: 3px solid #1a3a6b;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .note-section {
+            margin-bottom: 20px;
+        }
+
+        .note-section h3 {
+            color: #1a3a6b;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .note-text {
+            font-size: 14px;
+            color: #444;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                max-width: none;
+            }
+
+            .given-section,
+            .answer-box,
+            .sig-fig-note,
+            .assumptions-section,
+            .reasonableness-section,
+            .note-section {
+                break-inside: avoid;
+            }
+
+            h1, h2, h3 {
+                color: #000 !important;
+            }
+
+            .answer-value {
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Willis Tower — Exemplar Solution</h1>
+    <h2>AP Physics 1 · Chapter 10: Vibrational Motion · Algebra-Based</h2>
+
+    <div class="given-section">
+        <h3>GIVEN</h3>
+        <div class="given-item">Mass of Willis Tower: m = 2 × 10⁸ kg</div>
+        <div class="given-item">Sway frequency: f = 0.10 Hz</div>
+        <div class="given-item">Wind force (Part b): F = 4 × 10⁶ N</div>
+    </div>
+
+    <div class="part-section">
+        <div class="part-header">PART A: Effective Spring Constant</div>
+        
+        <div class="equation">
+            f = (1/2π)√(k/m)
+        </div>
+        
+        <div class="equation">
+            Rearrange: k = (2πf)² · m
+        </div>
+        
+        <div class="equation">
+            Substitute: k = (2π × 0.10)² × (2 × 10⁸) = (0.628)² × (2 × 10⁸) = 0.395 × 2 × 10⁸
+        </div>
+        
+        <div class="answer-box">
+            <span class="answer-label">ANSWER</span>
+            <span class="answer-value">k ≈ 8 × 10⁷ N/m</span>
+        </div>
+        
+        <div class="sig-fig-note">
+            Sig figs note: Mass = 1 sig fig (limiting), frequency = 2 sig figs → answer to 1 sig fig
+        </div>
+    </div>
+
+    <div class="part-section">
+        <div class="part-header">PART B: Wind Displacement</div>
+        
+        <div class="equation">
+            F = kx → x = F/k
+        </div>
+        
+        <div class="equation">
+            Substitute: x = (4 × 10⁶) / (8 × 10⁷)
+        </div>
+        
+        <div class="answer-box">
+            <span class="answer-label">ANSWER</span>
+            <span class="answer-value">x ≈ 0.05 m = 5 cm</span>
+        </div>
+        
+        <div class="sig-fig-note">
+            Sig figs note: F and k both have 1 sig fig → answer to 1 sig fig
+        </div>
+    </div>
+
+    <div class="assumptions-section">
+        <h3>ASSUMPTIONS</h3>
+        <div class="assumption-item">1. Restoring force is linear — Hooke's Law applies</div>
+        <div class="assumption-item">2. Wind force treated as static load, not oscillating</div>
+        <div class="assumption-item">3. Total mass treated as a lumped point mass</div>
+        <div class="assumption-item">4. Damping is negligible</div>
+        <div class="assumption-item">5. Small-angle sway approximation holds</div>
+    </div>
+
+    <div class="reasonableness-section">
+        <h3>REASONABLENESS CHECK</h3>
+        <div class="reasonableness-calc">
+            x/h = 0.05 m / 442 m ≈ 0.01% of tower height
+        </div>
+        <div class="reasonableness-conclusion">
+            Conclusion: 5 cm displacement is physically plausible for a stiff steel skyscraper.
+        </div>
+    </div>
+
+    <div class="note-section">
+        <h3>NOTE</h3>
+        <div class="note-text">
+            If students used k = 7.9 × 10⁷ N/m (less rounded), x = 0.051 m ≈ 5 cm — same result at 1 sig fig. Both values acceptable.
+        </div>
+    </div>
+
+    <footer>
+        AP Physics 1 · Willis Tower Assessment · Exemplar Solution
+    </footer>
+</body>
+</html>
