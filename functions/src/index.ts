@@ -2969,7 +2969,7 @@ function checkModeration(text: string): boolean {
   return BANNED_PATTERNS.some((pattern) => pattern.test(cleaned));
 }
 
-export const sendClassMessage = onCall({ minInstances: 1 }, async (request) => {
+export const sendClassMessage = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const { content, channelId, classType } = request.data;
 
