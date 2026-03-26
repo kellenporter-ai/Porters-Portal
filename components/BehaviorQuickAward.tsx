@@ -76,7 +76,7 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
       setSelectedStudents([]);
       setSearch('');
     } catch {
-      toast.error('Failed to award.');
+      toast.error('Could not send award. Check your connection.');
     } finally {
       setAwarding(false);
     }

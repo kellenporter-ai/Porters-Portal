@@ -94,7 +94,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       sfx.equip();
       toast.success(`${item.name} equipped.`);
     } catch {
-      toast.error('Failed to equip item.');
+      toast.error('Could not equip this item. You may not meet the requirements.');
     } finally {
       setIsProcessing(false);
     }
@@ -107,7 +107,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       setInspectItem(null);
       toast.success('Item unequipped.');
     } catch {
-      toast.error('Failed to unequip item.');
+      toast.error('Could not unequip this item. Try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -129,7 +129,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
         sfx.salvage();
         toast.success(`Salvaged for ${val} Cyber-Flux.`);
       } catch {
-        toast.error('Failed to salvage item.');
+        toast.error('Could not salvage this item. It may be currently equipped.');
       } finally {
         setIsProcessing(false);
       }
@@ -217,7 +217,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       toast.success('Profile updated!');
       setShowCustomize(false);
     } catch {
-      toast.error('Failed to save — try again');
+      toast.error('Could not save appearance. Check your connection.');
     }
   };
 

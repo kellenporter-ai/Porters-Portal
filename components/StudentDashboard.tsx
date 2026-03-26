@@ -365,7 +365,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           await dataService.switchUserView(user.id, newClass);
       } catch {
           setActiveClass(previousClass);
-          toast.error('Failed to switch class.');
+          toast.error('Could not switch class. Check your connection and try again.');
       }
   }, [user.id, activeClass, toast]);
 
@@ -393,7 +393,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           sfx.questAccept();
           toast.success(`Contract accepted: ${quest.title}`);
       } catch {
-          toast.error('Failed to accept contract.');
+          toast.error('Could not accept this contract. It may no longer be available.');
       } finally {
           setQuestActionLoading(null);
       }

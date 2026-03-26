@@ -7,7 +7,7 @@ import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useToast } from './ToastProvider';
-import { reportError } from '../lib/errorReporting';
+import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
 import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye, LogOut } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
@@ -239,8 +239,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         setIsSubmitting(false);
         return;
       } catch (err) {
+        const errorCode = extractFirebaseErrorCode(err);
         const errMsg = err instanceof Error ? err.message : String(err);
-        if (errMsg.includes('already-exists')) {
+
+        if (errorCode === 'already-exists') {
           toast.success('Your assessment was already submitted successfully!');
           setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
           setIsSubmitting(false);
@@ -251,11 +253,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           await new Promise(r => setTimeout(r, 3000));
           continue;
         }
-        reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id });
+        reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id, errorCode });
 
-        // Parse failed-precondition errors for hasUnsavedWork hint
+        // Map error codes to actionable messages
         let toastMsg = 'Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.';
-        if (errMsg.includes('failed-precondition')) {
+        if (errorCode === 'failed-precondition') {
           try {
             const parsed = JSON.parse(errMsg.replace(/^.*?(\{)/, '$1'));
             if (parsed.hasUnsavedWork) {
@@ -264,8 +266,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               toastMsg = 'Session expired. Please start a new assessment attempt.';
             }
           } catch {
-            // Couldn't parse — use default message
+            toastMsg = 'Your session has expired. Please start a new assessment attempt.';
           }
+        } else if (errorCode === 'permission-denied') {
+          toastMsg = 'You are not enrolled in the class for this assessment.';
+        } else if (errorCode === 'not-found') {
+          toastMsg = 'This assessment was not found. It may have been updated — please refresh the page.';
+        } else if (errorCode === 'unauthenticated') {
+          toastMsg = 'You were signed out. Please sign in and try again.';
         }
         toast.error(toastMsg);
         setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');

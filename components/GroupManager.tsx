@@ -67,7 +67,7 @@ const GroupManager: React.FC<GroupManagerProps> = ({ students, fullPage }) => {
       setNewSection('');
       setShowCreate(false);
       toast.success('Group created.');
-    } catch { toast.error('Failed to create group.'); }
+    } catch { toast.error('Could not create the group. Try a different name.'); }
   };
 
   const handleDelete = async (groupId: string) => {

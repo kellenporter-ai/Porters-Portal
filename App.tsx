@@ -13,6 +13,7 @@ import GoogleLogin from './components/GoogleLogin';
 import { ShieldAlert, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
 import ErrorBoundary, { FeatureErrorBoundary } from './components/ErrorBoundary';
+import { getFirebaseErrorMessage } from './lib/errorReporting';
 import { reportError } from './lib/errorReporting';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
@@ -70,8 +71,12 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
       } else {
         setError(result.error || 'Failed to redeem code.');
       }
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      setError(getFirebaseErrorMessage(err, 'Something went wrong. Please try again.', {
+        'not-found': 'That enrollment code was not found. Double-check the code and try again.',
+        'already-exists': 'You are already enrolled in this class.',
+        'invalid-argument': 'That code is not valid. Please check with your teacher.',
+      }));
     } finally {
       setIsRedeeming(false);
     }
@@ -109,6 +114,9 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
             </button>
           </div>
 
+          {!error && !success && code.length > 0 && code.replace('-', '').length < 4 && (
+            <p className="mt-2 text-xs text-[var(--text-muted)]">Enter the full code from your teacher (4-8 characters)</p>
+          )}
           {error && <p className="mt-3 text-sm text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">{error}</p>}
           {success && (
             <p className="mt-3 text-sm text-emerald-400 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">

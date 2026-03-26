@@ -3,7 +3,8 @@ import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { google } from "googleapis";
+// googleapis lazy-loaded in getClassroomClient() to avoid cold-start penalty
+// for the 50+ functions that don't use Classroom APIs
 
 
 admin.initializeApp();
@@ -738,7 +739,7 @@ function calculateFeedbackServerSide(
  * awardXP — Server-authoritative XP granting with transaction safety.
  * Called when a student completes engagement with a resource, or by admin for manual adjustment.
  */
-export const awardXP = onCall(async (request) => {
+export const awardXP = onCall({ minInstances: 1 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { targetUserId, amount, classType } = request.data;
 
@@ -2397,7 +2398,7 @@ export const startAssessmentSession = onCall(async (request) => {
 // ==========================================
 // SUBMIT ASSESSMENT — Server-side grading + telemetry
 // ==========================================
-export const submitAssessment = onCall(async (request) => {
+export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   // 1. Verify auth
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
@@ -2414,7 +2415,7 @@ export const submitAssessment = onCall(async (request) => {
   const tokenRef = sessionToken ? db.collection("assessment_sessions").doc(sessionToken) : null;
 
   if (sessionToken && tokenRef) {
-    // Phase 1: Validate token (but don't mark used yet — that happens atomically with submission)
+    // Phase 1: Validate token AND claim it atomically (prevents double-submit race)
     const tokenData = await db.runTransaction(async (transaction) => {
       const tokenSnap = await transaction.get(tokenRef);
       if (!tokenSnap.exists) {
@@ -2430,7 +2431,8 @@ export const submitAssessment = onCall(async (request) => {
       if (data.used) {
         throw new HttpsError("already-exists", "This assessment session has already been submitted. Please start a new attempt.");
       }
-      // Don't mark used here — deferred to atomic commit with submission (Fix 2)
+      // Claim token immediately — second request will see used:true and fail fast
+      transaction.update(tokenRef, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
       return data;
     });
     // Extract startedAt from the session doc (Firestore Timestamp -> millis)
@@ -2452,6 +2454,16 @@ export const submitAssessment = onCall(async (request) => {
       }));
   }
 
+  // Hoist variables needed after the try/catch (XP award + return value)
+  let correct = 0, total = 0, percentage = 0;
+  let perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }> = {};
+  let attemptNumber = 1;
+  let status: string = "CLEAN";
+  let xpEarned = 0;
+
+  // Everything after token claim is wrapped in try/catch for compensating rollback
+  try {
+
   // 3. Read assignment to get answer keys
   const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
   if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
@@ -2472,7 +2484,7 @@ export const submitAssessment = onCall(async (request) => {
 
   // 3. Grade auto-gradable blocks
   const blocks = assignment.lessonBlocks || [];
-  const { correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses);
+  ({ correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses));
 
   // 4. Determine attempt number
   const existingSubs = await db.collection("submissions")
@@ -2481,7 +2493,7 @@ export const submitAssessment = onCall(async (request) => {
     .where("isAssessment", "==", true)
     .get();
   const activeSubmissions = existingSubs.docs.filter(d => d.data().status !== "RETURNED");
-  const attemptNumber = activeSubmissions.length + 1;
+  attemptNumber = activeSubmissions.length + 1;
 
   // 5. Calculate telemetry status
   let assessmentThresholds: Partial<TelemetryThresholds> = {};
@@ -2524,7 +2536,7 @@ export const submitAssessment = onCall(async (request) => {
     return true;
   });
 
-  const { status } = calculateFeedbackServerSide({
+  ({ status } = calculateFeedbackServerSide({
     pasteCount: metrics.pasteCount || 0,
     engagementTime: validatedEngagement,
     keystrokes: metrics.keystrokes || 0,
@@ -2532,7 +2544,7 @@ export const submitAssessment = onCall(async (request) => {
   }, assessmentThresholds, {
     responseCount: nonEmptyResponses.length,
     hasWrittenResponses: nonEmptyResponses.length > 0,
-  });
+  }));
 
   if (status === "FLAGGED") {
     logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
@@ -2600,62 +2612,74 @@ export const submitAssessment = onCall(async (request) => {
     ...(sessionToken ? { sessionToken } : {}),
   };
 
-  // Phase 2: Atomic commit — token burn + submission create + draft delete
-  // Uses a transaction to re-validate the token (prevents race between phase 1 and phase 2)
+  // Phase 2: Batch write — submission create + draft delete
+  // Token already claimed in Phase 1, so no transaction needed here
   if (tokenRef) {
-    await db.runTransaction(async (t) => {
-      // Re-check token not used (prevents double-submit race)
-      const tokenSnap = await t.get(tokenRef);
-      if (tokenSnap.data()?.used) {
-        throw new HttpsError("already-exists", "This assessment session has already been submitted. Please start a new attempt.");
-      }
-      // Mark token used
-      t.update(tokenRef, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
-      // Create submission
-      const submissionRef = db.collection("submissions").doc();
-      t.set(submissionRef, assessmentSubmission);
-      // Delete draft (Fix 3) — prevents stale data on retakes
-      const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
-      t.delete(draftRef);
-    });
+    const batch = db.batch();
+    // Create submission
+    const submissionRef = db.collection("submissions").doc();
+    batch.set(submissionRef, assessmentSubmission);
+    // Delete draft — prevents stale data on retakes
+    const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
+    batch.delete(draftRef);
+    await batch.commit();
   } else {
     // No session token path — should not reach here (thrown above), but safety fallback
     await db.collection("submissions").add(assessmentSubmission);
   }
 
-  // 7. Award XP scaled by percentage
-  const baseXP = Math.round(percentage * 0.5); // 0-50 XP
-  let xpEarned = 0;
-  if (baseXP > 0) {
-    // Get active multiplier
-    const effectiveClass = classType || "Uncategorized";
-    const now = new Date().toISOString();
-    const xpEventsSnap = await db.collection("xp_events")
-      .where("isActive", "==", true)
-      .get();
-    let multiplier = 1;
-    xpEventsSnap.docs.forEach((d) => {
-      const ev = d.data();
-      if (ev.expiresAt && ev.expiresAt < now) return;
-      if (ev.scheduledAt && ev.scheduledAt > now) return;
-      if (ev.type === "GLOBAL" || ev.targetClass === effectiveClass) {
-        multiplier = Math.max(multiplier, ev.multiplier || 1);
+  } catch (err) {
+    // Compensating action: un-claim token so student can retry
+    // Only runs if submission batch was NOT yet committed
+    if (tokenRef) {
+      try {
+        await tokenRef.update({ used: false, usedAt: admin.firestore.FieldValue.delete() });
+        logger.warn(`submitAssessment: token unclaimed after error for uid=${uid}`);
+      } catch (rollbackErr) {
+        logger.error(`submitAssessment: failed to unclaim token for uid=${uid}`, rollbackErr);
       }
-    });
-    xpEarned = Math.round(baseXP * multiplier);
+    }
+    throw err; // Re-throw the original error
+  }
 
-    const userRef = db.doc(`users/${uid}`);
-    await db.runTransaction(async (transaction) => {
-      const userSnap = await transaction.get(userRef);
-      if (!userSnap.exists) return;
-      const data = userSnap.data()!;
-      const gam = data.gamification || {};
-      const classXp = gam.classXp || {};
-      transaction.update(userRef, {
-        "gamification.xp": (gam.xp || 0) + xpEarned,
-        [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
+  // 7. Award XP scaled by percentage (outside try/catch — XP failure must NOT
+  // rollback a successful submission. Missing 0-50 XP is non-critical.)
+  const baseXP = Math.round(percentage * 0.5); // 0-50 XP
+  try {
+    if (baseXP > 0) {
+      // Get active multiplier
+      const effectiveClass = classType || "Uncategorized";
+      const now = new Date().toISOString();
+      const xpEventsSnap = await db.collection("xp_events")
+        .where("isActive", "==", true)
+        .get();
+      let multiplier = 1;
+      xpEventsSnap.docs.forEach((d) => {
+        const ev = d.data();
+        if (ev.expiresAt && ev.expiresAt < now) return;
+        if (ev.scheduledAt && ev.scheduledAt > now) return;
+        if (ev.type === "GLOBAL" || ev.targetClass === effectiveClass) {
+          multiplier = Math.max(multiplier, ev.multiplier || 1);
+        }
       });
-    });
+      xpEarned = Math.round(baseXP * multiplier);
+
+      const userRef = db.doc(`users/${uid}`);
+      await db.runTransaction(async (transaction) => {
+        const userSnap = await transaction.get(userRef);
+        if (!userSnap.exists) return;
+        const data = userSnap.data()!;
+        const gam = data.gamification || {};
+        const classXp = gam.classXp || {};
+        transaction.update(userRef, {
+          "gamification.xp": (gam.xp || 0) + xpEarned,
+          [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
+        });
+      });
+    }
+  } catch (xpErr) {
+    // Non-critical: log but don't fail the submission
+    logger.error(`submitAssessment: XP award failed for uid=${uid}, assignment=${assignmentId}`, xpErr);
   }
 
   logger.info(`submitAssessment: ${uid} scored ${percentage}% (${correct}/${total}) on ${assignmentId}, attempt #${attemptNumber}`);
@@ -2945,7 +2969,7 @@ function checkModeration(text: string): boolean {
   return BANNED_PATTERNS.some((pattern) => pattern.test(cleaned));
 }
 
-export const sendClassMessage = onCall(async (request) => {
+export const sendClassMessage = onCall({ minInstances: 1 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { content, channelId, classType } = request.data;
 
@@ -6688,8 +6712,10 @@ export const redeemEnrollmentCode = onCall({ region: "us-east1" }, async (reques
 
 /**
  * Helper: create an OAuth2 client using the teacher's access token.
+ * googleapis is lazy-loaded here to avoid cold-start penalty for all other functions.
  */
-function createClassroomClient(accessToken: string) {
+async function createClassroomClient(accessToken: string) {
+  const { google } = await import("googleapis");
   const oauth2Client = new google.auth.OAuth2();
   oauth2Client.setCredentials({ access_token: accessToken });
   return google.classroom({ version: "v1", auth: oauth2Client });
@@ -6712,7 +6738,7 @@ export const classroomListCourses = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing accessToken.");
   }
 
-  const classroom = createClassroomClient(accessToken);
+  const classroom = await createClassroomClient(accessToken);
   try {
     const courses: { id: string | null | undefined; name: string | null | undefined; section: string | null | undefined; descriptionHeading: string | null | undefined; ownerId: string | null | undefined; courseState: string | null | undefined }[] = [];
     let pageToken: string | undefined;
@@ -6747,7 +6773,7 @@ export const classroomListCourseWork = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing courseId.");
   }
 
-  const classroom = createClassroomClient(accessToken);
+  const classroom = await createClassroomClient(accessToken);
   try {
     const courseWork: { id: string | null | undefined; title: string | null | undefined; maxPoints: number | null | undefined; state: string | null | undefined }[] = [];
     let pageToken: string | undefined;
@@ -6789,7 +6815,7 @@ export const classroomCreateCourseWork = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid maxPoints.");
   }
 
-  const classroom = createClassroomClient(accessToken);
+  const classroom = await createClassroomClient(accessToken);
   try {
     const res = await classroom.courses.courseWork.create({
       courseId,
@@ -6845,7 +6871,7 @@ export const classroomPushGrades = onCall(async (request) => {
   }
 
   const { courseId, courseWorkId } = classroomLink;
-  const classroom = createClassroomClient(accessToken);
+  const classroom = await createClassroomClient(accessToken);
 
   // 1b. Fetch live maxPoints from Classroom (not stale value from classroomLink)
   let maxPoints: number;

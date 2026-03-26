@@ -51,7 +51,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
       setIsModalOpen(false);
       toast.success('Announcement broadcast sent.');
     } catch (err) {
-      toast.error('Failed to create announcement.');
+      toast.error('Could not create announcement. Try again.');
     }
   };
 

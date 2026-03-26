@@ -37,7 +37,7 @@ const SongRequester: React.FC<SongRequesterProps> = ({ user }) => {
       timersRef.current.push(setTimeout(() => setCooldown(false), 30000));
       timersRef.current.push(setTimeout(() => { setSubmitted(false); setIsOpen(false); setSong(''); setArtist(''); }, 2000));
     } catch {
-      toast.error('Failed to send request. Please try again.');
+      toast.error('Could not send song request. Check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }

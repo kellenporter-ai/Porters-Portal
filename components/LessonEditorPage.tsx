@@ -645,7 +645,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setAutoSavedAt(null);
       clearAutoSave();
     } catch (err) {
-      toast.error('Failed to save.');
+      toast.error('Could not save changes. Check your connection and try again.');
       reportError(err, { component: 'LessonEditorPage' });
     } finally {
       setIsSaving(false);

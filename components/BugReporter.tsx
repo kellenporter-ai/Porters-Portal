@@ -39,7 +39,7 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
       timersRef.current.push(setTimeout(() => setCooldown(false), 5000));
       timersRef.current.push(setTimeout(() => { setSubmitted(false); setIsOpen(false); setDescription(''); }, 2000));
     } catch {
-      toast.error('Failed to submit report. Please try again.');
+      toast.error('Could not submit your report. Check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }

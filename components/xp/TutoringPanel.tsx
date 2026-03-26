@@ -123,7 +123,7 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
       setTopic('');
       setShowCreate(false);
     } catch (err) {
-      toast.error('Failed to create request');
+      toast.error('Could not create tutoring request. Try again.');
     }
     setCreating(false);
   };
@@ -133,7 +133,7 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
       await dataService.claimTutorRole(sessionId, userId, userName);
       toast.success('You are now the tutor for this session!');
     } catch (err) {
-      toast.error('Failed to claim tutor role');
+      toast.error('Could not claim this session. Someone else may have taken it.');
     }
   };
 
@@ -142,7 +142,7 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
       await dataService.startTutoringSession(sessionId);
       toast.success('Session started!');
     } catch (err) {
-      toast.error('Failed to start session');
+      toast.error('Could not start the session. Try refreshing the page.');
     }
   };
 
@@ -158,7 +158,7 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
         : (session.requesterFeedback ? 'Both feedbacks received — awaiting admin verification.' : 'Waiting for student feedback.')));
       setFeedbackSessionId(null);
     } catch (err) {
-      toast.error('Failed to submit feedback');
+      toast.error('Could not submit feedback. Check your connection and try again.');
     }
     setSubmittingFeedback(false);
   };
@@ -168,7 +168,7 @@ const TutoringPanel: React.FC<TutoringPanelProps> = ({ userId, userName, classTy
       const result = await dataService.completeTutoring(sessionId, tutorId);
       toast.success(`Verified! Tutor earned ${result.xpAwarded} XP and ${result.fluxAwarded} Flux`);
     } catch (err) {
-      toast.error('Failed to verify session');
+      toast.error('Session verification failed. Ask your teacher for help.');
     }
   };
 

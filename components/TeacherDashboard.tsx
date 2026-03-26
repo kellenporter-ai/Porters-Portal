@@ -270,7 +270,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           try {
               await dataService.muteUser(userId, 0);
           } catch {
-              toast.error('Failed to unmute user.');
+              toast.error('Could not unmute this student. Try again.');
           }
       }
   };
@@ -286,7 +286,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       try {
           await dataService.muteUser(senderId, minutes);
       } catch {
-          toast.error('Failed to mute user.');
+          toast.error('Could not mute this student. Try again.');
       }
       setMuteMenuFlagId(null);
   };
@@ -300,7 +300,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       try {
           await dataService.muteUser(userId, minutesFromNow);
       } catch {
-          toast.error('Failed to extend mute.');
+          toast.error('Could not extend mute. Try again.');
       }
   };
   
@@ -1304,7 +1304,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     });
                                     toast.success(`Reminder sent to ${draftStudentName}`);
                                   } catch {
-                                    toast.error('Failed to send reminder');
+                                    toast.error('Could not send reminder. Check your connection.');
                                   }
                                 }}
                                 className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold px-2 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 transition"
@@ -1325,7 +1325,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     toast.success(`Submitted ${draftStudentName}'s assessment`);
                                   } catch (err) {
                                     reportError(err, { method: 'callSubmitOnBehalf' });
-                                    toast.error('Failed to submit on behalf');
+                                    toast.error('Could not submit on behalf. The student may have already submitted.');
                                   }
                                 }}
                                 className="text-[10px] text-green-400 hover:text-green-300 font-bold px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 transition flex items-center gap-0.5"
@@ -1350,7 +1350,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                     });
                                     toast.success(`Reminder sent to ${draftStudentName}`);
                                   } catch {
-                                    toast.error('Failed to send reminder');
+                                    toast.error('Could not send reminder. Check your connection.');
                                   }
                                 }}
                                 className="text-[10px] text-orange-400 hover:text-orange-300 font-bold px-2 py-1 rounded bg-orange-500/10 hover:bg-orange-500/20 transition"
@@ -2017,7 +2017,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                   toast.success(`Assessment returned to ${selectedGroup.userName}`);
                                 } catch (err) {
                                   reportError(err, { method: 'callReturnAssessment' });
-                                  toast.error('Failed to return assessment');
+                                  toast.error('Could not return this assessment. Try again.');
                                 }
                               }}
                               className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 rounded-lg transition"
@@ -2103,7 +2103,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                                 }
                               } catch (err) {
                                 reportError(err, { method: 'saveRubricGrade' });
-                                toast.error('Failed to save grade. Check console for details.');
+                                toast.error('Could not save grade. Please try again.');
                               } finally {
                                 setIsSavingRubric(false);
                               }
