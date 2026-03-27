@@ -451,9 +451,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
     return (
       <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[var(--surface-base)]' : ''} flex items-center justify-center h-full`}>
-        <div className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-8 w-full mx-4 backdrop-blur-md ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
-          {/* Header */}
-          <div className="text-center mb-6">
+        <div className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl w-full mx-4 backdrop-blur-md max-h-[90vh] flex flex-col ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
+          {/* Scrollable content */}
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-8 pb-4">
+            {/* Header */}
+            <div className="text-center mb-6">
             {showScore ? (
               <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
                 assessmentResult.percentage >= 80 ? 'bg-green-500/20 text-green-400' :
@@ -604,7 +606,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </div>
           )}
 
-          <div className="flex gap-3">
+          </div>{/* end scrollable content */}
+
+          {/* Sticky action buttons — always visible at bottom of card */}
+          <div className="flex gap-3 p-6 pt-4 border-t border-[var(--border)] shrink-0 rounded-b-2xl">
             {canRetake && (
               <button
                 onClick={handleRetake}
