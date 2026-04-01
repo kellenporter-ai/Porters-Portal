@@ -1723,9 +1723,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     const scaleX = 100 / canvas.width;
     const scaleY = 100 / canvas.height;
 
-    const PERP_OFFSET = 3;       // percent — perpendicular push away from shaft
-    const COLLISION_THRESH = 4;  // percent — if two labels are closer than this, nudge
-    const NUDGE_ALONG = 8;       // percent — how far to slide along shaft on collision
+    const PERP_OFFSET = 3;    // percent — perpendicular push away from shaft
+    const LABEL_HALF_W = 10;  // approx half-width of label in percent
+    const LABEL_HALF_H = 5;   // approx half-height of label in percent
+    const NUDGE_STEP = 12;    // percent — how far to slide along shaft per collision
 
     // Compute midpoint + perpendicular offset for each arrow
     const raw: { idx: number; x: number; y: number; dx: number; dy: number }[] = [];
@@ -1748,17 +1749,23 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       raw.push({ idx, x: mx + px, y: my + py, dx: ux * scaleX, dy: uy * scaleY });
     });
 
-    // Collision nudge — slide overlapping labels along their shaft
-    for (let i = 0; i < raw.length; i++) {
-      for (let j = i + 1; j < raw.length; j++) {
-        const dist = Math.hypot(raw[i].x - raw[j].x, raw[i].y - raw[j].y);
-        if (dist < COLLISION_THRESH) {
-          raw[i].x -= raw[i].dx * NUDGE_ALONG;
-          raw[i].y -= raw[i].dy * NUDGE_ALONG;
-          raw[j].x += raw[j].dx * NUDGE_ALONG;
-          raw[j].y += raw[j].dy * NUDGE_ALONG;
+    // Iterative box-overlap nudge — slide overlapping labels along their shaft
+    for (let pass = 0; pass < 3; pass++) {
+      let anyCollision = false;
+      for (let i = 0; i < raw.length; i++) {
+        for (let j = i + 1; j < raw.length; j++) {
+          const overlapX = Math.abs(raw[i].x - raw[j].x) < LABEL_HALF_W * 2;
+          const overlapY = Math.abs(raw[i].y - raw[j].y) < LABEL_HALF_H * 2;
+          if (overlapX && overlapY) {
+            raw[i].x -= raw[i].dx * NUDGE_STEP;
+            raw[i].y -= raw[i].dy * NUDGE_STEP;
+            raw[j].x += raw[j].dx * NUDGE_STEP;
+            raw[j].y += raw[j].dy * NUDGE_STEP;
+            anyCollision = true;
+          }
         }
       }
+      if (!anyCollision) break;
     }
 
     // Clamp to canvas bounds
