@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Assignment, ClassConfig, Submission, migrateResourceCategory } from '../../types';
 import { ChevronRight, ChevronDown, Play, FlaskConical, Target, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown } from 'lucide-react';
 import { sortUnitKeys } from '../AdminPanel';
@@ -73,10 +73,33 @@ interface ResourcesTabProps {
 
 const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, onToggleUnit, practiceCompletion, onStartAssignment, classConfigs, activeClass, submissions = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alpha' | 'type'>('newest');
+  const [sortBy, setSortBy] = useState<'default' | 'newest' | 'oldest' | 'alpha' | 'type'>('default');
 
-  const sortItems = (items: EnrichedAssignment[]): EnrichedAssignment[] => {
+  const getResourceOrder = useCallback((unit: string): string[] | undefined => {
+    if (!activeClass) return undefined;
+    return classConfigs?.find(c => c.className === activeClass)?.resourceOrder?.[unit];
+  }, [activeClass, classConfigs]);
+
+  const sortItems = (items: EnrichedAssignment[], unit: string): EnrichedAssignment[] => {
     const sorted = [...items];
+    if (sortBy === 'default') {
+      const order = getResourceOrder(unit);
+      if (order && order.length > 0) {
+        return sorted.sort((a, b) => {
+          const ai = order.indexOf(a.id);
+          const bi = order.indexOf(b.id);
+          if (ai === -1 && bi === -1) return a.title.localeCompare(b.title);
+          if (ai === -1) return 1;
+          if (bi === -1) return -1;
+          return ai - bi;
+        });
+      }
+      return sorted.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
     switch (sortBy) {
       case 'newest':
         return sorted.sort((a, b) => {
@@ -300,7 +323,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
       {/* Sort controls */}
       <div className="flex items-center gap-1.5 mb-3">
         <ArrowUpDown size={12} className="text-[var(--text-muted)]" />
-        {(['newest', 'oldest', 'alpha', 'type'] as const).map(option => (
+        {(['default', 'newest', 'oldest', 'alpha', 'type'] as const).map(option => (
           <button
             key={option}
             onClick={() => setSortBy(option)}
@@ -338,7 +361,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
               {expandedUnits.has(unit) && (
                 <div className="grid grid-cols-1 gap-2 p-3 pt-0 animate-in slide-in-from-top-2 duration-300">
                   {(() => {
-                    const sortedItems = sortItems(items);
+                    const sortedItems = sortItems(items, unit);
                     if (sortBy !== 'type') {
                       return sortedItems.map(resource => renderResourceCard(resource));
                     }

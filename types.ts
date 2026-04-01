@@ -108,6 +108,7 @@ export interface LessonBlock {
   columns?: { key: string; label: string; unit?: string; editable?: boolean }[];
   trials?: number;
   rowLabels?: string[];
+  rows?: Record<string, string>[];
   // Bar Chart
   barCount?: number;
   initialLabel?: string;

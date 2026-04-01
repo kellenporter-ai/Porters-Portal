@@ -597,8 +597,13 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
   const rowCount = block.trials || 3;
   const rowLabels = block.rowLabels || [];
   const hasCustomLabels = rowLabels.some(l => l && l.trim() !== '');
+  const prefillRows = block.rows || [];
   const [data, setData] = useState<Record<string, string>[]>(() =>
-    savedResponse?.data ?? Array.from({ length: rowCount }, () => Object.fromEntries(columns.map(c => [c.key, ''])))
+    savedResponse?.data ?? Array.from({ length: rowCount }, (_, i) => {
+      const base = Object.fromEntries(columns.map(c => [c.key, '']));
+      if (prefillRows[i]) { for (const k in prefillRows[i]) base[k] = prefillRows[i][k]; }
+      return base;
+    })
   );
 
   const updateCell = (rowIdx: number, colKey: string, val: string) => {
