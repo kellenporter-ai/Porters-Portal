@@ -6859,32 +6859,33 @@ export const classroomPushGrades = onCall(async (request) => {
 
   const db = admin.firestore();
 
-  // 1. Read the assignment doc and verify classroomLink exists
+  // 1. Read the assignment doc and resolve link entries (new array or legacy single)
   const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
   if (!assignmentSnap.exists) {
     throw new HttpsError("not-found", "Assignment not found.");
   }
   const assignment = assignmentSnap.data()!;
-  const classroomLink = assignment.classroomLink;
-  if (!classroomLink || !classroomLink.courseId || !classroomLink.courseWorkId) {
+
+  // Support both classroomLinks (array) and legacy classroomLink (single)
+  interface LinkEntry {
+    courseId: string;
+    courseWorkId: string;
+    maxPoints: number;
+    portalSection?: string;
+  }
+  let linkEntries: LinkEntry[];
+  if (assignment.classroomLinks && Array.isArray(assignment.classroomLinks) && assignment.classroomLinks.length > 0) {
+    linkEntries = assignment.classroomLinks as LinkEntry[];
+  } else if (Array.isArray(assignment.classroomLinks) && assignment.classroomLinks.length === 0) {
+    // Empty array — links were cleared; nothing to push
+    return { pushed: 0, skipped: 0, errors: [] };
+  } else if (assignment.classroomLink?.courseId && assignment.classroomLink?.courseWorkId) {
+    linkEntries = [{ ...assignment.classroomLink, portalSection: undefined }] as LinkEntry[];
+  } else {
     throw new HttpsError("failed-precondition", "Assignment is not linked to Google Classroom.");
   }
 
-  const { courseId, courseWorkId } = classroomLink;
-  const classroom = await createClassroomClient(accessToken);
-
-  // 1b. Fetch live maxPoints from Classroom (not stale value from classroomLink)
-  let maxPoints: number;
-  try {
-    const cwRes = await classroom.courses.courseWork.get({ courseId, id: courseWorkId });
-    maxPoints = cwRes.data.maxPoints ?? classroomLink.maxPoints ?? 100;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("Failed to fetch CourseWork from Classroom", { error: msg });
-    throw new HttpsError("internal", `Cannot read Classroom assignment: ${msg}`);
-  }
-
-  // 2. Read all submissions for this assignment
+  // 2. Read all submissions for this assignment (once, shared across all link entries)
   const subsSnap = await db.collection("submissions")
     .where("assignmentId", "==", assignmentId)
     .get();
@@ -6894,14 +6895,16 @@ export const classroomPushGrades = onCall(async (request) => {
   }
 
   // 3. For each student, find the best effective score (handles retakes)
+  //    Also track which section was on the best-scoring submission.
   const bestScores: Record<string, number> = {}; // userId -> best percentage
+  const bestSubmissionSection: Record<string, string | undefined> = {}; // userId -> userSection from best submission
   for (const doc of subsSnap.docs) {
     const sub = doc.data();
-    const userId = sub.userId;
+    const userId = sub.userId as string | undefined;
     if (!userId) continue;
 
     // Effective score: rubricGrade > assessmentScore > score > 0
-    const effectivePercentage =
+    const effectivePercentage: number =
       sub.rubricGrade?.overallPercentage ??
       sub.assessmentScore?.percentage ??
       sub.score ??
@@ -6909,136 +6912,200 @@ export const classroomPushGrades = onCall(async (request) => {
 
     if (bestScores[userId] === undefined || effectivePercentage > bestScores[userId]) {
       bestScores[userId] = effectivePercentage;
+      bestSubmissionSection[userId] = sub.userSection as string | undefined;
     }
   }
 
-  // 4. Get emails for all Portal students with submissions
+  // 4. Get emails and section info for all Portal students with submissions (single batch)
   const userIds = Object.keys(bestScores);
   if (userIds.length === 0) {
     return { pushed: 0, skipped: 0, errors: [] };
   }
 
-  // Firestore 'in' queries support max 30 items; batch if needed
+  const assignmentClassType = (assignment.classType as string) || "";
   const emailMap: Record<string, string> = {}; // email -> userId
+  const userProfileSectionMap: Record<string, string | undefined> = {}; // userId -> resolved section for this classType
+
+  // Firestore 'in' queries support max 30 items; batch if needed
   for (let i = 0; i < userIds.length; i += 30) {
-    const batch = userIds.slice(i, i + 30);
+    const batchIds = userIds.slice(i, i + 30);
     const usersSnap = await db.collection("users")
-      .where(admin.firestore.FieldPath.documentId(), "in", batch)
+      .where(admin.firestore.FieldPath.documentId(), "in", batchIds)
       .get();
     for (const userDoc of usersSnap.docs) {
-      const email = userDoc.data().email;
-      if (email) {
-        emailMap[email.toLowerCase()] = userDoc.id;
-      }
+      const userData = userDoc.data();
+      const email = userData.email as string | undefined;
+      if (email) emailMap[email.toLowerCase()] = userDoc.id;
+
+      // Resolve section for this classType (mirrors getUserSectionForClass from types.ts)
+      const classSections = userData.classSections as Record<string, string> | undefined;
+      const legacySection = userData.section as string | undefined;
+      const userClassType = userData.classType as string | undefined;
+      const enrolledClasses = userData.enrolledClasses as string[] | undefined;
+      userProfileSectionMap[userDoc.id] =
+        classSections?.[assignmentClassType] ??
+        ((userClassType === assignmentClassType || enrolledClasses?.includes(assignmentClassType))
+          ? legacySection
+          : undefined);
     }
   }
 
-  // 5. Get Classroom student submissions
-  let classroomSubmissions: Array<{
-    id: string;
-    userId: string;
-  }> = [];
+  // 5. Push grades per link entry in parallel
+  const linkResults = await Promise.allSettled(
+    linkEntries.map(async (entry) => {
+      const { courseId, courseWorkId } = entry;
+      const classroom = await createClassroomClient(accessToken);
 
-  try {
-    let pageToken: string | undefined;
-    do {
-      const res = await classroom.courses.courseWork.studentSubmissions.list({
+      // Fetch live maxPoints for this entry
+      let maxPoints: number;
+      try {
+        const cwRes = await classroom.courses.courseWork.get({ courseId, id: courseWorkId });
+        maxPoints = cwRes.data.maxPoints ?? entry.maxPoints ?? 100;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        logger.error("Failed to fetch CourseWork from Classroom", { courseId, courseWorkId, error: msg });
+        throw new Error(`Cannot read Classroom assignment (${courseId}/${courseWorkId}): ${msg}`);
+      }
+
+      // Filter bestScores to only students in this section (if portalSection is set)
+      const filteredScores: Record<string, number> = {};
+      if (entry.portalSection) {
+        for (const [userId, score] of Object.entries(bestScores)) {
+          // Check section from best submission first (captured at submit time), then user profile
+          const section = bestSubmissionSection[userId] ?? userProfileSectionMap[userId];
+          if (section === entry.portalSection) {
+            filteredScores[userId] = score;
+          }
+        }
+      } else {
+        // Legacy (no section filter): push all students
+        Object.assign(filteredScores, bestScores);
+      }
+
+      // List Classroom student submissions for this course/coursework
+      const classroomSubmissions: Array<{ id: string; userId: string }> = [];
+      try {
+        let pageToken: string | undefined;
+        do {
+          const res = await classroom.courses.courseWork.studentSubmissions.list({
+            courseId,
+            courseWorkId,
+            pageToken,
+          });
+          for (const s of res.data.studentSubmissions || []) {
+            if (s.id && s.userId) classroomSubmissions.push({ id: s.id, userId: s.userId });
+          }
+          pageToken = res.data.nextPageToken || undefined;
+        } while (pageToken);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        logger.error("Failed to list Classroom submissions", { courseId, courseWorkId, error: msg });
+        throw new Error(`Failed to list Classroom submissions (${courseId}/${courseWorkId}): ${msg}`);
+      }
+
+      // Batch-fetch enrolled students to map Classroom userId -> email
+      const classroomUserIdToEmail: Record<string, string> = {};
+      try {
+        let studentsPageToken: string | undefined;
+        do {
+          const res = await classroom.courses.students.list({
+            courseId,
+            pageSize: 100,
+            pageToken: studentsPageToken,
+          });
+          for (const student of res.data.students || []) {
+            const email = student.profile?.emailAddress;
+            const uid = student.userId;
+            if (email && uid) classroomUserIdToEmail[uid] = email.toLowerCase();
+          }
+          studentsPageToken = res.data.nextPageToken || undefined;
+        } while (studentsPageToken);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        logger.error("Failed to list Classroom students", { courseId, error: msg });
+        throw new Error(`Failed to list Classroom students (${courseId}): ${msg}`);
+      }
+
+      // Build email -> Classroom submission ID map
+      const classroomEmailToSubId: Record<string, string> = {};
+      for (const cs of classroomSubmissions) {
+        const email = classroomUserIdToEmail[cs.userId];
+        if (email) classroomEmailToSubId[email] = cs.id;
+      }
+
+      // Match Portal emails to Classroom submissions and patch grades
+      let entryPushed = 0;
+      let entrySkipped = 0;
+      const entryErrors: string[] = [];
+
+      for (const [email, userId] of Object.entries(emailMap)) {
+        // Only push students in the filtered set for this entry
+        if (!(userId in filteredScores)) continue;
+
+        const submissionId = classroomEmailToSubId[email];
+        if (!submissionId) {
+          entrySkipped++;
+          continue;
+        }
+
+        const percentage = filteredScores[userId];
+        const assignedGrade = (percentage / 100) * maxPoints;
+
+        // Retry with exponential backoff for rate limiting
+        let success = false;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            await classroom.courses.courseWork.studentSubmissions.patch({
+              courseId,
+              courseWorkId,
+              id: submissionId,
+              updateMask: "assignedGrade",
+              requestBody: { assignedGrade },
+            });
+            entryPushed++;
+            success = true;
+            break;
+          } catch (err: unknown) {
+            const status = (err as { code?: number }).code;
+            if (status === 429 && attempt < 2) {
+              const delay = Math.pow(2, attempt) * 1000;
+              logger.warn(`Rate limited on grade push, retrying in ${delay}ms`, { email, attempt, courseId });
+              await sleep(delay);
+            } else {
+              const msg = err instanceof Error ? err.message : "Unknown error";
+              entryErrors.push(`${email}: ${msg}`);
+              break;
+            }
+          }
+        }
+        if (!success && entryErrors[entryErrors.length - 1]?.startsWith(email) === false) {
+          entryErrors.push(`${email}: Max retries exceeded`);
+        }
+      }
+
+      logger.info("classroomPushGrades entry complete", {
         courseId,
         courseWorkId,
-        pageToken,
+        portalSection: entry.portalSection ?? "all",
+        pushed: entryPushed,
+        skipped: entrySkipped,
+        errorCount: entryErrors.length,
       });
-      const subs = res.data.studentSubmissions || [];
-      for (const s of subs) {
-        if (s.id && s.userId) {
-          classroomSubmissions.push({ id: s.id, userId: s.userId });
-        }
-      }
-      pageToken = res.data.nextPageToken || undefined;
-    } while (pageToken);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("Failed to list Classroom submissions", { error: msg });
-    throw new HttpsError("internal", `Failed to list Classroom submissions: ${msg}`);
-  }
+      return { pushed: entryPushed, skipped: entrySkipped, errors: entryErrors };
+    })
+  );
 
-  // 6. Build a map of Classroom student email -> submission ID
-  // Batch-fetch all enrolled students (avoids N+1 per-student API calls)
-  const classroomUserIdToEmail: Record<string, string> = {};
-  try {
-    let studentsPageToken: string | undefined;
-    do {
-      const res = await classroom.courses.students.list({
-        courseId,
-        pageSize: 100,
-        pageToken: studentsPageToken,
-      });
-      for (const student of res.data.students || []) {
-        const email = student.profile?.emailAddress;
-        const userId = student.userId;
-        if (email && userId) {
-          classroomUserIdToEmail[userId] = email.toLowerCase();
-        }
-      }
-      studentsPageToken = res.data.nextPageToken || undefined;
-    } while (studentsPageToken);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("Failed to list Classroom students", { error: msg });
-    throw new HttpsError("internal", `Failed to list Classroom students: ${msg}`);
-  }
-
-  const classroomEmailToSubId: Record<string, string> = {};
-  for (const cs of classroomSubmissions) {
-    const email = classroomUserIdToEmail[cs.userId];
-    if (email) {
-      classroomEmailToSubId[email] = cs.id;
-    }
-  }
-
-  // 7. Match and push grades
+  // Aggregate results across all link entries
   let pushed = 0;
   let skipped = 0;
   const errors: string[] = [];
-
-  for (const [email, userId] of Object.entries(emailMap)) {
-    const submissionId = classroomEmailToSubId[email];
-    if (!submissionId) {
-      skipped++;
-      continue;
-    }
-
-    const percentage = bestScores[userId];
-    const assignedGrade = (percentage / 100) * maxPoints;
-
-    // Retry with exponential backoff for rate limiting
-    let success = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await classroom.courses.courseWork.studentSubmissions.patch({
-          courseId,
-          courseWorkId,
-          id: submissionId,
-          updateMask: "assignedGrade",
-          requestBody: { assignedGrade },
-        });
-        pushed++;
-        success = true;
-        break;
-      } catch (err: unknown) {
-        const status = (err as { code?: number }).code;
-        if (status === 429 && attempt < 2) {
-          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-          logger.warn(`Rate limited on grade push, retrying in ${delay}ms`, { email, attempt });
-          await sleep(delay);
-        } else {
-          const msg = err instanceof Error ? err.message : "Unknown error";
-          errors.push(`${email}: ${msg}`);
-          break;
-        }
-      }
-    }
-    if (!success && errors[errors.length - 1]?.startsWith(email) === false) {
-      errors.push(`${email}: Max retries exceeded`);
+  for (const result of linkResults) {
+    if (result.status === "fulfilled") {
+      pushed += result.value.pushed;
+      skipped += result.value.skipped;
+      errors.push(...result.value.errors);
+    } else {
+      errors.push((result.reason as Error)?.message ?? "Unknown error");
     }
   }
 

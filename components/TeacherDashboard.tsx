@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass, DailyDigest } from '../types';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, LessonBlock, RubricGrade, RubricSkillGrade, getUserSectionForClass, DailyDigest, hasClassroomLinks } from '../types';
 import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Activity, Search, Award, Download, Upload, Loader2, BarChart3, Shield, BookOpen, Save, Bot, Undo2, Fingerprint, Sparkles, X, Newspaper, Send, Eye } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
@@ -641,7 +641,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   <button
                     onClick={async () => {
                       if (!selectedAssessment) return;
-                      if (!selectedAssessment.classroomLink) {
+                      if (!hasClassroomLinks(selectedAssessment)) {
                         setClassroomLinkModalOpen(true);
                         return;
                       }
@@ -666,7 +666,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                     ) : (
                       <Upload className="w-3 h-3" aria-hidden="true" />
                     )}
-                    {selectedAssessment.classroomLink ? `Push to Classroom (${gradedCount})` : 'Link & Push to Classroom'}
+                    {hasClassroomLinks(selectedAssessment)
+                      ? `Push to Classroom (${gradedCount})${(selectedAssessment.classroomLinks?.length ?? 0) > 1 ? ` ×${selectedAssessment.classroomLinks!.length}` : ''}`
+                      : 'Link & Push to Classroom'}
                   </button>
                 </div>
               )}
@@ -695,8 +697,15 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-text)] transition truncate mr-3 flex items-center gap-1.5">
                             {assignment.title}
-                            {assignment.classroomLink && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20 flex-shrink-0" title={`Linked to ${assignment.classroomLink.courseName}`}>GC</span>
+                            {hasClassroomLinks(assignment) && (
+                              <span
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20 flex-shrink-0"
+                                title={assignment.classroomLinks?.length
+                                  ? `Linked to ${assignment.classroomLinks.length} Classroom section${assignment.classroomLinks.length > 1 ? 's' : ''}`
+                                  : `Linked to ${assignment.classroomLink?.courseName}`}
+                              >
+                                {(assignment.classroomLinks?.length ?? 0) > 1 ? `GC ×${assignment.classroomLinks!.length}` : 'GC'}
+                              </span>
                             )}
                           </span>
                           <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">{assignment.classType}</span>
@@ -2774,8 +2783,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             isOpen={classroomLinkModalOpen}
             onClose={() => setClassroomLinkModalOpen(false)}
             assignment={assignmentForModal}
-            onLinked={async (link) => {
-              toast.success(`Linked to ${link.courseName} — ${link.courseWorkTitle}`);
+            classType={assignmentForModal.classType || ''}
+            students={students}
+            onLinked={async (links) => {
+              const first = links[0];
+              toast.success(links.length > 1
+                ? `Linked ${links.length} sections to Classroom`
+                : `Linked to ${first?.courseName ?? ''} — ${first?.courseWorkTitle ?? ''}`);
               // Auto-push grades after linking
               setPushingToClassroom(true);
               try {

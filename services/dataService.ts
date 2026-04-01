@@ -1,5 +1,5 @@
 
-import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink } from '../types';
+import { User, UserRole, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, Conversation, ChatMessage, EvidenceLog, LabReport, UserSettings, ChatFlag, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, StudentGroup, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, DailyDigest, ClassroomLink, ClassroomLinkEntry } from '../types';
 import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callSendClassMessage, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -825,6 +825,50 @@ export const dataService = {
       }
     } catch (error) {
       reportError(error, { method: 'updateAssignmentClassroomLink' });
+      throw error;
+    }
+  },
+
+  /** Write multi-section classroom links. Cleans up legacy classroomLink field on write. */
+  updateAssignmentClassroomLinks: async (assignmentId: string, links: ClassroomLinkEntry[] | null) => {
+    try {
+      if (links && links.length > 0) {
+        await updateDoc(doc(db, 'assignments', assignmentId), {
+          classroomLinks: links,
+          classroomLink: deleteField(),
+        });
+      } else {
+        await updateDoc(doc(db, 'assignments', assignmentId), {
+          classroomLinks: deleteField(),
+          classroomLink: deleteField(),
+        });
+      }
+    } catch (error) {
+      reportError(error, { method: 'updateAssignmentClassroomLinks' });
+      throw error;
+    }
+  },
+
+  /** Read the admin's hidden Google Classroom course IDs.
+   * Fails silently (returns []) — graceful degradation so the modal still opens
+   * even if prefs are temporarily unreadable (e.g. brief permission hiccup). */
+  getClassroomPrefs: async (): Promise<{ hiddenCourseIds: string[] }> => {
+    try {
+      const snap = await getDoc(doc(db, 'adminSettings', 'classroomPrefs'));
+      if (!snap.exists()) return { hiddenCourseIds: [] };
+      return { hiddenCourseIds: snap.data().hiddenCourseIds ?? [] };
+    } catch (error) {
+      reportError(error, { method: 'getClassroomPrefs' });
+      return { hiddenCourseIds: [] }; // intentional: don't break the modal on read failure
+    }
+  },
+
+  /** Persist the list of hidden Google Classroom course IDs for the admin. */
+  setHiddenClassroomCourses: async (hiddenCourseIds: string[]) => {
+    try {
+      await setDoc(doc(db, 'adminSettings', 'classroomPrefs'), { hiddenCourseIds }, { merge: true });
+    } catch (error) {
+      reportError(error, { method: 'setHiddenClassroomCourses' });
       throw error;
     }
   },

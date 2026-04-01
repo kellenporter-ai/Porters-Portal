@@ -630,6 +630,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Admin-only collection — all documents require admin claim.
+    // If a future doc needs student-read access, add a specific rule above this one.
+    match /adminSettings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================

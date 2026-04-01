@@ -502,11 +502,25 @@ export interface Assignment {
   rubric?: Rubric;
   // Google Classroom grade sync
   classroomLink?: ClassroomLink;
+  classroomLinks?: ClassroomLinkEntry[];
 }
 
 export interface ClassroomLink {
   courseId: string;
   courseName: string;
+  courseWorkId: string;
+  courseWorkTitle: string;
+  maxPoints: number;
+  linkedAt: string;
+  linkedBy: string;
+}
+
+/** One link per Google Classroom course-section (supports 1:N Portal→GC mapping) */
+export interface ClassroomLinkEntry {
+  courseId: string;
+  courseName: string;
+  courseSection?: string;      // GC's section field (e.g., "Period 5")
+  portalSection?: string;      // Portal section this maps to
   courseWorkId: string;
   courseWorkTitle: string;
   maxPoints: number;
@@ -1459,6 +1473,19 @@ export function getSectionsForClass(students: User[], classType: string): string
     if (sec) sections.add(sec);
   });
   return Array.from(sections).sort();
+}
+
+// ========================================
+// CLASSROOM HELPERS
+// ========================================
+
+/**
+ * Check whether an assignment has any Google Classroom links (new or legacy).
+ * Note: classroomLinks:[] (empty array) returns false — same as undefined/never linked.
+ * If you need to distinguish "all unlinked" from "never linked", check the field directly.
+ */
+export function hasClassroomLinks(a: Assignment): boolean {
+  return !!(a.classroomLinks?.length || a.classroomLink);
 }
 
 // ========================================
