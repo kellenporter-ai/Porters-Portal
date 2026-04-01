@@ -1726,10 +1726,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     const PERP_OFFSET = 3;    // percent — perpendicular push away from shaft
     const LABEL_HALF_W = 10;  // approx half-width of label in percent
     const LABEL_HALF_H = 5;   // approx half-height of label in percent
-    const NUDGE_STEP = 12;    // percent — how far to slide along shaft per collision
+    const MARGIN = 1;         // percent — extra gap after resolving overlap
 
     // Compute midpoint + perpendicular offset for each arrow
-    const raw: { idx: number; x: number; y: number; dx: number; dy: number }[] = [];
+    const raw: { idx: number; x: number; y: number }[] = [];
     elements.forEach((el, idx) => {
       if (el.type !== 'arrow') return;
       const mx = ((el.start.x + el.end.x) / 2) * scaleX;
@@ -1746,21 +1746,31 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       const px = -uy * PERP_OFFSET;
       const py = ux * PERP_OFFSET;
 
-      raw.push({ idx, x: mx + px, y: my + py, dx: ux * scaleX, dy: uy * scaleY });
+      raw.push({ idx, x: mx + px, y: my + py });
     });
 
-    // Iterative box-overlap nudge — slide overlapping labels along their shaft
-    for (let pass = 0; pass < 3; pass++) {
+    // Iterative AABB collision resolution — push apart on the axis of least overlap
+    for (let pass = 0; pass < 4; pass++) {
       let anyCollision = false;
       for (let i = 0; i < raw.length; i++) {
         for (let j = i + 1; j < raw.length; j++) {
-          const overlapX = Math.abs(raw[i].x - raw[j].x) < LABEL_HALF_W * 2;
-          const overlapY = Math.abs(raw[i].y - raw[j].y) < LABEL_HALF_H * 2;
-          if (overlapX && overlapY) {
-            raw[i].x -= raw[i].dx * NUDGE_STEP;
-            raw[i].y -= raw[i].dy * NUDGE_STEP;
-            raw[j].x += raw[j].dx * NUDGE_STEP;
-            raw[j].y += raw[j].dy * NUDGE_STEP;
+          const gapX = Math.abs(raw[i].x - raw[j].x);
+          const gapY = Math.abs(raw[i].y - raw[j].y);
+          const overlapAmtX = LABEL_HALF_W * 2 - gapX;
+          const overlapAmtY = LABEL_HALF_H * 2 - gapY;
+          if (overlapAmtX > 0 && overlapAmtY > 0) {
+            // Push apart on whichever axis needs less displacement
+            if (overlapAmtX < overlapAmtY) {
+              const push = (overlapAmtX / 2) + MARGIN;
+              const sign = raw[j].x >= raw[i].x ? 1 : -1;
+              raw[i].x -= sign * push;
+              raw[j].x += sign * push;
+            } else {
+              const push = (overlapAmtY / 2) + MARGIN;
+              const sign = raw[j].y >= raw[i].y ? 1 : -1;
+              raw[i].y -= sign * push;
+              raw[j].y += sign * push;
+            }
             anyCollision = true;
           }
         }
