@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   Pencil, Eraser, ArrowUpRight, Square, Type, Undo2, Redo2, Trash2,
   Circle, Minus, Check, Edit3, MousePointer2, Keyboard, GripHorizontal,
@@ -1714,6 +1714,65 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // ──────────────────────────────────────────
 
   // ──────────────────────────────────────────
+  // Vector label positions (midpoint + perpendicular offset with collision nudge)
+  // ──────────────────────────────────────────
+
+  const labelPositions = useMemo(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return new Map<number, { x: number; y: number }>();
+    const scaleX = 100 / canvas.width;
+    const scaleY = 100 / canvas.height;
+
+    const PERP_OFFSET = 3;       // percent — perpendicular push away from shaft
+    const COLLISION_THRESH = 4;  // percent — if two labels are closer than this, nudge
+    const NUDGE_ALONG = 8;       // percent — how far to slide along shaft on collision
+
+    // Compute midpoint + perpendicular offset for each arrow
+    const raw: { idx: number; x: number; y: number; dx: number; dy: number }[] = [];
+    elements.forEach((el, idx) => {
+      if (el.type !== 'arrow') return;
+      const mx = ((el.start.x + el.end.x) / 2) * scaleX;
+      const my = ((el.start.y + el.end.y) / 2) * scaleY;
+
+      // Unit vector along the arrow
+      const adx = el.end.x - el.start.x;
+      const ady = el.end.y - el.start.y;
+      const len = Math.hypot(adx, ady) || 1;
+      const ux = adx / len;
+      const uy = ady / len;
+
+      // Perpendicular offset — consistent side of the arrow shaft
+      const px = -uy * PERP_OFFSET;
+      const py = ux * PERP_OFFSET;
+
+      raw.push({ idx, x: mx + px, y: my + py, dx: ux * scaleX, dy: uy * scaleY });
+    });
+
+    // Collision nudge — slide overlapping labels along their shaft
+    for (let i = 0; i < raw.length; i++) {
+      for (let j = i + 1; j < raw.length; j++) {
+        const dist = Math.hypot(raw[i].x - raw[j].x, raw[i].y - raw[j].y);
+        if (dist < COLLISION_THRESH) {
+          raw[i].x -= raw[i].dx * NUDGE_ALONG;
+          raw[i].y -= raw[i].dy * NUDGE_ALONG;
+          raw[j].x += raw[j].dx * NUDGE_ALONG;
+          raw[j].y += raw[j].dy * NUDGE_ALONG;
+        }
+      }
+    }
+
+    // Clamp to canvas bounds
+    const positions = new Map<number, { x: number; y: number }>();
+    for (const label of raw) {
+      positions.set(label.idx, {
+        x: Math.max(2, Math.min(98, label.x)),
+        y: Math.max(2, Math.min(95, label.y)),
+      });
+    }
+    return positions;
+  }, [elements, canvasRef.current?.width, canvasRef.current?.height]);
+
+  // ──────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────
 
@@ -2299,16 +2358,10 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           {elements.map((el, idx) => {
             if (el.type !== 'arrow') return null;
 
-            const canvas = canvasRef.current;
-            if (!canvas) return null;
-            const scaleX = 100 / canvas.width;
-            const scaleY = 100 / canvas.height;
-
-            const labelX = el.end.x * scaleX;
-            const labelY = el.end.y * scaleY;
-
-            const isPointingDown = (el.end.y - el.start.y) > 0;
-            const offsetY = isPointingDown ? 1.5 : -5;
+            const pos = labelPositions.get(idx);
+            if (!pos) return null;
+            const labelX = pos.x;
+            const labelY = pos.y;
 
             const vt = el.vectorType ?? 'force';
             const cfg = VECTOR_TYPES[vt];
@@ -2321,7 +2374,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   position: 'absolute',
                   left: `${labelX}%`,
                   top: `${labelY}%`,
-                  transform: `translate(-50%, ${offsetY > 0 ? '8px' : 'calc(-100% - 8px)'})`,
+                  transform: 'translate(-50%, -50%)',
                   background: 'rgba(255, 255, 255, 0.92)',
                   backdropFilter: 'blur(4px)',
                   padding: '4px 8px',
