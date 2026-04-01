@@ -2403,7 +2403,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
                   zIndex: 5,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   border: selectedIndices.has(idx) ? '1.5px solid #007aff' : '1px solid rgba(0,0,0,0.05)',
-                  pointerEvents: locked ? 'none' : 'auto',
+                  pointerEvents: (locked || isDrawing) ? 'none' : 'auto',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '2px',
