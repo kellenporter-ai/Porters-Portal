@@ -2785,16 +2785,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             assignment={assignmentForModal}
             classType={assignmentForModal.classType || ''}
             students={students}
-            onLinked={async (links) => {
+            onLinked={async (links, token) => {
               const first = links[0];
               toast.success(links.length > 1
                 ? `Linked ${links.length} sections to Classroom`
                 : `Linked to ${first?.courseName ?? ''} — ${first?.courseWorkTitle ?? ''}`);
-              // Auto-push grades after linking
+              // Auto-push grades after linking — reuse token from modal to avoid blocked popup
+              if (!token) return;
               setPushingToClassroom(true);
               try {
-                const accessToken = await getClassroomAccessToken();
-                const result = await callClassroomPushGrades({ accessToken, assignmentId: selectedAssessmentId });
+                const result = await callClassroomPushGrades({ accessToken: token, assignmentId: selectedAssessmentId });
                 const data = result.data as { pushed: number; skipped: number };
                 toast.success(`Pushed ${data.pushed} grades to Classroom${data.skipped > 0 ? ` (${data.skipped} skipped)` : ''}`);
               } catch (err: any) {

@@ -11,7 +11,7 @@ interface ClassroomLinkModalProps {
   assignment: Assignment;
   classType: string;
   students: User[];
-  onLinked: (links: ClassroomLinkEntry[]) => void;
+  onLinked: (links: ClassroomLinkEntry[], accessToken?: string) => void;
   onUnlinked: () => void;
 }
 
@@ -379,7 +379,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
       };
 
       await dataService.updateAssignmentClassroomLinks(assignment.id, [entry]);
-      onLinked([entry]);
+      onLinked([entry], accessToken ?? undefined);
       onClose();
     } catch (err: any) {
       setGeneralError(err.message || 'Failed to link assignment');
@@ -441,7 +441,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
       );
 
       await dataService.updateAssignmentClassroomLinks(assignment.id, entries);
-      onLinked(entries);
+      onLinked(entries, accessToken ?? undefined);
       onClose();
     } catch (err: any) {
       setGeneralError(err.message || 'Failed to link assignments');
@@ -497,7 +497,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
         onUnlinked();
         onClose();
       } else {
-        onLinked(remaining);
+        onLinked(remaining, accessToken ?? undefined);
       }
     } catch (err: any) {
       setGeneralError(err.message || 'Failed to unlink section');
