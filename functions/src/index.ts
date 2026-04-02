@@ -6982,67 +6982,34 @@ export const classroomPushGrades = onCall(async (request) => {
         Object.assign(filteredScores, bestScores);
       }
 
-      // List Classroom student submissions for this course/coursework
-      const classroomSubmissions: Array<{ id: string; userId: string }> = [];
-      try {
-        let pageToken: string | undefined;
-        do {
-          const res = await classroom.courses.courseWork.studentSubmissions.list({
-            courseId,
-            courseWorkId,
-            pageToken,
-          });
-          for (const s of res.data.studentSubmissions || []) {
-            if (s.id && s.userId) classroomSubmissions.push({ id: s.id, userId: s.userId });
-          }
-          pageToken = res.data.nextPageToken || undefined;
-        } while (pageToken);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        logger.error("Failed to list Classroom submissions", { courseId, courseWorkId, error: msg });
-        throw new Error(`Failed to list Classroom submissions (${courseId}/${courseWorkId}): ${msg}`);
-      }
-
-      // Batch-fetch enrolled students to map Classroom userId -> email
-      const classroomUserIdToEmail: Record<string, string> = {};
-      try {
-        let studentsPageToken: string | undefined;
-        do {
-          const res = await classroom.courses.students.list({
-            courseId,
-            pageSize: 100,
-            pageToken: studentsPageToken,
-          });
-          for (const student of res.data.students || []) {
-            const email = student.profile?.emailAddress;
-            const uid = student.userId;
-            if (email && uid) classroomUserIdToEmail[uid] = email.toLowerCase();
-          }
-          studentsPageToken = res.data.nextPageToken || undefined;
-        } while (studentsPageToken);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        logger.error("Failed to list Classroom students", { courseId, error: msg });
-        throw new Error(`Failed to list Classroom students (${courseId}): ${msg}`);
-      }
-
-      // Build email -> Classroom submission ID map
-      const classroomEmailToSubId: Record<string, string> = {};
-      for (const cs of classroomSubmissions) {
-        const email = classroomUserIdToEmail[cs.userId];
-        if (email) classroomEmailToSubId[email] = cs.id;
-      }
-
-      // Match Portal emails to Classroom submissions and patch grades
+      // Match Portal students to Classroom submissions and patch grades.
+      // Uses per-student submission lookup by email (Classroom API accepts
+      // email as userId). This bypasses roster/profile endpoints which may
+      // return empty results due to Workspace admin directory restrictions.
       let entryPushed = 0;
       let entrySkipped = 0;
       const entryErrors: string[] = [];
 
-      for (const [email, userId] of Object.entries(emailMap)) {
-        // Only push students in the filtered set for this entry
-        if (!(userId in filteredScores)) continue;
+      const portalEmails = Object.entries(emailMap).filter(([, uid]) => uid in filteredScores);
+      logger.info("classroomPushGrades matching", {
+        portalSection: entry.portalSection ?? "all",
+        portalEmailCount: portalEmails.length,
+      });
 
-        const submissionId = classroomEmailToSubId[email];
+      for (const [email, userId] of portalEmails) {
+        // Look up this student's submission directly by email
+        let submissionId: string | undefined;
+        try {
+          const res = await classroom.courses.courseWork.studentSubmissions.list({
+            courseId,
+            courseWorkId,
+            userId: email,
+          });
+          submissionId = res.data.studentSubmissions?.[0]?.id ?? undefined;
+        } catch {
+          // Student not enrolled in this Classroom course
+        }
+
         if (!submissionId) {
           entrySkipped++;
           continue;

@@ -5,7 +5,7 @@ import { useAssignments } from '../lib/AppDataContext';
 import { useChat } from '../lib/ChatContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
@@ -247,6 +247,23 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
           setIsSubmitting(false);
           return;
+        }
+        // Stale session token — clear cached token, request a fresh one, and retry
+        if (errorCode === 'not-found' && sessionTokenRef.current && attempt < MAX_SUBMIT_RETRIES) {
+          const key = `assessment_session_${activeAssignment.id}`;
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+          try {
+            const freshToken = await callStartAssessmentSession({ assignmentId: activeAssignment.id });
+            const tokenData = freshToken.data as { sessionToken: string };
+            sessionTokenRef.current = tokenData.sessionToken;
+            localStorage.setItem(key, tokenData.sessionToken);
+            sessionStorage.setItem(key, tokenData.sessionToken);
+            toast.info('Reconnecting session... retrying submission.');
+            continue;
+          } catch {
+            // Token refresh failed — fall through to normal error handling
+          }
         }
         if (attempt < MAX_SUBMIT_RETRIES) {
           toast.info('Submission taking longer than expected. Retrying...');
