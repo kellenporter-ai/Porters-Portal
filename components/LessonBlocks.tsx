@@ -162,7 +162,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
   const handleSubmit = () => {
     if (!answer.trim()) return;
     const accepted = (block.acceptedAnswers || []).map(a => a.toLowerCase().trim());
-    const correct = accepted.includes(answer.toLowerCase().trim());
+    const correct = accepted.length === 0 || accepted.includes(answer.toLowerCase().trim());
     setIsCorrect(correct);
     setAnswered(true);
     onResponseChange?.({ answer, answered: true, isCorrect: correct });
@@ -204,7 +204,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
       {!readOnly && answered && (
         <div className="flex items-center gap-3">
           <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
-            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> Not quite — review the material above.</>}
+            {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? 'Correct!' : 'Response recorded'}</> : <><XCircle className="w-3 h-3" /> Not quite — review the material above.</>}
           </div>
           <button
             onClick={() => {
