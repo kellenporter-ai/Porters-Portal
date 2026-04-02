@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Check, AlertTriangle } from 'lucide-react';
 import type { WriteStatus } from '../lib/persistentWrite';
 
@@ -6,6 +6,7 @@ import type { WriteStatus } from '../lib/persistentWrite';
 declare global {
   interface WindowEventMap {
     'portal-storage-unavailable': CustomEvent<{ message: string }>;
+    'portal-connectivity-degraded': CustomEvent;
   }
 }
 
@@ -13,16 +14,19 @@ interface SaveStatusIndicatorProps {
   status: WriteStatus;
   isOnline?: boolean;
   isAssessment?: boolean;
+  errorSince?: number | null;
 }
 
 const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
   status,
   isOnline = true,
   isAssessment = false,
+  errorSince = null,
 }) => {
   const [visible, setVisible] = useState(false);
-  const [fadeTimer, setFadeTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
+  const [errorDurationMs, setErrorDurationMs] = useState(0);
 
   useEffect(() => {
     const handler = () => setStorageUnavailable(true);
@@ -30,8 +34,28 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
     return () => window.removeEventListener('portal-storage-unavailable', handler);
   }, []);
 
+  // Force visibility on connectivity degradation (from metrics snapshot failures)
   useEffect(() => {
-    if (fadeTimer) clearTimeout(fadeTimer);
+    const handler = () => setVisible(true);
+    window.addEventListener('portal-connectivity-degraded', handler);
+    return () => window.removeEventListener('portal-connectivity-degraded', handler);
+  }, []);
+
+  // Track how long we've been in error state
+  useEffect(() => {
+    if (status !== 'error' || !errorSince) {
+      setErrorDurationMs(0);
+      return;
+    }
+    setErrorDurationMs(Date.now() - errorSince);
+    const interval = setInterval(() => {
+      setErrorDurationMs(Date.now() - errorSince);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [status, errorSince]);
+
+  useEffect(() => {
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
 
     if (status === 'idle') {
       setVisible(false);
@@ -43,18 +67,20 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
     // Auto-fade "saved" after 3 seconds (skip during assessments — keep visible for reassurance)
     if (status === 'saved' && !isAssessment) {
       const timer = setTimeout(() => setVisible(false), 3000);
-      setFadeTimer(timer);
+      fadeTimerRef.current = timer;
       return () => clearTimeout(timer);
     }
     // If assessment + saved, stay visible indefinitely (next status change will update it)
 
     return () => {
-      if (fadeTimer) clearTimeout(fadeTimer);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, isAssessment]);
 
   if (!visible && status !== 'error' && status !== 'retrying') return null;
+
+  const prolongedError = errorDurationMs > 120_000;
 
   const config = {
     saving: {
@@ -73,9 +99,13 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
       className: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
     },
     error: {
-      icon: <AlertTriangle className="w-3 h-3" />,
-      text: 'Save failed \u2014 work backed up locally',
-      className: 'text-red-300 bg-red-500/10 border-red-500/20',
+      icon: <AlertTriangle className={`w-3 h-3 ${prolongedError ? 'animate-pulse' : ''}`} />,
+      text: prolongedError
+        ? 'Saves failing \u2014 keep this tab open!'
+        : 'Save failed \u2014 work backed up locally',
+      className: prolongedError
+        ? 'text-red-400 bg-red-500/20 border-red-500/40 animate-pulse'
+        : 'text-red-300 bg-red-500/10 border-red-500/20',
     },
     idle: { icon: null, text: '', className: '' },
   }[status];

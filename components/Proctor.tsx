@@ -107,6 +107,7 @@ interface PracticeProgressDoc {
 
 const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode, hasSidebar, flushRef }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
+  const metricsFailCountRef = useRef(0);
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
   const [isActive, setIsActive] = useState(true);
@@ -146,6 +147,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     getResponses,
     clearAll: clearSavedResponses,
     isOnline,
+    errorSince,
     setInitialResponses,
   } = usePersistentSave({
     userId,
@@ -256,7 +258,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (snap.exists()) {
             const data = snap.data();
             const responses = data.responses || {};
-            setInitialResponses(responses);
+            setInitialResponses(responses, data.lastUpdated);
             setSavedBlockResponses(responses);
           } else {
             setSavedBlockResponses({});
@@ -269,14 +271,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       } else {
         // Check if this is a retake with pre-filled responses from the prior submission
         const docId = `${userId}_${assignmentId}_blocks`;
-        const handleFreshStart = async () => {
+        const handleFreshStart = async (): Promise<{ responses: Record<string, unknown>; lastUpdated: string }> => {
           const snap = await getDoc(doc(db, 'lesson_block_responses', docId));
           if (snap.exists() && snap.data().retakePreFilled) {
             // Retake: load pre-filled responses, clear the flag
             const data = snap.data();
             const responses = data.responses || {};
             await updateDoc(doc(db, 'lesson_block_responses', docId), { retakePreFilled: false });
-            return responses;
+            return { responses, lastUpdated: data.lastUpdated || new Date().toISOString() };
           }
           // Session recovery: if server has responses, the student has work in progress.
           // Always restore — students can take unlimited time on assessments.
@@ -295,7 +297,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               } catch {
                 // If token request fails, still restore work — don't lose data
               }
-              return responses;
+              return { responses, lastUpdated: data.lastUpdated || new Date().toISOString() };
             }
           }
           // Fresh assessment start — archive & clear via atomic Cloud Function
@@ -310,17 +312,17 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               lastUpdated: new Date().toISOString(),
             });
           }
-          return {};
+          return { responses: {}, lastUpdated: new Date().toISOString() };
         };
-        handleFreshStart().then((responses) => {
+        handleFreshStart().then(({ responses, lastUpdated }) => {
           if (cancelled) return;
-          setInitialResponses(responses);
+          setInitialResponses(responses, lastUpdated);
           setSavedBlockResponses(responses);
         }).catch(err => {
           if (cancelled) return;
           reportError(err, { component: 'Proctor', context: 'Failed to handle assessment fresh start' });
           setInitialResponses({});
-          setSavedBlockResponses({});
+          setSavedBlockResponses(getResponses());
         });
       }
     } else {
@@ -329,7 +331,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         if (snap.exists()) {
           const data = snap.data();
           const responses = data.responses || {};
-          setInitialResponses(responses);
+          setInitialResponses(responses, data.lastUpdated);
           setSavedBlockResponses(responses);
         } else {
           setSavedBlockResponses({});
@@ -657,7 +659,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           wordCount: m.wordCount || 0,
           wordsPerSecond: m.wordsPerSecond || 0,
         },
-      }).catch(() => { /* doc may not exist yet */ });
+      }).then(() => {
+        metricsFailCountRef.current = 0;
+      }).catch(() => {
+        metricsFailCountRef.current += 1;
+        if (metricsFailCountRef.current === 3) {
+          window.dispatchEvent(new CustomEvent('portal-connectivity-degraded'));
+        }
+      });
     };
 
     // Save on visibility change (student leaves tab)
@@ -1135,7 +1144,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
                 {/* Save status indicator */}
-                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} />
+                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} errorSince={errorSince} />
             </div>
             <div className="flex items-center gap-3 flex-wrap">
                 {/* TTS — Screen Reader */}

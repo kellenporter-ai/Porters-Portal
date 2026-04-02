@@ -37,8 +37,10 @@ interface UsePersistentSaveReturn {
   clearAll: () => void;
   /** Whether we're online. */
   isOnline: boolean;
+  /** Timestamp (ms) when error state began, or null if not in error. */
+  errorSince: number | null;
   /** Load initial responses (call once after fetching from Firestore on mount). */
-  setInitialResponses: (responses: Record<string, unknown>) => void;
+  setInitialResponses: (responses: Record<string, unknown>, serverTimestamp?: string) => void;
 }
 
 export function usePersistentSave({
@@ -51,18 +53,31 @@ export function usePersistentSave({
   const isOnline = useOnlineStatus();
   const [saveStatus, setSaveStatus] = useState<WriteStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [errorSince, setErrorSince] = useState<number | null>(null);
 
   const responsesRef = useRef<Record<string, unknown>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
   const saveGenRef = useRef(0); // Generation counter to discard stale retry callbacks
+  const draftRestoredTimestampRef = useRef<string | null>(null); // Set when dirty draft restored on mount
+  const errorSinceRef = useRef<number | null>(null); // Ref to avoid stale closure in setStatus
+  const isInErrorRef = useRef(false);
 
   const docId = userId && assignmentId ? `${userId}_${assignmentId}_blocks` : null;
   const lsKey = userId && assignmentId ? draftKey('draft', userId, assignmentId) : null;
 
-  // Safe status setter that respects unmount
+  // Safe status setter that respects unmount and tracks error onset
   const setStatus = useCallback((s: WriteStatus) => {
-    if (mountedRef.current) setSaveStatus(s);
+    if (!mountedRef.current) return;
+    setSaveStatus(s);
+    if (s === 'error' && !errorSinceRef.current) {
+      const now = Date.now();
+      errorSinceRef.current = now;
+      setErrorSince(now);
+    } else if (s === 'saved' || s === 'idle') {
+      errorSinceRef.current = null;
+      setErrorSince(null);
+    }
   }, []);
 
   // Core save function — uses generation counter to ignore stale retry callbacks
@@ -135,10 +150,25 @@ export function usePersistentSave({
   }, [lsKey, onResponsesChange]);
 
   // Public: set initial responses (after Firestore load)
-  const setInitialResponses = useCallback((responses: Record<string, unknown>) => {
+  // If a dirty draft was restored on mount, only accept server data if it's newer
+  const setInitialResponses = useCallback((responses: Record<string, unknown>, serverTimestamp?: string) => {
+    const draftTs = draftRestoredTimestampRef.current;
+    if (draftTs) {
+      draftRestoredTimestampRef.current = null;
+      if (serverTimestamp && serverTimestamp > draftTs) {
+        // Server is newer — accept it
+        responsesRef.current = responses;
+        onResponsesChange?.(responses);
+      } else {
+        // Local draft is newer — reject stale server data, push local to Firestore
+        onResponsesChange?.(responsesRef.current);
+        scheduleSave();
+      }
+      return;
+    }
     responsesRef.current = responses;
     onResponsesChange?.(responses);
-  }, [onResponsesChange]);
+  }, [onResponsesChange, scheduleSave]);
 
   // Listen for localStorage quota exhaustion events from persistentWrite
   useEffect(() => {
@@ -158,6 +188,7 @@ export function usePersistentSave({
       const draftData = draft.data as Record<string, unknown>;
       if (draftData?.responses) {
         responsesRef.current = draftData.responses as Record<string, unknown>;
+        draftRestoredTimestampRef.current = draft.timestamp;
         onResponsesChange?.(responsesRef.current);
       }
       // Try to sync to Firestore
@@ -170,6 +201,29 @@ export function usePersistentSave({
     if (disabled || !isOnline || !lsKey || !docId) return;
     syncDirtyDraft(lsKey, collection, docId, setStatus);
   }, [disabled, isOnline, lsKey, docId, collection, setStatus]);
+
+  // Background retry: periodically attempt re-sync when in error state
+  // Uses a ref to avoid the interval being killed by intermediate status transitions (e.g., 'retrying')
+  useEffect(() => {
+    isInErrorRef.current = saveStatus === 'error';
+  }, [saveStatus]);
+
+  useEffect(() => {
+    if (disabled || !lsKey || !docId) return;
+
+    // Start interval — it self-checks isInErrorRef each tick
+    const interval = setInterval(() => {
+      if (!isInErrorRef.current) return;
+      syncDirtyDraft(lsKey, collection, docId, (status) => {
+        if (mountedRef.current) {
+          setStatus(status);
+          if (status === 'saved') setLastSavedAt(new Date().toISOString());
+        }
+      });
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [disabled, lsKey, docId, collection, setStatus]);
 
   // Flush on visibilitychange (synchronous localStorage + async Firestore)
   useEffect(() => {
@@ -241,6 +295,7 @@ export function usePersistentSave({
     getResponses,
     clearAll,
     isOnline,
+    errorSince,
     setInitialResponses,
   };
 }
