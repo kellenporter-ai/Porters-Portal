@@ -572,6 +572,8 @@ export const dataService = {
           isAssessment: data.isAssessment || false,
           assessmentConfig: data.assessmentConfig || undefined,
           rubric: data.rubric || undefined,
+          classroomLink: data.classroomLink || undefined,
+          classroomLinks: data.classroomLinks || undefined,
         };
       });
       callback(assignments);
