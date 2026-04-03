@@ -66,15 +66,15 @@ function naturalToLatex(input: string): string {
 
   let s = input;
 
-  // 1. Unicode Greek → LaTeX
+  // 1. Unicode Greek → LaTeX (trailing space terminates command name, matches operator convention)
   const greekMap: [string, string][] = [
-    ['\u03B8', '\\theta'], ['\u0398', '\\Theta'],
-    ['\u03B1', '\\alpha'], ['\u03B2', '\\beta'], ['\u03B3', '\\gamma'],
-    ['\u0394', '\\Delta'], ['\u03B4', '\\delta'],
-    ['\u03BC', '\\mu'], ['\u03C9', '\\omega'], ['\u03A9', '\\Omega'],
-    ['\u03C0', '\\pi'], ['\u03C3', '\\sigma'], ['\u03A3', '\\Sigma'],
-    ['\u03BB', '\\lambda'], ['\u03C1', '\\rho'], ['\u03C4', '\\tau'], ['\u03C6', '\\phi'],
-    ['\u221E', '\\infty'],
+    ['\u03B8', '\\theta '], ['\u0398', '\\Theta '],
+    ['\u03B1', '\\alpha '], ['\u03B2', '\\beta '], ['\u03B3', '\\gamma '],
+    ['\u0394', '\\Delta '], ['\u03B4', '\\delta '],
+    ['\u03BC', '\\mu '], ['\u03C9', '\\omega '], ['\u03A9', '\\Omega '],
+    ['\u03C0', '\\pi '], ['\u03C3', '\\sigma '], ['\u03A3', '\\Sigma '],
+    ['\u03BB', '\\lambda '], ['\u03C1', '\\rho '], ['\u03C4', '\\tau '], ['\u03C6', '\\phi '],
+    ['\u221E', '\\infty '],
   ];
   for (const [char, latex] of greekMap) {
     s = s.split(char).join(latex);
