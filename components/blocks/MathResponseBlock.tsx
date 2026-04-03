@@ -355,6 +355,16 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   { display: 'v = f\u03BB', insert: 'v = f\u03BB', title: 'Wave Speed', category: 'Waves' },
   { display: 'T = 1/f', insert: 'T = 1/f', title: 'Period', category: 'Waves' },
 
+  // Fluids (Static)
+  { display: 'P = P\u2080 + \u03C1gh', insert: 'P = P_0 + \u03C1gh', title: 'Pressure at Depth', category: 'Fluids' },
+  { display: 'P = F/A', insert: 'P = F/A', title: 'Pressure Definition', category: 'Fluids' },
+  { display: 'F\u0062 = \u03C1Vg', insert: 'F_b = \u03C1Vg', title: 'Buoyant Force', category: 'Fluids' },
+  { display: 'F\u2081/A\u2081 = F\u2082/A\u2082', insert: 'F_1/A_1 = F_2/A_2', title: "Pascal's Law", category: 'Fluids' },
+
+  // Fluids (Motion)
+  { display: 'A\u2081v\u2081 = A\u2082v\u2082', insert: 'A_1 v_1 = A_2 v_2', title: 'Continuity Equation', category: 'Fluids' },
+  { display: 'P + \u00BD\u03C1v\u00B2 + \u03C1gy = const', insert: 'P_1 + (1)/(2) \u03C1v_1^2 + \u03C1gy_1 = P_2 + (1)/(2) \u03C1v_2^2 + \u03C1gy_2', title: "Bernoulli's Equation", category: 'Fluids' },
+
   // Gravity
   { display: 'F\u0067 = Gm\u2081m\u2082/r\u00B2', insert: 'F_g = G(m_1 m_2)/(r^2)', title: 'Universal Gravitation', category: 'Gravity' },
 
