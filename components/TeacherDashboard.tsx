@@ -1,11 +1,10 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket, DailyDigest } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Loader2, BarChart3, Newspaper, Download } from 'lucide-react';
+import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
+import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Loader2, BarChart3, Download } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
-import { callTriggerDailyDigest } from '../lib/firebase';
 import { BUCKET_META } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
 import { FeatureErrorBoundary } from './ErrorBoundary';
@@ -40,10 +39,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'digest'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics'>('dashboard');
   const tableScrollRef = useRef<HTMLDivElement>(null);
-  const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
-  const [digestGenerating, setDigestGenerating] = useState(false);
   const [showNudgeModal, setShowNudgeModal] = useState(false);
   const [nudgeTarget, setNudgeTarget] = useState<{ studentId: string; studentName: string; defaultMessage: string; classType: string } | null>(null);
   const [nudgeMessage, setNudgeMessage] = useState('');
@@ -62,14 +59,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       const unsubAnnouncements = dataService.subscribeToAnnouncements(setAnnouncements);
       const unsubAlerts = dataService.subscribeToStudentAlerts(setAlerts);
       const unsubBuckets = dataService.subscribeToStudentBuckets(setBucketProfiles);
-      const unsubDigests = dataService.subscribeToDailyDigests(setDailyDigests);
       const interval = setInterval(() => setNow(Date.now()), 60000); // Update 'expires in' every minute
       return () => {
           unsub();
           unsubAnnouncements();
           unsubAlerts();
           unsubBuckets();
-          unsubDigests();
           clearInterval(interval);
       };
   }, []);
@@ -280,9 +275,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <button id="tab-analytics" role="tab" aria-selected={adminTab === 'analytics'} aria-controls="tabpanel-analytics" onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Analytics
           </button>
-          <button id="tab-digest" role="tab" aria-selected={adminTab === 'digest'} aria-controls="tabpanel-digest" onClick={() => setAdminTab('digest')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'digest' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
-            <Newspaper className="w-3.5 h-3.5" aria-hidden="true" /> Daily Digest
-          </button>
         </div>
       </div>
 
@@ -293,170 +285,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       )}
 
 
-      {adminTab === 'digest' && (<div role="tabpanel" id="tabpanel-digest" aria-labelledby="tab-digest"><FeatureErrorBoundary feature="Daily Digest">
-        <div className="space-y-6">
-          <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Newspaper className="w-5 h-5 text-blue-400" aria-hidden="true" />
-                Daily Activity Digest
-              </h3>
-              <button
-                disabled={digestGenerating}
-                onClick={async () => {
-                  setDigestGenerating(true);
-                  try {
-                    await callTriggerDailyDigest();
-                  } catch (err) {
-                    reportError(err instanceof Error ? err : new Error(String(err)), { source: 'triggerDailyDigest' });
-                  } finally {
-                    setDigestGenerating(false);
-                  }
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${digestGenerating ? 'animate-spin' : ''}`} />
-                {digestGenerating ? 'Generating...' : 'Generate Now'}
-              </button>
-            </div>
-
-            {dailyDigests.length === 0 ? (
-              <div className="text-center py-12 text-[var(--text-muted)]">
-                <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-20" aria-hidden="true" />
-                <p className="text-sm font-bold">No digest reports yet</p>
-                <p className="text-xs mt-1">Daily digests are generated automatically each morning at 6:30 AM.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {dailyDigests.map(digest => (
-                  <div key={digest.id} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5 space-y-4">
-                    {/* Date Header */}
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">
-                        {new Date(digest.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                      </h4>
-                      <span className="text-xs text-[var(--text-tertiary)]">Generated {new Date(digest.generatedAt).toLocaleTimeString()}</span>
-                    </div>
-
-                    {/* Summary Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-green-400">{digest.summary.totalSubmissions}</div>
-                        <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Submissions</div>
-                      </div>
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-blue-400">{digest.summary.totalResubmissions}</div>
-                        <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Resubmissions</div>
-                      </div>
-                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-emerald-400">{digest.summary.totalGraded}</div>
-                        <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Graded</div>
-                      </div>
-                      {digest.summary.totalAutoFlagged > 0 && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-amber-400">{digest.summary.totalAutoFlagged}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Auto Flagged</div>
-                        </div>
-                      )}
-                      {digest.summary.totalAIFlagged > 0 && (
-                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-purple-400">{digest.summary.totalAIFlagged}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">AI Flagged</div>
-                        </div>
-                      )}
-                      {digest.summary.totalEWSAlerts > 0 && (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-red-400">{digest.summary.totalEWSAlerts}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">EWS Alerts</div>
-                        </div>
-                      )}
-                      {digest.summary.totalLevelUps > 0 && (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-yellow-400">{digest.summary.totalLevelUps}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Level Ups</div>
-                        </div>
-                      )}
-                      {digest.summary.totalQuestsCompleted > 0 && (
-                        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-cyan-400">{digest.summary.totalQuestsCompleted}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Quests Done</div>
-                        </div>
-                      )}
-                      {digest.summary.totalBossDefeated > 0 && (
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-orange-400">{digest.summary.totalBossDefeated}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">Bosses Defeated</div>
-                        </div>
-                      )}
-                      {digest.summary.totalNewEnrollments > 0 && (
-                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
-                          <div className="text-2xl font-bold text-indigo-400">{digest.summary.totalNewEnrollments}</div>
-                          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">New Students</div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Event Feed */}
-                    {digest.events.length > 0 && (
-                      <div className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
-                        <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest mb-2">Activity Feed</div>
-                        {digest.events.map((event, idx) => {
-                          const eventColors: Record<string, string> = {
-                            SUBMISSION: 'text-green-400',
-                            RESUBMISSION: 'text-blue-400',
-                            AUTO_FLAGGED: 'text-amber-400',
-                            AI_FLAGGED: 'text-purple-400',
-                            GRADED: 'text-emerald-400',
-                            EWS_ALERT: 'text-red-400',
-                            LEVEL_UP: 'text-yellow-400',
-                            QUEST_COMPLETED: 'text-cyan-400',
-                            BOSS_DEFEATED: 'text-orange-400',
-                            NEW_ENROLLMENT: 'text-indigo-400',
-                          };
-                          const eventLabels: Record<string, string> = {
-                            SUBMISSION: 'Submitted',
-                            RESUBMISSION: 'Resubmitted',
-                            AUTO_FLAGGED: 'Auto Flagged',
-                            AI_FLAGGED: 'AI Flagged',
-                            GRADED: 'Graded',
-                            EWS_ALERT: 'EWS Alert',
-                            LEVEL_UP: 'Level Up',
-                            QUEST_COMPLETED: 'Quest Done',
-                            BOSS_DEFEATED: 'Boss Defeated',
-                            NEW_ENROLLMENT: 'Enrolled',
-                          };
-                          return (
-                            <div key={idx} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-[var(--surface-glass)] transition text-xs">
-                              <span className={`font-bold text-[10px] uppercase tracking-wider w-24 shrink-0 ${eventColors[event.type] || 'text-[var(--text-tertiary)]'}`}>
-                                {eventLabels[event.type] || event.type}
-                              </span>
-                              <span className="text-[var(--text-secondary)] font-medium truncate">{event.studentName || 'System'}</span>
-                              {event.assignmentTitle && (
-                                <span className="text-[var(--text-muted)] truncate">{event.assignmentTitle}</span>
-                              )}
-                              {event.detail && (
-                                <span className="text-[var(--text-muted)] text-[10px] shrink-0">{event.detail}</span>
-                              )}
-                              <span className="text-[var(--text-muted)] text-[10px] ml-auto shrink-0">
-                                {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Empty day message */}
-                    {digest.events.length === 0 && (
-                      <div className="text-center py-4 text-[var(--text-muted)] text-xs italic">No activity recorded for this day.</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </FeatureErrorBoundary></div>)}
 
       <div className={adminTab === 'dashboard' ? 'space-y-6' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
       <FeatureErrorBoundary feature="Dashboard Overview">

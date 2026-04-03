@@ -1584,51 +1584,6 @@ export interface StreakData {
   milestones: number[];       // Days reached (3, 7, 14, 21, 30)
 }
 
-// ========================================
-// ADMIN DAILY DIGEST
-// ========================================
-
-export type DigestEventType =
-  | 'SUBMISSION'           // New first-time submission
-  | 'RESUBMISSION'         // Student resubmitted (attemptNumber > 1)
-  | 'AUTO_FLAGGED'         // Submission auto-flagged for suspicious behavior
-  | 'AI_FLAGGED'           // Submission flagged as AI-generated
-  | 'GRADED'               // Teacher graded a submission
-  | 'EWS_ALERT'            // New EWS alert generated
-  | 'LEVEL_UP'             // Student leveled up
-  | 'QUEST_COMPLETED'      // Student completed a quest/mission
-  | 'BOSS_DEFEATED'        // Boss quiz defeated
-  | 'NEW_ENROLLMENT';      // New student enrolled
-
-export interface DigestEvent {
-  type: DigestEventType;
-  studentId?: string;
-  studentName?: string;
-  assignmentId?: string;
-  assignmentTitle?: string;
-  classType?: string;
-  detail?: string;          // Human-readable detail (e.g., "Attempt #3", "Level 12 → 13")
-  timestamp: string;        // ISO timestamp of the original event
-}
-
-export interface DailyDigest {
-  id: string;
-  date: string;             // YYYY-MM-DD
-  generatedAt: string;      // ISO timestamp
-  summary: {
-    totalSubmissions: number;
-    totalResubmissions: number;
-    totalGraded: number;
-    totalAutoFlagged: number;
-    totalAIFlagged: number;
-    totalEWSAlerts: number;
-    totalLevelUps: number;
-    totalQuestsCompleted: number;
-    totalBossDefeated: number;
-    totalNewEnrollments: number;
-  };
-  events: DigestEvent[];
-}
 
 // ========================================
 // TYPE GUARDS — validate Firestore data at deserialization boundaries

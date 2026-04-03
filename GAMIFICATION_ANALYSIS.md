@@ -173,7 +173,6 @@ This analysis focuses on **actionable improvements** to how admins and students 
 - Scheduled notification sequences (Day 1: "New boss arrives tomorrow!", Day 2: "Boss is here!", Day 3: "Last chance!")
 - Gamification milestone notifications ("3 students away from defeating the boss!")
 - Auto-notifications on achievement unlocks (class-visible celebrations)
-- Weekly digest: "This Week in Porter Portal — Top XP earner, Boss defeated, etc."
 
 **Benefit**: Builds anticipation and community. Automated notifications reduce admin workload while keeping students informed.
 

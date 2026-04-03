@@ -111,9 +111,6 @@ export const callRedeemEnrollmentCode = httpsCallable(functions, 'redeemEnrollme
 // Admin whitelist
 export const callAdminAddToWhitelist = httpsCallable(functions, 'adminAddToWhitelist');
 
-// Admin digest
-export const callTriggerDailyDigest = httpsCallable(functions, 'triggerDailyDigest');
-
 // Assessment admin actions
 export const callReturnAssessment = httpsCallable(functions, 'returnAssessment');
 export const callSubmitOnBehalf = httpsCallable(functions, 'submitOnBehalf');
