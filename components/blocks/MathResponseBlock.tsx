@@ -350,6 +350,19 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   { display: 'a\u2099 = v\u00B2/r', insert: 'a_c = v^2/r', title: 'Centripetal Acceleration', category: 'Rotation' },
   { display: '\u03A3\u03C4 = I\u03B1', insert: '\u03A3\u03C4 = I\u03B1', title: "Newton's Second Law (Rotation)", category: 'Rotation' },
   { display: 'a = \u03B1r', insert: 'a = \u03B1r', title: 'Tangential Acceleration', category: 'Rotation' },
+  { display: 'L = I\u03C9', insert: 'L = I\u03C9', title: 'Angular Momentum', category: 'Rotation' },
+  { display: 'KE\u1D63 = \u00BDI\u03C9\u00B2', insert: 'KE_r = (1)/(2) I\u03C9^2', title: 'Rotational KE', category: 'Rotation' },
+  { display: '\u0394L = \u03C4\u0394t', insert: '\u0394L = \u03C4\u0394t', title: 'Angular Impulse', category: 'Rotation' },
+  { display: 'L\u1D62 = L\u0066', insert: 'L_i = L_f', title: 'Conservation of Angular Momentum', category: 'Rotation' },
+
+  // Moments of Inertia
+  { display: 'I = mr\u00B2', insert: 'I = mr^2', title: 'Point Mass', category: 'Inertia' },
+  { display: 'I = \u00BDmr\u00B2', insert: 'I = (1)/(2) mr^2', title: 'Solid Cylinder / Disk', category: 'Inertia' },
+  { display: 'I = mr\u00B2', insert: 'I = mr^2', title: 'Thin Hoop (axis through center)', category: 'Inertia' },
+  { display: 'I = \u2154mr\u00B2', insert: 'I = (2)/(5) mr^2', title: 'Solid Sphere', category: 'Inertia' },
+  { display: 'I = \u2154mr\u00B2', insert: 'I = (2)/(3) mr^2', title: 'Hollow Sphere', category: 'Inertia' },
+  { display: 'I = \u00B9\u2044\u2081\u2082mL\u00B2', insert: 'I = (1)/(12) mL^2', title: 'Thin Rod (center)', category: 'Inertia' },
+  { display: 'I = \u00B9\u2044\u2083mL\u00B2', insert: 'I = (1)/(3) mL^2', title: 'Thin Rod (end)', category: 'Inertia' },
 
   // Simple Harmonic Motion
   { display: 'T\u209B = 2\u03C0\u221A(m/k)', insert: 'T_s = 2\u03C0 sqrt(m/k)', title: 'Period (spring)', category: 'SHM' },
