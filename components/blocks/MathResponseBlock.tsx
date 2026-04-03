@@ -693,6 +693,40 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       {!readOnly && <div className="space-y-3">
         {steps.map((step, index) => (
           <div key={index} className="group space-y-1">
+            {/* KaTeX preview (above input so toolbar stays near typing area) */}
+            <div className="ml-10">
+              {step.latex.trim() ? (
+                <div
+                  className="bg-[var(--surface-glass)] rounded-lg px-3 py-2 overflow-x-auto"
+                  aria-live="polite"
+                  aria-label={`Preview for step ${index + 1}`}
+                >
+                  <div className="space-y-1">
+                    {step.latex.split(' \\\\ ').map((line, li) => {
+                      const isNote = /^\\text\{.*\}$/.test(line.trim());
+                      return (
+                        <div
+                          key={li}
+                          className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
+                        >
+                          <span className={`text-[10px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: renderLatex(line.trim()),
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[var(--text-muted)] text-xs italic px-3 py-1">
+                  Preview appears here as you type
+                </p>
+              )}
+            </div>
+
             {/* Input row */}
             <div className="flex gap-2 items-start">
               {/* Reorder buttons */}
@@ -740,7 +774,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                 </datalist>
               </div>
 
-              {/* Natural math input — all steps use textarea with per-line bullet rendering */}
+              {/* Natural math input */}
               <div className="flex-1 min-w-0">
                 <label className="sr-only" htmlFor={`step-input-${index}`}>
                   Step {index + 1} math input
@@ -791,40 +825,6 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                 >
                   <X className="w-4 h-4" />
                 </button>
-              )}
-            </div>
-
-            {/* KaTeX preview (below input, indented to align) */}
-            <div className="ml-10">
-              {step.latex.trim() ? (
-                <div
-                  className="bg-[var(--surface-glass)] rounded-lg px-3 py-2 overflow-x-auto"
-                  aria-live="polite"
-                  aria-label={`Preview for step ${index + 1}`}
-                >
-                  <div className="space-y-1">
-                    {step.latex.split(' \\\\ ').map((line, li) => {
-                      const isNote = /^\\text\{.*\}$/.test(line.trim());
-                      return (
-                        <div
-                          key={li}
-                          className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
-                        >
-                          <span className={`text-[10px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: renderLatex(line.trim()),
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[var(--text-muted)] text-xs italic px-3 py-1">
-                  Preview appears here as you type
-                </p>
               )}
             </div>
           </div>
