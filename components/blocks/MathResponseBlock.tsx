@@ -322,46 +322,46 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   // Kinematics
   { display: 'v = \u0394x/\u0394t', insert: 'v = (x_f - x_i)/(t_f - t_i)', title: 'Average Velocity', category: 'Kinematics' },
   { display: 'a = \u0394v/\u0394t', insert: 'a = (v_f - v_i)/(t_f - t_i)', title: 'Average Acceleration', category: 'Kinematics' },
-  { display: 'x = x\u2080 + v\u2080t + \u00BDat\u00B2', insert: 'x = x_0 + v_0 \u00D7 t + (1)/(2) \u00D7 a \u00D7 t^2', title: 'Position (constant accel)', category: 'Kinematics' },
-  { display: 'v = v\u2080 + at', insert: 'v = v_0 + a \u00D7 t', title: 'Velocity (constant accel)', category: 'Kinematics' },
-  { display: 'v\u00B2 = v\u2080\u00B2 + 2a\u0394x', insert: 'v^2 = v_0^2 + 2 \u00D7 a \u00D7 \u0394x', title: 'Velocity squared (no time)', category: 'Kinematics' },
+  { display: 'x = x\u2080 + v\u2080t + \u00BDat\u00B2', insert: 'x = x_0 + v_0 t + (1)/(2) a t^2', title: 'Position (constant accel)', category: 'Kinematics' },
+  { display: 'v = v\u2080 + at', insert: 'v = v_0 + a t', title: 'Velocity (constant accel)', category: 'Kinematics' },
+  { display: 'v\u00B2 = v\u2080\u00B2 + 2a\u0394x', insert: 'v^2 = v_0^2 + 2a\u0394x', title: 'Velocity squared (no time)', category: 'Kinematics' },
 
   // Forces
-  { display: '\u03A3F = ma', insert: '\u03A3F = m \u00D7 a', title: "Newton's Second Law", category: 'Forces' },
-  { display: 'F\u0066 = \u03BCF\u2099', insert: 'F_f = \u03BC \u00D7 F_N', title: 'Friction', category: 'Forces' },
-  { display: 'F\u0067 = mg', insert: 'F_g = m \u00D7 g', title: 'Weight', category: 'Forces' },
-  { display: 'F\u209B = -kx', insert: 'F_s = -k \u00D7 x', title: "Hooke's Law", category: 'Forces' },
+  { display: '\u03A3F = ma', insert: '\u03A3F = ma', title: "Newton's Second Law", category: 'Forces' },
+  { display: 'F\u0066 = \u03BCF\u2099', insert: 'F_f = \u03BCF_N', title: 'Friction', category: 'Forces' },
+  { display: 'F\u0067 = mg', insert: 'F_g = mg', title: 'Weight', category: 'Forces' },
+  { display: 'F\u209B = -kx', insert: 'F_s = -kx', title: "Hooke's Law", category: 'Forces' },
 
   // Energy
-  { display: 'KE = \u00BDmv\u00B2', insert: 'KE = (1)/(2) \u00D7 m \u00D7 v^2', title: 'Kinetic Energy', category: 'Energy' },
-  { display: 'PE\u0067 = mgh', insert: 'PE_g = m \u00D7 g \u00D7 h', title: 'Gravitational PE', category: 'Energy' },
-  { display: 'PE\u209B = \u00BDkx\u00B2', insert: 'PE_s = (1)/(2) \u00D7 k \u00D7 x^2', title: 'Spring PE', category: 'Energy' },
-  { display: 'W = Fd cos\u03B8', insert: 'W = F \u00D7 d \u00D7 cos(\u03B8)', title: 'Work', category: 'Energy' },
+  { display: 'KE = \u00BDmv\u00B2', insert: 'KE = (1)/(2) mv^2', title: 'Kinetic Energy', category: 'Energy' },
+  { display: 'PE\u0067 = mgh', insert: 'PE_g = mgh', title: 'Gravitational PE', category: 'Energy' },
+  { display: 'PE\u209B = \u00BDkx\u00B2', insert: 'PE_s = (1)/(2) kx^2', title: 'Spring PE', category: 'Energy' },
+  { display: 'W = Fd cos\u03B8', insert: 'W = Fd cos(\u03B8)', title: 'Work', category: 'Energy' },
   { display: 'P = W/\u0394t', insert: 'P = W/\u0394t', title: 'Power', category: 'Energy' },
 
   // Momentum
-  { display: 'p = mv', insert: 'p = m \u00D7 v', title: 'Momentum', category: 'Momentum' },
-  { display: 'J = \u03A3F\u0394t', insert: 'J = \u03A3F \u00D7 \u0394t', title: 'Impulse', category: 'Momentum' },
+  { display: 'p = mv', insert: 'p = mv', title: 'Momentum', category: 'Momentum' },
+  { display: 'J = \u03A3F\u0394t', insert: 'J = \u03A3F\u0394t', title: 'Impulse', category: 'Momentum' },
   { display: '\u03A3p\u1d62 = \u03A3p\u0066', insert: '\u03A3p_i = \u03A3p_f', title: 'Conservation of Momentum', category: 'Momentum' },
 
   // Rotation
-  { display: '\u03C4 = rF sin\u03B8', insert: '\u03C4 = r \u00D7 F \u00D7 sin(\u03B8)', title: 'Torque', category: 'Rotation' },
-  { display: 'v = r\u03C9', insert: 'v = r \u00D7 \u03C9', title: 'Tangential Velocity', category: 'Rotation' },
+  { display: '\u03C4 = rF sin\u03B8', insert: '\u03C4 = rF sin(\u03B8)', title: 'Torque', category: 'Rotation' },
+  { display: 'v = r\u03C9', insert: 'v = r\u03C9', title: 'Tangential Velocity', category: 'Rotation' },
   { display: 'a\u2099 = v\u00B2/r', insert: 'a_c = v^2/r', title: 'Centripetal Acceleration', category: 'Rotation' },
-  { display: '\u03A3\u03C4 = I\u03B1', insert: '\u03A3\u03C4 = I \u00D7 \u03B1', title: "Newton's Second Law (Rotation)", category: 'Rotation' },
-  { display: 'a = \u03B1r', insert: 'a = \u03B1 \u00D7 r', title: 'Tangential Acceleration', category: 'Rotation' },
+  { display: '\u03A3\u03C4 = I\u03B1', insert: '\u03A3\u03C4 = I\u03B1', title: "Newton's Second Law (Rotation)", category: 'Rotation' },
+  { display: 'a = \u03B1r', insert: 'a = \u03B1r', title: 'Tangential Acceleration', category: 'Rotation' },
 
   // Waves & Sound
-  { display: 'v = f\u03BB', insert: 'v = f \u00D7 \u03BB', title: 'Wave Speed', category: 'Waves' },
+  { display: 'v = f\u03BB', insert: 'v = f\u03BB', title: 'Wave Speed', category: 'Waves' },
   { display: 'T = 1/f', insert: 'T = 1/f', title: 'Period', category: 'Waves' },
 
   // Gravity
-  { display: 'F\u0067 = Gm\u2081m\u2082/r\u00B2', insert: 'F_g = G \u00D7 (m_1 \u00D7 m_2)/(r^2)', title: 'Universal Gravitation', category: 'Gravity' },
+  { display: 'F\u0067 = Gm\u2081m\u2082/r\u00B2', insert: 'F_g = G(m_1 m_2)/(r^2)', title: 'Universal Gravitation', category: 'Gravity' },
 
   // Electricity
-  { display: 'F\u2091 = kq\u2081q\u2082/r\u00B2', insert: 'F_e = k \u00D7 (q_1 \u00D7 q_2)/(r^2)', title: "Coulomb's Law", category: 'Electricity' },
-  { display: 'V = IR', insert: 'V = I \u00D7 R', title: "Ohm's Law", category: 'Electricity' },
-  { display: 'P = IV', insert: 'P = I \u00D7 V', title: 'Electrical Power', category: 'Electricity' },
+  { display: 'F\u2091 = kq\u2081q\u2082/r\u00B2', insert: 'F_e = k(q_1 q_2)/(r^2)', title: "Coulomb's Law", category: 'Electricity' },
+  { display: 'V = IR', insert: 'V = IR', title: "Ohm's Law", category: 'Electricity' },
+  { display: 'P = IV', insert: 'P = IV', title: 'Electrical Power', category: 'Electricity' },
 ];
 
 // ──────────────────────────────────────────────
