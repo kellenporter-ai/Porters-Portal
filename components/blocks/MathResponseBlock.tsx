@@ -31,6 +31,19 @@ interface MathResponseBlockProps {
 // Natural Math → LaTeX Converter
 // ──────────────────────────────────────────────
 
+// Detect plain English text lines (no math structure indicators, 3+ word tokens)
+function isPlainTextLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.length < 4) return false;
+  if (/[=^_{}()\[\]/\\]/.test(trimmed)) return false;
+  if (/[\u0370-\u03FF\u00B2\u00B3\u00D7\u00F7\u00B1\u2248\u2260\u2265\u2264\u2192]/.test(trimmed)) return false;
+  const tokens = trimmed.split(/\s+/);
+  if (tokens.length < 2) return false;
+  // 2-token phrases need both tokens 3+ chars (catches "net force", skips "10 N" and "F m")
+  if (tokens.length === 2) return tokens.every(t => t.length >= 3);
+  return tokens.filter(t => t.length >= 2).length / tokens.length >= 0.6;
+}
+
 // Normalize LaTeX command boundaries: \SigmaF → \Sigma F
 // KaTeX parses \SigmaF as one unknown command; we split at known command boundaries.
 const KNOWN_LATEX_COMMANDS = new Set([
@@ -59,6 +72,17 @@ function normalizeLatexCommands(s: string): string {
 
 function naturalToLatex(input: string): string {
   if (!input.trim()) return '';
+
+  // Explicit text prefix: "// some comment" → \text{some comment}
+  if (input.trimStart().startsWith('//')) {
+    const text = input.trimStart().slice(2).trim();
+    return text ? `\\text{${text}}` : '';
+  }
+
+  // Auto-detect English text lines (no math indicators, 3+ word tokens)
+  if (isPlainTextLine(input)) {
+    return `\\text{${input.trim()}}`;
+  }
 
   // If input already contains LaTeX commands, normalize boundaries then pass through
   // e.g. \SigmaF → \Sigma F so KaTeX doesn't see an unknown command
@@ -560,6 +584,33 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
     [steps, updateStepInput]
   );
 
+  const insertNotePrefix = useCallback(() => {
+    const idx = focusedInputRef.current.index;
+    const el =
+      focusedInputRef.current.el ?? inputRefs.current[steps.length - 1];
+    if (!el) {
+      const lastIdx = steps.length - 1;
+      updateStepInput(lastIdx, '// ' + (steps[lastIdx].input || ''));
+      return;
+    }
+
+    const cursor = el.selectionStart ?? el.value.length;
+    const val = el.value;
+    // Find start of current line
+    const lineStart = val.lastIndexOf('\n', cursor - 1) + 1;
+    const newValue = val.slice(0, lineStart) + '// ' + val.slice(lineStart);
+
+    const stepIndex = inputRefs.current.indexOf(el);
+    const actualIndex = stepIndex >= 0 ? stepIndex : idx;
+    updateStepInput(actualIndex, newValue);
+
+    const cursorPos = cursor + 3; // account for inserted "// "
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(cursorPos, cursorPos);
+    }, 0);
+  }, [steps, updateStepInput]);
+
   // ── Submit / Edit ──
 
   const handleSubmit = useCallback(() => {
@@ -601,19 +652,22 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
               <div className="bg-[var(--surface-glass)] rounded-lg px-3 py-2 overflow-x-auto">
                 {step.latex.trim() ? (
                   <div className="space-y-1">
-                    {step.latex.split(' \\\\ ').map((line, li) => (
-                      <div
-                        key={li}
-                        className="text-[var(--text-primary)] katex-preview flex items-center gap-2"
-                      >
-                        <span className="text-[var(--text-muted)] text-[10px] select-none">{'\u2022'}</span>
+                    {step.latex.split(' \\\\ ').map((line, li) => {
+                      const isNote = /^\\text\{.*\}$/.test(line.trim());
+                      return (
                         <div
-                          dangerouslySetInnerHTML={{
-                            __html: renderLatex(line.trim()),
-                          }}
-                        />
-                      </div>
-                    ))}
+                          key={li}
+                          className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
+                        >
+                          <span className={`text-[10px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: renderLatex(line.trim()),
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-[var(--text-muted)] text-xs italic">No response</p>
@@ -709,7 +763,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                       ? 'List known values, one per line:\nv_i = 10 m/s\na = 2 m/s^2\nt = 5 s'
                       : step.label.toLowerCase().includes('find')
                       ? 'List what you need to find, one per line:\nv_f = ?\nd = ?'
-                      : 'Type math naturally — one expression per line\ne.g. v = d/t\nF = m × a'
+                      : 'Type math naturally — one expression per line\ne.g. v = d/t\n// add a note like this'
                   }
                   className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-y"
                 />
@@ -738,19 +792,22 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                   aria-label={`Preview for step ${index + 1}`}
                 >
                   <div className="space-y-1">
-                    {step.latex.split(' \\\\ ').map((line, li) => (
-                      <div
-                        key={li}
-                        className="text-[var(--text-primary)] katex-preview flex items-center gap-2"
-                      >
-                        <span className="text-[var(--text-muted)] text-[10px] select-none">{'\u2022'}</span>
+                    {step.latex.split(' \\\\ ').map((line, li) => {
+                      const isNote = /^\\text\{.*\}$/.test(line.trim());
+                      return (
                         <div
-                          dangerouslySetInnerHTML={{
-                            __html: renderLatex(line.trim()),
-                          }}
-                        />
-                      </div>
-                    ))}
+                          key={li}
+                          className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
+                        >
+                          <span className={`text-[10px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: renderLatex(line.trim()),
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
@@ -805,6 +862,14 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                 </button>
               );
             })}
+            <button
+              type="button"
+              onClick={() => insertNotePrefix()}
+              className="px-2.5 py-1.5 text-xs rounded-lg border transition font-medium bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-blue-500/20 hover:text-[var(--text-primary)]"
+              title="Add a text note (won't render as math)"
+            >
+              Aa
+            </button>
           </div>
 
           {/* Structure form (appears when a structure button is active) */}
