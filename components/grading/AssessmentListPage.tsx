@@ -64,14 +64,15 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(assessment => {
-            const assessmentSubs = submissions.filter(s => s.assignmentId === assessment.id && s.status !== 'STARTED');
+            const allAssessmentSubs = submissions.filter(s => s.assignmentId === assessment.id);
+            const draftCount = allAssessmentSubs.filter(s => s.status === 'STARTED').length;
+            const assessmentSubs = allAssessmentSubs.filter(s => s.status !== 'STARTED');
             const uniqueStudents = new Set(assessmentSubs.map(s => s.userId)).size;
             const gradedStudents = new Set(
               assessmentSubs.filter(s => s.rubricGrade).map(s => s.userId)
             ).size;
             const flaggedCount = assessmentSubs.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
             const aiFlaggedCount = assessmentSubs.filter(s => s.flaggedAsAI).length;
-            const draftCount = assessmentSubs.filter(s => s.status === 'STARTED').length;
             const gradePct = uniqueStudents > 0 ? Math.round((gradedStudents / uniqueStudents) * 100) : 0;
             const isOverdue = assessment.dueDate ? new Date(assessment.dueDate) < new Date() : false;
 

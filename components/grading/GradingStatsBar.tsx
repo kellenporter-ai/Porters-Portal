@@ -18,7 +18,6 @@ interface GradingStatsBarProps {
   batchAcceptingAI?: boolean;
   batchAcceptProgress?: { done: number; total: number } | null;
   onBatchAcceptAI?: () => void;
-  assessmentTitle?: string;
   selectedAssessment?: Assignment | null;
   onCheckIntegrity: () => void;
   onDownloadCSV: () => void;
