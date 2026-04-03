@@ -885,9 +885,10 @@ export const dataService = {
 
   updateWhitelistSection: async (email: string, section: string, classType?: string) => {
     try {
-      await updateDoc(doc(db, 'allowed_emails', email), { section });
+      const normalizedEmail = email.toLowerCase().trim();
+      await updateDoc(doc(db, 'allowed_emails', normalizedEmail), { section });
       // Also update user doc if they already exist
-      const q = query(collection(db, 'users'), where('email', '==', email));
+      const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
       const snap = await getDocs(q);
       await Promise.all(snap.docs.map(async (d) => {
         if (classType) {
@@ -918,8 +919,9 @@ export const dataService = {
 
   removeFromWhitelist: async (email: string) => {
     try {
-      await deleteDoc(doc(db, 'allowed_emails', email));
-      const q = query(collection(db, 'users'), where('email', '==', email));
+      const normalizedEmail = email.toLowerCase().trim();
+      await deleteDoc(doc(db, 'allowed_emails', normalizedEmail));
+      const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
       const snap = await getDocs(q);
       await Promise.all(snap.docs.map(async (d) => {
         await updateDoc(doc(db, 'users', d.id), {
@@ -950,10 +952,11 @@ export const dataService = {
           
           const email = userData.email;
           if(email) {
-              const wlSnap = await getDoc(doc(db, 'allowed_emails', email));
+              const normalizedEmail = email.toLowerCase().trim();
+              const wlSnap = await getDoc(doc(db, 'allowed_emails', normalizedEmail));
               const existingTypes: string[] = wlSnap.exists() ? (wlSnap.data().classTypes || [wlSnap.data().classType].filter(Boolean)) : [];
               const mergedTypes = Array.from(new Set([...existingTypes, classType]));
-              await setDoc(doc(db, 'allowed_emails', email), { classType, classTypes: mergedTypes });
+              await setDoc(doc(db, 'allowed_emails', normalizedEmail), { classType, classTypes: mergedTypes });
           }
       }
     } catch (error) {
@@ -966,7 +969,7 @@ export const dataService = {
       const userSnap = await getDoc(doc(db, 'users', userId));
       if (userSnap.exists()) {
         const email = userSnap.data().email;
-        await deleteDoc(doc(db, 'allowed_emails', email));
+        if (email) await deleteDoc(doc(db, 'allowed_emails', email.toLowerCase().trim()));
       }
       await deleteDoc(doc(db, 'users', userId));
     } catch (error) {
@@ -1046,15 +1049,16 @@ export const dataService = {
             classType: classes.length > 0 ? classes[0] : 'Uncategorized'
           };
           
+          const normalizedEmail = email?.toLowerCase().trim();
           if (classes.length === 0) {
               updates.isWhitelisted = false;
-              if (email) {
-                  await deleteDoc(doc(db, 'allowed_emails', email));
+              if (normalizedEmail) {
+                  await deleteDoc(doc(db, 'allowed_emails', normalizedEmail));
               }
           } else {
               updates.isWhitelisted = true;
-              if (email) {
-                  await setDoc(doc(db, 'allowed_emails', email), { classType: classes[0], classTypes: classes });
+              if (normalizedEmail) {
+                  await setDoc(doc(db, 'allowed_emails', normalizedEmail), { classType: classes[0], classTypes: classes });
               }
           }
           
