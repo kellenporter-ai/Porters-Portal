@@ -31,7 +31,8 @@ interface MathResponseBlockProps {
 // Natural Math → LaTeX Converter
 // ──────────────────────────────────────────────
 
-// Detect plain English text lines (no math structure indicators, 3+ word tokens)
+// Detect plain English text lines — monotonic: once a 4+ char word exists, stays detected.
+// This prevents flicker where detection toggles as the student types mid-sentence.
 function isPlainTextLine(line: string): boolean {
   const trimmed = line.trim();
   if (!trimmed || trimmed.length < 4) return false;
@@ -39,9 +40,9 @@ function isPlainTextLine(line: string): boolean {
   if (/[\u0370-\u03FF\u00B2\u00B3\u00D7\u00F7\u00B1\u2248\u2260\u2265\u2264\u2192]/.test(trimmed)) return false;
   const tokens = trimmed.split(/\s+/);
   if (tokens.length < 2) return false;
-  // 2-token phrases need both tokens 3+ chars (catches "net force", skips "10 N" and "F m")
-  if (tokens.length === 2) return tokens.every(t => t.length >= 3);
-  return tokens.filter(t => t.length >= 2).length / tokens.length >= 0.6;
+  // Require at least one word 4+ chars — clearly English, not a variable name.
+  // Once a student types "writing" or "force" etc., detection is stable.
+  return tokens.some(t => t.length >= 4);
 }
 
 // Normalize LaTeX command boundaries: \SigmaF → \Sigma F
@@ -79,7 +80,17 @@ function naturalToLatex(input: string): string {
     return text ? `\\text{${text}}` : '';
   }
 
-  // Auto-detect English text lines (no math indicators, 3+ word tokens)
+  // Inline comment: "F = ma // because Newton" → F = ma \text{ because Newton}
+  const commentIdx = input.indexOf('//');
+  if (commentIdx > 0) {
+    const mathPart = input.slice(0, commentIdx).trim();
+    const textPart = input.slice(commentIdx + 2).trim();
+    const mathLatex = mathPart ? naturalToLatex(mathPart) : '';
+    const textLatex = textPart ? `\\text{ ${textPart}}` : '';
+    return mathLatex + textLatex;
+  }
+
+  // Auto-detect English text lines (no math indicators, has a 4+ char word)
   if (isPlainTextLine(input)) {
     return `\\text{${input.trim()}}`;
   }
