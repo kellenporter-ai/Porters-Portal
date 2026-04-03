@@ -31,11 +31,38 @@ interface MathResponseBlockProps {
 // Natural Math → LaTeX Converter
 // ──────────────────────────────────────────────
 
+// Normalize LaTeX command boundaries: \SigmaF → \Sigma F
+// KaTeX parses \SigmaF as one unknown command; we split at known command boundaries.
+const KNOWN_LATEX_COMMANDS = new Set([
+  'alpha','beta','gamma','delta','epsilon','zeta','eta','theta','iota','kappa',
+  'lambda','mu','nu','xi','pi','rho','sigma','tau','upsilon','phi','chi','psi','omega',
+  'Alpha','Beta','Gamma','Delta','Epsilon','Zeta','Eta','Theta','Iota','Kappa',
+  'Lambda','Mu','Nu','Xi','Pi','Rho','Sigma','Tau','Upsilon','Phi','Chi','Psi','Omega',
+  'times','div','cdot','pm','approx','neq','geq','leq','rightarrow','leftarrow',
+  'infty','sqrt','frac','text','sin','cos','tan','log','ln','vec','hat','bar',
+  'dot','ddot','partial','nabla','sum','prod','int','oint','lim','max','min',
+  'circ','perp','angle','parallel',
+]);
+
+function normalizeLatexCommands(s: string): string {
+  return s.replace(/\\([a-zA-Z]+)/g, (_match, word) => {
+    if (KNOWN_LATEX_COMMANDS.has(word)) return `\\${word}`;
+    // Try to find a known command prefix (longest match first)
+    for (let len = word.length - 1; len >= 2; len--) {
+      if (KNOWN_LATEX_COMMANDS.has(word.slice(0, len))) {
+        return `\\${word.slice(0, len)} ${word.slice(len)}`;
+      }
+    }
+    return `\\${word}`;
+  });
+}
+
 function naturalToLatex(input: string): string {
   if (!input.trim()) return '';
 
-  // If input already contains LaTeX commands, pass through
-  if (input.includes('\\')) return input;
+  // If input already contains LaTeX commands, normalize boundaries then pass through
+  // e.g. \SigmaF → \Sigma F so KaTeX doesn't see an unknown command
+  if (input.includes('\\')) return normalizeLatexCommands(input);
 
   let s = input;
 
