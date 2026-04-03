@@ -4,14 +4,13 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, MessageSquare, Bug, Music } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, Bug, Music } from 'lucide-react';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
-import { useChat } from '../lib/ChatContext';
 
 interface LayoutProps {
   user: User;
@@ -25,9 +24,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { enabledFeatures } = useClassConfig();
-  const { isCommOpen, setIsCommOpen } = useChat();
-
   // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -515,16 +511,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               >
                 <LogOut className="w-4 h-4" />
               </button>
-              {enabledFeatures.communications && (
-                <button
-                  onClick={() => setIsCommOpen(!isCommOpen)}
-                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                  aria-label="Chat"
-                  title="Chat"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
-              )}
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('porters:openBugReport'))}
                 className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
@@ -568,16 +554,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 >
                   <Settings className="w-4 h-4" />
                 </button>
-                {enabledFeatures.communications && (
-                  <button
-                    onClick={() => setIsCommOpen(!isCommOpen)}
-                    className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                    aria-label="Chat"
-                    title="Chat"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                  </button>
-                )}
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('porters:openBugReport'))}
                   className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"

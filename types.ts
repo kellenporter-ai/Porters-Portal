@@ -31,7 +31,6 @@ export interface ClassConfig {
   features: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    communications: boolean;
     dungeons: boolean;
     pvpArena: boolean;
     bossFights: boolean;
@@ -266,7 +265,6 @@ export interface User {
   isWhitelisted: boolean;
   avatarUrl?: string;
   settings?: UserSettings;
-  mutedUntil?: string; 
   lastLoginAt?: string; 
   createdAt?: string;
   stats?: {
@@ -564,37 +562,6 @@ export interface Submission {
   submittedOnBehalfBy?: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  isFlagged?: boolean;
-  systemNote?: string;
-  channelId?: string;
-  reactions?: { [emoji: string]: string[] }; 
-  pinnedBy?: string[]; 
-  isGlobalPinned?: boolean; 
-}
-
-export interface StudentGroup {
-  id: string;
-  name: string;
-  classType: string;
-  section?: string; // Optional section within a class (e.g. "Period 3")
-  members: { userId: string; userName: string }[];
-  createdAt: string;
-  createdBy: string;
-}
-
-// Conversation interface for messaging services
-export interface Conversation {
-  id: string;
-  lastMessage: string;
-  lastMessageAt: string;
-  adminDisabled?: boolean;
-}
 
 // Gamification Engine Types
 export interface XPEvent {
@@ -666,16 +633,6 @@ export interface LabReport {
   timestamp: string;
 }
 
-export interface ChatFlag {
-  id: string;
-  messageId: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  classType: string;
-  isResolved: boolean;
-}
 
 export interface Announcement {
   id: string;

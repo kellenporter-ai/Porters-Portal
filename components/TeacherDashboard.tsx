@@ -1,14 +1,13 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ChatFlag, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
-import { Users, Clock, FileText, Zap, ShieldAlert, CheckCircle, MicOff, AlertTriangle, RefreshCw, Check, Trash2, ChevronUp, ChevronDown, Activity, Search, Award, Loader2, BarChart3, Download } from 'lucide-react';
+import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../types';
+import { Users, Clock, FileText, Zap, ChevronUp, ChevronDown, Activity, Search, Award, Loader2, BarChart3, Download } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { BUCKET_META } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
 import { FeatureErrorBoundary } from './ErrorBoundary';
-import { useConfirm } from './ConfirmDialog';
 import { useToast } from './ToastProvider';
 import AnnouncementManager from './AnnouncementManager';
 import StudentDetailDrawer from './StudentDetailDrawer';
@@ -23,16 +22,12 @@ interface TeacherDashboardProps {
 }
 
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments = [], submissions = [] }) => {
-  const { confirm } = useConfirm();
   const toast = useToast();
   const { classConfigs } = useClassConfig();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  const [flags, setFlags] = useState<ChatFlag[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [alerts, setAlerts] = useState<StudentAlert[]>([]);
   const [bucketProfiles, setBucketProfiles] = useState<StudentBucketProfile[]>([]);
-  const [now, setNow] = useState(Date.now());
-  const [muteMenuFlagId, setMuteMenuFlagId] = useState<string | null>(null);
   const [sortCol, setSortCol] = useState<string>('xp');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [engagementSearch, setEngagementSearch] = useState('');
@@ -55,17 +50,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   }, []);
 
   useEffect(() => {
-      const unsub = dataService.subscribeToChatFlags(setFlags);
       const unsubAnnouncements = dataService.subscribeToAnnouncements(setAnnouncements);
       const unsubAlerts = dataService.subscribeToStudentAlerts(setAlerts);
       const unsubBuckets = dataService.subscribeToStudentBuckets(setBucketProfiles);
-      const interval = setInterval(() => setNow(Date.now()), 60000); // Update 'expires in' every minute
       return () => {
-          unsub();
           unsubAnnouncements();
           unsubAlerts();
           unsubBuckets();
-          clearInterval(interval);
       };
   }, []);
 
@@ -133,9 +124,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     };
   }, [students]);
 
-  // Derived Moderation Data
-  const mutedStudents = useMemo(() => students.filter(s => s.mutedUntil && new Date(s.mutedUntil).getTime() > now), [students, now]);
-
   // Filtered + sorted student list (used by table + virtualizer)
   const sortedStudents = useMemo(() => {
     const filtered = students.filter(s => {
@@ -188,44 +176,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     a.click(); URL.revokeObjectURL(url);
   }, [students, selectedIds]);
 
-  const handleUnmute = async (userId: string) => {
-      if(await confirm({ message: "Lift silence sanction for this operative?", confirmLabel: "Unmute", variant: "info" })) {
-          try {
-              await dataService.muteUser(userId, 0);
-          } catch {
-              toast.error('Could not unmute this student. Try again.');
-          }
-      }
-  };
-
-  const MUTE_DURATIONS = [
-      { label: '15 min', minutes: 15 },
-      { label: '1 hour', minutes: 60 },
-      { label: '24 hours', minutes: 1440 },
-      { label: 'Indefinite', minutes: dataService.INDEFINITE_MUTE },
-  ];
-
-  const handleMuteFromFlag = async (senderId: string, minutes: number) => {
-      try {
-          await dataService.muteUser(senderId, minutes);
-      } catch {
-          toast.error('Could not mute this student. Try again.');
-      }
-      setMuteMenuFlagId(null);
-  };
-
-  const handleExtendMute = async (userId: string, currentMute: string) => {
-      const currentEnd = new Date(currentMute).getTime();
-      // Add 1 hour to the current expiry
-      const newEnd = new Date(Math.max(currentEnd, Date.now()) + 60 * 60 * 1000);
-      // Calculate minutes from now
-      const minutesFromNow = Math.ceil((newEnd.getTime() - Date.now()) / 60000);
-      try {
-          await dataService.muteUser(userId, minutesFromNow);
-      } catch {
-          toast.error('Could not extend mute. Try again.');
-      }
-  };
   
   const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
     <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] p-6 rounded-3xl relative overflow-hidden group hover:border-[var(--border-strong)] transition-all duration-300" aria-label={label}>
@@ -240,14 +190,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     </div>
   ));
 
-  const getTimeRemaining = (isoString: string) => {
-      const end = new Date(isoString).getTime();
-      const diff = end - now;
-      if (diff <= 0) return 'Expired';
-      const mins = Math.ceil(diff / 60000);
-      if (mins > 60) return `${Math.ceil(mins/60)} hrs`;
-      return `${mins} mins`;
-  };
 
   const formatLastSeen = (dateStr?: string) => {
       if (!dateStr) return 'Never';
@@ -294,126 +236,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <StatCard label="Total XP Awarded" value={totalXP.toLocaleString()} icon={<Zap className="w-12 h-12" />} color="from-purple-500 to-pink-500" />
           <StatCard label="Resources Viewed" value={totalResourcesAccessed} icon={<FileText className="w-12 h-12" />} color="from-emerald-500 to-teal-400" />
           <StatCard label="Avg Active Time" value={`${avgTime}m`} icon={<Clock className="w-12 h-12" />} color="from-amber-500 to-orange-400" />
-      </div>
-
-      {/* MODERATION SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Active Flags */}
-          <div className={`border rounded-3xl p-6 backdrop-blur-md transition-colors ${flags.length > 0 ? 'bg-red-900/10 border-red-500/30' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
-              <div className="flex justify-between items-center mb-6">
-                  <h3 className={`text-xl font-bold flex items-center gap-2 ${flags.length > 0 ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
-                      {flags.length > 0 ? <AlertTriangle className="w-5 h-5" aria-hidden="true" /> : <ShieldAlert className="w-5 h-5 text-[var(--text-tertiary)]" aria-hidden="true" />}
-                      Moderation Queue
-                  </h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${flags.length > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-green-500/20 text-green-400'}`}>
-                      {flags.length > 0 ? `${flags.length} Issues` : 'Secure'}
-                  </span>
-              </div>
-              
-              {flags.length === 0 ? (
-                  <div className="text-center py-8 text-[var(--text-muted)] italic">
-                      <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
-                      No active alerts. Comms channels are clear.
-                  </div>
-              ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                      {flags.map(flag => (
-                          <div key={flag.id} className="bg-[var(--panel-bg)] border border-red-500/20 p-3 rounded-xl">
-                              <div className="flex justify-between items-start mb-2">
-                                  <div>
-                                      <div className="text-sm font-bold text-[var(--text-primary)]">{flag.senderName} <span className="text-xs text-[var(--text-muted)] font-normal">in {flag.classType}</span></div>
-                                      <div className="text-xs text-red-300 italic mt-1">"{flag.content}"</div>
-                                  </div>
-                                  <div className="text-xs text-[var(--text-tertiary)] whitespace-nowrap ml-2">
-                                      {new Date(flag.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                  </div>
-                              </div>
-                              <div className="flex gap-2 mt-2">
-                                  <button onClick={async () => { await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.unflagMessage(flag.messageId).catch(err => reportError(err, { method: 'unflagMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-400 rounded-lg text-[11px] font-bold transition">
-                                      <Check className="w-3 h-3" aria-hidden="true" /> Dismiss
-                                  </button>
-                                  <button onClick={async () => { if (!await confirm({ message: "Delete flagged message and resolve?", confirmLabel: "Delete" })) return; await dataService.resolveFlag(flag.id); if (flag.messageId) await dataService.deleteMessage(flag.messageId).catch(err => reportError(err, { method: 'deleteFlaggedMessage' })); }} className="flex-1 flex items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 rounded-lg text-[11px] font-bold transition">
-                                      <Trash2 className="w-3 h-3" aria-hidden="true" /> Delete
-                                  </button>
-                                  <div className="relative">
-                                      <button onClick={() => setMuteMenuFlagId(muteMenuFlagId === flag.id ? null : flag.id)} className="flex items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 rounded-lg text-[11px] font-bold transition" aria-label="Mute user" aria-haspopup="menu" aria-expanded={muteMenuFlagId === flag.id}>
-                                          <MicOff className="w-3 h-3" aria-hidden="true" />
-                                      </button>
-                                      {muteMenuFlagId === flag.id && (
-                                          <div role="menu" className="absolute bottom-full mb-1 right-0 bg-[var(--surface-overlay)] border border-orange-500/30 rounded-xl p-1 shadow-2xl z-50 animate-in zoom-in-95 whitespace-nowrap" onKeyDown={e => { if (e.key === 'Escape') setMuteMenuFlagId(null); }}>
-                                              <div className="text-xs text-[var(--text-tertiary)] px-2 py-1 font-bold uppercase">Mute {flag.senderName}</div>
-                                              {MUTE_DURATIONS.map(d => (
-                                                  <button key={d.minutes} role="menuitem" onClick={() => handleMuteFromFlag(flag.senderId, d.minutes)} className="block w-full text-left px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 rounded-lg transition">{d.label}</button>
-                                              ))}
-                                          </div>
-                                      )}
-                                  </div>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-              )}
-          </div>
-
-          {/* Muted Students */}
-          <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
-              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
-                  <MicOff className="w-5 h-5 text-orange-400" aria-hidden="true" />
-                  Silenced Operatives
-              </h3>
-              
-              {mutedStudents.length === 0 ? (
-                  <div className="text-center py-8 text-[var(--text-muted)] italic">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-20" aria-hidden="true" />
-                      No active silence sanctions.
-                  </div>
-              ) : (
-                  <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                          <thead>
-                              <tr className="border-b border-[var(--border)] text-[10px] uppercase font-bold text-[var(--text-muted)]">
-                                  <th scope="col" className="pb-2">Operative</th>
-                                  <th scope="col" className="pb-2">Remaining</th>
-                                  <th scope="col" className="pb-2 text-right">Protocol</th>
-                              </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[var(--border)]">
-                              {mutedStudents.map(s => (
-                                  <tr key={s.id} className="group hover:bg-[var(--surface-glass)] transition">
-                                      <td className="py-3">
-                                          <div className="text-sm font-bold text-[var(--text-primary)]">{s.name}</div>
-                                          <div className="text-xs text-[var(--text-tertiary)]">{s.classType}</div>
-                                      </td>
-                                      <td className="py-3">
-                                          <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded text-xs font-mono">
-                                              {getTimeRemaining(s.mutedUntil!)}
-                                          </span>
-                                      </td>
-                                      <td className="py-3 text-right">
-                                          <div className="flex justify-end gap-2">
-                                              <button
-                                                  onClick={() => handleExtendMute(s.id, s.mutedUntil!)}
-                                                  className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-                                                  aria-label="Extend mute 1 hour"
-                                              >
-                                                  <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
-                                              </button>
-                                              <button
-                                                  onClick={() => handleUnmute(s.id)}
-                                                  className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition"
-                                                  aria-label="Unmute user"
-                                              >
-                                                  <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                                              </button>
-                                          </div>
-                                      </td>
-                                  </tr>
-                              ))}
-                          </tbody>
-                      </table>
-                  </div>
-              )}
-          </div>
       </div>
 
       {/* EARLY WARNING PANEL */}

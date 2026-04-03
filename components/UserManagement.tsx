@@ -201,7 +201,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const [groupFeatures, setGroupFeatures] = useState({
       evidenceLocker: false,
       leaderboard: true,
-      communications: true,
       dungeons: true,
       pvpArena: true,
       bossFights: true
@@ -365,7 +364,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           setGroupFeatures(config.features);
           setGroupXpPerMinute(config.xpPerMinute || 10);
       } else {
-          setGroupFeatures({ evidenceLocker: false, leaderboard: true, communications: true, dungeons: true, pvpArena: true, bossFights: true });
+          setGroupFeatures({ evidenceLocker: false, leaderboard: true, dungeons: true, pvpArena: true, bossFights: true });
           setGroupXpPerMinute(10);
       }
       setIsGroupModalOpen(true);
@@ -639,7 +638,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <button 
                 onClick={() => {
                     setGroupName('');
-                    setGroupFeatures({ evidenceLocker: false, leaderboard: true, communications: true, dungeons: true, pvpArena: true, bossFights: true });
+                    setGroupFeatures({ evidenceLocker: false, leaderboard: true, dungeons: true, pvpArena: true, bossFights: true });
                     setIsEditingGroup(false);
                     setIsGroupModalOpen(true);
                 }}
@@ -893,10 +892,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       <label className="flex items-center gap-3 cursor-pointer group">
                           <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.leaderboard} onChange={e => setGroupFeatures({...groupFeatures, leaderboard: e.target.checked})} />
                           <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Global XP Leaderboards</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                          <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.communications} onChange={e => setGroupFeatures({...groupFeatures, communications: e.target.checked})} />
-                          <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Real-time Class Communications</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer group">
                           <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.dungeons} onChange={e => setGroupFeatures({...groupFeatures, dungeons: e.target.checked})} />

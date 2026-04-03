@@ -10,7 +10,6 @@ export const ADMIN_ROUTES = {
   ADMIN_PANEL: '/admin',
   RESOURCE_EDITOR: '/editor',
   USER_MANAGEMENT: '/users',
-  STUDENT_GROUPS: '/groups',
   ENROLLMENT_CODES: '/enrollment',
   XP_COMMAND: '/xp',
   STUDENT_REPORTS: '/reports',
@@ -61,7 +60,6 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Admin Panel': ADMIN_ROUTES.ADMIN_PANEL,
   'Resource Editor': ADMIN_ROUTES.RESOURCE_EDITOR,
   'User Management': ADMIN_ROUTES.USER_MANAGEMENT,
-  'Student Groups': ADMIN_ROUTES.STUDENT_GROUPS,
   'Enrollment Codes': ADMIN_ROUTES.ENROLLMENT_CODES,
   'Student Reports': ADMIN_ROUTES.STUDENT_REPORTS,
   // XP Command children — stored as "XP Command:Operatives" in the old system

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAssignments } from '../lib/AppDataContext';
-import { useChat } from '../lib/ChatContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
 import { db, callStartAssessmentSession } from '../lib/firebase';
@@ -36,7 +35,6 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { assignments, loading: appDataLoading } = useAssignments();
-  const { setIsCommOpen } = useChat();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const toast = useToast();
@@ -919,15 +917,6 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                           <div className="text-[10px] text-[var(--text-muted)]">Live Operatives</div>
                         </div>
                       </div>
-                    </div>
-                    <div className="bg-[var(--panel-bg)] p-4 rounded-xl border border-[var(--border)]">
-                      <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-2">Collaboration</label>
-                      <button
-                        onClick={() => setIsCommOpen(true)}
-                        className="w-full bg-indigo-600 border border-indigo-500 py-2 rounded-lg text-xs font-bold text-white hover:bg-indigo-500 transition"
-                      >
-                        Open Class Chat
-                      </button>
                     </div>
                   </div>
                 </div>

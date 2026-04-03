@@ -35,12 +35,6 @@ service cloud.firestore {
         && d.keys().hasAll(['studentId', 'createdAt']);
     }
 
-    function validDMMessage() {
-      let d = request.resource.data;
-      return d.senderId is string
-        && d.text is string && d.text.size() <= 5000;
-    }
-
     // ==========================================
     // USER PROFILES
     // ==========================================
@@ -151,67 +145,6 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // CLASS MESSAGES (Chat)
-    // ==========================================
-    match /class_messages/{messageId} {
-      // Authenticated users can read messages.
-      // Admin reads any message; students must scope queries by channelId
-      // (enforced client-side — all student subscriptions filter by channelId).
-      allow read: if isAdmin()
-        || (isAuthenticated() && resource.data.channelId != null);
-      
-      // Only Cloud Functions (Admin SDK) can create messages — prevents bypassing
-      // server-side validation (mute checks, moderation, enrollment verification).
-      allow create: if false;
-      
-      // Students can ONLY update reactions and pinnedBy (personal pins)
-      allow update: if isAdmin()
-        || (isAuthenticated()
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['reactions', 'pinnedBy']));
-      
-      allow delete: if isAdmin();
-    }
-
-    // ==========================================
-    // CHAT FLAGS (Moderation)
-    // ==========================================
-    match /chat_flags/{flagId} {
-      // Only admin can read flags
-      allow read: if isAdmin();
-      
-      // System creates flags (via client on message send), admin resolves
-      allow create: if isAuthenticated();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    // ==========================================
-    // CONVERSATIONS (DMs — Teacher-Student only)
-    // ==========================================
-    match /conversations/{convoId} {
-      // Only admin or participants can read conversations
-      allow read: if isAdmin() ||
-        (isAuthenticated() && request.auth.uid in resource.data.participantIds);
-      
-      // Only admin can create or modify conversation metadata
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-      
-      match /messages/{messageId} {
-        // Only participants of the parent conversation can read messages
-        allow read: if isAdmin() ||
-          (isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds);
-        // Authenticated participants can create messages with their own senderId
-        allow create: if isAuthenticated()
-          && validDMMessage()
-          && request.resource.data.senderId == request.auth.uid
-          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds;
-      }
-    }
-
-    // ==========================================
     // EVIDENCE LOCKER
     // ==========================================
     match /evidence/{evidenceId} {
@@ -271,9 +204,6 @@ service cloud.firestore {
       allow read, write: if false; // Admin SDK only
     }
 
-    match /message_cooldowns/{docId} {
-      allow read, write: if false; // Admin SDK only
-    }
 
     // ==========================================
     // PRACTICE PROGRESS (Proctor Bridge)
@@ -476,20 +406,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-
-    // ==========================================
-    // STUDENT GROUPS (Group Chat)
-    // ==========================================
-    match /student_groups/{groupId} {
-      // Admin can read all groups; students can read groups they belong to
-      allow read: if isAdmin() ||
-        (isAuthenticated() && request.auth.uid in resource.data.memberIds);
-
-      // Only admin can create, update, or delete groups
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
 
     // ==========================================
     // BOSS QUESTION BANKS

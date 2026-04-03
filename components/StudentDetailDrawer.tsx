@@ -465,9 +465,6 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             <div>Enrolled: {enrolledClasses.join(', ') || 'None'}</div>
             <div>Last login: {student.lastLoginAt ? new Date(student.lastLoginAt).toLocaleString() : 'Never'}</div>
             <div>Created: {student.createdAt ? new Date(student.createdAt).toLocaleDateString() : '—'}</div>
-            {student.mutedUntil && new Date(student.mutedUntil) > new Date() && (
-              <div className="text-orange-400 font-bold">⚠ Muted until {new Date(student.mutedUntil).toLocaleString()}</div>
-            )}
           </div>
         </div>
       </div>

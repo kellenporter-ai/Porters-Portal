@@ -50,7 +50,6 @@ export const callCraftItem = httpsCallable(functions, 'craftItem');
 export const callAdminUpdateInventory = httpsCallable(functions, 'adminUpdateInventory');
 export const callAdminUpdateEquipped = httpsCallable(functions, 'adminUpdateEquipped');
 export const callSubmitEngagement = httpsCallable(functions, 'submitEngagement');
-export const callSendClassMessage = httpsCallable(functions, 'sendClassMessage');
 export const callUploadQuestionBank = httpsCallable(functions, 'uploadQuestionBank');
 export const callAwardQuestionXP = httpsCallable(functions, 'awardQuestionXP');
 export const callPenalizeWrongAnswer = httpsCallable(functions, 'penalizeWrongAnswer');

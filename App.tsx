@@ -25,7 +25,6 @@ import StreakDisplay from './components/StreakDisplay';
 import RouteSkeleton from './components/RouteSkeleton';
 import { AppDataProvider, useAppData, useAssignments, useClassConfig } from './lib/AppDataContext';
 import { AdminDataProvider, useAdminData } from './lib/AdminDataContext';
-import { ChatProvider, useChat } from './lib/ChatContext';
 import { TAB_TO_PATH, XP_SUB_ROUTES } from './lib/routes';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 
@@ -34,8 +33,6 @@ const TeacherDashboard = lazyWithRetry(() => import('./components/TeacherDashboa
 const UserManagement = lazyWithRetry(() => import('./components/UserManagement'));
 const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'));
 const XPManagement = lazyWithRetry(() => import('./components/XPManagement'));
-const GroupManager = lazyWithRetry(() => import('./components/GroupManager'));
-const Communications = lazyWithRetry(() => import('./components/Communications'));
 const StudentDashboard = lazyWithRetry(() => import('./components/StudentDashboard'));
 const EvidenceLocker = lazyWithRetry(() => import('./components/EvidenceLocker'));
 const Leaderboard = lazyWithRetry(() => import('./components/Leaderboard'));
@@ -152,33 +149,6 @@ const XP_SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
   Object.entries(XP_SUB_ROUTES).map(([name, slug]) => [slug, name])
 );
 
-// ─── Floating overlays (Communications) ───
-const FloatingOverlays: React.FC<{ user: User }> = ({ user }) => {
-  const { assignments, classConfigs, enabledFeatures } = useAppData();
-  const { unreadChannels, markChannelRead, isCommOpen, setIsCommOpen } = useChat();
-  const navigate = useNavigate();
-
-  const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
-
-  return (
-    <FeatureErrorBoundary feature="Floating Tools">
-    <Suspense fallback={null}>
-      {showComm && (
-        <Communications
-          user={user}
-          isOpen={isCommOpen}
-          onClose={() => setIsCommOpen(false)}
-          assignments={assignments}
-          classConfigs={classConfigs}
-          unreadChannels={unreadChannels}
-          onMarkChannelRead={markChannelRead}
-          onOpenResource={(id) => navigate(`/resources/${id}`)}
-        />
-      )}
-    </Suspense>
-    </FeatureErrorBoundary>
-  );
-};
 
 // ─── Admin route wrappers (pull from AdminDataContext) ───
 const DashboardRoute: React.FC = () => {
@@ -202,11 +172,6 @@ const UserManagementRoute: React.FC = () => {
   const { users, whitelistedEmails } = useAdminData();
   const { classConfigs } = useClassConfig();
   return <UserManagement users={users} whitelistedEmails={whitelistedEmails} classConfigs={classConfigs} onWhitelist={async (e, c) => dataService.addToWhitelist(e, c)} />;
-};
-
-const GroupsRoute: React.FC = () => {
-  const { users, availableSections } = useAdminData();
-  return <GroupManager students={users.filter(u => u.role === 'STUDENT')} availableSections={availableSections} fullPage />;
 };
 
 const EnrollmentRoute: React.FC = () => {
@@ -379,10 +344,8 @@ const App: React.FC = () => {
     <ToastProvider>
     <ThemeProvider userSettings={user.settings} onUpdateSettings={handleThemeSettingsUpdate}>
     <AppDataProvider user={user}>
-    <ChatProvider user={user}>
 <>
       <ConnectionStatus />
-      <FloatingOverlays user={user} />
 
       <Routes>
         <Route element={<Layout user={user} onLogout={handleLogout} />}>
@@ -396,7 +359,6 @@ const App: React.FC = () => {
               <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Admin Panel"><AdminPanelRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Lesson Editor"><EditorRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/users" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="User Management"><UserManagementRoute /></FeatureErrorBoundary></Suspense>} />
-              <Route path="/groups" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Groups"><GroupsRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Enrollment"><EnrollmentRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/reports" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Reports"><StudentReportsRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="XP Management"><XPRoute /></FeatureErrorBoundary></Suspense>} />
@@ -505,7 +467,6 @@ const App: React.FC = () => {
         </div>
       )}
     </>
-    </ChatProvider>
     </AppDataProvider>
     </ThemeProvider>
     </ToastProvider>
