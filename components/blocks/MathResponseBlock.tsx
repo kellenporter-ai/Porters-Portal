@@ -351,6 +351,16 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   { display: '\u03A3\u03C4 = I\u03B1', insert: '\u03A3\u03C4 = I\u03B1', title: "Newton's Second Law (Rotation)", category: 'Rotation' },
   { display: 'a = \u03B1r', insert: 'a = \u03B1r', title: 'Tangential Acceleration', category: 'Rotation' },
 
+  // Simple Harmonic Motion
+  { display: 'T\u209B = 2\u03C0\u221A(m/k)', insert: 'T_s = 2\u03C0 sqrt(m/k)', title: 'Period (spring)', category: 'SHM' },
+  { display: 'T\u209A = 2\u03C0\u221A(L/g)', insert: 'T_p = 2\u03C0 sqrt(L/g)', title: 'Period (pendulum)', category: 'SHM' },
+  { display: 'x = A cos(\u03C9t)', insert: 'x = A cos(\u03C9t)', title: 'Position (SHM)', category: 'SHM' },
+  { display: 'v = -A\u03C9 sin(\u03C9t)', insert: 'v = -A\u03C9 sin(\u03C9t)', title: 'Velocity (SHM)', category: 'SHM' },
+  { display: 'a = -\u03C9\u00B2x', insert: 'a = -\u03C9\u00B2x', title: 'Acceleration (SHM)', category: 'SHM' },
+  { display: '\u03C9 = 2\u03C0/T', insert: '\u03C9 = 2\u03C0/T', title: 'Angular Frequency', category: 'SHM' },
+  { display: 'F\u209B = -kx', insert: 'F_s = -kx', title: 'Restoring Force (spring)', category: 'SHM' },
+  { display: 'E = \u00BDkA\u00B2', insert: 'E = (1)/(2) kA^2', title: 'Total Energy (SHM)', category: 'SHM' },
+
   // Waves & Sound
   { display: 'v = f\u03BB', insert: 'v = f\u03BB', title: 'Wave Speed', category: 'Waves' },
   { display: 'T = 1/f', insert: 'T = 1/f', title: 'Period', category: 'Waves' },
