@@ -44,6 +44,7 @@ const EnrollmentCodes = lazyWithRetry(() => import('./components/EnrollmentCodes
 const LessonEditorPage = lazyWithRetry(() => import('./components/LessonEditorPage'));
 const ResourceViewer = lazyWithRetry(() => import('./components/ResourceViewer'));
 const StudentReports = lazyWithRetry(() => import('./components/StudentReports'));
+const GradingPage = lazyWithRetry(() => import('./components/grading/GradingPage'));
 
 const LazyFallback = () => <RouteSkeleton />;
 
@@ -194,6 +195,12 @@ const DashboardRoute: React.FC = () => {
   return <TeacherDashboard users={users} assignments={assignments} submissions={submissions} />;
 };
 
+const GradingRoute: React.FC = () => {
+  const { users, submissions } = useAdminData();
+  const { assignments } = useAssignments();
+  return <GradingPage users={users} assignments={assignments} submissions={submissions} />;
+};
+
 const AdminPanelRoute: React.FC = () => {
   const { rawUsers, submissions } = useAdminData();
   return <AdminPanel assignments={[]} submissions={submissions} users={rawUsers} onCreateAssignment={undefined as never} classConfigs={[]} />;
@@ -305,7 +312,8 @@ const App: React.FC = () => {
   const handleSession = async (firebaseUser: FirebaseUser) => {
     try {
       const userRef = doc(db, 'users', firebaseUser.uid);
-      const whitelistDoc = await getDoc(doc(db, 'allowed_emails', firebaseUser.email || ''));
+      const normalizedEmail = (firebaseUser.email || '').toLowerCase().trim();
+      const whitelistDoc = await getDoc(doc(db, 'allowed_emails', normalizedEmail));
       const tokenResult = await firebaseUser.getIdTokenResult();
       const isAdmin = tokenResult.claims.admin === true;
 
@@ -390,6 +398,9 @@ const App: React.FC = () => {
           <Route element={<RequireAdmin isAdmin={isAdmin} />}>
             <Route element={<AdminLayout />}>
               <Route path="/dashboard" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Teacher Dashboard"><DashboardRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/grading" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Grading"><GradingRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/grading/:assessmentId" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Grading"><GradingRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/grading/:assessmentId/:studentId" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Grading"><GradingRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Admin Panel"><AdminPanelRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Lesson Editor"><EditorRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/users" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="User Management"><UserManagementRoute /></FeatureErrorBoundary></Suspense>} />

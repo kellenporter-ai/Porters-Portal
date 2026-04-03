@@ -6,6 +6,7 @@
 // Admin routes
 export const ADMIN_ROUTES = {
   DASHBOARD: '/dashboard',
+  GRADING: '/grading',
   ADMIN_PANEL: '/admin',
   RESOURCE_EDITOR: '/editor',
   USER_MANAGEMENT: '/users',
@@ -56,6 +57,7 @@ export const XP_SUB_ROUTES: Record<string, string> = {
 export const TAB_TO_PATH: Record<string, string> = {
   // Admin
   'Dashboard': ADMIN_ROUTES.DASHBOARD,
+  'Grading': ADMIN_ROUTES.GRADING,
   'Admin Panel': ADMIN_ROUTES.ADMIN_PANEL,
   'Resource Editor': ADMIN_ROUTES.RESOURCE_EDITOR,
   'User Management': ADMIN_ROUTES.USER_MANAGEMENT,

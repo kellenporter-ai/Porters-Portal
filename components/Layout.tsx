@@ -68,7 +68,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, [user.id, user.settings, dismissCrosBanner]);
 
   // Derive activeTab from URL for nav highlighting
-  const activeTab = PATH_TO_TAB[location.pathname] || '';
+  const activeTab = PATH_TO_TAB[location.pathname]
+    || (location.pathname.startsWith('/grading') ? 'Grading' : '')
+    || '';
 
   // Derived settings with defaults
   const settings: UserSettings = user.settings || {

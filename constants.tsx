@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap, Shield, Brain, Award, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Compass, Swords, Rocket, Store, FileBarChart } from 'lucide-react';
+import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap, Shield, Brain, Award, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Compass, Swords, Rocket, Store, FileBarChart, ClipboardCheck } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -36,6 +36,7 @@ export interface NavItem {
 export const NAVIGATION: NavItem[] = [
   // Admin navigation
   { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, role: 'ADMIN' },
+  { name: 'Grading', icon: <ClipboardCheck className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Admin Panel', icon: <ShieldAlert className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'Resource Editor', icon: <BookOpen className="w-5 h-5" />, role: 'ADMIN' },
   { name: 'User Management', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },

@@ -417,6 +417,20 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 lg:gap-5 xl:gap-6 2xl:gap-8 h-full pb-6 lg:pb-8 xl:pb-10 2xl:pb-12">
+      {/* Mobile class selector — visible below lg where the sidebar selector is hidden */}
+      {enrolledClasses.length > 1 && (
+        <div className="lg:hidden relative">
+          <select
+            value={activeClass}
+            onChange={handleClassChange}
+            aria-label="Switch active class"
+            className="w-full bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-bold py-2.5 px-4 rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
+          >
+            {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
+        </div>
+      )}
 
       {/* ANNOUNCEMENTS BANNER */}
       {visibleAnnouncements.length > 0 && (

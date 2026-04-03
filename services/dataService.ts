@@ -1079,7 +1079,12 @@ export const dataService = {
           
           const email = snap.data().email;
           if (email) {
-             await setDoc(doc(db, 'allowed_emails', email), { classType });
+             const normalizedEmail = email.toLowerCase().trim();
+             const whitelistRef = doc(db, 'allowed_emails', normalizedEmail);
+             const existing = await getDoc(whitelistRef);
+             const currentTypes: string[] = existing.exists() ? (existing.data()?.classTypes || [existing.data()?.classType].filter(Boolean)) : [];
+             const mergedTypes = Array.from(new Set([...currentTypes, classType]));
+             await setDoc(whitelistRef, { classType, classTypes: mergedTypes }, { merge: true });
           }
       }
     } catch (error) {
