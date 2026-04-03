@@ -369,7 +369,7 @@ const TEMPLATES: { display: string; insert: string; title: string; category: str
   { display: 'T\u209A = 2\u03C0\u221A(L/g)', insert: 'T_p = 2\u03C0 sqrt(L/g)', title: 'Period (pendulum)', category: 'SHM' },
   { display: 'x = A cos(\u03C9t)', insert: 'x = A cos(\u03C9t)', title: 'Position (SHM)', category: 'SHM' },
   { display: 'v = -A\u03C9 sin(\u03C9t)', insert: 'v = -A\u03C9 sin(\u03C9t)', title: 'Velocity (SHM)', category: 'SHM' },
-  { display: 'a = -\u03C9\u00B2x', insert: 'a = -\u03C9\u00B2x', title: 'Acceleration (SHM)', category: 'SHM' },
+  { display: 'a = -\u03C9\u00B2A cos(\u03C9t)', insert: 'a = -\u03C9\u00B2 A cos(\u03C9t)', title: 'Acceleration (SHM)', category: 'SHM' },
   { display: '\u03C9 = 2\u03C0/T', insert: '\u03C9 = 2\u03C0/T', title: 'Angular Frequency', category: 'SHM' },
   { display: 'F\u209B = -kx', insert: 'F_s = -kx', title: 'Restoring Force (spring)', category: 'SHM' },
   { display: 'E = \u00BDkA\u00B2', insert: 'E = (1)/(2) kA^2', title: 'Total Energy (SHM)', category: 'SHM' },
