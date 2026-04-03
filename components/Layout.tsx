@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, MessageSquare, Bug, LineChart, Music } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, MessageSquare, Bug, Music } from 'lucide-react';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
@@ -541,16 +541,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               >
                 <Music className="w-4 h-4" />
               </button>
-              {enabledFeatures.physicsTools && (
-                <button
-                  onClick={() => window.dispatchEvent(new CustomEvent('porters:openGrapher'))}
-                  className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                  aria-label="Grapher"
-                  title="Grapher"
-                >
-                  <LineChart className="w-4 h-4" />
-                </button>
-              )}
             </div>
           ) : (
             <div className="p-3 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl">
@@ -604,16 +594,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 >
                   <Music className="w-4 h-4" />
                 </button>
-                {enabledFeatures.physicsTools && (
-                  <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('porters:openGrapher'))}
-                    className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                    aria-label="Grapher"
-                    title="Grapher"
-                  >
-                    <LineChart className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             </div>
           )}

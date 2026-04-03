@@ -31,7 +31,6 @@ export interface ClassConfig {
   features: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    physicsTools: boolean;
     communications: boolean;
     dungeons: boolean;
     pvpArena: boolean;

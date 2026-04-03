@@ -58,7 +58,6 @@ interface StudentDashboardProps {
   enabledFeatures: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    physicsTools: boolean;
     communications: boolean;
     dungeons: boolean;
     pvpArena: boolean;

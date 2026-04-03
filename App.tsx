@@ -35,7 +35,6 @@ const UserManagement = lazyWithRetry(() => import('./components/UserManagement')
 const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'));
 const XPManagement = lazyWithRetry(() => import('./components/XPManagement'));
 const GroupManager = lazyWithRetry(() => import('./components/GroupManager'));
-const PhysicsTools = lazyWithRetry(() => import('./components/PhysicsTools'));
 const Communications = lazyWithRetry(() => import('./components/Communications'));
 const StudentDashboard = lazyWithRetry(() => import('./components/StudentDashboard'));
 const EvidenceLocker = lazyWithRetry(() => import('./components/EvidenceLocker'));
@@ -153,24 +152,17 @@ const XP_SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
   Object.entries(XP_SUB_ROUTES).map(([name, slug]) => [slug, name])
 );
 
-// ─── Floating overlays (PhysicsTools + Communications) ───
+// ─── Floating overlays (Communications) ───
 const FloatingOverlays: React.FC<{ user: User }> = ({ user }) => {
   const { assignments, classConfigs, enabledFeatures } = useAppData();
   const { unreadChannels, markChannelRead, isCommOpen, setIsCommOpen } = useChat();
   const navigate = useNavigate();
 
-  const showTools = user.role === UserRole.ADMIN || enabledFeatures.physicsTools;
   const showComm = user.role === UserRole.ADMIN || enabledFeatures.communications;
 
   return (
     <FeatureErrorBoundary feature="Floating Tools">
     <Suspense fallback={null}>
-      {showTools && (
-        <PhysicsTools
-          onToggleChat={showComm ? () => setIsCommOpen(!isCommOpen) : undefined}
-          hasUnreadChat={unreadChannels.size > 0}
-        />
-      )}
       {showComm && (
         <Communications
           user={user}
