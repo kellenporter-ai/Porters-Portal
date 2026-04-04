@@ -93,26 +93,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     return map;
   }, [bucketProfiles]);
 
-  // Bucket distribution for overview (includes ALL students)
-  const bucketDistribution = useMemo(() => {
-    const counts: Record<TelemetryBucket, number> = {
-      THRIVING: 0, ON_TRACK: 0, COASTING: 0, SPRINTING: 0,
-      STRUGGLING: 0, DISENGAGING: 0, INACTIVE: 0, COPYING: 0,
-    };
-    // Deduplicate: count each student once (across classes, take first)
-    const seen = new Set<string>();
-    for (const bp of bucketProfiles) {
-      if (seen.has(bp.studentId)) continue;
-      seen.add(bp.studentId);
-      if (counts[bp.bucket] !== undefined) counts[bp.bucket]++;
-    }
-    // Students without a bucket profile default to INACTIVE
-    for (const s of students) {
-      if (!seen.has(s.id)) counts.INACTIVE++;
-    }
-    return counts;
-  }, [bucketProfiles, students]);
-  
   // Stats
   const { totalStudents, avgTime, totalResourcesAccessed, totalXP } = useMemo(() => {
     const total = students.length;
@@ -177,18 +157,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   }, [students, selectedIds]);
 
   
-  const StatCard = React.memo(({ label, value, icon, color }: { label: string, value: string | number, icon: React.ReactNode, color: string }) => (
-    <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] p-6 rounded-3xl relative overflow-hidden group hover:border-[var(--border-strong)] transition-all duration-300" aria-label={label}>
-      <div className={`absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity ${color}`}>
-        {icon}
-      </div>
-      <div className="relative z-10">
-        <div className="text-4xl font-bold text-[var(--text-primary)] mb-2">{value}</div>
-        <div className="text-sm font-medium text-[var(--text-tertiary)] uppercase tracking-wider">{label}</div>
-      </div>
-      <div className={`absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r ${color}`}></div>
-    </div>
-  ));
 
 
   const formatLastSeen = (dateStr?: string) => {
@@ -231,11 +199,31 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       <div className={adminTab === 'dashboard' ? 'space-y-6' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
       <FeatureErrorBoundary feature="Dashboard Overview">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard label="Total Students" value={totalStudents} icon={<Users className="w-12 h-12" />} color="from-blue-500 to-cyan-400" />
-          <StatCard label="Total XP Awarded" value={totalXP.toLocaleString()} icon={<Zap className="w-12 h-12" />} color="from-purple-500 to-pink-500" />
-          <StatCard label="Resources Viewed" value={totalResourcesAccessed} icon={<FileText className="w-12 h-12" />} color="from-emerald-500 to-teal-400" />
-          <StatCard label="Avg Active Time" value={`${avgTime}m`} icon={<Clock className="w-12 h-12" />} color="from-amber-500 to-orange-400" />
+      {/* STAT STRIP */}
+      <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl px-6 flex items-center gap-6 h-12" role="group" aria-label="Class overview statistics">
+        <div className="flex items-center gap-2 shrink-0">
+          <Users className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+          <span className="text-lg font-bold text-[var(--text)]">{totalStudents}</span>
+          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Students</span>
+        </div>
+        <div className="w-px h-5 bg-[var(--border)] shrink-0" />
+        <div className="flex items-center gap-2 shrink-0">
+          <Zap className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+          <span className="text-lg font-bold text-[var(--text)]">{totalXP.toLocaleString()}</span>
+          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">XP Awarded</span>
+        </div>
+        <div className="w-px h-5 bg-[var(--border)] shrink-0" />
+        <div className="flex items-center gap-2 shrink-0">
+          <FileText className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+          <span className="text-lg font-bold text-[var(--text)]">{totalResourcesAccessed}</span>
+          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Resources Viewed</span>
+        </div>
+        <div className="w-px h-5 bg-[var(--border)] shrink-0" />
+        <div className="flex items-center gap-2 shrink-0">
+          <Clock className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+          <span className="text-lg font-bold text-[var(--text)]">{avgTime}m</span>
+          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Avg Active Time</span>
+        </div>
       </div>
 
       {/* EARLY WARNING PANEL */}
@@ -258,62 +246,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           setSelectedStudentId(student.id);
         }}
       />
-
-      {/* TELEMETRY BUCKET DISTRIBUTION */}
-      {students.length > 0 && (
-        <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-              <Activity className="w-5 h-5 text-cyan-400" aria-hidden="true" />
-              Student Engagement Buckets
-            </h3>
-            <span className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">
-              {students.length} student{students.length !== 1 ? 's' : ''} ({bucketProfiles.length} profiled)
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(bucket => {
-              const meta = BUCKET_META[bucket];
-              const count = bucketDistribution[bucket];
-              return (
-                <div key={bucket} className={`border rounded-2xl p-3 ${meta.borderColor} ${meta.bgColor} transition hover:scale-[1.02]`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
-                    <span className="text-lg font-bold text-[var(--text-primary)]">{count}</span>
-                  </div>
-                  <p className="text-[9px] text-[var(--text-tertiary)] leading-tight">{meta.description}</p>
-                </div>
-              );
-            })}
-          </div>
-          {/* At-a-glance bar */}
-          {(() => {
-            const total = Object.values(bucketDistribution).reduce((a, b) => a + b, 0);
-            if (total === 0) return null;
-            return (
-              <div className="mt-4 flex h-3 rounded-full overflow-hidden bg-[var(--surface-glass)]">
-                {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(bucket => {
-                  const pct = (bucketDistribution[bucket] / total) * 100;
-                  if (pct === 0) return null;
-                  const colorMap: Record<string, string> = {
-                    THRIVING: 'bg-emerald-500', ON_TRACK: 'bg-blue-500', COASTING: 'bg-yellow-500',
-                    SPRINTING: 'bg-orange-500', STRUGGLING: 'bg-purple-500', DISENGAGING: 'bg-red-500',
-                    INACTIVE: 'bg-gray-500', COPYING: 'bg-rose-500',
-                  };
-                  return (
-                    <div
-                      key={bucket}
-                      className={`${colorMap[bucket] || 'bg-gray-500'} transition-all`}
-                      style={{ width: `${pct}%` }}
-                      title={`${BUCKET_META[bucket].label}: ${bucketDistribution[bucket]} (${Math.round(pct)}%)`}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-      )}
 
       {/* ANNOUNCEMENTS */}
       <div>
