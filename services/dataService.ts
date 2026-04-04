@@ -369,6 +369,48 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'assessmentSessions', assignmentId }));
   },
 
+  /**
+   * Activity Monitor — real-time feed of all open (unused) assessment sessions started in the
+   * last 4 hours, across every assignment.  Keyed by userId so the UI can join against the
+   * assignments list for display names / titles.
+   *
+   * NOTE: This query filters on two fields (used, startedAt).  Firestore requires a composite
+   * index for this combination.  If the query throws a "requires an index" error in the console,
+   * create a composite index on `assessment_sessions`:
+   *   - Field 1: used      (Ascending)
+   *   - Field 2: startedAt (Ascending)
+   * The console error will include a direct link to create it automatically.
+   *
+   * Schema observation: session docs contain { userId, assignmentId, startedAt (Timestamp), used }.
+   * There is no `assignmentTitle` field on the session document — the UI must join against the
+   * assignments list using `assignmentId` to resolve a human-readable title.
+   */
+  subscribeToActiveAssessmentSessions: (
+    callback: (sessions: Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>) => void
+  ): (() => void) => {
+    const cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    const q = query(
+      collection(db, 'assessment_sessions'),
+      where('used', '==', false),
+      where('startedAt', '>=', cutoff),
+    );
+    return onSnapshot(q, (snapshot) => {
+      const map = new Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>();
+      snapshot.docs.forEach(d => {
+        const data = d.data();
+        const userId = data.userId as string;
+        if (!userId) return;
+        map.set(userId, {
+          assignmentId: data.assignmentId as string,
+          // assignmentTitle is not stored on the session doc; the UI should join via assignmentId.
+          assignmentTitle: (data.assignmentTitle as string) || '',
+          startedAt: data.startedAt?.toDate?.()?.toISOString?.() || data.startedAt || '',
+        });
+      });
+      callback(map);
+    }, (error: unknown) => reportError(error, { subscription: 'activeAssessmentSessions' }));
+  },
+
   /** Student-scoped submissions — avoids Firestore permission error on unfiltered query */
   subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void, maxResults = 50) => {
     // Only filter by userId — no orderBy to avoid composite index requirement
