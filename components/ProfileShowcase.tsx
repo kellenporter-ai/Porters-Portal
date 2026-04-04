@@ -8,7 +8,7 @@ import { getClassProfile } from '../lib/classProfile';
 import OperativeAvatar from './dashboard/OperativeAvatar';
 import Avatar3D from './dashboard/Avatar3D';
 import ProfileFrame from './dashboard/ProfileFrame';
-import { Shield, Zap, Trophy, Star, Target, Flame, Swords, GraduationCap, Copy, Check } from 'lucide-react';
+import { Shield, Zap, Trophy, Star, Target, Flame, Copy, Check } from 'lucide-react';
 import { useTheme } from '../lib/ThemeContext';
 
 interface ProfileShowcaseProps {
@@ -247,16 +247,6 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   <Flame className="w-3.5 h-3.5 text-orange-400" />
                   <span className="text-[var(--text-tertiary)]">Engagement Streak:</span>
                   <span className="text-orange-400 font-bold">{gam.engagementStreak || 0} weeks</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Swords className="w-3.5 h-3.5 text-red-400" />
-                  <span className="text-[var(--text-tertiary)]">Quests Completed:</span>
-                  <span className="text-red-400 font-bold">{gam.completedQuests?.length || 0}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <GraduationCap className="w-3.5 h-3.5 text-green-400" />
-                  <span className="text-[var(--text-tertiary)]">Tutoring Sessions:</span>
-                  <span className="text-green-400 font-bold">{gam.tutoringSessionsCompleted || 0}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />

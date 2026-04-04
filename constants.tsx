@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, GraduationCap, Shield, Brain, Award, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Compass, Swords, Rocket, Store, FileBarChart, ClipboardCheck } from 'lucide-react';
+import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, Shield, Brain, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Swords, Store, FileBarChart, ClipboardCheck } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -45,25 +45,16 @@ export const NAVIGATION: NavItem[] = [
   { name: 'XP Command', icon: <Target className="w-5 h-5" />, role: 'ADMIN', children: [
     { name: 'Operatives', icon: <Shield className="w-4 h-4" /> },
     { name: 'XP Protocols', icon: <Zap className="w-4 h-4" /> },
-    { name: 'Missions', icon: <Award className="w-4 h-4" /> },
-    { name: 'Mission Control', icon: <Briefcase className="w-4 h-4" /> },
     { name: 'Boss Ops', icon: <Brain className="w-4 h-4" /> },
-    { name: 'Tutoring', icon: <GraduationCap className="w-4 h-4" /> },
     { name: 'Analytics', icon: <PieChart className="w-4 h-4" /> },
-    { name: 'Dungeon Ops', icon: <Compass className="w-4 h-4" /> },
-    { name: 'Idle Missions', icon: <Rocket className="w-4 h-4" /> },
   ]},
   // Student navigation — ungrouped
   { name: 'Home', icon: <Home className="w-5 h-5" />, role: 'STUDENT' },
   // Learning group
   { name: 'Resources', icon: <Layers className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
   { name: 'Calendar', icon: <Calendar className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
-  { name: 'Tutoring', icon: <GraduationCap className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
-  { name: 'Deploy', icon: <Rocket className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
   // Operations group
   { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Missions', icon: <Target className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Dungeons', icon: <Compass className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
   { name: 'Arena', icon: <Swords className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
   { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
   { name: 'Flux Shop', icon: <Store className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },

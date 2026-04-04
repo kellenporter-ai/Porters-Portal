@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Assignment, ClassConfig, User, UserRole, XPEvent, Quest } from '../types';
+import { Assignment, ClassConfig, User, UserRole, XPEvent } from '../types';
 import { dataService } from '../services/dataService';
 import { reportError } from './errorReporting';
 
 // ─── Types ───
 
-export type EnabledFeatures = { evidenceLocker: boolean; leaderboard: boolean; dungeons: boolean; pvpArena: boolean; bossFights: boolean };
+export type EnabledFeatures = { evidenceLocker: boolean; leaderboard: boolean; pvpArena: boolean; bossFights: boolean };
 
 interface AssignmentData {
   assignments: Assignment[];
@@ -14,7 +14,6 @@ interface AssignmentData {
 
 interface GameData {
   xpEvents: XPEvent[];
-  quests: Quest[];
 }
 
 interface ClassConfigData {
@@ -26,10 +25,10 @@ interface AppData extends AssignmentData, GameData, ClassConfigData {}
 
 // ─── Defaults ───
 
-const DEFAULT_FEATURES: EnabledFeatures = { evidenceLocker: true, leaderboard: true, dungeons: true, pvpArena: true, bossFights: true };
+const DEFAULT_FEATURES: EnabledFeatures = { evidenceLocker: true, leaderboard: true, pvpArena: true, bossFights: true };
 
 const EMPTY_ASSIGNMENT_DATA: AssignmentData = { assignments: [], loading: true };
-const EMPTY_GAME_DATA: GameData = { xpEvents: [], quests: [] };
+const EMPTY_GAME_DATA: GameData = { xpEvents: [] };
 const EMPTY_CLASS_CONFIG_DATA: ClassConfigData = { classConfigs: [], enabledFeatures: DEFAULT_FEATURES };
 
 // ─── Contexts ───
@@ -69,7 +68,6 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classConfigs, setClassConfigs] = useState<ClassConfig[]>([]);
   const [xpEvents, setXpEvents] = useState<XPEvent[]>([]);
-  const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,14 +80,11 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
     try { unsubs.push(dataService.subscribeToClassConfigs(setClassConfigs)); }
     catch (e) { reportError(e, { subscription: 'classConfigs' }); }
 
-    // XP events & quests may fail for permission reasons — don't block other subscriptions.
-    // Students only need active events/quests; admins get the full list for management.
+    // XP events may fail for permission reasons — don't block other subscriptions.
+    // Students only need active events; admins get the full list for management.
     const isStudent = user.role === UserRole.STUDENT;
     try { unsubs.push(dataService.subscribeToXPEvents(setXpEvents, isStudent)); }
     catch (e) { reportError(e, { subscription: 'xpEvents' }); }
-
-    try { unsubs.push(dataService.subscribeToQuests(setQuests, isStudent)); }
-    catch (e) { reportError(e, { subscription: 'quests' }); }
 
     return () => unsubs.forEach(u => u());
   }, [user.id, user.isWhitelisted, user.role]);
@@ -103,7 +98,7 @@ export const AppDataProvider: React.FC<{ user: User; children: React.ReactNode }
   }, [user.role, user.classType, classConfigs]);
 
   const assignmentValue = useMemo(() => ({ assignments, loading }), [assignments, loading]);
-  const gameValue = useMemo(() => ({ xpEvents, quests }), [xpEvents, quests]);
+  const gameValue = useMemo(() => ({ xpEvents }), [xpEvents]);
   const configValue = useMemo(() => ({ classConfigs, enabledFeatures }), [classConfigs, enabledFeatures]);
 
   return (

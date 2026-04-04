@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { User, Submission, Assignment, StudentBucketProfile, TelemetryBucket } from '../types';
-import { X, Zap, Clock, BookOpen, Shield, Crosshair, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
+import { X, Zap, Clock, BookOpen, Shield, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { BUCKET_META } from '../lib/telemetry';
@@ -23,8 +23,6 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
   const rankDetails = getRankDetails(level);
   const playerStats = calculatePlayerStats(student);
   const enrolledClasses = student.enrolledClasses || (student.classType ? [student.classType] : []);
-  const completedQuests = student.gamification?.completedQuests?.length || 0;
-  const activeQuests = student.gamification?.activeQuests?.filter(q => q.status === 'ACCEPTED' || q.status === 'DEPLOYED').length || 0;
 
   // Per-class breakdown
   const classBreakdown = useMemo(() => {
@@ -200,12 +198,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <Crosshair className="w-5 h-5 text-orange-400 mx-auto mb-1" />
-              <div className="text-lg font-bold text-[var(--text-primary)]">{completedQuests}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Missions</div>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
               <Package className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{currency}</div>
@@ -437,26 +430,6 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               </div>
             )}
           </div>
-
-          {/* Active Quests */}
-          {activeQuests > 0 && (
-            <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4">
-              <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">Active Missions</h4>
-              <div className="space-y-2">
-                {student.gamification?.activeQuests?.filter(q => q.status === 'ACCEPTED' || q.status === 'DEPLOYED').map(q => (
-                  <div key={q.questId} className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0">
-                    <div className="flex items-center gap-2">
-                      <Crosshair className={`w-3.5 h-3.5 ${q.status === 'DEPLOYED' ? 'text-yellow-400' : 'text-blue-400'}`} />
-                      <span className="text-xs text-[var(--text-primary)]">{q.questId}</span>
-                    </div>
-                    <span className={`text-[10px] font-bold uppercase ${q.status === 'DEPLOYED' ? 'text-yellow-400' : 'text-blue-400'}`}>
-                      {q.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Meta */}
           <div className="text-[10px] text-[var(--text-muted)] space-y-1 pb-4">

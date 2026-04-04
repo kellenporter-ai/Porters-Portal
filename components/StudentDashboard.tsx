@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Assignment, Submission, RPGItem, Quest, ClassConfig } from '../types';
+import { User, Assignment, Submission, RPGItem, ClassConfig } from '../types';
 import { ChevronRight, Microscope, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye, AlertTriangle, AlertCircle } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
@@ -14,7 +14,6 @@ import { reportError } from '../lib/errorReporting';
 import { useIsMounted } from '../lib/useIsMounted';
 import { useGameData } from '../lib/AppDataContext';
 import { useToast } from './ToastProvider';
-import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
 import { Announcement } from '../types';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
@@ -32,7 +31,6 @@ const TAB_KEY_TO_NAV: Record<string, string> = Object.fromEntries(
   Object.entries(STUDENT_TAB_MAP).map(([navName, tabKey]) => [tabKey, navName])
 );
 const HomeTab = lazyWithRetry(() => import('./dashboard/HomeTab'));
-const MissionsTab = lazyWithRetry(() => import('./dashboard/MissionsTab'));
 const ResourcesTab = lazyWithRetry(() => import('./dashboard/ResourcesTab'));
 const AgentLoadoutTab = lazyWithRetry(() => import('./dashboard/AgentLoadoutTab'));
 const BadgesTab = lazyWithRetry(() => import('./dashboard/BadgesTab'));
@@ -42,13 +40,10 @@ const SkillTreePanel = lazyWithRetry(() => import('./xp/SkillTreePanel'));
 const FortuneWheel = lazyWithRetry(() => import('./xp/FortuneWheel'));
 const BossEncounterPanel = lazyWithRetry(() => import('./xp/BossEncounterPanel'));
 const BossQuizPanel = lazyWithRetry(() => import('./xp/BossQuizPanel'));
-const TutoringPanel = lazyWithRetry(() => import('./xp/TutoringPanel'));
-const DungeonPanel = lazyWithRetry(() => import('./xp/DungeonPanel'));
 const ArenaPanel = lazyWithRetry(() => import('./xp/ArenaPanel'));
-const IdleMissionsPanel = lazyWithRetry(() => import('./xp/IdleMissionsPanel'));
 const FluxShopPanel = lazyWithRetry(() => import('./xp/FluxShopPanel'));
 
-type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY';
+type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'ARENA';
 
 interface StudentDashboardProps {
   user: User;
@@ -58,7 +53,6 @@ interface StudentDashboardProps {
   enabledFeatures: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    dungeons: boolean;
     pvpArena: boolean;
     bossFights: boolean;
   };
@@ -69,13 +63,12 @@ interface StudentDashboardProps {
 
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
   const toast = useToast();
-  const { confirm } = useConfirm();
   const isMounted = useIsMounted();
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   // Initialize activeClass from user, but DON'T snap back on every classType change.
   // For multi-class students, activeClass is the local view selector.
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
-  const { xpEvents, quests: allQuests } = useGameData();
+  const { xpEvents } = useGameData();
   const reducedMotion = useReducedMotion();
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -85,7 +78,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     const safeImport = (loader: () => Promise<unknown>) => loader().catch(() => {});
     const preload = () => {
       safeImport(() => import('./dashboard/HomeTab'));
-      safeImport(() => import('./dashboard/MissionsTab'));
       safeImport(() => import('./dashboard/ResourcesTab'));
       safeImport(() => import('./dashboard/AgentLoadoutTab'));
       safeImport(() => import('./dashboard/BadgesTab'));
@@ -93,13 +85,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       safeImport(() => import('./dashboard/CalendarView'));
       safeImport(() => import('./xp/SkillTreePanel'));
       safeImport(() => import('./xp/FortuneWheel'));
-      safeImport(() => import('./xp/DungeonPanel'));
       safeImport(() => import('./xp/ArenaPanel'));
       safeImport(() => import('./xp/FluxShopPanel'));
       safeImport(() => import('./xp/BossEncounterPanel'));
       safeImport(() => import('./xp/BossQuizPanel'));
-      safeImport(() => import('./xp/TutoringPanel'));
-      safeImport(() => import('./xp/IdleMissionsPanel'));
     };
     if ('requestIdleCallback' in window) {
       const id = requestIdleCallback(preload, { timeout: 5000 });
@@ -148,7 +137,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
-  const [questActionLoading, setQuestActionLoading] = useState<string | null>(null);
 
   // Guard against duplicate level-up triggers from rapid re-renders
   const levelUpTriggeredRef = React.useRef(false);
@@ -184,22 +172,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       return true;
     }) || null;
   }, [xpEvents, activeClass, user.classSections, user.section]);
-
-  const availableQuests = useMemo(() => {
-    const myClasses = user.enrolledClasses || (user.classType ? [user.classType] : []);
-    return allQuests.filter(q => {
-      if (!q.isActive) return false;
-      const now = new Date();
-      if (q.startsAt && new Date(q.startsAt) > now) return false;
-      if (q.expiresAt && new Date(q.expiresAt) < now) return false;
-      if (q.targetClass && !myClasses.includes(q.targetClass)) return false;
-      if (q.targetSections?.length) {
-        const questSection = user.classSections?.[q.targetClass || activeClass] || user.section || '';
-        if (!q.targetSections.includes(questSection)) return false;
-      }
-      return true;
-    });
-  }, [allQuests, user.enrolledClasses, user.classType, user.classSections, user.section, activeClass]);
 
   useEffect(() => {
     try {
@@ -366,52 +338,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
           toast.error('Could not switch class. Check your connection and try again.');
       }
   }, [user.id, activeClass, toast]);
-
-  // --- QUEST LOGIC ---
-  const activeQuests = user.gamification?.activeQuests || [];
-  const completedQuests = user.gamification?.completedQuests || [];
-
-  const myAcceptedQuests = useMemo(() =>
-    availableQuests.filter(q => activeQuests.some(aq => aq.questId === q.id)),
-    [availableQuests, activeQuests]
-  );
-  const newQuests = useMemo(() =>
-    availableQuests.filter(q =>
-      !activeQuests.some(aq => aq.questId === q.id) &&
-      !completedQuests.includes(q.id)
-    ),
-    [availableQuests, activeQuests, completedQuests]
-  );
-
-  const handleAcceptQuest = useCallback(async (quest: Quest) => {
-      if (questActionLoading) return;
-      setQuestActionLoading(quest.id);
-      try {
-          await dataService.acceptQuest(user.id, quest.id);
-          sfx.questAccept();
-          toast.success(`Contract accepted: ${quest.title}`);
-      } catch {
-          toast.error('Could not accept this contract. It may no longer be available.');
-      } finally {
-          setQuestActionLoading(null);
-      }
-  }, [user.id, toast, questActionLoading]);
-
-  const handleDeployQuest = useCallback(async (quest: Quest) => {
-      if (questActionLoading) return;
-      const isManual = quest.type === 'CUSTOM';
-      if(!await confirm({ message: isManual ? "Submit quest for manual HQ verification?" : "Deploy agent for skill check? This will calculate your success probability based on current gear.", confirmLabel: isManual ? "Submit" : "Deploy", variant: "info" })) return;
-      setQuestActionLoading(quest.id);
-      try {
-          await dataService.deployMission(user.id, quest);
-          sfx.questDeploy();
-          toast.info('Mission deployed. Awaiting verification.');
-      } catch {
-          toast.error('Deployment failed.');
-      } finally {
-          setQuestActionLoading(null);
-      }
-  }, [user.id, confirm, toast, questActionLoading]);
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 lg:gap-5 xl:gap-6 2xl:gap-8 h-full pb-6 lg:pb-8 xl:pb-10 2xl:pb-12">
@@ -616,29 +542,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        submissions={submissions}
                        activeClass={activeClass}
                        practiceCompletion={practiceCompletion}
-                       availableQuests={availableQuests}
-                       activeQuests={activeQuests}
-                       completedQuests={completedQuests}
                        activeEvent={activeEvent}
                        onNavigate={onNavigate}
                        onStartAssignment={onStartAssignment}
                        userSection={user.section}
                        userClassSections={user.classSections}
-                   />
-                   </React.Suspense>
-                 </FeatureErrorBoundary>
-             )}
-
-             {activeTab === 'MISSIONS' && (
-                 <FeatureErrorBoundary feature="Missions">
-                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
-                   <MissionsTab
-                       newQuests={newQuests}
-                       myAcceptedQuests={myAcceptedQuests}
-                       activeQuests={activeQuests}
-                       onAcceptQuest={handleAcceptQuest}
-                       onDeployQuest={handleDeployQuest}
-                       questActionLoading={questActionLoading}
                    />
                    </React.Suspense>
                  </FeatureErrorBoundary>
@@ -732,20 +640,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  </div>
              )}
 
-             {activeTab === 'TUTORING' && (
-                 <div key="tutoring" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <FeatureErrorBoundary feature="Tutoring">
-                       <React.Suspense fallback={<GamificationSkeleton />}>
-                       <TutoringPanel
-                           userId={user.id}
-                           userName={user.name}
-                           classType={activeClass}
-                       />
-                       </React.Suspense>
-                     </FeatureErrorBoundary>
-                 </div>
-             )}
-
              {activeTab === 'INTEL' && (
                  <div key="intel" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Intel Dossier">
@@ -784,16 +678,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  </FeatureErrorBoundary>
              )}
 
-             {activeTab === 'DUNGEONS' && enabledFeatures.dungeons && (
-                 <div key="dungeons" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <FeatureErrorBoundary feature="Dungeons">
-                       <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
-                       <DungeonPanel userId={user.id} classType={activeClass} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} selectedCharacterModel={user.gamification?.selectedCharacterModel} />
-                       </React.Suspense>
-                     </FeatureErrorBoundary>
-                 </div>
-             )}
-
              {activeTab === 'ARENA' && enabledFeatures.pvpArena && (
                  <div key="arena" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Arena">
@@ -804,15 +688,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  </div>
              )}
 
-             {activeTab === 'DEPLOY' && (
-                 <div key="deploy" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <FeatureErrorBoundary feature="Idle Missions">
-                       <React.Suspense fallback={<GamificationSkeleton />}>
-                       <IdleMissionsPanel userId={user.id} classType={activeClass} />
-                       </React.Suspense>
-                     </FeatureErrorBoundary>
-                 </div>
-             )}
            </div>
           </div>
       </main>

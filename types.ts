@@ -31,7 +31,6 @@ export interface ClassConfig {
   features: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    dungeons: boolean;
     pvpArena: boolean;
     bossFights: boolean;
   };
@@ -306,14 +305,6 @@ export interface User {
     engagementStreak?: number; // Consecutive weeks of engagement
     lastStreakWeek?: string; // ISO week ID of last engagement
     dismissedAnnouncements?: string[]; // IDs of dismissed announcements
-    activeQuests?: {
-        questId: string;
-        status: 'ACCEPTED' | 'DEPLOYED' | 'COMPLETED' | 'FAILED';
-        acceptedAt: string;
-        deploymentRoll?: number; // The result of their skill check
-    }[];
-    completedQuests?: string[]; // Permanent record of completed mission IDs
-
     // === GEM INVENTORY ===
     gemsInventory?: ItemGem[]; // Unslotted gems available for socketing
 
@@ -351,15 +342,9 @@ export interface User {
     rerollTokens?: number; // Free reforge tokens
     consumablePurchases?: { [dateItemKey: string]: number }; // "2026-03-04_xp_boost_1h" → count
 
-    // === GROUP QUESTS ===
-    partyId?: string; // Current quest party
-
     // === BOSS ENCOUNTERS ===
     bossDamageDealt?: { [bossId: string]: number };
 
-    // === PEER TUTORING ===
-    tutoringXpEarned?: number;
-    tutoringSessionsCompleted?: number;
   };
 }
 
@@ -573,41 +558,6 @@ export interface XPEvent {
   targetClass?: string;
   expiresAt?: string | null;
   scheduledAt?: string | null; // ISO date — deploy at this time; null/undefined = immediate
-  targetSections?: string[];
-}
-
-export interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  xpReward: number;
-  isActive: boolean;
-  type: 'ENGAGEMENT' | 'REVIEW_QUESTIONS' | 'STUDY_MATERIAL' | 'SKILL_CHECK' | 'CUSTOM';
-  startsAt?: string | null; // ISO String — quest hidden until this time
-  expiresAt?: string | null; // ISO String
-  
-  // Advanced Rewards
-  fluxReward?: number;
-  itemRewardRarity?: ItemRarity | null; // Guarantees 1 item of this rarity + 1 random
-  customItemRewardId?: string | null;   // ID of a CustomItem from the library to grant on completion
-
-  // Skill Check Mechanics
-  statRequirements?: {
-    tech?: number;
-    focus?: number;
-    analysis?: number;
-    charisma?: number;
-  };
-  rollDieSides?: number; // e.g. 20 for D20. If 0, generic fail.
-  
-  // Flavor
-  consequenceText?: string | null;
-  
-  // Multi-user
-  isGroupQuest?: boolean;
-  minPlayers?: number;
-  maxPlayers?: number;
-  targetClass?: string; // Class restriction for quest
   targetSections?: string[];
 }
 
@@ -1011,112 +961,6 @@ export const BOSS_PARTICIPATION_MIN_ATTEMPTS = 5;
 export const BOSS_PARTICIPATION_MIN_CORRECT = 1;
 
 // ========================================
-// DUNGEON EXPEDITIONS
-// ========================================
-
-export type DungeonRoomType = 'COMBAT' | 'PUZZLE' | 'BOSS' | 'REST' | 'TREASURE';
-
-export interface DungeonRoom {
-  id: string;
-  name: string;
-  description: string;
-  type: DungeonRoomType;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  questions?: BossQuizQuestion[];     // Reuse boss quiz question format
-  enemyHp?: number;                   // For COMBAT/BOSS rooms
-  enemyDamage?: number;               // Damage on wrong answer
-  enemyName?: string;                 // Name of the enemy
-  enemyAppearance?: BossAppearance;   // Reuse boss visual system
-  isBonusRoom?: boolean;              // Optional harder room for bonus loot
-  loot?: BossLootEntry[];             // Room-specific drops
-  healAmount?: number;                // For REST rooms — HP restored
-}
-
-export interface Dungeon {
-  id: string;
-  name: string;
-  description: string;
-  classType: string;
-  targetSections?: string[];
-  rooms: DungeonRoom[];
-  rewards: {
-    xp: number;
-    flux: number;
-    itemRarity?: ItemRarity;
-  };
-  bonusRoomRewards?: {
-    xp: number;
-    flux: number;
-  };
-  isActive: boolean;
-  resetsAt?: 'DAILY' | 'WEEKLY';
-  minLevel?: number;
-  minGearScore?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DungeonRun {
-  id: string;
-  dungeonId: string;
-  dungeonName: string;
-  userId: string;
-  currentRoom: number;               // 0-indexed
-  playerHp: number;
-  maxHp: number;
-  roomsCleared: number;
-  totalDamageDealt: number;
-  questionsCorrect: number;
-  questionsAttempted: number;
-  status: 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
-  startedAt: string;
-  completedAt?: string;
-  answeredQuestions: string[];        // Track answered questions across rooms
-  currentRoomEnemyHp?: number;       // Track current room enemy HP
-  lootCollected: { itemName: string; rarity: ItemRarity }[];
-  combatStats: BossQuizCombatStats;
-}
-
-// ========================================
-// IDLE AGENT MISSIONS
-// ========================================
-
-export interface IdleMission {
-  id: string;
-  name: string;
-  description: string;
-  classType: string;
-  targetSections?: string[];
-  duration: number;              // Minutes (30, 60, 120, 240)
-  isActive: boolean;
-  rewards: {
-    xp: number;
-    flux: number;
-    itemRarity?: ItemRarity;
-  };
-  statBonuses?: {                // Better rewards at higher stats
-    stat: 'tech' | 'focus' | 'analysis' | 'charisma';
-    threshold: number;           // Stat value needed for bonus
-    bonusMultiplier: number;     // e.g., 1.5 = +50% rewards
-    description: string;         // e.g., "High Tech: +50% Flux"
-  }[];
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  minLevel?: number;
-  createdAt: string;
-}
-
-export interface ActiveIdleMission {
-  missionId: string;
-  missionName: string;
-  deployedAt: string;            // ISO date
-  completesAt: string;           // ISO date
-  stats: { tech: number; focus: number; analysis: number; charisma: number };
-  gearScore: number;
-  classType: string;
-  claimed: boolean;
-}
-
-// ========================================
 // PVP ARENA
 // ========================================
 
@@ -1201,52 +1045,6 @@ export interface KnowledgeGate {
   };
   isActive: boolean;
   classType?: string;
-}
-
-// ========================================
-// PEER TUTORING
-// ========================================
-
-export type TutoringStatus = 'OPEN' | 'MATCHED' | 'IN_PROGRESS' | 'COMPLETED' | 'VERIFIED';
-
-export interface TutoringFeedback {
-  rating: number; // 1-5 overall experience
-  communicationRating: number; // 1-5 communication quality
-  response: string; // What they learned (student) or taught (tutor)
-  submittedAt: string;
-}
-
-export interface TutoringSession {
-  id: string;
-  requesterId: string;
-  requesterName: string;
-  tutorId?: string;
-  tutorName?: string;
-  topic: string;
-  classType: string;
-  status: TutoringStatus;
-  createdAt: string;
-  completedAt?: string;
-  verifiedBy?: string; // Admin who verified
-  xpReward: number; // XP for the tutor
-  fluxReward?: number;
-  requesterFeedback?: TutoringFeedback;
-  tutorFeedback?: TutoringFeedback;
-}
-
-// ========================================
-// QUEST PARTY (GROUP QUESTS)
-// ========================================
-
-export interface QuestParty {
-  id: string;
-  leaderId: string;
-  leaderName: string;
-  members: { userId: string; userName: string; joinedAt: string }[];
-  questId: string;
-  status: 'FORMING' | 'READY' | 'DEPLOYED' | 'COMPLETED' | 'FAILED';
-  createdAt: string;
-  maxSize: number;
 }
 
 // ========================================

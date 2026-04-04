@@ -99,21 +99,14 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
     const totalEngagementSec = classSubmissions.reduce((acc, s) => acc + (s.metrics?.engagementTime || 0), 0);
     const engagementXp = Math.round(totalEngagementSec / 60) * 10; // ~10 XP per minute
 
-    // Quest XP
-    const completedQuests = gam?.completedQuests?.length || 0;
-    const questXp = completedQuests * 100; // approximate
-
     // Boss XP (from damage records)
     const bossDamage = gam?.bossDamageDealt || {};
     const bossXp = Object.values(bossDamage).reduce((sum: number, dmg) => sum + (dmg as number), 0) * 2; // approximate
 
-    // Tutoring XP
-    const tutoringXp = gam?.tutoringXpEarned || 0;
-
     // Behavior awards, daily challenges etc. make up the rest
-    const otherXp = Math.max(0, classXp - engagementXp - questXp - bossXp - tutoringXp);
+    const otherXp = Math.max(0, classXp - engagementXp - bossXp);
 
-    return { engagementXp, questXp, bossXp, tutoringXp, otherXp };
+    return { engagementXp, bossXp, otherXp };
   }, [classSubmissions, gam, classXp]);
 
   // ─── Telemetry bucket classification ─────────────────
@@ -274,9 +267,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           <div className="space-y-2">
             {[
               { label: 'Resource Engagement', xp: xpBreakdown.engagementXp, color: 'bg-purple-500', textColor: 'text-purple-400', desc: '~10 XP per minute of active engagement' },
-              { label: 'Mission Rewards', xp: xpBreakdown.questXp, color: 'bg-indigo-500', textColor: 'text-indigo-400', desc: 'XP from completing contracts' },
               { label: 'Boss Encounters', xp: xpBreakdown.bossXp, color: 'bg-red-500', textColor: 'text-red-400', desc: 'XP from boss quiz damage' },
-              { label: 'Peer Tutoring', xp: xpBreakdown.tutoringXp, color: 'bg-emerald-500', textColor: 'text-emerald-400', desc: 'XP earned helping other agents' },
               { label: 'Other (Badges, Daily, Behavior)', xp: xpBreakdown.otherXp, color: 'bg-amber-500', textColor: 'text-amber-400', desc: 'Login rewards, behavior awards, badge XP' },
             ].filter(s => s.xp > 0).map(source => (
               <div key={source.label} className="flex items-center gap-3">

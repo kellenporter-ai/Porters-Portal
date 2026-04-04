@@ -3,14 +3,13 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { User, Quest, XPEvent, BossQuizEvent } from '../../types';
-import { BarChart3, TrendingUp, Users, Trophy, Zap, Target } from 'lucide-react';
+import { User, XPEvent, BossQuizEvent } from '../../types';
+import { BarChart3, TrendingUp, Users, Trophy, Zap } from 'lucide-react';
 import { getRankDetails } from '../../lib/gamification';
 import { useChartTheme } from '../../lib/useChartTheme';
 
 interface GamificationAnalyticsTabProps {
   students: User[];
-  quests: Quest[];
   events: XPEvent[];
   quizBosses: BossQuizEvent[];
 }
@@ -25,7 +24,7 @@ const StatCard = ({ label, value, sub, icon }: { label: string; value: string | 
   </div>
 );
 
-const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ students, quests, events, quizBosses }) => {
+const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ students, events, quizBosses }) => {
   const chartTheme = useChartTheme();
 
   // --- XP Distribution ---
@@ -71,25 +70,6 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [students]);
-
-  // --- Quest Completion Stats ---
-  const questStats = useMemo(() => {
-    const activeQuests = quests.filter(q => q.isActive).length;
-    const totalQuests = quests.length;
-    let totalCompletions = 0;
-    students.forEach(s => {
-      totalCompletions += s.gamification?.completedQuests?.length || 0;
-    });
-    const avgCompletionsPerStudent = students.length > 0 ? (totalCompletions / students.length).toFixed(1) : '0';
-    return { activeQuests, totalQuests, totalCompletions, avgCompletionsPerStudent };
-  }, [quests, students]);
-
-  // --- Quest type distribution ---
-  const questTypeData = useMemo(() => {
-    const types: Record<string, number> = {};
-    quests.forEach(q => { types[q.type] = (types[q.type] || 0) + 1; });
-    return Object.entries(types).map(([name, value]) => ({ name, value }));
-  }, [quests]);
 
   // --- Flux Economy ---
   const fluxStats = useMemo(() => {
@@ -146,7 +126,6 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
         <StatCard label="Total Students" value={students.length} icon={<Users className="w-4 h-4" />} />
         <StatCard label="Avg XP" value={summaryStats.avgXP.toLocaleString()} sub={`${summaryStats.totalXP.toLocaleString()} total`} icon={<Zap className="w-4 h-4" />} />
         <StatCard label="Max Level" value={summaryStats.maxLevel} icon={<TrendingUp className="w-4 h-4" />} />
-        <StatCard label="Active Quests" value={questStats.activeQuests} sub={`${questStats.totalQuests} total`} icon={<Target className="w-4 h-4" />} />
         <StatCard label="Active Events" value={summaryStats.activeEvents} icon={<Zap className="w-4 h-4" />} />
         <StatCard label="Active Bosses" value={summaryStats.activeBosses} icon={<Trophy className="w-4 h-4" />} />
       </div>
@@ -197,19 +176,6 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
           </ResponsiveContainer>
         </div>
 
-        {/* Quest Type Distribution */}
-        <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
-          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Quest Types</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={questTypeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, value }) => `${name} (${value})`} labelLine={false}>
-                {questTypeData.map((_, i) => <Cell key={i} fill={COLORS[(i + 2) % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
         {/* Engagement Streaks */}
         <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
           <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Engagement Streaks</h3>
@@ -243,9 +209,6 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
               <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.max.toLocaleString()}</div>
               <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Max Holdings</div>
             </div>
-          </div>
-          <div className="text-[10px] text-[var(--text-muted)]">
-            Quest completions: {questStats.totalCompletions} total ({questStats.avgCompletionsPerStudent} avg/student)
           </div>
         </div>
 

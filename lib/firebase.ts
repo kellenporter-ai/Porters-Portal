@@ -40,9 +40,6 @@ export const rtdb = getDatabase(app);
 
 // Cloud Function callables
 export const callAwardXP = httpsCallable(functions, 'awardXP');
-export const callAcceptQuest = httpsCallable(functions, 'acceptQuest');
-export const callDeployMission = httpsCallable(functions, 'deployMission');
-export const callResolveQuest = httpsCallable(functions, 'resolveQuest');
 export const callEquipItem = httpsCallable(functions, 'equipItem');
 export const callUnequipItem = httpsCallable(functions, 'unequipItem');
 export const callDisenchantItem = httpsCallable(functions, 'disenchantItem');
@@ -64,9 +61,6 @@ export const callSocketGem = httpsCallable(functions, 'socketGem');
 export const callUnsocketGem = httpsCallable(functions, 'unsocketGem');
 export const callDealBossDamage = httpsCallable(functions, 'dealBossDamage');
 export const callAnswerBossQuiz = httpsCallable(functions, 'answerBossQuiz');
-export const callCreateParty = httpsCallable(functions, 'createParty');
-export const callJoinParty = httpsCallable(functions, 'joinParty');
-export const callCompleteTutoring = httpsCallable(functions, 'completeTutoring');
 export const callClaimKnowledgeLoot = httpsCallable(functions, 'claimKnowledgeLoot');
 export const callPurchaseCosmetic = httpsCallable(functions, 'purchaseCosmetic');
 export const callClaimDailyChallenge = httpsCallable(functions, 'claimDailyChallenge');
@@ -82,15 +76,6 @@ export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment')
 export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');
 export const callBackfillWordCount = httpsCallable(functions, 'backfillWordCount');
 export const callScaleBossHp = httpsCallable(functions, 'scaleBossHp');
-
-// Dungeon Expedition Cloud Functions
-export const callStartDungeonRun = httpsCallable(functions, 'startDungeonRun');
-export const callAnswerDungeonRoom = httpsCallable(functions, 'answerDungeonRoom');
-export const callClaimDungeonRewards = httpsCallable(functions, 'claimDungeonRewards');
-
-// Idle Agent Mission Cloud Functions
-export const callDeployIdleMission = httpsCallable(functions, 'deployIdleMission');
-export const callClaimIdleMission = httpsCallable(functions, 'claimIdleMission');
 
 // PvP Arena Cloud Functions
 export const callQueueArenaDuel = httpsCallable(functions, 'queueArenaDuel');

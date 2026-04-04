@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, Quest, RPGItem, EquipmentSlot, ItemRarity, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem, Dungeon, IdleMission } from '../types';
+import { User, XPEvent, RPGItem, EquipmentSlot, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem } from '../types';
 import { useClassConfig } from '../lib/AppDataContext';
-import { Trophy, Zap, Plus, Trash2, Award, Rocket, Brain, Copy } from 'lucide-react';
+import { Zap, Plus, Trash2, Brain } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
-import { reportError } from '../lib/errorReporting';
 import SectionPicker from './SectionPicker';
 import { getClassProfile } from '../lib/classProfile';
 import { useToast } from './ToastProvider';
@@ -13,29 +12,19 @@ import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
 import InspectInventoryModal from './xp/InspectInventoryModal';
 import AdjustXPModal from './xp/AdjustXPModal';
-import MissionControlTab from './xp/MissionControlTab';
-import MissionFormModal, { INITIAL_MISSION_STATE } from './xp/MissionFormModal';
 import OperativesTab from './xp/OperativesTab';
 import BossOpsTab from './xp/BossOpsTab';
-import XPTutoringTab from './xp/XPTutoringTab';
 import QuizBossFormModal from './xp/QuizBossFormModal';
 import QuestionBankFormModal from './xp/QuestionBankFormModal';
 import GamificationAnalyticsTab from './xp/GamificationAnalyticsTab';
-import DungeonFormModal from './xp/DungeonFormModal';
-import IdleMissionFormModal from './xp/IdleMissionFormModal';
 
-type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'MISSIONS' | 'MISSION_CONTROL' | 'BOSS_OPS' | 'TUTORING' | 'ANALYTICS' | 'DUNGEON_OPS' | 'IDLE_MISSIONS';
+type XPTab = 'OPERATIVES' | 'PROTOCOLS' | 'BOSS_OPS' | 'ANALYTICS';
 
 const TAB_NAME_MAP: Record<string, XPTab> = {
   'Operatives': 'OPERATIVES',
   'XP Protocols': 'PROTOCOLS',
-  'Missions': 'MISSIONS',
-  'Mission Control': 'MISSION_CONTROL',
   'Boss Ops': 'BOSS_OPS',
-  'Tutoring': 'TUTORING',
   'Analytics': 'ANALYTICS',
-  'Dungeon Ops': 'DUNGEON_OPS',
-  'Idle Missions': 'IDLE_MISSIONS',
 };
 
 interface XPManagementProps {
@@ -51,14 +40,9 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const activeTab: XPTab = (initialTab && TAB_NAME_MAP[initialTab]) || 'OPERATIVES';
 
   const [events, setEvents] = useState<XPEvent[]>([]);
-  const [quests, setQuests] = useState<Quest[]>([]);
   const [adjustingUser, setAdjustingUser] = useState<User | null>(null);
   const [inspectingUser, setInspectingUser] = useState<User | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
-  const [missionForm, setMissionForm] = useState(INITIAL_MISSION_STATE);
-  const [isSubmittingQuest, setIsSubmittingQuest] = useState(false);
-  const [activeDeployments, setActiveDeployments] = useState<{ user: User; quest: Quest; status: string; roll?: number; acceptedAt?: string }[]>([]);
   const [newEventData, setNewEventData] = useState({
       title: '', multiplier: 2, type: 'GLOBAL' as 'GLOBAL' | 'CLASS_SPECIFIC', targetClass: (classOptions[0] || 'AP Physics'), targetSections: [] as string[]
   });
@@ -76,44 +60,15 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const [endgameProgress, setEndgameProgress] = useState<BossQuizProgress[]>([]);
   const [loadingEndgame, setLoadingEndgame] = useState(false);
 
-  // Admin tutoring
-  const [allTutoringSessions, setAllTutoringSessions] = useState<import('../types').TutoringSession[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
-
-  // Dungeon Ops state
-  const [dungeons, setDungeons] = useState<Dungeon[]>([]);
-  const [isDungeonModalOpen, setIsDungeonModalOpen] = useState(false);
-  const [editingDungeon, setEditingDungeon] = useState<Dungeon | null>(null);
-
-  // Idle Missions state
-  const [idleMissions, setIdleMissions] = useState<IdleMission[]>([]);
-  const [isIdleMissionModalOpen, setIsIdleMissionModalOpen] = useState(false);
-  const [editingIdleMission, setEditingIdleMission] = useState<IdleMission | null>(null);
 
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
-    const unsubQuests = dataService.subscribeToQuests(setQuests);
     const unsubQuizBosses = dataService.subscribeToAllBossQuizzes(setQuizBosses);
-    const unsubTutoring = dataService.subscribeToAllTutoringSessions(setAllTutoringSessions);
     const unsubBanks = dataService.subscribeToBossQuestionBanks(setQuestionBanks);
     const unsubCustomItems = dataService.subscribeToCustomItems(setCustomItems);
-    const unsubDungeons = dataService.subscribeToAllDungeons(setDungeons);
-    const unsubIdleMissions = dataService.subscribeToAllIdleMissions(setIdleMissions);
-    return () => { unsubEvents(); unsubQuests(); unsubQuizBosses(); unsubTutoring(); unsubBanks(); unsubCustomItems(); unsubDungeons(); unsubIdleMissions(); };
+    return () => { unsubEvents(); unsubQuizBosses(); unsubBanks(); unsubCustomItems(); };
   }, []);
-
-  useEffect(() => {
-      const deployments: { user: User; quest: Quest; status: string; roll?: number; acceptedAt?: string }[] = [];
-      users.forEach(u => {
-          u.gamification?.activeQuests?.forEach(aq => {
-              const quest = quests.find(q => q.id === aq.questId);
-              if (quest && (aq.status === 'DEPLOYED' || aq.status === 'ACCEPTED')) {
-                  deployments.push({ user: u, quest, status: aq.status, roll: aq.deploymentRoll, acceptedAt: aq.acceptedAt });
-              }
-          });
-      });
-      setActiveDeployments(deployments);
-  }, [users, quests, activeTab]);
 
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
   const availableSections = useMemo(() => {
@@ -130,12 +85,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
     const cs = getSectionsForClass(students, newEventData.targetClass);
     return cs.length > 0 ? cs : availableSections;
   }, [newEventData.type, newEventData.targetClass, students, availableSections]);
-
-  const missionSections = useMemo(() => {
-    if (!missionForm.targetClass) return availableSections;
-    const cs = getSectionsForClass(students, missionForm.targetClass);
-    return cs.length > 0 ? cs : availableSections;
-  }, [missionForm.targetClass, students, availableSections]);
 
   // --- Handlers ---
   const handleAdjustXP = async (user: User, amount: number) => {
@@ -162,43 +111,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       setNewEventData({ title: '', multiplier: 2, type: 'GLOBAL', targetClass: (classOptions[0] || 'AP Physics'), targetSections: [] });
   };
 
-  const handleIssueMission = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsSubmittingQuest(true);
-      try {
-          const statRequirements: Record<string, number> = {};
-          if (missionForm.techReq > 0) statRequirements.tech = missionForm.techReq;
-          if (missionForm.focusReq > 0) statRequirements.focus = missionForm.focusReq;
-          if (missionForm.analysisReq > 0) statRequirements.analysis = missionForm.analysisReq;
-          if (missionForm.charismaReq > 0) statRequirements.charisma = missionForm.charismaReq;
-          const expiryDate = new Date();
-          expiryDate.setHours(expiryDate.getHours() + (missionForm.durationHours || 0));
-          const newQuest: Quest = {
-              id: Math.random().toString(36).substring(2, 9), title: missionForm.title,
-              description: missionForm.description, xpReward: missionForm.xpReward, fluxReward: missionForm.fluxReward,
-              isActive: true, type: missionForm.type as Quest['type'], statRequirements,
-              startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
-              expiresAt: missionForm.durationHours > 0 ? expiryDate.toISOString() : null,
-              itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
-              customItemRewardId: missionForm.customItemRewardId || null,
-              rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
-              targetClass: missionForm.targetClass || undefined,
-              targetSections: missionForm.targetSections.length > 0 ? missionForm.targetSections : undefined
-          };
-          await dataService.saveQuest(newQuest);
-          toast.success(`Mission "${newQuest.title}" deployed.`);
-          setMissionForm(INITIAL_MISSION_STATE);
-          setIsQuestModalOpen(false);
-      } catch (err) { reportError(err, { component: 'XPManagement' }); toast.error("Failed to issue mission."); }
-      finally { setIsSubmittingQuest(false); }
-  };
-
   const handleToggleEvent = async (event: XPEvent) => { await dataService.saveXPEvent({ ...event, isActive: !event.isActive }); };
-  const handleToggleQuest = async (quest: Quest) => {
-      const updated = { ...quest, isActive: !quest.isActive };
-      if (updated.isActive) updated.expiresAt = null;
-      await dataService.saveQuest(updated);
-  };
 
   const handleDeleteItem = async (user: User, item: RPGItem, classType?: string) => {
       if(!await confirm({ message: `Confiscate ${item.name} from ${user.name}? This cannot be undone.`, confirmLabel: "Confiscate" })) return;
@@ -268,18 +181,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       } catch { toast.error('Failed to edit item.'); }
   };
 
-  const handleResolveQuest = async (userId: string, quest: Quest, success: boolean, classType?: string) => {
-      try { await dataService.resolveQuest(userId, quest, success, classType); toast.success(success ? `Mission "${quest.title}" approved.` : `Mission "${quest.title}" rejected.`); }
-      catch (e) { toast.error('Failed to resolve mission.'); }
-  };
-
-  const handleRollForSalvation = async (deployment: { user: User; quest: Quest; status: string; roll?: number }) => {
-      const sides = deployment.quest.rollDieSides || 20;
-      const roll = Math.floor(Math.random() * sides) + 1;
-      toast.info(`Rolled a ${roll} on a D${sides}. ${roll === sides ? "CRITICAL SUCCESS!" : "Failure confirmed."}`);
-      await handleResolveQuest(deployment.user.id, deployment.quest, roll === sides, deployment.user.classType);
-  };
-
   const handleSaveCodename = async (userId: string, codename: string) => {
       try {
           await dataService.updateCodename(userId, codename);
@@ -320,31 +221,11 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       setLoadingEndgame(false);
   };
 
-  const handleAdminVerifyTutoring = async (sessionId: string, tutorId: string) => {
-      try {
-          const result = await dataService.completeTutoring(sessionId, tutorId);
-          toast.success(`Verified! Tutor earned ${result.xpAwarded} XP and ${result.fluxAwarded} Flux`);
-      } catch (err) { toast.error('Failed to verify session'); }
-  };
-
-  const handleAdminCancelTutoring = async (sessionId: string) => {
-      if (!await confirm({ message: 'Cancel this tutoring session?', confirmLabel: 'Cancel Session' })) return;
-      try {
-          await dataService.cancelTutoringSession(sessionId);
-          toast.success('Session cancelled.');
-      } catch (err) { toast.error('Failed to cancel session'); }
-  };
-
   const TAB_TITLES: Record<XPTab, string> = {
     OPERATIVES: 'Operatives',
     PROTOCOLS: 'XP Protocols',
-    MISSIONS: 'Missions',
-    MISSION_CONTROL: 'Mission Control',
     BOSS_OPS: 'Boss Ops',
-    TUTORING: 'Tutoring',
     ANALYTICS: 'Analytics',
-    DUNGEON_OPS: 'Dungeon Ops',
-    IDLE_MISSIONS: 'Idle Missions',
   };
 
   return (
@@ -355,8 +236,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
           <p className="text-gray-400">Manage operative progression, rewards, and active engagement boosters.</p>
         </div>
         <div className="flex gap-2">
-          {activeTab === 'PROTOCOLS' && <button onClick={() => setIsEventModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-blue-900/20"><Rocket className="w-4 h-4" /> Deploy Protocol</button>}
-          {activeTab === 'MISSIONS' && <button onClick={() => setIsQuestModalOpen(true)} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-purple-900/20"><Award className="w-4 h-4" /> Issue Mission</button>}
+          {activeTab === 'PROTOCOLS' && <button onClick={() => setIsEventModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-blue-900/20"><Zap className="w-4 h-4" /> Deploy Protocol</button>}
           {activeTab === 'BOSS_OPS' && <button onClick={() => { setEditingQuizBoss(null); setIsQuizBossModalOpen(true); }} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-amber-900/20"><Brain className="w-4 h-4" /> Deploy Quiz Boss</button>}
         </div>
       </div>
@@ -397,58 +277,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
             </div>
           )}
 
-          {activeTab === 'MISSIONS' && (
-            <div className="space-y-4">
-              {quests.map(quest => (
-                <div key={quest.id} className={`p-5 rounded-2xl border flex items-center justify-between transition-all ${quest.isActive ? 'bg-purple-600/10 border-purple-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
-                  <div className="flex items-center gap-5">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${quest.isActive ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/40' : 'bg-gray-800 text-gray-400'}`}><Trophy className="w-7 h-7" /></div>
-                    <div>
-                      <h4 className="font-bold text-lg text-white">{quest.title}</h4>
-                      <p className="text-sm text-gray-500">{quest.description}</p>
-                      {quest.statRequirements && <div className="flex gap-2 mt-2">{Object.entries(quest.statRequirements).map(([stat, val]) => <span key={stat} className="text-[9px] bg-white/10 px-2 py-0.5 rounded text-gray-300 uppercase font-mono border border-white/10">{val} {stat}</span>)}</div>}
-                      <div className="flex gap-3 mt-2">
-                        <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{quest.type}</span>
-                        <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">+{quest.xpReward} XP</span>
-                        {quest.itemRewardRarity && <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">LOOT DROP</span>}
-                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{quest.targetClass || 'All Classes'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => {
-                        setMissionForm({
-                          title: quest.title, description: quest.description,
-                          xpReward: quest.xpReward, fluxReward: quest.fluxReward || 0,
-                          type: quest.type, lootRarity: quest.itemRewardRarity || '',
-                          customItemRewardId: quest.customItemRewardId || '',
-                          startsAt: '', durationHours: 0,
-                          techReq: quest.statRequirements?.tech || 0, focusReq: quest.statRequirements?.focus || 0,
-                          analysisReq: quest.statRequirements?.analysis || 0, charismaReq: quest.statRequirements?.charisma || 0,
-                          dieSides: quest.rollDieSides || 20, consequence: quest.consequenceText || '',
-                          isGroup: quest.isGroupQuest || false,
-                          targetClass: quest.targetClass || '', targetSections: [],
-                        });
-                        setIsQuestModalOpen(true);
-                      }}
-                      className="p-2 text-gray-600 hover:text-purple-400 transition" title="Clone mission"
-                    ><Copy className="w-4 h-4" /></button>
-                    <div className="text-right">
-                      <button onClick={() => handleToggleQuest(quest)} className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${quest.isActive ? 'bg-purple-600' : 'bg-gray-700'}`}>
-                        <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${quest.isActive ? 'translate-x-6' : ''}`} />
-                      </button>
-                      <span className="block text-[8px] font-bold text-gray-600 uppercase mt-1 tracking-widest">{quest.isActive ? 'Active' : 'Standby'}</span>
-                    </div>
-                    <button onClick={() => dataService.deleteQuest(quest.id)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'MISSION_CONTROL' && <MissionControlTab deployments={activeDeployments} onResolveQuest={handleResolveQuest} onRollForSalvation={handleRollForSalvation} />}
-
           {activeTab === 'BOSS_OPS' && (
             <BossOpsTab
               quizBosses={quizBosses}
@@ -464,139 +292,19 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
             />
           )}
 
-          {activeTab === 'TUTORING' && (
-            <XPTutoringTab
-              allSessions={allTutoringSessions}
-              onVerify={handleAdminVerifyTutoring}
-              onCancel={handleAdminCancelTutoring}
-            />
-          )}
-
           {activeTab === 'ANALYTICS' && (
             <GamificationAnalyticsTab
               students={students}
-              quests={quests}
               events={events}
               quizBosses={quizBosses}
             />
           )}
 
-          {activeTab === 'DUNGEON_OPS' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">Create and manage dungeon expeditions for students.</p>
-                <button
-                  onClick={() => { setEditingDungeon(null); setIsDungeonModalOpen(true); }}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition text-xs"
-                >
-                  <Plus className="w-3 h-3" /> New Dungeon
-                </button>
-              </div>
-              {dungeons.length === 0 && (
-                <div className="text-center py-14 text-gray-500">
-                  <Brain className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="font-bold">No dungeons created yet.</p>
-                  <p className="text-sm mt-1">Create dungeon expeditions for students to explore.</p>
-                </div>
-              )}
-              {dungeons.map((dungeon) => (
-                <div key={dungeon.id} className={`p-4 rounded-2xl border flex items-center gap-4 mb-3 ${dungeon.isActive ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white text-sm truncate">{dungeon.name}</h4>
-                    <p className="text-xs text-gray-500 truncate">{dungeon.description}</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      <span className="text-[10px] font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-500/20">{dungeon.rooms.length} Rooms</span>
-                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{dungeon.classType}</span>
-                      {dungeon.resetsAt && <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">{dungeon.resetsAt}</span>}
-                      <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{dungeon.rewards.xp} XP / {dungeon.rewards.flux} Flux</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button onClick={() => { setEditingDungeon(dungeon); setIsDungeonModalOpen(true); }} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase">Edit</button>
-                    <button
-                      onClick={async () => { await dataService.saveDungeon({ ...dungeon, isActive: !dungeon.isActive }); }}
-                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${dungeon.isActive ? 'bg-indigo-600' : 'bg-gray-700'}`}
-                    >
-                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${dungeon.isActive ? 'translate-x-6' : ''}`} />
-                    </button>
-                    <button onClick={() => dataService.deleteDungeon(dungeon.id)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'IDLE_MISSIONS' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">Create idle agent missions students can deploy on timed runs.</p>
-                <button
-                  onClick={() => { setEditingIdleMission(null); setIsIdleMissionModalOpen(true); }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition text-xs"
-                >
-                  <Plus className="w-3 h-3" /> New Idle Mission
-                </button>
-              </div>
-              {idleMissions.length === 0 && (
-                <div className="text-center py-14 text-gray-500">
-                  <Rocket className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="font-bold">No idle missions created yet.</p>
-                  <p className="text-sm mt-1">Create timed missions students can deploy agents on.</p>
-                </div>
-              )}
-              {idleMissions.map((mission) => (
-                <div key={mission.id} className={`p-4 rounded-2xl border flex items-center gap-4 mb-3 ${mission.isActive ? 'bg-orange-600/10 border-orange-500/30' : 'bg-black/20 border-white/10 opacity-60'}`}>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white text-sm truncate">{mission.name}</h4>
-                    <p className="text-xs text-gray-500 truncate">{mission.description}</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">{mission.duration}m duration</span>
-                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">{mission.classType}</span>
-                      <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">{mission.rewards.xp} XP / {mission.rewards.flux} Flux</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button onClick={() => { setEditingIdleMission(mission); setIsIdleMissionModalOpen(true); }} className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase">Edit</button>
-                    <button
-                      onClick={async () => { await dataService.saveIdleMission({ ...mission, isActive: !mission.isActive }); }}
-                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${mission.isActive ? 'bg-orange-600' : 'bg-gray-700'}`}
-                    >
-                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${mission.isActive ? 'translate-x-6' : ''}`} />
-                    </button>
-                    <button onClick={() => dataService.deleteIdleMission(mission.id)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
       {/* Modals */}
       <InspectInventoryModal user={inspectingUser} onClose={() => setInspectingUser(null)} onDeleteItem={handleDeleteItem} onUnequipItem={handleUnequipItem} onGrantFlux={handleGrantFlux} onGrantItem={handleGrantItem} onEditItem={handleEditItem} customItems={customItems} />
-      <MissionFormModal isOpen={isQuestModalOpen} onClose={() => setIsQuestModalOpen(false)} form={missionForm} setForm={setMissionForm} onSubmit={handleIssueMission} customItems={customItems} onSaveDraft={async () => {
-        const statRequirements: Record<string, number> = {};
-        if (missionForm.techReq > 0) statRequirements.tech = missionForm.techReq;
-        if (missionForm.focusReq > 0) statRequirements.focus = missionForm.focusReq;
-        if (missionForm.analysisReq > 0) statRequirements.analysis = missionForm.analysisReq;
-        if (missionForm.charismaReq > 0) statRequirements.charisma = missionForm.charismaReq;
-        const draft: Quest = {
-          id: Math.random().toString(36).substring(2, 9), title: missionForm.title,
-          description: missionForm.description, xpReward: missionForm.xpReward, fluxReward: missionForm.fluxReward,
-          isActive: false, type: missionForm.type as Quest['type'], statRequirements,
-          startsAt: missionForm.startsAt ? new Date(missionForm.startsAt).toISOString() : null,
-          expiresAt: null, itemRewardRarity: (missionForm.lootRarity as ItemRarity) || null,
-          customItemRewardId: missionForm.customItemRewardId || null,
-          rollDieSides: missionForm.dieSides || 20, consequenceText: missionForm.consequence || null, isGroupQuest: missionForm.isGroup,
-          targetClass: missionForm.targetClass || undefined,
-          targetSections: missionForm.targetSections.length > 0 ? missionForm.targetSections : undefined
-        };
-        await dataService.saveQuest(draft);
-        toast.success('Mission saved as draft (standby).');
-        setMissionForm(INITIAL_MISSION_STATE);
-        setIsQuestModalOpen(false);
-      }} isSubmitting={isSubmittingQuest} availableSections={missionSections} />
-
       <Modal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} title="New XP Protocol Deployment">
         <form onSubmit={handleCreateEvent} className="space-y-4 text-gray-100 p-2">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 px-1">Protocol Title</label><input value={newEventData.title} onChange={e => setNewEventData({...newEventData, title: e.target.value})} required className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-bold" placeholder="e.g. Double XP Weekend" /></div>
@@ -637,17 +345,6 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
         onClose={() => { setEndgameQuiz(null); setEndgameProgress([]); }}
       />
 
-      <DungeonFormModal
-        isOpen={isDungeonModalOpen}
-        onClose={() => { setIsDungeonModalOpen(false); setEditingDungeon(null); }}
-        editingDungeon={editingDungeon}
-      />
-
-      <IdleMissionFormModal
-        isOpen={isIdleMissionModalOpen}
-        onClose={() => { setIsIdleMissionModalOpen(false); setEditingIdleMission(null); }}
-        editingMission={editingIdleMission}
-      />
     </div>
   );
 };

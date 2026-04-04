@@ -136,14 +136,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /quests/{questId} {
-      // All authenticated users can read quests (needed for quest board)
-      allow read: if isAuthenticated();
-      
-      // Only admin can create/edit/delete quests
-      allow write: if isAdmin();
-    }
-
     // ==========================================
     // EVIDENCE LOCKER
     // ==========================================
@@ -337,36 +329,6 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // PEER TUTORING SESSIONS
-    // ==========================================
-    match /tutoring_sessions/{sessionId} {
-      allow read: if isAuthenticated();
-      // Students can create tutoring requests with their own ID
-      allow create: if isAuthenticated() &&
-        request.resource.data.requesterId == request.auth.uid;
-      // Field-level gating per role
-      allow update: if isAdmin()
-        // Requester can cancel their own OPEN request
-        || (isAuthenticated()
-            && resource.data.requesterId == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-            && request.resource.data.status == 'CANCELLED')
-        // Non-requester can claim tutor role on OPEN sessions
-        || (isAuthenticated()
-            && resource.data.status == 'OPEN'
-            && request.auth.uid != resource.data.requesterId
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tutorId', 'tutorName', 'status'])
-            && request.resource.data.status == 'MATCHED')
-        // Participants can transition status or submit feedback
-        || (isAuthenticated()
-            && (request.auth.uid == resource.data.requesterId || request.auth.uid == resource.data.tutorId)
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['status', 'requesterFeedback', 'tutorFeedback'])
-            && request.resource.data.status in ['IN_PROGRESS', 'COMPLETED']);
-      allow delete: if isAdmin();
-    }
-
-    // ==========================================
     // KNOWLEDGE GATES
     // ==========================================
     match /knowledge_gates/{gateId} {
@@ -416,20 +378,6 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // DUNGEON EXPEDITIONS
-    // ==========================================
-    match /dungeons/{dungeonId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Dungeon run progress — students can read their own runs
-    match /dungeon_runs/{runId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Admin SDK only (Cloud Functions)
-    }
-
-    // ==========================================
     // PVP ARENA
     // ==========================================
     match /arena_matches/{matchId} {
@@ -438,14 +386,6 @@ service cloud.firestore {
     }
 
     match /arena_seasons/{seasonId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // ==========================================
-    // IDLE AGENT MISSIONS
-    // ==========================================
-    match /idle_missions/{missionId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
@@ -518,14 +458,6 @@ service cloud.firestore {
     // ==========================================
     match /customItems/{itemId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // ==========================================
-    // QUEST TEMPLATES (Admin-only)
-    // ==========================================
-    match /quest_templates/{templateId} {
-      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 

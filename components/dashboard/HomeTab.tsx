@@ -1,25 +1,16 @@
 
 import React, { useMemo } from 'react';
-import { Assignment, Submission, Quest, XPEvent } from '../../types';
+import { Assignment, Submission, XPEvent } from '../../types';
 import {
   Calendar, Clock, Target, Zap, ChevronRight, CheckCircle2,
   Layers, Briefcase, Trophy, TrendingUp, BookOpen,
 } from 'lucide-react';
-
-interface ActiveQuestEntry {
-  questId: string;
-  status: 'ACCEPTED' | 'DEPLOYED' | 'COMPLETED' | 'FAILED';
-  deploymentRoll?: number;
-}
 
 interface HomeTabProps {
   assignments: Assignment[];
   submissions: Submission[];
   activeClass: string;
   practiceCompletion: Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>;
-  availableQuests: Quest[];
-  activeQuests: ActiveQuestEntry[];
-  completedQuests: string[];
   activeEvent: XPEvent | null;
   onNavigate: (tab: string) => void;
   onStartAssignment?: (id: string) => void;
@@ -111,9 +102,6 @@ const HomeTab: React.FC<HomeTabProps> = ({
   submissions,
   activeClass,
   practiceCompletion,
-  availableQuests,
-  activeQuests,
-  completedQuests,
   activeEvent,
   onNavigate,
   onStartAssignment,
@@ -184,17 +172,6 @@ const HomeTab: React.FC<HomeTabProps> = ({
     return { total, completed, totalTime, practicesMastered };
   }, [classAssignments, submissions, practiceCompletion]);
 
-  // New quests
-  const newQuestCount = useMemo(() =>
-    availableQuests.filter(q =>
-      !activeQuests.some(aq => aq.questId === q.id) &&
-      !completedQuests.includes(q.id)
-    ).length,
-    [availableQuests, activeQuests, completedQuests],
-  );
-
-  const acceptedQuestCount = activeQuests.filter(q => q.status === 'ACCEPTED' || q.status === 'DEPLOYED').length;
-
   // "Up Next" — the single most urgent incomplete assignment
   const upNextAssignment = useMemo(() => {
     return upcomingDue.find(a => !a.isCompleted) || null;
@@ -244,13 +221,6 @@ const HomeTab: React.FC<HomeTabProps> = ({
           icon={<Layers className="w-5 h-5 text-purple-400" />}
           color="bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20"
           onClick={() => onNavigate('Resources')}
-        />
-        <QuickNavCard
-          label="Missions"
-          icon={<Target className="w-5 h-5 text-indigo-400" />}
-          color="bg-indigo-500/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20"
-          badge={newQuestCount}
-          onClick={() => onNavigate('Missions')}
         />
         <QuickNavCard
           label="Loadout"
@@ -342,37 +312,12 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Study Time</div>
               </div>
               <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
-                <div className="text-xl font-black text-[var(--text-primary)]">{acceptedQuestCount}</div>
-                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Active Quests</div>
+                <div className="text-xl font-black text-[var(--text-primary)]">{stats.practicesMastered}</div>
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Mastered</div>
               </div>
             </div>
           </Section>
 
-          {/* Active Missions (compact) */}
-          {(newQuestCount > 0 || acceptedQuestCount > 0) && (
-            <Section
-              title="Missions"
-              icon={<Target className="w-3.5 h-3.5" />}
-              actionLabel="View All"
-              onAction={() => onNavigate('Missions')}
-            >
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/15">
-                {newQuestCount > 0 && (
-                  <span className="text-xs text-indigo-400 font-bold">
-                    {newQuestCount} new {newQuestCount === 1 ? 'contract' : 'contracts'}
-                  </span>
-                )}
-                {newQuestCount > 0 && acceptedQuestCount > 0 && (
-                  <span className="text-[var(--text-muted)]">&middot;</span>
-                )}
-                {acceptedQuestCount > 0 && (
-                  <span className="text-xs text-[var(--accent-text)] font-bold">
-                    {acceptedQuestCount} in progress
-                  </span>
-                )}
-              </div>
-            </Section>
-          )}
         </div>
       </div>
 

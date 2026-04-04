@@ -20,18 +20,14 @@ export const STUDENT_ROUTES = {
   HOME: '/home',
   RESOURCES: '/resources',
   LOADOUT: '/loadout',
-  MISSIONS: '/missions',
   BADGES: '/badges',
   SKILLS: '/skills',
   FORTUNE: '/fortune',
   FLUX_SHOP: '/flux-shop',
-  TUTORING: '/tutoring',
   INTEL: '/intel',
   PROGRESS: '/progress',
   CALENDAR: '/calendar',
-  DUNGEONS: '/dungeons',
   ARENA: '/arena',
-  DEPLOY: '/deploy',
   FORENSICS: '/forensics',
   LEADERBOARD: '/leaderboard',
 } as const;
@@ -40,13 +36,8 @@ export const STUDENT_ROUTES = {
 export const XP_SUB_ROUTES: Record<string, string> = {
   'Operatives': 'operatives',
   'XP Protocols': 'protocols',
-  'Missions': 'missions',
-  'Mission Control': 'mission-control',
   'Boss Ops': 'boss-ops',
-  'Tutoring': 'tutoring',
   'Analytics': 'analytics',
-  'Dungeon Ops': 'dungeon-ops',
-  'Idle Missions': 'idle-missions',
 };
 
 /**
@@ -65,29 +56,20 @@ export const TAB_TO_PATH: Record<string, string> = {
   // XP Command children — stored as "XP Command:Operatives" in the old system
   'XP Command:Operatives': '/xp/operatives',
   'XP Command:XP Protocols': '/xp/protocols',
-  'XP Command:Missions': '/xp/missions',
-  'XP Command:Mission Control': '/xp/mission-control',
   'XP Command:Boss Ops': '/xp/boss-ops',
-  'XP Command:Tutoring': '/xp/tutoring',
   'XP Command:Analytics': '/xp/analytics',
-  'XP Command:Dungeon Ops': '/xp/dungeon-ops',
-  'XP Command:Idle Missions': '/xp/idle-missions',
   // Student
   'Home': STUDENT_ROUTES.HOME,
   'Resources': STUDENT_ROUTES.RESOURCES,
   'Agent Loadout': STUDENT_ROUTES.LOADOUT,
-  'Missions': STUDENT_ROUTES.MISSIONS,
   'Badges': STUDENT_ROUTES.BADGES,
   'Skills': STUDENT_ROUTES.SKILLS,
   'Fortune': STUDENT_ROUTES.FORTUNE,
   'Flux Shop': STUDENT_ROUTES.FLUX_SHOP,
-  'Tutoring': STUDENT_ROUTES.TUTORING,
   'Intel Dossier': STUDENT_ROUTES.INTEL,
   'Progress': STUDENT_ROUTES.PROGRESS,
   'Calendar': STUDENT_ROUTES.CALENDAR,
-  'Dungeons': STUDENT_ROUTES.DUNGEONS,
   'Arena': STUDENT_ROUTES.ARENA,
-  'Deploy': STUDENT_ROUTES.DEPLOY,
   'Forensics': STUDENT_ROUTES.FORENSICS,
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
 };
@@ -98,22 +80,18 @@ export const PATH_TO_TAB: Record<string, string> = Object.fromEntries(
 );
 
 /** Map student tab name → StudentDashboard tab prop */
-export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'MISSIONS' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'TUTORING' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'DUNGEONS' | 'ARENA' | 'DEPLOY'> = {
+export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'ARENA'> = {
   'Home': 'HOME',
   'Resources': 'RESOURCES',
   'Agent Loadout': 'LOADOUT',
-  'Missions': 'MISSIONS',
   'Badges': 'ACHIEVEMENTS',
   'Skills': 'SKILLS',
   'Fortune': 'FORTUNE',
   'Flux Shop': 'FLUX_SHOP',
-  'Tutoring': 'TUTORING',
   'Intel Dossier': 'INTEL',
   'Progress': 'PROGRESS',
   'Calendar': 'CALENDAR',
-  'Dungeons': 'DUNGEONS',
   'Arena': 'ARENA',
-  'Deploy': 'DEPLOY',
 };
 
 /** Student paths that render via StudentDashboard */
@@ -121,16 +99,12 @@ export const STUDENT_DASHBOARD_PATHS = new Set([
   STUDENT_ROUTES.HOME,
   STUDENT_ROUTES.RESOURCES,
   STUDENT_ROUTES.LOADOUT,
-  STUDENT_ROUTES.MISSIONS,
   STUDENT_ROUTES.BADGES,
   STUDENT_ROUTES.SKILLS,
   STUDENT_ROUTES.FORTUNE,
   STUDENT_ROUTES.FLUX_SHOP,
-  STUDENT_ROUTES.TUTORING,
   STUDENT_ROUTES.INTEL,
   STUDENT_ROUTES.PROGRESS,
   STUDENT_ROUTES.CALENDAR,
-  STUDENT_ROUTES.DUNGEONS,
   STUDENT_ROUTES.ARENA,
-  STUDENT_ROUTES.DEPLOY,
 ]);

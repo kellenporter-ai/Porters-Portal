@@ -1,6 +1,6 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, Quest, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, TutoringSession, QuestParty, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, Dungeon, DungeonRun, IdleMission, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry } from '../types';
-import { db, storage, callAwardXP, callAcceptQuest, callDeployMission, callResolveQuest, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callCreateParty, callJoinParty, callCompleteTutoring, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callStartDungeonRun, callAnswerDungeonRoom, callClaimDungeonRewards, callDeployIdleMission, callClaimIdleMission, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry } from '../types';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -42,36 +42,6 @@ export const dataService = {
 
   deleteXPEvent: async (id: string) => {
     await deleteDoc(doc(db, 'xp_events', id));
-  },
-
-  subscribeToQuests: (callback: (quests: Quest[]) => void, activeOnly = false) => {
-    const q = activeOnly
-      ? query(collection(db, 'quests'), where('isActive', '==', true))
-      : collection(db, 'quests');
-    return resilientSnapshot('quests', q, (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Quest)));
-    });
-  },
-
-  saveQuest: async (quest: Quest) => {
-    await setDoc(doc(db, 'quests', quest.id), stripUndefined(quest));
-  },
-
-  deleteQuest: async (id: string) => {
-    await deleteDoc(doc(db, 'quests', id));
-  },
-
-  // Student Quest Interactions — All via Cloud Functions for security
-  acceptQuest: async (_userId: string, questId: string) => {
-      await callAcceptQuest({ questId });
-  },
-
-  deployMission: async (_userId: string, quest: Quest) => {
-      await callDeployMission({ questId: quest.id });
-  },
-
-  resolveQuest: async (userId: string, quest: Quest, success: boolean, classType?: string) => {
-      await callResolveQuest({ userId, questId: quest.id, success, classType });
   },
 
   adjustUserXP: async (userId: string, amount: number, classType: string) => {
@@ -125,25 +95,6 @@ export const dataService = {
 
   deleteCustomItem: async (id: string) => {
     await deleteDoc(doc(db, 'customItems', id));
-  },
-
-  // ========================================
-  // QUEST TEMPLATES
-  // ========================================
-
-  subscribeToQuestTemplates: (callback: (templates: import('../types').Quest[]) => void) => {
-    return resilientSnapshot('quest_templates', collection(db, 'quest_templates'), (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() })));
-    });
-  },
-
-  saveQuestTemplate: async (template: Record<string, unknown>) => {
-    const id = (template.id as string) || Math.random().toString(36).substring(2, 9);
-    await setDoc(doc(db, 'quest_templates', id), stripUndefined({ ...template, id }));
-  },
-
-  deleteQuestTemplate: async (id: string) => {
-    await deleteDoc(doc(db, 'quest_templates', id));
   },
 
   // Write only the appearance sub-field — all other gamification fields are Cloud-Function-only
@@ -1353,99 +1304,6 @@ export const dataService = {
     }, () => callback(null));
   },
 
-  // --- GROUP QUESTS / PARTIES ---
-
-  createParty: async (questId: string, userName: string) => {
-    const result = await callCreateParty({ questId, userName });
-    return result.data as { partyId: string };
-  },
-
-  joinParty: async (partyId: string, userName: string) => {
-    const result = await callJoinParty({ partyId, userName });
-    return result.data as { success: boolean; memberCount: number };
-  },
-
-  subscribeToParty: (partyId: string, callback: (party: QuestParty | null) => void) => {
-    return onSnapshot(doc(db, 'parties', partyId), (snapshot) => {
-      if (snapshot.exists()) {
-        callback({ id: snapshot.id, ...snapshot.data() } as QuestParty);
-      } else {
-        callback(null);
-      }
-    }, (error: unknown) => reportError(error, { subscription: 'party' }));
-  },
-
-  // --- PEER TUTORING ---
-
-  createTutoringRequest: async (requesterId: string, requesterName: string, topic: string, classType: string) => {
-    await addDoc(collection(db, 'tutoring_sessions'), {
-      requesterId, requesterName, topic, classType,
-      status: 'OPEN',
-      createdAt: new Date().toISOString(),
-      xpReward: 75,
-      fluxReward: 25,
-    });
-  },
-
-  claimTutorRole: async (sessionId: string, tutorId: string, tutorName: string) => {
-    await updateDoc(doc(db, 'tutoring_sessions', sessionId), {
-      tutorId, tutorName, status: 'MATCHED',
-    });
-  },
-
-  // Student marks session as in-progress (work has begun)
-  startTutoringSession: async (sessionId: string) => {
-    await updateDoc(doc(db, 'tutoring_sessions', sessionId), { status: 'IN_PROGRESS' });
-  },
-
-  // Student marks session complete (awaiting admin verification)
-  markTutoringComplete: async (sessionId: string) => {
-    await updateDoc(doc(db, 'tutoring_sessions', sessionId), { status: 'COMPLETED' });
-  },
-
-  // Submit feedback for a tutoring session. When both participants have submitted, auto-transitions to COMPLETED.
-  submitTutoringFeedback: async (sessionId: string, role: 'requester' | 'tutor', feedback: import('../types').TutoringFeedback) => {
-    const ref = doc(db, 'tutoring_sessions', sessionId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) throw new Error('Session not found');
-    const session = snap.data();
-    const feedbackField = role === 'requester' ? 'requesterFeedback' : 'tutorFeedback';
-    const otherField = role === 'requester' ? 'tutorFeedback' : 'requesterFeedback';
-    const updates: Record<string, unknown> = { [feedbackField]: feedback };
-    // Auto-transition to COMPLETED when both have submitted
-    if (session[otherField]) {
-      updates.status = 'COMPLETED';
-    }
-    await updateDoc(ref, updates);
-  },
-
-  // Admin: subscribe to ALL tutoring sessions across classes
-  subscribeToAllTutoringSessions: (callback: (sessions: import('../types').TutoringSession[]) => void) => {
-    const q = query(collection(db, 'tutoring_sessions'), orderBy('createdAt', 'desc'), limit(100));
-    return onSnapshot(q, (snapshot) => {
-      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as import('../types').TutoringSession)));
-    }, (error: unknown) => reportError(error, { subscription: 'allTutoringSessions' }));
-  },
-
-  // Admin: cancel a tutoring session
-  cancelTutoringSession: async (sessionId: string) => {
-    await deleteDoc(doc(db, 'tutoring_sessions', sessionId));
-  },
-
-  subscribeToTutoringSessions: (classType: string, callback: (sessions: TutoringSession[]) => void) => {
-    const q = query(collection(db, 'tutoring_sessions'), where('classType', '==', classType), limit(50));
-    return resilientSnapshot('tutoring_sessions', q, (snapshot: any) => {
-      const sessions = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as TutoringSession));
-      sessions.sort((a: TutoringSession, b: TutoringSession) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      callback(sessions);
-    });
-  },
-
-  completeTutoring: async (sessionId: string, tutorId: string) => {
-    const result = await callCompleteTutoring({ sessionId, tutorId });
-    return result.data as { xpAwarded: number; fluxAwarded: number };
-  },
-
   // --- KNOWLEDGE-GATED LOOT ---
 
   subscribeToKnowledgeGates: (callback: (gates: KnowledgeGate[]) => void) => {
@@ -1785,111 +1643,6 @@ export const dataService = {
     if (!snap.exists()) return null;
     const data = snap.data();
     return data.streakData || null;
-  },
-
-  // --- DUNGEON EXPEDITIONS ---
-
-  subscribeToDungeons: (classType: string, callback: (dungeons: Dungeon[]) => void) => {
-    const q = query(
-      collection(db, 'dungeons'),
-      where('classType', '==', classType),
-      where('isActive', '==', true)
-    );
-    return resilientSnapshot('dungeons', q, (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Dungeon)));
-    });
-  },
-
-  subscribeToAllDungeons: (callback: (dungeons: Dungeon[]) => void) => {
-    return resilientSnapshot('dungeons', collection(db, 'dungeons'), (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as Dungeon)));
-    });
-  },
-
-  saveDungeon: async (dungeon: Dungeon) => {
-    await setDoc(doc(db, 'dungeons', dungeon.id), stripUndefined(dungeon));
-  },
-
-  deleteDungeon: async (id: string) => {
-    await deleteDoc(doc(db, 'dungeons', id));
-  },
-
-  subscribeToActiveDungeonRun: (userId: string, dungeonId: string, callback: (run: DungeonRun | null) => void) => {
-    const q = query(
-      collection(db, 'dungeon_runs'),
-      where('userId', '==', userId),
-      where('dungeonId', '==', dungeonId),
-      where('status', '==', 'IN_PROGRESS')
-    );
-    return resilientSnapshot('dungeon_runs', q, (snapshot: any) => {
-      const doc = snapshot.docs[0];
-      callback(doc ? ({ id: doc.id, ...doc.data() } as DungeonRun) : null);
-    });
-  },
-
-  startDungeonRun: async (dungeonId: string) => {
-    const result = await callStartDungeonRun({ dungeonId });
-    return result.data as DungeonRun & { resumed: boolean };
-  },
-
-  answerDungeonRoom: async (runId: string, questionId: string, answer: number) => {
-    const result = await callAnswerDungeonRoom({ runId, questionId, answer });
-    return result.data as {
-      correct: boolean;
-      damage: number;
-      playerDamage?: number;
-      playerHp: number;
-      enemyHp: number;
-      roomCleared: boolean;
-      runCompleted: boolean;
-      isCrit?: boolean;
-      healAmount?: number;
-      loot?: { itemName: string; rarity: string };
-    };
-  },
-
-  claimDungeonRewards: async (runId: string) => {
-    const result = await callClaimDungeonRewards({ runId });
-    return result.data as { xp: number; flux: number; loot: { itemName: string; rarity: string }[] };
-  },
-
-  // ========================================
-  // IDLE AGENT MISSIONS
-  // ========================================
-
-  subscribeToIdleMissions: (classType: string, callback: (missions: IdleMission[]) => void) => {
-    const q = query(
-      collection(db, 'idle_missions'),
-      where('isActive', '==', true),
-      where('classType', '==', classType)
-    );
-    return resilientSnapshot('idle_missions', q, (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as IdleMission)));
-    });
-  },
-
-  subscribeToAllIdleMissions: (callback: (missions: IdleMission[]) => void) => {
-    return resilientSnapshot('idle_missions_all', collection(db, 'idle_missions'), (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as IdleMission)));
-    });
-  },
-
-  deployIdleMission: async (missionId: string) => {
-    const result = await callDeployIdleMission({ missionId });
-    return result.data as { deployed: boolean; completesAt: string; stats: Record<string, number>; gearScore: number };
-  },
-
-  claimIdleMission: async (missionId: string) => {
-    const result = await callClaimIdleMission({ missionId });
-    return result.data as { xpAwarded: number; fluxAwarded: number; bonusesApplied: string[]; leveledUp: boolean; newLevel: number; loot: boolean };
-  },
-
-  saveIdleMission: async (mission: IdleMission) => {
-    await setDoc(doc(db, 'idle_missions', mission.id), stripUndefined(mission));
-  },
-
-  deleteIdleMission: async (id: string) => {
-    await deleteDoc(doc(db, 'idle_missions', id));
   },
 
   // ========================================
