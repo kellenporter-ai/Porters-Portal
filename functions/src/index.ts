@@ -229,24 +229,6 @@ const rollTier = (level: number, rarity: string): number => {
 
 const rollValue = (tier: number): number => Math.max(1, tier * 5 + Math.floor(Math.random() * 5) - 2);
 
-/**
- * Fetch custom items marked as droppable from the customItems collection.
- * Called before loot generation to provide the custom drop pool.
- */
-async function fetchCustomDropPool(): Promise<LootItem[]> {
-  try {
-    const db = admin.firestore();
-    const snap = await db.collection("customItems").where("canDropInLoot", "==", true).get();
-    return snap.docs.map((d) => {
-      const data = d.data();
-      // Strip library metadata, return as LootItem
-      const { createdBy, createdAt, tags, canDropInLoot, dropWeight, ...item } = data;
-      return { ...item, id: d.id } as LootItem;
-    });
-  } catch {
-    return [];
-  }
-}
 
 function generateLoot(level: number, forcedRarity?: string, customDropPool?: LootItem[]): LootItem {
   // 8% chance to drop a custom item from the pool (if pool is available and non-empty)
