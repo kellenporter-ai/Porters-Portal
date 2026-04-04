@@ -176,36 +176,25 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
 
   return (
     <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-[var(--text-primary)]">Activity Monitor</h3>
-        <button
-          onClick={() => onAward?.()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition"
-          aria-label="Open Quick Award"
-        >
-          <Star className="w-3.5 h-3.5" aria-hidden="true" /> Quick Award
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+      {/* Compact header row: title + search + bucket filter + online only + quick award */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <h3 className="text-base font-bold text-[var(--text-primary)] shrink-0 mr-1">Activity Monitor</h3>
+        <div className="relative flex-1 min-w-[160px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search students..."
             aria-label="Search students"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
+            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
           />
         </div>
         <select
           aria-label="Filter by engagement bucket"
           value={bucketFilter}
           onChange={e => setBucketFilter(e.target.value as TelemetryBucket | '')}
-          className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"
+          className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 shrink-0"
         >
           <option value="">All Buckets</option>
           {(Object.keys(BUCKET_META) as TelemetryBucket[]).map(b => (
@@ -215,13 +204,20 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
         <button
           onClick={() => setOnlineOnly(v => !v)}
           aria-pressed={onlineOnly}
-          className={`px-4 py-2.5 rounded-xl text-sm font-bold border transition ${
+          className={`px-3 py-2 rounded-xl text-sm font-bold border transition shrink-0 ${
             onlineOnly
               ? 'bg-green-500/20 border-green-500/40 text-green-400'
               : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
           Online Only
+        </button>
+        <button
+          onClick={() => onAward?.()}
+          className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition shrink-0 ml-auto"
+          aria-label="Open Quick Award"
+        >
+          <Star className="w-3.5 h-3.5" aria-hidden="true" /> Quick Award
         </button>
       </div>
 

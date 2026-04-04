@@ -61,7 +61,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
 
   return (
     <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
           <Megaphone className="w-5 h-5 text-orange-400" />
           Announcements
@@ -77,38 +77,9 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
         </button>
       </div>
 
-      {announcements.length === 0 ? (
-        <div className="text-center py-6 text-[var(--text-muted)] italic">
-          <Megaphone className="w-10 h-10 mx-auto mb-2 opacity-20" />
-          No active announcements.
-        </div>
-      ) : (
-        <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-          {announcements.map(a => {
-            const style = PRIORITY_STYLES[a.priority] || PRIORITY_STYLES.INFO;
-            return (
-              <div key={a.id} className={`p-3 ${style.bg} border ${style.border} rounded-xl flex justify-between items-start`}>
-                <div className="flex gap-2 items-start">
-                  <div className={`mt-0.5 ${style.text}`}>{style.icon}</div>
-                  <div>
-                    <div className="text-sm font-bold text-[var(--text-primary)]">{a.title}</div>
-                    <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{a.content}</div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1">
-                      {a.classType === 'GLOBAL' ? 'All Classes' : a.classType}{a.targetSections?.length ? ` · ${a.targetSections.join(', ')}` : ''}{a.targetStudentIds?.length ? ` · ${a.targetStudentIds.length} student${a.targetStudentIds.length !== 1 ? 's' : ''}` : ''} · {new Date(a.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => handleDelete(a.id)} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition shrink-0">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
+      {/* Composer — shown at top when open */}
       {isComposerOpen && (
-        <div role="region" aria-label="Broadcast announcement composer" className="mt-4 p-4 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl space-y-3 transition-all duration-200 animate-in fade-in slide-in-from-top-2">
+        <div role="region" aria-label="Broadcast announcement composer" className="mb-4 p-4 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl space-y-3 transition-all duration-200 animate-in fade-in slide-in-from-top-2">
           {/* Row 1: Title + Priority + Audience */}
           <div className="flex gap-3">
             <div className="flex-1 min-w-0">
@@ -165,6 +136,55 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
               Broadcast
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Announcement grid */}
+      {announcements.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
+          <Megaphone className="w-10 h-10 mb-3 opacity-20" />
+          <p className="text-sm italic">No active announcements.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {announcements.map(a => {
+            const style = PRIORITY_STYLES[a.priority] || PRIORITY_STYLES.INFO;
+            const audience = a.classType === 'GLOBAL' ? 'All Classes' : a.classType;
+            const audienceSuffix = a.targetSections?.length
+              ? ` · ${a.targetSections.join(', ')}`
+              : a.targetStudentIds?.length
+              ? ` · ${a.targetStudentIds.length} student${a.targetStudentIds.length !== 1 ? 's' : ''}`
+              : '';
+            const relTime = new Date(a.createdAt).toLocaleDateString();
+            return (
+              <div key={a.id} className={`relative p-3 ${style.bg} border ${style.border} rounded-xl flex flex-col gap-1.5 min-w-0`}>
+                {/* Title row */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={`shrink-0 ${style.text}`}>{style.icon}</span>
+                    <span className="text-sm font-bold text-[var(--text-primary)] truncate">{a.title}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(a.id)}
+                    className="p-1 text-[var(--text-muted)] hover:text-red-400 transition shrink-0"
+                    aria-label={`Delete announcement: ${a.title}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {/* Meta row */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${style.bg} ${style.text} border ${style.border}`}>
+                    {a.priority}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-muted)] truncate">{audience}{audienceSuffix}</span>
+                  <span className="text-[10px] text-[var(--text-muted)] ml-auto shrink-0">{relTime}</span>
+                </div>
+                {/* Message preview */}
+                <p className="text-xs text-[var(--text-tertiary)] line-clamp-2">{a.content}</p>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

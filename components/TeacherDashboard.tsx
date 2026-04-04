@@ -30,6 +30,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [activeSessions, setActiveSessions] = useState<Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>>(new Map());
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
   const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics'>('dashboard');
+  const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students'>('alerts');
   const [showNudgeModal, setShowNudgeModal] = useState(false);
   const [nudgeTarget, setNudgeTarget] = useState<{ studentId: string; studentName: string; defaultMessage: string; classType: string } | null>(null);
   const [nudgeMessage, setNudgeMessage] = useState('');
@@ -81,6 +82,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
     return map;
   }, [bucketProfiles]);
 
+  // Badge counts for sub-tabs
+  const flaggedCount = useMemo(() => alertsByStudent.size, [alertsByStudent]);
+  const activeAnnouncementCount = useMemo(() => announcements.length, [announcements]);
+
   // Stats
   const { totalStudents, avgTime, totalResourcesAccessed, totalXP } = useMemo(() => {
     const total = students.length;
@@ -121,7 +126,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
 
 
-      <div className={adminTab === 'dashboard' ? 'space-y-6' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
+      <div className={adminTab === 'dashboard' ? 'space-y-3' : 'hidden'} role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard">
       <FeatureErrorBoundary feature="Dashboard Overview">
 
       {/* STAT STRIP */}
@@ -151,53 +156,89 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         </div>
       </div>
 
-      {/* EARLY WARNING PANEL */}
-      <EarlyWarningPanel
-        students={students}
-        alerts={alerts}
-        bucketProfiles={bucketProfiles}
-        thresholds={warningThresholds}
-        onMessage={(student) => {
-          setNudgeTarget({
-            studentId: student.id,
-            studentName: student.name,
-            defaultMessage: 'Your teacher wants to check in with you.',
-            classType: student.classType || '',
-          });
-          setNudgeMessage('Your teacher wants to check in with you.');
-          setShowNudgeModal(true);
-        }}
-        onViewProfile={(student) => {
-          setSelectedStudentId(student.id);
-        }}
-      />
-
-      {/* ANNOUNCEMENTS */}
-      <div>
-          <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
+      {/* OVERVIEW SUB-TABS */}
+      <div className="flex items-center gap-1 border-b border-[var(--border)] pb-0" role="tablist" aria-label="Overview sections">
+        {(
+          [
+            { key: 'alerts', label: 'Alerts', count: flaggedCount },
+            { key: 'announcements', label: 'Announcements', count: activeAnnouncementCount },
+            { key: 'students', label: 'Students', count: totalStudents },
+          ] as { key: 'alerts' | 'announcements' | 'students'; label: string; count: number }[]
+        ).map(({ key, label, count }) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={overviewTab === key}
+            onClick={() => setOverviewTab(key)}
+            className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition rounded-t-lg -mb-px border-b-2 ${
+              overviewTab === key
+                ? 'text-[var(--text)] border-purple-500'
+                : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--border)]'
+            }`}
+          >
+            {label}
+            {count > 0 && (
+              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                overviewTab === key
+                  ? 'bg-purple-600/30 text-purple-300'
+                  : 'bg-[var(--surface-glass)] text-[var(--text-muted)]'
+              }`}>
+                {count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* ACTIVITY MONITOR */}
-      <ActivityMonitor
-        students={students}
-        activeSessions={activeSessions}
-        assignments={assignments}
-        submissions={submissions}
-        bucketsByStudent={bucketsByStudent}
-        alertsByStudent={alertsByStudent}
-        onViewProfile={(student) => setSelectedStudentId(student.id)}
-        onMessage={(student) => {
-          setNudgeTarget({
-            studentId: student.id,
-            studentName: student.name,
-            defaultMessage: 'Your teacher wants to check in with you.',
-            classType: student.classType || '',
-          });
-          setNudgeMessage('Your teacher wants to check in with you.');
-          setShowNudgeModal(true);
-        }}
-        onAward={() => setShowBehaviorAward(true)}
-      />
+      {/* OVERVIEW CONTENT AREA */}
+      {overviewTab === 'alerts' && (
+        <EarlyWarningPanel
+          students={students}
+          alerts={alerts}
+          bucketProfiles={bucketProfiles}
+          thresholds={warningThresholds}
+          onMessage={(student) => {
+            setNudgeTarget({
+              studentId: student.id,
+              studentName: student.name,
+              defaultMessage: 'Your teacher wants to check in with you.',
+              classType: student.classType || '',
+            });
+            setNudgeMessage('Your teacher wants to check in with you.');
+            setShowNudgeModal(true);
+          }}
+          onViewProfile={(student) => {
+            setSelectedStudentId(student.id);
+          }}
+        />
+      )}
+
+      {overviewTab === 'announcements' && (
+        <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
+      )}
+
+      {overviewTab === 'students' && (
+        <ActivityMonitor
+          students={students}
+          activeSessions={activeSessions}
+          assignments={assignments}
+          submissions={submissions}
+          bucketsByStudent={bucketsByStudent}
+          alertsByStudent={alertsByStudent}
+          onViewProfile={(student) => setSelectedStudentId(student.id)}
+          onMessage={(student) => {
+            setNudgeTarget({
+              studentId: student.id,
+              studentName: student.name,
+              defaultMessage: 'Your teacher wants to check in with you.',
+              classType: student.classType || '',
+            });
+            setNudgeMessage('Your teacher wants to check in with you.');
+            setShowNudgeModal(true);
+          }}
+          onAward={() => setShowBehaviorAward(true)}
+        />
+      )}
 
       </FeatureErrorBoundary>
       </div>
