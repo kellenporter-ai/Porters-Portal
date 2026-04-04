@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp, MessageSquare, User as UserIcon, Eye } from 'lucide-react';
+import { AlertTriangle, MessageSquare, User as UserIcon, Eye, X, XCircle, Loader2 } from 'lucide-react';
 import { User, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../../types';
 import { BUCKET_META } from '../../lib/telemetry';
+import { dataService } from '../../services/dataService';
+import { useToast } from '../ToastProvider';
 
 // ─── Threshold defaults (used when ClassConfig.telemetryThresholds is absent) ───
 
@@ -10,6 +12,9 @@ const DEFAULT_MIN_ENGAGEMENT_MINUTES = 15;
 
 /** Maximum daily-challenge consecutive misses before flagging */
 const DEFAULT_MAX_MISSED_CHALLENGES = 2;
+
+/** Alert age in days after which it is considered stale */
+const STALE_DAYS = 7;
 
 /** TelemetryBuckets that are considered at-risk for the panel */
 const AT_RISK_BUCKETS: ReadonlySet<TelemetryBucket> = new Set<TelemetryBucket>([
@@ -30,10 +35,16 @@ export type WarningSignalKind =
 
 export type WarningSeverity = 'watch' | 'intervene';
 
+export type FilterTab = 'all' | 'intervene' | 'watch';
+
 export interface WarningSignal {
   kind: WarningSignalKind;
   label: string;
   severity: WarningSeverity;
+  /** For EWS_ALERT signals: the originating alert id (used for dismiss) */
+  alertId?: string;
+  /** ISO timestamp of the alert's creation (for staleness display) */
+  createdAt?: string;
 }
 
 export interface FlaggedStudent {
@@ -75,6 +86,13 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+/** Returns the number of whole days since a given ISO timestamp, or null if unparseable. */
+function alertAgeDays(createdAt: string): number | null {
+  const created = Date.parse(createdAt);
+  if (isNaN(created)) return null;
+  return Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
+}
+
 // ─── Sub-components ───
 
 const SeverityPip: React.FC<{ severity: WarningSeverity }> = ({ severity }) =>
@@ -89,9 +107,21 @@ const SignalChip: React.FC<{ signal: WarningSignal }> = ({ signal }) => {
     signal.severity === 'intervene'
       ? 'bg-red-500/15 text-red-400 border-red-500/30'
       : 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30';
+
+  const ageDays = signal.createdAt ? alertAgeDays(signal.createdAt) : null;
+  const isStale = ageDays !== null && ageDays >= STALE_DAYS;
+
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${colorClass}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${colorClass} ${isStale ? 'opacity-60' : ''}`}>
       {signal.label}
+      {ageDays !== null && (
+        <span className="text-[9px] opacity-70">{ageDays}d</span>
+      )}
+      {isStale && (
+        <span className="ml-0.5 px-1 rounded bg-[var(--surface-glass)] text-[var(--text-muted)] border border-[var(--border)] text-[9px]">
+          Stale
+        </span>
+      )}
     </span>
   );
 };
@@ -100,14 +130,17 @@ interface StudentCardProps {
   flagged: FlaggedStudent;
   onMessage?: (student: User) => void;
   onViewProfile?: (student: User) => void;
+  onDismiss: (alertId: string) => void;
 }
 
-const StudentCard: React.FC<StudentCardProps> = ({ flagged, onMessage, onViewProfile }) => {
+const StudentCard: React.FC<StudentCardProps> = ({ flagged, onMessage, onViewProfile, onDismiss }) => {
   const { student, signals, topSeverity } = flagged;
   const cardBorder =
     topSeverity === 'intervene'
       ? 'border-red-500/30 bg-red-900/10'
       : 'border-yellow-500/20 bg-yellow-900/10';
+
+  const ewsSignal = signals.find((s) => s.kind === 'EWS_ALERT' && s.alertId);
 
   return (
     <div className={`flex items-start gap-3 p-3 rounded-xl border ${cardBorder}`}>
@@ -147,7 +180,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ flagged, onMessage, onViewPro
         </div>
 
         {/* Quick-action buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => onMessage?.(student)}
@@ -166,9 +199,38 @@ const StudentCard: React.FC<StudentCardProps> = ({ flagged, onMessage, onViewPro
             <Eye className="w-3 h-3" aria-hidden="true" />
             View Profile
           </button>
+          {ewsSignal?.alertId && (
+            <button
+              type="button"
+              onClick={() => onDismiss(ewsSignal.alertId!)}
+              className="flex items-center gap-1 px-2.5 py-1.5 min-h-[36px] bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 rounded-lg text-[11px] font-bold transition"
+              aria-label={`Dismiss alert for ${student.name}`}
+            >
+              <X className="w-3 h-3" aria-hidden="true" />
+              Dismiss
+            </button>
+          )}
         </div>
       </div>
     </div>
+  );
+};
+
+/** Section header rendered between severity groups in "All" view */
+const SectionHeader: React.FC<{ severity: WarningSeverity; count: number }> = ({ severity, count }) => {
+  const isIntervene = severity === 'intervene';
+  return (
+    <h3
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold ${
+        isIntervene
+          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+      }`}
+    >
+      <span className={`w-2 h-2 rounded-full ${isIntervene ? 'bg-red-500' : 'bg-yellow-400'}`} />
+      {isIntervene ? 'Intervene' : 'Watch'}
+      <span className="ml-auto opacity-60">{count}</span>
+    </h3>
   );
 };
 
@@ -182,7 +244,10 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
   onMessage,
   onViewProfile,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [classFilter, setClassFilter] = useState<string>('all');
+  const [isDismissing, setIsDismissing] = useState(false);
+  const toast = useToast();
 
   // Resolve effective thresholds
   const minEngagementSeconds =
@@ -260,6 +325,8 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
           kind: 'EWS_ALERT',
           label: ewsAlert.riskLevel.charAt(0) + ewsAlert.riskLevel.slice(1).toLowerCase(),
           severity: isCritical ? 'intervene' : 'watch',
+          alertId: ewsAlert.id,
+          createdAt: ewsAlert.createdAt,
         });
       }
 
@@ -293,9 +360,61 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
     return results;
   }, [students, alertsByStudentId, bucketByStudentId, minEngagementSeconds, thresholds]);
 
+  // Derive unique class sections for the class filter dropdown
+  const classSections = useMemo(() => {
+    const sections = new Set<string>();
+    for (const { student } of flaggedStudents) {
+      if (student.classType) sections.add(student.classType);
+    }
+    return Array.from(sections).sort();
+  }, [flaggedStudents]);
+
+  // Apply tab + class filters
+  const visibleStudents = useMemo(() => {
+    return flaggedStudents.filter((f) => {
+      if (activeTab !== 'all' && f.topSeverity !== activeTab) return false;
+      if (classFilter !== 'all' && f.student.classType !== classFilter) return false;
+      return true;
+    });
+  }, [flaggedStudents, activeTab, classFilter]);
+
+  const interveneStudents = visibleStudents.filter((f) => f.topSeverity === 'intervene');
+  const watchStudents = visibleStudents.filter((f) => f.topSeverity === 'watch');
+
   const interveneCount = flaggedStudents.filter((f) => f.topSeverity === 'intervene').length;
   const watchCount = flaggedStudents.filter((f) => f.topSeverity === 'watch').length;
   const totalCount = flaggedStudents.length;
+
+  // Collect all dismissable alert IDs currently visible
+  const allVisibleAlertIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const { signals } of visibleStudents) {
+      for (const sig of signals) {
+        if (sig.kind === 'EWS_ALERT' && sig.alertId) ids.push(sig.alertId);
+      }
+    }
+    return ids;
+  }, [visibleStudents]);
+
+  const handleDismiss = async (alertId: string) => {
+    try {
+      await dataService.dismissAlert(alertId);
+    } catch {
+      toast.error('Failed to dismiss alert');
+    }
+  };
+
+  const handleDismissAll = async () => {
+    if (allVisibleAlertIds.length === 0) return;
+    setIsDismissing(true);
+    try {
+      await dataService.dismissAlertsBatch(allVisibleAlertIds);
+    } catch {
+      toast.error('Failed to dismiss alerts');
+    } finally {
+      setIsDismissing(false);
+    }
+  };
 
   // Panel is always rendered (even at 0 flags) so teachers know the system is active
   const panelBorderClass =
@@ -312,16 +431,16 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
       ? 'text-amber-400'
       : 'text-[var(--text-tertiary)]';
 
+  const tabs: { id: FilterTab; label: string; count: number }[] = [
+    { id: 'all', label: 'All', count: totalCount },
+    { id: 'intervene', label: 'Intervene', count: interveneCount },
+    { id: 'watch', label: 'Watch', count: watchCount },
+  ];
+
   return (
     <div className={`rounded-3xl border backdrop-blur-md transition-colors ${panelBorderClass}`}>
-      {/* ── Collapsible Header ── */}
-      <button
-        type="button"
-        className="w-full flex items-center justify-between p-6 text-left"
-        onClick={() => setIsExpanded((prev) => !prev)}
-        aria-expanded={isExpanded}
-        aria-controls="early-warning-body"
-      >
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between p-6 pb-3">
         <div className="flex items-center gap-3">
           <AlertTriangle
             className={`w-5 h-5 ${interveneCount > 0 ? 'text-red-400' : totalCount > 0 ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}
@@ -350,62 +469,145 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-[var(--text-muted)]">
-          {totalCount > 0 && !isExpanded && (
-            <span className="text-xs text-[var(--text-tertiary)]">
-              {totalCount} student{totalCount !== 1 ? 's' : ''} flagged
-            </span>
-          )}
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4" aria-hidden="true" />
-          ) : (
-            <ChevronDown className="w-4 h-4" aria-hidden="true" />
-          )}
+        {/* Dismiss All */}
+        {allVisibleAlertIds.length > 0 && (
+          <button
+            type="button"
+            onClick={handleDismissAll}
+            disabled={isDismissing}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 rounded-lg text-[11px] font-bold transition disabled:opacity-50 disabled:pointer-events-none"
+            aria-label="Dismiss all visible alerts"
+          >
+            {isDismissing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+            Dismiss All
+          </button>
+        )}
+      </div>
+
+      {/* ── Filter Tabs + Class Dropdown ── */}
+      <div className="flex items-center gap-3 px-6 pb-3 border-b border-[var(--border)]">
+        <div className="flex items-center gap-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                activeTab === tab.id
+                  ? tab.id === 'intervene'
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                    : tab.id === 'watch'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                    : 'bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] border border-[var(--border)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
+              }`}
+              aria-pressed={activeTab === tab.id}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className="ml-1 opacity-70">{tab.count}</span>
+              )}
+            </button>
+          ))}
         </div>
-      </button>
 
-      {/* ── Expanded Body ── */}
-      {isExpanded && (
-        <div id="early-warning-body" className="px-6 pb-6">
-          {totalCount === 0 ? (
-            <div className="text-center py-8 text-[var(--text-muted)] italic">
-              <UserIcon className="w-10 h-10 mx-auto mb-2 opacity-20" aria-hidden="true" />
-              No students flagged. Engagement looks healthy.
+        {classSections.length > 1 && (
+          <select
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            className="ml-auto text-xs bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)] rounded-lg px-2 py-1 focus:outline-none focus:border-[var(--border)]"
+            aria-label="Filter by class section"
+          >
+            <option value="all">All classes</option>
+            {classSections.map((section) => (
+              <option key={section} value={section}>{section}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* ── Body ── */}
+      <div id="early-warning-body" className="px-6 pb-6 pt-4">
+        {totalCount === 0 ? (
+          <div className="text-center py-8 text-[var(--text-muted)] italic">
+            <UserIcon className="w-10 h-10 mx-auto mb-2 opacity-20" aria-hidden="true" />
+            No students flagged. Engagement looks healthy.
+          </div>
+        ) : visibleStudents.length === 0 ? (
+          <div className="text-center py-6 text-[var(--text-muted)] italic text-sm">
+            No students match the current filter.
+          </div>
+        ) : (
+          <>
+            {/* Legend */}
+            <div className="flex items-center gap-4 mb-4 text-xs text-[var(--text-tertiary)]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                Intervene — needs immediate attention
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+                Watch — monitor closely
+              </span>
             </div>
-          ) : (
-            <>
-              {/* Legend */}
-              <div className="flex items-center gap-4 mb-4 text-xs text-[var(--text-tertiary)]">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                  Intervene — needs immediate attention
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-                  Watch — monitor closely
-                </span>
-              </div>
 
-              <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1">
-                {flaggedStudents.map((flagged) => (
+            <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1">
+              {activeTab === 'all' ? (
+                <>
+                  {interveneStudents.length > 0 && (
+                    <>
+                      <SectionHeader severity="intervene" count={interveneStudents.length} />
+                      {interveneStudents.map((flagged) => (
+                        <StudentCard
+                          key={flagged.student.id}
+                          flagged={flagged}
+                          onMessage={onMessage}
+                          onViewProfile={onViewProfile}
+                          onDismiss={handleDismiss}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {watchStudents.length > 0 && (
+                    <>
+                      <SectionHeader severity="watch" count={watchStudents.length} />
+                      {watchStudents.map((flagged) => (
+                        <StudentCard
+                          key={flagged.student.id}
+                          flagged={flagged}
+                          onMessage={onMessage}
+                          onViewProfile={onViewProfile}
+                          onDismiss={handleDismiss}
+                        />
+                      ))}
+                    </>
+                  )}
+                </>
+              ) : (
+                visibleStudents.map((flagged) => (
                   <StudentCard
                     key={flagged.student.id}
                     flagged={flagged}
                     onMessage={onMessage}
                     onViewProfile={onViewProfile}
+                    onDismiss={handleDismiss}
                   />
-                ))}
-              </div>
+                ))
+              )}
+            </div>
 
-              {/* Bucket breakdown note */}
-              <p className="mt-3 text-[10px] text-[var(--text-muted)] italic">
-                Signals combine server-side EWS alerts with local engagement thresholds and
-                telemetry bucket data. Dismissing a server alert removes it from this panel.
-              </p>
-            </>
-          )}
-        </div>
-      )}
+            {/* Bucket breakdown note */}
+            <p className="mt-3 text-[10px] text-[var(--text-muted)] italic">
+              Signals combine server-side EWS alerts with local engagement thresholds and
+              telemetry bucket data. Dismissing a server alert removes it from this panel.
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 };

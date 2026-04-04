@@ -1623,6 +1623,31 @@ export const dismissAlert = onCall(async (request) => {
   return { success: true };
 });
 
+/**
+ * dismissAlertsBatch — Teacher dismisses multiple EWS alerts in one call.
+ */
+export const dismissAlertsBatch = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { alertIds } = request.data;
+
+  if (!Array.isArray(alertIds) || alertIds.length === 0) {
+    throw new HttpsError("invalid-argument", "alertIds must be a non-empty array.");
+  }
+  if (alertIds.length > 100) {
+    throw new HttpsError("invalid-argument", "alertIds may not exceed 100 items per call.");
+  }
+
+  const db = admin.firestore();
+  const batch = db.batch();
+  for (const alertId of alertIds) {
+    const alertRef = db.doc(`student_alerts/${alertId}`);
+    batch.set(alertRef, { isDismissed: true }, { merge: true });
+  }
+  await batch.commit();
+
+  return { dismissed: alertIds.length };
+});
+
 
 // ==========================================
 // UTILITY FUNCTIONS
