@@ -5200,7 +5200,7 @@ function sleep(ms: number): Promise<void> {
 /**
  * classroomListCourses — List active courses for the authenticated teacher.
  */
-export const classroomListCourses = onCall(async (request) => {
+export const classroomListCourses = onCall({ memory: "512MiB" }, async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -5232,7 +5232,7 @@ export const classroomListCourses = onCall(async (request) => {
 /**
  * classroomListCourseWork — List course work for a given course.
  */
-export const classroomListCourseWork = onCall(async (request) => {
+export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken, courseId } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -5268,7 +5268,7 @@ export const classroomListCourseWork = onCall(async (request) => {
 /**
  * classroomCreateCourseWork — Create a new assignment in Google Classroom.
  */
-export const classroomCreateCourseWork = onCall(async (request) => {
+export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken, courseId, title, maxPoints } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -5316,7 +5316,7 @@ export const classroomCreateCourseWork = onCall(async (request) => {
  * matches students by email to Classroom roster, and patches grades.
  * Includes exponential backoff for rate limiting (429 errors).
  */
-export const classroomPushGrades = onCall(async (request) => {
+export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   await verifyAdmin(request.auth);
   const { accessToken, assignmentId } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
@@ -5326,6 +5326,7 @@ export const classroomPushGrades = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing assignmentId.");
   }
 
+  try {
   const db = admin.firestore();
 
   // 1. Read the assignment doc and resolve link entries (new array or legacy single)
@@ -5495,8 +5496,14 @@ export const classroomPushGrades = onCall(async (request) => {
               courseId,
               courseWorkId,
               id: submissionId,
-              updateMask: "assignedGrade",
-              requestBody: { assignedGrade },
+              updateMask: "assignedGrade,draftGrade",
+              requestBody: { assignedGrade, draftGrade: assignedGrade },
+            });
+            // Return the submission so the grade is visible to the student
+            await classroom.courses.courseWork.studentSubmissions.return({
+              courseId,
+              courseWorkId,
+              id: submissionId,
             });
             entryPushed++;
             success = true;
@@ -5547,4 +5554,10 @@ export const classroomPushGrades = onCall(async (request) => {
 
   logger.info("classroomPushGrades complete", { pushed, skipped, errorCount: errors.length });
   return { pushed, skipped, errors };
+  } catch (err: unknown) {
+    if (err instanceof HttpsError) throw err;
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomPushGrades unhandled error", { error: msg, stack: err instanceof Error ? err.stack : undefined });
+    throw new HttpsError("internal", `Grade push failed: ${msg}`);
+  }
 });
