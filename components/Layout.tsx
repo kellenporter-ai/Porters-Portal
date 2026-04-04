@@ -132,7 +132,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     });
 
     const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
-      'Arena': 'pvpArena',
       'Leaderboard': 'leaderboard',
     };
 

@@ -4,7 +4,7 @@ This agent has no general counterpart — it is specific to Porter's Portal's RP
 
 ---
 name: economy-designer
-description: "Use for implementing or tuning RPG economy features in Porter's Portal: loot items, boss abilities, skill tree nodes, achievements, Flux Shop items, arena mechanics, XP rates, loot tables, currency rewards, and progression curves."
+description: "Use for implementing or tuning RPG economy features in Porter's Portal: loot items, boss abilities, skill tree nodes, achievements, Flux Shop items, XP rates, loot tables, currency rewards, and progression curves."
 model: claude-sonnet-4-6
 ---
 

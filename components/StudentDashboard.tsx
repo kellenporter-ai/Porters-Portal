@@ -40,10 +40,9 @@ const SkillTreePanel = lazyWithRetry(() => import('./xp/SkillTreePanel'));
 const FortuneWheel = lazyWithRetry(() => import('./xp/FortuneWheel'));
 const BossEncounterPanel = lazyWithRetry(() => import('./xp/BossEncounterPanel'));
 const BossQuizPanel = lazyWithRetry(() => import('./xp/BossQuizPanel'));
-const ArenaPanel = lazyWithRetry(() => import('./xp/ArenaPanel'));
 const FluxShopPanel = lazyWithRetry(() => import('./xp/FluxShopPanel'));
 
-type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'ARENA';
+type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
 
 interface StudentDashboardProps {
   user: User;
@@ -53,7 +52,6 @@ interface StudentDashboardProps {
   enabledFeatures: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    pvpArena: boolean;
     bossFights: boolean;
   };
   onNavigate: (tab: string) => void;
@@ -85,7 +83,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       safeImport(() => import('./dashboard/CalendarView'));
       safeImport(() => import('./xp/SkillTreePanel'));
       safeImport(() => import('./xp/FortuneWheel'));
-      safeImport(() => import('./xp/ArenaPanel'));
       safeImport(() => import('./xp/FluxShopPanel'));
       safeImport(() => import('./xp/BossEncounterPanel'));
       safeImport(() => import('./xp/BossQuizPanel'));
@@ -676,16 +673,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                    />
                    </React.Suspense>
                  </FeatureErrorBoundary>
-             )}
-
-             {activeTab === 'ARENA' && enabledFeatures.pvpArena && (
-                 <div key="arena" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-                     <FeatureErrorBoundary feature="Arena">
-                       <React.Suspense fallback={<GamificationSkeleton />}>
-                       <ArenaPanel userId={user.id} classType={activeClass} />
-                       </React.Suspense>
-                     </FeatureErrorBoundary>
-                 </div>
              )}
 
            </div>

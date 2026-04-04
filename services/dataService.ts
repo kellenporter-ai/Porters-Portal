@@ -1,6 +1,6 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, ArenaMatch, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callQueueArenaDuel, callCancelArenaQueue, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry } from '../types';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -1645,57 +1645,4 @@ export const dataService = {
     return data.streakData || null;
   },
 
-  // ========================================
-  // PVP ARENA
-  // ========================================
-
-  queueArenaDuel: async (classType: string) => {
-    const result = await callQueueArenaDuel({ classType });
-    return result.data as {
-      status: 'MATCHED' | 'QUEUED';
-      matchId: string;
-      winnerId?: string | null;
-      rounds?: any[];
-      opponent?: any;
-    };
-  },
-
-  cancelArenaQueue: async (matchId: string) => {
-    const result = await callCancelArenaQueue({ matchId });
-    return result.data as { cancelled: boolean };
-  },
-
-  /**
-   * Subscribe to a single arena_match document to watch for status changes (QUEUED -> COMPLETED).
-   * Used while waiting in queue.
-   */
-  subscribeToArenaQueue: (matchId: string, callback: (match: ArenaMatch | null) => void) => {
-    const matchRef = doc(db, 'arena_matches', matchId);
-    return onSnapshot(matchRef, (snap) => {
-      callback(snap.exists() ? ({ id: snap.id, ...snap.data() } as ArenaMatch) : null);
-    });
-  },
-
-  /**
-   * Subscribe to completed arena matches for a user.
-   * Firestore can't query nested fields, so we fetch the last 20 COMPLETED matches
-   * and filter client-side for the given userId.
-   */
-  subscribeToArenaMatches: (userId: string, classType: string, callback: (matches: ArenaMatch[]) => void) => {
-    const q = query(
-      collection(db, 'arena_matches'),
-      where('status', '==', 'COMPLETED'),
-      where('classType', '==', classType),
-      orderBy('completedAt', 'desc'),
-      limit(20)
-    );
-    return resilientSnapshot('arena_matches', q, (snapshot: any) => {
-      const all = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as ArenaMatch));
-      // Filter to matches involving this user
-      const mine = all.filter((m: ArenaMatch) =>
-        m.player1?.userId === userId || m.player2?.userId === userId
-      );
-      callback(mine.slice(0, 10));
-    });
-  },
 };

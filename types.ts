@@ -31,7 +31,6 @@ export interface ClassConfig {
   features: {
     evidenceLocker: boolean;
     leaderboard: boolean;
-    pvpArena: boolean;
     bossFights: boolean;
   };
   // Admin-configurable telemetry thresholds (optional — falls back to defaults)
@@ -959,74 +958,6 @@ export interface BossQuizProgress {
 export const BOSS_REWARD_TIERS = [1.5, 1.4, 1.3, 1.2, 1.1] as const;
 export const BOSS_PARTICIPATION_MIN_ATTEMPTS = 5;
 export const BOSS_PARTICIPATION_MIN_CORRECT = 1;
-
-// ========================================
-// PVP ARENA
-// ========================================
-
-export type ArenaMatchMode = 'AUTO_DUEL' | 'QUIZ_RACE';
-export type ArenaMatchStatus = 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED';
-
-export interface ArenaMatch {
-  id: string;
-  classType: string;
-  mode: ArenaMatchMode;
-  player1: ArenaPlayer;
-  player2: ArenaPlayer;
-  rounds: ArenaRound[];
-  winnerId?: string;
-  status: ArenaMatchStatus;
-  createdAt: string;
-  completedAt?: string;
-  seasonId?: string;
-}
-
-export interface ArenaPlayer {
-  userId: string;
-  name: string;
-  gearScore: number;
-  stats: { tech: number; focus: number; analysis: number; charisma: number };
-  role: string;         // PlayerRole derived from stats
-  hp: number;
-  maxHp: number;
-}
-
-export interface ArenaRound {
-  roundNumber: number;
-  p1Action: { damage: number; isCrit: boolean; blocked: number };
-  p2Action: { damage: number; isCrit: boolean; blocked: number };
-  p1HpAfter: number;
-  p2HpAfter: number;
-}
-
-export interface ArenaSeason {
-  id: string;
-  name: string;
-  classType: string;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  entryRewards: {        // Rewards per match
-    winXp: number;
-    winFlux: number;
-    lossXp: number;
-    lossFlux: number;
-  };
-  ratingChange: {
-    win: number;          // e.g., +15
-    loss: number;         // e.g., -10
-  };
-  dailyMatchLimit: number;
-}
-
-export interface ArenaProfile {
-  rating: number;
-  wins: number;
-  losses: number;
-  matchesPlayedToday: number;
-  lastMatchDate?: string;
-  seasonId?: string;
-}
 
 // ========================================
 // KNOWLEDGE-GATED LOOT

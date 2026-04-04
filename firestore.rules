@@ -378,19 +378,6 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // PVP ARENA
-    // ==========================================
-    match /arena_matches/{matchId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Admin SDK only (Cloud Functions)
-    }
-
-    match /arena_seasons/{seasonId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // ==========================================
     // BUG REPORTS
     // ==========================================
     match /bug_reports/{reportId} {

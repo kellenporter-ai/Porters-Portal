@@ -100,7 +100,6 @@ Equippable gear must provide balanced advantages without trivializing quizzes.
 **Principles:**
 - Gear provides percentage bonuses, not flat overrides
 - No single stat should dominate all content types
-- PvP Arena stats are normalized separately from PvE dungeon stats
 - Highest-wins stacking (Math.max), not additive — prevents exponential scaling
 
 ## Monte Carlo Simulation Guidelines

@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, Shield, Brain, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Swords, Store, FileBarChart, ClipboardCheck } from 'lucide-react';
+import { Atom, Microscope, Zap, ShieldAlert, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, Shield, Brain, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Store, FileBarChart, ClipboardCheck } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -55,7 +55,6 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Calendar', icon: <Calendar className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
   // Operations group
   { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Arena', icon: <Swords className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
   { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
   { name: 'Flux Shop', icon: <Store className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
   { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },

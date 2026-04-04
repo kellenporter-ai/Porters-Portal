@@ -416,11 +416,6 @@ const App: React.FC = () => {
               <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="CALENDAR" />
             </FeatureErrorBoundary></Suspense>
           } />
-          <Route path="/arena" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Arena">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ARENA" />
-            </FeatureErrorBoundary></Suspense>
-          } />
           <Route path="/forensics" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>
           } />
@@ -459,7 +454,7 @@ const App: React.FC = () => {
 const StudentRouteWrapper: React.FC<{
   user: User;
   submissions: Submission[];
-  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'ARENA';
+  tab: 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
 }> = ({ user, submissions, tab }) => {
   const { assignments, classConfigs, enabledFeatures, loading } = useAppData();
   const navigate = useNavigate();

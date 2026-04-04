@@ -75,10 +75,6 @@ export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAss
 export const callBackfillWordCount = httpsCallable(functions, 'backfillWordCount');
 export const callScaleBossHp = httpsCallable(functions, 'scaleBossHp');
 
-// PvP Arena Cloud Functions
-export const callQueueArenaDuel = httpsCallable(functions, 'queueArenaDuel');
-export const callCancelArenaQueue = httpsCallable(functions, 'cancelArenaQueue');
-
 // Flux Shop Cloud Functions
 export const callPurchaseFluxItem = httpsCallable(functions, 'purchaseFluxItem');
 export const callEquipFluxCosmetic = httpsCallable(functions, 'equipFluxCosmetic');

@@ -5,7 +5,7 @@ import { reportError } from './errorReporting';
 
 // ─── Types ───
 
-export type EnabledFeatures = { evidenceLocker: boolean; leaderboard: boolean; pvpArena: boolean; bossFights: boolean };
+export type EnabledFeatures = { evidenceLocker: boolean; leaderboard: boolean; bossFights: boolean };
 
 interface AssignmentData {
   assignments: Assignment[];
@@ -25,7 +25,7 @@ interface AppData extends AssignmentData, GameData, ClassConfigData {}
 
 // ─── Defaults ───
 
-const DEFAULT_FEATURES: EnabledFeatures = { evidenceLocker: true, leaderboard: true, pvpArena: true, bossFights: true };
+const DEFAULT_FEATURES: EnabledFeatures = { evidenceLocker: true, leaderboard: true, bossFights: true };
 
 const EMPTY_ASSIGNMENT_DATA: AssignmentData = { assignments: [], loading: true };
 const EMPTY_GAME_DATA: GameData = { xpEvents: [] };

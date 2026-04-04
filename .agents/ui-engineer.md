@@ -17,7 +17,7 @@
 
 ## Key Directories
 - `components/dashboard/` — main dashboard panels (StudentDashboard, TeacherDashboard)
-- `components/xp/` — gamification UI (boss battles, shop, skill tree, arena, dungeons)
+- `components/xp/` — gamification UI (boss battles, shop, skill tree, dungeons)
 - `components/dashboard/OperativeAvatar.tsx` — student avatar (procedural SVG, ~700 lines)
 - `components/lessons/LessonBlocks.tsx` — all 22 interactive block type renderers
 - `lib/` — hooks, utilities, persistentWrite, lazyWithRetry
@@ -136,5 +136,4 @@ Other non-existent options: `suspense`, `staleTime`, `cacheTime`.
 ## Gamification UI Notes
 - Leaderboard, TeacherDashboard, UserManagement, OperativesTab, Communications: all virtualized with `useVirtualizer` + `measureElement`
 - Boss ability animations: shake + flash + HP threshold markers
-- Arena rating: 5 spy-themed tiers with progress bar
 - Flux Shop: category filter tabs, cosmetic preview with equip toggle
