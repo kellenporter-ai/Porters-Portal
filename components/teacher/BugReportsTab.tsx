@@ -220,7 +220,7 @@ Please analyze these issues, identify the root causes in the codebase, and imple
 
       {/* AI Fix Panel — inline, shown when selectedBugs > 0 or showAiPanel */}
       {(showAiPanel || selectedBugs.size > 0) && (
-        <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6 space-y-4">
+        <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-amber-400" />
@@ -236,9 +236,9 @@ Please analyze these issues, identify the root causes in the codebase, and imple
           </div>
 
           {selectedBugs.size > 0 && (
-            <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4">
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
               <span className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest">{selectedBugs.size} report{selectedBugs.size !== 1 ? 's' : ''} selected</span>
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-2 space-y-1">
                 {bugReports.filter(r => selectedBugs.has(r.id!)).map(r => (
                   <div key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] bg-[var(--panel-bg)] rounded-lg px-3 py-2">
                     <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${CATEGORY_BADGES[r.category].color}`}>{r.category}</span>
@@ -259,20 +259,20 @@ Please analyze these issues, identify the root causes in the codebase, and imple
             <textarea
               value={aiContext}
               onChange={e => setAiContext(e.target.value)}
-              rows={3}
+              rows={2}
               placeholder="Extra context about the bugs or how to reproduce them..."
-              className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
+              className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-4 py-1.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="flex gap-2 items-start">
             <button
               onClick={copyPrompt}
-              className="flex items-center justify-center gap-2 px-4 py-3.5 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold text-sm transition cursor-pointer shadow-lg shadow-purple-500/20"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold text-xs transition cursor-pointer shadow-sm shrink-0"
             >
               <Clipboard className="w-4 h-4" /> Copy Prompt to Clipboard
             </button>
-            <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 max-h-48 overflow-y-auto custom-scrollbar">
+            <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-2 max-h-24 overflow-y-auto custom-scrollbar flex-1">
               <pre className="text-xs text-[var(--text-tertiary)] whitespace-pre-wrap font-mono leading-relaxed">{generatePrompt()}</pre>
             </div>
           </div>

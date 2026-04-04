@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, BugReport, SongRequest } from '../types';
-import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, Bug, Music } from 'lucide-react';
+import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3 } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
@@ -32,8 +32,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketProfiles, setBucketProfiles] = useState<StudentBucketProfile[]>([]);
   const [activeSessions, setActiveSessions] = useState<Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>>(new Map());
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'bugs' | 'songs'>('dashboard');
-  const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students'>('alerts');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics'>('dashboard');
+  const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students' | 'bugs' | 'songs'>('alerts');
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [songRequests, setSongRequests] = useState<SongRequest[]>([]);
   const [showNudgeModal, setShowNudgeModal] = useState(false);
@@ -126,22 +126,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <button id="tab-analytics" role="tab" aria-selected={adminTab === 'analytics'} aria-controls="tabpanel-analytics" onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Analytics
           </button>
-          <button id="tab-bugs" role="tab" aria-selected={adminTab === 'bugs'} aria-controls="tabpanel-bugs" onClick={() => setAdminTab('bugs')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'bugs' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
-            <Bug className="w-3.5 h-3.5" aria-hidden="true" /> Bug Reports
-            {unresolvedBugCount > 0 && (
-              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${adminTab === 'bugs' ? 'bg-white/20 text-white' : 'bg-red-500/20 text-red-400'}`}>
-                {unresolvedBugCount}
-              </span>
-            )}
-          </button>
-          <button id="tab-songs" role="tab" aria-selected={adminTab === 'songs'} aria-controls="tabpanel-songs" onClick={() => setAdminTab('songs')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'songs' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
-            <Music className="w-3.5 h-3.5" aria-hidden="true" /> Song Queue
-            {pendingSongCount > 0 && (
-              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${adminTab === 'songs' ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-400'}`}>
-                {pendingSongCount}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 
@@ -151,17 +135,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         </FeatureErrorBoundary></div>
       )}
 
-      {adminTab === 'bugs' && (
-        <div role="tabpanel" id="tabpanel-bugs" aria-labelledby="tab-bugs">
-          <BugReportsTab bugReports={bugReports} />
-        </div>
-      )}
-
-      {adminTab === 'songs' && (
-        <div role="tabpanel" id="tabpanel-songs" aria-labelledby="tab-songs">
-          <SongQueueTab songRequests={songRequests} />
-        </div>
-      )}
 
 
 
@@ -202,7 +175,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             { key: 'alerts', label: 'Alerts', count: flaggedCount },
             { key: 'announcements', label: 'Announcements', count: activeAnnouncementCount },
             { key: 'students', label: 'Students', count: totalStudents },
-          ] as { key: 'alerts' | 'announcements' | 'students'; label: string; count: number }[]
+            { key: 'bugs', label: 'Bug Reports', count: unresolvedBugCount },
+            { key: 'songs', label: 'Song Queue', count: pendingSongCount },
+          ] as { key: 'alerts' | 'announcements' | 'students' | 'bugs' | 'songs'; label: string; count: number }[]
         ).map(({ key, label, count }) => (
           <button
             key={key}
@@ -219,8 +194,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             {count > 0 && (
               <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
                 overviewTab === key
-                  ? 'bg-purple-600/30 text-purple-300'
-                  : 'bg-[var(--surface-glass)] text-[var(--text-muted)]'
+                  ? key === 'bugs' ? 'bg-red-600/30 text-red-300'
+                    : key === 'songs' ? 'bg-amber-600/30 text-amber-300'
+                    : 'bg-purple-600/30 text-purple-300'
+                  : key === 'bugs' ? 'bg-red-500/20 text-red-400'
+                    : key === 'songs' ? 'bg-amber-500/20 text-amber-400'
+                    : 'bg-[var(--surface-glass)] text-[var(--text-muted)]'
               }`}>
                 {count}
               </span>
@@ -280,6 +259,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           onAward={() => setShowBehaviorAward(true)}
         />
         </>
+      )}
+
+      {overviewTab === 'bugs' && (
+        <BugReportsTab bugReports={bugReports} />
+      )}
+      {overviewTab === 'songs' && (
+        <SongQueueTab songRequests={songRequests} />
       )}
 
       </FeatureErrorBoundary>
