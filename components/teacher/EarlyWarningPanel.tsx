@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, MessageSquare, User as UserIcon, Eye, X, XCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, MessageSquare, User as UserIcon, Eye, X, XCircle, Loader2, EyeOff } from 'lucide-react';
 import { User, StudentAlert, StudentBucketProfile, TelemetryBucket } from '../../types';
 import { BUCKET_META } from '../../lib/telemetry';
 import { dataService } from '../../services/dataService';
@@ -93,6 +93,18 @@ function alertAgeDays(createdAt: string): number | null {
   return Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
 }
 
+/** Short human-readable label for a signal kind (no redundant context). */
+function shortSignalLabel(signal: WarningSignal): string {
+  switch (signal.kind) {
+    case 'LOW_ENGAGEMENT':    return 'Low engagement';
+    case 'HIGH_PASTE_COUNT':  return 'High paste rate';
+    case 'MISSED_CHALLENGES': return 'Missed challenges';
+    case 'AT_RISK_BUCKET':    return signal.label;          // already short (e.g. "Inactive")
+    case 'EWS_ALERT':         return signal.label;          // e.g. "Critical"
+    default:                  return signal.label;
+  }
+}
+
 // ─── Sub-components ───
 
 const SeverityPip: React.FC<{ severity: WarningSeverity }> = ({ severity }) =>
@@ -102,7 +114,7 @@ const SeverityPip: React.FC<{ severity: WarningSeverity }> = ({ severity }) =>
     <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 shrink-0" aria-label="Watch" title="Monitor" />
   );
 
-const SignalChip: React.FC<{ signal: WarningSignal }> = ({ signal }) => {
+const SignalChip: React.FC<{ signal: WarningSignal; compact?: boolean }> = ({ signal, compact }) => {
   const colorClass =
     signal.severity === 'intervene'
       ? 'bg-red-500/15 text-red-400 border-red-500/30'
@@ -110,118 +122,151 @@ const SignalChip: React.FC<{ signal: WarningSignal }> = ({ signal }) => {
 
   const ageDays = signal.createdAt ? alertAgeDays(signal.createdAt) : null;
   const isStale = ageDays !== null && ageDays >= STALE_DAYS;
+  const label = compact ? shortSignalLabel(signal) : signal.label;
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${colorClass} ${isStale ? 'opacity-60' : ''}`}>
-      {signal.label}
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${colorClass} ${isStale ? 'opacity-60' : ''}`}>
+      {label}
       {ageDays !== null && (
         <span className="text-[9px] opacity-70">{ageDays}d</span>
       )}
-      {isStale && (
+      {isStale && !compact && (
         <span className="ml-0.5 px-1 rounded bg-[var(--surface-glass)] text-[var(--text-muted)] border border-[var(--border)] text-[9px]">
           Stale
         </span>
+      )}
+      {isStale && compact && (
+        <span className="text-[9px] opacity-60" title="Stale alert">·S</span>
       )}
     </span>
   );
 };
 
-interface StudentCardProps {
+interface CompactStudentCardProps {
   flagged: FlaggedStudent;
   onMessage?: (student: User) => void;
   onViewProfile?: (student: User) => void;
   onDismiss: (alertId: string) => void;
+  onHide: (studentId: string) => void;
 }
 
-const StudentCard: React.FC<StudentCardProps> = ({ flagged, onMessage, onViewProfile, onDismiss }) => {
+const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
+  flagged,
+  onMessage,
+  onViewProfile,
+  onDismiss,
+  onHide,
+}) => {
   const { student, signals, topSeverity } = flagged;
   const cardBorder =
     topSeverity === 'intervene'
-      ? 'border-red-500/30 bg-red-900/10'
-      : 'border-yellow-500/20 bg-yellow-900/10';
+      ? 'border-red-500/30 bg-red-500/10'
+      : 'border-amber-500/20 bg-amber-500/10';
 
   const ewsSignal = signals.find((s) => s.kind === 'EWS_ALERT' && s.alertId);
+  const visibleSignals = signals.slice(0, 2);
+  const extraCount = signals.length - visibleSignals.length;
 
   return (
-    <div className={`flex items-start gap-3 p-3 rounded-xl border ${cardBorder}`}>
-      {/* Avatar */}
-      <div className="shrink-0">
-        {student.avatarUrl ? (
-          <img
-            src={student.avatarUrl}
-            alt={`${student.name} avatar`}
-            className="w-9 h-9 rounded-full object-cover border border-[var(--border)]"
-          />
-        ) : (
-          <div
-            className="w-9 h-9 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] flex items-center justify-center text-xs font-bold text-[var(--text-secondary)]"
-            aria-hidden="true"
-          >
-            {getInitials(student.name)}
-          </div>
+    <div
+      className={`group flex flex-col gap-1.5 p-2.5 rounded-xl border ${cardBorder} contain-layout`}
+      style={{ contain: 'layout style' }}
+    >
+      {/* Row 1: Avatar + name + severity pip */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="shrink-0">
+          {student.avatarUrl ? (
+            <img
+              src={student.avatarUrl}
+              alt={`${student.name} avatar`}
+              className="w-8 h-8 rounded-full object-cover border border-[var(--border)]"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] flex items-center justify-center text-[10px] font-bold text-[var(--text-secondary)]"
+              aria-hidden="true"
+            >
+              {getInitials(student.name)}
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <SeverityPip severity={topSeverity} />
+          <span className="text-sm font-bold text-[var(--text)] truncate">{student.name}</span>
+        </div>
+      </div>
+
+      {/* Row 2: Class name */}
+      {student.classType && (
+        <span className="text-[10px] text-[var(--text-muted)] truncate leading-none pl-0.5">
+          {student.classType}
+        </span>
+      )}
+
+      {/* Row 3: Signal chips (first 2 + overflow badge) */}
+      <div className="flex flex-wrap gap-1">
+        {visibleSignals.map((sig) => (
+          <SignalChip key={sig.kind} signal={sig} compact />
+        ))}
+        {extraCount > 0 && (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)]">
+            +{extraCount}
+          </span>
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <SeverityPip severity={topSeverity} />
-          <span className="text-sm font-bold text-[var(--text-primary)] truncate">{student.name}</span>
-          {student.classType && (
-            <span className="text-[10px] text-[var(--text-tertiary)] shrink-0">{student.classType}</span>
-          )}
-        </div>
-
-        {/* Warning signal chips */}
-        <div className="flex flex-wrap gap-1 mb-2">
-          {signals.map((sig) => (
-            <SignalChip key={sig.kind} signal={sig} />
-          ))}
-        </div>
-
-        {/* Quick-action buttons */}
-        <div className="flex gap-2 flex-wrap">
+      {/* Row 4: Action buttons — icon-only, shown on hover (always on touch) */}
+      <div className="flex items-center gap-1 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={() => onMessage?.(student)}
+          className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-400 transition"
+          aria-label={`Message ${student.name}`}
+          title="Message"
+        >
+          <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onViewProfile?.(student)}
+          className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] transition"
+          aria-label={`View profile for ${student.name}`}
+          title="View Profile"
+        >
+          <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+        {ewsSignal?.alertId ? (
           <button
             type="button"
-            onClick={() => onMessage?.(student)}
-            className="flex items-center gap-1 px-2.5 py-1.5 min-h-[36px] bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-400 rounded-lg text-[11px] font-bold transition"
-            aria-label={`Message ${student.name}`}
+            onClick={() => onDismiss(ewsSignal.alertId!)}
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 transition"
+            aria-label={`Dismiss alert for ${student.name}`}
+            title="Dismiss server alert"
           >
-            <MessageSquare className="w-3 h-3" aria-hidden="true" />
-            Message
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
+        ) : (
           <button
             type="button"
-            onClick={() => onViewProfile?.(student)}
-            className="flex items-center gap-1 px-2.5 py-1.5 min-h-[36px] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-[11px] font-bold transition"
-            aria-label={`View profile for ${student.name}`}
+            onClick={() => onHide(student.id)}
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] transition"
+            aria-label={`Hide ${student.name} from view`}
+            title="Hide from view"
           >
-            <Eye className="w-3 h-3" aria-hidden="true" />
-            View Profile
+            <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
-          {ewsSignal?.alertId && (
-            <button
-              type="button"
-              onClick={() => onDismiss(ewsSignal.alertId!)}
-              className="flex items-center gap-1 px-2.5 py-1.5 min-h-[36px] bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 rounded-lg text-[11px] font-bold transition"
-              aria-label={`Dismiss alert for ${student.name}`}
-            >
-              <X className="w-3 h-3" aria-hidden="true" />
-              Dismiss
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
-/** Section header rendered between severity groups in "All" view */
+/** Section header spanning full grid width when in "All" tab */
 const SectionHeader: React.FC<{ severity: WarningSeverity; count: number }> = ({ severity, count }) => {
   const isIntervene = severity === 'intervene';
   return (
     <h3
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold ${
+      className={`col-span-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold ${
         isIntervene
           ? 'bg-red-500/10 text-red-400 border border-red-500/20'
           : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
@@ -247,6 +292,8 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [isDismissing, setIsDismissing] = useState(false);
+  const [hiddenStudentIds, setHiddenStudentIds] = useState<Set<string>>(new Set());
+  const [showHidden, setShowHidden] = useState(false);
   const toast = useToast();
 
   // Resolve effective thresholds
@@ -369,14 +416,15 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
     return Array.from(sections).sort();
   }, [flaggedStudents]);
 
-  // Apply tab + class filters
+  // Apply tab + class filters + hidden set
   const visibleStudents = useMemo(() => {
     return flaggedStudents.filter((f) => {
       if (activeTab !== 'all' && f.topSeverity !== activeTab) return false;
       if (classFilter !== 'all' && f.student.classType !== classFilter) return false;
+      if (!showHidden && hiddenStudentIds.has(f.student.id)) return false;
       return true;
     });
-  }, [flaggedStudents, activeTab, classFilter]);
+  }, [flaggedStudents, activeTab, classFilter, hiddenStudentIds, showHidden]);
 
   const interveneStudents = visibleStudents.filter((f) => f.topSeverity === 'intervene');
   const watchStudents = visibleStudents.filter((f) => f.topSeverity === 'watch');
@@ -385,7 +433,7 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
   const watchCount = flaggedStudents.filter((f) => f.topSeverity === 'watch').length;
   const totalCount = flaggedStudents.length;
 
-  // Collect all dismissable alert IDs currently visible
+  // Collect all dismissable EWS alert IDs currently visible
   const allVisibleAlertIds = useMemo(() => {
     const ids: string[] = [];
     for (const { signals } of visibleStudents) {
@@ -395,6 +443,21 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
     }
     return ids;
   }, [visibleStudents]);
+
+  // Count of locally-flagged students (no alertId) that are not yet hidden
+  const locallyFlaggedVisible = useMemo(() => {
+    return visibleStudents.filter(
+      (f) => !f.signals.some((s) => s.kind === 'EWS_ALERT' && s.alertId)
+    ).length;
+  }, [visibleStudents]);
+
+  const hiddenCount = useMemo(() => {
+    return flaggedStudents.filter((f) => hiddenStudentIds.has(f.student.id)).length;
+  }, [flaggedStudents, hiddenStudentIds]);
+
+  const handleHide = (studentId: string) => {
+    setHiddenStudentIds((prev) => new Set(prev).add(studentId));
+  };
 
   const handleDismiss = async (alertId: string) => {
     try {
@@ -437,6 +500,9 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
     { id: 'watch', label: 'Watch', count: watchCount },
   ];
 
+  // Total dismissable = EWS alerts + locally-flagged visible (can be hidden)
+  const totalDismissableCount = allVisibleAlertIds.length + locallyFlaggedVisible;
+
   return (
     <div className={`rounded-3xl border backdrop-blur-md transition-colors ${panelBorderClass}`}>
       {/* ── Header ── */}
@@ -469,23 +535,40 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
           )}
         </div>
 
-        {/* Dismiss All */}
-        {allVisibleAlertIds.length > 0 && (
-          <button
-            type="button"
-            onClick={handleDismissAll}
-            disabled={isDismissing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 rounded-lg text-[11px] font-bold transition disabled:opacity-50 disabled:pointer-events-none"
-            aria-label="Dismiss all visible alerts"
-          >
-            {isDismissing ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
-            )}
-            Dismiss All
-          </button>
-        )}
+        {/* Header actions: Show Hidden toggle + Dismiss All */}
+        <div className="flex items-center gap-2">
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowHidden((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] rounded-lg text-[11px] font-bold transition"
+              aria-pressed={showHidden}
+              aria-label={showHidden ? 'Hide hidden students' : `Show ${hiddenCount} hidden students`}
+            >
+              <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
+              {showHidden ? 'Hide hidden' : `Show Hidden (${hiddenCount})`}
+            </button>
+          )}
+          {totalDismissableCount > 0 && (
+            <button
+              type="button"
+              onClick={handleDismissAll}
+              disabled={isDismissing || allVisibleAlertIds.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 rounded-lg text-[11px] font-bold transition disabled:opacity-50 disabled:pointer-events-none"
+              aria-label={`Dismiss all ${allVisibleAlertIds.length} server alerts`}
+              title={allVisibleAlertIds.length === 0 ? 'No server-side alerts to dismiss (use Hide on local signals)' : undefined}
+            >
+              {isDismissing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              {allVisibleAlertIds.length > 0
+                ? `Dismiss All (${allVisibleAlertIds.length})`
+                : 'Dismiss All'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Filter Tabs + Class Dropdown ── */}
@@ -555,19 +638,21 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
               </span>
             </div>
 
-            <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1">
+            {/* Compact responsive grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar pr-1">
               {activeTab === 'all' ? (
                 <>
                   {interveneStudents.length > 0 && (
                     <>
                       <SectionHeader severity="intervene" count={interveneStudents.length} />
                       {interveneStudents.map((flagged) => (
-                        <StudentCard
+                        <CompactStudentCard
                           key={flagged.student.id}
                           flagged={flagged}
                           onMessage={onMessage}
                           onViewProfile={onViewProfile}
                           onDismiss={handleDismiss}
+                          onHide={handleHide}
                         />
                       ))}
                     </>
@@ -576,12 +661,13 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
                     <>
                       <SectionHeader severity="watch" count={watchStudents.length} />
                       {watchStudents.map((flagged) => (
-                        <StudentCard
+                        <CompactStudentCard
                           key={flagged.student.id}
                           flagged={flagged}
                           onMessage={onMessage}
                           onViewProfile={onViewProfile}
                           onDismiss={handleDismiss}
+                          onHide={handleHide}
                         />
                       ))}
                     </>
@@ -589,12 +675,13 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
                 </>
               ) : (
                 visibleStudents.map((flagged) => (
-                  <StudentCard
+                  <CompactStudentCard
                     key={flagged.student.id}
                     flagged={flagged}
                     onMessage={onMessage}
                     onViewProfile={onViewProfile}
                     onDismiss={handleDismiss}
+                    onHide={handleHide}
                   />
                 ))
               )}
@@ -603,7 +690,7 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
             {/* Bucket breakdown note */}
             <p className="mt-3 text-[10px] text-[var(--text-muted)] italic">
               Signals combine server-side EWS alerts with local engagement thresholds and
-              telemetry bucket data. Dismissing a server alert removes it from this panel.
+              telemetry bucket data. Dismiss removes a server alert; Hide clears a local signal from view.
             </p>
           </>
         )}
