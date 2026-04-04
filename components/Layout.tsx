@@ -4,7 +4,9 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, TrendingUp, Zap, Bug, Music } from 'lucide-react';
+import { LogOut, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Zap, Bug, Music } from 'lucide-react';
+import AnimatedIcon from './AnimatedIcon';
+import PortalLogo from './PortalLogo';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
@@ -178,7 +180,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               }`}
             >
               <span className={isActive ? 'text-[var(--sidebar-text-active)]' : ''}>
-                {item.icon}
+                <AnimatedIcon src={item.iconSrc} alt={item.name} size={20} disableAnimation={settings.performanceMode} />
               </span>
               {showUrgencyDot && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
             </button>
@@ -376,11 +378,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Mobile/Tablet Header — visible below lg breakpoint */}
       <header className="lg:hidden flex items-center justify-between p-4 bg-[var(--surface-overlay)] backdrop-blur-md border-b border-[var(--border)] z-30">
-          <div className="flex items-center gap-3">
-              <div className="bg-purple-600 p-2 rounded-lg">
-                  <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="font-bold text-[var(--text-primary)] text-lg">Porter Portal</h1>
+          <div className="flex items-center gap-2">
+              <PortalLogo size={36} />
+              <h1 className="font-bold text-[var(--text-primary)] text-lg">Porter's Portal</h1>
           </div>
           <div className="flex items-center gap-1">
               <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} />
@@ -447,9 +447,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
           {/* Header */}
           {sidebarCollapsed ? (
             <div className="flex flex-col items-center gap-2 p-3 border-b border-[var(--sidebar-border)]">
-              <div className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl p-2">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
+              <PortalLogo size={32} />
               <button
                 onClick={toggleSidebar}
                 className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
@@ -461,12 +459,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             </div>
           ) : (
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--sidebar-border)] gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded-xl p-2.5 shrink-0">
-                  <GraduationCap className="w-5 h-5 text-white" />
-                </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <PortalLogo size={40} />
                 <div className="min-w-0">
-                  <h1 className="font-bold text-base tracking-tight text-[var(--sidebar-text)] truncate">Porter Portal</h1>
+                  <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">Porter's Portal</h1>
                   <p className="text-[10px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
                     {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
                   </p>

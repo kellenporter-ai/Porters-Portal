@@ -679,3 +679,52 @@ html:not(.dark) .proctor-content hr {
     color-scheme: light;
   }
 }
+
+/* ═══ AnimatedIcon particle animations ═══ */
+
+.ai-particle {
+  fill: #a78bfa;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+
+.ai-particle.ai-active {
+  opacity: 0.7;
+  filter: drop-shadow(0 0 2px #a78bfa);
+}
+
+.ai-p1.ai-active { animation: ai-orbit1 1.8s ease-in-out infinite; }
+.ai-p2.ai-active { animation: ai-orbit2 2.2s ease-in-out infinite; }
+.ai-p3.ai-active { animation: ai-orbit3 2.0s ease-in-out infinite; }
+.ai-p4.ai-active { animation: ai-orbit4 1.6s ease-in-out infinite; }
+
+@keyframes ai-orbit1 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
+  25% { transform: translate(2px, -3px); opacity: 0.8; }
+  50% { transform: translate(4px, 0); opacity: 0.6; }
+  75% { transform: translate(2px, 3px); opacity: 0.8; }
+}
+
+@keyframes ai-orbit2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.6; }
+  25% { transform: translate(-3px, -2px); opacity: 0.8; }
+  50% { transform: translate(-1px, -4px); opacity: 0.65; }
+  75% { transform: translate(2px, -2px); opacity: 0.75; }
+}
+
+@keyframes ai-orbit3 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
+  33% { transform: translate(-3px, 2px); opacity: 0.8; }
+  66% { transform: translate(-2px, -2px); opacity: 0.6; }
+}
+
+@keyframes ai-orbit4 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.65; }
+  50% { transform: translate(3px, -3px); opacity: 0.8; }
+}
+
+.no-anim .ai-particle,
+.no-anim .ai-particle.ai-active {
+  animation: none !important;
+  opacity: 0 !important;
+}

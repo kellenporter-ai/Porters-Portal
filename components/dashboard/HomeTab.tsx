@@ -81,10 +81,10 @@ const QuickNavCard: React.FC<{
   <button
     onClick={onClick}
     aria-label={badge ? `${label}, ${badge} new` : label}
-    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-purple-500 ${color}`}
+    className={`flex-1 flex flex-col items-center gap-3 px-6 py-4 rounded-2xl border transition-all motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-purple-500 ${color}`}
   >
     <div className="relative">
-      {icon}
+      {React.cloneElement(icon as React.ReactElement, { className: 'w-8 h-8' })}
       {badge !== undefined && badge !== 0 && (
         <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
           {badge}
@@ -214,8 +214,8 @@ const HomeTab: React.FC<HomeTabProps> = ({
         </div>
       )}
 
-      {/* Quick Navigation Grid */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+      {/* Quick Navigation */}
+      <div className="flex items-center gap-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
         <QuickNavCard
           label="Resources"
           icon={<Layers className="w-5 h-5 text-purple-400" />}
@@ -252,45 +252,47 @@ const HomeTab: React.FC<HomeTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Upcoming Due Dates */}
-        <Section
-          title="Upcoming"
-          icon={<Clock className="w-3.5 h-3.5" />}
-          actionLabel="Calendar"
-          onAction={() => onNavigate('Calendar')}
-        >
-          {upcomingDue.length === 0 ? (
-            <div className="text-sm text-[var(--text-muted)] italic py-6 text-center bg-black/10 rounded-xl border border-dashed border-[var(--border)]">
-              No upcoming due dates
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {upcomingDue.map(a => (
-                <button
-                  key={a.id}
-                  onClick={() => onStartAssignment?.(a.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-[var(--surface-glass)] text-left focus-visible:ring-2 focus-visible:ring-purple-500 ${urgencyColor(a.dueDate!)}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[var(--text-primary)] truncate">{a.title}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs font-bold">{relativeDate(a.dueDate!)}</span>
-                      {a.unit && <span className="text-xs text-[var(--text-tertiary)]">{a.unit}</span>}
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+          <Section
+            title="Upcoming"
+            icon={<Clock className="w-3.5 h-3.5" />}
+            actionLabel="Calendar"
+            onAction={() => onNavigate('Calendar')}
+          >
+            {upcomingDue.length === 0 ? (
+              <div className="text-sm text-[var(--text-muted)] italic py-6 text-center bg-black/10 rounded-xl border border-dashed border-[var(--border)]">
+                No upcoming due dates
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {upcomingDue.map(a => (
+                  <button
+                    key={a.id}
+                    onClick={() => onStartAssignment?.(a.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-[var(--surface-glass)] text-left focus-visible:ring-2 focus-visible:ring-purple-500 ${urgencyColor(a.dueDate!)}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-[var(--text-primary)] truncate">{a.title}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs font-bold">{relativeDate(a.dueDate!)}</span>
+                        {a.unit && <span className="text-xs text-[var(--text-tertiary)]">{a.unit}</span>}
+                      </div>
                     </div>
-                  </div>
-                  {a.isCompleted ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 opacity-40 shrink-0" />
-                  )}
-                  <span className="sr-only">{a.isCompleted ? 'Completed' : 'Not yet completed'}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </Section>
+                    {a.isCompleted ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 opacity-40 shrink-0" />
+                    )}
+                    <span className="sr-only">{a.isCompleted ? 'Completed' : 'Not yet completed'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </Section>
+        </div>
 
         {/* At-a-Glance Stats */}
-        <div className="space-y-4">
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
           <Section
             title="Overview"
             icon={<TrendingUp className="w-3.5 h-3.5" />}
@@ -298,12 +300,12 @@ const HomeTab: React.FC<HomeTabProps> = ({
             onAction={() => onNavigate('Progress')}
           >
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
+              <div className="bg-black/10 border border-[var(--border)] rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-[var(--text-primary)]">{stats.completed}</div>
                 <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Completed</div>
                 <div className="text-xs text-[var(--text-tertiary)]">of {stats.total}</div>
               </div>
-              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
+              <div className="bg-black/10 border border-[var(--border)] rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-[var(--text-primary)]">
                   {stats.totalTime >= 3600
                     ? `${(stats.totalTime / 3600).toFixed(1)}h`
@@ -311,13 +313,12 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 </div>
                 <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Study Time</div>
               </div>
-              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-center">
+              <div className="bg-black/10 border border-[var(--border)] rounded-xl p-3 text-center">
                 <div className="text-xl font-black text-[var(--text-primary)]">{stats.practicesMastered}</div>
                 <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-1">Mastered</div>
               </div>
             </div>
           </Section>
-
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 
-import { Atom, Microscope, Zap, Users, LayoutDashboard, Target, Layers, Briefcase, Trophy, GitBranch, Dices, Shield, Brain, KeyRound, BarChart3, BookOpen, TrendingUp, Calendar, PieChart, Home, Store, FileBarChart, ClipboardCheck } from 'lucide-react';
+import { Atom, Microscope, Zap } from 'lucide-react';
 import { DefaultClassTypes } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
@@ -27,39 +27,39 @@ export type NavGroup = 'learning' | 'operations' | 'intel';
 
 export interface NavItem {
   name: string;
-  icon: React.ReactNode;
+  iconSrc: string;
   role: 'ADMIN' | 'STUDENT';
   group?: NavGroup;
-  children?: { name: string; icon: React.ReactNode }[];
+  children?: { name: string; iconSrc: string }[];
 }
 
 export const NAVIGATION: NavItem[] = [
   // Admin navigation
-  { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'Grading', icon: <ClipboardCheck className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'Resource Editor', icon: <BookOpen className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'User Management', icon: <Users className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'Enrollment Codes', icon: <KeyRound className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'Student Reports', icon: <FileBarChart className="w-5 h-5" />, role: 'ADMIN' },
-  { name: 'XP Command', icon: <Target className="w-5 h-5" />, role: 'ADMIN', children: [
-    { name: 'Operatives', icon: <Shield className="w-4 h-4" /> },
-    { name: 'XP Protocols', icon: <Zap className="w-4 h-4" /> },
-    { name: 'Boss Ops', icon: <Brain className="w-4 h-4" /> },
-    { name: 'Analytics', icon: <PieChart className="w-4 h-4" /> },
+  { name: 'Dashboard', iconSrc: '/assets/icons/icon-dashboard.png', role: 'ADMIN' },
+  { name: 'Grading', iconSrc: '/assets/icons/icon-grading.png', role: 'ADMIN' },
+  { name: 'Resource Editor', iconSrc: '/assets/icons/icon-resource-editor.png', role: 'ADMIN' },
+  { name: 'User Management', iconSrc: '/assets/icons/icon-user-management.png', role: 'ADMIN' },
+  { name: 'Enrollment Codes', iconSrc: '/assets/icons/icon-enrollment-codes.png', role: 'ADMIN' },
+  { name: 'Student Reports', iconSrc: '/assets/icons/icon-student-reports.png', role: 'ADMIN' },
+  { name: 'XP Command', iconSrc: '/assets/icons/icon-xp-command.png', role: 'ADMIN', children: [
+    { name: 'Operatives', iconSrc: '/assets/icons/icon-operatives.png' },
+    { name: 'XP Protocols', iconSrc: '/assets/icons/icon-xp-protocols.png' },
+    { name: 'Boss Ops', iconSrc: '/assets/icons/icon-boss-ops.png' },
+    { name: 'Analytics', iconSrc: '/assets/icons/icon-analytics.png' },
   ]},
   // Student navigation — ungrouped
-  { name: 'Home', icon: <Home className="w-5 h-5" />, role: 'STUDENT' },
+  { name: 'Home', iconSrc: '/assets/icons/icon-home.png', role: 'STUDENT' },
   // Learning group
-  { name: 'Resources', icon: <Layers className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
-  { name: 'Calendar', icon: <Calendar className="w-5 h-5" />, role: 'STUDENT', group: 'learning' },
+  { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', role: 'STUDENT', group: 'learning' },
+  { name: 'Calendar', iconSrc: '/assets/icons/icon-calendar.png', role: 'STUDENT', group: 'learning' },
   // Operations group
-  { name: 'Agent Loadout', icon: <Briefcase className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Fortune', icon: <Dices className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Flux Shop', icon: <Store className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Badges', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
-  { name: 'Skills', icon: <GitBranch className="w-5 h-5" />, role: 'STUDENT', group: 'operations' },
+  { name: 'Agent Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations' },
+  { name: 'Fortune', iconSrc: '/assets/icons/icon-fortune.png', role: 'STUDENT', group: 'operations' },
+  { name: 'Flux Shop', iconSrc: '/assets/icons/icon-flux-shop.png', role: 'STUDENT', group: 'operations' },
+  { name: 'Badges', iconSrc: '/assets/icons/icon-badges.png', role: 'STUDENT', group: 'operations' },
+  { name: 'Skills', iconSrc: '/assets/icons/icon-skills.png', role: 'STUDENT', group: 'operations' },
   // Intel group
-  { name: 'Intel Dossier', icon: <BarChart3 className="w-5 h-5" />, role: 'STUDENT', group: 'intel' },
-  { name: 'Progress', icon: <TrendingUp className="w-5 h-5" />, role: 'STUDENT', group: 'intel' },
-  { name: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, role: 'STUDENT', group: 'intel' },
+  { name: 'Intel Dossier', iconSrc: '/assets/icons/icon-intel-dossier.png', role: 'STUDENT', group: 'intel' },
+  { name: 'Progress', iconSrc: '/assets/icons/icon-progress.png', role: 'STUDENT', group: 'intel' },
+  { name: 'Leaderboard', iconSrc: '/assets/icons/icon-leaderboard.png', role: 'STUDENT', group: 'intel' },
 ];
