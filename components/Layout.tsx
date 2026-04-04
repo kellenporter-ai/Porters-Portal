@@ -173,14 +173,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               title={item.name}
               aria-label={item.name}
               aria-current={isActive && !item.children ? 'page' : undefined}
-              className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+              className={`group relative w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
                 isActive
                   ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] shadow-md border border-[var(--accent)]/30'
                   : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)]'
               }`}
             >
               <span className={isActive ? 'text-[var(--sidebar-text-active)]' : ''}>
-                <AnimatedIcon src={item.iconSrc} alt={item.name} size={20} disableAnimation={settings.performanceMode} />
+                <AnimatedIcon src={item.iconSrc} alt={item.name} size={item.iconSize || 40} disableAnimation={settings.performanceMode} />
               </span>
               {showUrgencyDot && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
             </button>
@@ -220,7 +220,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             }`}
           >
             <span className={`${isActive ? 'text-[var(--sidebar-text-active)]' : 'text-[var(--sidebar-text-muted)] group-hover:text-[var(--sidebar-text-active)]'}`}>
-              {item.icon}
+              <AnimatedIcon src={item.iconSrc} alt={item.name} size={item.iconSize || 40} disableAnimation={settings.performanceMode} />
             </span>
             <span className="font-medium text-sm flex-1 text-left flex items-center gap-2">
               {item.name}
@@ -247,7 +247,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                         : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)]'
                     }`}
                   >
-                    <span className={childActive ? 'text-[var(--sidebar-text-active)]' : ''}>{child.icon}</span>
+                    <span className={childActive ? 'text-[var(--sidebar-text-active)]' : ''}><AnimatedIcon src={child.iconSrc} alt={child.name} size={child.iconSize || 24} disableAnimation={settings.performanceMode} /></span>
                     {child.name}
                   </button>
                 );
@@ -356,10 +356,10 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 3. Glass Overlay */}
       {isLight && (
-        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-purple-50/10 ${settings.performanceMode ? '' : 'backdrop-blur-sm'}`}></div>
+        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-purple-50/10`}></div>
       )}
       {!isLight && (
-        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/40 ${settings.performanceMode ? '' : 'backdrop-blur-[3px]'}`}></div>
+        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/40`}></div>
       )}
 
       {/* ChromeOS performance mode suggestion banner */}
@@ -443,7 +443,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Desktop Sidebar — visible at lg breakpoint and above */}
       <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-60' : 'w-72'}`}>
-        <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn ${settings.performanceMode ? '' : 'backdrop-blur-2xl'}`}>
+        <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn`}>
           {/* Header */}
           {sidebarCollapsed ? (
             <div className="flex flex-col items-center gap-2 p-3 border-b border-[var(--sidebar-border)]">
@@ -458,24 +458,24 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--sidebar-border)] gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <PortalLogo size={40} />
-                <div className="min-w-0">
-                  <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">Porter's Portal</h1>
+            <div className="flex items-center px-4 py-3 border-b border-[var(--sidebar-border)] gap-3">
+              <PortalLogo size={40} />
+              <div className="min-w-0 flex-1">
+                <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">Porter's Portal</h1>
+                <div className="flex items-center gap-1">
                   <p className="text-[10px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
                     {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
                   </p>
+                  <button
+                    onClick={toggleSidebar}
+                    className="p-1 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition shrink-0"
+                    aria-label="Collapse sidebar"
+                    title="Collapse sidebar"
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition shrink-0"
-                aria-label="Collapse sidebar"
-                title="Collapse sidebar"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
             </div>
           )}
 
@@ -581,9 +581,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       {user.role === UserRole.STUDENT && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-[var(--surface-overlay)] backdrop-blur-md border-t border-[var(--border)] flex items-center justify-around px-2" role="tablist" aria-label="Quick navigation">
           {([
-            { name: 'Home', icon: <Home className="w-5 h-5" />, tab: 'Home' },
-            { name: 'Resources', icon: <Layers className="w-5 h-5" />, tab: 'Resources' },
-            { name: 'Progress', icon: <TrendingUp className="w-5 h-5" />, tab: 'Progress' },
+            { name: 'Home', iconSrc: '/assets/icons/icon-home.png', tab: 'Home' },
+            { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', tab: 'Resources' },
+            { name: 'Progress', iconSrc: '/assets/icons/icon-progress.png', tab: 'Progress' },
           ] as const).map(item => {
             const isActive = activeTab === item.tab;
             return (
@@ -598,7 +598,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   isActive ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
-                {item.icon}
+                <AnimatedIcon src={item.iconSrc} alt={item.name} size={32} disableAnimation={settings.performanceMode} groupHover={false} />
                 <span className="text-[10px] font-bold">{item.name}</span>
               </button>
             );

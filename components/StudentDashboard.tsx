@@ -504,6 +504,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        onStartAssignment={onStartAssignment}
                        userSection={user.section}
                        userClassSections={user.classSections}
+                       performanceMode={user.settings?.performanceMode}
                    />
                    </React.Suspense>
                  </FeatureErrorBoundary>

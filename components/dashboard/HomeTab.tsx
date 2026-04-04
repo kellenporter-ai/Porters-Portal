@@ -2,9 +2,9 @@
 import React, { useMemo } from 'react';
 import { Assignment, Submission, XPEvent } from '../../types';
 import {
-  Calendar, Clock, Target, Zap, ChevronRight, CheckCircle2,
-  Layers, Briefcase, Trophy, TrendingUp, BookOpen,
+  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp,
 } from 'lucide-react';
+import AnimatedIcon from '../AnimatedIcon';
 
 interface HomeTabProps {
   assignments: Assignment[];
@@ -16,6 +16,7 @@ interface HomeTabProps {
   onStartAssignment?: (id: string) => void;
   userSection?: string;
   userClassSections?: Record<string, string>;
+  performanceMode?: boolean;
 }
 
 // ─── Helpers ─────────────────────────────────
@@ -81,10 +82,10 @@ const QuickNavCard: React.FC<{
   <button
     onClick={onClick}
     aria-label={badge ? `${label}, ${badge} new` : label}
-    className={`flex-1 flex flex-col items-center gap-3 px-6 py-4 rounded-2xl border transition-all motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-purple-500 ${color}`}
+    className={`group flex-1 flex flex-col items-center gap-3 px-6 py-4 rounded-2xl border transition-all motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-purple-500 ${color}`}
   >
     <div className="relative">
-      {React.cloneElement(icon as React.ReactElement, { className: 'w-8 h-8' })}
+      {icon}
       {badge !== undefined && badge !== 0 && (
         <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
           {badge}
@@ -107,6 +108,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
   onStartAssignment,
   userSection,
   userClassSections,
+  performanceMode = false,
 }) => {
   // Filter to active class, visible assignments only
   const classAssignments = useMemo(() =>
@@ -218,31 +220,31 @@ const HomeTab: React.FC<HomeTabProps> = ({
       <div className="flex items-center gap-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
         <QuickNavCard
           label="Resources"
-          icon={<Layers className="w-5 h-5 text-purple-400" />}
+          icon={<AnimatedIcon src="/assets/icons/icon-resources.png" alt="Resources" size={56} disableAnimation={performanceMode} />}
           color="bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20"
           onClick={() => onNavigate('Resources')}
         />
         <QuickNavCard
           label="Loadout"
-          icon={<Briefcase className="w-5 h-5 text-amber-400" />}
+          icon={<AnimatedIcon src="/assets/icons/icon-agent-loadout.png" alt="Loadout" size={56} disableAnimation={performanceMode} />}
           color="bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
           onClick={() => onNavigate('Agent Loadout')}
         />
         <QuickNavCard
           label="Progress"
-          icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
+          icon={<AnimatedIcon src="/assets/icons/icon-progress.png" alt="Progress" size={56} disableAnimation={performanceMode} />}
           color="bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
           onClick={() => onNavigate('Progress')}
         />
         <QuickNavCard
           label="Badges"
-          icon={<Trophy className="w-5 h-5 text-yellow-400" />}
+          icon={<AnimatedIcon src="/assets/icons/icon-badges.png" alt="Badges" size={56} disableAnimation={performanceMode} />}
           color="bg-yellow-500/10 border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20"
           onClick={() => onNavigate('Badges')}
         />
         <QuickNavCard
           label="Calendar"
-          icon={<Calendar className="w-5 h-5 text-cyan-400" />}
+          icon={<AnimatedIcon src="/assets/icons/icon-calendar.png" alt="Calendar" size={56} disableAnimation={performanceMode} />}
           color="bg-cyan-500/10 border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20"
           onClick={() => onNavigate('Calendar')}
         />

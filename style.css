@@ -682,49 +682,78 @@ html:not(.dark) .proctor-content hr {
 
 /* ═══ AnimatedIcon particle animations ═══ */
 
+/* Particles hidden by default, shown on group hover */
 .ai-particle {
   fill: #a78bfa;
   opacity: 0;
-  transition: opacity 0.25s ease-out;
+  transition: opacity 0.2s;
+}
+.group:hover .ai-particle {
+  opacity: 0.9;
+  filter: drop-shadow(0 0 4px #a78bfa) drop-shadow(0 0 8px #7c3aed);
 }
 
+/* Standalone hover (non-group context) */
 .ai-particle.ai-active {
-  opacity: 0.7;
-  filter: drop-shadow(0 0 2px #a78bfa);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 4px #a78bfa) drop-shadow(0 0 8px #7c3aed);
 }
 
-.ai-p1.ai-active { animation: ai-orbit1 1.8s ease-in-out infinite; }
-.ai-p2.ai-active { animation: ai-orbit2 2.2s ease-in-out infinite; }
-.ai-p3.ai-active { animation: ai-orbit3 2.0s ease-in-out infinite; }
-.ai-p4.ai-active { animation: ai-orbit4 1.6s ease-in-out infinite; }
+/* Icon glow on group hover */
+.group:hover .ai-icon-img {
+  filter: drop-shadow(0 0 6px #a78bfa) drop-shadow(0 0 12px #7c3aed);
+}
+
+/* Standalone hover glow (non-group context) */
+.ai-icon-hovered {
+  filter: drop-shadow(0 0 4px #a78bfa) drop-shadow(0 0 8px #7c3aed80);
+}
+
+.group:hover .ai-p1, .ai-p1.ai-active { animation: ai-orbit1 1.8s ease-in-out infinite; }
+.group:hover .ai-p2, .ai-p2.ai-active { animation: ai-orbit2 2.2s ease-in-out infinite; }
+.group:hover .ai-p3, .ai-p3.ai-active { animation: ai-orbit3 2.0s ease-in-out infinite; }
+.group:hover .ai-p4, .ai-p4.ai-active { animation: ai-orbit4 1.6s ease-in-out infinite; }
 
 @keyframes ai-orbit1 {
-  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
-  25% { transform: translate(2px, -3px); opacity: 0.8; }
-  50% { transform: translate(4px, 0); opacity: 0.6; }
-  75% { transform: translate(2px, 3px); opacity: 0.8; }
+  0%, 100% { transform: translate(0, 0); opacity: 0.9; }
+  25% { transform: translate(5px, -6px); opacity: 1; }
+  50% { transform: translate(8px, 0); opacity: 0.85; }
+  75% { transform: translate(5px, 6px); opacity: 1; }
 }
 
 @keyframes ai-orbit2 {
-  0%, 100% { transform: translate(0, 0); opacity: 0.6; }
-  25% { transform: translate(-3px, -2px); opacity: 0.8; }
-  50% { transform: translate(-1px, -4px); opacity: 0.65; }
-  75% { transform: translate(2px, -2px); opacity: 0.75; }
+  0%, 100% { transform: translate(0, 0); opacity: 0.85; }
+  25% { transform: translate(-6px, -5px); opacity: 1; }
+  50% { transform: translate(-3px, -8px); opacity: 0.9; }
+  75% { transform: translate(4px, -5px); opacity: 1; }
 }
 
 @keyframes ai-orbit3 {
-  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
-  33% { transform: translate(-3px, 2px); opacity: 0.8; }
-  66% { transform: translate(-2px, -2px); opacity: 0.6; }
+  0%, 100% { transform: translate(0, 0); opacity: 0.9; }
+  33% { transform: translate(-7px, 4px); opacity: 1; }
+  66% { transform: translate(-4px, -5px); opacity: 0.85; }
 }
 
 @keyframes ai-orbit4 {
-  0%, 100% { transform: translate(0, 0); opacity: 0.65; }
-  50% { transform: translate(3px, -3px); opacity: 0.8; }
+  0%, 100% { transform: translate(0, 0); opacity: 0.85; }
+  50% { transform: translate(6px, -7px); opacity: 1; }
 }
 
+/* Performance mode kills everything */
+.perf-mode .ai-particle,
 .no-anim .ai-particle,
+.perf-mode .ai-particle.ai-active,
 .no-anim .ai-particle.ai-active {
-  animation: none !important;
-  opacity: 0 !important;
+  display: none !important;
+}
+.perf-mode .group:hover .ai-particle,
+.no-anim .group:hover .ai-particle {
+  display: none !important;
+}
+.perf-mode .group:hover .ai-icon-img {
+  filter: none !important;
+}
+
+.no-anim .ai-icon-hovered {
+  filter: none !important;
 }

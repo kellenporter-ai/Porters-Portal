@@ -28,9 +28,10 @@ export type NavGroup = 'learning' | 'operations' | 'intel';
 export interface NavItem {
   name: string;
   iconSrc: string;
+  iconSize?: number;
   role: 'ADMIN' | 'STUDENT';
   group?: NavGroup;
-  children?: { name: string; iconSrc: string }[];
+  children?: { name: string; iconSrc: string; iconSize?: number }[];
 }
 
 export const NAVIGATION: NavItem[] = [
@@ -56,10 +57,10 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Agent Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations' },
   { name: 'Fortune', iconSrc: '/assets/icons/icon-fortune.png', role: 'STUDENT', group: 'operations' },
   { name: 'Flux Shop', iconSrc: '/assets/icons/icon-flux-shop.png', role: 'STUDENT', group: 'operations' },
-  { name: 'Badges', iconSrc: '/assets/icons/icon-badges.png', role: 'STUDENT', group: 'operations' },
-  { name: 'Skills', iconSrc: '/assets/icons/icon-skills.png', role: 'STUDENT', group: 'operations' },
+  { name: 'Badges', iconSrc: '/assets/icons/icon-badges.png', role: 'STUDENT', group: 'operations', iconSize: 35 },
+  { name: 'Skills', iconSrc: '/assets/icons/icon-skills.png', role: 'STUDENT', group: 'operations', iconSize: 35 },
   // Intel group
   { name: 'Intel Dossier', iconSrc: '/assets/icons/icon-intel-dossier.png', role: 'STUDENT', group: 'intel' },
-  { name: 'Progress', iconSrc: '/assets/icons/icon-progress.png', role: 'STUDENT', group: 'intel' },
-  { name: 'Leaderboard', iconSrc: '/assets/icons/icon-leaderboard.png', role: 'STUDENT', group: 'intel' },
+  { name: 'Progress', iconSrc: '/assets/icons/icon-progress.png', role: 'STUDENT', group: 'intel', iconSize: 48 },
+  { name: 'Leaderboard', iconSrc: '/assets/icons/icon-leaderboard.png', role: 'STUDENT', group: 'intel', iconSize: 48 },
 ];
