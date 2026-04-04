@@ -1,11 +1,11 @@
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { User, Assignment, Submission, RPGItem, ClassConfig } from '../types';
-import { ChevronRight, Microscope, ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, Eye, AlertTriangle, AlertCircle } from 'lucide-react';
+import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
 import { dataService } from '../services/dataService';
-import { getRankDetails, getAssetColors, calculateGearScore, getLevelProgress, xpForLevel, MAX_LEVEL } from '../lib/gamification';
+import { getRankDetails, getAssetColors, getLevelProgress } from '../lib/gamification';
 import { getClassProfile } from '../lib/classProfile';
 import { useAnimatedCounter } from '../lib/useAnimatedCounter';
 import { sfx } from '../lib/sfx';
@@ -130,7 +130,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     }
   }, [studentTab]);
   const activeTab = displayTab;
-  const [xpFloatAmount, setXpFloatAmount] = useState<number | null>(null);
+
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
@@ -191,10 +191,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       if (classXp > prevXpRef.current && prevXpRef.current >= 0) {
           const gained = classXp - prevXpRef.current;
           if (gained > 0 && gained < 500) {
-              setXpFloatAmount(gained);
               sfx.xpGain();
-              const timer = setTimeout(() => setXpFloatAmount(null), 2000);
-              return () => clearTimeout(timer);
           }
       }
       prevXpRef.current = classXp;
@@ -273,7 +270,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       });
       return base;
   }, [equipped]);
-  const gearScore = useMemo(() => calculateGearScore(equipped), [equipped]);
 
   const unitGroups = useMemo(() => {
     const groups: Record<string, (Assignment & { lastEngagement: string | null; engagementTime: number })[]> = {};
@@ -318,9 +314,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const level = user.gamification?.level || 1;
   const currency = user.gamification?.currency || 0;
-  const xp = classXp;
   const progress = useMemo(() => getLevelProgress(user.gamification?.xp || 0, level), [user.gamification?.xp, level]);
-  const displayXp = useAnimatedCounter(xp);
   const displayCurrency = useAnimatedCounter(currency);
   const rankDetails = useMemo(() => getRankDetails(level), [level]);
 
@@ -337,7 +331,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, [user.id, activeClass, toast]);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 lg:gap-5 xl:gap-6 2xl:gap-8 h-full pb-6 lg:pb-8 xl:pb-10 2xl:pb-12">
+    <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-5 h-full pb-6 lg:pb-8">
       {/* Mobile class selector — visible below lg where the sidebar selector is hidden */}
       {enrolledClasses.length > 1 && (
         <div className="lg:hidden relative">
@@ -355,7 +349,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* ANNOUNCEMENTS BANNER */}
       {visibleAnnouncements.length > 0 && (
-        <section aria-label="Announcements" className="xl:col-span-12 space-y-2">
+        <section aria-label="Announcements" className="space-y-2">
           {visibleAnnouncements.map(a => {
             const styles = {
               INFO: 'bg-blue-600/10 border-blue-500/30 text-blue-300',
@@ -381,7 +375,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* ACTIVE EVENT BANNER */}
       {activeEvent && (
-        <div className="xl:col-span-12">
+        <div>
           <div className={`bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)]${reducedMotion ? '' : ' animate-pulse'}`} role="status" aria-live="polite">
             <div className="flex items-center gap-3">
               <div className="bg-blue-500 text-white p-2 rounded-lg">
@@ -399,71 +393,59 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         </div>
       )}
 
-      {/* --- OPERATIVE STATUS: horizontal strip at lg (Chromebook), vertical sidebar at xl+ --- */}
-      <aside aria-label="Player status" className="xl:col-span-3 2xl:col-span-2 flex flex-col lg:flex-row xl:flex-col lg:flex-wrap lg:items-center xl:items-stretch gap-3 lg:gap-3 xl:gap-3 2xl:gap-4">
+      {/* --- OPERATIVE STATUS: compact horizontal strip at all sizes --- */}
+      <aside aria-label="Player status" className="flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-3 lg:gap-3">
         {/* Identity card — avatar, name, rank, XP */}
-        <div className={`bg-[var(--surface-glass)] border rounded-3xl lg:rounded-xl xl:rounded-3xl p-4 lg:py-2 lg:px-3 xl:p-4 backdrop-blur-md relative overflow-hidden group lg:flex-1 xl:flex-none ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
+        <div className={`bg-[var(--surface-glass)] border rounded-xl lg:rounded-xl p-3 lg:py-2 lg:px-3 backdrop-blur-md relative overflow-hidden group lg:flex-1 ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>
-            <div className="relative z-10 flex flex-col items-center lg:flex-row lg:items-center lg:gap-2 xl:flex-col xl:items-center">
-                <div className={`w-20 h-20 lg:w-8 lg:h-8 xl:w-20 xl:h-20 rounded-full p-1 lg:p-0.5 xl:p-1 bg-gradient-to-tr from-white/10 to-white/5 mb-3 lg:mb-0 xl:mb-3 shrink-0 ${rankDetails.tierGlow} shadow-xl`}>
+            <div className="relative z-10 flex flex-col items-center lg:flex-row lg:items-center lg:gap-2">
+                <div className={`lg:w-8 lg:h-8 rounded-full p-0.5 bg-gradient-to-tr from-white/10 to-white/5 mb-0 shrink-0 ${rankDetails.tierGlow} shadow-xl`}>
                     <img
                       src={user.avatarUrl}
                       alt={`${user.gamification?.codename || user.name}'s avatar`}
-                      className={`w-full h-full rounded-full border-4 lg:border-2 xl:border-4 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
+                      className={`w-full h-full rounded-full border-2 lg:border-2 object-cover ${rankDetails.tierColor.split(' ')[0]}`}
                     />
                 </div>
-                <div className="flex flex-col items-center lg:items-start xl:items-center lg:flex-1 lg:min-w-0">
-                    <div className="flex flex-col items-center lg:flex-row lg:items-baseline lg:gap-2 xl:flex-col xl:items-center">
+                <div className="flex flex-col items-center lg:items-start lg:flex-1 lg:min-w-0">
+                    <div className="flex flex-col items-center lg:flex-row lg:items-baseline lg:gap-2">
                         <h2
-                          className={`text-xl lg:text-sm xl:text-xl font-bold tracking-tight lg:truncate lg:max-w-full ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
+                          className={`lg:text-sm font-bold tracking-tight lg:truncate lg:max-w-full ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
                           style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : undefined}
                         >{user.gamification?.codename || user.name}</h2>
-                        <span className={`font-mono text-xs lg:text-[10px] xl:text-xs uppercase tracking-[0.2em] mt-1 lg:mt-0 xl:mt-1 font-bold ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
+                        <span className={`font-mono text-xs lg:text-[10px] uppercase tracking-[0.2em] mt-0 lg:mt-0 font-bold ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                             {rankDetails.rankName} (Lvl {level})
                         </span>
-                    </div>
-                    <span className={`text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/30 font-bold uppercase tracking-widest mt-1 hidden xl:inline ${isLight ? 'text-yellow-700' : 'text-yellow-400'}`}>
-                        Gear Score: {gearScore}
-                    </span>
 
                     {enrolledClasses.length > 1 && (
-                        <div className="mt-3 hidden lg:block lg:mt-0 lg:ml-2 xl:mt-3 xl:ml-0 relative w-full lg:w-auto xl:w-full">
+                        <div className="mt-3 hidden lg:block lg:mt-0 lg:ml-2 relative lg:w-auto">
                             <select
                                 value={activeClass}
                                 onChange={handleClassChange}
                                 aria-label="Switch active class"
-                                className="w-full lg:w-[160px] xl:w-full bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs lg:text-[11px] xl:text-xs font-bold py-2 lg:py-1 xl:py-2 px-4 lg:px-2 xl:px-4 rounded-xl lg:rounded-lg xl:rounded-xl appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
+                                className="w-full lg:w-[160px] bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-xs lg:text-[11px] font-bold py-2 lg:py-1 px-4 lg:px-2 rounded-xl lg:rounded-lg appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500 transition"
                             >
                                 {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
-                            <ChevronDown className="absolute right-3 lg:right-2 xl:right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
+                            <ChevronDown className="absolute right-3 lg:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
                         </div>
                     )}
 
-                    <div className="w-full lg:w-[140px] xl:w-full h-2 lg:h-1.5 xl:h-2 bg-black/60 rounded-full mt-4 lg:mt-1 xl:mt-4 overflow-hidden border border-[var(--border)] relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
+                    <div className="w-full lg:w-[140px] h-2 lg:h-1.5 bg-black/60 rounded-full mt-1 lg:mt-1 overflow-hidden border border-[var(--border)] relative" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`XP progress: ${Math.round(progress)}% to next level`}>
                         <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
-                    </div>
-                    <div className="flex justify-between w-full text-xs text-[var(--text-tertiary)] mt-2 font-mono font-bold relative hidden xl:flex">
-                        <span className="truncate">{displayXp.toLocaleString()} XP ({activeClass})</span>
-                        <span className="shrink-0 ml-2">{level >= MAX_LEVEL ? 'MAX LEVEL' : `${xpForLevel(level + 1).toLocaleString()} XP`}</span>
-                        {xpFloatAmount && (
-                            <span className={`${reducedMotion ? '' : 'xp-float-anim'} absolute -top-6 left-1/2 -translate-x-1/2 text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 whitespace-nowrap`} aria-live="polite" role="status">
-                                +{xpFloatAmount} XP
-                            </span>
-                        )}
                     </div>
                 </div>
             </div>
         </div>
+        </div>
 
-        {/* Stat badges — compact inline at lg, stacked cards at xl+ */}
-        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-3 lg:py-2 lg:px-3 xl:p-3 flex items-center gap-2">
-            <div className="w-8 h-8 lg:w-6 lg:h-6 xl:w-8 xl:h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-                <Hexagon className="w-5 h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5" aria-hidden="true" />
+        {/* Stat badges — compact inline */}
+        <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2">
+            <div className="w-8 h-8 lg:w-6 lg:h-6 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                <Hexagon className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
             </div>
-            <div className="flex items-baseline gap-1.5 lg:gap-1 xl:flex-col xl:gap-0">
-                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest lg:text-[10px] xl:text-xs">Cyber-Flux</div>
-                <div className="text-lg lg:text-base xl:text-lg font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
+            <div className="flex items-baseline gap-1.5 lg:gap-1">
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest lg:text-[10px]">Cyber-Flux</div>
+                <div className="text-lg lg:text-base font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
             </div>
         </div>
 
@@ -472,18 +454,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             const streak = user.gamification?.engagementStreak || 0;
             const multiplier = getStreakMultiplier(streak);
             return (
-                <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 xl:p-3 flex items-center gap-2 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
-                    <div className={`w-8 h-8 lg:w-6 lg:h-6 xl:w-8 xl:h-8 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-400'}`}>
-                        <Flame className="w-5 h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5" aria-hidden="true" />
+                <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
+                    <div className={`w-8 h-8 lg:w-6 lg:h-6 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-400'}`}>
+                        <Flame className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
                     </div>
-                    <div className="flex items-baseline gap-1.5 lg:gap-1 xl:flex-col xl:gap-0 flex-1 min-w-0">
-                        <div className="text-xs lg:text-[10px] xl:text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
-                        <div className={`text-lg lg:text-base xl:text-lg font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
+                    <div className="flex items-baseline gap-1.5 lg:gap-1 flex-1 min-w-0">
+                        <div className="text-xs lg:text-[10px] text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
+                        <div className={`text-lg lg:text-base font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
                     </div>
                     {multiplier > 1 && (
                         <div className="text-right shrink-0">
-                            <div className="text-xs lg:text-[10px] xl:text-xs text-[var(--text-tertiary)] uppercase">XP Bonus</div>
-                            <div className={`text-sm lg:text-xs xl:text-sm font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
+                            <div className="text-xs lg:text-[10px] text-[var(--text-tertiary)] uppercase">XP Bonus</div>
+                            <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
                         </div>
                     )}
                 </div>
@@ -492,43 +474,21 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
         {/* Login Streak */}
         {(user.gamification?.loginStreak || 0) > 1 && (
-            <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 xl:p-3 flex items-center gap-2 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
-                <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
-                <div className="flex items-baseline gap-1.5 lg:gap-1 xl:flex-col xl:gap-0">
-                    <div className="text-xs lg:text-[10px] xl:text-xs text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
-                    <div className={`text-sm lg:text-xs xl:text-sm font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
+            <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
+                <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
+                <div className="flex items-baseline gap-1.5 lg:gap-1">
+                    <div className="text-xs lg:text-[10px] text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
+                    <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
         )}
 
-        {/* Profile + Access Nodes — hidden in horizontal strip, shown in vertical sidebar */}
-        <button
-            onClick={() => setShowProfile(true)}
-            className="hidden xl:flex w-full bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] p-3 rounded-2xl items-center justify-center gap-2 transition text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm font-bold focus-visible:ring-2 focus-visible:ring-purple-500"
-        >
-            <Eye className="w-4 h-4" aria-hidden="true" /> View Profile
-        </button>
-
-        <div className="hidden xl:block space-y-2">
-             <h3 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest px-2">Access Nodes</h3>
-             {enabledFeatures.evidenceLocker && (
-                 <button onClick={() => onNavigate('Forensics')} className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-3 rounded-2xl flex items-center justify-between transition group focus-visible:ring-2 focus-visible:ring-purple-500">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400 shadow-inner"><Microscope className="w-4 h-4" aria-hidden="true" /></div>
-                        <div className="text-left">
-                            <div className="font-bold text-[var(--text-secondary)] text-sm">Evidence Log</div>
-                            <div className={`text-xs uppercase font-bold tracking-tight ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Weekly Portfolio</div>
-                        </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition" />
-                 </button>
-             )}
-        </div>
+        {/* Profile + Access Nodes — hidden in compact horizontal strip */}
       </aside>
 
       {/* --- MIDDLE: CONTENT --- */}
-      <main className="xl:col-span-9 2xl:col-span-10 space-y-4 xl:space-y-5 2xl:space-y-6">
-          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-4 xl:p-5 2xl:p-6 backdrop-blur-md min-h-[400px] xl:min-h-[500px] 2xl:min-h-[600px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
+      <main className="space-y-4">
+          <div ref={tabpanelRef} tabIndex={-1} id={`tabpanel-${TAB_KEY_TO_NAV[activeTab] || activeTab}`} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-4 backdrop-blur-md min-h-[400px] flex flex-col outline-none" role="tabpanel" aria-label={`${TAB_KEY_TO_NAV[activeTab] || activeTab} content`}>
            <div className={`flex-1 transition-all ${reducedMotion ? 'duration-0' : 'duration-150'} ease-in-out ${tabExiting ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
 
              {activeTab === 'HOME' && (
@@ -681,7 +641,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* BOSS ENCOUNTERS — Full-width panel */}
       {enabledFeatures.bossFights && (
-      <div className="xl:col-span-12">
+      <div>
           <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md space-y-6">
               <FeatureErrorBoundary feature="Boss Encounters">
                 <React.Suspense fallback={<GamificationSkeleton />}>
