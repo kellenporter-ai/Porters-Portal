@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
-import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, Target, TrendingUp, Zap, Bug, Music } from 'lucide-react';
+import { LogOut, GraduationCap, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Home, Layers, TrendingUp, Zap, Bug, Music } from 'lucide-react';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
@@ -120,7 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     });
   }, []);
 
-  const NavItems = () => {
+  const NavItems = ({ forceExpanded = false }: { forceExpanded?: boolean }) => {
     const { enabledFeatures } = useClassConfig();
     const { assignments } = useAssignments();
 
@@ -262,7 +262,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       const groups: NavGroup[] = ['learning', 'operations', 'intel'];
 
       // Collapsed sidebar: icon-only, no group headers
-      if (sidebarCollapsed) {
+      if (sidebarCollapsed && !forceExpanded) {
         return (
           <>
             {ungrouped.map(i => renderNavButton(i, true))}
@@ -317,7 +317,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     }
 
     // Admin: render flat, respecting collapsed state
-    return <>{filteredItems.map(i => renderNavButton(i, sidebarCollapsed))}</>;
+    return <>{filteredItems.map(i => renderNavButton(i, sidebarCollapsed && !forceExpanded))}</>;
   };
 
   // Arrow key navigation within sidebar nav items
@@ -418,7 +418,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   </div>
 
                   <nav className="flex-1 space-y-2 overflow-y-auto" role="tablist" aria-label="Mobile navigation" onKeyDown={handleNavKeyDown}>
-                      <NavItems />
+                      <NavItems forceExpanded />
                   </nav>
 
                   <div className="pt-6 border-t border-[var(--sidebar-border)] space-y-3">
@@ -587,7 +587,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
           {([
             { name: 'Home', icon: <Home className="w-5 h-5" />, tab: 'Home' },
             { name: 'Resources', icon: <Layers className="w-5 h-5" />, tab: 'Resources' },
-            { name: 'Missions', icon: <Target className="w-5 h-5" />, tab: 'Missions' },
             { name: 'Progress', icon: <TrendingUp className="w-5 h-5" />, tab: 'Progress' },
           ] as const).map(item => {
             const isActive = activeTab === item.tab;
