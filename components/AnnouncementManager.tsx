@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { Announcement, DefaultClassTypes } from '../types';
-import { Megaphone, Plus, Trash2, AlertTriangle, Info, AlertOctagon } from 'lucide-react';
+import { Megaphone, Plus, Trash2, AlertTriangle, Info, AlertOctagon, ChevronUp } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import { useToast } from './ToastProvider';
-import Modal from './Modal';
 import SectionPicker from './SectionPicker';
 
 interface AnnouncementManagerProps {
@@ -23,7 +22,7 @@ const PRIORITY_STYLES = {
 const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds, availableSections = [] }) => {
   const { confirm } = useConfirm();
   const toast = useToast();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<'INFO' | 'WARNING' | 'URGENT'>('INFO');
@@ -48,7 +47,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
       setTitle('');
       setContent('');
       setTargetSections([]);
-      setIsModalOpen(false);
+      setIsComposerOpen(false);
       toast.success('Announcement broadcast sent.');
     } catch (err) {
       toast.error('Could not create announcement. Try again.');
@@ -68,10 +67,13 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
           Announcements
         </h3>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsComposerOpen(prev => !prev)}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold transition"
         >
-          <Plus className="w-3.5 h-3.5" /> Broadcast
+          {isComposerOpen
+            ? <><ChevronUp className="w-3.5 h-3.5" /> Close</>
+            : <><Plus className="w-3.5 h-3.5" /> Broadcast</>
+          }
         </button>
       </div>
 
@@ -105,19 +107,40 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Announcement" maxWidth="max-w-md">
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Quiz moved to Friday..."
-              className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500 transition"
-              maxLength={80}
-            />
+      {isComposerOpen && (
+        <div role="region" aria-label="Broadcast announcement composer" className="mt-4 p-4 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl space-y-3 transition-all duration-200 animate-in fade-in slide-in-from-top-2">
+          {/* Row 1: Title + Priority + Audience */}
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Quiz moved to Friday..."
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500 transition"
+                maxLength={80}
+              />
+            </div>
+            <div className="w-32 shrink-0">
+              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Priority</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value as Announcement['priority'])} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
+                <option value="INFO">Info</option>
+                <option value="WARNING">Warning</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+            <div className="w-36 shrink-0">
+              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Audience</label>
+              <select value={classType} onChange={(e) => setClassType(e.target.value)} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
+                <option value="GLOBAL">All Classes</option>
+                {Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized').map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          {/* Row 2: Message */}
           <div>
             <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Message</label>
             <textarea
@@ -129,35 +152,21 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
               maxLength={300}
             />
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Priority</label>
-              <select value={priority} onChange={(e) => setPriority(e.target.value as Announcement['priority'])} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
-                <option value="INFO">Info</option>
-                <option value="WARNING">Warning</option>
-                <option value="URGENT">Urgent</option>
-              </select>
+          {/* Row 3: SectionPicker + Submit */}
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <SectionPicker availableSections={availableSections} selectedSections={targetSections} onChange={setTargetSections} />
             </div>
-            <div className="flex-1">
-              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Audience</label>
-              <select value={classType} onChange={(e) => setClassType(e.target.value)} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
-                <option value="GLOBAL">All Classes</option>
-                {Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized').map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
+            <button
+              onClick={handleCreate}
+              disabled={!title.trim() || !content.trim()}
+              className="shrink-0 px-5 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl text-sm font-bold transition"
+            >
+              Broadcast
+            </button>
           </div>
-          <SectionPicker availableSections={availableSections} selectedSections={targetSections} onChange={setTargetSections} />
-          <button
-            onClick={handleCreate}
-            disabled={!title.trim() || !content.trim()}
-            className="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-2xl font-bold transition"
-          >
-            Broadcast Announcement
-          </button>
         </div>
-      </Modal>
+      )}
     </div>
   );
 };
