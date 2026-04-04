@@ -4,7 +4,7 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getDatabase } from 'firebase/database';
+
 
 // VITE NOTE: We must access import.meta.env.VITE_* explicitly for the bundler to replace them.
 
@@ -36,8 +36,6 @@ export const db = initializeFirestore(app, {
 });
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
-export const rtdb = getDatabase(app);
-
 // Cloud Function callables
 export const callAwardXP = httpsCallable(functions, 'awardXP');
 export const callEquipItem = httpsCallable(functions, 'equipItem');
