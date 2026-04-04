@@ -442,7 +442,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       )}
 
       {/* Desktop Sidebar — visible at lg breakpoint and above */}
-      <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-60' : 'w-72'}`}>
+      <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-64' : 'w-72'}`}>
         <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn`}>
           {/* Header */}
           {sidebarCollapsed ? (

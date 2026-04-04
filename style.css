@@ -9,8 +9,8 @@
   --surface-raised: #ffffff;
   --surface-sunken: #f0eef5;
   --surface-overlay: rgba(255, 255, 255, 0.92);
-  --surface-glass: rgba(250, 249, 255, 0.06);
-  --surface-glass-heavy: rgba(250, 249, 255, 0.15);
+  --surface-glass: rgba(124, 58, 237, 0.04);
+  --surface-glass-heavy: rgba(124, 58, 237, 0.08);
   --text-primary: #1e1233;
   --text-secondary: #4a4560;
   --text-tertiary: #6a6580;
@@ -20,8 +20,8 @@
   --accent-hover: #6d28d9;
   --accent-muted: rgba(124, 58, 237, 0.12);
   --accent-text: #7c3aed;
-  --border: rgba(124, 58, 237, 0.18) !important;
-  --border-strong: rgba(124, 58, 237, 0.30) !important;
+  --border: rgba(124, 58, 237, 0.22) !important;
+  --border-strong: rgba(124, 58, 237, 0.35) !important;
   --border-accent: rgba(124, 58, 237, 0.40) !important;
   --sidebar-bg: #efe8f8;
   --sidebar-text: #1e1233;
@@ -34,8 +34,8 @@
   --focus-ring: #7c3aed;
   --ring-offset: #f8f7fc;
   --backdrop: rgba(30, 18, 51, 0.25);
-  --panel-bg: rgba(250, 249, 255, 0.10);
-  --glass-glow: 0 0 0 1px rgba(255, 255, 255, 0.70), 0 4px 12px rgba(90, 70, 120, 0.08), 0 1px 3px rgba(90, 70, 120, 0.04);
+  --panel-bg: rgba(255, 255, 255, 0.85);
+  --glass-glow: 0 0 0 1px rgba(124, 58, 237, 0.10), 0 4px 12px rgba(90, 70, 120, 0.10), 0 1px 3px rgba(90, 70, 120, 0.06);
   --toggle-off: #d8d0e8;
   --success: #059669;
   --warning: #d97706;
