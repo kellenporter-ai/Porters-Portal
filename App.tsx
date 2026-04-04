@@ -31,7 +31,6 @@ import { lazyWithRetry } from './lib/lazyWithRetry';
 // ─── Lazy-loaded route components — auto-reload on stale chunk errors ───
 const TeacherDashboard = lazyWithRetry(() => import('./components/TeacherDashboard'));
 const UserManagement = lazyWithRetry(() => import('./components/UserManagement'));
-const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'));
 const XPManagement = lazyWithRetry(() => import('./components/XPManagement'));
 const StudentDashboard = lazyWithRetry(() => import('./components/StudentDashboard'));
 const EvidenceLocker = lazyWithRetry(() => import('./components/EvidenceLocker'));
@@ -163,11 +162,6 @@ const GradingRoute: React.FC = () => {
   return <GradingPage users={users} assignments={assignments} submissions={submissions} />;
 };
 
-const AdminPanelRoute: React.FC = () => {
-  const { rawUsers, submissions } = useAdminData();
-  return <AdminPanel assignments={[]} submissions={submissions} users={rawUsers} onCreateAssignment={undefined as never} classConfigs={[]} />;
-};
-
 const UserManagementRoute: React.FC = () => {
   const { users, whitelistedEmails } = useAdminData();
   const { classConfigs } = useClassConfig();
@@ -188,7 +182,7 @@ const EditorRoute: React.FC = () => {
   return (
     <LessonEditorPage
       assignments={assignments}
-      onClose={() => navigate('/admin')}
+      onClose={() => navigate('/dashboard')}
       classConfigs={classConfigs}
       users={rawUsers}
       availableSections={availableSections}
@@ -356,7 +350,7 @@ const App: React.FC = () => {
               <Route path="/grading" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Grading"><GradingRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/grading/:assessmentId" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Grading"><GradingRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/grading/:assessmentId/:studentId" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Grading"><GradingRoute /></FeatureErrorBoundary></Suspense>} />
-              <Route path="/admin" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Admin Panel"><AdminPanelRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               <Route path="/editor" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Lesson Editor"><EditorRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/users" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="User Management"><UserManagementRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Enrollment"><EnrollmentRoute /></FeatureErrorBoundary></Suspense>} />

@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Assignment, ClassConfig, Submission, migrateResourceCategory } from '../../types';
 import { ChevronRight, ChevronDown, Play, FlaskConical, Target, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown } from 'lucide-react';
-import { sortUnitKeys } from '../AdminPanel';
+import { sortUnitKeys } from '../../lib/sortUnitKeys';
 
 function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString);

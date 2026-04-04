@@ -5,7 +5,7 @@ import {
   ChevronUp, Rocket, Archive, Eye, EyeOff, Trash2, CalendarClock, Layers,
   BookOpen, PlayCircle, FlaskConical, Target, Shield
 } from 'lucide-react';
-import { sortUnitKeys } from '../AdminPanel';
+import { sortUnitKeys } from '../../lib/sortUnitKeys';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
 
