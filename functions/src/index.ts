@@ -3535,6 +3535,7 @@ export const answerBossQuiz = onCall(async (request) => {
   const profile = gam.classProfiles?.[activeClass];
   const equipped = profile?.equipped || gam.equipped || {};
   const playerAttrStats = calculateServerStats(equipped);
+  const playerGearScore = calculateServerGearScore(equipped);
   const baseCombat = deriveCombatStats(playerAttrStats);
   let { maxHp } = baseCombat;
   let armorPercent = baseCombat.armorPercent;
@@ -3586,6 +3587,7 @@ export const answerBossQuiz = onCall(async (request) => {
     longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
     healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
   };
+  const isFirstAnswerForPlayer = progress.answeredQuestions.length === 0;
   cs.questionsAttempted++;
 
   const isCorrect = Number(answer) === question.correctAnswer;
@@ -3603,22 +3605,20 @@ export const answerBossQuiz = onCall(async (request) => {
     if (cs.currentStreak > cs.longestStreak) cs.longestStreak = cs.currentStreak;
     cs.correctByDifficulty[question.difficulty as "EASY" | "MEDIUM" | "HARD"]++;
 
-    damage = quiz.damagePerCorrect || 10;
+    damage = (quiz.damagePerCorrect || 10) + Math.floor(playerGearScore / 100);
     if (question.damageBonus) damage += question.damageBonus;
 
     // Modifier: player damage boost
     if (hasMod(mods, "PLAYER_DAMAGE_BOOST")) damage += modVal(mods, "PLAYER_DAMAGE_BOOST", 25);
-    // Modifier: double or nothing
-    if (hasMod(mods, "DOUBLE_OR_NOTHING")) damage *= 2;
-    // Modifier: glass cannon (mutually exclusive with double or nothing for damage)
-    else if (hasMod(mods, "GLASS_CANNON")) damage *= 2;
+    // Additive modifier stacking — collect bonuses, apply once
+    let stackingBonus = 0;
+    if (hasMod(mods, "DOUBLE_OR_NOTHING")) stackingBonus += 1.0;
+    else if (hasMod(mods, "GLASS_CANNON")) stackingBonus += 1.0;
+    if (hasMod(mods, "LAST_STAND") && playerHp < maxHp * 0.25) stackingBonus += 0.5;
+    if (stackingBonus > 0) damage = Math.round(damage * (1 + stackingBonus));
     // Modifier: streak bonus
     if (hasMod(mods, "STREAK_BONUS") && cs.currentStreak > 1) {
       damage += modVal(mods, "STREAK_BONUS", 10) * (cs.currentStreak - 1);
-    }
-    // Modifier: last stand (+50% when below 25% HP)
-    if (hasMod(mods, "LAST_STAND") && playerHp < maxHp * 0.25) {
-      damage = Math.round(damage * 1.5);
     }
 
     // Role damage multiplier (VANGUARD +15%)
@@ -3631,7 +3631,17 @@ export const answerBossQuiz = onCall(async (request) => {
       cs.criticalHits++;
     }
 
-    damage = Math.max(1, Math.round(damage));
+    damage = Math.max(1, Math.min(Math.round(damage), 500));
+
+    // F: Diminishing returns based on participant count
+    const participantCount = (quiz.participantCount || 0);
+    const drMultiplier = Math.min(1.0, Math.sqrt(10 / Math.max(10, participantCount + 1)));
+    damage = Math.max(1, Math.round(damage * drMultiplier));
+
+    // G: Boss armor scales with participant count (2% per student above 10, max 50%)
+    const bossArmor = Math.min(50, Math.max(0, (participantCount - 10) * 2));
+    damage = Math.max(1, Math.round(damage * (1 - bossArmor / 100)));
+
     cs.totalDamageDealt += damage;
 
     // Distributed counter: write damage to a random shard
@@ -3639,6 +3649,11 @@ export const answerBossQuiz = onCall(async (request) => {
     batch.set(db.doc(`boss_quizzes/${quizId}/shards/${shardId}`), {
       damageDealt: admin.firestore.FieldValue.increment(damage),
     }, { merge: true });
+
+    // Track participant count (increment on first answer only)
+    if (isFirstAnswerForPlayer) {
+      batch.update(quizRef, { participantCount: admin.firestore.FieldValue.increment(1) });
+    }
 
     // Write to damage_log subcollection for real-time battle feed
     const quizLogRef = db.collection(`boss_quizzes/${quizId}/damage_log`).doc();
@@ -4081,7 +4096,7 @@ export const scaleBossHp = onCall(async (request) => {
         }
         const avgLevel = classSize > 0 ? totalLevel / classSize : 1;
         if (avgLevel > 10) {
-          scaledHp *= 1 + ((avgLevel - 10) * 0.005);
+          scaledHp *= 1 + ((avgLevel - 10) * 0.02);
         }
       }
     }
