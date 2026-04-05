@@ -1,94 +1,113 @@
 /**
  * Item Icon Mapping Utility
  *
- * Maps RPGItem visualId + slot + rarity to Quaternius Ultimate RPG Items icon PNGs.
- * Icons live in /public/assets/items/ and are served as static assets.
+ * Maps RPGItem visualId + slot + rarity to custom cyberpunk gear icon PNGs.
+ * Icons live in /public/assets/items/gear/ and are served as static assets.
  */
 
 import { ItemRarity } from '../types';
 
 // Base path for item icon PNGs (relative to public root)
-const ICON_BASE = '/assets/items';
+const ICON_BASE = '/assets/items/gear';
 
 // ─── visualId → icon filename mapping ────────────────────────────────────
-// Each visualId from BASE_ITEMS in the server gets a specific icon.
-// Golden variants are used for RARE/UNIQUE rarities when available.
+// Each visualId from BASE_ITEMS gets a normal icon and an epic variant
+// for RARE/UNIQUE rarities.
 
 interface IconVariant {
   normal: string;
-  golden?: string; // Used for RARE/UNIQUE rarity
+  epic?: string; // Used for RARE/UNIQUE rarity
 }
 
 const VISUAL_ID_ICONS: Record<string, IconVariant> = {
   // HEAD
-  visor:     { normal: 'Crown2.png',       golden: 'Crown.png' },
-  helm:      { normal: 'Crown2.png',       golden: 'Crown.png' },
-  band:      { normal: 'Necklace2.png',    golden: 'Necklace3.png' },
+  visor:     { normal: 'visor.png',      epic: 'visor_epic.png' },
+  helm:      { normal: 'helm.png',       epic: 'helm_epic.png' },
+  band:      { normal: 'band.png',       epic: 'band_epic.png' },
 
   // CHEST
-  vest:      { normal: 'Armor_Leather.png', golden: 'Armor_Golden.png' },
-  coat:      { normal: 'Armor_Leather.png', golden: 'Armor_Golden.png' },
-  plate:     { normal: 'Armor_Metal.png',   golden: 'Armor_Golden.png' },
+  vest:      { normal: 'vest.png',       epic: 'vest_epic.png' },
+  coat:      { normal: 'coat.png',       epic: 'coat_epic.png' },
+  plate:     { normal: 'plate.png',      epic: 'plate_epic.png' },
 
   // HANDS
-  gloves:    { normal: 'Glove.png' },
-  gauntlets: { normal: 'Glove.png' },
-  grips:     { normal: 'Glove.png' },
+  gloves:    { normal: 'gloves.png',     epic: 'gloves_epic.png' },
+  gauntlets: { normal: 'gauntlets.png',  epic: 'gauntlets_epic.png' },
+  grips:     { normal: 'grips.png',      epic: 'grips_epic.png' },
 
   // FEET
-  boots:     { normal: 'Dagger.png',        golden: 'Dagger_Golden.png' },
-  treads:    { normal: 'Dagger.png',        golden: 'Dagger_Golden.png' },
-  stabs:     { normal: 'Dagger.png',        golden: 'Dagger_Golden.png' },
+  boots:     { normal: 'boots.png',      epic: 'boots_epic.png' },
+  treads:    { normal: 'treads.png',     epic: 'treads_epic.png' },
+  stabs:     { normal: 'stabs.png',      epic: 'stabs_epic.png' },
 
   // BELT
-  belt:      { normal: 'Pouch.png',         golden: 'Backpack.png' },
-  sash:      { normal: 'Pouch.png' },
+  belt:      { normal: 'belt.png',       epic: 'belt_epic.png' },
+  sash:      { normal: 'sash.png',       epic: 'sash_epic.png' },
 
-  // AMULET
-  chip:      { normal: 'Crystal1.png',      golden: 'Crystal4.png' },
-  core:      { normal: 'Crystal2.png',      golden: 'Crystal3.png' },
-
-  // RING
-  ring:      { normal: 'Ring1.png',         golden: 'Ring5.png' },
-  // "band" for RING slot is already mapped above; the slot-based fallback handles it
+  // WEAPON
+  sword:     { normal: 'sword.png',      epic: 'sword_epic.png' },
+  staff:     { normal: 'staff.png',      epic: 'staff_epic.png' },
+  baton:     { normal: 'baton.png',      epic: 'baton_epic.png' },
 };
 
 // ─── Slot-based fallback icons ───────────────────────────────────────────
-// Used when visualId doesn't match any known mapping.
 
 const SLOT_FALLBACK_ICONS: Record<string, IconVariant> = {
-  HEAD:   { normal: 'Crown2.png',        golden: 'Crown.png' },
-  CHEST:  { normal: 'Armor_Leather.png', golden: 'Armor_Golden.png' },
-  HANDS:  { normal: 'Glove.png' },
-  FEET:   { normal: 'Dagger.png',        golden: 'Dagger_Golden.png' },
-  BELT:   { normal: 'Pouch.png',         golden: 'Backpack.png' },
-  AMULET: { normal: 'Necklace1.png',     golden: 'Necklace3.png' },
-  RING:   { normal: 'Ring1.png',         golden: 'Ring5.png' },
-  WEAPON: { normal: 'Sword.png',         golden: 'Sword_Golden.png' },
+  HEAD:   { normal: 'visor.png',     epic: 'visor_epic.png' },
+  CHEST:  { normal: 'vest.png',      epic: 'vest_epic.png' },
+  HANDS:  { normal: 'gloves.png',    epic: 'gloves_epic.png' },
+  FEET:   { normal: 'boots.png',     epic: 'boots_epic.png' },
+  BELT:   { normal: 'belt.png',      epic: 'belt_epic.png' },
+  AMULET: { normal: 'chip.png',      epic: 'chip_rare.png' },
+  RING:   { normal: 'ring.png',      epic: 'ring_rare.png' },
+  WEAPON: { normal: 'sword.png',     epic: 'sword_epic.png' },
 };
 
-// ─── Rarity-specific ring icons for visual variety ───────────────────────
+// ─── Rarity-specific icons for rings ────────────────────────────────────
+
 const RARITY_RING_ICONS: Record<ItemRarity, string> = {
-  COMMON:   'Ring1.png',
-  UNCOMMON: 'Ring2.png',
-  RARE:     'Ring5.png',
-  UNIQUE:   'Ring7.png',
+  COMMON:   'ring.png',
+  UNCOMMON: 'ring_uncommon.png',
+  RARE:     'ring_rare.png',
+  UNIQUE:   'ring_rare.png',
 };
 
-const RARITY_CRYSTAL_ICONS: Record<ItemRarity, string> = {
-  COMMON:   'Crystal1.png',
-  UNCOMMON: 'Crystal2.png',
-  RARE:     'Crystal3.png',
-  UNIQUE:   'Crystal5.png',
+const RARITY_FOCUS_BAND_ICONS: Record<ItemRarity, string> = {
+  COMMON:   'focus_band.png',
+  UNCOMMON: 'focus_band_uncommon.png',
+  RARE:     'focus_band_rare.png',
+  UNIQUE:   'focus_band_unique.png',
+};
+
+// ─── Rarity-specific icons for amulets ──────────────────────────────────
+
+const RARITY_CHIP_ICONS: Record<ItemRarity, string> = {
+  COMMON:   'chip.png',
+  UNCOMMON: 'chip_uncommon.png',
+  RARE:     'chip_rare.png',
+  UNIQUE:   'chip_unique.png',
+};
+
+const RARITY_CORE_ICONS: Record<ItemRarity, string> = {
+  COMMON:   'core.png',
+  UNCOMMON: 'core_uncommon.png',
+  RARE:     'core_rare.png',
+  UNIQUE:   'core_unique.png',
+};
+
+// ─── Named unique item icons ────────────────────────────────────────────
+
+const UNIQUE_ICONS: Record<string, string> = {
+  "unique_newton's_prism": 'unique_newtons_prism.png',
+  "unique_tesla's_coils": 'unique_teslas_coils.png',
+  "unique_curie's_determination": 'unique_curies_determination.png',
+  "unique_einstein's_relativistic_boots": 'unique_einsteins_boots.png',
+  "unique_galileo's_telescope": 'unique_galileos_telescope.png',
+  "unique_archimedes'_lever": 'unique_archimedes_lever.png',
 };
 
 /**
  * Returns the icon path for an RPG item based on its visualId, slot, and rarity.
- *
- * @param visualId - The item's visualId string
- * @param slot     - The equipment slot (HEAD, CHEST, etc.)
- * @param rarity   - The item rarity for golden variant selection
- * @returns Absolute path to the icon PNG from public root, or null if no mapping
  */
 export function getItemIconPath(
   visualId: string,
@@ -97,41 +116,45 @@ export function getItemIconPath(
 ): string {
   const isHighRarity = rarity === 'RARE' || rarity === 'UNIQUE';
 
-  // Special case: rings get rarity-specific icons
+  // Named unique items get their own dedicated art
+  if (visualId && UNIQUE_ICONS[visualId]) {
+    return `${ICON_BASE}/${UNIQUE_ICONS[visualId]}`;
+  }
+
+  // Rings get rarity-specific icons
   if (slot === 'RING' || slot === 'RING1' || slot === 'RING2') {
-    if (visualId === 'ring' || visualId === 'band') {
+    if (visualId === 'ring') {
       return `${ICON_BASE}/${RARITY_RING_ICONS[rarity]}`;
     }
+    if (visualId === 'band') {
+      return `${ICON_BASE}/${RARITY_FOCUS_BAND_ICONS[rarity]}`;
+    }
   }
 
-  // Special case: amulet chips/cores get rarity-specific crystal icons
-  if (slot === 'AMULET' && (visualId === 'chip' || visualId === 'core')) {
-    return `${ICON_BASE}/${RARITY_CRYSTAL_ICONS[rarity]}`;
+  // Amulets get rarity-specific icons
+  if (slot === 'AMULET') {
+    if (visualId === 'chip') {
+      return `${ICON_BASE}/${RARITY_CHIP_ICONS[rarity]}`;
+    }
+    if (visualId === 'core') {
+      return `${ICON_BASE}/${RARITY_CORE_ICONS[rarity]}`;
+    }
   }
 
-  // Check visualId mapping first
+  // Standard visualId mapping
   const mapping = VISUAL_ID_ICONS[visualId];
   if (mapping) {
-    const filename = (isHighRarity && mapping.golden) ? mapping.golden : mapping.normal;
+    const filename = (isHighRarity && mapping.epic) ? mapping.epic : mapping.normal;
     return `${ICON_BASE}/${filename}`;
-  }
-
-  // Check unique items (visualId starts with "unique_")
-  if (visualId && visualId.startsWith('unique_')) {
-    // For unique items, use the slot fallback with golden variant
-    const fallback = SLOT_FALLBACK_ICONS[slot];
-    if (fallback) {
-      return `${ICON_BASE}/${fallback.golden || fallback.normal}`;
-    }
   }
 
   // Slot-based fallback
   const slotFallback = SLOT_FALLBACK_ICONS[slot];
   if (slotFallback) {
-    const filename = (isHighRarity && slotFallback.golden) ? slotFallback.golden : slotFallback.normal;
+    const filename = (isHighRarity && slotFallback.epic) ? slotFallback.epic : slotFallback.normal;
     return `${ICON_BASE}/${filename}`;
   }
 
   // Ultimate fallback
-  return `${ICON_BASE}/Star.png`;
+  return `${ICON_BASE}/sword.png`;
 }

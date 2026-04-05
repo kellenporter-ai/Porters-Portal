@@ -262,7 +262,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                            draggedItem && isCompatible ? 'ring-1 ring-purple-500/40 animate-pulse' : '';
 
     return (
-      <div ref={setDropRef} className="relative w-full h-full">
+      <div ref={setDropRef} className="relative w-full h-full hover:z-50">
         <div
           ref={setDragRef}
           {...attributes}
