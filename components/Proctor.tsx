@@ -68,6 +68,10 @@ interface ProctorProps {
 //   { type: 'portal-replay' }
 //     Sent when the student wants to replay a completed module. Resets active state but preserves completion records.
 //
+//   { type: 'portal-activity' }
+//     Heartbeat sent periodically (~30s) while the student is interacting.
+//     Resets the Proctor's inactivity timer so engagement time is tracked accurately.
+//
 // PARENT → IFRAME messages:
 //   { type: 'portal-init', payload: { userId: string, savedState: {...} | null, completionInfo: {...} | null } }
 //     Sent in response to 'portal-ready'. Provides saved state and any completion records.
@@ -111,6 +115,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const lastInteractionRef = useRef<number>(Date.now());
   const onCompleteRef = useRef(onComplete);
   const [isActive, setIsActive] = useState(true);
+  const isActiveRef = useRef(true);
   const [displayTime, setDisplayTime] = useState(0);
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [xpToast, setXpToast] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
@@ -506,8 +511,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   const handleInteraction = useCallback(() => {
       lastInteractionRef.current = Date.now();
-      if (!isActive) setIsActive(true);
-  }, [isActive]);
+      if (!isActiveRef.current) {
+        isActiveRef.current = true;
+        setIsActive(true);
+      }
+  }, []);
 
   // Throttled version for high-frequency events (mousemove)
   const lastInteractionTimeRef = useRef(0);
@@ -591,20 +599,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     }
   }, [userId, assignmentId, classType, handleInteraction, previewMode]);
 
-  // Session Timer
+  // Session Timer — uses refs to avoid dependency churn
   useEffect(() => {
       const interval = setInterval(() => {
           const now = Date.now();
           if (now - lastInteractionRef.current < 60000) {
               metricsRef.current.engagementTime += 1;
               setDisplayTime(metricsRef.current.engagementTime);
-              if (!isActive) setIsActive(true);
+              if (!isActiveRef.current) {
+                isActiveRef.current = true;
+                setIsActive(true);
+              }
           } else {
-              if (isActive) setIsActive(false);
+              if (isActiveRef.current) {
+                isActiveRef.current = false;
+                setIsActive(false);
+              }
           }
       }, 1000);
       return () => clearInterval(interval);
-  }, [isActive]);
+  }, []);
 
   // Global Listeners — specific handlers for telemetry, generic for AFK
   useEffect(() => {
@@ -613,12 +627,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       window.addEventListener('click', handleClick);
       window.addEventListener('mousemove', throttledInteraction);
       window.addEventListener('scroll', handleInteraction);
+      window.addEventListener('pointerdown', throttledInteraction);
+      window.addEventListener('pointermove', throttledInteraction);
       return () => {
           window.removeEventListener('keydown', handleKeyDown);
           window.removeEventListener('paste', handlePaste);
           window.removeEventListener('click', handleClick);
           window.removeEventListener('mousemove', throttledInteraction);
           window.removeEventListener('scroll', handleInteraction);
+          window.removeEventListener('pointerdown', throttledInteraction);
+          window.removeEventListener('pointermove', throttledInteraction);
       };
   }, [handleKeyDown, handlePaste, handleClick, handleInteraction, throttledInteraction]);
 
