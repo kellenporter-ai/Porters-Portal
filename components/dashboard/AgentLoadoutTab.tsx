@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot, ItemSlot } from '../../types';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { useChartTheme } from '../../lib/useChartTheme';
 import { User as UserIcon, GripVertical } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
@@ -16,6 +14,8 @@ import Avatar3D from './Avatar3D';
 import CustomizeModal from './CustomizeModal';
 import InspectItemModal from './InspectItemModal';
 import ItemIcon from '../ItemIcon';
+
+type RightPanelTab = 'agent' | 'loadout';
 
 // Inline modifier: snaps the drag overlay center to the cursor position.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,17 +39,17 @@ interface AgentLoadoutTabProps {
   level: number;
 }
 
-const LEFT_SLOTS: EquipmentSlot[] = ['HEAD', 'HANDS', 'RING1', 'AMULET'];
-const RIGHT_SLOTS: EquipmentSlot[] = ['CHEST', 'BELT', 'FEET', 'RING2'];
+/** All equipment slots for the loadout grid */
+const ALL_EQUIP_SLOTS: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', 'RING1', 'RING2', 'AMULET', 'WEAPON1', 'WEAPON2'];
 
 const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, level }) => {
-  const chartTheme = useChartTheme();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [draggedItem, setDraggedItem] = useState<RPGItem | null>(null);
+  const [rightTab, setRightTab] = useState<RightPanelTab>('agent');
 
   const classProfile = useMemo(() => getClassProfile(user, activeClass), [user, activeClass]);
   const equipped = classProfile.equipped;
@@ -66,13 +66,6 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     return base;
   }, [equipped]);
 
-  const radarData = useMemo(() => [
-    { subject: 'Tech', A: playerStats.tech, fullMark: 100 },
-    { subject: 'Focus', A: playerStats.focus, fullMark: 100 },
-    { subject: 'Analysis', A: playerStats.analysis, fullMark: 100 },
-    { subject: 'Charisma', A: playerStats.charisma, fullMark: 100 },
-  ], [playerStats]);
-
   // --- DnD sensors ---
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -81,6 +74,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
 
   const slotAccepts = (equipSlot: EquipmentSlot): ItemSlot[] => {
     if (equipSlot === 'RING1' || equipSlot === 'RING2') return ['RING'];
+    if (equipSlot === 'WEAPON1' || equipSlot === 'WEAPON2') return ['WEAPON'];
     return [equipSlot as ItemSlot];
   };
 
@@ -268,20 +262,20 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                            draggedItem && isCompatible ? 'ring-1 ring-purple-500/40 animate-pulse' : '';
 
     return (
-      <div ref={setDropRef} className="relative">
+      <div ref={setDropRef} className="relative w-full h-full">
         <div
           ref={setDragRef}
           {...attributes}
           {...listeners}
-          className={`w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
-            isDragging ? 'opacity-30 scale-90 border-dashed' : 'hover:scale-110 cursor-grab active:cursor-grabbing'
+          className={`w-full h-full min-w-[64px] min-h-[64px] rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
+            isDragging ? 'opacity-30 scale-90 border-dashed' : 'hover:scale-105 cursor-grab active:cursor-grabbing'
           } ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass}`}
           onClick={() => !isDragging && item && setInspectItem(item)}
         >
           {item ? (
             <>
-              <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
-              <span className={`text-[7px] font-bold mt-0.5 truncate w-full text-center px-0.5 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
+              <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-10 h-10" />
+              <span className={`text-[8px] font-bold mt-1 truncate w-full text-center px-1 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
               {!isDragging && (
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
                   <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
@@ -292,8 +286,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               )}
             </>
           ) : (
-            <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{
-              { HEAD: 'HEAD', HANDS: 'HANDS', RING1: 'RING', RING2: 'RING', AMULET: 'AMUL.', CHEST: 'CHEST', BELT: 'BELT', FEET: 'FEET' }[slot] || slot.slice(0, 4)
+            <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{
+              { HEAD: 'HEAD', HANDS: 'HANDS', RING1: 'RING', RING2: 'RING', AMULET: 'AMUL.', CHEST: 'CHEST', BELT: 'BELT', FEET: 'FEET', WEAPON1: 'WPN 1', WEAPON2: 'WPN 2' }[slot] || slot.slice(0, 4)
             }</span>
           )}
         </div>
@@ -305,131 +299,165 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[snapCenterToCursor]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div key="loadout" className="flex flex-col h-full" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 xl:gap-6 flex-1 min-h-0">
 
-            {/* LEFT: CHARACTER VISUALIZER WITH SLOTS */}
-            <div className="bg-[var(--surface-sunken)] rounded-2xl border border-[var(--border)] relative flex flex-col items-center justify-center p-4 min-h-[300px] lg:min-h-[320px] xl:min-h-[380px] 2xl:min-h-[400px]">
+          {/* TWO-COLUMN: Gear Storage (left) | Avatar + Slots (right) */}
+          <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+
+            {/* LEFT: GEAR STORAGE */}
+            <div className="order-2 lg:order-1 lg:w-[45%] flex-shrink-0">
+              <InventoryGrid
+                inventory={inventory}
+                equipped={equipped}
+                draggedItem={draggedItem}
+                onInspect={setInspectItem}
+              />
+            </div>
+
+            {/* RIGHT: AVATAR + EQUIPMENT SLOTS */}
+            <div className="order-1 lg:order-2 flex-1 bg-[var(--surface-sunken)] rounded-2xl border border-[var(--border)] relative flex flex-col items-center p-4 min-h-[340px] lg:min-h-0">
               <div className="absolute inset-0 rounded-2xl overflow-hidden loadout-hex-bg pointer-events-none"></div>
               <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
 
-              <div className="flex w-full h-full relative z-10 justify-between items-center px-4">
-                <div className="flex flex-col gap-4">
-                  {LEFT_SLOTS.map(slot => <SlotRender key={slot} slot={slot} />)}
-                </div>
-                <div className="w-40 h-full relative">
-                  {user.gamification?.selectedCharacterModel ? (
-                    <Avatar3D
-                      characterModelId={user.gamification.selectedCharacterModel}
-                      appearance={classProfile.appearance}
-                      activeCosmetics={user.gamification?.activeCosmetics}
-                      evolutionLevel={level}
-                    />
-                  ) : (
-                    <OperativeAvatar
-                      equipped={equipped}
-                      appearance={classProfile.appearance}
-                      evolutionLevel={level}
-                      activeCosmetics={user.gamification?.activeCosmetics}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-4">
-                  {RIGHT_SLOTS.map(slot => <SlotRender key={slot} slot={slot} />)}
-                </div>
+              {/* Tab switcher */}
+              <div className="relative z-10 flex gap-1 bg-black/30 rounded-xl p-1 mb-2 self-center">
+                <button
+                  type="button"
+                  onClick={() => setRightTab('agent')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    rightTab === 'agent'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  Agent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightTab('loadout')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    rightTab === 'loadout'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  Loadout
+                </button>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowCustomize(true);
-                }}
-                className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
-              >
-                <UserIcon className="w-3.5 h-3.5" />
-                Edit DNA Profile
-              </button>
-            </div>
-
-            {/* RIGHT: STATS */}
-            <div className="flex flex-col gap-4">
-              <div className="bg-[var(--surface-sunken)] rounded-2xl p-4 border border-[var(--border)] flex-1 min-h-[200px]">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Performance Radar</h4>
-                <div className="h-[160px] lg:h-[170px] xl:h-[190px] 2xl:h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                      <defs>
-                        <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="#a855f7" stopOpacity={0.3} />
-                        </linearGradient>
-                      </defs>
-                      <PolarGrid stroke={chartTheme.gridColor} />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: chartTheme.tickColor, fontSize: 10, fontWeight: 700 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
-                      <Radar name="Stats" dataKey="A" stroke="#a855f7" strokeWidth={2} fill="url(#radarGradient)" fillOpacity={0.5} animationDuration={800} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Stats Summary */}
-              {(() => {
-                const combat = deriveCombatStats(playerStats);
-                return (
-                  <div className="bg-[var(--surface-sunken)] rounded-2xl p-4 border border-[var(--border)] space-y-3">
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="group relative flex items-center gap-2 cursor-help">
-                        <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                        <span className="text-gray-500">Tech</span>
-                        <span className="text-blue-400 font-bold ml-auto">{playerStats.tech}</span>
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                          <span className="font-bold text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
-                        </div>
-                      </div>
-                      <div className="group relative flex items-center gap-2 cursor-help">
-                        <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                        <span className="text-gray-500">Focus</span>
-                        <span className="text-green-400 font-bold ml-auto">{playerStats.focus}</span>
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                          <span className="font-bold text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% &middot; Crit damage: {combat.critMultiplier.toFixed(2)}x
-                        </div>
-                      </div>
-                      <div className="group relative flex items-center gap-2 cursor-help">
-                        <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                        <span className="text-gray-500">Analysis</span>
-                        <span className="text-yellow-400 font-bold ml-auto">{playerStats.analysis}</span>
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                          <span className="font-bold text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
-                        </div>
-                      </div>
-                      <div className="group relative flex items-center gap-2 cursor-help">
-                        <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                        <span className="text-gray-500">Charisma</span>
-                        <span className="text-purple-400 font-bold ml-auto">{playerStats.charisma}</span>
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
-                          <span className="font-bold text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] pt-2 border-t border-[var(--border)]">
-                      <div className="text-center"><span className="text-gray-600 block">HP</span><span className="text-emerald-400 font-bold">{combat.maxHp}</span></div>
-                      <div className="text-center"><span className="text-gray-600 block">Armor</span><span className="text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span></div>
-                      <div className="text-center"><span className="text-gray-600 block">Crit</span><span className="text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span></div>
-                    </div>
+              {rightTab === 'agent' ? (
+                <>
+                  {/* AGENT VIEW — avatar fills the space */}
+                  <div className="flex-1 w-full max-w-[280px] relative z-10">
+                    {user.gamification?.selectedCharacterModel ? (
+                      <Avatar3D
+                        characterModelId={user.gamification.selectedCharacterModel}
+                        appearance={classProfile.appearance}
+                        activeCosmetics={user.gamification?.activeCosmetics}
+                        evolutionLevel={level}
+                      />
+                    ) : (
+                      <OperativeAvatar
+                        equipped={equipped}
+                        appearance={classProfile.appearance}
+                        evolutionLevel={level}
+                        activeCosmetics={user.gamification?.activeCosmetics}
+                      />
+                    )}
                   </div>
-                );
-              })()}
+                </>
+              ) : (
+                <>
+                  {/* LOADOUT VIEW — equipment grid, no avatar */}
+                  <div className="flex-1 w-full relative z-10 grid gap-2 p-2" style={{
+                    gridTemplateColumns: '1fr 1.2fr 1fr',
+                    gridTemplateRows: '1fr 1fr 0.8fr 0.8fr',
+                    gridTemplateAreas: `
+                      "weapon1  head    weapon2"
+                      "weapon1  chest   weapon2"
+                      "ring1    ring2   amulet"
+                      "hands    belt    feet"
+                    `,
+                  }}>
+                    {ALL_EQUIP_SLOTS.map(slot => (
+                      <div key={slot} style={{ gridArea: slot.toLowerCase() }}>
+                        <SlotRender slot={slot} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {rightTab === 'agent' && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowCustomize(true);
+                  }}
+                  className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
+                >
+                  <UserIcon className="w-3.5 h-3.5" />
+                  Edit DNA Profile
+                </button>
+              )}
             </div>
           </div>
 
-          {/* BOTTOM: INVENTORY GRID */}
-          <InventoryGrid
-            inventory={inventory}
-            equipped={equipped}
-            draggedItem={draggedItem}
-            onInspect={setInspectItem}
-          />
+          {/* COMPACT STATS STRIP — full width below both columns */}
+          <div className="mt-3">
+            {(() => {
+              const combat = deriveCombatStats(playerStats);
+              return (
+                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-[var(--surface-sunken)] rounded-xl px-4 py-2.5 border border-[var(--border)]">
+                  <div className="flex items-center gap-1.5 group relative cursor-help">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    <span className="text-[10px] text-gray-500">Tech</span>
+                    <span className="text-[11px] text-blue-400 font-bold">{playerStats.tech}</span>
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                      <span className="font-bold text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 group relative cursor-help">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    <span className="text-[10px] text-gray-500">Focus</span>
+                    <span className="text-[11px] text-green-400 font-bold">{playerStats.focus}</span>
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                      <span className="font-bold text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% · Crit damage: {combat.critMultiplier.toFixed(2)}x
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 group relative cursor-help">
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                    <span className="text-[10px] text-gray-500">Analysis</span>
+                    <span className="text-[11px] text-yellow-400 font-bold">{playerStats.analysis}</span>
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                      <span className="font-bold text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 group relative cursor-help">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                    <span className="text-[10px] text-gray-500">Charisma</span>
+                    <span className="text-[11px] text-purple-400 font-bold">{playerStats.charisma}</span>
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                      <span className="font-bold text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
+                    </div>
+                  </div>
+                  <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-600">HP</span>
+                    <span className="text-[11px] text-emerald-400 font-bold">{combat.maxHp}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-600">Armor</span>
+                    <span className="text-[11px] text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-600">Crit</span>
+                    <span className="text-[11px] text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </div>
 
         {/* Drag Overlay */}
@@ -491,6 +519,16 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
 // INVENTORY GRID
 // ============================================================
 
+type GearTab = 'ALL' | 'ARMOR' | 'HANDS' | 'JEWELRY' | 'WEAPONS';
+
+const GEAR_TAB_SLOTS: Record<GearTab, ItemSlot[] | null> = {
+  ALL: null,
+  ARMOR: ['HEAD', 'CHEST', 'BELT', 'FEET'],
+  HANDS: ['HANDS'],
+  JEWELRY: ['RING', 'AMULET'],
+  WEAPONS: ['WEAPON'],
+};
+
 interface InventoryGridProps {
   inventory: RPGItem[];
   equipped: Partial<Record<EquipmentSlot, RPGItem>>;
@@ -501,22 +539,47 @@ interface InventoryGridProps {
 const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
   const isDroppingEquipped = draggedItem && Object.values(equipped).some(e => (e as RPGItem | null)?.id === draggedItem.id);
+  const [activeTab, setActiveTab] = useState<GearTab>('ALL');
+
+  const filteredInventory = activeTab === 'ALL'
+    ? inventory
+    : inventory.filter(item => GEAR_TAB_SLOTS[activeTab]?.includes(item.slot));
 
   return (
     <div
       ref={setNodeRef}
-      className={`mt-6 flex-1 min-h-[180px] xl:min-h-[220px] 2xl:min-h-[250px] bg-[var(--surface-sunken)] border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
+      className={`flex-1 min-h-[180px] bg-[var(--surface-sunken)] border-2 rounded-2xl p-4 overflow-hidden flex flex-col transition-all duration-200 ${
         isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-[var(--border)]'
       }`}
     >
-      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
-        <span>Gear Storage ({inventory.length})</span>
+      {/* Header row: title + drag hint */}
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+          Gear Storage ({filteredInventory.length})
+        </h4>
         <span className="text-[9px] text-gray-600 flex items-center gap-1">
           <GripVertical className="w-3 h-3" /> Drag to equip
         </span>
-      </h4>
+      </div>
+      {/* Filter tabs */}
+      <div className="flex gap-1 mb-3">
+        {(['ALL', 'ARMOR', 'HANDS', 'JEWELRY', 'WEAPONS'] as GearTab[]).map(tab => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+              activeTab === tab
+                ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
+                : 'text-gray-600 hover:text-gray-400 hover:bg-[var(--surface-glass)] border border-transparent'
+            }`}
+          >
+            {tab === 'ALL' ? 'All' : tab === 'ARMOR' ? 'Armor' : tab === 'HANDS' ? 'Hands' : tab === 'JEWELRY' ? 'Jewelry' : 'Weapons'}
+          </button>
+        ))}
+      </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2 md:gap-3 content-start">
-        {inventory.map((item) => (
+        {filteredInventory.map((item) => (
           <DraggableInventoryItem
             key={item.id}
             item={item}
@@ -524,7 +587,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             onInspect={onInspect}
           />
         ))}
-        {Array.from({ length: Math.max(0, 16 - inventory.length) }).map((_, i) => (
+        {Array.from({ length: Math.max(0, 16 - filteredInventory.length) }).map((_, i) => (
           <DroppableEmptyCell key={`empty-${i}`} index={i} isDroppingEquipped={!!isDroppingEquipped} />
         ))}
       </div>

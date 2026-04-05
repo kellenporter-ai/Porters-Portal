@@ -64,6 +64,7 @@ const SLOT_FALLBACK_ICONS: Record<string, IconVariant> = {
   BELT:   { normal: 'Pouch.png',         golden: 'Backpack.png' },
   AMULET: { normal: 'Necklace1.png',     golden: 'Necklace3.png' },
   RING:   { normal: 'Ring1.png',         golden: 'Ring5.png' },
+  WEAPON: { normal: 'Sword.png',         golden: 'Sword_Golden.png' },
 };
 
 // ─── Rarity-specific ring icons for visual variety ───────────────────────

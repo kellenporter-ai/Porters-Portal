@@ -159,9 +159,9 @@ export interface TelemetryMetrics {
 // RPG TYPES
 export type ItemRarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'UNIQUE';
 // Unified RING slot for items, though equipped record still uses RING1/RING2 keys
-export type ItemSlot = 'HEAD' | 'CHEST' | 'HANDS' | 'FEET' | 'BELT' | 'AMULET' | 'RING';
+export type ItemSlot = 'HEAD' | 'CHEST' | 'HANDS' | 'FEET' | 'BELT' | 'AMULET' | 'RING' | 'WEAPON';
 // Internal keys for the equipped object
-export type EquipmentSlot = 'HEAD' | 'CHEST' | 'HANDS' | 'FEET' | 'BELT' | 'AMULET' | 'RING1' | 'RING2';
+export type EquipmentSlot = 'HEAD' | 'CHEST' | 'HANDS' | 'FEET' | 'BELT' | 'AMULET' | 'RING1' | 'RING2' | 'WEAPON1' | 'WEAPON2';
 
 export interface ItemAffix {
   name: string; // e.g., "of the Owl"

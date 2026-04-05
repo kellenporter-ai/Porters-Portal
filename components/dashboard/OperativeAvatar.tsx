@@ -112,14 +112,15 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
             };
         case 3: // Long flowing
             return {
-                back: `M${L - 3} 44 Q${L - 6} 55 ${L - 4} 85 Q${L - 2} 92 ${L + 4} 88 L${L + 2} 46 Z`,
-                main: `M${L} 46 Q${L - 2} 24 ${cx} 18 Q${R + 2} 24 ${R} 46 Q${R - 2} 30 ${cx} 25 Q${L + 2} 30 ${L} 46`,
-                accent: `M${R + 3} 44 Q${R + 6} 55 ${R + 4} 85 Q${R + 2} 92 ${R - 4} 88 L${R - 2} 46 Z`,
+                back: `M${L + 2} 46 Q${L - 4} 50 ${L - 12} 58 Q${L - 14} 68 ${L - 10} 78 Q${L - 6} 88 ${L - 12} 95 Q${L - 8} 100 ${L} 96 Q${L + 6} 90 ${L + 4} 80 Q${L + 2} 70 ${L - 2} 60 Q${L} 52 ${L + 2} 46 Z`,
+                main: `M${L} 46 Q${L - 2} 16 ${cx} 16 Q${R + 2} 16 ${R} 46 Q${R - 2} 30 ${cx} 22 Q${L + 2} 30 ${L} 46`,
+                accent: `M${R - 2} 46 Q${R + 4} 50 ${R + 12} 58 Q${R + 14} 68 ${R + 10} 78 Q${R + 6} 88 ${R + 12} 95 Q${R + 8} 100 ${R} 96 Q${R - 6} 90 ${R - 4} 80 Q${R - 2} 70 ${R + 2} 60 Q${R} 52 ${R - 2} 46 Z`,
             };
-        case 4: // High Ponytail — gathered at crown, arcs up then cascades down
+        case 4: // High Ponytail — gathered at crown, cascades down the back
             return {
-                main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
-                back: `M${cx} 24 Q${cx + 8} 6 ${cx + 14} 10 Q${cx + 18} 24 ${cx + 12} 52 Q${cx + 8} 76 ${cx + 4} 80 Q${cx + 2} 74 ${cx + 6} 52 Q${cx + 10} 28 ${cx + 6} 14 Z`,
+                main: `M${L} 44 Q${L - 2} 24 ${cx} 18 Q${R + 2} 24 ${R} 44 Q${R - 2} 34 ${cx} 24 Q${L + 2} 34 ${L} 44`,
+                back: `M${cx - 4} 34 Q${cx - 6} 44 ${cx - 5} 55 Q${cx - 6} 68 ${cx - 4} 80 Q${cx - 2} 90 ${cx} 92 Q${cx + 2} 90 ${cx + 4} 80 Q${cx + 6} 68 ${cx + 5} 55 Q${cx + 6} 44 ${cx + 4} 34 Z`,
+                accent: `M${cx - 5} 24 Q${cx - 3} 20 ${cx} 18 Q${cx + 3} 20 ${cx + 5} 24 Q${cx + 7} 16 ${cx + 5} 10 Q${cx + 3} 6 ${cx} 8 Q${cx - 3} 6 ${cx - 5} 10 Q${cx - 7} 16 ${cx - 5} 24 Z`,
             };
         case 5: // Spiky
             return {
@@ -134,19 +135,20 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
             };
         case 7: // Curly Bob — chin-length curly volume
             return {
-                back: `M${L - 4} 44 Q${L - 8} 55 ${L - 5} 72 Q${L - 2} 78 ${L + 4} 74 L${L + 2} 46 Z`,
-                main: `M${L} 46 Q${L - 3} 24 ${cx} 20 Q${R + 3} 24 ${R} 46 Q${R - 2} 30 ${cx} 26 Q${L + 2} 30 ${L} 46`,
-                accent: `M${R + 4} 44 Q${R + 8} 55 ${R + 5} 72 Q${R + 2} 78 ${R - 4} 74 L${R - 2} 46 Z`,
+                back: `M${L + 2} 46 L${L - 2} 48 Q${L - 14} 52 ${L - 16} 56 Q${L - 10} 52 ${L - 14} 60 Q${L - 18} 64 ${L - 12} 62 Q${L - 16} 68 ${L - 10} 70 Q${L - 6} 76 ${L} 74 L${L + 4} 74 L${L + 2} 46 Z`,
+                main: `M${L} 46 Q${L - 3} 18 ${cx} 18 Q${R + 3} 18 ${R} 46 Q${R - 2} 30 ${cx} 24 Q${L + 2} 30 ${L} 46`,
+                accent: `M${R - 2} 46 L${R + 2} 48 Q${R + 14} 52 ${R + 16} 56 Q${R + 10} 52 ${R + 14} 60 Q${R + 18} 64 ${R + 12} 62 Q${R + 16} 68 ${R + 10} 70 Q${R + 6} 76 ${R} 74 L${R - 4} 74 L${R - 2} 46 Z`,
             };
         case 8: // Space Buns — two buns on top
             return {
-                main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
-                accent: `M${cx - 14} 28 Q${cx - 22} 14 ${cx - 14} 10 Q${cx - 6} 6 ${cx - 6} 18 Q${cx - 6} 28 ${cx - 14} 28 Z M${cx + 14} 28 Q${cx + 22} 14 ${cx + 14} 10 Q${cx + 6} 6 ${cx + 6} 18 Q${cx + 6} 28 ${cx + 14} 28 Z`,
+                main: `M${L} 44 Q${L - 1} 26 ${cx} 18 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 24 Q${L + 2} 34 ${L} 44`,
+                accent: `M${cx - 14} 32 Q${cx - 26} 28 ${cx - 26} 16 Q${cx - 26} 4 ${cx - 14} 4 Q${cx - 2} 4 ${cx - 2} 16 Q${cx - 2} 28 ${cx - 14} 32 Z M${cx + 14} 32 Q${cx + 2} 28 ${cx + 2} 16 Q${cx + 2} 4 ${cx + 14} 4 Q${cx + 26} 4 ${cx + 26} 16 Q${cx + 26} 28 ${cx + 14} 32 Z`,
             };
         case 9: // Braids — two long braids down (both in back so they render behind the head)
             return {
-                main: `M${L} 44 Q${L - 1} 26 ${cx} 20 Q${R + 1} 26 ${R} 44 Q${R - 2} 34 ${cx} 26 Q${L + 2} 34 ${L} 44`,
-                back: `M${L - 2} 52 Q${L - 6} 64 ${L - 4} 80 Q${L - 2} 96 ${L - 6} 108 Q${L - 4} 112 ${L} 108 Q${L + 2} 96 ${L} 80 Q${L + 2} 64 ${L - 2} 52 Z M${R + 2} 52 Q${R + 6} 64 ${R + 4} 80 Q${R + 2} 96 ${R + 6} 108 Q${R + 4} 112 ${R} 108 Q${R - 2} 96 ${R} 80 Q${R - 2} 64 ${R + 2} 52 Z`,
+                main: `M${L} 44 Q${L - 1} 24 ${cx} 18 Q${R + 1} 24 ${R} 44 Q${R - 2} 32 ${cx} 24 Q${L + 2} 32 ${L} 44`,
+                back: `M${L - 2} 50 Q${L - 5} 50 ${L - 6} 56 Q${L - 8} 64 ${L - 5} 72 Q${L - 8} 80 ${L - 6} 88 Q${L - 8} 96 ${L - 4} 104 Q${L - 2} 108 ${L} 106 Q${L + 2} 104 ${L + 2} 96 Q${L + 4} 88 ${L + 1} 80 Q${L + 4} 72 ${L + 2} 64 Q${L + 4} 56 ${L + 2} 50 Z M${R + 2} 50 Q${R + 5} 50 ${R + 6} 56 Q${R + 8} 64 ${R + 5} 72 Q${R + 8} 80 ${R + 6} 88 Q${R + 8} 96 ${R + 4} 104 Q${R + 2} 108 ${R} 106 Q${R - 2} 104 ${R - 2} 96 Q${R - 4} 88 ${R - 1} 80 Q${R - 4} 72 ${R - 2} 64 Q${R - 4} 56 ${R - 2} 50 Z`,
+                accent: `M${L - 3} 60 L${L + 1} 58 M${L - 4} 72 L${L + 2} 70 M${L - 3} 84 L${L + 1} 82 M${L - 4} 96 L${L} 94 M${R + 3} 60 L${R - 1} 58 M${R + 4} 72 L${R - 2} 70 M${R + 3} 84 L${R - 1} 82 M${R + 4} 96 L${R} 94`,
             };
         case 10: // Pixie Cut — short asymmetric (left side longer, right short)
             return {
@@ -155,9 +157,9 @@ const getHairPaths = (style: number, hw: number): { main: string; back?: string;
             };
         case 11: // Half Up — top gathered, bottom flowing
             return {
-                back: `M${L - 3} 44 Q${L - 6} 55 ${L - 4} 80 Q${L - 2} 88 ${L + 4} 84 L${L + 2} 46 Z`,
-                main: `M${L} 46 Q${L - 2} 24 ${cx} 18 Q${R + 2} 24 ${R} 46 Q${R - 2} 30 ${cx} 25 Q${L + 2} 30 ${L} 46`,
-                accent: `M${R + 3} 44 Q${R + 6} 55 ${R + 4} 80 Q${R + 2} 88 ${R - 4} 84 L${R - 2} 46 Z M${cx - 2} 24 Q${cx + 4} 16 ${cx + 2} 28`,
+                back: `M${L + 2} 46 Q${L - 4} 50 ${L - 12} 58 Q${L - 16} 66 ${L - 10} 76 Q${L - 4} 86 ${L - 10} 92 Q${L - 6} 96 ${L} 92 Q${L + 6} 86 ${L + 4} 76 Q${L + 2} 66 ${L - 4} 56 Q${L} 50 ${L + 2} 46 Z`,
+                main: `M${L} 46 Q${L - 3} 14 ${cx} 14 Q${R + 3} 14 ${R} 46 Q${R - 2} 28 ${cx} 20 Q${L + 2} 28 ${L} 46`,
+                accent: `M${R - 2} 46 Q${R + 4} 50 ${R + 12} 58 Q${R + 16} 66 ${R + 10} 76 Q${R + 4} 86 ${R + 10} 92 Q${R + 6} 96 ${R} 92 Q${R - 6} 86 ${R - 4} 76 Q${R - 2} 66 ${R + 4} 56 Q${R} 50 ${R - 2} 46 Z M${cx - 6} 22 Q${cx - 2} 18 ${cx + 6} 20 Q${cx + 10} 24 ${cx + 8} 28 Q${cx + 4} 30 ${cx} 28 Q${cx - 4} 30 ${cx - 6} 22 Z`,
             };
         default:
             return { main: `M${L} 44 Q${L - 1} 28 ${cx} 22 Q${R + 1} 28 ${R} 44 Q${R - 2} 32 ${cx} 28 Q${L + 2} 32 ${L} 44` };
@@ -226,6 +228,14 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
     const hair = HAIR_COLORS[appearance?.hairColor ?? 0];
     const hairStyle = appearance?.hairStyle ?? 1;
     const skinSh = skin + '99';
+    // Slightly darkened skin for face gradient edge — proportional so dark tones aren't crushed
+    const skinDark = (() => {
+        const hex = skin.replace('#', '');
+        const r = Math.round(parseInt(hex.substring(0, 2), 16) * 0.88);
+        const g = Math.round(parseInt(hex.substring(2, 4), 16) * 0.86);
+        const b = Math.round(parseInt(hex.substring(4, 6), 16) * 0.84);
+        return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+    })();
 
     const head = equipped?.HEAD;
     const chest = equipped?.CHEST;
@@ -264,8 +274,8 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     <stop offset="0%" stopColor={`hsl(${suitHue}, 35%, 18%)`} />
                     <stop offset="100%" stopColor={`hsl(${suitHue}, 30%, 12%)`} />
                 </linearGradient>
-                <radialGradient id={`${uid}-face`} cx="45%" cy="40%" r="55%">
-                    <stop offset="0%" stopColor={skin} /><stop offset="100%" stopColor={skinSh} />
+                <radialGradient id={`${uid}-face`} cx="48%" cy="45%" r="60%">
+                    <stop offset="0%" stopColor={skin} /><stop offset="70%" stopColor={skin} /><stop offset="100%" stopColor={skinDark} />
                 </radialGradient>
                 <radialGradient id={`${uid}-energy`} cx="50%" cy="50%" r="50%">
                     <stop offset="0%" stopColor={`hsl(${hue + 180}, 100%, 70%)`} stopOpacity={coreInt} />
@@ -286,6 +296,13 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 <pattern id={`${uid}-tex-leather`} patternUnits="userSpaceOnUse" width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H}>
                     <image href={TEXTURE_DARK_LEATHER} width={TEXTURE_LEATHER_W} height={TEXTURE_LEATHER_H} />
                 </pattern>
+                {/* Eyelid clip regions — used by blink animation */}
+                <clipPath id={`${uid}-eyeL`}>
+                    <ellipse cx="91" cy="47" rx="6.5" ry="5" />
+                </clipPath>
+                <clipPath id={`${uid}-eyeR`}>
+                    <ellipse cx="109" cy="47" rx="6.5" ry="5" />
+                </clipPath>
             </defs>
 
             {/* Platform shadow */}
@@ -316,6 +333,12 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                         </path>
                     </g>
                 )}
+
+                {/* === HAIR BEHIND BODY (back layer — must render before neck/torso) === */}
+                {hairPaths.back && <>
+                    <path d={hairPaths.back} fill={`url(#${uid}-hair)`} opacity="0.5" transform="translate(1, 1)" />
+                    <path d={hairPaths.back} fill={`url(#${uid}-hair)`} opacity="0.85" />
+                </>}
 
                 {/* === LEGS === */}
                 <path d={isTypeC
@@ -466,8 +489,16 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     );
                 })() : (
                     <g>
-                        <ellipse cx="50" cy="166" rx="7" ry="9" fill={skin} />
-                        <ellipse cx="150" cy="166" rx="7" ry="9" fill={skin} />
+                        {/* Left hand — palm + 4 fingers + thumb */}
+                        <path d={`M43 158 Q42 154 44 152 L46 152 Q48 150 49 152 L50 153 Q52 151 53 153 L54 155 Q56 153 57 155 L57 158 Q57 166 55 170 Q53 174 50 175 Q46 175 44 172 Q42 168 43 158 Z`} fill={skin} stroke={skinSh} strokeWidth="0.4" />
+                        <path d="M46 153 L46 158" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M49 152 L49 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M52 153 L52 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        {/* Right hand — mirrored */}
+                        <path d={`M157 158 Q158 154 156 152 L154 152 Q152 150 151 152 L150 153 Q148 151 147 153 L146 155 Q144 153 143 155 L143 158 Q143 166 145 170 Q147 174 150 175 Q154 175 156 172 Q158 168 157 158 Z`} fill={skin} stroke={skinSh} strokeWidth="0.4" />
+                        <path d="M154 153 L154 158" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M151 152 L151 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M148 153 L148 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
                     </g>
                 )}
 
@@ -511,15 +542,8 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
 
                 {/* === HEAD === */}
                 <g>
-                    {/* Hair behind head */}
-                    {hairPaths.back && <path d={hairPaths.back} fill={`url(#${uid}-hair)`} opacity="0.8" />}
-
                     {/* Head shape */}
                     <ellipse cx="100" cy="50" rx={headW} ry="28" fill={`url(#${uid}-face)`} stroke={skinSh} strokeWidth="0.5" />
-
-                    {/* Ears */}
-                    <ellipse cx={100 - headW - 1} cy="52" rx="4" ry="6" fill={skin} stroke={skinSh} strokeWidth="0.3" />
-                    <ellipse cx={100 + headW + 1} cy="52" rx="4" ry="6" fill={skin} stroke={skinSh} strokeWidth="0.3" />
 
                     {/* === FACE === */}
                     <g>
@@ -538,22 +562,37 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                         {/* Highlights */}
                         <circle cx="93.5" cy="45.5" r="1" fill="white" fillOpacity="0.8" />
                         <circle cx="111.5" cy="45.5" r="1" fill="white" fillOpacity="0.8" />
-                        {/* Blink */}
-                        <ellipse cx="91" cy="47" rx="6.5" ry="0" fill={skin}>
-                            <animate attributeName="ry" values="0;0;0;5;0;0;0;0;0;0;0;0" dur="5s" repeatCount="indefinite" />
-                        </ellipse>
-                        <ellipse cx="109" cy="47" rx="6.5" ry="0" fill={skin}>
-                            <animate attributeName="ry" values="0;0;0;5;0;0;0;0;0;0;0;0" dur="5s" repeatCount="indefinite" />
-                        </ellipse>
+                        {/* Blink — eyelid descends from top of eye */}
+                        <rect x="84" y="36" width="14" height="12" fill={skin} clipPath={`url(#${uid}-eyeL)`}>
+                            <animateTransform attributeName="transform" type="translate" values="0,-10;0,-10;0,-10;0,6;0,-10;0,-10;0,-10;0,-10;0,-10;0,-10;0,-10;0,-10" dur="5s" repeatCount="indefinite" />
+                        </rect>
+                        <rect x="102" y="36" width="14" height="12" fill={skin} clipPath={`url(#${uid}-eyeR)`}>
+                            <animateTransform attributeName="transform" type="translate" values="0,-10;0,-10;0,-10;0,6;0,-10;0,-10;0,-10;0,-10;0,-10;0,-10;0,-10;0,-10" dur="5s" repeatCount="indefinite" />
+                        </rect>
                         {/* Nose */}
                         <path d="M98 52 Q100 56 102 52" stroke={skinSh} strokeWidth="0.8" fill="none" strokeLinecap="round" />
-                        {/* Mouth */}
-                        <path d="M95 60 Q100 63 105 60" stroke={skinSh} strokeWidth="0.8" fill="none" strokeLinecap="round" />
+                        {/* Mouth — subtle smile, visible across all skin tones */}
+                        <path d="M94 60 Q100 64 106 60" stroke="rgba(120,80,70,0.55)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
                     </g>
 
                     {/* === HAIR === */}
+                    {/* Main hair shadow for depth */}
+                    <path d={hairPaths.main} fill={hair} opacity="0.3" transform="translate(0.5, 0.5)" />
+                    {/* Main hair fill */}
                     <path d={hairPaths.main} fill={`url(#${uid}-hair)`} />
-                    {hairPaths.accent && <path d={hairPaths.accent} fill={`url(#${uid}-hair)`} opacity="0.9" />}
+                    {/* Highlight sheen — top edge */}
+                    <path d={hairPaths.main} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+                    {/* Strand detail lines */}
+                    <path d={hairPaths.main} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="4 6" />
+                    {/* Accent pieces */}
+                    {hairPaths.accent && <>
+                        <path d={hairPaths.accent} fill={`url(#${uid}-hair)`} opacity="0.85" />
+                        <path d={hairPaths.accent} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                    </>}
+
+                    {/* Ears — rendered after hair so flowing styles don't clip over them */}
+                    <ellipse cx={100 - headW - 1} cy="52" rx="4" ry="6" fill={skin} stroke={skinSh} strokeWidth="0.3" />
+                    <ellipse cx={100 + headW + 1} cy="52" rx="4" ry="6" fill={skin} stroke={skinSh} strokeWidth="0.3" />
 
                     {/* === HEAD GEAR === */}
                     {head && (() => {

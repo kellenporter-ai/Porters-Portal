@@ -174,7 +174,7 @@ function getProfileData(data: FirebaseFirestore.DocumentData, classType?: string
   };
 }
 
-const SLOTS = ["HEAD", "CHEST", "HANDS", "FEET", "BELT", "AMULET", "RING"];
+const SLOTS = ["HEAD", "CHEST", "HANDS", "FEET", "BELT", "AMULET", "RING", "WEAPON"];
 
 const BASE_ITEMS: Record<string, { name: string; vid: string }[]> = {
   HEAD: [{ name: "Synthetic Visor", vid: "visor" }, { name: "Fiber Helm", vid: "helm" }, { name: "Neural Band", vid: "band" }],
@@ -184,6 +184,11 @@ const BASE_ITEMS: Record<string, { name: string; vid: string }[]> = {
   BELT: [{ name: "Utility Belt", vid: "belt" }, { name: "Field Sash", vid: "sash" }],
   AMULET: [{ name: "Quantum Chip", vid: "chip" }, { name: "Resonance Core", vid: "core" }],
   RING: [{ name: "Circuit Ring", vid: "ring" }, { name: "Focus Band", vid: "band" }],
+  WEAPON: [
+    { name: "Plasma Blade", vid: "sword" },
+    { name: "Ion Staff", vid: "staff" },
+    { name: "Shock Baton", vid: "baton" },
+  ],
 };
 
 const PREFIX_DEFS = [
@@ -203,6 +208,8 @@ const UNIQUES = [
   { name: "Tesla's Coils", slot: "HANDS", uniqueStat: { stat: "tech", val: 45 }, effect: "Shocking discoveries yield bonus resources" },
   { name: "Curie's Determination", slot: "RING", uniqueStat: { stat: "focus", val: 40 }, effect: "Radiation resistance (Mental fatigue reduction)" },
   { name: "Einstein's Relativistic Boots", slot: "FEET", uniqueStat: { stat: "tech", val: 50 }, effect: "Time dilation allows late submission grace period" },
+  { name: "Galileo's Telescope", slot: "WEAPON", uniqueStat: { stat: "focus", val: 45 }, effect: "Enhanced observation reveals hidden patterns" },
+  { name: "Archimedes' Lever", slot: "WEAPON", uniqueStat: { stat: "tech", val: 50 }, effect: "Mechanical advantage multiplies effort" },
 ];
 
 const FLUX_COSTS: Record<string, number> = { RECALIBRATE: 5, REFORGE: 25, OPTIMIZE: 50, SOCKET: 30, ENCHANT: 15 };
@@ -760,6 +767,7 @@ export const equipItem = onCall(async (request) => {
 
     let targetSlot = item.slot;
     if (item.slot === "RING") targetSlot = !equipped.RING1 ? "RING1" : "RING2";
+    if (item.slot === "WEAPON") targetSlot = !equipped.WEAPON1 ? "WEAPON1" : "WEAPON2";
 
     // Swap: if a different item is already in the target slot, return it to inventory
     const newInventory = inventory.filter((_: LootItem, i: number) => i !== itemIdx);
