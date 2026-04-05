@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot, ItemSlot } from '../../types';
-import { User as UserIcon, GripVertical } from 'lucide-react';
+import { User as UserIcon, GripVertical, Diamond, ChevronDown, ChevronUp } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
@@ -14,8 +14,9 @@ import Avatar3D from './Avatar3D';
 import CustomizeModal from './CustomizeModal';
 import InspectItemModal from './InspectItemModal';
 import ItemIcon from '../ItemIcon';
+import { RUNEWORD_DEFINITIONS } from '../../lib/runewords';
 
-type RightPanelTab = 'agent' | 'loadout';
+type RightPanelTab = 'agent' | 'loadout' | 'gems';
 
 // Inline modifier: snaps the drag overlay center to the cursor position.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -342,6 +343,18 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 >
                   Loadout
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setRightTab('gems')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    rightTab === 'gems'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  <Diamond className="w-3 h-3 inline-block mr-1 -mt-px" />
+                  Gems
+                </button>
               </div>
 
               {rightTab === 'agent' ? (
@@ -366,7 +379,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     )}
                   </div>
                 </>
-              ) : (
+              ) : rightTab === 'loadout' ? (
                 <>
                   {/* LOADOUT VIEW — equipment grid, no avatar */}
                   <div className="flex-1 w-full relative z-10 grid gap-2 p-2" style={{
@@ -386,6 +399,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     ))}
                   </div>
                 </>
+              ) : (
+                <GemsPanel gemsInventory={gemsInventory} equipped={equipped} />
               )}
 
               {rightTab === 'agent' && (
@@ -513,6 +528,180 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
         onUnsocketGem={handleUnsocketGem}
       />
     </>
+  );
+};
+
+// ============================================================
+// GEMS PANEL
+// ============================================================
+
+const GEM_LEGEND: { name: string; stat: string; desc: string; color: string }[] = [
+  { name: 'Ruby', stat: 'Tech', desc: 'Attack power', color: '#ef4444' },
+  { name: 'Emerald', stat: 'Focus', desc: 'Crit chance & damage', color: '#22c55e' },
+  { name: 'Sapphire', stat: 'Analysis', desc: 'Armor rating', color: '#3b82f6' },
+  { name: 'Amethyst', stat: 'Charisma', desc: 'Max HP', color: '#a855f7' },
+];
+
+interface GemsPanelProps {
+  gemsInventory: { id: string; name: string; stat: string; value: number; tier: number; color: string }[];
+  equipped: Partial<Record<EquipmentSlot, RPGItem>>;
+}
+
+const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
+  const [codexOpen, setCodexOpen] = useState(false);
+
+  // Active runeword IDs from equipped items
+  const activeRunewordIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(equipped).filter(Boolean).forEach(item => {
+      const rw = (item as RPGItem).runewordActive;
+      if (rw) ids.add(rw);
+    });
+    return ids;
+  }, [equipped]);
+
+  // Group gems by base name (strip tier info)
+  const gemGroups = useMemo(() => {
+    const groups: Record<string, typeof gemsInventory> = {};
+    for (const gem of gemsInventory) {
+      const baseName = gem.name.replace(/\s*\(T\d+\)/, '');
+      if (!groups[baseName]) groups[baseName] = [];
+      groups[baseName].push(gem);
+    }
+    // Sort each group by tier
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => a.tier - b.tier);
+    }
+    return groups;
+  }, [gemsInventory]);
+
+  if (gemsInventory.length === 0) {
+    return (
+      <div className="flex-1 w-full relative z-10 flex flex-col items-center justify-center gap-3 text-center px-6">
+        <Diamond className="w-10 h-10 text-gray-700" />
+        <p className="text-[11px] text-gray-600 leading-relaxed">
+          No gems yet. Earn gems from fortune wheel spins, boss victories, and daily login rewards.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 w-full relative z-10 overflow-y-auto custom-scrollbar px-2 pb-2">
+      {/* Gem Purpose Legend */}
+      <div className="mb-3 bg-black/20 rounded-lg px-3 py-2 border border-[var(--border)]">
+        {GEM_LEGEND.map(g => (
+          <div key={g.name} className="flex items-center gap-2 py-0.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color }} />
+            <span className="text-[9px] font-bold" style={{ color: g.color }}>{g.name}</span>
+            <span className="text-[9px] text-gray-600 mx-0.5">&rarr;</span>
+            <span className="text-[9px] text-gray-500">{g.stat}</span>
+            <span className="text-[9px] text-gray-600 mx-0.5">&mdash;</span>
+            <span className="text-[9px] text-gray-500">{g.desc}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Gem Collection Grid */}
+      <div className="space-y-2 mb-3">
+        {Object.entries(gemGroups).map(([baseName, gems]) => {
+          const color = gems[0].color;
+          // Tier breakdown
+          const tierCounts: Record<number, number> = {};
+          gems.forEach(g => { tierCounts[g.tier] = (tierCounts[g.tier] || 0) + 1; });
+
+          return (
+            <div key={baseName} className="bg-black/20 rounded-lg px-3 py-2 border border-[var(--border)]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}60` }} />
+                <span className="text-[11px] font-bold" style={{ color }}>{baseName}</span>
+                <span className="text-[10px] text-gray-500 ml-auto">{gems.length} owned</span>
+              </div>
+              {Object.keys(tierCounts).length > 1 && (
+                <div className="flex gap-2 mb-1.5">
+                  {Object.entries(tierCounts).sort(([a],[b]) => Number(a) - Number(b)).map(([tier, count]) => (
+                    <span key={tier} className="text-[9px] text-gray-600">T{tier}: {count}</span>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {gems.map(gem => (
+                  <div key={gem.id} className="flex items-center gap-1 bg-black/30 rounded-md px-2 py-1 border border-[var(--border)]">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: gem.color }} />
+                    <span className="text-[9px] text-gray-400">{gem.name}</span>
+                    <span className="text-[9px] font-bold" style={{ color: gem.color }}>+{gem.value} {gem.stat.slice(0, 3).toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Runeword Codex */}
+      <div className="bg-black/20 rounded-lg border border-[var(--border)]">
+        <button
+          type="button"
+          onClick={() => setCodexOpen(!codexOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors"
+        >
+          Runeword Codex
+          {codexOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        </button>
+        {codexOpen && (
+          <div className="px-3 pb-3 space-y-2">
+            {RUNEWORD_DEFINITIONS.map(rw => {
+              const isActive = activeRunewordIds.has(rw.id);
+              return (
+                <div
+                  key={rw.id}
+                  className={`rounded-lg px-3 py-2 border ${
+                    isActive
+                      ? 'border-amber-500/40 bg-amber-500/5'
+                      : 'border-[var(--border)] bg-black/20'
+                  }`}
+                  style={isActive ? { boxShadow: '0 0 12px rgba(245,158,11,0.15)' } : undefined}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[11px] font-bold ${isActive ? 'text-amber-300' : 'text-gray-300'}`}>{rw.name}</span>
+                    {isActive && (
+                      <span className="text-[8px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">ACTIVE</span>
+                    )}
+                    <span className="text-[9px] text-gray-600 ml-auto">{rw.requiredSockets}s</span>
+                  </div>
+                  {/* Pattern as colored dots */}
+                  <div className="flex items-center gap-1 mb-1">
+                    {rw.pattern.map((gemName, i) => {
+                      const legend = GEM_LEGEND.find(g => g.name === gemName);
+                      return (
+                        <div key={i} className="flex items-center gap-0.5">
+                          {i > 0 && <span className="text-[8px] text-gray-700">+</span>}
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: legend?.color || '#666' }} />
+                          <span className="text-[8px] text-gray-500">{gemName}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Bonus stats */}
+                  <div className="flex gap-2 mb-1">
+                    {Object.entries(rw.bonusStats).filter(([,v]) => v).map(([stat, val]) => {
+                      const legend = GEM_LEGEND.find(g => g.stat.toLowerCase() === stat);
+                      return (
+                        <span key={stat} className="text-[9px] font-bold" style={{ color: legend?.color || '#999' }}>
+                          +{val} {stat.slice(0, 3).toUpperCase()}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {/* Lore */}
+                  <p className="text-[9px] text-gray-600 italic leading-relaxed">{rw.lore}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
