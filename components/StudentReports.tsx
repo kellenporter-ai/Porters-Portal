@@ -48,7 +48,7 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
   // Subscribe to per-student submissions
   useEffect(() => {
     if (!selectedStudentId) { setStudentSubmissions([]); return; }
-    const unsub = dataService.subscribeToUserSubmissions(selectedStudentId, setStudentSubmissions, 200);
+    const unsub = dataService.subscribeToUserSubmissions(selectedStudentId, setStudentSubmissions);
     return () => unsub();
   }, [selectedStudentId]);
 

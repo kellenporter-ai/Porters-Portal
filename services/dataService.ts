@@ -414,9 +414,9 @@ export const dataService = {
   },
 
   /** Student-scoped submissions — avoids Firestore permission error on unfiltered query */
-  subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void, maxResults = 50) => {
-    // Only filter by userId — no orderBy to avoid composite index requirement
-    const q = query(collection(db, 'submissions'), where('userId', '==', userId), limit(maxResults));
+  subscribeToUserSubmissions: (userId: string, callback: (submissions: Submission[]) => void) => {
+    // Only filter by userId — no limit, single-user query is cheap
+    const q = query(collection(db, 'submissions'), where('userId', '==', userId));
     return onSnapshot(q, (snapshot) => {
       const submissions = snapshot.docs.map(d => {
         const data = d.data();
