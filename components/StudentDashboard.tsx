@@ -582,6 +582,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            rerollTokens={user.gamification?.rerollTokens || 0}
                            consumablePurchases={user.gamification?.consumablePurchases || {}}
                            ownedCosmetics={user.gamification?.ownedCosmetics || []}
+                           ownedNameColors={user.gamification?.ownedNameColors || []}
                            activeCosmetics={user.gamification?.activeCosmetics}
                            onEquipCosmetic={(cosmeticId, slot) => dataService.equipCosmetic(user.id, cosmeticId, slot)}
                            playerEquipped={equipped}
@@ -592,6 +593,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                            onSelectCharacterModel={async (modelId) => {
                              try { await dataService.selectCharacterModel(user.id, modelId); } catch (err) { reportError(err, { context: 'selectCharacterModel' }); }
                            }}
+                           codename={user.gamification?.codename || user.name}
+                           avatarUrl={user.avatarUrl}
                        />
                        </React.Suspense>
                      </FeatureErrorBoundary>

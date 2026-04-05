@@ -338,6 +338,7 @@ export interface User {
     // === FLUX SHOP ===
     activeBoosts?: ActiveBoost[]; // Currently active temporary boosts
     nameColor?: string; // Hex color for codename display
+    ownedNameColors?: string[]; // Name color item IDs the student has purchased
     rerollTokens?: number; // Free reforge tokens
     consumablePurchases?: { [dateItemKey: string]: number }; // "2026-03-04_xp_boost_1h" → count
 

@@ -4739,10 +4739,10 @@ const FLUX_SHOP_CATALOG: Record<string, {
   xp_boost_1h: { type: 'XP_BOOST', cost: 75, value: 1.5, duration: 1, dailyLimit: 2 },
   xp_boost_3h: { type: 'XP_BOOST', cost: 150, value: 1.5, duration: 3, dailyLimit: 1 },
   reroll_token: { type: 'REROLL_TOKEN', cost: 50, dailyLimit: 3 },
-  name_color_cyan: { type: 'NAME_COLOR', cost: 100, value: 0x00e5ff, dailyLimit: 0 },
-  name_color_gold: { type: 'NAME_COLOR', cost: 100, value: 0xffd700, dailyLimit: 0 },
-  name_color_magenta: { type: 'NAME_COLOR', cost: 100, value: 0xff00ff, dailyLimit: 0 },
-  name_color_lime: { type: 'NAME_COLOR', cost: 100, value: 0x76ff03, dailyLimit: 0 },
+  name_color_cyan: { type: 'NAME_COLOR', cost: 0, value: 0x00e5ff, dailyLimit: 0 },
+  name_color_gold: { type: 'NAME_COLOR', cost: 0, value: 0xffd700, dailyLimit: 0 },
+  name_color_magenta: { type: 'NAME_COLOR', cost: 0, value: 0xff00ff, dailyLimit: 0 },
+  name_color_lime: { type: 'NAME_COLOR', cost: 0, value: 0x76ff03, dailyLimit: 0 },
   // Auras - 150 Flux each
   aura_ember: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
   aura_frost: { type: 'AGENT_COSMETIC', cost: 150, dailyLimit: 0 },
@@ -4851,6 +4851,15 @@ export const purchaseFluxItem = onCall(async (request) => {
       updates["gamification.rerollTokens"] = currentTokens + 1;
     } else if (item.type === 'NAME_COLOR') {
       const hexColor = '#' + (item.value || 0).toString(16).padStart(6, '0');
+      const ownedNameColors: string[] = gam.ownedNameColors || [];
+      if (ownedNameColors.includes(itemId)) {
+        // Already owned — free swap, cancel the currency deduction
+        updates["gamification.currency"] = currency;
+      } else {
+        // First purchase — add to owned list
+        ownedNameColors.push(itemId);
+        updates["gamification.ownedNameColors"] = ownedNameColors;
+      }
       updates["gamification.nameColor"] = hexColor;
       result.nameColor = hexColor;
     } else if (item.type === 'AGENT_COSMETIC') {
