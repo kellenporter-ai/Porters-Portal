@@ -1,4 +1,20 @@
-import React, { useId, useMemo } from 'react';
+import React, { useId, useMemo, useEffect, useState } from 'react';
+
+/** Returns true when the user has requested reduced motion via OS/browser settings. */
+const useReducedMotion = (): boolean => {
+    const [reduced, setReduced] = useState<boolean>(() =>
+        typeof window !== 'undefined'
+            ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            : false
+    );
+    useEffect(() => {
+        const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
+    return reduced;
+};
 
 // === CUSTOMIZATION PALETTES (exported for customize modal) ===
 
@@ -37,7 +53,7 @@ interface ResolvedCosmetic {
 }
 
 interface OperativeAvatarProps {
-    equipped: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
+    equipped: Partial<Record<string, { rarity?: string; visualId?: string } | null | undefined>>;
     appearance?: {
         bodyType?: 'A' | 'B' | 'C';
         hue?: number;
@@ -193,6 +209,8 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
     cosmeticIntensity: legacyIntensity = 0.6,
     cosmeticParticleCount: legacyParticleCount = 8,
 }) => {
+    const reducedMotion = useReducedMotion();
+
     // Resolve all active cosmetics from multi-equip or fall back to legacy single-equip
     const auraCosmetic = useMemo(() => resolveCosmetic(multiCosmetics?.aura), [multiCosmetics?.aura]);
     const particleCosmetic = useMemo(() => resolveCosmetic(multiCosmetics?.particle), [multiCosmetics?.particle]);
@@ -251,7 +269,11 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
     const hairPaths = useMemo(() => getHairPaths(hairStyle, headW), [hairStyle, headW]);
 
     return (
-        <svg viewBox="0 0 200 340" className="w-full h-full" style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.25))' }}>
+        <svg id={`operative-${uid}`} viewBox="0 0 200 340" className="w-full h-full" style={{ filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.25))' }}>
+            {/* Suppress SMIL animations scoped to this SVG instance only */}
+            {reducedMotion && (
+                <style>{`#operative-${uid} animate, #operative-${uid} animateTransform { display: none; }`}</style>
+            )}
             <defs>
                 <filter id={`${uid}-glow`} x="-30%" y="-30%" width="160%" height="160%">
                     <feGaussianBlur stdDeviation="3" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" />
@@ -360,20 +382,38 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     const texOp = getTextureOpacity(feet);
                     return (
                         <g filter={s.intensity > 0.5 ? `url(#${uid}-soft)` : undefined}>
-                            <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill={s.primary} stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
-                            <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill={s.primary} stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
-                            {/* Dark leather texture overlay on boots */}
-                            <path d="M76 270 L74 282 Q72 292 82 292 L96 292 Q100 292 98 284 L96 270" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
-                            <path d="M102 270 L100 282 Q98 292 108 292 L122 292 Q126 292 124 284 L122 270" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
-                            <line x1="78" y1="276" x2="96" y2="276" stroke={s.particle} strokeWidth="1.5" strokeOpacity="0.5" />
-                            <line x1="104" y1="276" x2="122" y2="276" stroke={s.particle} strokeWidth="1.5" strokeOpacity="0.5" />
+                            {/* Left boot — body, toe cap, heel spur, ankle cuff */}
+                            <path d="M77 268 L75 281 Q73 288 78 291 L95 291 Q100 291 99 284 L97 268" fill={s.primary} fillOpacity="0.65" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.5" />
+                            {/* Leather texture on boot body */}
+                            <path d="M77 268 L75 281 Q73 288 78 291 L95 291 Q100 291 99 284 L97 268" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
+                            {/* Toe cap */}
+                            <path d="M74 283 Q72 291 78 293 L95 293 Q100 293 99 287 L97 283 Q87 281 74 283 Z" fill={s.primary} fillOpacity="0.85" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.7" />
+                            {/* Heel spur */}
+                            <path d="M75 270 Q71 274 72 279 L76 279 L77 268 Z" fill={s.primary} fillOpacity="0.8" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.5" />
+                            {/* Ankle cuff band */}
+                            <rect x="76" y="270" width="22" height="4" rx="2" fill={s.particle} fillOpacity="0.35" stroke={s.particle} strokeWidth="0.5" />
+                            {/* Sole edge highlight */}
+                            <line x1="74" y1="291" x2="98" y2="291" stroke={s.particle} strokeWidth="1.2" strokeOpacity="0.6" />
+                            {/* Boot sole toe glint */}
+                            <line x1="76" y1="293" x2="92" y2="293" stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" />
+
+                            {/* Right boot — body, toe cap, heel spur, ankle cuff */}
+                            <path d="M103 268 L101 281 Q99 288 104 291 L121 291 Q126 291 125 284 L123 268" fill={s.primary} fillOpacity="0.65" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.5" />
+                            <path d="M103 268 L101 281 Q99 288 104 291 L121 291 Q126 291 125 284 L123 268" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
+                            <path d="M100 283 Q98 291 104 293 L121 293 Q126 293 125 287 L123 283 Q113 281 100 283 Z" fill={s.primary} fillOpacity="0.85" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.7" />
+                            <path d="M125 270 Q129 274 128 279 L124 279 L123 268 Z" fill={s.primary} fillOpacity="0.8" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.5" />
+                            <rect x="102" y="270" width="22" height="4" rx="2" fill={s.particle} fillOpacity="0.35" stroke={s.particle} strokeWidth="0.5" />
+                            <line x1="100" y1="291" x2="124" y2="291" stroke={s.particle} strokeWidth="1.2" strokeOpacity="0.6" />
+                            <line x1="102" y1="293" x2="118" y2="293" stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" />
+
+                            {/* RARE/UNIQUE: animated energy trim on cuffs */}
                             {s.intensity >= 0.7 && <>
-                                <line x1="80" y1="284" x2="94" y2="284" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.4">
-                                    <animate attributeName="strokeOpacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite" />
-                                </line>
-                                <line x1="106" y1="284" x2="120" y2="284" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.4">
-                                    <animate attributeName="strokeOpacity" values="0.1;0.4;0.1" dur="2s" repeatCount="indefinite" />
-                                </line>
+                                <rect x="76" y="270" width="22" height="4" rx="2" fill="none" stroke={s.glow} strokeWidth="1">
+                                    <animate attributeName="strokeOpacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite" />
+                                </rect>
+                                <rect x="102" y="270" width="22" height="4" rx="2" fill="none" stroke={s.glow} strokeWidth="1">
+                                    <animate attributeName="strokeOpacity" values="0.2;0.8;0.2" dur="2s" repeatCount="indefinite" />
+                                </rect>
                             </>}
                         </g>
                     );
@@ -406,36 +446,75 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {chest && (() => {
                     const s = getRarityStyle(chest)!;
                     const texOp = getTextureOpacity(chest);
+                    // Body-type-specific x coords for shoulder edges and torso sides
+                    const leftEdge  = isTypeC ? 72 : isTypeB ? 70 : 72;
+                    const rightEdge = isTypeC ? 128 : isTypeB ? 130 : 128;
+                    const paulL     = isTypeC ? 62 : isTypeB ? 56 : 60;
+                    const paulR     = isTypeC ? 138 : isTypeB ? 144 : 140;
                     return (
                         <g filter={s.intensity > 0.5 ? `url(#${uid}-soft)` : undefined}>
+                            {/* Main chest plate */}
                             <path d={isTypeC
                                 ? "M72 92 Q100 86 128 92 L122 175 Q100 180 78 175 Z"
                                 : isTypeB
                                 ? "M70 92 Q100 86 130 92 L126 175 Q100 180 74 175 Z"
                                 : "M72 92 Q100 86 128 92 L124 175 Q100 180 76 175 Z"}
-                                  fill={s.primary} fillOpacity="0.3" stroke={s.primary} strokeWidth="1" strokeOpacity="0.6" />
-                            {/* Carbon-fibre texture overlay on chest armor */}
+                                  fill={s.primary} fillOpacity="0.35" stroke={s.primary} strokeWidth="1.2" strokeOpacity="0.7" />
+                            {/* Carbon-fibre texture on chest plate */}
                             <path d={isTypeC
                                 ? "M72 92 Q100 86 128 92 L122 175 Q100 180 78 175 Z"
                                 : isTypeB
                                 ? "M70 92 Q100 86 130 92 L126 175 Q100 180 74 175 Z"
                                 : "M72 92 Q100 86 128 92 L124 175 Q100 180 76 175 Z"}
                                   fill={`url(#${uid}-tex-carbon)`} opacity={texOp} />
-                            {/* Shoulder plates */}
-                            <path d={`M${isTypeC ? 70 : isTypeB ? 64 : 68} 88 Q${isTypeC ? 62 : isTypeB ? 56 : 60} 86 ${isTypeC ? 62 : isTypeB ? 56 : 60} 96 L${isTypeC ? 72 : isTypeB ? 66 : 70} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
-                            <path d={`M${isTypeC ? 130 : isTypeB ? 136 : 132} 88 Q${isTypeC ? 138 : isTypeB ? 144 : 140} 86 ${isTypeC ? 138 : isTypeB ? 144 : 140} 96 L${isTypeC ? 128 : isTypeB ? 134 : 130} 100`} fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.5" />
-                            <line x1="80" y1="115" x2="120" y2="115" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.3" />
-                            <line x1="82" y1="140" x2="118" y2="140" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.2" />
-                            <circle cx="100" cy="120" r="5" fill="none" stroke={s.primary} strokeWidth="1.2" strokeOpacity="0.7" />
-                            <circle cx="100" cy="120" r="2" fill={s.particle} fillOpacity="0.7">
-                                <animate attributeName="fillOpacity" values="0.7;0.3;0.7" dur="2s" repeatCount="indefinite" />
+                            {/* Vertical center seam */}
+                            <line x1="100" y1="92" x2="100" y2="175" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.35" />
+                            {/* Horizontal seam lines — chest ribs */}
+                            <line x1={leftEdge + 4} y1="115" x2={rightEdge - 4} y2="115" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.4" />
+                            <line x1={leftEdge + 6} y1="140" x2={rightEdge - 6} y2="140" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.3" />
+                            <line x1={leftEdge + 8} y1="162" x2={rightEdge - 8} y2="162" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.2" />
+
+                            {/* LEFT PAULDRON — multi-layered shoulder plate */}
+                            <path d={`M${leftEdge} 88 Q${paulL + 4} 82 ${paulL} 88 Q${paulL - 2} 96 ${paulL + 2} 102 L${leftEdge + 4} 106 L${leftEdge} 100 Z`}
+                                  fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
+                            <path d={`M${paulL} 88 Q${paulL - 2} 96 ${paulL + 2} 102`}
+                                  fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeLinecap="round" />
+                            {/* Pauldron highlight edge */}
+                            <line x1={leftEdge} y1="100" x2={leftEdge + 4} y2="106" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.5" />
+
+                            {/* RIGHT PAULDRON */}
+                            <path d={`M${rightEdge} 88 Q${paulR - 4} 82 ${paulR} 88 Q${paulR + 2} 96 ${paulR - 2} 102 L${rightEdge - 4} 106 L${rightEdge} 100 Z`}
+                                  fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
+                            <path d={`M${paulR} 88 Q${paulR + 2} 96 ${paulR - 2} 102`}
+                                  fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeLinecap="round" />
+                            <line x1={rightEdge} y1="100" x2={rightEdge - 4} y2="106" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.5" />
+
+                            {/* Glowing energy core — centered on chest plate */}
+                            <circle cx="100" cy="118" r="7" fill="none" stroke={s.primary} strokeWidth="1.5" strokeOpacity="0.8" />
+                            <circle cx="100" cy="118" r="4.5" fill={s.primary} fillOpacity="0.25" />
+                            <circle cx="100" cy="118" r="2.5" fill={s.particle} fillOpacity="0.9">
+                                <animate attributeName="fillOpacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite" />
+                                <animate attributeName="r" values="2.5;3.2;2.5" dur="2s" repeatCount="indefinite" />
                             </circle>
+                            {/* Core outer ring pulse */}
+                            <circle cx="100" cy="118" r="8" fill="none" stroke={s.glow} strokeWidth="2" strokeOpacity="0.5">
+                                <animate attributeName="r" values="8;11;8" dur="2s" repeatCount="indefinite" />
+                                <animate attributeName="strokeOpacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
+                            </circle>
+
+                            {/* RARE/UNIQUE: animated energy conduit lines flowing to core */}
                             {s.intensity >= 0.7 && <g>
-                                <line x1="88" y1="100" x2="82" y2="165" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.2" strokeDasharray="3 4">
-                                    <animate attributeName="strokeDashoffset" values="0;-14" dur="2s" repeatCount="indefinite" />
+                                <line x1="86" y1="94" x2="94" y2="115" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.25" strokeDasharray="3 5">
+                                    <animate attributeName="strokeDashoffset" values="0;-16" dur="1.8s" repeatCount="indefinite" />
                                 </line>
-                                <line x1="112" y1="100" x2="118" y2="165" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.2" strokeDasharray="3 4">
-                                    <animate attributeName="strokeDashoffset" values="0;-14" dur="2s" repeatCount="indefinite" />
+                                <line x1="114" y1="94" x2="106" y2="115" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.25" strokeDasharray="3 5">
+                                    <animate attributeName="strokeDashoffset" values="0;-16" dur="1.8s" repeatCount="indefinite" />
+                                </line>
+                                <line x1="82" y1="140" x2="94" y2="122" stroke={s.particle} strokeWidth="0.4" strokeOpacity="0.2" strokeDasharray="2 4">
+                                    <animate attributeName="strokeDashoffset" values="0;-12" dur="2.2s" repeatCount="indefinite" />
+                                </line>
+                                <line x1="118" y1="140" x2="106" y2="122" stroke={s.particle} strokeWidth="0.4" strokeOpacity="0.2" strokeDasharray="2 4">
+                                    <animate attributeName="strokeDashoffset" values="0;-12" dur="2.2s" repeatCount="indefinite" />
                                 </line>
                             </g>}
                         </g>
@@ -448,12 +527,41 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     const texOp = getTextureOpacity(belt);
                     return (
                         <g>
-                            <rect x="72" y="188" width="56" height="14" rx="3" fill={s.primary} fillOpacity="0.55" stroke={s.primary} strokeWidth="0.8" />
-                            {/* Dark leather texture overlay on belt */}
-                            <rect x="72" y="188" width="56" height="14" rx="3" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
-                            <rect x="94" y="189" width="12" height="12" rx="2" fill={s.particle} fillOpacity="0.4" />
-                            <rect x="74" y="190" width="8" height="10" rx="2" fill={s.primary} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.3" />
-                            <rect x="118" y="190" width="8" height="10" rx="2" fill={s.primary} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.3" />
+                            {/* Main belt strap */}
+                            <rect x="72" y="188" width="56" height="13" rx="3" fill={s.primary} fillOpacity="0.6" stroke={s.primary} strokeWidth="1" strokeOpacity="0.7" />
+                            {/* Leather texture on belt */}
+                            <rect x="72" y="188" width="56" height="13" rx="3" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
+                            {/* Belt highlight edge */}
+                            <line x1="73" y1="189" x2="127" y2="189" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+
+                            {/* Central buckle plate */}
+                            <rect x="92" y="187" width="16" height="15" rx="3" fill={s.primary} fillOpacity="0.85" stroke={s.particle} strokeWidth="1" strokeOpacity="0.9" />
+                            <rect x="94" y="189" width="12" height="11" rx="2" fill={`url(#${uid}-tex-carbon)`} opacity={texOp + 0.1} />
+                            {/* Buckle energy gem */}
+                            <circle cx="100" cy="194.5" r="3.5" fill={s.particle} fillOpacity="0.85">
+                                <animate attributeName="fillOpacity" values="0.85;0.4;0.85" dur="1.8s" repeatCount="indefinite" />
+                            </circle>
+                            <circle cx="100" cy="194.5" r="5.5" fill="none" stroke={s.glow} strokeWidth="1.2" strokeOpacity="0.7">
+                                <animate attributeName="strokeOpacity" values="0.7;0.1;0.7" dur="1.8s" repeatCount="indefinite" />
+                                <animate attributeName="r" values="5.5;7;5.5" dur="1.8s" repeatCount="indefinite" />
+                            </circle>
+
+                            {/* Left pouch */}
+                            <rect x="74" y="190" width="10" height="9" rx="2" fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.5" />
+                            <rect x="74" y="190" width="10" height="9" rx="2" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
+                            <line x1="75" y1="195" x2="83" y2="195" stroke={s.particle} strokeWidth="0.4" strokeOpacity="0.4" />
+
+                            {/* Right pouch */}
+                            <rect x="116" y="190" width="10" height="9" rx="2" fill={s.primary} fillOpacity="0.5" stroke={s.particle} strokeWidth="0.6" strokeOpacity="0.5" />
+                            <rect x="116" y="190" width="10" height="9" rx="2" fill={`url(#${uid}-tex-leather)`} opacity={texOp} />
+                            <line x1="117" y1="195" x2="125" y2="195" stroke={s.particle} strokeWidth="0.4" strokeOpacity="0.4" />
+
+                            {/* RARE/UNIQUE: rarity particle on buckle */}
+                            {s.intensity >= 0.7 && (
+                                <circle cx="100" cy="194.5" r="1.5" fill="white" fillOpacity="0.9">
+                                    <animate attributeName="fillOpacity" values="0.9;0.3;0.9" dur="1.4s" repeatCount="indefinite" />
+                                </circle>
+                            )}
                         </g>
                     );
                 })() : <line x1="74" y1="195" x2="126" y2="195" stroke={`hsl(${suitHue},35%,27%)`} strokeWidth="1.5" />}
@@ -477,28 +585,67 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                     const s = getRarityStyle(hands)!;
                     return (
                         <g filter={s.intensity > 0.5 ? `url(#${uid}-soft)` : undefined}>
-                            <path d="M38 148 L38 172 Q38 178 44 178 L58 178 Q62 178 62 172 L62 148" fill={s.primary} fillOpacity="0.5" stroke={s.primary} strokeWidth="0.8" strokeOpacity="0.7" />
-                            <path d="M138 148 L138 172 Q138 178 144 178 L158 178 Q162 178 162 172 L162 148" fill={s.primary} fillOpacity="0.5" stroke={s.primary} strokeWidth="0.8" strokeOpacity="0.7" />
-                            <line x1="42" y1="170" x2="58" y2="170" stroke={s.particle} strokeWidth="1" strokeOpacity="0.5" />
-                            <line x1="142" y1="170" x2="158" y2="170" stroke={s.particle} strokeWidth="1" strokeOpacity="0.5" />
+                            {/* Left gauntlet — covers new hand at x:43-57, y:155-175 */}
+                            {/* Back-of-hand plate */}
+                            <path d="M41 155 L41 172 Q41 179 47 179 L59 179 Q63 179 63 172 L63 155 Q56 152 48 152 Z"
+                                  fill={s.primary} fillOpacity="0.6" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
+                            {/* Carbon texture on gauntlet */}
+                            <path d="M41 155 L41 172 Q41 179 47 179 L59 179 Q63 179 63 172 L63 155 Q56 152 48 152 Z"
+                                  fill={`url(#${uid}-tex-carbon)`} opacity={getTextureOpacity(hands)} />
+                            {/* Knuckle guard bar */}
+                            <rect x="42" y="155" width="20" height="5" rx="2.5" fill={s.primary} fillOpacity="0.85" stroke={s.particle} strokeWidth="0.6" />
+                            {/* Finger articulation lines */}
+                            <line x1="46" y1="161" x2="46" y2="176" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.4" />
+                            <line x1="50" y1="161" x2="50" y2="177" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.4" />
+                            <line x1="54" y1="161" x2="54" y2="176" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.4" />
+                            {/* Wrist cuff */}
+                            <rect x="42" y="170" width="20" height="4" rx="2" fill={s.particle} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.4" />
+
+                            {/* Right gauntlet — covers new hand at x:143-157, y:155-175 */}
+                            <path d="M141 155 L141 172 Q141 179 145 179 L159 179 Q163 179 163 172 L163 155 Q156 152 148 152 Z"
+                                  fill={s.primary} fillOpacity="0.6" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.6" />
+                            <path d="M141 155 L141 172 Q141 179 145 179 L159 179 Q163 179 163 172 L163 155 Q156 152 148 152 Z"
+                                  fill={`url(#${uid}-tex-carbon)`} opacity={getTextureOpacity(hands)} />
+                            <rect x="142" y="155" width="20" height="5" rx="2.5" fill={s.primary} fillOpacity="0.85" stroke={s.particle} strokeWidth="0.6" />
+                            <line x1="146" y1="161" x2="146" y2="176" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.4" />
+                            <line x1="150" y1="161" x2="150" y2="177" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.4" />
+                            <line x1="154" y1="161" x2="154" y2="176" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.4" />
+                            <rect x="142" y="170" width="20" height="4" rx="2" fill={s.particle} fillOpacity="0.3" stroke={s.particle} strokeWidth="0.4" />
+
+                            {/* RARE/UNIQUE: palm energy nodes */}
                             {s.intensity >= 0.7 && <>
-                                <circle cx="50" cy="168" r="2" fill={s.particle} fillOpacity="0.5"><animate attributeName="fillOpacity" values="0.5;0.2;0.5" dur="1.5s" repeatCount="indefinite" /></circle>
-                                <circle cx="150" cy="168" r="2" fill={s.particle} fillOpacity="0.5"><animate attributeName="fillOpacity" values="0.2;0.5;0.2" dur="1.5s" repeatCount="indefinite" /></circle>
+                                <circle cx="52" cy="167" r="2.5" fill={s.particle} fillOpacity="0.6">
+                                    <animate attributeName="fillOpacity" values="0.6;0.2;0.6" dur="1.5s" repeatCount="indefinite" />
+                                    <animate attributeName="r" values="2.5;3.5;2.5" dur="1.5s" repeatCount="indefinite" />
+                                </circle>
+                                <circle cx="152" cy="167" r="2.5" fill={s.particle} fillOpacity="0.6">
+                                    <animate attributeName="fillOpacity" values="0.2;0.6;0.2" dur="1.5s" repeatCount="indefinite" />
+                                    <animate attributeName="r" values="2.5;3.5;2.5" dur="1.5s" repeatCount="indefinite" />
+                                </circle>
+                                {/* Energy ring around nodes */}
+                                <circle cx="52" cy="167" r="4" fill="none" stroke={s.glow} strokeWidth="0.8">
+                                    <animate attributeName="strokeOpacity" values="0.6;0;0.6" dur="1.5s" repeatCount="indefinite" />
+                                    <animate attributeName="r" values="4;6;4" dur="1.5s" repeatCount="indefinite" />
+                                </circle>
+                                <circle cx="152" cy="167" r="4" fill="none" stroke={s.glow} strokeWidth="0.8">
+                                    <animate attributeName="strokeOpacity" values="0;0.6;0" dur="1.5s" repeatCount="indefinite" />
+                                    <animate attributeName="r" values="4;6;4" dur="1.5s" repeatCount="indefinite" />
+                                </circle>
                             </>}
                         </g>
                     );
                 })() : (
                     <g>
-                        {/* Left hand — palm + 4 fingers + thumb */}
-                        <path d={`M43 158 Q42 154 44 152 L46 152 Q48 150 49 152 L50 153 Q52 151 53 153 L54 155 Q56 153 57 155 L57 158 Q57 166 55 170 Q53 174 50 175 Q46 175 44 172 Q42 168 43 158 Z`} fill={skin} stroke={skinSh} strokeWidth="0.4" />
-                        <path d="M46 153 L46 158" stroke={skinSh} strokeWidth="0.4" fill="none" />
-                        <path d="M49 152 L49 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
-                        <path d="M52 153 L52 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
-                        {/* Right hand — mirrored */}
-                        <path d={`M157 158 Q158 154 156 152 L154 152 Q152 150 151 152 L150 153 Q148 151 147 153 L146 155 Q144 153 143 155 L143 158 Q143 166 145 170 Q147 174 150 175 Q154 175 156 172 Q158 168 157 158 Z`} fill={skin} stroke={skinSh} strokeWidth="0.4" />
-                        <path d="M154 153 L154 158" stroke={skinSh} strokeWidth="0.4" fill="none" />
-                        <path d="M151 152 L151 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
-                        <path d="M148 153 L148 157" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        {/* Left hand — palm + 4 fingers pointing down, thumb on right (outer) side */}
+                        <path d={`M157 155 Q155 153 150 153 Q145 153 143 155 L143 168 Q144 172 145 175 Q146 178 147 175 L148 173 Q149 178 150 175 L151 173 Q152 178 154 175 Q156 178 157 175 Q158 172 157 168 Z`} fill={skin} stroke={skinSh} strokeWidth="0.4" transform="translate(-100,0)" />
+                        <path d="M54 170 L54 175" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M51 170 L51 175" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M48 170 L48 175" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        {/* Right hand — mirrored, thumb on left (outer) side */}
+                        <path d={`M43 155 Q45 153 50 153 Q55 153 57 155 L57 168 Q56 172 55 175 Q54 178 53 175 L52 173 Q51 178 50 175 L49 173 Q48 178 46 175 Q44 178 43 175 Q42 172 43 168 Z`} fill={skin} stroke={skinSh} strokeWidth="0.4" transform="translate(100,0)" />
+                        <path d="M146 170 L146 175" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M149 170 L149 175" stroke={skinSh} strokeWidth="0.4" fill="none" />
+                        <path d="M152 170 L152 175" stroke={skinSh} strokeWidth="0.4" fill="none" />
                     </g>
                 )}
 
@@ -528,14 +675,41 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                 {amulet && (() => {
                     const s = getRarityStyle(amulet)!;
                     return (
-                        <g filter={`url(#${uid}-glow)`}>
-                            <path d="M92 78 Q100 96 108 78" stroke={s.particle} strokeWidth="0.8" fill="none" strokeOpacity="0.5" />
-                            <polygon points="100,90 95,97 100,104 105,97" fill={s.primary} stroke={s.particle} strokeWidth="0.8">
-                                <animate attributeName="opacity" values="1;0.7;1" dur="2.5s" repeatCount="indefinite" />
-                            </polygon>
-                            <circle cx="100" cy="97" r="2" fill={s.particle}>
-                                <animate attributeName="r" values="2;2.5;2" dur="2s" repeatCount="indefinite" />
+                        <g filter={`url(#${uid}-bloom)`}>
+                            {/* Necklace chain — fine arcs from collar to gem */}
+                            <path d="M92 84 Q96 88 100 90 Q104 88 108 84"
+                                  stroke={s.particle} strokeWidth="0.8" fill="none" strokeOpacity="0.6" />
+                            {/* Outer aura ring */}
+                            <circle cx="100" cy="98" r="12" fill="none" stroke={s.glow} strokeWidth="3" strokeOpacity="0.4">
+                                <animate attributeName="r" values="12;16;12" dur="2.2s" repeatCount="indefinite" />
+                                <animate attributeName="strokeOpacity" values="0.4;0;0.4" dur="2.2s" repeatCount="indefinite" />
                             </circle>
+                            {/* Mid halo */}
+                            <circle cx="100" cy="98" r="9" fill={s.primary} fillOpacity="0.2" stroke={s.primary} strokeWidth="1" strokeOpacity="0.6">
+                                <animate attributeName="fillOpacity" values="0.2;0.08;0.2" dur="2.2s" repeatCount="indefinite" />
+                            </circle>
+                            {/* Gem facets — hexagonal shape */}
+                            <polygon points="100,89 107,93 107,101 100,105 93,101 93,93"
+                                     fill={s.primary} fillOpacity="0.8" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.9">
+                                <animate attributeName="fillOpacity" values="0.8;0.5;0.8" dur="2.2s" repeatCount="indefinite" />
+                            </polygon>
+                            {/* Gem inner facets for depth */}
+                            <polygon points="100,91 105,94 105,100 100,103 95,100 95,94"
+                                     fill={s.particle} fillOpacity="0.35" />
+                            {/* Central orb — bright core */}
+                            <circle cx="100" cy="97" r="3.5" fill={s.particle} fillOpacity="0.95">
+                                <animate attributeName="r" values="3.5;4.5;3.5" dur="1.8s" repeatCount="indefinite" />
+                                <animate attributeName="fillOpacity" values="0.95;0.55;0.95" dur="1.8s" repeatCount="indefinite" />
+                            </circle>
+                            {/* Gem highlight spark */}
+                            <circle cx="97.5" cy="94.5" r="1.2" fill="white" fillOpacity="0.7" />
+                            {/* RARE/UNIQUE: orbiting particle */}
+                            {s.intensity >= 0.7 && (
+                                <circle cx="110" cy="97" r="1.5" fill={s.particle} fillOpacity="0.8">
+                                    <animateTransform attributeName="transform" type="rotate" from="0 100 97" to="360 100 97" dur="3s" repeatCount="indefinite" />
+                                    <animate attributeName="fillOpacity" values="0.8;0.2;0.8" dur="3s" repeatCount="indefinite" />
+                                </circle>
+                            )}
                         </g>
                     );
                 })()}
@@ -599,38 +773,116 @@ const OperativeAvatar: React.FC<OperativeAvatarProps> = ({
                         const s = getRarityStyle(head)!;
                         const vid = head.visualId || '';
                         const texOp = getTextureOpacity(head);
+                        const hw2 = headW + 2; // slightly wider than head
+                        const lx = 100 - headW; // left head edge
+                        const rx = 100 + headW; // right head edge
                         return (
-                            <g filter={s.intensity > 0.5 ? `url(#${uid}-glow)` : `url(#${uid}-soft)`}>
+                            <g filter={s.intensity > 0.6 ? `url(#${uid}-glow)` : `url(#${uid}-soft)`}>
                                 {vid.includes('helm') ? <>
-                                    <path d={`M${100 - headW - 2} 28 Q100 10 ${100 + headW + 2} 28 L${100 + headW + 4} 62 Q100 72 ${100 - headW - 4} 62 Z`}
-                                          fill={s.primary} fillOpacity="0.55" stroke={s.primary} strokeWidth="1.2" />
-                                    {/* Hexabump texture overlay on full helmet */}
-                                    <path d={`M${100 - headW - 2} 28 Q100 10 ${100 + headW + 2} 28 L${100 + headW + 4} 62 Q100 72 ${100 - headW - 4} 62 Z`}
+                                    {/* Full helmet shell */}
+                                    <path d={`M${100 - hw2} 30 Q100 10 ${100 + hw2} 30 L${100 + hw2 + 2} 64 Q100 74 ${100 - hw2 - 2} 64 Z`}
+                                          fill={s.primary} fillOpacity="0.6" stroke={s.primary} strokeWidth="1.4" strokeOpacity="0.8" />
+                                    {/* Hexabump texture on helm */}
+                                    <path d={`M${100 - hw2} 30 Q100 10 ${100 + hw2} 30 L${100 + hw2 + 2} 64 Q100 74 ${100 - hw2 - 2} 64 Z`}
                                           fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
-                                    <rect x="80" y="44" width="40" height="8" rx="4" fill={`hsl(${hue + 180},90%,55%)`} fillOpacity="0.85">
-                                        <animate attributeName="fillOpacity" values="0.85;0.5;0.85" dur="3s" repeatCount="indefinite" />
+                                    {/* Helmet highlight ridge top */}
+                                    <path d={`M${100 - hw2 + 4} 32 Q100 14 ${100 + hw2 - 4} 32`}
+                                          fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
+                                    {/* Visor band */}
+                                    <rect x="80" y="43" width="40" height="10" rx="5"
+                                          fill={`hsl(${hue + 180},90%,55%)`} fillOpacity="0.88" stroke={s.particle} strokeWidth="0.6">
+                                        <animate attributeName="fillOpacity" values="0.88;0.5;0.88" dur="2.8s" repeatCount="indefinite" />
                                     </rect>
+                                    {/* Visor glint — diagonal highlight */}
+                                    <path d="M82 44 Q90 46 98 44" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+                                    {/* Left side vent */}
+                                    <line x1={100 - hw2 - 1} y1="38" x2={100 - hw2 + 4} y2="38" stroke={s.particle} strokeWidth="1.2" strokeOpacity="0.7" />
+                                    <line x1={100 - hw2 - 1} y1="41" x2={100 - hw2 + 4} y2="41" stroke={s.particle} strokeWidth="1" strokeOpacity="0.5" />
+                                    <line x1={100 - hw2 - 1} y1="44" x2={100 - hw2 + 4} y2="44" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.4" />
+                                    {/* Right side vent */}
+                                    <line x1={100 + hw2 + 1} y1="38" x2={100 + hw2 - 4} y2="38" stroke={s.particle} strokeWidth="1.2" strokeOpacity="0.7" />
+                                    <line x1={100 + hw2 + 1} y1="41" x2={100 + hw2 - 4} y2="41" stroke={s.particle} strokeWidth="1" strokeOpacity="0.5" />
+                                    <line x1={100 + hw2 + 1} y1="44" x2={100 + hw2 - 4} y2="44" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.4" />
+                                    {/* Left ear piece */}
+                                    <path d={`M${lx - 2} 46 Q${lx - 6} 48 ${lx - 5} 56 Q${lx - 4} 62 ${lx} 64 L${lx + 2} 62 Q${lx - 2} 58 ${lx - 1} 52 Q${lx} 46 ${lx - 2} 46 Z`}
+                                          fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.5" />
+                                    {/* Right ear piece */}
+                                    <path d={`M${rx + 2} 46 Q${rx + 6} 48 ${rx + 5} 56 Q${rx + 4} 62 ${rx} 64 L${rx - 2} 62 Q${rx + 2} 58 ${rx + 1} 52 Q${rx} 46 ${rx + 2} 46 Z`}
+                                          fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.5" />
+                                    {/* RARE/UNIQUE: animated scan line on visor */}
+                                    {s.intensity >= 0.7 && (
+                                        <line x1="81" y1="48" x2="119" y2="48" stroke="rgba(255,255,255,0.5)" strokeWidth="0.6">
+                                            <animate attributeName="y1" values="44;52;44" dur="2s" repeatCount="indefinite" />
+                                            <animate attributeName="y2" values="44;52;44" dur="2s" repeatCount="indefinite" />
+                                            <animate attributeName="strokeOpacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
+                                        </line>
+                                    )}
                                 </> : vid.includes('visor') ? <>
-                                    <rect x="80" y="42" width="40" height="12" rx="6" fill={`hsla(${hue + 180},80%,50%,0.7)`} stroke={s.primary} strokeWidth="1">
-                                        <animate attributeName="fillOpacity" values="0.7;0.4;0.7" dur="2.5s" repeatCount="indefinite" />
+                                    {/* Standalone visor / tactical HUD */}
+                                    <rect x="78" y="41" width="44" height="14" rx="7"
+                                          fill={`hsla(${hue + 180},80%,50%,0.75)`} stroke={s.primary} strokeWidth="1.2" strokeOpacity="0.8">
+                                        <animate attributeName="fillOpacity" values="0.75;0.4;0.75" dur="2.5s" repeatCount="indefinite" />
                                     </rect>
-                                    {/* Hexabump texture overlay on visor */}
-                                    <rect x="80" y="42" width="40" height="12" rx="6" fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
-                                    <line x1="76" y1="48" x2="80" y2="48" stroke={s.primary} strokeWidth="1.5" />
-                                    <line x1="120" y1="48" x2="124" y2="48" stroke={s.primary} strokeWidth="1.5" />
+                                    {/* Hexabump on visor surface */}
+                                    <rect x="78" y="41" width="44" height="14" rx="7" fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
+                                    {/* Visor glint arc */}
+                                    <path d="M80 43 Q95 40 115 43" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round" />
+                                    {/* Left temple arm */}
+                                    <line x1="78" y1="48" x2={lx - 2} y2="50" stroke={s.primary} strokeWidth="1.8" strokeOpacity="0.8" strokeLinecap="round" />
+                                    {/* Right temple arm */}
+                                    <line x1="122" y1="48" x2={rx + 2} y2="50" stroke={s.primary} strokeWidth="1.8" strokeOpacity="0.8" strokeLinecap="round" />
+                                    {/* Left ear clip */}
+                                    <circle cx={lx - 3} cy="51" r="2.5" fill={s.primary} fillOpacity="0.8" stroke={s.particle} strokeWidth="0.5" />
+                                    {/* Right ear clip */}
+                                    <circle cx={rx + 3} cy="51" r="2.5" fill={s.primary} fillOpacity="0.8" stroke={s.particle} strokeWidth="0.5" />
+                                    {/* HUD data line across visor */}
+                                    <line x1="82" y1="48" x2="118" y2="48" stroke={s.particle} strokeWidth="0.5" strokeOpacity="0.5" strokeDasharray="2 3">
+                                        <animate attributeName="strokeDashoffset" values="0;-10" dur="1.5s" repeatCount="indefinite" />
+                                    </line>
+                                    {/* RARE/UNIQUE: scan sweep */}
+                                    {s.intensity >= 0.7 && (
+                                        <line x1="82" y1="45" x2="82" y2="53" stroke={s.particle} strokeWidth="1.2" strokeOpacity="0.8">
+                                            <animate attributeName="x1" values="82;116;82" dur="2s" repeatCount="indefinite" />
+                                            <animate attributeName="x2" values="82;116;82" dur="2s" repeatCount="indefinite" />
+                                            <animate attributeName="strokeOpacity" values="0.8;0.1;0.8" dur="2s" repeatCount="indefinite" />
+                                        </line>
+                                    )}
                                 </> : <>
-                                    <rect x="78" y="36" width="44" height="6" rx="3" fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="0.5" />
-                                    {/* Hexabump texture overlay on headband */}
-                                    <rect x="78" y="36" width="44" height="6" rx="3" fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
-                                    <circle cx="89" cy="47" r="8" fill="none" stroke={s.primary} strokeWidth="1.5" />
-                                    <circle cx="111" cy="47" r="8" fill="none" stroke={s.primary} strokeWidth="1.5" />
-                                    <circle cx="89" cy="47" r="5.5" fill={s.particle} fillOpacity="0.3">
-                                        <animate attributeName="fillOpacity" values="0.3;0.15;0.3" dur="2s" repeatCount="indefinite" />
+                                    {/* Headband variant */}
+                                    <rect x="78" y="35" width="44" height="7" rx="3.5"
+                                          fill={s.primary} fillOpacity="0.75" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.7" />
+                                    {/* Hexabump on headband */}
+                                    <rect x="78" y="35" width="44" height="7" rx="3.5" fill={`url(#${uid}-tex-hexabump)`} opacity={texOp} />
+                                    {/* Headband highlight */}
+                                    <line x1="80" y1="36.5" x2="120" y2="36.5" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+                                    {/* Central gem/node — prominent focal point */}
+                                    <circle cx="100" cy="38.5" r="6" fill={s.primary} fillOpacity="0.7" stroke={s.particle} strokeWidth="1" strokeOpacity="0.9" />
+                                    <circle cx="100" cy="38.5" r="4" fill={s.particle} fillOpacity="0.8">
+                                        <animate attributeName="fillOpacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite" />
                                     </circle>
-                                    <circle cx="111" cy="47" r="5.5" fill={s.particle} fillOpacity="0.3">
-                                        <animate attributeName="fillOpacity" values="0.15;0.3;0.15" dur="2s" repeatCount="indefinite" />
+                                    <circle cx="100" cy="38.5" r="10" fill="none" stroke={s.glow} strokeWidth="2" strokeOpacity="0.5">
+                                        <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite" />
+                                        <animate attributeName="strokeOpacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
                                     </circle>
-                                    <line x1="97" y1="47" x2="103" y2="47" stroke={s.primary} strokeWidth="1.5" />
+                                    {/* Gem highlight */}
+                                    <circle cx="98.5" cy="37" r="1.5" fill="white" fillOpacity="0.65" />
+                                    {/* Side tech nodes on band */}
+                                    <circle cx="85" cy="38.5" r="2.5" fill={s.primary} fillOpacity="0.6" stroke={s.particle} strokeWidth="0.5" />
+                                    <circle cx="115" cy="38.5" r="2.5" fill={s.primary} fillOpacity="0.6" stroke={s.particle} strokeWidth="0.5" />
+                                    {/* Lines connecting side nodes to central gem */}
+                                    <line x1="87.5" y1="38.5" x2="94" y2="38.5" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.5" />
+                                    <line x1="106" y1="38.5" x2="112.5" y2="38.5" stroke={s.particle} strokeWidth="0.8" strokeOpacity="0.5" />
+                                    {/* RARE/UNIQUE: pulsing side node halos */}
+                                    {s.intensity >= 0.7 && <>
+                                        <circle cx="85" cy="38.5" r="4" fill="none" stroke={s.glow} strokeWidth="1">
+                                            <animate attributeName="r" values="4;6;4" dur="2.5s" repeatCount="indefinite" />
+                                            <animate attributeName="strokeOpacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite" />
+                                        </circle>
+                                        <circle cx="115" cy="38.5" r="4" fill="none" stroke={s.glow} strokeWidth="1">
+                                            <animate attributeName="r" values="4;6;4" dur="2.5s" begin="0.5s" repeatCount="indefinite" />
+                                            <animate attributeName="strokeOpacity" values="0;0.5;0" dur="2.5s" begin="0.5s" repeatCount="indefinite" />
+                                        </circle>
+                                    </>}
                                 </>}
                             </g>
                         );
