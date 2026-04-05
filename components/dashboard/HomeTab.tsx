@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Assignment, Submission, XPEvent } from '../../types';
 import {
-  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp,
+  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp, MessageSquare,
 } from 'lucide-react';
 import AnimatedIcon from '../AnimatedIcon';
 
@@ -17,6 +17,8 @@ interface HomeTabProps {
   userSection?: string;
   userClassSections?: Record<string, string>;
   performanceMode?: boolean;
+  /** Teacher name or display string, used in feedback attribution. */
+  teacherName?: string;
 }
 
 // ─── Helpers ─────────────────────────────────
@@ -109,6 +111,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
   userSection,
   userClassSections,
   performanceMode = false,
+  teacherName,
 }) => {
   // Filter to active class, visible assignments only
   const classAssignments = useMemo(() =>
@@ -174,6 +177,26 @@ const HomeTab: React.FC<HomeTabProps> = ({
     return { total, completed, totalTime, practicesMastered };
   }, [classAssignments, submissions, practiceCompletion]);
 
+  // Unread teacher feedback — submissions with rubricGrade.teacherFeedback but no feedbackReadAt
+  const unreadFeedbackItems = useMemo(() => {
+    return submissions
+      .filter(s => {
+        const assignment = classAssignments.find(a => a.id === s.assignmentId);
+        if (!assignment) return false;
+        return s.rubricGrade?.teacherFeedback && !s.feedbackReadAt;
+      })
+      .map(s => {
+        const assignment = classAssignments.find(a => a.id === s.assignmentId);
+        return {
+          submission: s,
+          assignmentId: s.assignmentId,
+          assignmentTitle: assignment?.title || s.assignmentTitle,
+          feedbackPreview: (s.rubricGrade!.teacherFeedback || '').slice(0, 80) + ((s.rubricGrade!.teacherFeedback || '').length > 80 ? '…' : ''),
+          gradedBy: s.rubricGrade?.gradedBy || teacherName || 'Your teacher',
+        };
+      });
+  }, [submissions, classAssignments, teacherName]);
+
   // "Up Next" — the single most urgent incomplete assignment
   const upNextAssignment = useMemo(() => {
     return upcomingDue.find(a => !a.isCompleted) || null;
@@ -182,6 +205,39 @@ const HomeTab: React.FC<HomeTabProps> = ({
   return (
     <div key="home" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <h2 className="sr-only">Home</h2>
+
+      {/* New Feedback — unread teacher feedback items */}
+      {unreadFeedbackItems.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-400 mb-3">
+            <MessageSquare className="w-4 h-4 shrink-0" />
+            New Feedback
+            <span
+              className="ml-auto text-xs bg-amber-500/20 border border-amber-500/30 rounded-full px-2 py-0.5 font-black"
+              role="status"
+              aria-label={`${unreadFeedbackItems.length} unread feedback item${unreadFeedbackItems.length !== 1 ? 's' : ''}`}
+            >
+              {unreadFeedbackItems.length}
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {unreadFeedbackItems.map(item => (
+              <button
+                key={item.submission.id}
+                onClick={() => onStartAssignment?.(item.assignmentId)}
+                className="w-full flex items-start gap-3 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/15 transition text-left focus-visible:ring-2 focus-visible:ring-amber-500"
+              >
+                <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-[var(--text-primary)] truncate">{item.assignmentTitle}</div>
+                  <div className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">{item.gradedBy}: "{item.feedbackPreview}"</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Up Next — most urgent incomplete assignment */}
       {upNextAssignment && (

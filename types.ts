@@ -545,6 +545,8 @@ export interface Submission {
   returnedAt?: string;
   returnedBy?: string;
   submittedOnBehalfBy?: string;
+  // Feedback read tracking — set client-side when student first views teacher feedback
+  feedbackReadAt?: string; // ISO timestamp
 }
 
 

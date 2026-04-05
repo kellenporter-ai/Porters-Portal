@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { Assignment, ClassConfig, Submission, migrateResourceCategory } from '../../types';
-import { ChevronRight, ChevronDown, Play, FlaskConical, Target, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown } from 'lucide-react';
+import { ChevronRight, ChevronDown, Play, FlaskConical, Target, Layers, CheckCircle2, Clock, GraduationCap, Search, X, Calendar, ArrowUpDown, MessageSquare } from 'lucide-react';
 import { sortUnitKeys } from '../../lib/sortUnitKeys';
 
 function formatRelativeDate(isoString: string): string {
@@ -160,6 +160,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
       ? submissions.filter(s => s.assignmentId === resource.id && s.isAssessment).sort((a, b) => (b.attemptNumber || 0) - (a.attemptNumber || 0))
       : [];
     const latestSub = assessmentSubs[0] || null;
+    // Unread teacher feedback indicator
+    const hasUnreadFeedback = !!latestSub?.rubricGrade?.teacherFeedback && !latestSub?.feedbackReadAt;
     const assessmentConfig = resource.assessmentConfig || {};
     const maxAttempts = assessmentConfig.maxAttempts || 0;
     const isUnlimitedAttempts = maxAttempts === 0;
@@ -288,8 +290,15 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
             )}
           </div>
         </div>
-        <div className="opacity-0 group-hover:opacity-100 transition">
-          <Play className="w-4 h-4 text-[var(--accent-text)] fill-current" />
+        <div className="flex flex-col items-center gap-1.5">
+          {hasUnreadFeedback && (
+            <div title="New teacher feedback" role="status" aria-label="New teacher feedback available" className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40">
+              <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+            </div>
+          )}
+          <div className="opacity-0 group-hover:opacity-100 transition">
+            <Play className="w-4 h-4 text-[var(--accent-text)] fill-current" />
+          </div>
         </div>
       </div>
     );

@@ -280,6 +280,7 @@ export const dataService = {
           flaggedAsAI: data.flaggedAsAI || false,
           flaggedAsAIBy: data.flaggedAsAIBy || '',
           flaggedAsAIAt: data.flaggedAsAIAt || '',
+          feedbackReadAt: data.feedbackReadAt || undefined,
         } as Submission;
       });
       callback(submissions);
@@ -320,6 +321,7 @@ export const dataService = {
           flaggedAsAI: data.flaggedAsAI || false,
           flaggedAsAIBy: data.flaggedAsAIBy || '',
           flaggedAsAIAt: data.flaggedAsAIAt || '',
+          feedbackReadAt: data.feedbackReadAt || undefined,
         } as Submission;
       });
       // Sort by submittedAt descending (client-side since we dropped orderBy to avoid index dep)
@@ -445,6 +447,7 @@ export const dataService = {
           flaggedAsAI: data.flaggedAsAI || false,
           flaggedAsAIBy: data.flaggedAsAIBy || '',
           flaggedAsAIAt: data.flaggedAsAIAt || '',
+          feedbackReadAt: data.feedbackReadAt || undefined,
         } as Submission;
       })
       // Sort client-side instead
@@ -875,6 +878,22 @@ export const dataService = {
       }).catch(err => reportError(err, { method: 'saveRubricGrade:notification' }));
     }
     return { clearedAIFlag };
+  },
+
+  /**
+   * Mark teacher feedback as read by the student.
+   * Writes feedbackReadAt (ISO timestamp) to the submission document.
+   * No-op if feedbackReadAt is already set (idempotent).
+   */
+  markFeedbackRead: async (submissionId: string): Promise<void> => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        feedbackReadAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      // Non-critical — swallow silently so it never blocks the UI
+      reportError(error, { method: 'markFeedbackRead', submissionId });
+    }
   },
 
   flagSubmissionAsAI: async (submissionId: string, flaggedBy: string, studentUserId?: string, assessmentTitle?: string) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, UserRole, TelemetryMetrics, Submission } from '../types';
+import { User, UserRole, TelemetryMetrics, Submission, Rubric } from '../types';
 import { useAssignments } from '../lib/AppDataContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
@@ -8,7 +8,7 @@ import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye, LogOut } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye, LogOut, ChevronDown, ChevronRight, MessageSquare } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -26,6 +26,45 @@ const LazyFallback = () => (
     <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
   </div>
 );
+
+/** Collapsible inline tier definitions shown in the results view after a rubric is graded. */
+const TierDefinitionsAccordion: React.FC<{ rubric: Rubric; isLight: boolean }> = ({ rubric, isLight }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className={`flex items-center gap-1.5 text-xs font-bold transition ${isLight ? 'text-amber-700 hover:text-amber-800' : 'text-amber-400 hover:text-amber-300'}`}
+      >
+        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        Tier definitions — what does each level mean?
+      </button>
+      {open && (
+        <div className="mt-2 space-y-3 border border-[var(--border)] rounded-xl p-3 bg-[var(--surface-glass)]">
+          {rubric.questions.map(q => (
+            <div key={q.id}>
+              <p className="text-xs font-bold text-[var(--text-secondary)] mb-1.5">{q.questionLabel}</p>
+              {q.skills.map(skill => (
+                <div key={skill.id} className="mb-2 last:mb-0">
+                  <p className="text-xs text-[var(--text-muted)] italic mb-1">{skill.skillText}</p>
+                  <div className="space-y-1">
+                    {skill.tiers.map(tier => (
+                      <div key={tier.label} className="flex gap-2 text-sm leading-relaxed">
+                        <span className={`shrink-0 font-bold w-24 text-xs ${isLight ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>{tier.label} ({tier.percentage}%)</span>
+                        <span className="text-sm text-[var(--text-primary)] leading-relaxed">{tier.descriptor}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface ResourceViewerProps {
   user: User;
@@ -79,6 +118,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
   // Session token for assessment security (issued by startAssessmentSession Cloud Function)
   const sessionTokenRef = useRef<string | null>(null);
+  // Track whether we've already fired the feedbackReadAt write for this session
+  const feedbackReadTrackedRef = useRef(false);
   // Suppress auto-recovery during retake flow (so clearing assessmentResult doesn't instantly re-populate)
   const isRetakingRef = useRef(false);
 
@@ -128,6 +169,20 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       setSubmitFailed(false);
     }
   }, [existingSubmission, assessmentResult, isLiveAssessment]);
+
+  // Mark teacher feedback as read (once) when it becomes visible to the student
+  useEffect(() => {
+    // Reset tracker when submission disappears (retake flow) or a new submission loads
+    if (!existingSubmission) {
+      feedbackReadTrackedRef.current = false;
+      return;
+    }
+    if (feedbackReadTrackedRef.current) return;
+    const sub = existingSubmission;
+    if (!sub.rubricGrade?.teacherFeedback || sub.feedbackReadAt) return;
+    feedbackReadTrackedRef.current = true;
+    dataService.markFeedbackRead(sub.id);
+  }, [existingSubmission, existingSubmission?.id]);
 
   // Probe supplemental tabs
   // Play lesson-open sound when resource loads
@@ -575,12 +630,39 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </div>
           )}
 
+          {/* Teacher Feedback — prominent banner, shown above score breakdown when present */}
+          {existingSubmission?.rubricGrade?.teacherFeedback && (
+            <div className="mb-5 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Teacher Feedback</span>
+              </div>
+              <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">
+                Graded by {existingSubmission.rubricGrade.gradedBy}
+                {existingSubmission.rubricGrade.gradedAt && (
+                  <> · {new Date(existingSubmission.rubricGrade.gradedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
+                )}
+              </p>
+            </div>
+          )}
+
           {/* Rubric section in results */}
           {activeAssignment.rubric && (
             <div className="mb-6">
               <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5" /> Assessment Rubric
               </h4>
+              {existingSubmission?.rubricGrade ? (
+                <div className="mb-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-3 text-center">
+                  <span className="text-sm font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</span>
+                  <span className="text-xs text-[var(--text-muted)] ml-2">Rubric Score</span>
+                </div>
+              ) : (
+                <p className="text-xs text-[var(--text-muted)] mb-3 text-center italic">
+                  Your teacher will grade rubric-assessed questions. Check back for results.
+                </p>
+              )}
               <div className="max-h-64 overflow-y-auto custom-scrollbar">
                 <Suspense fallback={<LazyFallback />}>
                   <RubricViewer
@@ -590,21 +672,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   />
                 </Suspense>
               </div>
-              {existingSubmission?.rubricGrade ? (
-                <div className="mt-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-3 text-center">
-                  <span className="text-sm font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</span>
-                  <span className="text-[10px] text-[var(--text-muted)] ml-2">Rubric Score</span>
-                  {existingSubmission.rubricGrade.teacherFeedback && (
-                    <div className="mt-3 bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 text-left">
-                      <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-1">Teacher Feedback</div>
-                      <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-[10px] text-[var(--text-muted)] mt-2 text-center italic">
-                  Your teacher will grade rubric-assessed questions. Check back for results.
-                </p>
+              {/* Inline collapsible tier definitions */}
+              {existingSubmission?.rubricGrade && (
+                <TierDefinitionsAccordion rubric={activeAssignment.rubric} isLight={isLight} />
               )}
             </div>
           )}
@@ -753,16 +823,21 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 />
               </Suspense>
               {existingSubmission?.rubricGrade && (
-                <div className="mt-4 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">Rubric Score</div>
-                  <div className="text-[10px] text-[var(--text-muted)] mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
+                <div className="mt-4">
                   {existingSubmission.rubricGrade.teacherFeedback && (
-                    <div className="mt-3 bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 text-left">
-                      <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-1">Teacher Feedback</div>
-                      <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{existingSubmission.rubricGrade.teacherFeedback}</p>
+                    <div className="mb-4 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Teacher Feedback</span>
+                      </div>
+                      <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
                     </div>
                   )}
+                  <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
+                    <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">Rubric Score</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
+                  </div>
                 </div>
               )}
               {!existingSubmission?.rubricGrade && existingSubmission && (
