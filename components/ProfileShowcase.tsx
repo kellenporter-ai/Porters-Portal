@@ -86,6 +86,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                     appearance={appearance}
                     activeCosmetics={gam.activeCosmetics}
                     evolutionLevel={gam.level}
+                    equipped={equipped}
                   />
                 ) : (
                   <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />

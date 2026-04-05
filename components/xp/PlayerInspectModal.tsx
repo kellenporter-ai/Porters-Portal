@@ -101,6 +101,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
                     appearance={appearance}
                     activeCosmetics={gam.activeCosmetics}
                     evolutionLevel={gam.level}
+                    equipped={equipped}
                     compact
                   />
                 ) : (

@@ -137,6 +137,7 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                         appearance={profile.appearance}
                                         activeCosmetics={user.gamification?.activeCosmetics}
                                         evolutionLevel={level}
+                                        equipped={profile.equipped}
                                     />
                                 ) : (
                                     <OperativeAvatar

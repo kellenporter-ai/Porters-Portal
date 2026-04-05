@@ -221,6 +221,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                         characterModelId={selectedCharacterModel}
                         appearance={playerAppearance}
                         evolutionLevel={playerEvolutionLevel}
+                        equipped={playerEquipped}
                         compact
                     />
                 ) : (

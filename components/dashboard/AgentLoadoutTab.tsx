@@ -354,6 +354,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                         appearance={classProfile.appearance}
                         activeCosmetics={user.gamification?.activeCosmetics}
                         evolutionLevel={level}
+                        equipped={equipped}
                       />
                     ) : (
                       <OperativeAvatar

@@ -838,6 +838,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                       appearance={playerAppearance}
                       activeCosmetics={displayedCosmetics}
                       evolutionLevel={playerEvolutionLevel}
+                      equipped={playerEquipped}
                     />
                   </div>
 

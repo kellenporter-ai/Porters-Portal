@@ -54,6 +54,7 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
                 appearance={appearance}
                 activeCosmetics={activeCosmetics}
                 evolutionLevel={evolutionLevel}
+                equipped={equipped}
                 compact={compact}
                 className={className}
             />

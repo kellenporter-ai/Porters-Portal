@@ -391,6 +391,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                       skinTone: previewSkinTone ?? appearance?.skinTone ?? 0,
                     }}
                     activeCosmetics={activeCosmetics}
+                    equipped={equipped}
                   />
                 ) : (
                   <OperativeAvatar equipped={equipped} appearance={{

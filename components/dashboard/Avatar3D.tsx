@@ -154,6 +154,8 @@ interface Avatar3DProps {
     activeCosmetics?: ActiveCosmetics;
     /** Evolution level for glow intensity */
     evolutionLevel?: number;
+    /** Equipment map passed through to 2D fallback when 3D is disabled */
+    equipped?: Partial<Record<string, { rarity?: string; visualId?: string } | null | undefined>>;
     /** If true, render a static fallback instead of full 3D scene */
     compact?: boolean;
     /** CSS class for the container */
@@ -173,7 +175,7 @@ interface Avatar3DProps {
 const Avatar3D: React.FC<Avatar3DProps> = (props) => {
     // When 3D is disabled globally, fall back to 2D avatar for all users
     if (!ENABLE_3D_AVATAR) {
-        return <OperativeAvatar equipped={{}} appearance={props.appearance} activeCosmetics={props.activeCosmetics} evolutionLevel={props.evolutionLevel} />;
+        return <OperativeAvatar equipped={props.equipped || {}} appearance={props.appearance} activeCosmetics={props.activeCosmetics} evolutionLevel={props.evolutionLevel} />;
     }
     return <Avatar3DInner {...props} />;
 };
