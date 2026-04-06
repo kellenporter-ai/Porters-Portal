@@ -119,14 +119,18 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
   }, [assignments]);
 
   // Split submissions with teacher feedback into unread / read / reviewed
+  // Exclude submissions from deleted assignments (no classType resolvable)
   const { unread, read, reviewed } = useMemo(() => {
-    const withFeedback = submissions.filter(s => s.rubricGrade?.teacherFeedback);
+    const withFeedback = submissions.filter(s =>
+      s.rubricGrade?.teacherFeedback &&
+      (classLookup.has(s.assignmentId) || (s.classType && s.classType !== 'Unknown'))
+    );
     return {
       reviewed: withFeedback.filter(s => s.feedbackReviewedAt),
       unread: withFeedback.filter(s => !s.feedbackReadAt && !s.feedbackReviewedAt),
       read: withFeedback.filter(s => s.feedbackReadAt && !s.feedbackReviewedAt),
     };
-  }, [submissions]);
+  }, [submissions, classLookup]);
 
   // Default tab: 'new' if items exist, else 'read', else 'reviewed'
   const defaultTab: FeedbackTab = unread.length > 0 ? 'new' : read.length > 0 ? 'read' : 'reviewed';
