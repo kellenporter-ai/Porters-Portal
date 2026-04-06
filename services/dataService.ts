@@ -281,6 +281,7 @@ export const dataService = {
           flaggedAsAIBy: data.flaggedAsAIBy || '',
           flaggedAsAIAt: data.flaggedAsAIAt || '',
           feedbackReadAt: data.feedbackReadAt || undefined,
+          feedbackReviewedAt: data.feedbackReviewedAt || undefined,
         } as Submission;
       });
       callback(submissions);
@@ -322,6 +323,7 @@ export const dataService = {
           flaggedAsAIBy: data.flaggedAsAIBy || '',
           flaggedAsAIAt: data.flaggedAsAIAt || '',
           feedbackReadAt: data.feedbackReadAt || undefined,
+          feedbackReviewedAt: data.feedbackReviewedAt || undefined,
         } as Submission;
       });
       // Sort by submittedAt descending (client-side since we dropped orderBy to avoid index dep)
@@ -448,6 +450,7 @@ export const dataService = {
           flaggedAsAIBy: data.flaggedAsAIBy || '',
           flaggedAsAIAt: data.flaggedAsAIAt || '',
           feedbackReadAt: data.feedbackReadAt || undefined,
+          feedbackReviewedAt: data.feedbackReviewedAt || undefined,
         } as Submission;
       })
       // Sort client-side instead
@@ -893,6 +896,16 @@ export const dataService = {
     } catch (error) {
       // Non-critical — swallow silently so it never blocks the UI
       reportError(error, { method: 'markFeedbackRead', submissionId });
+    }
+  },
+
+  markFeedbackReviewed: async (submissionId: string): Promise<void> => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        feedbackReviewedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      reportError(error, { method: 'markFeedbackReviewed', submissionId });
     }
   },
 

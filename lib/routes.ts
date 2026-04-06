@@ -28,6 +28,7 @@ export const STUDENT_ROUTES = {
   CALENDAR: '/calendar',
   FORENSICS: '/forensics',
   LEADERBOARD: '/leaderboard',
+  FEEDBACK: '/feedback',
 } as const;
 
 // XP Command sub-routes (nested under /xp)
@@ -68,6 +69,7 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Calendar': STUDENT_ROUTES.CALENDAR,
   'Forensics': STUDENT_ROUTES.FORENSICS,
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
+  'Feedback': STUDENT_ROUTES.FEEDBACK,
 };
 
 /** Reverse lookup: URL path → old tab name (for Layout active state) */

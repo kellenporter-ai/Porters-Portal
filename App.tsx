@@ -40,6 +40,7 @@ const LessonEditorPage = lazyWithRetry(() => import('./components/LessonEditorPa
 const ResourceViewer = lazyWithRetry(() => import('./components/ResourceViewer'));
 const StudentReports = lazyWithRetry(() => import('./components/StudentReports'));
 const GradingPage = lazyWithRetry(() => import('./components/grading/GradingPage'));
+const FeedbackPage = lazyWithRetry(() => import('./components/dashboard/FeedbackPage'));
 
 const LazyFallback = () => <RouteSkeleton />;
 
@@ -415,6 +416,9 @@ const App: React.FC = () => {
           } />
           <Route path="/leaderboard" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Leaderboard"><Leaderboard user={user} /></FeatureErrorBoundary></Suspense>
+          } />
+          <Route path="/feedback" element={
+            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Feedback"><FeedbackPage user={user} submissions={studentSubmissions} /></FeatureErrorBoundary></Suspense>
           } />
 
           {/* ─── Resource viewer (shared — both admin and student) ─── */}

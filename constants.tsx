@@ -50,6 +50,7 @@ export const NAVIGATION: NavItem[] = [
   ]},
   // Student navigation — ungrouped
   { name: 'Home', iconSrc: '/assets/icons/icon-home.png', role: 'STUDENT' },
+  { name: 'Feedback', iconSrc: '/assets/icons/icon-grading.png', role: 'STUDENT' },
   // Learning group
   { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', role: 'STUDENT', group: 'learning' },
   { name: 'Calendar', iconSrc: '/assets/icons/icon-calendar.png', role: 'STUDENT', group: 'learning' },

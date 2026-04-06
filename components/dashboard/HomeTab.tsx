@@ -1,5 +1,6 @@
 
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Assignment, Submission, XPEvent } from '../../types';
 import {
   Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp, MessageSquare,
@@ -113,6 +114,8 @@ const HomeTab: React.FC<HomeTabProps> = ({
   performanceMode = false,
   teacherName,
 }) => {
+  const navigate = useNavigate();
+
   // Filter to active class, visible assignments only
   const classAssignments = useMemo(() =>
     assignments.filter(a => {
@@ -206,37 +209,21 @@ const HomeTab: React.FC<HomeTabProps> = ({
     <div key="home" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <h2 className="sr-only">Home</h2>
 
-      {/* New Feedback — unread teacher feedback items */}
+      {/* New Feedback — compact banner linking to /feedback */}
       {unreadFeedbackItems.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-400 mb-3">
-            <MessageSquare className="w-4 h-4 shrink-0" />
-            New Feedback
-            <span
-              className="ml-auto text-xs bg-amber-500/20 border border-amber-500/30 rounded-full px-2 py-0.5 font-black"
-              role="status"
-              aria-label={`${unreadFeedbackItems.length} unread feedback item${unreadFeedbackItems.length !== 1 ? 's' : ''}`}
-            >
-              {unreadFeedbackItems.length}
-            </span>
-          </h3>
-          <div className="space-y-2">
-            {unreadFeedbackItems.map(item => (
-              <button
-                key={item.submission.id}
-                onClick={() => onStartAssignment?.(item.assignmentId)}
-                className="w-full flex items-start gap-3 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/15 transition text-left focus-visible:ring-2 focus-visible:ring-amber-500"
-              >
-                <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-[var(--text-primary)] truncate">{item.assignmentTitle}</div>
-                  <div className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">{item.gradedBy}: "{item.feedbackPreview}"</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              </button>
-            ))}
-          </div>
-        </div>
+        <button
+          onClick={() => navigate('/feedback')}
+          className="w-full flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl hover:bg-amber-500/15 transition text-left"
+        >
+          <MessageSquare className="w-5 h-5 text-amber-500 shrink-0" />
+          <span className="text-sm font-medium text-[var(--text-primary)] flex-1">
+            You have {unreadFeedbackItems.length} unread feedback item{unreadFeedbackItems.length !== 1 ? 's' : ''}
+          </span>
+          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full shrink-0" role="status" aria-label={`${unreadFeedbackItems.length} unread feedback item${unreadFeedbackItems.length !== 1 ? 's' : ''}`}>
+            {unreadFeedbackItems.length}
+          </span>
+          <ChevronRight className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+        </button>
       )}
 
       {/* Up Next — most urgent incomplete assignment */}
