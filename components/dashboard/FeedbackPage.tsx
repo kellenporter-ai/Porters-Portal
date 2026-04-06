@@ -180,7 +180,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
       <button
         key={s.id}
         onClick={() => navigate(`/resources/${s.assignmentId}`)}
-        className={`w-full text-left bg-[var(--panel-bg)] border border-[var(--border)] border-l-[3px] ${classBorderAccent(classType)} rounded-xl p-4 transition-all focus-visible:ring-2 focus-visible:ring-purple-500 ${
+        className={`w-full text-left bg-[var(--panel-bg)] border border-[var(--border)] border-l-[3px] ${classBorderAccent(classType)} rounded-xl p-5 transition-all focus-visible:ring-2 focus-visible:ring-purple-500 ${
           dimmed
             ? 'opacity-50'
             : 'hover:border-[var(--border-strong)] hover:bg-[var(--surface-glass)]'
@@ -188,10 +188,10 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
       >
         {/* Row 1 — Identity */}
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 text-[9px] font-bold uppercase rounded border shrink-0 ${classBadgeClasses(classType)}`}>
+          <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border shrink-0 ${classBadgeClasses(classType)}`}>
             {classType}
           </span>
-          <span className="text-sm font-bold text-[var(--text-primary)] truncate">{s.assignmentTitle}</span>
+          <span className="text-base font-bold text-[var(--text-primary)] truncate">{s.assignmentTitle}</span>
           {grade.overallPercentage != null && (
             <span className={`ml-auto text-base font-bold shrink-0 ${gradeColor(grade.overallPercentage)} ${gradeBgColor(grade.overallPercentage)} px-2 py-0.5 rounded`}>
               {grade.overallPercentage}%
@@ -201,14 +201,14 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
 
         {/* Row 2 — Feedback preview */}
         {grade.teacherFeedback && (
-          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mt-2 line-clamp-2">
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed mt-3 line-clamp-3">
             {grade.teacherFeedback}
           </p>
         )}
 
         {/* Row 3 — Footer */}
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-[10px] text-[var(--text-muted)]">
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs text-[var(--text-muted)]">
             {grade.gradedBy || 'Your teacher'} · {gradedDate}
             {s.attemptNumber && s.attemptNumber > 1 && ` · Attempt ${s.attemptNumber}`}
           </span>
@@ -216,7 +216,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
             {!s.feedbackReviewedAt && (
               <button
                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleMarkReviewed(s.id); }}
-                className="px-3 py-1.5 text-[10px] font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition shadow-sm"
+                className="px-3 py-1.5 text-xs font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition shadow-sm"
               >
                 Mark Reviewed
               </button>
@@ -301,7 +301,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                   <button
                     key={key}
                     onClick={() => setActiveTab(key)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${
                       isActive
                         ? 'bg-purple-500/20 text-[var(--text-primary)]'
                         : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
@@ -348,7 +348,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setClassFilter('All')}
-                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border transition ${
+                    className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-lg border transition ${
                       classFilter === 'All'
                         ? 'bg-[var(--surface-glass)] text-[var(--text-primary)] border-[var(--border-strong)]'
                         : 'bg-[var(--panel-bg)] text-[var(--text-tertiary)] border-[var(--border)] hover:text-[var(--text-primary)]'
@@ -360,7 +360,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                     <button
                       key={cls}
                       onClick={() => setClassFilter(cls)}
-                      className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border transition ${classFilterClasses(cls, classFilter === cls)}`}
+                      className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-lg border transition ${classFilterClasses(cls, classFilter === cls)}`}
                     >
                       {cls}
                     </button>
