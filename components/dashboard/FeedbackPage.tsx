@@ -119,11 +119,10 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
   }, [assignments]);
 
   // Split submissions with teacher feedback into unread / read / reviewed
-  // Exclude submissions from deleted assignments (no classType resolvable)
+  // Exclude submissions whose assignment has been deleted
   const { unread, read, reviewed } = useMemo(() => {
     const withFeedback = submissions.filter(s =>
-      s.rubricGrade?.teacherFeedback &&
-      (classLookup.has(s.assignmentId) || (s.classType && s.classType !== 'Unknown'))
+      s.rubricGrade?.teacherFeedback && classLookup.has(s.assignmentId)
     );
     return {
       reviewed: withFeedback.filter(s => s.feedbackReviewedAt),
