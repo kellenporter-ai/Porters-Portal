@@ -815,15 +815,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
             </div>
             <div className="overflow-y-auto p-5 custom-scrollbar">
-              <Suspense fallback={<LazyFallback />}>
-                <RubricViewer
-                  rubric={activeAssignment.rubric}
-                  mode={existingSubmission?.rubricGrade ? 'results' : 'view'}
-                  rubricGrade={existingSubmission?.rubricGrade}
-                />
-              </Suspense>
               {existingSubmission?.rubricGrade && (
-                <div className="mt-4">
+                <>
                   {existingSubmission.rubricGrade.teacherFeedback && (
                     <div className="mb-4 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
@@ -833,14 +826,20 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                       <p className="text-base text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
                     </div>
                   )}
-                  <TierDefinitionsAccordion rubric={activeAssignment.rubric} isLight={isLight} />
-                  <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-center mt-3">
+                  <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-center mb-4">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
                     <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">Rubric Score</div>
                     <div className="text-xs text-[var(--text-muted)] mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
                   </div>
-                </div>
+                </>
               )}
+              <Suspense fallback={<LazyFallback />}>
+                <RubricViewer
+                  rubric={activeAssignment.rubric}
+                  mode={existingSubmission?.rubricGrade ? 'results' : 'view'}
+                  rubricGrade={existingSubmission?.rubricGrade}
+                />
+              </Suspense>
               {!existingSubmission?.rubricGrade && existingSubmission && (
                 <p className="text-[10px] text-[var(--text-muted)] mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
               )}

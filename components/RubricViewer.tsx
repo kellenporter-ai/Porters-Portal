@@ -124,8 +124,8 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
     onGradeChange(questionId, skillId, tierIndex);
   }, [mode, onGradeChange]);
 
-  // In grade mode, descriptors are always visible — no toggle needed
-  const showDescriptorsAlways = mode === 'grade';
+  // In grade and results mode, descriptors are always visible — no toggle needed
+  const showDescriptorsAlways = mode === 'grade' || mode === 'results';
 
   const handleSkillKeyDown = useCallback((e: React.KeyboardEvent, questionId: string, skillId: string) => {
     if (mode !== 'grade') return;
