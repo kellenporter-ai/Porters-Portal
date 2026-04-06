@@ -1764,6 +1764,17 @@ export const submitEngagement = onCall(async (request) => {
     transaction.set(rateLimitRef, { lastSubmitted: now }, { merge: true });
   });
 
+  // Look up student's section for this class
+  let userSection: string | undefined;
+  if (classType) {
+    const userSnap = await db.doc(`users/${uid}`).get();
+    if (userSnap.exists) {
+      const userData = userSnap.data()!;
+      userSection = userData.classSections?.[classType]
+        ?? ((userData.classType === classType || (userData.enrolledClasses || []).includes(classType)) ? userData.section : undefined);
+    }
+  }
+
   // Create submission
   const validatedMetrics = { engagementTime, keystrokes, pasteCount, tabSwitchCount };
   const submission = {
@@ -1778,6 +1789,8 @@ export const submitEngagement = onCall(async (request) => {
     privateComments: [],
     hasUnreadAdmin: false,
     hasUnreadStudent: false,
+    classType: classType || "",
+    ...(userSection ? { userSection } : {}),
   };
 
   await db.collection("submissions").add(submission);
@@ -2136,6 +2149,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     privateComments: [],
     hasUnreadAdmin: true,
     hasUnreadStudent: false,
+    classType: classType || "",
     ...(userSection ? { userSection } : {}),
     ...(sessionToken ? { sessionToken } : {}),
   };
@@ -2422,6 +2436,7 @@ export const submitOnBehalf = onCall(async (request) => {
     privateComments: [],
     hasUnreadAdmin: true,
     hasUnreadStudent: false,
+    classType: classType || "",
     submittedOnBehalfBy: request.auth!.uid,
     ...(userSection ? { userSection } : {}),
   };
