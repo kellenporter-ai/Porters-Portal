@@ -113,14 +113,21 @@ service cloud.firestore {
         ]);
 
       // Students can update their own non-assessment submissions; admin can update all
+      // Students can also write feedbackReadAt/feedbackReviewedAt on ANY of their own submissions (including assessments)
       allow update: if isAdmin() || (isAuthenticated() &&
-        resource.data.userId == request.auth.uid &&
-        resource.data.isAssessment != true &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['userId', 'userName', 'assignmentId', 'assignmentTitle',
-            'metrics', 'status', 'score', 'submittedAt', 'blockResponses',
-            'classType', 'section', 'lessonId', 'lessonTitle',
-            'feedbackReadAt', 'feedbackReviewedAt']));
+        resource.data.userId == request.auth.uid && (
+          // Non-assessment: full update with allowed keys
+          (resource.data.isAssessment != true &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['userId', 'userName', 'assignmentId', 'assignmentTitle',
+                'metrics', 'status', 'score', 'submittedAt', 'blockResponses',
+                'classType', 'section', 'lessonId', 'lessonTitle',
+                'feedbackReadAt', 'feedbackReviewedAt']))
+          ||
+          // Assessment: only feedback tracking fields
+          (request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['feedbackReadAt', 'feedbackReviewedAt']))
+        ));
 
       // Only admin can delete submissions
       allow delete: if isAdmin();
