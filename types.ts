@@ -538,6 +538,7 @@ export interface Submission {
   rubricGrade?: RubricGrade;
   aiSuggestedGrade?: AISuggestedGrade;
   userSection?: string;
+  classType?: string;
   flaggedAsAI?: boolean;
   flaggedAsAIBy?: string;
   flaggedAsAIAt?: string;

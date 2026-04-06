@@ -58,7 +58,7 @@ function classFilterClasses(classType: string, active: boolean): string {
 function groupByClass(items: Submission[], classLookup: Map<string, string>): { classType: string; items: Submission[] }[] {
   const groups = new Map<string, Submission[]>();
   for (const s of items) {
-    const ct = classLookup.get(s.assignmentId) || 'Unknown';
+    const ct = classLookup.get(s.assignmentId) || s.classType || 'Unknown';
     if (!groups.has(ct)) groups.set(ct, []);
     groups.get(ct)!.push(s);
   }
@@ -141,7 +141,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
     const allFeedback = [...unread, ...read, ...reviewed];
     const classSet = new Set<string>();
     for (const s of allFeedback) {
-      classSet.add(classLookup.get(s.assignmentId) || 'Unknown');
+      classSet.add(classLookup.get(s.assignmentId) || s.classType || 'Unknown');
     }
     return Array.from(classSet).sort();
   }, [unread, read, reviewed, classLookup]);
@@ -156,7 +156,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
     }
     // Apply class filter
     if (classFilter !== 'All') {
-      items = items.filter(s => (classLookup.get(s.assignmentId) || 'Unknown') === classFilter);
+      items = items.filter(s => (classLookup.get(s.assignmentId) || s.classType || 'Unknown') === classFilter);
     }
     // Apply sort
     return sortSubmissions(items, sortKey);
@@ -173,7 +173,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
   const renderCard = (s: Submission, dimmed: boolean = false) => {
     const grade = s.rubricGrade;
     if (!grade) return null;
-    const classType = classLookup.get(s.assignmentId) || 'Unknown';
+    const classType = classLookup.get(s.assignmentId) || s.classType || 'Unknown';
     const gradedDate = grade.gradedAt ? new Date(grade.gradedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 
     return (

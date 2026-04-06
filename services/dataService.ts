@@ -282,6 +282,7 @@ export const dataService = {
           flaggedAsAIAt: data.flaggedAsAIAt || '',
           feedbackReadAt: data.feedbackReadAt || undefined,
           feedbackReviewedAt: data.feedbackReviewedAt || undefined,
+          classType: data.classType || undefined,
         } as Submission;
       });
       callback(submissions);
@@ -324,6 +325,7 @@ export const dataService = {
           flaggedAsAIAt: data.flaggedAsAIAt || '',
           feedbackReadAt: data.feedbackReadAt || undefined,
           feedbackReviewedAt: data.feedbackReviewedAt || undefined,
+          classType: data.classType || undefined,
         } as Submission;
       });
       // Sort by submittedAt descending (client-side since we dropped orderBy to avoid index dep)
@@ -451,6 +453,7 @@ export const dataService = {
           flaggedAsAIAt: data.flaggedAsAIAt || '',
           feedbackReadAt: data.feedbackReadAt || undefined,
           feedbackReviewedAt: data.feedbackReviewedAt || undefined,
+          classType: data.classType || undefined,
         } as Submission;
       })
       // Sort client-side instead
