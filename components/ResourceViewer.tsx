@@ -830,11 +830,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                         <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Teacher Feedback</span>
                       </div>
-                      <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
+                      <p className="text-base text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
                     </div>
                   )}
-                  <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
+                  <TierDefinitionsAccordion rubric={activeAssignment.rubric} isLight={isLight} />
+                  <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-center mt-3">
+                    <div className="text-lg font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
                     <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">Rubric Score</div>
                     <div className="text-xs text-[var(--text-muted)] mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
                   </div>
