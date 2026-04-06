@@ -901,8 +901,10 @@ export const dataService = {
 
   markFeedbackReviewed: async (submissionId: string): Promise<void> => {
     try {
+      const now = new Date().toISOString();
       await updateDoc(doc(db, 'submissions', submissionId), {
-        feedbackReviewedAt: new Date().toISOString(),
+        feedbackReadAt: now,
+        feedbackReviewedAt: now,
       });
     } catch (error) {
       reportError(error, { method: 'markFeedbackReviewed', submissionId });

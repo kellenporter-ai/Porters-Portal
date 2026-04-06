@@ -23,9 +23,9 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
   const { unread, read, reviewed } = useMemo(() => {
     const withFeedback = submissions.filter(s => s.rubricGrade?.teacherFeedback);
     return {
-      unread: withFeedback.filter(s => !s.feedbackReadAt),
-      read: withFeedback.filter(s => s.feedbackReadAt && !s.feedbackReviewedAt),
       reviewed: withFeedback.filter(s => s.feedbackReviewedAt),
+      unread: withFeedback.filter(s => !s.feedbackReadAt && !s.feedbackReviewedAt),
+      read: withFeedback.filter(s => s.feedbackReadAt && !s.feedbackReviewedAt),
     };
   }, [submissions]);
 

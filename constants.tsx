@@ -51,8 +51,8 @@ export const NAVIGATION: NavItem[] = [
   // Student navigation — ungrouped
   { name: 'Home', iconSrc: '/assets/icons/icon-home.png', role: 'STUDENT' },
   // Learning group
-  { name: 'Feedback', iconSrc: '/assets/icons/icon-grading.png', role: 'STUDENT', group: 'learning' },
   { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', role: 'STUDENT', group: 'learning' },
+  { name: 'Feedback', iconSrc: '/assets/icons/icon-grading.png', role: 'STUDENT', group: 'learning' },
   { name: 'Calendar', iconSrc: '/assets/icons/icon-calendar.png', role: 'STUDENT', group: 'learning' },
   // Operations group
   { name: 'Agent Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations' },
