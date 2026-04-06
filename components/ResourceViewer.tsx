@@ -29,7 +29,7 @@ const LazyFallback = () => (
 
 /** Collapsible inline tier definitions shown in the results view after a rubric is graded. */
 const TierDefinitionsAccordion: React.FC<{ rubric: Rubric; isLight: boolean }> = ({ rubric, isLight }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   return (
     <div className="mt-3">
       <button
@@ -523,20 +523,20 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[var(--surface-base)]' : ''} flex items-center justify-center h-full`}>
         <div className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl w-full mx-4 backdrop-blur-md max-h-[90vh] flex flex-col ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
           {/* Scrollable content */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 p-8 pb-4">
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-6 pb-4">
             {/* Header */}
             <div className="text-center mb-6">
             {showScore ? (
-              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
+              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${
                 assessmentResult.percentage >= 80 ? 'bg-green-500/20 text-green-400' :
                 assessmentResult.percentage >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
                 'bg-red-500/20 text-red-400'
               }`}>
-                <span className="text-3xl font-bold">{assessmentResult.percentage}%</span>
+                <span className="text-sm font-bold">{assessmentResult.percentage}%</span>
               </div>
             ) : (
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-purple-500/20 text-[var(--accent-text)]">
-                <CheckCircle2 className="w-10 h-10" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 bg-purple-500/20 text-[var(--accent-text)]">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
             )}
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-1">
@@ -561,7 +561,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
           {/* Performance feedback */}
           {feedbackMessage && (
-            <div className={`rounded-lg px-4 py-3 mb-5 text-center text-sm ${
+            <div className={`rounded-lg px-4 py-3 mb-3 text-center text-sm ${
               assessmentResult.percentage >= 80 ? 'bg-green-500/10 text-green-300 border border-green-500/20'
               : assessmentResult.percentage >= 60 ? 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20'
               : 'bg-red-500/10 text-red-300 border border-red-500/20'
@@ -583,27 +583,27 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
           {showScore && (
             <>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-green-400">{assessmentResult.correct}</div>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-[var(--panel-bg)] rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-green-400">{assessmentResult.correct}</div>
                   <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Correct</div>
                 </div>
-                <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-[var(--text-secondary)]">{assessmentResult.total}</div>
+                <div className="bg-[var(--panel-bg)] rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-[var(--text-secondary)]">{assessmentResult.total}</div>
                   <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total</div>
                 </div>
-                <div className="bg-[var(--panel-bg)] rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">+{assessmentResult.xpEarned}</div>
+                <div className="bg-[var(--panel-bg)] rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-amber-700 dark:text-amber-400">+{assessmentResult.xpEarned}</div>
                   <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">XP Earned</div>
                 </div>
               </div>
 
               {/* Per-question results with proper numbering */}
-              <div className="space-y-1.5 max-h-48 overflow-y-auto mb-6 custom-scrollbar">
+              <div className="space-y-1 max-h-32 overflow-y-auto mb-4 custom-scrollbar">
                 {blockEntries.map(([blockId, result], index) => {
                   const isPending = result.needsReview;
                   return (
-                    <div key={blockId} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+                    <div key={blockId} className={`flex items-center gap-2 text-xs px-2 py-1 rounded-lg ${
                       isPending ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                         : result.correct ? 'bg-green-500/10 text-green-300'
                         : 'bg-red-500/10 text-red-300'
@@ -637,7 +637,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Teacher Feedback</span>
               </div>
-              <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
+              <p className="text-base text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
               <p className="text-xs text-[var(--text-muted)] mt-2">
                 Graded by {existingSubmission.rubricGrade.gradedBy}
                 {existingSubmission.rubricGrade.gradedAt && (
@@ -663,7 +663,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   Your teacher will grade rubric-assessed questions. Check back for results.
                 </p>
               )}
-              <div className="max-h-64 overflow-y-auto custom-scrollbar">
+              <div className="max-h-96 overflow-y-auto custom-scrollbar">
                 <Suspense fallback={<LazyFallback />}>
                   <RubricViewer
                     rubric={activeAssignment.rubric}
@@ -681,7 +681,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
           {/* Retake info panel */}
           {canRetake && showScore && incorrectCount > 0 && (
-            <div className="bg-purple-500/5 border border-purple-500/15 rounded-lg p-3 mb-4">
+            <div className="bg-purple-500/5 border border-purple-500/15 rounded-lg p-2 mb-3">
               <p className="text-xs text-purple-300 font-medium mb-1">Ready to try again?</p>
               <p className="text-[11px] text-purple-300/70">
                 You missed {incorrectCount} question{incorrectCount !== 1 ? 's' : ''}{pendingCount > 0 ? ` and ${pendingCount} ${pendingCount === 1 ? 'is' : 'are'} pending review` : ''}.
@@ -694,11 +694,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           </div>{/* end scrollable content */}
 
           {/* Sticky action buttons — always visible at bottom of card */}
-          <div className="flex gap-3 p-6 pt-4 border-t border-[var(--border)] shrink-0 rounded-b-2xl">
+          <div className="flex gap-3 p-4 pt-3 border-t border-[var(--border)] shrink-0 rounded-b-2xl">
             {canRetake && (
               <button
                 onClick={handleRetake}
-                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition text-sm"
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl transition text-sm"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Retake{!isUnlimited ? ` (${attemptsRemaining} left)` : ''}</span>
@@ -707,14 +707,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             {config.showReviewAfterSubmit !== false && existingSubmission?.blockResponses && Object.keys(existingSubmission.blockResponses).length > 0 && (
               <button
                 onClick={() => setReviewMode(true)}
-                className="flex-1 flex items-center justify-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-bold py-3 rounded-xl transition text-sm"
+                className="flex-1 flex items-center justify-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-bold py-2.5 rounded-xl transition text-sm"
               >
                 <Eye className="w-4 h-4" /> Review My Work
               </button>
             )}
             <button
               onClick={handleExit}
-              className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] font-bold py-3 rounded-xl transition text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] font-bold py-2.5 rounded-xl transition text-sm"
             >
               <ArrowLeft className="w-4 h-4" /> {canRetake ? 'Review Later' : 'Exit'}
             </button>
