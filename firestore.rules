@@ -64,7 +64,7 @@ service cloud.firestore {
             && (
               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['gamification'])
               || request.resource.data.gamification.diff(resource.data.gamification).affectedKeys()
-                  .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeQuests', 'selectedCharacterModel'])
+                  .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeQuests', 'selectedCharacterModel', 'dismissedAnnouncements'])
             ));
       
       // Only admin can delete user profiles
