@@ -8,9 +8,9 @@
   --surface-base: #f8f7fc;
   --surface-raised: #ffffff;
   --surface-sunken: #f0eef5;
-  --surface-overlay: rgba(255, 255, 255, 0.92);
-  --surface-glass: rgba(124, 58, 237, 0.04);
-  --surface-glass-heavy: rgba(124, 58, 237, 0.08);
+  --surface-overlay: #f5f3fa;
+  --surface-glass: #f0edf7;
+  --surface-glass-heavy: #e8e3f2;
   --text-primary: #1e1233;
   --text-secondary: #4a4560;
   --text-tertiary: #6a6580;
@@ -34,7 +34,7 @@
   --focus-ring: #7c3aed;
   --ring-offset: #f8f7fc;
   --backdrop: rgba(30, 18, 51, 0.25);
-  --panel-bg: rgba(255, 255, 255, 0.85);
+  --panel-bg: #f7f5fc;
   --glass-glow: 0 0 0 1px rgba(124, 58, 237, 0.10), 0 4px 12px rgba(90, 70, 120, 0.10), 0 1px 3px rgba(90, 70, 120, 0.06);
   --toggle-off: #d8d0e8;
   --success: #059669;
@@ -47,13 +47,13 @@
   --surface-base: #0f0720;
   --surface-raised: #1a0d35;
   --surface-sunken: #0a0518;
-  --surface-overlay: rgba(15, 7, 32, 0.95);
-  --surface-glass: rgba(255, 255, 255, 0.05);
-  --surface-glass-heavy: rgba(255, 255, 255, 0.10);
+  --surface-overlay: #0d0620;
+  --surface-glass: #160e2a;
+  --surface-glass-heavy: #1e1338;
   --text-primary: #e9d5ff;
   --text-secondary: #d1d5db;
   --text-tertiary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-muted: #b0b8c4;
   --text-inverted: #0f0720;
   --accent: #a855f7;
   --accent-hover: #9333ea;
@@ -73,7 +73,7 @@
   --focus-ring: #a78bfa;
   --ring-offset: #0f0720;
   --backdrop: rgba(0, 0, 0, 0.80);
-  --panel-bg: rgba(0, 0, 0, 0.40);
+  --panel-bg: #130a28;
   --glass-glow: none;
   --toggle-off: rgba(255, 255, 255, 0.12);
   --success: #10b981;

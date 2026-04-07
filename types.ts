@@ -411,6 +411,13 @@ export interface RubricGrade {
   gradedAt: string;
   gradedBy: string;
   teacherFeedback?: string;
+  feedbackHistory?: FeedbackHistoryEntry[];
+}
+
+export interface FeedbackHistoryEntry {
+  feedback: string;
+  timestamp: string;
+  gradedBy: string;
 }
 
 // AI Grading Assistant types
@@ -535,6 +542,7 @@ export interface Submission {
     perBlock: Record<string, { correct: boolean; answer: unknown; needsReview?: boolean }>;
   };
   blockResponses?: Record<string, unknown>;
+  studentNotes?: Record<string, string>;
   rubricGrade?: RubricGrade;
   aiSuggestedGrade?: AISuggestedGrade;
   userSection?: string;

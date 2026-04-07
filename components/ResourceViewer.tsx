@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, UserRole, TelemetryMetrics, Submission, Rubric } from '../types';
+import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAssignments } from '../lib/AppDataContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
@@ -8,7 +8,7 @@ import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, X, BookOpen, Clock, Bot, Home, Eye, LogOut, ChevronDown, ChevronRight, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, CheckCircle2, AlertTriangle, X, BookOpen, Bot, Home, Eye, LogOut, MessageSquare, ChevronDown } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -19,6 +19,7 @@ const Proctor = lazyWithRetry(() => import('./Proctor'));
 const ReviewQuestions = lazyWithRetry(() => import('./ReviewQuestions'));
 const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
 const StudyMaterial = lazyWithRetry(() => import('./StudyMaterial'));
+const AssessmentWorkspace = lazyWithRetry(() => import('./AssessmentWorkspace'));
 const LessonBlocks = lazyWithRetry(() => import('./LessonBlocks').then(m => ({ default: m.default })));
 
 const LazyFallback = () => (
@@ -27,44 +28,7 @@ const LazyFallback = () => (
   </div>
 );
 
-/** Collapsible inline tier definitions shown in the results view after a rubric is graded. */
-const TierDefinitionsAccordion: React.FC<{ rubric: Rubric; isLight: boolean }> = ({ rubric, isLight }) => {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className={`flex items-center gap-1.5 text-xs font-bold transition ${isLight ? 'text-amber-700 hover:text-amber-800' : 'text-amber-400 hover:text-amber-300'}`}
-      >
-        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        Tier definitions — what does each level mean?
-      </button>
-      {open && (
-        <div className="mt-2 space-y-3 border border-[var(--border)] rounded-xl p-3 bg-[var(--surface-glass)]">
-          {rubric.questions.map(q => (
-            <div key={q.id}>
-              <p className="text-xs font-bold text-[var(--text-secondary)] mb-1.5">{q.questionLabel}</p>
-              {q.skills.map(skill => (
-                <div key={skill.id} className="mb-2 last:mb-0">
-                  <p className="text-xs text-[var(--text-muted)] italic mb-1">{skill.skillText}</p>
-                  <div className="space-y-1">
-                    {skill.tiers.map(tier => (
-                      <div key={tier.label} className="flex gap-2 text-sm leading-relaxed">
-                        <span className={`shrink-0 font-bold w-24 text-xs ${isLight ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>{tier.label} ({tier.percentage}%)</span>
-                        <span className="text-sm text-[var(--text-primary)] leading-relaxed">{tier.descriptor}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+
 
 interface ResourceViewerProps {
   user: User;
@@ -90,6 +54,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [answeredBlocks, setAnsweredBlocks] = useState(0);
   const [totalBlocks, setTotalBlocks] = useState(0);
 
+  // Live block responses for AssessmentWorkspace taking-mode sidebar
+  const [liveBlockResponses, setLiveBlockResponses] = useState<Record<string, unknown>>({});
+
   // Save & Exit state
   const [isSavingExit, setIsSavingExit] = useState(false);
   const [showSaveFailedModal, setShowSaveFailedModal] = useState(false);
@@ -113,6 +80,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [showRubric, setShowRubric] = useState(false);
   const [existingSubmission, setExistingSubmission] = useState<Submission | null>(null);
   const [reviewMode, setReviewMode] = useState(false);
+  const [studyNotesExpanded, setStudyNotesExpanded] = useState(true);
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
@@ -504,223 +472,25 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     const canRetake = config.allowResubmission !== false &&
       (config.maxAttempts === 0 || !config.maxAttempts || assessmentResult.attemptNumber < config.maxAttempts);
     const isUnlimited = config.maxAttempts === 0 || !config.maxAttempts;
-    const attemptsRemaining = isUnlimited ? Infinity : (config.maxAttempts! - assessmentResult.attemptNumber);
+    const attemptsRemaining = isUnlimited ? null : (config.maxAttempts! - assessmentResult.attemptNumber);
     const showScore = config.showScoreOnSubmit !== false;
-    const blockEntries = Object.entries(assessmentResult.perBlock);
-    const incorrectCount = blockEntries.filter(([, r]) => !r.correct && !r.needsReview).length;
-    const pendingCount = blockEntries.filter(([, r]) => r.needsReview).length;
-
-    // Performance-based feedback message
-    const feedbackMessage = !showScore ? null
-      : assessmentResult.status === 'FLAGGED' ? null
-      : assessmentResult.percentage >= 90 ? 'Excellent work! You demonstrated strong understanding.'
-      : assessmentResult.percentage >= 80 ? 'Great job! You have a solid grasp of this material.'
-      : assessmentResult.percentage >= 70 ? 'Good effort! Review the questions you missed and consider retaking.'
-      : assessmentResult.percentage >= 50 ? 'You\'re getting there. Focus on the incorrect questions and try again.'
-      : 'This material needs more review. Study the content and retake when ready.';
 
     return (
-      <div className={`${isAssessment ? 'fixed inset-0 z-50 bg-[var(--surface-base)]' : ''} flex items-center justify-center h-full`}>
-        <div className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl w-full mx-4 backdrop-blur-md max-h-[90vh] flex flex-col ${activeAssignment.rubric ? 'max-w-2xl' : 'max-w-lg'}`}>
-          {/* Scrollable content */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 p-6 pb-4">
-            {/* Header */}
-            <div className="text-center mb-6">
-            {showScore ? (
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${
-                assessmentResult.percentage >= 80 ? 'bg-green-500/20 text-green-400' :
-                assessmentResult.percentage >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
-                'bg-red-500/20 text-red-400'
-              }`}>
-                <span className="text-sm font-bold">{assessmentResult.percentage}%</span>
-              </div>
-            ) : (
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 bg-purple-500/20 text-[var(--accent-text)]">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-            )}
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-1">
-              {showScore ? 'Assessment Complete' : 'Assessment Submitted'}
-            </h2>
-            {/* Attempt tracker with remaining info */}
-            <p className="text-sm text-[var(--text-tertiary)]">
-              {isUnlimited
-                ? `Attempt ${assessmentResult.attemptNumber}`
-                : `Attempt ${assessmentResult.attemptNumber} of ${config.maxAttempts}`
-              }
-            </p>
-            {canRetake && !isUnlimited && (
-              <p className="text-xs text-[var(--accent-text)] mt-1">
-                {attemptsRemaining === 1 ? '1 attempt remaining' : `${attemptsRemaining} attempts remaining`}
-              </p>
-            )}
-            {!canRetake && config.allowResubmission !== false && (
-              <p className="text-xs text-[var(--text-muted)] mt-1">No attempts remaining</p>
-            )}
-          </div>
-
-          {/* Performance feedback */}
-          {feedbackMessage && (
-            <div className={`rounded-lg px-4 py-3 mb-3 text-center text-sm ${
-              assessmentResult.percentage >= 80 ? 'bg-green-500/10 text-green-300 border border-green-500/20'
-              : assessmentResult.percentage >= 60 ? 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20'
-              : 'bg-red-500/10 text-red-300 border border-red-500/20'
-            }`}>
-              {feedbackMessage}
-            </div>
-          )}
-
-          {/* FLAGGED banner — shown regardless of showScore setting */}
-          {assessmentResult.status === 'FLAGGED' && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold mb-0.5">Submission flagged for review</p>
-                <p className="text-amber-700 dark:text-amber-300/80">Your teacher will follow up. You may retake the assessment if attempts are available.</p>
-              </div>
-            </div>
-          )}
-
-          {showScore && (
-            <>
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="bg-[var(--panel-bg)] rounded-xl p-2 text-center">
-                  <div className="text-lg font-bold text-green-400">{assessmentResult.correct}</div>
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Correct</div>
-                </div>
-                <div className="bg-[var(--panel-bg)] rounded-xl p-2 text-center">
-                  <div className="text-lg font-bold text-[var(--text-secondary)]">{assessmentResult.total}</div>
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total</div>
-                </div>
-                <div className="bg-[var(--panel-bg)] rounded-xl p-2 text-center">
-                  <div className="text-lg font-bold text-amber-700 dark:text-amber-400">+{assessmentResult.xpEarned}</div>
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">XP Earned</div>
-                </div>
-              </div>
-
-              {/* Per-question results with proper numbering */}
-              <div className="space-y-1 max-h-32 overflow-y-auto mb-4 custom-scrollbar">
-                {blockEntries.map(([blockId, result], index) => {
-                  const isPending = result.needsReview;
-                  return (
-                    <div key={blockId} className={`flex items-center gap-2 text-xs px-2 py-1 rounded-lg ${
-                      isPending ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                        : result.correct ? 'bg-green-500/10 text-green-300'
-                        : 'bg-red-500/10 text-red-300'
-                    }`}>
-                      {isPending ? <Clock className="w-3.5 h-3.5 shrink-0" />
-                        : result.correct ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                        : <XCircle className="w-3.5 h-3.5 shrink-0" />}
-                      <span className="truncate">Question {index + 1}</span>
-                      <span className="ml-auto font-bold">
-                        {isPending ? 'Pending Review' : result.correct ? 'Correct' : 'Incorrect'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* Score hidden message */}
-          {!showScore && (
-            <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-4 mb-6 text-center">
-              <p className="text-sm text-[var(--text-secondary)]">Your responses have been recorded.</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Your teacher will review your submission and share results.</p>
-            </div>
-          )}
-
-          {/* Teacher Feedback — prominent banner, shown above score breakdown when present */}
-          {existingSubmission?.rubricGrade?.teacherFeedback && (
-            <div className="mb-5 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Teacher Feedback</span>
-              </div>
-              <p className="text-base text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
-              <p className="text-xs text-[var(--text-muted)] mt-2">
-                Graded by {existingSubmission.rubricGrade.gradedBy}
-                {existingSubmission.rubricGrade.gradedAt && (
-                  <> · {new Date(existingSubmission.rubricGrade.gradedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* Rubric section in results */}
-          {activeAssignment.rubric && (
-            <div className="mb-6">
-              <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" /> Assessment Rubric
-              </h4>
-              {existingSubmission?.rubricGrade ? (
-                <div className="mb-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-3 text-center">
-                  <span className="text-sm font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</span>
-                  <span className="text-xs text-[var(--text-muted)] ml-2">Rubric Score</span>
-                </div>
-              ) : (
-                <p className="text-xs text-[var(--text-muted)] mb-3 text-center italic">
-                  Your teacher will grade rubric-assessed questions. Check back for results.
-                </p>
-              )}
-              <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                <Suspense fallback={<LazyFallback />}>
-                  <RubricViewer
-                    rubric={activeAssignment.rubric}
-                    mode={existingSubmission?.rubricGrade ? 'results' : 'view'}
-                    rubricGrade={existingSubmission?.rubricGrade}
-                  />
-                </Suspense>
-              </div>
-              {/* Inline collapsible tier definitions */}
-              {existingSubmission?.rubricGrade && (
-                <TierDefinitionsAccordion rubric={activeAssignment.rubric} isLight={isLight} />
-              )}
-            </div>
-          )}
-
-          {/* Retake info panel */}
-          {canRetake && showScore && incorrectCount > 0 && (
-            <div className="bg-purple-500/5 border border-purple-500/15 rounded-lg p-2 mb-3">
-              <p className="text-xs text-purple-300 font-medium mb-1">Ready to try again?</p>
-              <p className="text-[11px] text-purple-300/70">
-                You missed {incorrectCount} question{incorrectCount !== 1 ? 's' : ''}{pendingCount > 0 ? ` and ${pendingCount} ${pendingCount === 1 ? 'is' : 'are'} pending review` : ''}.
-                Retaking will load your previous answers so you can edit and resubmit.
-                {!isUnlimited && ` You have ${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} left.`}
-              </p>
-            </div>
-          )}
-
-          </div>{/* end scrollable content */}
-
-          {/* Sticky action buttons — always visible at bottom of card */}
-          <div className="flex gap-3 p-4 pt-3 border-t border-[var(--border)] shrink-0 rounded-b-2xl">
-            {canRetake && (
-              <button
-                onClick={handleRetake}
-                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl transition text-sm"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Retake{!isUnlimited ? ` (${attemptsRemaining} left)` : ''}</span>
-              </button>
-            )}
-            {config.showReviewAfterSubmit !== false && existingSubmission?.blockResponses && Object.keys(existingSubmission.blockResponses).length > 0 && (
-              <button
-                onClick={() => setReviewMode(true)}
-                className="flex-1 flex items-center justify-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-bold py-2.5 rounded-xl transition text-sm"
-              >
-                <Eye className="w-4 h-4" /> Review My Work
-              </button>
-            )}
-            <button
-              onClick={handleExit}
-              className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] font-bold py-2.5 rounded-xl transition text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" /> {canRetake ? 'Review Later' : 'Exit'}
-            </button>
-          </div>
-        </div>
-      </div>
+      <Suspense fallback={<LazyFallback />}>
+        <AssessmentWorkspace
+          mode="results"
+          activeAssignment={activeAssignment}
+          assessmentResult={assessmentResult}
+          existingSubmission={existingSubmission}
+          showScore={showScore}
+          canRetake={canRetake}
+          attemptsRemaining={attemptsRemaining}
+          isUnlimited={isUnlimited}
+          onRetake={handleRetake}
+          onExit={handleExit}
+          onReviewWork={() => setReviewMode(true)}
+        />
+      </Suspense>
     );
   }
 
@@ -805,7 +575,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {/* Rubric modal */}
       {showRubric && activeAssignment?.rubric && (
         <div className="fixed inset-0 z-[55] bg-[var(--backdrop)] flex items-center justify-center p-4">
-          <div className="bg-[var(--surface-raised)] dark:bg-[#1a0d35]/95 dark:backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-xl">
+          <div className="bg-[var(--surface-raised)] dark:bg-[#1a0d35]/95 dark:backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-5xl w-full max-h-[85vh] flex flex-col shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-[var(--border)] shrink-0">
               <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}
@@ -951,9 +721,131 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
       <div className="flex-1 overflow-hidden relative">
         <Suspense fallback={<LazyFallback />}>
-          {assignViewMode === 'WORK' && (
+          {assignViewMode === 'WORK' && isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && (
+            <Suspense fallback={<LazyFallback />}>
+              <AssessmentWorkspace
+                mode="taking"
+                activeAssignment={activeAssignment}
+                existingSubmission={existingSubmission}
+                lessonBlocks={activeAssignment.lessonBlocks}
+                blockResponses={liveBlockResponses}
+                onScrollToBlock={(blockId) => {
+                  document.getElementById(`block-${blockId}`)?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onSubmit={handleAssessmentSubmit}
+                onExit={handleSaveAndExit}
+              >
+                {/* Study Notes banner for retakes */}
+                {isRetakingRef.current && existingSubmission?.studentNotes && Object.keys(existingSubmission.studentNotes).length > 0 && (() => {
+                  const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
+                  const interactiveBlocks = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type));
+                  const notes = existingSubmission.studentNotes;
+                  return (
+                    <div className="mx-1 mb-3 bg-amber-500/5 border border-amber-500/20 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setStudyNotesExpanded(prev => !prev)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-amber-500/5 transition-colors"
+                      >
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                          Your Study Notes
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-amber-700 dark:text-amber-400 transition-transform ${studyNotesExpanded ? '' : '-rotate-90'}`} />
+                      </button>
+                      {studyNotesExpanded && (
+                        <div className="px-4 pb-3 space-y-2">
+                          {interactiveBlocks.map((block, idx) => {
+                            const note = notes[block.id];
+                            if (!note) return null;
+                            return (
+                              <div key={block.id} className="text-sm">
+                                <span className="font-semibold text-[var(--text-primary)]">Question {idx + 1}: </span>
+                                <span
+                                  className="text-[var(--text-secondary)]"
+                                  style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+                                  onCopy={(e) => e.preventDefault()}
+                                >
+                                  {note}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <Proctor
+                  flushRef={flushRef}
+                  onComplete={handleEngagementComplete}
+                  onBlockProgress={(completed) => {
+                    const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
+                    const total = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
+                    setBlockProgress(total > 0 ? completed / total : 0);
+                    setAnsweredBlocks(completed);
+                    setTotalBlocks(total);
+                    // Update live responses for AssessmentWorkspace sidebar
+                    if (getMetricsAndResponsesRef.current) {
+                      const { responses } = getMetricsAndResponsesRef.current();
+                      setLiveBlockResponses(responses as Record<string, unknown>);
+                    }
+                  }}
+                  contentUrl={activeAssignment.contentUrl}
+                  htmlContent={activeAssignment.htmlContent}
+                  userId={user.id}
+                  assignmentId={activeAssignment.id}
+                  classType={activeAssignment.classType}
+                  lessonBlocks={activeAssignment.lessonBlocks}
+                  isAssessment={isAssessment}
+                  onGetMetricsAndResponses={getMetricsAndResponsesRef}
+                  onSessionToken={(token) => { sessionTokenRef.current = token; }}
+                  previewMode={isPreview}
+                  hasSidebar={true}
+                />
+              </AssessmentWorkspace>
+            </Suspense>
+          )}
+          {assignViewMode === 'WORK' && !(isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current)) && (
             <div className="h-full flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col">
+                {/* Study Notes banner for retakes (non-assessment or preview path) */}
+                {isRetakingRef.current && existingSubmission?.studentNotes && Object.keys(existingSubmission.studentNotes).length > 0 && (() => {
+                  const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
+                  const interactiveBlocks = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type));
+                  const notes = existingSubmission.studentNotes;
+                  return (
+                    <div className="mx-1 mb-3 bg-amber-500/5 border border-amber-500/20 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setStudyNotesExpanded(prev => !prev)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-amber-500/5 transition-colors"
+                      >
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                          Your Study Notes
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-amber-700 dark:text-amber-400 transition-transform ${studyNotesExpanded ? '' : '-rotate-90'}`} />
+                      </button>
+                      {studyNotesExpanded && (
+                        <div className="px-4 pb-3 space-y-2">
+                          {interactiveBlocks.map((block, idx) => {
+                            const note = notes[block.id];
+                            if (!note) return null;
+                            return (
+                              <div key={block.id} className="text-sm">
+                                <span className="font-semibold text-[var(--text-primary)]">Question {idx + 1}: </span>
+                                <span
+                                  className="text-[var(--text-secondary)]"
+                                  style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+                                  onCopy={(e) => e.preventDefault()}
+                                >
+                                  {note}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <Proctor
                   flushRef={flushRef}
                   onComplete={handleEngagementComplete}

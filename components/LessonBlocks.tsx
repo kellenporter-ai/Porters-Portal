@@ -1254,6 +1254,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
           {blocks.map((block, index) => (
             <div
               key={block.id}
+              id={`block-${block.id}`}
               ref={(el) => { if (el) blockRefs.current.set(block.id, el); else blockRefs.current.delete(block.id); }}
               tabIndex={-1}
               className={`block-reveal ${block.type === 'DIVIDER' ? '' : 'bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-5'}`}

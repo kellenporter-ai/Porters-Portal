@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Bot, Sparkles, AlertTriangle, Eye } from 'lucide-react';
+import { CheckCircle, Bot, Sparkles, AlertTriangle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import type { StudentGroup, UnifiedEntry } from './gradingHelpers';
 import type { User } from '../../types';
 import { getScoreColor, formatLastSeen } from './gradingHelpers';
@@ -146,6 +146,29 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                 <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-400' : getScoreColor(displayPct)}`}>
                   {group.isInProgress ? '\u2014' : `${displayPct}%`}
                 </span>
+                {/* Feedback read status badges */}
+                {group.hasRubricGrade && group.best.rubricGrade?.teacherFeedback && (
+                  <div className="ml-1" aria-label="Feedback read status">
+                    {group.best.feedbackReadAt ? (
+                      group.best.feedbackReviewedAt ? (
+                        <span className="text-[9px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback reviewed">
+                          <CheckCircle2 className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
+                          Reviewed
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback read">
+                          <Eye className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
+                          Read
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-[9px] font-bold bg-[var(--text-muted)]/20 text-[var(--text-muted)] px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback unread">
+                        <EyeOff className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
+                        Unread
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           }

@@ -1,5 +1,5 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry } from '../types';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry } from '../types';
 import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -848,6 +848,20 @@ export const dataService = {
       // Check if submission is AI-flagged — grading implies teacher cleared it
       const snap = await getDoc(doc(db, 'submissions', submissionId));
       const prev = snap.data();
+      
+      // Preserve existing feedback history if present
+      const existingFeedbackHistory = rubricGrade.feedbackHistory || [];
+      
+      // If the old rubricGrade has teacherFeedback, prepend it to history
+      if (prev?.rubricGrade?.teacherFeedback) {
+        const oldEntry: FeedbackHistoryEntry = {
+          feedback: prev.rubricGrade.teacherFeedback,
+          timestamp: prev.rubricGrade.gradedAt || new Date().toISOString(),
+          gradedBy: prev.rubricGrade.gradedBy || '',
+        };
+        rubricGrade.feedbackHistory = [oldEntry, ...existingFeedbackHistory].slice(0, 20);
+      }
+      
       const updatePayload: Record<string, unknown> = {
         rubricGrade,
         score: rubricGrade.overallPercentage,
@@ -889,10 +903,20 @@ export const dataService = {
   /**
    * Mark teacher feedback as read by the student.
    * Writes feedbackReadAt (ISO timestamp) to the submission document.
-   * No-op if feedbackReadAt is already set (idempotent).
+   * Awards 5 XP only if feedbackReadAt was not previously set.
    */
   markFeedbackRead: async (submissionId: string): Promise<void> => {
     try {
+      // First check if feedbackReadAt is already set
+      const snap = await getDoc(doc(db, 'submissions', submissionId));
+      const data = snap.data();
+      
+      // Only award XP if not already set
+      if (!data?.feedbackReadAt) {
+        await dataService.awardXP(data?.userId, 5);
+      }
+      
+      // Always update the timestamp
       await updateDoc(doc(db, 'submissions', submissionId), {
         feedbackReadAt: new Date().toISOString(),
       });
@@ -902,12 +926,26 @@ export const dataService = {
     }
   },
 
+  /**
+   * Mark teacher feedback as reviewed by the student.
+   * Writes feedbackReviewedAt (ISO timestamp) to the submission document.
+   * Awards 10 XP only if feedbackReviewedAt was not previously set.
+   */
   markFeedbackReviewed: async (submissionId: string): Promise<void> => {
     try {
-      const now = new Date().toISOString();
+      // First check if feedbackReviewedAt is already set
+      const snap = await getDoc(doc(db, 'submissions', submissionId));
+      const data = snap.data();
+      
+      // Only award XP if not already set
+      if (!data?.feedbackReviewedAt) {
+        await dataService.awardXP(data?.userId, 10);
+      }
+      
+      // Always update the timestamp
       await updateDoc(doc(db, 'submissions', submissionId), {
-        feedbackReadAt: now,
-        feedbackReviewedAt: now,
+        feedbackReadAt: new Date().toISOString(),
+        feedbackReviewedAt: new Date().toISOString(),
       });
     } catch (error) {
       reportError(error, { method: 'markFeedbackReviewed', submissionId });
@@ -999,6 +1037,30 @@ export const dataService = {
       });
     } catch (error) {
       reportError(error, { method: 'dismissAISuggestedGrade' });
+      throw error;
+    }
+  },
+
+  /** Save a student note for a specific block on a submission. */
+  saveStudentNote: async (submissionId: string, blockId: string, note: string): Promise<void> => {
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        [`studentNotes.${blockId}`]: note,
+      });
+    } catch (error) {
+      reportError(error, { method: 'saveStudentNote' });
+      throw error;
+    }
+  },
+
+  /** Get all student notes for a submission. */
+  getStudentNotes: async (submissionId: string): Promise<Record<string, string>> => {
+    try {
+      const snap = await getDoc(doc(db, 'submissions', submissionId));
+      if (!snap.exists()) return {};
+      return (snap.data()?.studentNotes as Record<string, string>) ?? {};
+    } catch (error) {
+      reportError(error, { method: 'getStudentNotes' });
       throw error;
     }
   },
@@ -1726,6 +1788,153 @@ export const dataService = {
     if (!snap.exists()) return null;
     const data = snap.data();
     return data.streakData || null;
+  },
+
+  // ========================================
+  // TEACHER SNIPPETS
+  // ========================================
+
+  /**
+   * Get all snippets for a teacher.
+   * Reads from Firestore collection 'teacherSnippets' using doc ID = teacherUid.
+   */
+  getTeacherSnippets: async (teacherUid: string): Promise<Array<{ id: string; text: string; label: string; createdAt: string }>> => {
+    try {
+      const docRef = doc(db, 'teacherSnippets', teacherUid);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        return [];
+      }
+      
+      const snippets = docSnap.data().snippets || [];
+      return snippets.map((s: any) => ({
+        id: s.id,
+        text: s.text,
+        label: s.label,
+        createdAt: s.createdAt || new Date().toISOString(),
+      }));
+    } catch (error) {
+      reportError(error, { method: 'getTeacherSnippets', teacherUid });
+      return [];
+    }
+  },
+
+  /**
+   * Save a new snippet for a teacher.
+   * Caps at 50 snippets, dropping the oldest if needed.
+   */
+  saveTeacherSnippet: async (teacherUid: string, snippet: { text: string; label: string }): Promise<void> => {
+    try {
+      const docRef = doc(db, 'teacherSnippets', teacherUid);
+      const docSnap = await getDoc(docRef);
+      
+      let existingSnippets: any[] = [];
+      if (docSnap.exists()) {
+        existingSnippets = docSnap.data().snippets || [];
+      }
+      
+      const newSnippet = {
+        id: crypto.randomUUID(),
+        text: snippet.text,
+        label: snippet.label,
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Cap at 50 snippets
+      if (existingSnippets.length >= 50) {
+        existingSnippets.shift(); // Remove oldest
+      }
+      
+      existingSnippets.push(newSnippet);
+      
+      await setDoc(docRef, { snippets: existingSnippets }, { merge: true });
+    } catch (error) {
+      reportError(error, { method: 'saveTeacherSnippet', teacherUid });
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a specific snippet by ID.
+   */
+  deleteTeacherSnippet: async (teacherUid: string, snippetId: string): Promise<void> => {
+    try {
+      const docRef = doc(db, 'teacherSnippets', teacherUid);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        throw new Error('Teacher snippets document not found');
+      }
+      
+      const existingSnippets: any[] = docSnap.data().snippets || [];
+      const filteredSnippets = existingSnippets.filter((s: any) => s.id !== snippetId);
+      
+      await setDoc(docRef, { snippets: filteredSnippets }, { merge: true });
+    } catch (error) {
+      reportError(error, { method: 'deleteTeacherSnippet', teacherUid, snippetId });
+      throw error;
+    }
+  },
+
+  // ========================================
+  // STUDENT FEEDBACK HISTORY QUERY
+  // ========================================
+
+  /**
+   * Get a student's feedback history from graded submissions.
+   * Returns submissions where rubricGrade.teacherFeedback exists,
+   * sorted by gradedAt descending.
+   */
+  getStudentFeedbackHistory: async (studentUid: string, assignmentId?: string): Promise<Array<{
+    assignmentTitle: string;
+    teacherFeedback: string;
+    score: number;
+    gradedAt: string;
+    feedbackReadAt?: string;
+    feedbackReviewedAt?: string;
+  }>> => {
+    try {
+      const constraints = [where('userId', '==', studentUid)];
+      if (assignmentId) constraints.push(where('assignmentId', '==', assignmentId));
+      const q = query(collection(db, 'submissions'), ...constraints);
+      
+      const querySnapshot = await getDocs(q);
+      const history: Array<{
+        assignmentTitle: string;
+        teacherFeedback: string;
+        score: number;
+        gradedAt: string;
+        feedbackReadAt?: string;
+        feedbackReviewedAt?: string;
+      }> = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        
+        // Only include submissions with teacher feedback
+        if (!data.rubricGrade?.teacherFeedback) {
+          return;
+        }
+        
+        history.push({
+          assignmentTitle: data.assignmentTitle || 'Unknown Assignment',
+          teacherFeedback: data.rubricGrade.teacherFeedback,
+          score: data.score ?? 0,
+          gradedAt: data.rubricGrade.gradedAt || new Date().toISOString(),
+          feedbackReadAt: data.feedbackReadAt || undefined,
+          feedbackReviewedAt: data.feedbackReviewedAt || undefined,
+        });
+      });
+      
+      // Sort by gradedAt descending
+      history.sort((a, b) => new Date(b.gradedAt).getTime() - new Date(a.gradedAt).getTime());
+      
+      return history;
+    } catch (error) {
+      reportError(error, { method: 'getStudentFeedbackHistory', studentUid });
+      return [];
+    }
   },
 
 };

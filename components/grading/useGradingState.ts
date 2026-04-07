@@ -25,6 +25,38 @@ interface UseGradingStateParams {
 
 const TIER_PERCENTAGES = [0, 55, 65, 85, 100] as const;
 
+// localStorage helpers
+const STORAGE_KEY_PREFIX = 'feedback-draft-';
+const DRAFT_TTL_DAYS = 7;
+
+function getDraftKey(submissionId: string): string {
+  return `${STORAGE_KEY_PREFIX}${submissionId}`;
+}
+
+function saveDraftToLocalStorage(submissionId: string, text: string): void {
+  const draft = { text, updatedAt: new Date().toISOString() };
+  localStorage.setItem(getDraftKey(submissionId), JSON.stringify(draft));
+}
+
+function loadDraftFromLocalStorage(submissionId: string): { text: string; updatedAt: string } | null {
+  const raw = localStorage.getItem(getDraftKey(submissionId));
+  if (!raw) return null;
+  try {
+    const draft = JSON.parse(raw) as { text: string; updatedAt: string };
+    // Check TTL
+    const ageMs = Date.now() - new Date(draft.updatedAt).getTime();
+    const ttlMs = DRAFT_TTL_DAYS * 24 * 60 * 60 * 1000;
+    if (ageMs > ttlMs) return null;
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraftFromLocalStorage(submissionId: string): void {
+  localStorage.removeItem(getDraftKey(submissionId));
+}
+
 export function useGradingState({ users, assignments, submissions }: UseGradingStateParams) {
   const navigate = useNavigate();
   const params = useParams<{ assessmentId?: string; studentId?: string }>();
@@ -170,6 +202,24 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   const sub = selectedGroup
     ? (selectedGroup.submissions.find(s => s.id === gradingAttemptId) || selectedGroup.best)
     : null;
+
+  // Debounced localStorage save for feedback draft
+  useEffect(() => {
+    if (!selectedGroup || !sub?.id) return;
+    const timer = setTimeout(() => {
+      saveDraftToLocalStorage(sub.id, feedbackDraft);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [feedbackDraft, selectedGroup, sub]);
+
+  // Restore draft from localStorage on mount or student selection
+  useEffect(() => {
+    if (!selectedGroup || !sub?.id) return;
+    const existingDraft = loadDraftFromLocalStorage(sub.id);
+    if (existingDraft && existingDraft.text !== sub.rubricGrade?.teacherFeedback) {
+      setFeedbackDraft(existingDraft.text);
+    }
+  }, [selectedGroup, sub]);
 
   // Auto-populate rubricDraft when student changes from URL
   useEffect(() => {
@@ -362,6 +412,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
 
       setRubricDraft({});
       setFeedbackDraft('');
+      clearDraftFromLocalStorage(sub.id);
       if (result.clearedAIFlag) {
         toast.success(`Grade saved: ${pct}% -- AI flag automatically cleared`);
       } else {

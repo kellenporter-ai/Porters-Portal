@@ -62,28 +62,42 @@ interface TierDescriptorListProps {
   selectedTier: number | null;
   compact: boolean;
   onTierClick: (questionId: string, skillId: string, tierIndex: number) => void;
+  aiSuggestion?: AISuggestedSkillGrade | null;
 }
 
-const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questionId, skillId, selectedTier, compact, onTierClick }) => (
+const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questionId, skillId, selectedTier, compact, onTierClick, aiSuggestion }) => (
   <div className={`${compact ? 'px-2 pb-2 pt-1.5 space-y-1' : 'px-3 pb-3 pt-2 space-y-1.5'}`}>
     {tiers.map((tier, tierIdx) => {
       const colors = RUBRIC_TIER_COLORS[tier.label];
       const isSelected = selectedTier === tierIdx;
+      const isAISuggested = aiSuggestion?.suggestedTier === tierIdx;
 
       return (
         <div
           key={tier.label}
-          className={`rounded-lg ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} border text-[10px] leading-relaxed transition-all ${
+          role="button"
+          tabIndex={0}
+          aria-pressed={isSelected}
+          className={`rounded-lg ${compact ? 'px-3 py-2' : 'px-4 py-3'} border text-[13px] leading-relaxed transition-all select-none ${
             isSelected
-              ? `${colors.bg} ${colors.border} ${colors.text} ring-1 ring-[var(--border)]`
-              : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-tertiary)]'
+              ? `${colors.bg} ${colors.border} ${colors.text} ring-2 ring-[var(--border)]`
+              : isAISuggested
+                ? `${colors.bg} ${colors.text} border-amber-400/40 ring-1 ring-amber-400/30`
+                : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)]'
           } cursor-pointer`}
           onClick={() => onTierClick(questionId, skillId, tierIdx)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onTierClick(questionId, skillId, tierIdx);
+            }
+          }}
         >
           <span className={`font-bold ${isSelected ? colors.text : 'text-[var(--text-tertiary)]'}`}>
             {tier.label} ({tier.percentage}%):
-          </span>{' '}
-          {tier.descriptor}
+          </span>
+          {isAISuggested && !isSelected && <Sparkles className="w-3 h-3 text-amber-400 inline ml-1.5" aria-hidden="true" />}
+          {' '}{tier.descriptor}
         </div>
       );
     })}
@@ -219,17 +233,19 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                         <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-[var(--text-secondary)] italic leading-relaxed`}>{skill.skillText}</p>
                       </div>
 
-                      {/* Tier quick-select strip (always visible) */}
-                      <TierButtonStrip
-                        tiers={skill.tiers}
-                        questionId={question.id}
-                        skillId={skill.id}
-                        selectedTier={selectedTier}
-                        aiSuggestion={aiSuggestion}
-                        mode={mode}
-                        flashTier={flashTier}
-                        onTierClick={handleTierClick}
-                      />
+                      {/* Tier quick-select strip (only in view mode — grade and results use TierDescriptorList) */}
+                      {mode === 'view' && (
+                        <TierButtonStrip
+                          tiers={skill.tiers}
+                          questionId={question.id}
+                          skillId={skill.id}
+                          selectedTier={selectedTier}
+                          aiSuggestion={aiSuggestion}
+                          mode={mode}
+                          flashTier={flashTier}
+                          onTierClick={handleTierClick}
+                        />
+                      )}
 
                       {/* AI rationale — shown when there's an AI suggestion for this skill */}
                       {aiSuggestion && (
@@ -258,6 +274,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                           selectedTier={selectedTier}
                           compact={compact}
                           onTierClick={handleTierClick}
+                          aiSuggestion={aiSuggestion}
                         />
                       ) : (
                         <>
