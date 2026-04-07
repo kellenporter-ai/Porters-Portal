@@ -1858,17 +1858,17 @@ function gradeAssessmentBlocks(
       }
 
       if (needsReview) {
-        perBlock[block.id as string] = { correct: false, answer: resp, needsReview: true };
+        perBlock[block.id as string] = { correct: false, answer: resp ?? null, needsReview: true };
       } else {
         total++;
         if (isCorrect) correct++;
-        perBlock[block.id as string] = { correct: isCorrect, answer: resp };
+        perBlock[block.id as string] = { correct: isCorrect, answer: resp ?? null };
       }
     }
 
     // Non-auto-gradable interactive blocks — always require manual/rubric review
     if (["DRAWING", "MATH_RESPONSE", "BAR_CHART", "DATA_TABLE", "CHECKLIST"].includes(block.type as string)) {
-      const resp = (responses as Record<string, unknown>)[block.id as string];
+      const resp = (responses as Record<string, unknown>)[block.id as string] ?? null;
       perBlock[block.id as string] = { correct: false, answer: resp, needsReview: true };
     }
   }
@@ -2307,45 +2307,61 @@ export const returnAssessment = onCall(async (request) => {
 // ==========================================
 // SUBMIT ON BEHALF — Admin submits student's draft work
 // ==========================================
-export const submitOnBehalf = onCall(async (request) => {
+export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) => {
   // 1. Verify admin
   await verifyAdmin(request.auth);
 
   // 2. Validate input
   const { userId, assignmentId } = request.data;
-  if (!userId || !assignmentId) throw new HttpsError("invalid-argument", "userId and assignmentId required");
+  if (!userId || !assignmentId) {
+    logger.error("submitOnBehalf: missing userId or assignmentId", { data: request.data });
+    throw new HttpsError("invalid-argument", "userId and assignmentId required");
+  }
 
   const db = admin.firestore();
+
+  try {
 
   // 3. Read draft responses
   const draftRef = db.doc(`lesson_block_responses/${userId}_${assignmentId}_blocks`);
   const draftSnap = await draftRef.get();
-  if (!draftSnap.exists) throw new HttpsError("not-found", "No draft responses found for this student");
+  if (!draftSnap.exists) {
+    logger.error("submitOnBehalf: No draft found", { userId, assignmentId });
+    throw new HttpsError("not-found", "No draft responses found for this student");
+  }
   const draftData = draftSnap.data()!;
   const responses = draftData.responses || {};
-  if (Object.keys(responses).length === 0) throw new HttpsError("not-found", "Draft has no responses");
+  if (Object.keys(responses).length === 0) {
+    logger.error("submitOnBehalf: Draft has no responses", { userId, assignmentId });
+    throw new HttpsError("not-found", "Draft has no responses");
+  }
 
   // 4. Read assignment
   const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
-  if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
+  if (!assignmentSnap.exists) {
+    logger.error("submitOnBehalf: Assignment not found", { userId, assignmentId });
+    throw new HttpsError("not-found", "Assignment not found");
+  }
   const assignment = assignmentSnap.data()!;
-  if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
+  if (!assignment.isAssessment) {
+    logger.error("submitOnBehalf: Not an assessment", { userId, assignmentId });
+    throw new HttpsError("invalid-argument", "Not an assessment");
+  }
 
   // 5. Grade using shared helper
   const blocks = assignment.lessonBlocks || [];
   const { correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses);
 
-  // 6. Mark session token as used (if found)
-  let sessionStartedAt: number | null = null;
+  // 6. Find session token (query outside transaction — inequality filters not allowed in transactions)
   const sessionQuery = await db.collection("assessment_sessions")
     .where("userId", "==", userId)
     .where("assignmentId", "==", assignmentId)
     .where("used", "==", false)
     .limit(1)
     .get();
-  if (!sessionQuery.empty) {
-    const sessionDoc = sessionQuery.docs[0];
-    await sessionDoc.ref.update({ used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+  const sessionDoc = sessionQuery.empty ? null : sessionQuery.docs[0];
+  let sessionStartedAt: number | null = null;
+  if (sessionDoc) {
     const startedAt = sessionDoc.data().startedAt;
     sessionStartedAt = startedAt?.toMillis?.() || Number(startedAt) || null;
   }
@@ -2391,7 +2407,7 @@ export const submitOnBehalf = onCall(async (request) => {
   const metricsEngagement = snap ? (Number(snap.engagementTime) || 0) : elapsed;
   const wordsPerSecond = metricsEngagement > 0 ? Math.round((totalWordCount / metricsEngagement) * 100) / 100 : 0;
 
-  // 10. Create submission doc
+  // 10. Build submission doc + atomic write (session mark + submission in one transaction)
   const submissionDoc = {
     userId,
     userName,
@@ -2441,7 +2457,18 @@ export const submitOnBehalf = onCall(async (request) => {
     ...(userSection ? { userSection } : {}),
   };
 
-  await db.collection("submissions").add(submissionDoc);
+  await db.runTransaction(async (t) => {
+    // Re-read session inside transaction to prevent double-submit race
+    if (sessionDoc) {
+      const freshSession = await t.get(sessionDoc.ref);
+      if (freshSession.exists && !freshSession.data()?.used) {
+        t.update(sessionDoc.ref, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+      }
+    }
+    // NOTE: Can't do where() queries inside transactions — attemptNumber uses pre-queried count
+    const subRef = db.collection("submissions").doc();
+    t.set(subRef, submissionDoc);
+  });
 
   // 11. Award XP (same as submitAssessment)
   const baseXP = Math.round(percentage * 0.5);
@@ -2478,8 +2505,13 @@ export const submitOnBehalf = onCall(async (request) => {
 
   logger.info(`submitOnBehalf: admin ${request.auth!.uid} submitted for ${userId} on ${assignmentId}, scored ${percentage}%`);
   return { success: true, assessmentScore: { correct, total, percentage, perBlock }, attemptNumber, xpEarned };
-});
 
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    logger.error("submitOnBehalf: unexpected error", { userId, assignmentId, error: String(err) });
+    throw new HttpsError("internal", "Unexpected error during submit on behalf");
+  }
+});
 
 // ==========================================
 // AI REVIEW QUESTIONS (Gemini)

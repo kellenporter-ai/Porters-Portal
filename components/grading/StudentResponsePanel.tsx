@@ -313,8 +313,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
         await callSubmitOnBehalf({ userId: viewingDraftUserId, assignmentId: selectedAssessmentId! });
         toast.success(`Submitted ${draftStudentName}'s assessment`);
       } catch (err) {
+        const msg = (err as any)?.message || (err as any)?.details || 'Unknown error during submit on behalf';
         reportError(err, { method: 'callSubmitOnBehalf' });
-        toast.error('Could not submit on behalf. The student may have already submitted.');
+        toast.error('Submit on behalf failed: ' + msg);
       }
     };
 

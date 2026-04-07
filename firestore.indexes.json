@@ -67,6 +67,23 @@
       ]
     },
     {
+      "collectionGroup": "assessment_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "assignmentId", "order": "ASCENDING" },
+        { "fieldPath": "used", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "assessment_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "used", "order": "ASCENDING" },
+        { "fieldPath": "startedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "student_alerts",
       "queryScope": "COLLECTION",
       "fields": [
