@@ -346,7 +346,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           </div>
         </div>
 
-        <div className="overflow-y-auto custom-scrollbar p-4" style={{ maxHeight: 'calc(100vh - 470px)' }}>
+        <div className="overflow-y-auto custom-scrollbar p-4 flex-1 min-h-0">
           {draftLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-[var(--text-muted)] text-sm">Loading draft...</div>
@@ -427,7 +427,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   // Empty state
   if (!selectedGroup || !sub) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12" style={{ minHeight: 'calc(100vh - 420px)' }}>
+      <div className="flex-1 flex items-center justify-center p-12 min-h-0">
         <div className="text-center">
           <FileText className="w-16 h-16 mx-auto mb-4 text-[var(--text-muted)] opacity-30" aria-hidden="true" />
           <p className="text-[var(--text-muted)] text-sm font-bold">Select a student to begin grading</p>
@@ -508,7 +508,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
       </div>
 
       {/* Center panel body */}
-      <div className="overflow-y-auto custom-scrollbar p-4" style={{ maxHeight: 'calc(100vh - 470px)' }}>
+      <div className="overflow-y-auto custom-scrollbar p-4 flex-1 min-h-0">
         {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
           <div className="space-y-2">
             {selectedAssessment.lessonBlocks

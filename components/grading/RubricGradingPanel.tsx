@@ -145,7 +145,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
       </div>
 
       {/* Scrollable body */}
-      <div className="overflow-y-auto custom-scrollbar flex-1 p-3" style={{ maxHeight: 'calc(100vh - 470px)' }}>
+      <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 p-3">
         {/* AI flagged notice */}
         {sub.flaggedAsAI && (
           <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">

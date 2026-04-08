@@ -99,7 +99,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 h-full min-h-0">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
         <button
@@ -207,7 +207,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
       {/* 3-Panel Grading View */}
       {selectedAssessmentId && hasSubs && (
         <div
-          className="flex flex-col lg:flex-row gap-0 bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl overflow-hidden backdrop-blur-md"
+          className="flex flex-col lg:flex-row gap-0 bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl overflow-hidden backdrop-blur-md flex-1 min-h-0"
           onKeyDown={(e) => {
             const tag = (e.target as HTMLElement).tagName;
             if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;

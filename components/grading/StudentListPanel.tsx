@@ -77,7 +77,7 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
       </div>
 
       {/* Student list */}
-      <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 420px)' }}>
+      <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0">
         {unifiedList.map(entry => {
           const entryId = getUnifiedId(entry);
           const isSelected = entryId === gradingStudentId || entryId === viewingDraftUserId;
