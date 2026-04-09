@@ -420,6 +420,12 @@ export interface FeedbackHistoryEntry {
   gradedBy: string;
 }
 
+export interface DraftFeedbackMessage {
+  message: string;
+  sentAt: string;     // ISO timestamp
+  sentBy: string;     // e.g. 'Admin'
+}
+
 // AI Grading Assistant types
 export interface AISuggestedSkillGrade {
   suggestedTier: number;
@@ -615,7 +621,7 @@ export type NotificationType =
   | 'ACHIEVEMENT_UNLOCKED' | 'DAILY_REWARD' | 'STREAK_MILESTONE'
   | 'BOSS_DEFEATED' | 'PARTY_INVITE' | 'WHEEL_PRIZE' | 'SKILL_UNLOCKED'
   | 'SET_BONUS_ACTIVE' | 'TUTORING_REWARD' | 'BOSS_QUIZ_START'
-  | 'AI_FLAGGED' | 'ASSESSMENT_GRADED';
+  | 'AI_FLAGGED' | 'ASSESSMENT_GRADED' | 'TEACHER_FEEDBACK';
 
 export interface Notification {
   id: string;

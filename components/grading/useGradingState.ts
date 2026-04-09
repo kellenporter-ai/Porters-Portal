@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { User, Assignment, Submission, RubricSkillGrade, RubricGrade } from '../../types';
+import { User, Assignment, Submission, RubricSkillGrade, RubricGrade, DraftFeedbackMessage } from '../../types';
 import { dataService } from '../../services/dataService';
 import { calculateRubricPercentage } from '../../lib/rubricParser';
 import { callReturnAssessment, callClassroomPushGrades } from '../../lib/firebase';
@@ -90,6 +90,9 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   const [viewingDraftUserId, setViewingDraftUserId] = useState<string | null>(null);
   const [draftResponses, setDraftResponses] = useState<Record<string, unknown> | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
+  const [draftFeedbackDraft, setDraftFeedbackDraft] = useState('');
+  const [draftFeedbackMessages, setDraftFeedbackMessages] = useState<DraftFeedbackMessage[]>([]);
+  const [isSendingDraftFeedback, setIsSendingDraftFeedback] = useState(false);
   const [classroomLinkModalOpen, setClassroomLinkModalOpen] = useState(false);
   const [pushingToClassroom, setPushingToClassroom] = useState(false);
 
@@ -306,11 +309,20 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setGradingAttemptId(null);
     setRubricDraft({});
     setFeedbackDraft('');
+    setDraftFeedbackDraft('');
+    setDraftFeedbackMessages([]);
     setViewingDraftUserId(studentId);
     setDraftLoading(true);
     try {
       const responses = await dataService.fetchDraftResponses(studentId, selectedAssessmentId!);
       setDraftResponses(responses);
+      // Also fetch any previously sent feedback for this draft student
+      try {
+        const messages = await dataService.fetchDraftFeedbackMessages(studentId, selectedAssessmentId!);
+        setDraftFeedbackMessages(messages);
+      } catch {
+        // Non-critical — silently ignore
+      }
     } catch (err) {
       reportError(err, { method: 'fetchDraftResponses' });
       setDraftResponses(null);
@@ -325,6 +337,8 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setGradingAttemptId(null);
     setRubricDraft({});
     setFeedbackDraft('');
+    setDraftFeedbackDraft('');
+    setDraftFeedbackMessages([]);
     setViewingDraftUserId(studentId);
     setDraftResponses(null);
   }, []);
@@ -425,6 +439,32 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
       setIsSavingRubric(false);
     }
   }, [selectedAssessment, sub, rubricDraft, feedbackDraft, toast]);
+
+  const handleSendDraftFeedback = useCallback(async () => {
+    if (!viewingDraftUserId || !selectedAssessmentId || !draftFeedbackDraft.trim()) return;
+    setIsSendingDraftFeedback(true);
+    try {
+      await dataService.sendDraftFeedback(
+        viewingDraftUserId,
+        selectedAssessmentId,
+        draftFeedbackDraft.trim(),
+        selectedAssessment?.title,
+      );
+      // Append optimistically to local state
+      const newMsg: DraftFeedbackMessage = {
+        message: draftFeedbackDraft.trim(),
+        sentAt: new Date().toISOString(),
+        sentBy: 'Admin',
+      };
+      setDraftFeedbackMessages(prev => [...prev, newMsg]);
+      setDraftFeedbackDraft('');
+      toast.success('Feedback sent');
+    } catch {
+      toast.error('Failed to send feedback');
+    } finally {
+      setIsSendingDraftFeedback(false);
+    }
+  }, [viewingDraftUserId, selectedAssessmentId, draftFeedbackDraft, selectedAssessment?.title, toast]);
 
   const handleReturnToStudent = useCallback(async () => {
     if (!sub || !selectedGroup) return;
@@ -679,6 +719,11 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     viewingDraftUserId,
     draftResponses,
     draftLoading,
+    draftFeedbackDraft,
+    setDraftFeedbackDraft,
+    draftFeedbackMessages,
+    isSendingDraftFeedback,
+    handleSendDraftFeedback,
     // Batch accept state
     batchAcceptingAI,
     batchAcceptProgress,

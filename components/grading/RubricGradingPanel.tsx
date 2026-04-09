@@ -1,11 +1,11 @@
 import React, { Suspense, useState } from 'react';
 import {
   BookOpen, Save, Undo2, ChevronRight, RefreshCw, Sparkles, Bot, X, Eye, Users, FileText,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, MessageSquare, Send,
 } from 'lucide-react';
 import SnippetsPopover from './SnippetsPopover';
 import StudentFeedbackFeed from './StudentFeedbackFeed';
-import type { Submission, Assignment } from '../../types';
+import type { Submission, Assignment, DraftFeedbackMessage } from '../../types';
 import type { StudentGroup } from './gradingHelpers';
 import { calculateRubricPercentage } from '../../lib/rubricParser';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
@@ -24,7 +24,12 @@ interface RubricGradingPanelProps {
   draftUserIds: Set<string>;
   unifiedList: Array<{ type: string; group?: { userId: string; needsGrading: boolean } | null }>;
   gradingStudentId: string | null;
+  draftFeedbackDraft: string;
+  draftFeedbackMessages: DraftFeedbackMessage[];
+  isSendingDraftFeedback: boolean;
   onFeedbackChange: (v: string) => void;
+  onDraftFeedbackChange: (v: string) => void;
+  onSendDraftFeedback: () => void;
   onGradeChange: (questionId: string, skillId: string, tierIndex: number) => void;
   onAcceptAllAI: () => void;
   onDismissAISuggestion: () => void;
@@ -44,7 +49,12 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   draftUserIds,
   unifiedList,
   gradingStudentId,
+  draftFeedbackDraft,
+  draftFeedbackMessages,
+  isSendingDraftFeedback,
   onFeedbackChange,
+  onDraftFeedbackChange,
+  onSendDraftFeedback,
   onGradeChange,
   onAcceptAllAI,
   onDismissAISuggestion,
@@ -84,34 +94,84 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   // Draft/not-started right panel
   if (viewingDraftUserId && !selectedGroup) {
     const isNotStartedRight = !draftUserIds.has(viewingDraftUserId);
+    const accentColor = isNotStartedRight ? 'text-orange-400' : 'text-cyan-400';
+    const hasFeedbackMessages = draftFeedbackMessages.length > 0;
+
     return (
       <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-[var(--border)] flex flex-col">
+        {/* Header */}
         <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
-          <h5 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isNotStartedRight ? 'text-orange-400' : 'text-cyan-400'}`}>
+          <h5 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${accentColor}`}>
             {isNotStartedRight
               ? <><Users className="w-3.5 h-3.5" aria-hidden="true" /> Not Started</>
               : <><Eye className="w-3.5 h-3.5" aria-hidden="true" /> Draft Preview</>}
           </h5>
         </div>
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center">
-            <FileText className={`w-12 h-12 mx-auto mb-3 ${isNotStartedRight ? 'text-orange-500/20' : 'text-cyan-500/20'}`} aria-hidden="true" />
-            {isNotStartedRight ? (
-              <>
-                <p className="text-orange-400 text-sm font-bold mb-1">Not yet started</p>
-                <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-[250px]">
-                  This student hasn&apos;t opened the assessment. Use Nudge to send them a reminder.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-cyan-400 text-sm font-bold mb-1">Draft &mdash; not yet submitted</p>
-                <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-[250px]">
-                  This student&apos;s work is still in progress. You can nudge them to submit, or submit on their behalf using the header buttons.
-                </p>
-              </>
-            )}
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 p-3 flex flex-col gap-3">
+          {/* Compact status info */}
+          <div className={`flex items-start gap-2.5 p-3 rounded-lg border ${isNotStartedRight ? 'bg-orange-500/5 border-orange-500/20' : 'bg-cyan-500/5 border-cyan-500/20'}`}>
+            <FileText className={`w-4 h-4 shrink-0 mt-0.5 ${isNotStartedRight ? 'text-orange-400/60' : 'text-cyan-400/60'}`} aria-hidden="true" />
+            <div>
+              <p className={`text-xs font-bold mb-0.5 ${accentColor}`}>
+                {isNotStartedRight ? 'Not yet started' : 'Draft \u2014 not yet submitted'}
+              </p>
+              <p className="text-[var(--text-muted)] text-[11px] leading-relaxed">
+                {isNotStartedRight
+                  ? "This student hasn\u2019t opened the assessment. Use Nudge to send them a reminder."
+                  : "Work is in progress. You can nudge or submit on their behalf using the header buttons."}
+              </p>
+            </div>
           </div>
+
+          {/* Feedback section */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-1.5">
+              <MessageSquare className="w-3 h-3" aria-hidden="true" /> Teacher Feedback
+            </label>
+            <textarea
+              value={draftFeedbackDraft}
+              onChange={e => onDraftFeedbackChange(e.target.value)}
+              placeholder="Write feedback or guidance for this student..."
+              rows={4}
+              className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
+              aria-label="Teacher feedback for draft student"
+            />
+            <button
+              onClick={onSendDraftFeedback}
+              disabled={isSendingDraftFeedback || !draftFeedbackDraft.trim()}
+              className="flex items-center justify-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed self-end"
+              aria-label="Send feedback to student"
+            >
+              {isSendingDraftFeedback ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Send className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              {isSendingDraftFeedback ? 'Sending...' : 'Send Feedback'}
+            </button>
+          </div>
+
+          {/* Previously sent feedback */}
+          {hasFeedbackMessages && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                Previously Sent
+              </p>
+              <div className="space-y-1.5">
+                {draftFeedbackMessages.map((msg, idx) => (
+                  <div key={idx} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-2.5">
+                    <div className="text-xs text-[var(--text-primary)] leading-relaxed">{msg.message}</div>
+                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+                      <span>{msg.sentBy}</span>
+                      <span>{new Date(msg.sentAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -1,5 +1,5 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry } from '../types';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage } from '../types';
 import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -898,6 +898,71 @@ export const dataService = {
       }).catch(err => reportError(err, { method: 'saveRubricGrade:notification' }));
     }
     return { clearedAIFlag };
+  },
+
+  /**
+   * Send teacher feedback to a draft/not-started student.
+   * - Always sends a TEACHER_FEEDBACK notification to the student.
+   * - For draft students (have a lesson_block_responses doc), appends the message
+   *   to `draftFeedbackMessages` array on that doc so the teacher can see history.
+   * - For not-started students (no draft doc), notification-only (no history stored).
+   */
+  sendDraftFeedback: async (
+    studentId: string,
+    assignmentId: string,
+    message: string,
+    assessmentTitle?: string,
+  ): Promise<void> => {
+    try {
+      const entry: DraftFeedbackMessage = {
+        message: message.trim(),
+        sentAt: new Date().toISOString(),
+        sentBy: 'Admin',
+      };
+
+      // Attempt to append to draft doc (exists for draft students, not for not-started)
+      const draftDocRef = doc(db, 'lesson_block_responses', `${studentId}_${assignmentId}_blocks`);
+      const draftSnap = await getDoc(draftDocRef);
+      if (draftSnap.exists()) {
+        await updateDoc(draftDocRef, {
+          draftFeedbackMessages: arrayUnion(entry),
+        });
+      }
+
+      // Always send a notification so the student sees it in the portal
+      await addDoc(collection(db, 'notifications'), {
+        userId: studentId,
+        type: 'TEACHER_FEEDBACK' as const,
+        title: 'Teacher Feedback',
+        message: `${assessmentTitle ? `"${assessmentTitle}" — ` : ''}${message.trim()}`,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        meta: { assignmentId, assessmentTitle },
+      });
+    } catch (error) {
+      reportError(error, { method: 'sendDraftFeedback' });
+      throw error;
+    }
+  },
+
+  /**
+   * Fetch previously sent draft feedback messages for a student on an assignment.
+   * Returns empty array if no draft doc or no messages.
+   */
+  fetchDraftFeedbackMessages: async (
+    studentId: string,
+    assignmentId: string,
+  ): Promise<DraftFeedbackMessage[]> => {
+    try {
+      const draftDocRef = doc(db, 'lesson_block_responses', `${studentId}_${assignmentId}_blocks`);
+      const snap = await getDoc(draftDocRef);
+      if (!snap.exists()) return [];
+      const data = snap.data();
+      return (data.draftFeedbackMessages as DraftFeedbackMessage[]) || [];
+    } catch (error) {
+      reportError(error, { method: 'fetchDraftFeedbackMessages' });
+      return [];
+    }
   },
 
   /**

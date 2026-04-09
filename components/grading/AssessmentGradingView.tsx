@@ -65,6 +65,11 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     viewingDraftUserId,
     draftResponses,
     draftLoading,
+    draftFeedbackDraft,
+    setDraftFeedbackDraft,
+    draftFeedbackMessages,
+    isSendingDraftFeedback,
+    handleSendDraftFeedback,
     batchAcceptingAI,
     batchAcceptProgress,
     csvMaxPoints,
@@ -99,7 +104,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
   };
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 h-full min-h-0">
+    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full min-h-0">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
         <button
@@ -237,7 +242,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
           />
 
           {/* Center: Student Work */}
-          <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col">
             <StudentResponsePanel
               selectedGroup={selectedGroup}
               sub={sub}
@@ -270,6 +275,9 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
             draftUserIds={draftUserIds}
             unifiedList={unifiedList}
             gradingStudentId={gradingStudentId}
+            draftFeedbackDraft={draftFeedbackDraft}
+            draftFeedbackMessages={draftFeedbackMessages}
+            isSendingDraftFeedback={isSendingDraftFeedback}
             onFeedbackChange={setFeedbackDraft}
             onGradeChange={handleRubricGradeChange}
             onAcceptAllAI={handleAcceptAllAI}
@@ -277,6 +285,8 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
             onSaveRubric={handleSaveRubric}
             onReturnToStudent={handleReturnToStudent}
             onSelectStudent={selectStudent}
+            onDraftFeedbackChange={setDraftFeedbackDraft}
+            onSendDraftFeedback={handleSendDraftFeedback}
           />
         </div>
       )}
