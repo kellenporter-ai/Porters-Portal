@@ -320,7 +320,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
     };
 
     return (
-      <>
+      <div className="flex-1 flex flex-col min-h-0">
         <div className={`px-4 py-3 border-b border-[var(--border)] flex items-center gap-3 ${isNotStarted ? 'bg-orange-500/[0.03]' : 'bg-cyan-500/[0.03]'}`}>
           <NavButtons />
           {isNotStarted ? <Users className="w-4 h-4 text-orange-400" aria-hidden="true" /> : <Eye className="w-4 h-4 text-cyan-400" aria-hidden="true" />}
@@ -420,7 +420,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
             </div>
           )}
         </div>
-      </>
+      </div>
     );
   }
 
@@ -443,7 +443,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   const inactiveTime = Math.max(0, totalTime - activeTime);
 
   return (
-    <>
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Center panel header */}
       <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)] flex items-center gap-3 flex-wrap">
         <NavButtons />
@@ -595,7 +595,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           <div className="text-xs text-[var(--text-muted)] italic">No per-question data available for this submission.</div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

@@ -572,7 +572,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Main Content */}
       <main id="main-content" className={`flex-1 overflow-y-auto p-2 pb-20 md:p-4 md:pb-20 lg:p-4 lg:pb-4 animate-fade-in z-10 ${settings.performanceMode ? 'no-anim' : 'animate-slide-up'}`}>
-        <div className="h-full">
+        <div className="h-full flex flex-col min-h-0">
           <Outlet />
         </div>
       </main>

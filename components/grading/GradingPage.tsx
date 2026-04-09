@@ -18,7 +18,7 @@ const GradingPage: React.FC<GradingPageProps> = ({ users, assignments, submissio
 
   return (
     <FeatureErrorBoundary feature="Grading">
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 h-full">
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col min-h-0">
         {!assessmentId ? (
           <div className="space-y-6">
             <div>
