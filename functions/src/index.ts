@@ -700,7 +700,7 @@ function calculateFeedbackServerSide(
  * awardXP — Server-authoritative XP granting with transaction safety.
  * Called when a student completes engagement with a resource, or by admin for manual adjustment.
  */
-export const awardXP = onCall({ minInstances: 1 }, async (request) => {
+export const awardXP = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const { targetUserId, amount, classType } = request.data;
 
@@ -4534,6 +4534,10 @@ export const onGradePosted = onDocumentUpdated(
     const before = event.data?.before.data();
     const after = event.data?.after.data();
     if (!before || !after) return;
+
+    // Fast-path guard: if score didn't change, this update can't be a grading event.
+    // Protects against invocation cascades from bulk updates (e.g. field backfills).
+    if (before.score === after.score) return;
 
     // Only fire when score changes from 0 to a positive value (initial grading)
     const oldScore = before.score as number || 0;
