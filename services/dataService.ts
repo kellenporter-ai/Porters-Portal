@@ -9,6 +9,24 @@ import { resilientSnapshot, clearDeniedCollections } from './resilientSnapshot';
 
 export { clearDeniedCollections };
 
+/**
+ * Per-assignment grading stats computed from a one-shot submissions fetch.
+ * Used by the grading index page to show accurate counts without depending on
+ * the globally-capped live submissions cache.
+ */
+export interface AssessmentStats {
+  /** Unique students with any non-STARTED submission. */
+  submitted: number;
+  /** Unique students with a rubricGrade set (non-STARTED). */
+  graded: number;
+  /** Submissions with status === 'FLAGGED' and not AI-flagged. */
+  flagged: number;
+  /** Submissions with flaggedAsAI === true. */
+  aiFlagged: number;
+  /** Submissions with status === 'STARTED' (in-progress drafts). */
+  draft: number;
+}
+
 /** Strip undefined values from an object before passing to Firestore setDoc(). */
 const stripUndefined = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
@@ -332,6 +350,32 @@ export const dataService = {
       submissions.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
       callback(submissions);
     }, (error: unknown) => reportError(error, { subscription: 'assignmentSubmissions', assignmentId }));
+  },
+
+  /**
+   * One-shot per-assignment stats fetch. Returns accurate counts independent of
+   * the globally-capped live submissions cache — use this for the grading index
+   * page so older assessments never silently show 0 submitted when newer
+   * assessments fill the cache. Scoped by assignmentId with the same 500-doc
+   * cap as subscribeToAssignmentSubmissions, counted client-side to avoid new
+   * composite indexes. Never throws: logs and returns zeroed stats on error.
+   */
+  getAssessmentStats: async (assignmentId: string): Promise<AssessmentStats> => {
+    try {
+      const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), limit(500));
+      const snapshot = await getDocs(q);
+      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
+      const draft = all.filter(s => s.status === 'STARTED').length;
+      const nonStarted = all.filter(s => s.status !== 'STARTED');
+      const submitted = new Set(nonStarted.map(s => s.userId)).size;
+      const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId)).size;
+      const flagged = nonStarted.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
+      const aiFlagged = nonStarted.filter(s => s.flaggedAsAI).length;
+      return { submitted, graded, flagged, aiFlagged, draft };
+    } catch (error) {
+      reportError(error, { method: 'getAssessmentStats', assignmentId });
+      return { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0 };
+    }
   },
 
   /** Fetch a student's draft responses for an assessment (admin view). */
@@ -2003,3 +2047,12 @@ export const dataService = {
   },
 
 };
+
+/**
+ * Top-level export mirror of dataService.getAssessmentStats. Provided so
+ * callers can import the helper directly without pulling in the full
+ * dataService object. Delegates to the method to keep a single source of truth.
+ */
+export async function getAssessmentStats(assignmentId: string): Promise<AssessmentStats> {
+  return dataService.getAssessmentStats(assignmentId);
+}

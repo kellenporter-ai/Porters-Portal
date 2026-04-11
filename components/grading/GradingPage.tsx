@@ -27,7 +27,6 @@ const GradingPage: React.FC<GradingPageProps> = ({ users, assignments, submissio
             </div>
             <AssessmentListPage
               assessmentAssignments={assessmentAssignments}
-              submissions={submissions}
             />
           </div>
         ) : (

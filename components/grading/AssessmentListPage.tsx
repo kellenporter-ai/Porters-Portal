@@ -1,12 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Search } from 'lucide-react';
 import { hasClassroomLinks } from '../../types';
-import type { Assignment, Submission } from '../../types';
+import type { Assignment } from '../../types';
+import { getAssessmentStats } from '../../services/dataService';
+import type { AssessmentStats } from '../../services/dataService';
 
 interface AssessmentListPageProps {
   assessmentAssignments: Assignment[];
-  submissions: Submission[];
 }
 
 function getClassBadgeStyle(classType: string): string {
@@ -17,9 +18,32 @@ function getClassBadgeStyle(classType: string): string {
   return 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] border border-[var(--border)]';
 }
 
-const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssignments, submissions }) => {
+const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssignments }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [statsByAssessment, setStatsByAssessment] = useState<Record<string, AssessmentStats>>({});
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const assessmentIdsKey = useMemo(
+    () => assessmentAssignments.map(a => a.id).join(','),
+    [assessmentAssignments]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatsLoading(true);
+    Promise.all(
+      assessmentAssignments.map(a =>
+        getAssessmentStats(a.id).then(stats => [a.id, stats] as const)
+      )
+    ).then(entries => {
+      if (cancelled) return;
+      setStatsByAssessment(Object.fromEntries(entries));
+      setStatsLoading(false);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assessmentIdsKey]);
 
   const filtered = useMemo(() => {
     const sorted = [...assessmentAssignments].sort((a, b) => {
@@ -64,16 +88,8 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(assessment => {
-            const allAssessmentSubs = submissions.filter(s => s.assignmentId === assessment.id);
-            const draftCount = allAssessmentSubs.filter(s => s.status === 'STARTED').length;
-            const assessmentSubs = allAssessmentSubs.filter(s => s.status !== 'STARTED');
-            const uniqueStudents = new Set(assessmentSubs.map(s => s.userId)).size;
-            const gradedStudents = new Set(
-              assessmentSubs.filter(s => s.rubricGrade).map(s => s.userId)
-            ).size;
-            const flaggedCount = assessmentSubs.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
-            const aiFlaggedCount = assessmentSubs.filter(s => s.flaggedAsAI).length;
-            const gradePct = uniqueStudents > 0 ? Math.round((gradedStudents / uniqueStudents) * 100) : 0;
+            const stats = statsByAssessment[assessment.id] ?? { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0 };
+            const gradePct = stats.submitted > 0 ? Math.round((stats.graded / stats.submitted) * 100) : 0;
             const isOverdue = assessment.dueDate ? new Date(assessment.dueDate) < new Date() : false;
 
             return (
@@ -117,18 +133,18 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                       />
                     </div>
                     <span className={`text-[10px] font-bold tabular-nums ${gradePct === 100 ? 'text-green-400' : 'text-[var(--text-tertiary)]'}`}>
-                      {gradedStudents}/{uniqueStudents}
+                      {statsLoading ? '—' : `${stats.graded}/${stats.submitted}`}
                     </span>
                   </div>
                 )}
 
                 {/* Stats row */}
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--text-muted)]">
-                  <span>{uniqueStudents} submitted</span>
-                  {assessment.rubric && <span className="text-green-400/80">{gradedStudents} graded</span>}
-                  {flaggedCount > 0 && <span className="text-amber-400">{flaggedCount} flagged</span>}
-                  {aiFlaggedCount > 0 && <span className="text-purple-400">{aiFlaggedCount} AI flagged</span>}
-                  {draftCount > 0 && <span className="text-cyan-400">{draftCount} draft{draftCount !== 1 ? 's' : ''}</span>}
+                  <span>{statsLoading ? '—' : `${stats.submitted} submitted`}</span>
+                  {assessment.rubric && <span className="text-green-400/80">{statsLoading ? '—' : `${stats.graded} graded`}</span>}
+                  {!statsLoading && stats.flagged > 0 && <span className="text-amber-400">{stats.flagged} flagged</span>}
+                  {!statsLoading && stats.aiFlagged > 0 && <span className="text-purple-400">{stats.aiFlagged} AI flagged</span>}
+                  {!statsLoading && stats.draft > 0 && <span className="text-cyan-400">{stats.draft} draft{stats.draft !== 1 ? 's' : ''}</span>}
                 </div>
               </button>
             );
