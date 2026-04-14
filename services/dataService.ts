@@ -23,8 +23,10 @@ export interface AssessmentStats {
   flagged: number;
   /** Submissions with flaggedAsAI === true. */
   aiFlagged: number;
-  /** Submissions with status === 'STARTED' (in-progress drafts). */
+  /** Union of STARTED submissions, unused assessment_sessions, and lesson_block_responses with saved work — minus submitted users. */
   draft: number;
+  /** Enrolled students who have neither submitted nor started (requires assignment + enrolledStudents params). */
+  notStarted: number;
 }
 
 /** Strip undefined values from an object before passing to Firestore setDoc(). */
@@ -360,21 +362,51 @@ export const dataService = {
    * cap as subscribeToAssignmentSubmissions, counted client-side to avoid new
    * composite indexes. Never throws: logs and returns zeroed stats on error.
    */
-  getAssessmentStats: async (assignmentId: string): Promise<AssessmentStats> => {
+  getAssessmentStats: async (
+    assignmentId: string,
+    assignment?: Assignment,
+    enrolledStudents?: User[],
+  ): Promise<AssessmentStats> => {
     try {
-      const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), limit(500));
-      const snapshot = await getDocs(q);
-      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
-      const draft = all.filter(s => s.status === 'STARTED').length;
+      const [submissionsSnap, sessionsSnap, draftResponsesSnap] = await Promise.all([
+        getDocs(query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), limit(500))),
+        getDocs(query(collection(db, 'assessment_sessions'), where('assignmentId', '==', assignmentId), where('used', '==', false), limit(500))),
+        getDocs(query(collection(db, 'lesson_block_responses'), where('assignmentId', '==', assignmentId), limit(500))),
+      ]);
+
+      const all = submissionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
       const nonStarted = all.filter(s => s.status !== 'STARTED');
       const submitted = new Set(nonStarted.map(s => s.userId)).size;
       const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId)).size;
       const flagged = nonStarted.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
       const aiFlagged = nonStarted.filter(s => s.flaggedAsAI).length;
-      return { submitted, graded, flagged, aiFlagged, draft };
+
+      // Union of all draft sources minus submitted users
+      const submittedUserIds = new Set(nonStarted.map(s => s.userId));
+      const startedSubmissionIds = new Set(all.filter(s => s.status === 'STARTED').map(s => s.userId));
+      const sessionDraftIds = new Set(sessionsSnap.docs.map(d => d.data().userId as string));
+      const responseDraftIds = new Set(
+        draftResponsesSnap.docs
+          .filter(d => { const r = d.data().responses as Record<string, unknown> | undefined; return r && Object.keys(r).length > 0; })
+          .map(d => d.data().userId as string)
+      );
+      const allDraftIds = new Set([...startedSubmissionIds, ...sessionDraftIds, ...responseDraftIds].filter(id => !submittedUserIds.has(id)));
+      const draft = allDraftIds.size;
+
+      // notStarted: enrolled students minus submitted minus draft
+      let notStarted = 0;
+      if (assignment?.classType && enrolledStudents) {
+        const ct = assignment.classType;
+        const enrolledInClass = enrolledStudents.filter(s =>
+          s.classType === ct || s.enrolledClasses?.includes(ct as ClassType)
+        );
+        notStarted = enrolledInClass.filter(s => !submittedUserIds.has(s.id) && !allDraftIds.has(s.id)).length;
+      }
+
+      return { submitted, graded, flagged, aiFlagged, draft, notStarted };
     } catch (error) {
       reportError(error, { method: 'getAssessmentStats', assignmentId });
-      return { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0 };
+      return { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0, notStarted: 0 };
     }
   },
 
@@ -2053,6 +2085,6 @@ export const dataService = {
  * callers can import the helper directly without pulling in the full
  * dataService object. Delegates to the method to keep a single source of truth.
  */
-export async function getAssessmentStats(assignmentId: string): Promise<AssessmentStats> {
-  return dataService.getAssessmentStats(assignmentId);
+export async function getAssessmentStats(assignmentId: string, assignment?: Assignment, enrolledStudents?: User[]): Promise<AssessmentStats> {
+  return dataService.getAssessmentStats(assignmentId, assignment, enrolledStudents);
 }

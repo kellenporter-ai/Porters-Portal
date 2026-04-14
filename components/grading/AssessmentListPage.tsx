@@ -2,12 +2,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Search } from 'lucide-react';
 import { hasClassroomLinks } from '../../types';
-import type { Assignment } from '../../types';
+import type { Assignment, User } from '../../types';
 import { getAssessmentStats } from '../../services/dataService';
 import type { AssessmentStats } from '../../services/dataService';
 
 interface AssessmentListPageProps {
   assessmentAssignments: Assignment[];
+  users: User[];
 }
 
 function getClassBadgeStyle(classType: string): string {
@@ -18,7 +19,7 @@ function getClassBadgeStyle(classType: string): string {
   return 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] border border-[var(--border)]';
 }
 
-const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssignments }) => {
+const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssignments, users }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statsByAssessment, setStatsByAssessment] = useState<Record<string, AssessmentStats>>({});
@@ -34,7 +35,7 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
     setStatsLoading(true);
     Promise.all(
       assessmentAssignments.map(a =>
-        getAssessmentStats(a.id).then(stats => [a.id, stats] as const)
+        getAssessmentStats(a.id, a, users).then(stats => [a.id, stats] as const)
       )
     ).then(entries => {
       if (cancelled) return;
@@ -88,7 +89,7 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(assessment => {
-            const stats = statsByAssessment[assessment.id] ?? { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0 };
+            const stats = statsByAssessment[assessment.id] ?? { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0, notStarted: 0 };
             const gradePct = stats.submitted > 0 ? Math.round((stats.graded / stats.submitted) * 100) : 0;
             const isOverdue = assessment.dueDate ? new Date(assessment.dueDate) < new Date() : false;
 
@@ -145,6 +146,7 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                   {!statsLoading && stats.flagged > 0 && <span className="text-amber-400">{stats.flagged} flagged</span>}
                   {!statsLoading && stats.aiFlagged > 0 && <span className="text-purple-400">{stats.aiFlagged} AI flagged</span>}
                   {!statsLoading && stats.draft > 0 && <span className="text-cyan-400">{stats.draft} draft{stats.draft !== 1 ? 's' : ''}</span>}
+                  {!statsLoading && stats.notStarted > 0 && <span className="text-orange-400">{stats.notStarted} not started</span>}
                 </div>
               </button>
             );

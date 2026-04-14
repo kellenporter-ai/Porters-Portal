@@ -181,22 +181,34 @@ export function buildStudentGroups(params: BuildStudentGroupsParams): BuildStude
     };
   });
 
+  // Draft user sets — computed before enrolledInClass so the fallback below can reference draftUserIds
+  const submittedUserIds = new Set(sectionFilteredSubs.map(s => s.userId));
+  const sessionDraftUserIds = new Set(draftSessions.map(s => s.userId));
+  const draftUserIds = new Set([...sessionDraftUserIds, ...draftResponseUserIds]);
+
   // Enrolled cross-reference
   const enrolledInClass = enrolledStudents.filter(s => {
     const ct = selectedAssessment?.classType;
     if (!ct) return false;
-    return s.classType === ct || s.enrolledClasses?.includes(ct);
+    // Primary enrollment check
+    if (s.classType === ct || s.enrolledClasses?.includes(ct)) return true;
+    // Defense: if classType data is mismatched but student has an active draft, include them
+    if (draftUserIds.has(s.id)) return true;
+    return false;
   });
+  if (selectedAssessment?.classType && enrolledStudents.length > 0 && enrolledInClass.length === 0) {
+    console.warn('[gradingHelpers] enrolledInClass is empty despite classType being set — possible enrollment data mismatch', {
+      classType: selectedAssessment.classType,
+      sampleStudentClassType: enrolledStudents[0]?.classType,
+      sampleEnrolledClasses: enrolledStudents[0]?.enrolledClasses,
+    });
+  }
   const enrolledFiltered = assessmentSectionFilter
     ? enrolledInClass.filter(s => {
         const sec = getUserSectionForClass(s, selectedAssessment!.classType);
         return sec === assessmentSectionFilter;
       })
     : enrolledInClass;
-
-  const submittedUserIds = new Set(sectionFilteredSubs.map(s => s.userId));
-  const sessionDraftUserIds = new Set(draftSessions.map(s => s.userId));
-  const draftUserIds = new Set([...sessionDraftUserIds, ...draftResponseUserIds]);
   const draftSessionMap = new Map(draftSessions.map(s => [s.userId, s.startedAt]));
   const hasDraftStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id) && draftUserIds.has(s.id));
   const notStartedStudents = enrolledFiltered.filter(s => !submittedUserIds.has(s.id) && !draftUserIds.has(s.id));
