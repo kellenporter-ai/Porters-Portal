@@ -3,6 +3,10 @@
  * Extracted from TeacherDashboard.tsx.
  */
 import { Submission, Assignment, User, getUserSectionForClass } from '../../types';
+import {
+  classifyAssessmentParticipants,
+  filterEnrolledInClass,
+} from '../../lib/assessmentClassifier';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -181,21 +185,18 @@ export function buildStudentGroups(params: BuildStudentGroupsParams): BuildStude
     };
   });
 
-  // Draft user sets — computed before enrolledInClass so the fallback below can reference draftUserIds
-  const submittedUserIds = new Set(sectionFilteredSubs.map(s => s.userId));
-  const sessionDraftUserIds = new Set(draftSessions.map(s => s.userId));
-  const draftUserIds = new Set([...sessionDraftUserIds, ...draftResponseUserIds]);
-
-  // Enrolled cross-reference
-  const enrolledInClass = enrolledStudents.filter(s => {
-    const ct = selectedAssessment?.classType;
-    if (!ct) return false;
-    // Primary enrollment check
-    if (s.classType === ct || s.enrolledClasses?.includes(ct)) return true;
-    // Defense: if classType data is mismatched but student has an active draft, include them
-    if (draftUserIds.has(s.id)) return true;
-    return false;
+  // Draft user sets — delegated to shared classifier so dataService.getAssessmentStats
+  // and this helper apply the same rules for "what counts as a draft".
+  const classified = classifyAssessmentParticipants({
+    submissions: sectionFilteredSubs,
+    sessionDraftUserIds: new Set(draftSessions.map(s => s.userId)),
+    responseDraftUserIds: draftResponseUserIds,
   });
+  const submittedUserIds = classified.submittedUserIds;
+  const draftUserIds = classified.draftUserIds;
+
+  // Enrolled cross-reference (falls back to draft users when enrollment data is drifted)
+  const enrolledInClass = filterEnrolledInClass(enrolledStudents, selectedAssessment, draftUserIds);
   if (selectedAssessment?.classType && enrolledStudents.length > 0 && enrolledInClass.length === 0) {
     console.warn('[gradingHelpers] enrolledInClass is empty despite classType being set — possible enrollment data mismatch', {
       classType: selectedAssessment.classType,

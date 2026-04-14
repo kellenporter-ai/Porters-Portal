@@ -6,6 +6,11 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { createInitialMetrics } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
 import { resilientSnapshot, clearDeniedCollections } from './resilientSnapshot';
+import {
+  classifyAssessmentParticipants,
+  filterEnrolledInClass,
+  computeNotStartedCount,
+} from '../lib/assessmentClassifier';
 
 export { clearDeniedCollections };
 
@@ -374,33 +379,27 @@ export const dataService = {
         getDocs(query(collection(db, 'lesson_block_responses'), where('assignmentId', '==', assignmentId), limit(500))),
       ]);
 
-      const all = submissionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
-      const nonStarted = all.filter(s => s.status !== 'STARTED');
-      const submitted = new Set(nonStarted.map(s => s.userId)).size;
-      const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId)).size;
-      const flagged = nonStarted.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
-      const aiFlagged = nonStarted.filter(s => s.flaggedAsAI).length;
-
-      // Union of all draft sources minus submitted users
-      const submittedUserIds = new Set(nonStarted.map(s => s.userId));
-      const startedSubmissionIds = new Set(all.filter(s => s.status === 'STARTED').map(s => s.userId));
-      const sessionDraftIds = new Set(sessionsSnap.docs.map(d => d.data().userId as string));
-      const responseDraftIds = new Set(
+      const submissions = submissionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
+      const sessionDraftUserIds = new Set(sessionsSnap.docs.map(d => d.data().userId as string));
+      const responseDraftUserIds = new Set(
         draftResponsesSnap.docs
           .filter(d => { const r = d.data().responses as Record<string, unknown> | undefined; return r && Object.keys(r).length > 0; })
           .map(d => d.data().userId as string)
       );
-      const allDraftIds = new Set([...startedSubmissionIds, ...sessionDraftIds, ...responseDraftIds].filter(id => !submittedUserIds.has(id)));
-      const draft = allDraftIds.size;
 
-      // notStarted: enrolled students minus submitted minus draft
+      const classified = classifyAssessmentParticipants({ submissions, sessionDraftUserIds, responseDraftUserIds });
+      const nonStarted = submissions.filter(s => s.status !== 'STARTED');
+
+      const submitted = classified.submittedUserIds.size;
+      const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId)).size;
+      const flagged = nonStarted.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
+      const aiFlagged = nonStarted.filter(s => s.flaggedAsAI).length;
+      const draft = classified.draftUserIds.size;
+
       let notStarted = 0;
       if (assignment?.classType && enrolledStudents) {
-        const ct = assignment.classType;
-        const enrolledInClass = enrolledStudents.filter(s =>
-          s.classType === ct || s.enrolledClasses?.includes(ct as ClassType)
-        );
-        notStarted = enrolledInClass.filter(s => !submittedUserIds.has(s.id) && !allDraftIds.has(s.id)).length;
+        const enrolledInClass = filterEnrolledInClass(enrolledStudents, assignment, classified.draftUserIds);
+        notStarted = computeNotStartedCount(enrolledInClass, classified);
       }
 
       return { submitted, graded, flagged, aiFlagged, draft, notStarted };
