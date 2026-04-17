@@ -362,7 +362,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <AnnouncementIcon className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm text-[var(--text-primary)]"><span className="sr-only">{a.priority === 'URGENT' ? 'Urgent: ' : a.priority === 'WARNING' ? 'Warning: ' : 'Info: '}</span>{a.title}</h3>
-                  <div className="text-xs mt-0.5 text-inherit">{a.content}</div>
+                  <div className="text-xs mt-0.5 text-[var(--text-primary)]">{a.content}</div>
                 </div>
                 <button onClick={() => handleDismissAnnouncement(a.id)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition shrink-0 focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg" aria-label="Dismiss announcement">
                   <XIcon className="w-4 h-4" />

@@ -3,6 +3,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Typography — deliberate stack (set after tailwind so it overrides preflight) */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+code, .font-mono, kbd, pre, samp {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 /* ═══ Theme Variables ═══ */
 :root {
   --surface-base: #f8f7fc;
@@ -82,9 +90,8 @@
   --info: #3b82f6;
 }
 
-/* Light mode: purple neon edges on glass panels (top-level only, not nested cards) */
-:root:not(.dark) .rounded-2xl,
-:root:not(.dark) .rounded-3xl {
+/* Opt-in glow utility. Apply .glass-card to panels that should read as 'premium' glass. */
+:root:not(.dark) .glass-card {
   box-shadow: var(--glass-glow);
 }
 
@@ -375,7 +382,6 @@ html:not(.dark) .backdrop-blur-2xl {
 .rarity-shimmer-rare {
   background-image: linear-gradient(110deg, transparent 25%, rgba(234,179,8,0.2) 40%, rgba(234,179,8,0.08) 55%, transparent 70%);
   background-size: 200% 100%;
-  animation: shimmerSweep 3s ease-in-out infinite;
 }
 .rarity-shimmer-rare:hover { animation: shimmerSweep 1s ease-in-out infinite; }
 .rarity-shimmer-unique {
