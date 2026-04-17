@@ -41,7 +41,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions }) =>
           <div key={stat.label} className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
               <span className={`text-${stat.color}-400`}>{stat.icon}</span>
-              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{stat.label}</span>
+              <span className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{stat.label}</span>
             </div>
             <div className="text-2xl font-black text-[var(--text-primary)]">{stat.value}</div>
           </div>
@@ -56,8 +56,8 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions }) =>
             className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-2 hover:text-[var(--text-primary)] transition cursor-pointer"
           >
             <Clock className="w-4 h-4 text-[var(--accent-text)]" /> Recent Engagement
-            <span className="text-[10px] text-[var(--text-muted)]">({engagementLogs.length})</span>
-            <span className="text-[10px] text-[var(--text-muted)]">{expanded ? '▲' : '▼'}</span>
+            <span className="text-[11.5px] text-[var(--text-muted)]">({engagementLogs.length})</span>
+            <span className="text-[11.5px] text-[var(--text-muted)]">{expanded ? '▲' : '▼'}</span>
           </button>
           {expanded && (
             <div className="flex items-center gap-1 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg p-0.5">
@@ -84,11 +84,11 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions }) =>
                         <div className="flex justify-between items-start mb-3">
                           <div className="min-w-0">
                             <span className="font-bold text-[var(--text-secondary)] text-sm block truncate">{sub.userName}</span>
-                            <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-tight line-clamp-1">{sub.assignmentTitle}</span>
+                            <span className="text-[11.5px] text-[var(--text-muted)] font-medium uppercase tracking-tight line-clamp-1">{sub.assignmentTitle}</span>
                           </div>
-                          <span className="text-[10px] font-bold text-blue-400 bg-blue-900/30 px-2.5 py-1 rounded-full shrink-0 ml-2">{Math.round(sub.score)} XP</span>
+                          <span className="text-[11.5px] font-bold text-blue-400 bg-blue-900/30 px-2.5 py-1 rounded-full shrink-0 ml-2">{Math.round(sub.score)} XP</span>
                         </div>
-                        <div className="text-[10px] text-[var(--text-muted)] border-t border-[var(--border)] pt-2 flex justify-between">
+                        <div className="text-[11.5px] text-[var(--text-muted)] border-t border-[var(--border)] pt-2 flex justify-between">
                           <span>{Math.round(sub.metrics.engagementTime / 60)}m active</span>
                           <span className="opacity-0 group-hover:opacity-100 transition">{new Date(sub.submittedAt || '').toLocaleDateString()}</span>
                         </div>
@@ -100,7 +100,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions }) =>
                   <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                     <table className="w-full text-left table-fixed">
                       <thead className="sticky top-0 bg-[var(--panel-bg)] z-10">
-                        <tr className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">
+                        <tr className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">
                           <th scope="col" className="py-2 px-3 w-[25%]">Student</th>
                           <th scope="col" className="py-2 px-3 w-[35%]">Resource</th>
                           <th scope="col" className="py-2 px-3 text-right w-[12%]">XP</th>

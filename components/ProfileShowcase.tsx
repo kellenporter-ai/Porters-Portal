@@ -125,19 +125,19 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                     {classXP.toLocaleString()}
                   </div>
-                  <div className="text-[9px] text-[var(--text-muted)] font-mono">CLASS XP</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)] font-mono">CLASS XP</div>
                 </div>
                 <div className="text-center">
                   <div className="text-xl font-black text-yellow-400">{gearScore}</div>
-                  <div className="text-[9px] text-[var(--text-muted)] font-mono">GEAR SCORE</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)] font-mono">GEAR SCORE</div>
                 </div>
                 <div className="text-center">
                   <div className="text-xl font-black text-orange-400">{gam.engagementStreak || 0}w</div>
-                  <div className="text-[9px] text-[var(--text-muted)] font-mono">STREAK</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)] font-mono">STREAK</div>
                 </div>
                 <div className="text-center">
                   <div className="text-xl font-black text-purple-400">{unlockedAchievements.length}</div>
-                  <div className="text-[9px] text-[var(--text-muted)] font-mono">BADGES</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)] font-mono">BADGES</div>
                 </div>
               </div>
 
@@ -188,7 +188,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   const item = equipped[slot] as RPGItem | undefined;
                   if (!item) return (
                     <div key={slot} className="flex items-center gap-2 p-1.5 bg-white/2 rounded text-xs text-[var(--text-muted)]">
-                      <span className="font-mono w-12 text-[10px]">{slot}</span>
+                      <span className="font-mono w-12 text-[11.5px]">{slot}</span>
                       <span className="italic">Empty</span>
                     </div>
                   );
@@ -231,7 +231,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   {achievementDetails.slice(0, 12).map(a => (
                     <div key={a.id} className="text-center p-2 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
                       <div className="text-xl">{a.icon}</div>
-                      <div className="text-[9px] text-yellow-400 font-bold truncate mt-0.5">{a.title}</div>
+                      <div className="text-[11.5px] text-yellow-400 font-bold truncate mt-0.5">{a.title}</div>
                     </div>
                   ))}
                 </div>

@@ -33,22 +33,22 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1 print:text-purple-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{xp.toLocaleString()}</div>
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Shield className="w-5 h-5 text-cyan-400 mx-auto mb-1 print:text-cyan-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">Lv. {level}</div>
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Level</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Level</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Flame className="w-5 h-5 text-orange-400 mx-auto mb-1 print:text-orange-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{loginStreak}</div>
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Login Streak</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Login Streak</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
           <Zap className="w-5 h-5 text-yellow-400 mx-auto mb-1 print:text-yellow-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{currency}</div>
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
         </div>
       </div>
 
@@ -68,9 +68,9 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
       <div className="flex flex-wrap gap-3">
         {bucketMeta && (
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${bucketMeta.borderColor} ${bucketMeta.bgColor}`}>
-            <span className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Bucket:</span>
+            <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Bucket:</span>
             <span className={`text-sm font-bold ${bucketMeta.color}`}>{bucketMeta.label}</span>
-            {bucket && <span className="text-[10px] text-[var(--text-muted)]">ES: {bucket.engagementScore}</span>}
+            {bucket && <span className="text-[11.5px] text-[var(--text-muted)]">ES: {bucket.engagementScore}</span>}
           </div>
         )}
         {highestAlert && (
@@ -86,7 +86,7 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
               highestAlert.riskLevel === 'MODERATE' ? 'text-yellow-400' : 'text-blue-400'
             }`} />
             <span className="text-xs font-bold text-[var(--text-primary)] print:text-black">{highestAlert.riskLevel}</span>
-            <span className="text-[10px] text-[var(--text-tertiary)] print:text-gray-600">{highestAlert.reason.replace(/_/g, ' ')}</span>
+            <span className="text-[11.5px] text-[var(--text-tertiary)] print:text-[var(--text-tertiary)]">{highestAlert.reason.replace(/_/g, ' ')}</span>
           </div>
         )}
       </div>

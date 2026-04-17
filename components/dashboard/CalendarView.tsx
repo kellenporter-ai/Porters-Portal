@@ -193,7 +193,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
               </h3>
               <button
                 onClick={goToday}
-                className="text-[10px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider transition"
+                className="text-[11.5px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider transition"
               >
                 Today
               </button>
@@ -208,7 +208,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
               {/* Weekday headers */}
               <div className="grid grid-cols-7 gap-1 mb-1">
                 {WEEKDAYS.map(d => (
-                  <div key={d} className="text-center text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider py-1">
+                  <div key={d} className="text-center text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-wider py-1">
                     {d}
                   </div>
                 ))}
@@ -271,7 +271,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     } ${isSelected ? 'bg-[var(--surface-glass-heavy)] ring-1 ring-[var(--border-strong)]' : ''} ${hasAssignments ? 'hover:bg-[var(--surface-glass)]' : ''}`}
                   >
                     <div className="w-14 text-center">
-                      <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
+                      <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
                       <div className={`text-lg font-bold ${day.isToday ? 'text-purple-400' : 'text-[var(--text-secondary)]'}`}>{day.date.getDate()}</div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -298,13 +298,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
 
           {/* Legend */}
           <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--border)]">
-            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+            <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-muted)]">
               <div className={`w-2 h-2 rounded-full ${getClassColor(activeClass, allEnrolled)}`} /> {activeClass}
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+            <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-muted)]">
               <div className="w-2 h-2 rounded-full bg-emerald-400" /> Completed
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+            <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-muted)]">
               <div className="w-2 h-2 rounded-full bg-red-400" /> Overdue
             </div>
           </div>
@@ -335,7 +335,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                       )}
                       <div className="min-w-0">
                         <div className="text-sm text-[var(--text-secondary)] font-medium truncate">{a.title}</div>
-                        <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                        <div className="text-[11.5px] text-[var(--text-muted)] mt-0.5">
                           {a.unit || 'General'} · {a.category || 'Resource'}
                         </div>
                       </div>
@@ -365,7 +365,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     >
                       <div className="text-sm text-[var(--text-secondary)] truncate">{a.title}</div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-[10px] font-bold ${
+                        <span className={`text-[11.5px] font-bold ${
                           daysLeft <= 1 ? 'text-red-400' :
                           daysLeft <= 3 ? 'text-yellow-400' : 'text-[var(--text-muted)]'
                         }`}>
@@ -373,7 +373,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                            daysLeft === 1 ? 'Due tomorrow' :
                            `${daysLeft} days left`}
                         </span>
-                        <span className="text-[10px] text-[var(--text-muted)]">
+                        <span className="text-[11.5px] text-[var(--text-muted)]">
                           {due.getMonth() + 1}/{due.getDate()}
                         </span>
                       </div>
@@ -398,7 +398,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     return !sub && new Date(a.dueDate!) >= new Date();
                   }).length}
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Pending</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase">Pending</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-black text-red-400">
@@ -407,7 +407,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                     return !sub && new Date(a.dueDate!) < new Date();
                   }).length}
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Overdue</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase">Overdue</div>
               </div>
             </div>
           </div>

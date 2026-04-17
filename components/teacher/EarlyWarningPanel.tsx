@@ -125,18 +125,18 @@ const SignalChip: React.FC<{ signal: WarningSignal; compact?: boolean }> = ({ si
   const label = compact ? shortSignalLabel(signal) : signal.label;
 
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${colorClass} ${isStale ? 'opacity-60' : ''}`}>
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11.5px] font-semibold border ${colorClass} ${isStale ? 'opacity-60' : ''}`}>
       {label}
       {ageDays !== null && (
-        <span className="text-[9px] opacity-70">{ageDays}d</span>
+        <span className="text-[11.5px] opacity-70">{ageDays}d</span>
       )}
       {isStale && !compact && (
-        <span className="ml-0.5 px-1 rounded bg-[var(--surface-glass)] text-[var(--text-muted)] border border-[var(--border)] text-[9px]">
+        <span className="ml-0.5 px-1 rounded bg-[var(--surface-glass)] text-[var(--text-muted)] border border-[var(--border)] text-[11.5px]">
           Stale
         </span>
       )}
       {isStale && compact && (
-        <span className="text-[9px] opacity-60" title="Stale alert">·S</span>
+        <span className="text-[11.5px] opacity-60" title="Stale alert">·S</span>
       )}
     </span>
   );
@@ -183,7 +183,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
             />
           ) : (
             <div
-              className="w-8 h-8 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] flex items-center justify-center text-[10px] font-bold text-[var(--text-secondary)]"
+              className="w-8 h-8 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] flex items-center justify-center text-[11.5px] font-bold text-[var(--text-secondary)]"
               aria-hidden="true"
             >
               {getInitials(student.name)}
@@ -198,7 +198,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
 
       {/* Row 2: Class name */}
       {student.classType && (
-        <span className="text-[10px] text-[var(--text-muted)] truncate leading-none pl-0.5">
+        <span className="text-[11.5px] text-[var(--text-muted)] truncate leading-none pl-0.5">
           {student.classType}
         </span>
       )}
@@ -209,7 +209,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
           <SignalChip key={sig.kind} signal={sig} compact />
         ))}
         {extraCount > 0 && (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)]">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11.5px] font-semibold bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)]">
             +{extraCount}
           </span>
         )}
@@ -688,7 +688,7 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
             </div>
 
             {/* Bucket breakdown note */}
-            <p className="mt-3 text-[10px] text-[var(--text-muted)] italic">
+            <p className="mt-3 text-[11.5px] text-[var(--text-muted)] italic">
               Signals combine server-side EWS alerts with local engagement thresholds and
               telemetry bucket data. Dismiss removes a server alert; Hide clears a local signal from view.
             </p>

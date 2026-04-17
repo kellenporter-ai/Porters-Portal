@@ -104,13 +104,13 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                   <h3 className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-text)] transition leading-snug">
                     {assessment.title}
                     {hasClassroomLinks(assessment) && (
-                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">
+                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11.5px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">
                         {(assessment.classroomLinks?.length ?? 0) > 1 ? `GC \u00d7${assessment.classroomLinks!.length}` : 'GC'}
                       </span>
                     )}
                   </h3>
                   {assessment.classType && (
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${getClassBadgeStyle(assessment.classType)}`}>
+                    <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded-full shrink-0 ${getClassBadgeStyle(assessment.classType)}`}>
                       {assessment.classType}
                     </span>
                   )}
@@ -133,14 +133,14 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                         style={{ width: `${gradePct}%` }}
                       />
                     </div>
-                    <span className={`text-[10px] font-bold tabular-nums ${gradePct === 100 ? 'text-green-400' : 'text-[var(--text-tertiary)]'}`}>
+                    <span className={`text-[11.5px] font-bold tabular-nums ${gradePct === 100 ? 'text-green-400' : 'text-[var(--text-tertiary)]'}`}>
                       {statsLoading ? '—' : `${stats.graded}/${stats.submitted}`}
                     </span>
                   </div>
                 )}
 
                 {/* Stats row */}
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--text-muted)]">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-[var(--text-muted)]">
                   <span>{statsLoading ? '—' : `${stats.submitted} submitted`}</span>
                   {assessment.rubric && <span className="text-green-400/80">{statsLoading ? '—' : `${stats.graded} graded`}</span>}
                   {!statsLoading && stats.flagged > 0 && <span className="text-amber-400">{stats.flagged} flagged</span>}

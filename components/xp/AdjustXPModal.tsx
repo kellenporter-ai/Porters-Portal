@@ -106,7 +106,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                         <div>
                             <h3 className="font-bold text-[var(--text-primary)] text-lg">{user.name}</h3>
                             <p className="text-xs text-[var(--text-muted)]">{user.email}</p>
-                            <div className="text-[10px] font-black text-[var(--accent-text)] mt-1 uppercase tracking-tighter">Current: {user.gamification?.xp || 0} XP</div>
+                            <div className="text-[11.5px] font-black text-[var(--accent-text)] mt-1 uppercase tracking-tighter">Current: {user.gamification?.xp || 0} XP</div>
                         </div>
                     </div>
                 )}
@@ -140,10 +140,10 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                             </div>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{selectedIds.size} selected</span>
+                            <span className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{selectedIds.size} selected</span>
                             <div className="flex gap-2">
-                                <button onClick={selectAll} className="text-[10px] text-[var(--accent-text)] hover:text-purple-300 font-bold transition">Select All ({filteredStudents.length})</button>
-                                <button onClick={selectNone} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] font-bold transition">Clear</button>
+                                <button onClick={selectAll} className="text-[11.5px] text-[var(--accent-text)] hover:text-purple-300 font-bold transition">Select All ({filteredStudents.length})</button>
+                                <button onClick={selectNone} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] font-bold transition">Clear</button>
                             </div>
                         </div>
                         <div className="max-h-48 overflow-y-auto space-y-1 border border-[var(--border)] rounded-xl p-2 bg-[var(--panel-bg)]">
@@ -153,7 +153,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                                     <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-[var(--border)]" alt={s.name} loading="lazy" />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-xs font-bold text-[var(--text-primary)] truncate">{s.name}</div>
-                                        <div className="text-[10px] text-[var(--text-muted)]">{s.classType} — {s.gamification?.xp || 0} XP</div>
+                                        <div className="text-[11.5px] text-[var(--text-muted)]">{s.classType} — {s.gamification?.xp || 0} XP</div>
                                     </div>
                                 </label>
                             ))}
@@ -179,7 +179,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest px-1">Precise Adjustment</label>
+                    <label className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest px-1">Precise Adjustment</label>
                     <input
                         type="number"
                         className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-4 px-4 text-center text-2xl font-black text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"

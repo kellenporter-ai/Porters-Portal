@@ -185,7 +185,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-bold text-[var(--text-primary)]">Specialization</h3>
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">You earn 1 Skill Point every 2 levels</p>
+          <p className="text-[11.5px] text-[var(--text-muted)] mt-0.5">You earn 1 Skill Point every 2 levels</p>
         </div>
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5">
           <Zap className="w-4 h-4 text-yellow-400" />
@@ -247,8 +247,8 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-[var(--text-tertiary)] mt-1">{spec.description}</p>
-              {!hasChosen && isSelected && <p className="text-[9px] text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>}
+              <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1">{spec.description}</p>
+              {!hasChosen && isSelected && <p className="text-[11.5px] text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>}
             </button>
           );
         })}
@@ -259,7 +259,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
         <div className="p-3 bg-white/5 border border-white/10 rounded-xl space-y-2">
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-3.5 h-3.5 text-white/60" />
-            <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest">Active Synergies</span>
+            <span className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest">Active Synergies</span>
           </div>
           {activeSynergies.map(syn => (
             <div
@@ -270,7 +270,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
               <span className={`text-[11px] font-bold whitespace-nowrap ${syn.color}`}>{syn.bonus}</span>
             </div>
           ))}
-          <p className="text-[9px] text-[var(--text-muted)] mt-1 leading-relaxed">
+          <p className="text-[11.5px] text-[var(--text-muted)] mt-1 leading-relaxed">
             Synergy bonuses are earned by having unlocked skills in multiple specializations. Bonuses are display-only and informational.
           </p>
         </div>
@@ -282,7 +282,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
           const tierNodes = treeNodes.filter(n => n.tier === tier);
           return (
             <div key={tier}>
-              <p className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Tier {tier}</p>
+              <p className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Tier {tier}</p>
               <div className="grid grid-cols-2 gap-2">
                 {tierNodes.map(node => {
                   const isUnlocked = unlockedSkills.includes(node.id);
@@ -307,9 +307,9 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                         {isUnlocked && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 ml-auto" />}
                         {!isUnlocked && !isUnlockable && <Lock className="w-3 h-3 text-gray-600 ml-auto" />}
                       </div>
-                      <p className="text-[10px] text-[var(--text-tertiary)]">{node.description}</p>
+                      <p className="text-[11.5px] text-[var(--text-tertiary)]">{node.description}</p>
                       {!isUnlocked && (
-                        <div className="mt-1 text-[9px] font-mono text-[var(--text-muted)]">
+                        <div className="mt-1 text-[11.5px] font-mono text-[var(--text-muted)]">
                           Cost: {node.cost} SP
                         </div>
                       )}

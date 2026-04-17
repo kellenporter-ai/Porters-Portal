@@ -147,7 +147,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[11.5px] font-bold rounded-full flex items-center justify-center animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -171,7 +171,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-1 text-[10px] text-[var(--accent-text)] hover:text-purple-300 font-bold uppercase tracking-widest transition"
+                className="flex items-center gap-1 text-[11.5px] text-[var(--accent-text)] hover:text-purple-300 font-bold uppercase tracking-widest transition"
               >
                 <CheckCheck className="w-3 h-3" /> Mark all read
               </button>
@@ -194,13 +194,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
                         }
                         setShowPushPrompt(false);
                       }}
-                      className="px-2 py-1 bg-purple-600 text-white text-[10px] font-bold rounded-lg hover:bg-purple-500 transition"
+                      className="px-2 py-1 bg-purple-600 text-white text-[11.5px] font-bold rounded-lg hover:bg-purple-500 transition"
                     >
                       Enable
                     </button>
                     <button
                       onClick={() => setShowPushPrompt(false)}
-                      className="px-2 py-1 bg-[var(--surface-glass)] text-[var(--text-tertiary)] text-[10px] font-bold rounded-lg hover:bg-[var(--surface-glass-heavy)] transition"
+                      className="px-2 py-1 bg-[var(--surface-glass)] text-[var(--text-tertiary)] text-[11.5px] font-bold rounded-lg hover:bg-[var(--surface-glass-heavy)] transition"
                     >
                       Not now
                     </button>
@@ -231,7 +231,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs font-bold text-[var(--text-primary)] ${expandedId === n.id ? '' : 'truncate'}`}>{n.title}</p>
                     <p className={`text-[11px] text-[var(--text-tertiary)] leading-tight mt-0.5 ${expandedId === n.id ? '' : 'line-clamp-2'}`}>{n.message}</p>
-                    <p className="text-[9px] text-[var(--text-muted)] mt-1">{formatTime(n.timestamp)}</p>
+                    <p className="text-[11.5px] text-[var(--text-muted)] mt-1">{formatTime(n.timestamp)}</p>
                   </div>
                   {!n.isRead && (
                     <div className="w-2 h-2 rounded-full bg-purple-500 mt-1.5 shrink-0" />

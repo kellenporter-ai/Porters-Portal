@@ -90,7 +90,7 @@ const QuickNavCard: React.FC<{
     <div className="relative">
       {icon}
       {badge !== undefined && badge !== 0 && (
-        <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+        <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[11.5px] font-black rounded-full w-4 h-4 flex items-center justify-center">
           {badge}
         </span>
       )}
@@ -236,7 +236,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
             <Target className="w-6 h-6 text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-0.5">Up Next</div>
+            <div className="text-[11.5px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-0.5">Up Next</div>
             <div className="text-base font-bold text-[var(--text-primary)] truncate">{upNextAssignment.title}</div>
             <div className={`text-xs font-bold mt-0.5 ${
               new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 0 ? 'text-red-400' :

@@ -106,8 +106,8 @@ const BehavioralIndicators: React.FC<BehavioralIndicatorsProps> = ({ submissions
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
               </div>
               <div className={`text-lg font-bold ${colors.text}`}>{ind.value}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{ind.label}</div>
-              <div className="text-[10px] text-[var(--text-muted)] mt-1">{ind.detail}</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{ind.label}</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] mt-1">{ind.detail}</div>
             </div>
           );
         })}

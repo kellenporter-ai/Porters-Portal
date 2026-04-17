@@ -431,7 +431,7 @@ const StructureForm: React.FC<{
           )}
           <div className="flex flex-col gap-0.5">
             <label
-              className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider"
+              className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-wider"
               htmlFor={`struct-${type}-${field.key}`}
             >
               {field.label}
@@ -703,7 +703,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                           key={li}
                           className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
                         >
-                          <span className={`text-[10px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <span className={`text-[11.5px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
                           <div
                             dangerouslySetInnerHTML={{
                               __html: renderLatex(line.trim()),
@@ -742,7 +742,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                           key={li}
                           className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
                         >
-                          <span className={`text-[10px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <span className={`text-[11.5px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
                           <div
                             dangerouslySetInnerHTML={{
                               __html: renderLatex(line.trim()),
@@ -881,7 +881,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
         <div className="space-y-2.5 border-t border-[var(--border)] pt-3">
           {/* Structure buttons */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mr-1 shrink-0">
+            <span className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-wider mr-1 shrink-0">
               Build
             </span>
             {STRUCTURE_KEYS.map(type => {
@@ -929,7 +929,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {TOOLBAR_GROUPS.map(group => (
               <div key={group.label} className="flex items-center gap-1">
-                <span className="text-[10px] text-[var(--text-muted)] mr-1 shrink-0 uppercase tracking-wider">
+                <span className="text-[11.5px] text-[var(--text-muted)] mr-1 shrink-0 uppercase tracking-wider">
                   {group.label}
                 </span>
                 <div className="flex flex-wrap gap-0.5">
@@ -953,7 +953,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           <div className="space-y-1.5">
             {Array.from(new Set(TEMPLATES.map(t => t.category))).map(cat => (
               <div key={cat} className="flex items-center gap-1 flex-wrap">
-                <span className="text-[10px] text-[var(--text-muted)] mr-1 shrink-0 uppercase tracking-wider w-20">
+                <span className="text-[11.5px] text-[var(--text-muted)] mr-1 shrink-0 uppercase tracking-wider w-20">
                   {cat}
                 </span>
                 {TEMPLATES.filter(t => t.category === cat).map((tmpl, i) => (
@@ -993,7 +993,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
             <button
               type="button"
               onClick={handleEdit}
-              className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
+              className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
             >
               <Pencil className="w-3 h-3" /> Edit
             </button>

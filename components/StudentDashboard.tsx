@@ -59,7 +59,7 @@ interface StudentDashboardProps {
   studentTab?: StudentTab;
 }
 
-const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'RESOURCES' }) => {
+const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'HOME' }) => {
   const toast = useToast();
   const isMounted = useIsMounted();
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
@@ -354,7 +354,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             const styles = {
               INFO: 'bg-blue-600/10 border-blue-500/30 text-blue-300',
               WARNING: 'bg-yellow-600/10 border-yellow-500/30 text-yellow-300',
-              URGENT: `bg-red-600/10 border-red-500/30 text-red-300${reducedMotion ? '' : ' animate-pulse'}`,
+              URGENT: 'bg-red-600/10 border-red-500/30 text-red-300',
             };
             const AnnouncementIcon = a.priority === 'URGENT' ? AlertCircle : a.priority === 'WARNING' ? AlertTriangle : Megaphone;
             return (
@@ -376,7 +376,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* ACTIVE EVENT BANNER */}
       {activeEvent && (
         <div>
-          <div className={`bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)]${reducedMotion ? '' : ' animate-pulse'}`} role="status" aria-live="polite">
+          <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)]" role="status" aria-live="polite">
             <div className="flex items-center gap-3">
               <div className="bg-blue-500 text-white p-2 rounded-lg">
                 <Zap className="w-5 h-5 fill-current" aria-hidden="true" />
@@ -412,7 +412,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                           className={`lg:text-sm font-bold tracking-tight lg:truncate lg:max-w-full ${!user.gamification?.nameColor ? (isLight ? 'text-[var(--text-primary)]' : 'text-white') : ''}`}
                           style={user.gamification?.nameColor ? { color: user.gamification.nameColor } : undefined}
                         >{user.gamification?.codename || user.name}</h2>
-                        <span className={`font-mono text-xs lg:text-[10px] uppercase tracking-[0.2em] mt-0 lg:mt-0 font-bold ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
+                        <span className={`font-mono text-xs lg:text-[11.5px] uppercase tracking-[0.2em] mt-0 lg:mt-0 font-bold ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                             {rankDetails.rankName} (Lvl {level})
                         </span>
 
@@ -444,7 +444,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <Hexagon className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
             </div>
             <div className="flex items-baseline gap-1.5 lg:gap-1">
-                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest lg:text-[10px]">Cyber-Flux</div>
+                <div className="text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-widest lg:text-[11.5px]">Cyber-Flux</div>
                 <div className="text-lg lg:text-base font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
             </div>
         </div>
@@ -459,12 +459,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                         <Flame className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
                     </div>
                     <div className="flex items-baseline gap-1.5 lg:gap-1 flex-1 min-w-0">
-                        <div className="text-xs lg:text-[10px] text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
+                        <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
                         <div className={`text-lg lg:text-base font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
                     </div>
                     {multiplier > 1 && (
                         <div className="text-right shrink-0">
-                            <div className="text-xs lg:text-[10px] text-[var(--text-tertiary)] uppercase">XP Bonus</div>
+                            <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase">XP Bonus</div>
                             <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
                         </div>
                     )}
@@ -477,7 +477,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
                 <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
                 <div className="flex items-baseline gap-1.5 lg:gap-1">
-                    <div className="text-xs lg:text-[10px] text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
+                    <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
                     <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>

@@ -130,7 +130,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
               <div className={`text-2xl font-bold ${streak.currentStreak > 0 ? 'text-amber-300' : 'text-[var(--text-tertiary)]'}`}>
                 {streak.currentStreak} Day{streak.currentStreak !== 1 ? 's' : ''}
               </div>
-              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold">
                 Current Streak | Best: {streak.longestStreak}
               </div>
             </div>
@@ -146,7 +146,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
         <div className="flex gap-1.5">
           {last7Days.map(day => (
             <div key={day.date} className="flex-1 text-center">
-              <div className="text-[9px] text-[var(--text-muted)] mb-1">{day.dayLabel}</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] mb-1">{day.dayLabel}</div>
               <div className={`w-full aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition ${
                 day.isActive
                   ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20'
@@ -164,7 +164,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
         {(streak.milestones?.length || 0) > 0 && (
           <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--border)]">
             {streak.milestones?.map(m => (
-              <span key={m} className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] ${MILESTONE_COLORS[m] || 'text-[var(--text-primary)]'}`}>
+              <span key={m} className={`text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-glass)] border border-[var(--border)] ${MILESTONE_COLORS[m] || 'text-[var(--text-primary)]'}`}>
                 {m}d
               </span>
             ))}

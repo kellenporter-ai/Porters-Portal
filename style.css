@@ -161,10 +161,6 @@ textarea:focus:not(:focus-visible) {
 }
 
 /* Light mode: reduce heavy blurs so circuit board traces stay visible through panels */
-html:not(.dark) .backdrop-blur-md {
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-}
 html:not(.dark) .backdrop-blur-xl {
   backdrop-filter: blur(6px) !important;
   -webkit-backdrop-filter: blur(6px) !important;

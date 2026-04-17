@@ -259,7 +259,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
             {/* Center effects area */}
             <div className="flex-1 relative flex items-center justify-center">
                 {/* VS text */}
-                <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest opacity-60">vs</span>
+                <span className="text-[11.5px] font-black text-[var(--text-tertiary)] uppercase tracking-widest opacity-60">vs</span>
 
                 {/* Slash effect (player → boss) */}
                 {showSlash && (
@@ -302,7 +302,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                         }`}
                         style={{ top: '10%' }}
                     >
-                        {floatingDmg.isCrit && <span className="text-[10px] block text-center text-yellow-300 font-black tracking-widest animate-pulse">CRIT!</span>}
+                        {floatingDmg.isCrit && <span className="text-[11.5px] block text-center text-yellow-300 font-black tracking-widest animate-pulse">CRIT!</span>}
                         -{floatingDmg.value}
                     </div>
                 )}

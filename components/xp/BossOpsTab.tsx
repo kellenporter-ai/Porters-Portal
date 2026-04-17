@@ -104,25 +104,25 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                     <h4 className="font-bold text-lg text-[var(--text-primary)] truncate">{quiz.bossName}</h4>
                     <p className="text-sm text-[var(--text-muted)] truncate">{quiz.description}</p>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">
+                      <span className="text-[11.5px] font-bold text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">
                         {quiz.questions.length} Questions
                       </span>
-                      <span className="text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">
+                      <span className="text-[11.5px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">
                         HP: {(quiz.currentHp ?? (quiz.scaledMaxHp ?? quiz.maxHp)).toLocaleString()}/{(quiz.scaledMaxHp ?? quiz.maxHp).toLocaleString()}{quiz.scaledMaxHp && quiz.scaledMaxHp !== quiz.maxHp ? ` (base: ${quiz.maxHp.toLocaleString()})` : ''}
                       </span>
-                      <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
+                      <span className="text-[11.5px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
                         {quiz.damagePerCorrect} dmg/correct
                       </span>
-                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
+                      <span className="text-[11.5px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
                         {quiz.classType}
                       </span>
                       {quiz.modifiers?.length ? (
-                        <span className="text-[10px] font-bold text-pink-400 bg-pink-900/30 px-2 py-0.5 rounded border border-pink-500/20">
+                        <span className="text-[11.5px] font-bold text-pink-400 bg-pink-900/30 px-2 py-0.5 rounded border border-pink-500/20">
                           {quiz.modifiers.length} Modifiers
                         </span>
                       ) : null}
                       {quiz.difficultyTier && quiz.difficultyTier !== 'NORMAL' && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded border ${
                           quiz.difficultyTier === 'HARD' ? 'text-amber-400 bg-amber-900/30 border-amber-500/20' :
                           quiz.difficultyTier === 'NIGHTMARE' ? 'text-red-400 bg-red-900/30 border-red-500/20' :
                           'text-purple-400 bg-purple-900/30 border-purple-500/20'
@@ -131,37 +131,37 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                         </span>
                       )}
                       {quiz.autoScale?.enabled && (
-                        <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">
+                        <span className="text-[11.5px] font-bold text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">
                           Auto-Scale
                         </span>
                       )}
                       {quiz.phases && quiz.phases.length > 0 && (
-                        <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">
+                        <span className="text-[11.5px] font-bold text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">
                           {quiz.phases.length} Phases
                         </span>
                       )}
                       {quiz.bossAbilities && quiz.bossAbilities.length > 0 && (
-                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
+                        <span className="text-[11.5px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
                           {quiz.bossAbilities.length} Abilities
                         </span>
                       )}
                       {quiz.lootTable && quiz.lootTable.length > 0 && (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <span className="text-[11.5px] font-bold text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-500/20">
                           {quiz.lootTable.length} Loot Items
                         </span>
                       )}
                       {quiz.targetSections?.length ? (
-                        <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">
+                        <span className="text-[11.5px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">
                           {quiz.targetSections.join(', ')}
                         </span>
                       ) : null}
                       {isExpired && (
-                        <span className="text-[10px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">
+                        <span className="text-[11.5px] font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-500/20">
                           EXPIRED
                         </span>
                       )}
                       {isDefeated && (
-                        <span className="text-[10px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
+                        <span className="text-[11.5px] font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
                           DEFEATED
                         </span>
                       )}
@@ -184,7 +184,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                   {isDefeated && (
                     <button
                       onClick={() => onOpenEndgameView(quiz)}
-                      className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wide"
+                      className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition border border-emerald-500/20 text-[11.5px] font-bold uppercase tracking-wide"
                     >
                       <BarChart3 className="w-3 h-3 inline mr-1" />
                       Endgame
@@ -192,7 +192,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                   )}
                   <button
                     onClick={() => onEditQuizBoss(quiz)}
-                    className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide"
+                    className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[11.5px] font-bold uppercase tracking-wide"
                   >
                     <Pencil className="w-3 h-3 inline mr-1" />
                     Edit
@@ -218,7 +218,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                       };
                       onCloneQuizBoss(cloned);
                     }}
-                    className="px-3 py-1.5 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 transition border border-purple-500/20 text-[10px] font-bold uppercase tracking-wide"
+                    className="px-3 py-1.5 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 transition border border-purple-500/20 text-[11.5px] font-bold uppercase tracking-wide"
                   >
                     <Copy className="w-3 h-3 inline mr-1" />
                     Clone
@@ -287,13 +287,13 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                   <p className="text-xs text-[var(--text-muted)] truncate">{bank.description}</p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-1">
-                  <span className="text-[10px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">
+                  <span className="text-[11.5px] font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">
                     {bank.questions.length} Questions
                   </span>
-                  <span className="text-[10px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
+                  <span className="text-[11.5px] font-bold text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
                     {bank.classType}
                   </span>
-                  <span className="text-[10px] text-[var(--text-muted)]">
+                  <span className="text-[11.5px] text-[var(--text-muted)]">
                     {new Date(bank.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -301,7 +301,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => onEditBank(bank)}
-                  className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase"
+                  className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[11.5px] font-bold uppercase"
                 >
                   <Pencil className="w-3 h-3 inline mr-1" />
                   Edit

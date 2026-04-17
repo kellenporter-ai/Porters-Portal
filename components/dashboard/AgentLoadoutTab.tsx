@@ -279,15 +279,15 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               <span className={`text-[8px] font-bold mt-1 truncate w-full text-center px-1 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
               {!isDragging && (
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-                  <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-                  <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {slot}</div>
-                  <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+                  <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
+                  <div className="text-[11.5px] text-gray-400 font-mono">{item.rarity} {slot}</div>
+                  <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
                 </div>
               )}
             </>
           ) : (
-            <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{
+            <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">{
               { HEAD: 'HEAD', HANDS: 'HANDS', RING1: 'RING', RING2: 'RING', AMULET: 'AMUL.', CHEST: 'CHEST', BELT: 'BELT', FEET: 'FEET', WEAPON1: 'WPN 1', WEAPON2: 'WPN 2' }[slot] || slot.slice(0, 4)
             }</span>
           )}
@@ -324,7 +324,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 <button
                   type="button"
                   onClick={() => setRightTab('agent')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
                     rightTab === 'agent'
                       ? 'bg-purple-600 text-white shadow-lg'
                       : 'text-gray-500 hover:text-gray-300'
@@ -335,7 +335,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 <button
                   type="button"
                   onClick={() => setRightTab('loadout')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
                     rightTab === 'loadout'
                       ? 'bg-purple-600 text-white shadow-lg'
                       : 'text-gray-500 hover:text-gray-300'
@@ -346,7 +346,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 <button
                   type="button"
                   onClick={() => setRightTab('gems')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
                     rightTab === 'gems'
                       ? 'bg-purple-600 text-white shadow-lg'
                       : 'text-gray-500 hover:text-gray-300'
@@ -410,7 +410,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     e.stopPropagation();
                     setShowCustomize(true);
                   }}
-                  className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
+                  className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[11.5px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
                 >
                   <UserIcon className="w-3.5 h-3.5" />
                   Edit DNA Profile
@@ -427,47 +427,47 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-[var(--surface-sunken)] rounded-xl px-4 py-2.5 border border-[var(--border)]">
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <span className="text-[10px] text-gray-500">Tech</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Tech</span>
                     <span className="text-[11px] text-blue-400 font-bold">{playerStats.tech}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
                       <span className="font-bold text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                    <span className="text-[10px] text-gray-500">Focus</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Focus</span>
                     <span className="text-[11px] text-green-400 font-bold">{playerStats.focus}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
                       <span className="font-bold text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% · Crit damage: {combat.critMultiplier.toFixed(2)}x
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                    <span className="text-[10px] text-gray-500">Analysis</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Analysis</span>
                     <span className="text-[11px] text-yellow-400 font-bold">{playerStats.analysis}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
                       <span className="font-bold text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                    <span className="text-[10px] text-gray-500">Charisma</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Charisma</span>
                     <span className="text-[11px] text-purple-400 font-bold">{playerStats.charisma}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[10px] text-gray-300 shadow-xl">
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
                       <span className="font-bold text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
                     </div>
                   </div>
                   <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-600">HP</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">HP</span>
                     <span className="text-[11px] text-emerald-400 font-bold">{combat.maxHp}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-600">Armor</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Armor</span>
                     <span className="text-[11px] text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-600">Crit</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Crit</span>
                     <span className="text-[11px] text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span>
                   </div>
                 </div>
@@ -593,11 +593,11 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
         {GEM_LEGEND.map(g => (
           <div key={g.name} className="flex items-center gap-2 py-0.5">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color }} />
-            <span className="text-[9px] font-bold" style={{ color: g.color }}>{g.name}</span>
-            <span className="text-[9px] text-gray-600 mx-0.5">&rarr;</span>
-            <span className="text-[9px] text-gray-500">{g.stat}</span>
-            <span className="text-[9px] text-gray-600 mx-0.5">&mdash;</span>
-            <span className="text-[9px] text-gray-500">{g.desc}</span>
+            <span className="text-[11.5px] font-bold" style={{ color: g.color }}>{g.name}</span>
+            <span className="text-[11.5px] text-[var(--text-tertiary)] mx-0.5">&rarr;</span>
+            <span className="text-[11.5px] text-[var(--text-tertiary)]">{g.stat}</span>
+            <span className="text-[11.5px] text-[var(--text-tertiary)] mx-0.5">&mdash;</span>
+            <span className="text-[11.5px] text-[var(--text-tertiary)]">{g.desc}</span>
           </div>
         ))}
       </div>
@@ -615,12 +615,12 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}60` }} />
                 <span className="text-[11px] font-bold" style={{ color }}>{baseName}</span>
-                <span className="text-[10px] text-gray-500 ml-auto">{gems.length} owned</span>
+                <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{gems.length} owned</span>
               </div>
               {Object.keys(tierCounts).length > 1 && (
                 <div className="flex gap-2 mb-1.5">
                   {Object.entries(tierCounts).sort(([a],[b]) => Number(a) - Number(b)).map(([tier, count]) => (
-                    <span key={tier} className="text-[9px] text-gray-600">T{tier}: {count}</span>
+                    <span key={tier} className="text-[11.5px] text-[var(--text-tertiary)]">T{tier}: {count}</span>
                   ))}
                 </div>
               )}
@@ -628,8 +628,8 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                 {gems.map(gem => (
                   <div key={gem.id} className="flex items-center gap-1 bg-black/30 rounded-md px-2 py-1 border border-[var(--border)]">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: gem.color }} />
-                    <span className="text-[9px] text-gray-400">{gem.name}</span>
-                    <span className="text-[9px] font-bold" style={{ color: gem.color }}>+{gem.value} {gem.stat.slice(0, 3).toUpperCase()}</span>
+                    <span className="text-[11.5px] text-gray-400">{gem.name}</span>
+                    <span className="text-[11.5px] font-bold" style={{ color: gem.color }}>+{gem.value} {gem.stat.slice(0, 3).toUpperCase()}</span>
                   </div>
                 ))}
               </div>
@@ -667,7 +667,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                     {isActive && (
                       <span className="text-[8px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">ACTIVE</span>
                     )}
-                    <span className="text-[9px] text-gray-600 ml-auto">{rw.requiredSockets}s</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{rw.requiredSockets}s</span>
                   </div>
                   {/* Pattern as colored dots */}
                   <div className="flex items-center gap-1 mb-1">
@@ -687,14 +687,14 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                     {Object.entries(rw.bonusStats).filter(([,v]) => v).map(([stat, val]) => {
                       const legend = GEM_LEGEND.find(g => g.stat.toLowerCase() === stat);
                       return (
-                        <span key={stat} className="text-[9px] font-bold" style={{ color: legend?.color || '#999' }}>
+                        <span key={stat} className="text-[11.5px] font-bold" style={{ color: legend?.color || '#999' }}>
                           +{val} {stat.slice(0, 3).toUpperCase()}
                         </span>
                       );
                     })}
                   </div>
                   {/* Lore */}
-                  <p className="text-[9px] text-gray-600 italic leading-relaxed">{rw.lore}</p>
+                  <p className="text-[11.5px] text-[var(--text-tertiary)] italic leading-relaxed">{rw.lore}</p>
                 </div>
               );
             })}
@@ -747,7 +747,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
           Gear Storage ({filteredInventory.length})
         </h4>
-        <span className="text-[9px] text-gray-600 flex items-center gap-1">
+        <span className="text-[11.5px] text-[var(--text-tertiary)] flex items-center gap-1">
           <GripVertical className="w-3 h-3" /> Drag to equip
         </span>
       </div>
@@ -758,7 +758,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
               activeTab === tab
                 ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
                 : 'text-gray-600 hover:text-gray-400 hover:bg-[var(--surface-glass)] border border-transparent'
@@ -828,9 +828,9 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
       )}
       {!isDragging && (
         <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-          <div className={`text-[10px] font-bold ${colors.text}`}>{item.name}</div>
-          <div className="text-[9px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
-          <div className="text-[9px] text-gray-500 mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+          <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
+          <div className="text-[11.5px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
+          <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
         </div>
       )}

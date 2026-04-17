@@ -199,14 +199,14 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
               const badgeLabel = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) ?? 'Supplemental');
               const badgeColors = CATEGORY_COLORS[badgeLabel] ?? 'bg-gray-500/15 text-gray-400 border-gray-500/25';
               return (
-                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${badgeColors}`}>
+                <span className={`text-[11.5px] font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${badgeColors}`}>
                   {CATEGORY_BADGE_ICONS[badgeLabel]}
                   {badgeLabel}
                 </span>
               );
             })()}
             {resource.isAssessment && (
-              <span className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest font-bold">
+              <span className="text-[11.5px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest font-bold">
                 Assessment
               </span>
             )}
@@ -228,7 +228,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                 const effectiveScore = latestSub.rubricGrade?.overallPercentage ?? latestSub.assessmentScore?.percentage ?? latestSub.score ?? 0;
                 const hasScore = latestSub.rubricGrade || latestSub.assessmentScore;
                 return hasScore && assessmentConfig.showScoreOnSubmit !== false ? (
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
+                  <span className={`text-[11.5px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
                     effectiveScore >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/20'
                     : effectiveScore >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     : 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -237,53 +237,53 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                   </span>
                 ) : null;
               })()}
-              <span className="text-[9px] text-[var(--text-muted)] font-bold">
+              <span className="text-[11.5px] text-[var(--text-muted)] font-bold">
                 {isUnlimitedAttempts
                   ? `Attempt ${latestSub.attemptNumber || 1}`
                   : `Attempt ${latestSub.attemptNumber || 1} of ${maxAttempts}`
                 }
               </span>
               {canStillRetake && (
-                <span className="text-[9px] text-purple-400 font-bold flex items-center gap-0.5">
+                <span className="text-[11.5px] text-purple-400 font-bold flex items-center gap-0.5">
                   <Play className="w-2.5 h-2.5 fill-current" /> Retake available
                 </span>
               )}
               {!canStillRetake && (
-                <span className="text-[9px] text-[var(--text-muted)] font-bold">
+                <span className="text-[11.5px] text-[var(--text-muted)] font-bold">
                   {assessmentConfig.allowResubmission === false ? 'No retakes allowed' : 'No retakes left'}
                 </span>
               )}
               {latestSub.flaggedAsAI && (
-                <span className="text-[9px] text-purple-400 font-bold">Flagged</span>
+                <span className="text-[11.5px] text-purple-400 font-bold">Flagged</span>
               )}
             </div>
           )}
           {resource.isAssessment && !latestSub && (
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[9px] text-red-400 font-bold flex items-center gap-0.5">
+              <span className="text-[11.5px] text-red-400 font-bold flex items-center gap-0.5">
                 <Target className="w-2.5 h-2.5" /> Not yet submitted
               </span>
             </div>
           )}
           <div className="flex items-center gap-3 mt-1">
             {resource.createdAt && (
-              <span className="text-[9px] text-[var(--text-muted)] font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+              <span className="text-[11.5px] text-[var(--text-muted)] font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                 <Calendar size={10} /> Posted {formatRelativeDate(resource.createdAt)}
               </span>
             )}
             {resource.lastEngagement && (
-              <span className="text-[9px] text-emerald-400 font-bold">{engMin}m engaged</span>
+              <span className="text-[11.5px] text-emerald-400 font-bold">{engMin}m engaged</span>
             )}
             {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
-              <span className="text-[9px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
+              <span className="text-[11.5px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
             )}
             {hasLessonBlocks && (
-              <span className="text-[9px] text-indigo-400 font-bold flex items-center gap-0.5">
+              <span className="text-[11.5px] text-indigo-400 font-bold flex items-center gap-0.5">
                 <GraduationCap className="w-3 h-3" /> {resource.lessonBlocks!.length} blocks
               </span>
             )}
             {hasDue && (
-              <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`} title={dueDate!.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+              <span className={`text-[11.5px] font-bold flex items-center gap-0.5 ${dueColor}`} title={dueDate!.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                 <Clock className="w-3 h-3" />
                 {daysUntilDue <= 0 ? `Overdue (${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : daysUntilDue === 1 ? `Due tomorrow (${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : `Due ${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (in ${daysUntilDue}d)`}
               </span>
@@ -319,7 +319,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         />
         {searchQuery && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <span className="text-[10px] text-[var(--text-muted)] font-mono">
+            <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
               {Object.values(filteredUnitGroups).reduce((a, b) => a + b.length, 0)} results
             </span>
             <button onClick={() => setSearchQuery('')} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" aria-label="Clear search">
@@ -336,7 +336,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           <button
             key={option}
             onClick={() => setSortBy(option)}
-            className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-colors ${
+            className={`px-2 py-0.5 rounded-full text-[11.5px] font-medium transition-colors ${
               sortBy === option
                 ? 'bg-[var(--accent-muted)] text-[var(--accent-text)] border border-purple-500/30'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
@@ -364,7 +364,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                   {expandedUnits.has(unit) ? <ChevronDown className="w-4 h-4 text-[var(--accent-text)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
                   <span className="font-bold text-sm text-[var(--text-secondary)] uppercase tracking-wider">{unit}</span>
                 </div>
-                <span className="text-[10px] bg-[var(--surface-glass)] text-[var(--text-muted)] px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
+                <span className="text-[11.5px] bg-[var(--surface-glass)] text-[var(--text-muted)] px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
               </button>
 
               {expandedUnits.has(unit) && (

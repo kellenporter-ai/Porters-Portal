@@ -448,7 +448,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             <ArrowLeft className="w-4 h-4" /> Back to Results
           </button>
           <h2 className="text-sm font-bold text-[var(--text-primary)]">Your Submission</h2>
-          <span className="text-[10px] text-[var(--text-muted)]">
+          <span className="text-[11.5px] text-[var(--text-muted)]">
             {existingSubmission.submittedAt
               ? new Date(existingSubmission.submittedAt).toLocaleDateString()
               : ''}
@@ -507,7 +507,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             <p className="text-[var(--text-secondary)] text-xs mb-1">
               Your progress is automatically saved. You can return to finish this assessment anytime before the due date.
             </p>
-            <p className="text-[var(--text-tertiary)] text-[10px] mb-4">
+            <p className="text-[var(--text-tertiary)] text-[11.5px] mb-4">
               Ready to pause?
             </p>
             <div className="flex gap-2">
@@ -611,7 +611,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 />
               </Suspense>
               {!existingSubmission?.rubricGrade && existingSubmission && (
-                <p className="text-[10px] text-[var(--text-muted)] mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
+                <p className="text-[11.5px] text-[var(--text-muted)] mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
               )}
             </div>
           </div>
@@ -626,10 +626,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             {isAssessment && <Shield className="w-4 h-4 text-red-400 shrink-0" />}
             {activeAssignment.title}
             {isAssessment && (
-              <span className="text-[9px] bg-red-600/80 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Assessment</span>
+              <span className="text-[11.5px] bg-red-600/80 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Assessment</span>
             )}
             {user.role === UserRole.ADMIN && (
-              <span className="text-[9px] bg-purple-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Admin</span>
+              <span className="text-[11.5px] bg-purple-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Admin</span>
             )}
           </h2>
           {/* Hide tab switchers during assessment */}
@@ -648,7 +648,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
         <div className="flex items-center gap-2 shrink-0">
           {user.role === 'ADMIN' && (
-            <div className="flex bg-[var(--panel-bg)] rounded-lg p-0.5 border border-[var(--border)] text-[9px] font-bold">
+            <div className="flex bg-[var(--panel-bg)] rounded-lg p-0.5 border border-[var(--border)] text-[11.5px] font-bold">
               <button onClick={() => setAdminViewMode('STUDENT')} className={`px-2 py-1 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Student</button>
               <button onClick={() => setAdminViewMode('ADMIN')} className={`px-2 py-1 rounded transition ${adminViewMode === 'ADMIN' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Admin</button>
             </div>
@@ -874,14 +874,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   <h3 className="font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><SettingsIcon className="w-4 h-4 text-[var(--accent-text)]" /> Admin Controls</h3>
                   <div className="space-y-6">
                     <div className="bg-[var(--panel-bg)] p-4 rounded-xl border border-[var(--border)]">
-                      <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-2">Active Engagement</label>
+                      <label className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-2">Active Engagement</label>
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center text-[var(--accent-text)]">
                           <Users className="w-6 h-6" />
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-[var(--text-primary)]">{liveCount}</div>
-                          <div className="text-[10px] text-[var(--text-muted)]">Live Operatives</div>
+                          <div className="text-[11.5px] text-[var(--text-muted)]">Live Operatives</div>
                         </div>
                       </div>
                     </div>

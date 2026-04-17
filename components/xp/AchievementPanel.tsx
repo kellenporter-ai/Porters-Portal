@@ -97,7 +97,7 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                         </span>
                         {achievement.isSecret && !isUnlocked && <Lock className="w-3 h-3 text-gray-600" />}
                       </div>
-                      <p className="text-[10px] text-[var(--text-muted)]">{achievement.description}</p>
+                      <p className="text-[11.5px] text-[var(--text-muted)]">{achievement.description}</p>
                       {!isUnlocked && (
                         <div className="mt-1.5 flex items-center gap-2">
                           <div className="flex-1 bg-[var(--surface-glass)] rounded-full h-1.5">
@@ -106,7 +106,7 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                               style={{ width: `${progressPct}%` }}
                             />
                           </div>
-                          <span className="text-[9px] text-[var(--text-muted)] font-mono">
+                          <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
                             {progress}/{achievement.condition.target}
                           </span>
                         </div>
@@ -114,9 +114,9 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                     </div>
                     {isUnlocked && (
                       <div className="text-right shrink-0">
-                        <div className="text-[10px] text-yellow-500 font-bold">+{achievement.xpReward} XP</div>
+                        <div className="text-[11.5px] text-yellow-500 font-bold">+{achievement.xpReward} XP</div>
                         {achievement.fluxReward && (
-                          <div className="text-[9px] text-cyan-700 dark:text-cyan-400 font-bold">+{achievement.fluxReward} Flux</div>
+                          <div className="text-[11.5px] text-cyan-700 dark:text-cyan-400 font-bold">+{achievement.fluxReward} Flux</div>
                         )}
                       </div>
                     )}

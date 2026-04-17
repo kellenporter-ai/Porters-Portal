@@ -533,7 +533,7 @@ const Avatar3DInner: React.FC<Avatar3DProps> = ({
             {loading && !error && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 rounded-xl">
                     <div className="w-6 h-6 border-2 border-purple-400/40 border-t-purple-400 rounded-full animate-spin mb-2" />
-                    <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wider">Loading model...</span>
+                    <span className="text-[11.5px] text-gray-400 font-mono uppercase tracking-wider">Loading model...</span>
                 </div>
             )}
 
@@ -541,7 +541,7 @@ const Avatar3DInner: React.FC<Avatar3DProps> = ({
             {error && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 rounded-xl">
                     <span className="text-2xl mb-1">&#x1F916;</span>
-                    <span className="text-[9px] text-gray-500 font-mono">3D unavailable</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">3D unavailable</span>
                 </div>
             )}
 

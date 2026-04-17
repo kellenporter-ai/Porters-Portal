@@ -78,7 +78,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions, buck
           ...(stats.engagementScore !== null ? [{ label: 'Engagement Score', value: String(stats.engagementScore) }] : []),
         ].map(s => (
           <div key={s.label} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{s.label}</div>
+            <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{s.label}</div>
             <div className="text-lg font-bold text-[var(--text-primary)] print:text-black mt-0.5">{s.value}</div>
           </div>
         ))}

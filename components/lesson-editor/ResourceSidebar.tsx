@@ -207,7 +207,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
               setShowResourceOrder(null);
               setPendingResourceOrder(null);
             }}
-            className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
+            className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[11.5px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
           >
             <option value="All Classes">All Classes</option>
             {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
@@ -215,7 +215,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
+            className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[11.5px] text-[var(--text-secondary)] font-bold focus:outline-none focus:border-purple-500/50 transition cursor-pointer"
           >
             <option value="All Categories">All Categories</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -231,7 +231,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
               }
               setShowUnitOrder(!showUnitOrder);
             }}
-            className={`w-full flex items-center justify-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+            className={`w-full flex items-center justify-center gap-1.5 text-[11.5px] font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
               showUnitOrder ? 'text-amber-300 bg-amber-500/20 border-amber-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border-[var(--border)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -243,12 +243,12 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
       {/* Unit Order Panel */}
       {showUnitOrder && pendingOrder && (
         <div className="border-b border-[var(--border)] p-3 bg-amber-500/5 space-y-2">
-          <div className="text-[9px] font-bold text-amber-300 uppercase tracking-widest">Unit Order — {filterClass}</div>
+          <div className="text-[11.5px] font-bold text-amber-300 uppercase tracking-widest">Unit Order — {filterClass}</div>
           <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
             {pendingOrder.map((unit, idx) => (
               <div key={unit} className="flex items-center gap-1.5 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5">
-                <span className="text-[9px] text-[var(--text-muted)] font-mono w-4 text-right">{idx + 1}</span>
-                <span className="text-[10px] text-[var(--text-secondary)] truncate flex-1">{unit}</span>
+                <span className="text-[11.5px] text-[var(--text-muted)] font-mono w-4 text-right">{idx + 1}</span>
+                <span className="text-[11.5px] text-[var(--text-secondary)] truncate flex-1">{unit}</span>
                 <button
                   disabled={idx === 0}
                   onClick={() => { const n = [...pendingOrder]; [n[idx], n[idx - 1]] = [n[idx - 1], n[idx]]; setPendingOrder(n); }}
@@ -263,10 +263,10 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
             ))}
           </div>
           <div className="flex gap-2">
-            <button onClick={handleSaveUnitOrder} disabled={isSavingOrder} className="flex-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
+            <button onClick={handleSaveUnitOrder} disabled={isSavingOrder} className="flex-1 text-[11.5px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
               {isSavingOrder ? 'Saving...' : 'Save Order'}
             </button>
-            <button onClick={() => { setShowUnitOrder(false); setPendingOrder(null); }} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
+            <button onClick={() => { setShowUnitOrder(false); setPendingOrder(null); }} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
           </div>
         </div>
       )}
@@ -294,7 +294,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                   >
                     {isClassCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-purple-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
                     <span className="text-[11px] font-bold text-purple-300 truncate flex-1">{cls}</span>
-                    <span className="text-[9px] text-purple-500/70 font-mono shrink-0">{total}</span>
+                    <span className="text-[11.5px] text-purple-500/70 font-mono shrink-0">{total}</span>
                   </button>
                   {/* Units within this class */}
                   {!isClassCollapsed && (
@@ -310,8 +310,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-[var(--surface-glass)] rounded-lg transition cursor-pointer"
                             >
                               {isUnitExpanded ? <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
-                              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
-                              <span className="text-[9px] text-[var(--text-muted)] font-mono">{items.length}</span>
+                              <span className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
+                              <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{items.length}</span>
                             </button>
                             {isUnitExpanded && items.map(a => {
                               const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
@@ -412,8 +412,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                   className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-[var(--surface-glass)] rounded-lg transition cursor-pointer"
                 >
                   {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
-                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
-                  <span className="text-[9px] text-[var(--text-muted)] font-mono">{items.length}</span>
+                  <span className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
+                  <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{items.length}</span>
                   {filterClass !== 'All Classes' && items.length > 1 && (
                     <button
                       onClick={(e) => {
@@ -433,15 +433,15 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                 </div>
                 {showResourceOrder === unit && pendingResourceOrder && (
                   <div className="mx-2 mb-1 border border-amber-500/20 rounded-lg bg-amber-500/5 p-2 space-y-1.5">
-                    <div className="text-[9px] font-bold text-amber-300 uppercase tracking-widest">Resource Order</div>
+                    <div className="text-[11.5px] font-bold text-amber-300 uppercase tracking-widest">Resource Order</div>
                     <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
                       {pendingResourceOrder.map((id, idx) => {
                         const a = items.find(x => x.id === id);
                         if (!a) return null;
                         return (
                           <div key={id} className="flex items-center gap-1.5 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1">
-                            <span className="text-[9px] text-[var(--text-muted)] font-mono w-4 text-right">{idx + 1}</span>
-                            <span className="text-[10px] text-[var(--text-secondary)] truncate flex-1">{a.title}</span>
+                            <span className="text-[11.5px] text-[var(--text-muted)] font-mono w-4 text-right">{idx + 1}</span>
+                            <span className="text-[11.5px] text-[var(--text-secondary)] truncate flex-1">{a.title}</span>
                             <button disabled={idx === 0} onClick={() => { const n = [...pendingResourceOrder]; [n[idx], n[idx-1]] = [n[idx-1], n[idx]]; setPendingResourceOrder(n); }} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition cursor-pointer"><ChevronUp className="w-3 h-3" /></button>
                             <button disabled={idx === pendingResourceOrder.length - 1} onClick={() => { const n = [...pendingResourceOrder]; [n[idx], n[idx+1]] = [n[idx+1], n[idx]]; setPendingResourceOrder(n); }} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition cursor-pointer"><ChevronDown className="w-3 h-3" /></button>
                           </div>
@@ -449,10 +449,10 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                       })}
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleSaveResourceOrder(unit)} disabled={isSavingResourceOrder} className="flex-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
+                      <button onClick={() => handleSaveResourceOrder(unit)} disabled={isSavingResourceOrder} className="flex-1 text-[11.5px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 py-1.5 rounded-lg hover:bg-amber-500/30 transition cursor-pointer disabled:opacity-40">
                         {isSavingResourceOrder ? 'Saving...' : 'Save Order'}
                       </button>
-                      <button onClick={() => { setShowResourceOrder(null); setPendingResourceOrder(null); }} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
+                      <button onClick={() => { setShowResourceOrder(null); setPendingResourceOrder(null); }} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg transition cursor-pointer">Cancel</button>
                     </div>
                   </div>
                 )}
@@ -542,7 +542,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
         )}
       </div>
       {/* Sidebar footer stats */}
-      <div className="border-t border-[var(--border)] px-3 py-2 text-[9px] text-[var(--text-muted)] flex items-center justify-between">
+      <div className="border-t border-[var(--border)] px-3 py-2 text-[11.5px] text-[var(--text-muted)] flex items-center justify-between">
         {filterClass === 'All Classes' && filteredByClass ? (
           <>
             <span>{Object.values(filteredByClass).reduce((sum, units) => sum + Object.values(units).reduce((s, items) => s + items.length, 0), 0)} resources</span>

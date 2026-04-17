@@ -62,7 +62,7 @@ class ErrorBoundary extends React.Component<Props, State> {
                             Something unexpected happened. Your data is safe — try reloading.
                         </p>
                         {this.state.error && (
-                            <pre className="text-[10px] text-red-400/60 bg-black/40 p-3 rounded-xl mb-6 text-left overflow-auto max-h-24 font-mono">
+                            <pre className="text-[11.5px] text-red-400/60 bg-black/40 p-3 rounded-xl mb-6 text-left overflow-auto max-h-24 font-mono">
                                 {this.state.error.message}
                             </pre>
                         )}

@@ -140,7 +140,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
                 setSelected(null);
                 onResponseChange?.({ selected: null, answered: false });
               }}
-              className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
+              className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
             >
               <Pencil className="w-3 h-3" /> Edit
             </button>
@@ -211,7 +211,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
               setAnswered(false);
               onResponseChange?.({ answer, answered: false, isCorrect: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -524,13 +524,13 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       {/* Unplaced items */}
       {!readOnly && unplaced.length > 0 && (
         <div className="space-y-1">
-          <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Sort these items</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Sort these items</div>
           <div className="flex flex-wrap gap-2" role="listbox" aria-label="Items to sort" translate="no">
             {unplaced.map(idx => (
               <div key={idx} role="option" className="flex items-center gap-1 bg-[var(--surface-glass)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)]">
                 <BlockText text={items[idx].text} />
-                <button onClick={() => placeItem(idx, 'left')} aria-label={`Place ${items[idx].text} in ${block.leftLabel || 'Category A'}`} className="ml-1 text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-500/30 transition">{block.leftLabel || 'L'}</button>
-                <button onClick={() => placeItem(idx, 'right')} aria-label={`Place ${items[idx].text} in ${block.rightLabel || 'Category B'}`} className="text-[10px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition">{block.rightLabel || 'R'}</button>
+                <button onClick={() => placeItem(idx, 'left')} aria-label={`Place ${items[idx].text} in ${block.leftLabel || 'Category A'}`} className="ml-1 text-[11.5px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-500/30 transition">{block.leftLabel || 'L'}</button>
+                <button onClick={() => placeItem(idx, 'right')} aria-label={`Place ${items[idx].text} in ${block.rightLabel || 'Category B'}`} className="text-[11.5px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-500/30 transition">{block.rightLabel || 'R'}</button>
               </div>
             ))}
           </div>
@@ -582,7 +582,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
               setSubmitted(false);
               onResponseChange?.({ placements, submitted: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -627,9 +627,9 @@ const DataTableBlock: React.FC<{ block: LessonBlock; savedResponse?: { data: Rec
         <table className="w-full text-sm" aria-label={block.title || 'Data table'}>
           <thead>
             <tr className="bg-[var(--panel-bg)]">
-              <th scope="col" className="px-3 py-2.5 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left w-16">{hasCustomLabels ? 'Label' : '#'}</th>
+              <th scope="col" className="px-3 py-2.5 text-[11.5px] text-[var(--text-muted)] uppercase font-bold text-left w-16">{hasCustomLabels ? 'Label' : '#'}</th>
               {columns.map(col => (
-                <th scope="col" key={col.key} className="px-3 py-2.5 text-[10px] text-[var(--text-muted)] uppercase font-bold text-left">
+                <th scope="col" key={col.key} className="px-3 py-2.5 text-[11.5px] text-[var(--text-muted)] uppercase font-bold text-left">
                   {col.label}{col.unit ? ` (${col.unit})` : ''}
                 </th>
               ))}
@@ -862,7 +862,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
               setSubmitted(false);
               onResponseChange?.({ order, submitted: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -892,7 +892,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
     <div className="space-y-3">
       {linkedBlock && (
         <div className="border border-[var(--border)] bg-[var(--surface-glass)] rounded-xl p-3">
-          <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
             <Link className="w-3 h-3" /> Referenced question
           </div>
           <BlockText text={linkedBlock.content} tag="p" className="text-xs text-[var(--text-tertiary)]" />
@@ -938,7 +938,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
               setAnswered(false);
               onResponseChange?.({ answer, answered: false, isCorrect: false });
             }}
-            className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
+            className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-purple-400 transition"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
@@ -1165,7 +1165,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
               style={{ width: `${completionProgress}%` }}
             />
           </div>
-          <span className="text-[10px] text-[var(--text-muted)] font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
+          <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{completedBlocks.size}/{interactiveBlockCount}</span>
         </>}
 
         {/* Actions menu */}
@@ -1222,7 +1222,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                 <div className="flex items-center gap-2 justify-end">
                   <button
                     onClick={() => { setShowClearConfirm(null); setShowActionsMenu(false); }}
-                    className="text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition font-bold cursor-pointer"
+                    className="text-[11.5px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1233,7 +1233,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                       setShowClearConfirm(null);
                       setShowActionsMenu(false);
                     }}
-                    className="text-[10px] text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition font-bold cursor-pointer"
+                    className="text-[11.5px] text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition font-bold cursor-pointer"
                   >
                     {showClearConfirm === 'export-clear' ? 'Export & Clear' : 'Clear'}
                   </button>

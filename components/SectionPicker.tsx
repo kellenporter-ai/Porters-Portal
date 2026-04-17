@@ -22,7 +22,7 @@ const SectionPicker: React.FC<SectionPickerProps> = ({ availableSections, select
 
   return (
     <div>
-      <label className="block text-[10px] font-bold text-[var(--text-tertiary)] uppercase mb-1.5 px-1">{label}</label>
+      <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1.5 px-1">{label}</label>
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"

@@ -191,7 +191,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
       >
         {/* Row 1 — Identity */}
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border shrink-0 ${classBadgeClasses(classType)}`}>
+          <span className={`px-2 py-0.5 text-[11.5px] font-bold uppercase rounded border shrink-0 ${classBadgeClasses(classType)}`}>
             {classType}
           </span>
           <span className="text-base font-bold text-[var(--text-primary)] truncate">{s.assignmentTitle}</span>
@@ -241,7 +241,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
       <div className="space-y-4">
         {groups.map(g => (
           <div key={g.classType}>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5 pl-1">
+            <div className="text-[11.5px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5 pl-1">
               {g.classType}
             </div>
             <div className="space-y-2">
@@ -315,7 +315,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                     )}
                     {icon}
                     <span>{label}</span>
-                    <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                    <span className={`px-1.5 py-0.5 text-[11.5px] font-bold rounded-full ${
                       isActive
                         ? 'bg-purple-500/30 text-[var(--text-primary)]'
                         : 'bg-[var(--surface-glass)] text-[var(--text-muted)]'

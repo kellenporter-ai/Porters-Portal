@@ -124,7 +124,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
           />
         </div>
         <div className="flex gap-2 items-center">
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap">
+          <span className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap">
             {filteredStudents.length} operatives
           </span>
           <div className="relative">
@@ -158,7 +158,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
         {/* Fixed header */}
         <table className="w-full text-left min-w-[900px]">
           <thead>
-            <tr className="text-[10px] text-[var(--text-muted)] uppercase font-black tracking-widest border-b border-[var(--border)]">
+            <tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-black tracking-widest border-b border-[var(--border)]">
               <OpSortHeader label="Operative" col="name" className="pl-4" />
               <OpSortHeader label="Class" col="class" />
               <OpSortHeader label="Level" col="level" className="text-center" />
@@ -201,7 +201,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                                 if (e.key === 'Enter') handleSaveCodename(student.id);
                                 if (e.key === 'Escape') setEditingCodename(null);
                               }}
-                              className="bg-[var(--backdrop)] border border-purple-500/30 rounded px-1.5 py-0.5 text-[10px] text-[var(--text-primary)] font-mono w-28 focus:outline-none focus:border-purple-500"
+                              className="bg-[var(--backdrop)] border border-purple-500/30 rounded px-1.5 py-0.5 text-[11.5px] text-[var(--text-primary)] font-mono w-28 focus:outline-none focus:border-purple-500"
                             />
                             <button onClick={() => handleSaveCodename(student.id)} className="text-green-400 hover:text-green-300" title="Save">
                               <Check className="w-3 h-3" />
@@ -214,7 +214,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => { setEditingCodename(student.id); setCodenameValue(student.gamification?.codename || ''); }}
-                              className="text-[10px] font-mono text-[var(--text-muted)] uppercase hover:text-[var(--accent-text)] transition flex items-center gap-1 group/cn"
+                              className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase hover:text-[var(--accent-text)] transition flex items-center gap-1 group/cn"
                             >
                               {student.gamification?.codename || 'UNASSIGNED'}
                               <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/cn:opacity-100 transition" />
@@ -234,7 +234,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                   <div className="flex-1 py-3">
                     <div className="flex flex-wrap gap-1">
                       {classes.map(c => (
-                        <span key={c} className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 font-bold">{c}</span>
+                        <span key={c} className="text-[11.5px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 font-bold">{c}</span>
                       ))}
                     </div>
                   </div>
@@ -256,13 +256,13 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                     <div className="flex justify-end gap-1.5">
                       <button
                         onClick={() => onInspect(student)}
-                        className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[11.5px] font-bold uppercase tracking-wide flex items-center gap-1"
                       >
                         <Briefcase className="w-3 h-3" /><span className="hidden lg:inline"> Inventory</span>
                       </button>
                       <button
                         onClick={() => onAdjustXP(student)}
-                        className="px-2.5 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20 text-[11.5px] font-bold uppercase tracking-wide flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /><span className="hidden lg:inline"> XP</span>
                       </button>

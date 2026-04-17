@@ -108,7 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   // Persist collapsed groups in localStorage
   const [collapsedGroups, setCollapsedGroups] = useState<Set<NavGroup>>(() => {
     try {
-      const stored = localStorage.getItem('nav-collapsed-groups');
+      const stored = localStorage.getItem('nav-collapsed-groups-v2');
       return stored ? new Set(JSON.parse(stored) as NavGroup[]) : new Set();
     } catch { return new Set(); }
   });
@@ -117,7 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev);
       if (next.has(group)) next.delete(group); else next.add(group);
-      localStorage.setItem('nav-collapsed-groups', JSON.stringify([...next]));
+      localStorage.setItem('nav-collapsed-groups-v2', JSON.stringify([...next]));
       return next;
     });
   }, []);
@@ -300,7 +300,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 <button
                   onClick={() => toggleGroup(group)}
                   aria-expanded={!isCollapsed}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
                 >
                   <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                   {NAV_GROUP_LABELS[group]}
@@ -346,12 +346,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 2a. Light mode: Tech circuit background image */}
       {isLight && (
-        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
       )}
 
       {/* 2b. Dark mode: Circuit board background image */}
       {!isLight && (
-        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
       )}
 
       {/* 3. Glass Overlay */}
@@ -409,7 +409,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                           </div>
                           <div>
                               <p className="text-sm font-bold text-[var(--sidebar-text)]">{settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}</p>
-                              <p className="text-[10px] text-[var(--sidebar-text-muted)]">{user.role}</p>
+                              <p className="text-[11.5px] text-[var(--sidebar-text-muted)]">{user.role}</p>
                           </div>
                       </div>
                       <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]" aria-label="Close navigation menu">
@@ -463,7 +463,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <div className="min-w-0 flex-1">
                 <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">Porter's Portal</h1>
                 <div className="flex items-center gap-1">
-                  <p className="text-[10px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
+                  <p className="text-[11.5px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
                     {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
                   </p>
                   <button
@@ -599,7 +599,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 }`}
               >
                 <AnimatedIcon src={item.iconSrc} alt={item.name} size={32} disableAnimation={settings.performanceMode} groupHover={false} />
-                <span className="text-[10px] font-bold">{item.name}</span>
+                <span className="text-[11.5px] font-bold">{item.name}</span>
               </button>
             );
           })}

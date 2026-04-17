@@ -127,7 +127,7 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
     return (
       <button
         onClick={handlePlayPause}
-        className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors cursor-pointer ${
+        className={`flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors cursor-pointer ${
           isPlaying
             ? 'text-amber-300 bg-amber-500/20 border-amber-500/30 hover:bg-amber-500/30'
             : 'text-purple-300 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
@@ -170,7 +170,7 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       </div>
 
       {/* Sentence counter */}
-      <span className="text-[9px] text-[var(--text-muted)] font-mono min-w-[3rem] text-center">
+      <span className="text-[11.5px] text-[var(--text-muted)] font-mono min-w-[3rem] text-center">
         {currentSentence + 1}/{totalSentences}
       </span>
 
@@ -178,7 +178,7 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       <div className="relative">
         <button
           onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-          className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] bg-[var(--surface-glass)] px-2 py-1 rounded-lg border border-[var(--border)] transition"
+          className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] bg-[var(--surface-glass)] px-2 py-1 rounded-lg border border-[var(--border)] transition"
         >
           <Gauge className="w-3 h-3" />
           {speed}x

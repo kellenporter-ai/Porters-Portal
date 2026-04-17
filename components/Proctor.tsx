@@ -1122,7 +1122,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     <div className="flex flex-col h-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl overflow-hidden relative">
         {/* Preview Mode Banner */}
         {previewMode && (
-          <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 text-center text-[10px] font-bold text-amber-300 tracking-widest uppercase z-20">
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 text-center text-[11.5px] font-bold text-amber-300 tracking-widest uppercase z-20">
             <Eye className="w-3 h-3 inline mr-1.5 -mt-0.5" />
             Admin Preview — No data will be saved
           </div>
@@ -1176,14 +1176,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 {moduleCompleted && bridgeConnected && (
                     showReplayPrompt ? (
                         <div className="flex items-center gap-2 bg-[var(--backdrop)] rounded-lg px-3 py-1 border border-[var(--border)]">
-                            <span className="text-[10px] text-[var(--text-tertiary)]">Replay from start?</span>
-                            <button onClick={handleReplayClick} className="text-[10px] font-bold text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
-                            <button onClick={() => setShowReplayPrompt(false)} className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded transition">Cancel</button>
+                            <span className="text-[11.5px] text-[var(--text-tertiary)]">Replay from start?</span>
+                            <button onClick={handleReplayClick} className="text-[11.5px] font-bold text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
+                            <button onClick={() => setShowReplayPrompt(false)} className="text-[11.5px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded transition">Cancel</button>
                         </div>
                     ) : (
                         <button
                             onClick={() => setShowReplayPrompt(true)}
-                            className="flex items-center gap-1.5 text-[10px] text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
+                            className="flex items-center gap-1.5 text-[11.5px] text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
                             title="Replay this module from the start (your completion record is preserved)"
                         >
                             <RotateCcw className="w-3 h-3" /> Replay
@@ -1193,7 +1193,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 {contentUrl && focusMode !== 'lessons' && (
                     <button
                         onClick={toggleFullscreen}
-                        className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-[11.5px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
                         title={isFullscreen ? 'Exit full screen (Esc)' : 'Full screen'}
                     >
                         {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
@@ -1201,17 +1201,17 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </button>
                 )}
                 {!hasSidebar && bridgeConnected && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
+                    <div className="flex items-center gap-1.5 text-[11.5px] text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
                         <Zap className="w-3 h-3" /> XP Linked
                     </div>
                 )}
                 {!hasSidebar && !isActive && (
-                    <div className="flex items-center gap-2 text-[10px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
+                    <div className="flex items-center gap-2 text-[11.5px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
                         <AlertTriangle className="w-3 h-3" /> Resume movement for XP
                     </div>
                 )}
                 {isAssessment && tabSwitchCount > 0 && (
-                    <div className="flex items-center gap-2 text-[10px] text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 uppercase font-bold tracking-widest">
+                    <div className="flex items-center gap-2 text-[11.5px] text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 uppercase font-bold tracking-widest">
                         <AlertTriangle className="w-3 h-3" /> Tab Switch Detected ({tabSwitchCount})
                     </div>
                 )}
@@ -1257,7 +1257,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         <div className="flex items-center justify-center gap-1.5 bg-[var(--surface-base)] py-0.5 px-2 z-10 shrink-0 border-y border-[var(--border)]">
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                                 title="Expand simulation"
                             >
                                 <ChevronUp className="w-3.5 h-3.5" /> Simulation
@@ -1265,7 +1265,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             <div className="w-6 h-0.5 bg-[var(--surface-glass-heavy)] rounded-full" />
                             <button
                                 onClick={() => setFocusMode(prev => prev === 'lessons' ? 'balanced' : 'lessons')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                                 title="Expand lessons"
                             >
                                 <ChevronDown className="w-3.5 h-3.5" /> Lessons

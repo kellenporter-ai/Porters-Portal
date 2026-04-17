@@ -149,8 +149,8 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                             </div>
                             <div className="text-center mt-2">
                                 <div className="text-xs font-black text-[var(--text-primary)] truncate max-w-[140px]">{user.name}</div>
-                                <div className="text-[9px] font-bold mt-0.5" style={{ color: rank.tierColor }}>{rank.rankName}</div>
-                                <div className="text-[10px] font-black text-[var(--accent-text)] mt-1">Level {level}</div>
+                                <div className="text-[11.5px] font-bold mt-0.5" style={{ color: rank.tierColor }}>{rank.rankName}</div>
+                                <div className="text-[11.5px] font-black text-[var(--accent-text)] mt-1">Level {level}</div>
                                 <div className="w-full h-1.5 bg-[var(--panel-bg)] rounded-full mt-1 overflow-hidden">
                                     <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
                                 </div>
@@ -166,7 +166,7 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                             <div className="flex-1 bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] p-3">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Cyber-Flux</div>
+                                        <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Cyber-Flux</div>
                                         <div className="text-2xl font-black text-cyan-700 dark:text-cyan-400">{(user.gamification?.currency || 0).toLocaleString()}</div>
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -182,26 +182,26 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                 </div>
                             </div>
                             <div className="bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] p-3 text-center min-w-[90px]">
-                                <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Gear Score</div>
+                                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Gear Score</div>
                                 <div className="text-2xl font-black text-amber-400">{gearScore}</div>
                             </div>
                             <div className="bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] p-3 text-center min-w-[70px]">
-                                <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Skill Pts</div>
+                                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Skill Pts</div>
                                 <div className="text-2xl font-black text-emerald-400">{user.gamification?.skillPoints || 0}</div>
                             </div>
                         </div>
 
                         {/* Combat Stats */}
                         <div className="bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] p-3">
-                            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider mb-2">Combat Stats</div>
+                            <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider mb-2">Combat Stats</div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                 {STAT_KEYS.map(key => (
                                     <div key={key} className="flex items-center gap-2">
-                                        <span className={`text-[10px] font-bold uppercase w-16 ${STAT_COLORS[key].text}`}>{key}</span>
+                                        <span className={`text-[11.5px] font-bold uppercase w-16 ${STAT_COLORS[key].text}`}>{key}</span>
                                         <div className="flex-1 h-2 bg-[var(--panel-bg)] rounded-full overflow-hidden">
                                             <div className={`h-full rounded-full transition-all ${STAT_COLORS[key].bar}`} style={{ width: `${Math.min(100, (stats[key] / maxStat) * 100)}%` }} />
                                         </div>
-                                        <span className="text-[10px] font-mono text-white/80 w-8 text-right">{stats[key]}</span>
+                                        <span className="text-[11.5px] font-mono text-white/80 w-8 text-right">{stats[key]}</span>
                                     </div>
                                 ))}
                             </div>
@@ -214,7 +214,7 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                     <div className="flex gap-1.5 bg-[var(--panel-bg)] p-1.5 rounded-xl border border-[var(--border)]">
                         {classTabs.map(cls => (
                             <button key={cls} onClick={() => { setActiveClassTab(cls); setSelectedItem(null); }}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition cursor-pointer ${selectedClass === cls ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)]'}`}>
+                                className={`px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition cursor-pointer ${selectedClass === cls ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)]'}`}>
                                 {cls === '_legacy' ? 'Global' : cls}
                             </button>
                         ))}
@@ -224,10 +224,10 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                 {/* ═══ ACTIVE LOADOUT ═══ */}
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                        <h4 className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                             Active Loadout {selectedClass !== '_legacy' && <span className="text-[var(--accent-text)] ml-1">({selectedClass})</span>}
                         </h4>
-                        <span className="text-[9px] text-[var(--text-muted)] font-mono">{Object.values(profile.equipped).filter(Boolean).length}/8 slots</span>
+                        <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{Object.values(profile.equipped).filter(Boolean).length}/8 slots</span>
                     </div>
                     <div className="flex gap-2 flex-wrap">
                         {EQUIPMENT_SLOTS.map(slot => {
@@ -410,7 +410,7 @@ const StoredGearSection: React.FC<StoredGearSectionProps> = ({
     return (
         <div>
             <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                <h4 className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                     Stored Gear
                     {inventory.length > 0 && (
                         <span className="ml-2 text-[var(--text-muted)] font-mono normal-case">({inventory.length})</span>
@@ -420,7 +420,7 @@ const StoredGearSection: React.FC<StoredGearSectionProps> = ({
                     {customItems.length > 0 && (
                         <button
                             onClick={onToggleLibrary}
-                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
                                 showLibrary ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
                             }`}
                         >
@@ -429,7 +429,7 @@ const StoredGearSection: React.FC<StoredGearSectionProps> = ({
                     )}
                     <button
                         onClick={onToggleCreator}
-                        className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition flex items-center gap-1 cursor-pointer ${
                             showCreator ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
                         }`}
                     >
@@ -439,7 +439,7 @@ const StoredGearSection: React.FC<StoredGearSectionProps> = ({
             </div>
 
             {inventory.length === 0 && (
-                <div className="text-center py-6 text-[var(--text-muted)] text-[10px] italic">Inventory Empty</div>
+                <div className="text-center py-6 text-[var(--text-muted)] text-[11.5px] italic">Inventory Empty</div>
             )}
 
             {inventory.length > 0 && !useVirtual && (
@@ -507,8 +507,8 @@ const ItemDetailPanel: React.FC<{
                     <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-10 h-10" />
                     <div>
                         <div className={`text-sm font-black ${colors.text}`}>{item.name}</div>
-                        <div className="text-[10px] text-[var(--text-muted)]">{item.rarity} {item.slot} &middot; {item.baseName}</div>
-                        {item.description && <div className="text-[10px] text-[var(--text-tertiary)] italic mt-1">{item.description}</div>}
+                        <div className="text-[11.5px] text-[var(--text-muted)]">{item.rarity} {item.slot} &middot; {item.baseName}</div>
+                        {item.description && <div className="text-[11.5px] text-[var(--text-tertiary)] italic mt-1">{item.description}</div>}
                     </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -524,7 +524,7 @@ const ItemDetailPanel: React.FC<{
             {Object.keys(item.stats).length > 0 && (
                 <div className="flex gap-3">
                     {Object.entries(item.stats).filter(([, v]) => v).map(([key, val]) => (
-                        <div key={key} className={`text-[10px] font-bold ${STAT_COLORS[key]?.text || 'text-[var(--text-secondary)]'}`}>
+                        <div key={key} className={`text-[11.5px] font-bold ${STAT_COLORS[key]?.text || 'text-[var(--text-secondary)]'}`}>
                             +{val} {key}
                         </div>
                     ))}
@@ -534,9 +534,9 @@ const ItemDetailPanel: React.FC<{
             {/* Affixes */}
             {item.affixes.length > 0 && (
                 <div className="space-y-1">
-                    <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Affixes</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Affixes</div>
                     {item.affixes.map((a, i) => (
-                        <div key={i} className="flex items-center gap-2 text-[10px]">
+                        <div key={i} className="flex items-center gap-2 text-[11.5px]">
                             <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${a.type === 'PREFIX' ? 'bg-blue-500/10 text-blue-400' : a.type === 'SUFFIX' ? 'bg-purple-500/10 text-purple-400' : 'bg-orange-500/10 text-orange-400'}`}>
                                 {a.type}
                             </span>
@@ -551,9 +551,9 @@ const ItemDetailPanel: React.FC<{
             {/* Effects */}
             {item.effects && item.effects.length > 0 && (
                 <div className="space-y-1">
-                    <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Special Effects</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Special Effects</div>
                     {item.effects.map(eff => (
-                        <div key={eff.id} className="flex items-center gap-2 text-[10px]">
+                        <div key={eff.id} className="flex items-center gap-2 text-[11.5px]">
                             <Sparkles className="w-3 h-3 text-orange-400" />
                             <span className="text-orange-300 font-bold">{eff.name}</span>
                             <span className="text-[var(--text-tertiary)]">{eff.description}</span>
@@ -565,7 +565,7 @@ const ItemDetailPanel: React.FC<{
             {/* Sockets & Gems */}
             {(item.sockets ?? 0) > 0 && (
                 <div className="flex items-center gap-2">
-                    <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Sockets</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Sockets</div>
                     <div className="flex gap-1">
                         {Array.from({ length: item.sockets || 0 }).map((_, i) => {
                             const gem = item.gems?.[i];
@@ -619,52 +619,52 @@ const ItemEditorPanel: React.FC<{
             <div className="flex items-center justify-between">
                 <h4 className={`text-xs font-bold ${colors.text} uppercase tracking-widest`}>{title}</h4>
                 <div className="flex gap-1.5">
-                    <button onClick={onCancel} className="px-3 py-1 text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition cursor-pointer">Cancel</button>
-                    <button onClick={onSave} className="px-3 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-500 transition flex items-center gap-1 cursor-pointer"><Save className="w-3 h-3" /> Save</button>
+                    <button onClick={onCancel} className="px-3 py-1 text-[11.5px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition cursor-pointer">Cancel</button>
+                    <button onClick={onSave} className="px-3 py-1 bg-emerald-600 text-white text-[11.5px] font-bold rounded-lg hover:bg-emerald-500 transition flex items-center gap-1 cursor-pointer"><Save className="w-3 h-3" /> Save</button>
                 </div>
             </div>
 
             {/* Basic Fields */}
             <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                    <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Item Name</label>
+                    <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Item Name</label>
                     <input value={item.name} onChange={e => update({ name: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50" />
                 </div>
                 <div>
-                    <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Base Name</label>
+                    <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Base Name</label>
                     <input value={item.baseName} onChange={e => update({ baseName: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50" />
                 </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2">
                 <div>
-                    <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Rarity</label>
+                    <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Rarity</label>
                     <select value={item.rarity} onChange={e => update({ rarity: e.target.value as ItemRarity })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none cursor-pointer">
                         {RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Slot</label>
+                    <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Slot</label>
                     <select value={item.slot} onChange={e => update({ slot: e.target.value as ItemSlot, visualId: VISUAL_IDS[e.target.value]?.[0] || item.visualId })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none cursor-pointer">
                         {ITEM_SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Visual</label>
+                    <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Visual</label>
                     <select value={item.visualId} onChange={e => update({ visualId: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none cursor-pointer">
                         {(VISUAL_IDS[item.slot] || []).map(v => <option key={v} value={v}>{v}</option>)}
                         {!VISUAL_IDS[item.slot]?.includes(item.visualId) && <option value={item.visualId}>{item.visualId}</option>}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Sockets</label>
+                    <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Sockets</label>
                     <input type="number" min={0} max={3} value={item.sockets || 0} onChange={e => update({ sockets: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none" />
                 </div>
             </div>
 
             {/* Stats */}
             <div>
-                <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1">Stats</label>
+                <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-1">Stats</label>
                 <div className="grid grid-cols-4 gap-2">
                     {STAT_KEYS.map(key => (
                         <div key={key}>
@@ -677,29 +677,29 @@ const ItemEditorPanel: React.FC<{
 
             {/* Description */}
             <div>
-                <label className="block text-[9px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Description</label>
+                <label className="block text-[11.5px] text-[var(--text-muted)] uppercase font-bold mb-0.5">Description</label>
                 <input value={item.description} onChange={e => update({ description: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50" placeholder="A custom forged item..." />
             </div>
 
             {/* Affixes */}
             <div>
                 <div className="flex items-center justify-between mb-1">
-                    <label className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Affixes</label>
-                    <button onClick={addAffix} className="text-[9px] text-emerald-400 hover:text-emerald-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
+                    <label className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Affixes</label>
+                    <button onClick={addAffix} className="text-[11.5px] text-emerald-400 hover:text-emerald-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
                 </div>
                 {item.affixes.map((a, i) => (
                     <div key={i} className="flex items-center gap-1.5 mb-1">
-                        <select value={a.type} onChange={e => updateAffix(i, { type: e.target.value as 'PREFIX' | 'SUFFIX' | 'UNIQUE' })} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[9px] text-[var(--text-primary)] cursor-pointer">
+                        <select value={a.type} onChange={e => updateAffix(i, { type: e.target.value as 'PREFIX' | 'SUFFIX' | 'UNIQUE' })} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[11.5px] text-[var(--text-primary)] cursor-pointer">
                             <option value="PREFIX">PREFIX</option>
                             <option value="SUFFIX">SUFFIX</option>
                             <option value="UNIQUE">UNIQUE</option>
                         </select>
-                        <input value={a.name} onChange={e => updateAffix(i, { name: e.target.value })} placeholder="Name" className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[9px] text-[var(--text-primary)] focus:outline-none" />
-                        <select value={a.stat} onChange={e => updateAffix(i, { stat: e.target.value })} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[9px] text-[var(--text-primary)] cursor-pointer">
+                        <input value={a.name} onChange={e => updateAffix(i, { name: e.target.value })} placeholder="Name" className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[11.5px] text-[var(--text-primary)] focus:outline-none" />
+                        <select value={a.stat} onChange={e => updateAffix(i, { stat: e.target.value })} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[11.5px] text-[var(--text-primary)] cursor-pointer">
                             {STAT_KEYS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
-                        <input type="number" value={a.value} onChange={e => updateAffix(i, { value: parseInt(e.target.value) || 0 })} className="w-12 bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[9px] text-white text-center focus:outline-none" />
-                        <input type="number" value={a.tier} onChange={e => updateAffix(i, { tier: parseInt(e.target.value) || 1 })} className="w-10 bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[9px] text-white text-center focus:outline-none" placeholder="T" />
+                        <input type="number" value={a.value} onChange={e => updateAffix(i, { value: parseInt(e.target.value) || 0 })} className="w-12 bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[11.5px] text-white text-center focus:outline-none" />
+                        <input type="number" value={a.tier} onChange={e => updateAffix(i, { tier: parseInt(e.target.value) || 1 })} className="w-10 bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[11.5px] text-white text-center focus:outline-none" placeholder="T" />
                         <button onClick={() => removeAffix(i)} className="p-0.5 text-red-400 hover:text-red-300 cursor-pointer"><X className="w-3 h-3" /></button>
                     </div>
                 ))}
@@ -708,14 +708,14 @@ const ItemEditorPanel: React.FC<{
             {/* Effects */}
             <div>
                 <div className="flex items-center justify-between mb-1">
-                    <label className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Effects</label>
-                    <button onClick={addEffect} className="text-[9px] text-orange-400 hover:text-orange-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
+                    <label className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Effects</label>
+                    <button onClick={addEffect} className="text-[11.5px] text-orange-400 hover:text-orange-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
                 </div>
                 {(item.effects || []).map((eff, i) => (
                     <div key={i} className="flex items-center gap-1.5 mb-1">
-                        <input value={eff.name} onChange={e => updateEffect(i, { name: e.target.value })} placeholder="Effect name" className="w-32 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[9px] text-[var(--text-primary)] focus:outline-none" />
-                        <input value={eff.description} onChange={e => updateEffect(i, { description: e.target.value })} placeholder="Description" className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[9px] text-[var(--text-primary)] focus:outline-none" />
-                        <select value={eff.type} onChange={e => updateEffect(i, { type: e.target.value as 'XP_BOOST' | 'STAT_BOOST' | 'SPECIAL' })} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[9px] text-[var(--text-primary)] cursor-pointer">
+                        <input value={eff.name} onChange={e => updateEffect(i, { name: e.target.value })} placeholder="Effect name" className="w-32 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[11.5px] text-[var(--text-primary)] focus:outline-none" />
+                        <input value={eff.description} onChange={e => updateEffect(i, { description: e.target.value })} placeholder="Description" className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[11.5px] text-[var(--text-primary)] focus:outline-none" />
+                        <select value={eff.type} onChange={e => updateEffect(i, { type: e.target.value as 'XP_BOOST' | 'STAT_BOOST' | 'SPECIAL' })} className="bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-1 text-[11.5px] text-[var(--text-primary)] cursor-pointer">
                             <option value="SPECIAL">SPECIAL</option>
                             <option value="XP_BOOST">XP_BOOST</option>
                             <option value="STAT_BOOST">STAT_BOOST</option>
@@ -770,8 +770,8 @@ const CustomItemLibraryPanel: React.FC<{
     return (
         <div className="rounded-xl border border-amber-500/20 bg-amber-900/10 p-3 space-y-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Custom Item Library</h4>
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-40 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1 text-[10px] text-[var(--text-primary)] focus:outline-none focus:border-amber-500/50" />
+                <h4 className="text-[11.5px] font-bold text-amber-400 uppercase tracking-widest">Custom Item Library</h4>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-40 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11.5px] text-[var(--text-primary)] focus:outline-none focus:border-amber-500/50" />
             </div>
             <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
                 {filtered.map(item => {
@@ -779,7 +779,7 @@ const CustomItemLibraryPanel: React.FC<{
                     return (
                         <div key={item.id} className={`rounded-lg border ${colors.border} ${colors.bg} p-2 flex flex-col gap-1 items-center`}>
                             <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
-                            <div className={`text-[9px] font-bold ${colors.text} truncate w-full text-center`}>{item.name}</div>
+                            <div className={`text-[11.5px] font-bold ${colors.text} truncate w-full text-center`}>{item.name}</div>
                             <div className="text-[8px] text-[var(--text-muted)]">{item.rarity} {item.slot}</div>
                             {Object.entries(item.stats).filter(([, v]) => v).map(([k, v]) => (
                                 <div key={k} className={`text-[8px] ${STAT_COLORS[k]?.text || 'text-[var(--text-tertiary)]'}`}>+{v} {k}</div>
@@ -791,7 +791,7 @@ const CustomItemLibraryPanel: React.FC<{
                     );
                 })}
                 {filtered.length === 0 && (
-                    <div className="col-span-4 text-center py-4 text-[var(--text-muted)] text-[10px] italic">
+                    <div className="col-span-4 text-center py-4 text-[var(--text-muted)] text-[11.5px] italic">
                         {items.length === 0 ? 'No custom items yet. Create items in the Item Library tab.' : 'No items match search.'}
                     </div>
                 )}

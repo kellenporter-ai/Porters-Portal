@@ -83,7 +83,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
           {/* Row 1: Title + Priority + Audience */}
           <div className="flex gap-3">
             <div className="flex-1 min-w-0">
-              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Title</label>
+              <label className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Title</label>
               <input
                 type="text"
                 value={title}
@@ -94,7 +94,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
               />
             </div>
             <div className="w-32 shrink-0">
-              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Priority</label>
+              <label className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Priority</label>
               <select value={priority} onChange={(e) => setPriority(e.target.value as Announcement['priority'])} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
                 <option value="INFO">Info</option>
                 <option value="WARNING">Warning</option>
@@ -102,7 +102,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
               </select>
             </div>
             <div className="w-36 shrink-0">
-              <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Audience</label>
+              <label className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Audience</label>
               <select value={classType} onChange={(e) => setClassType(e.target.value)} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
                 <option value="GLOBAL">All Classes</option>
                 {Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized').map(c => (
@@ -113,7 +113,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
           </div>
           {/* Row 2: Message */}
           <div>
-            <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Message</label>
+            <label className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Message</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -174,11 +174,11 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
                 </div>
                 {/* Meta row */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${style.bg} ${style.text} border ${style.border}`}>
+                  <span className={`px-1.5 py-0.5 rounded text-[11.5px] font-bold uppercase ${style.bg} ${style.text} border ${style.border}`}>
                     {a.priority}
                   </span>
-                  <span className="text-[10px] text-[var(--text-muted)] truncate">{audience}{audienceSuffix}</span>
-                  <span className="text-[10px] text-[var(--text-muted)] ml-auto shrink-0">{relTime}</span>
+                  <span className="text-[11.5px] text-[var(--text-muted)] truncate">{audience}{audienceSuffix}</span>
+                  <span className="text-[11.5px] text-[var(--text-muted)] ml-auto shrink-0">{relTime}</span>
                 </div>
                 {/* Message preview */}
                 <p className="text-xs text-[var(--text-tertiary)] line-clamp-2">{a.content}</p>

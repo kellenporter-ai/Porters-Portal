@@ -105,7 +105,7 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
                     className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
                     autoFocus
                   />
-                  <p className="text-[10px] text-[var(--text-muted)] text-right">{description.length}/1000</p>
+                  <p className="text-[11.5px] text-[var(--text-muted)] text-right">{description.length}/1000</p>
 
                   <button
                     onClick={handleSubmit}

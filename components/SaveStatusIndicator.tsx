@@ -117,7 +117,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
       <div
         role="status"
         aria-live={isError ? 'assertive' : 'polite'}
-        className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border uppercase tracking-widest transition-opacity duration-300 ${config.className} ${visible ? 'opacity-100' : 'opacity-0'}`}
+        className={`flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1 rounded-full border uppercase tracking-widest transition-opacity duration-300 ${config.className} ${visible ? 'opacity-100' : 'opacity-0'}`}
       >
         {config.icon}
         {config.text}
@@ -125,7 +125,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
       {!isOnline && isAssessment && (
         <div
           role="alert"
-          className="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 uppercase tracking-widest"
+          className="flex items-center gap-1.5 text-[11.5px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 uppercase tracking-widest"
         >
           <AlertTriangle className="w-3 h-3" />
           Offline — work saved locally
@@ -134,7 +134,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
       {storageUnavailable && isAssessment && (
         <div
           role="alert"
-          className="flex items-center gap-1.5 text-[10px] font-bold text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest"
+          className="flex items-center gap-1.5 text-[11.5px] font-bold text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest"
         >
           <Loader2 className="w-3 h-3" />
           Saving to server only

@@ -38,14 +38,14 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
 
   return (
     <div className="space-y-1">
-      <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest flex items-center gap-1">
+      <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest flex items-center gap-1">
         <Zap className="w-2.5 h-2.5" /> Live Battle Feed
       </div>
       <div ref={containerRef} className="max-h-24 overflow-y-auto custom-scrollbar space-y-0.5">
         {entries.map((entry, i) => (
           <div
             key={`${entry.userId}-${entry.timestamp}`}
-            className={`flex items-center gap-2 text-[10px] py-0.5 px-2 rounded-lg ${
+            className={`flex items-center gap-2 text-[11.5px] py-0.5 px-2 rounded-lg ${
               i === 0 ? 'bg-amber-500/5 animate-in fade-in slide-in-from-top-1 duration-300' : 'opacity-60'
             }`}
           >
