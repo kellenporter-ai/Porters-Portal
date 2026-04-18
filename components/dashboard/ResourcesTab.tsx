@@ -139,7 +139,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
     const dueDate = resource.dueDate ? new Date(resource.dueDate) : null;
     const now = new Date();
     const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / 86400000) : Infinity;
-    const dueColor = daysUntilDue <= 0 ? 'text-red-400' : daysUntilDue <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]';
+    const dueColor = daysUntilDue <= 0 ? 'text-red-600 dark:text-red-400' : daysUntilDue <= 2 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]';
     const engMin = Math.floor(resource.engagementTime / 60);
     const isSubstantial = engMin >= 5;
     const completion = practiceCompletion[resource.id];
@@ -165,17 +165,17 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         key={resource.id}
         className={`border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${
           resource.isAssessment
-            ? 'bg-red-500/5 border-red-500/25 ring-1 ring-red-500/10 hover:border-red-400/50'
+            ? 'bg-purple-500/5 border-purple-500/25 ring-1 ring-purple-500/10 hover:border-purple-400/50'
             : `bg-[var(--surface-glass)] ${isModuleCompleted ? 'border-green-500/20' : 'border-[var(--border)]'}`
         }`}
         onClick={() => onStartAssignment && onStartAssignment(resource.id)}
       >
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
           resource.isAssessment && !isModuleCompleted && !isSubstantial && !resource.lastEngagement
-            ? 'bg-red-500/15 text-red-400 ring-2 ring-red-500/25 group-hover:scale-110 shadow-lg group-hover:shadow-red-500/20' :
-          isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
-          isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
-          resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
+            ? 'bg-purple-500/15 text-red-600 dark:text-red-400 ring-2 ring-purple-500/25 group-hover:scale-110 shadow-lg group-hover:shadow-purple-500/20' :
+          isModuleCompleted ? 'bg-green-500/20 text-green-600 dark:text-green-400 ring-2 ring-green-500/30' :
+          isSubstantial ? 'bg-green-500/20 text-green-600 dark:text-green-400 ring-2 ring-green-500/30' :
+          resource.lastEngagement ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
           isLessonOnly ? `${NEUTRAL_ICON_TILE} group-hover:scale-110 shadow-lg` :
           `${NEUTRAL_ICON_TILE} group-hover:scale-110 shadow-lg`
         }`}>
@@ -203,7 +203,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
             )}
             <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">{resource.title}</h4>
             {isModuleCompleted && (
-              <span className="text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">
+              <span className="text-[8px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-0.5 flex-shrink-0">
                 <CheckCircle2 className="w-2.5 h-2.5" />
                 COMPLETED{(completion?.totalCompletions || 0) > 1 ? ` (${completion.totalCompletions}x)` : ''}
               </span>
@@ -220,9 +220,9 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                 const hasScore = latestSub.rubricGrade || latestSub.assessmentScore;
                 return hasScore && assessmentConfig.showScoreOnSubmit !== false ? (
                   <span className={`text-[11.5px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
-                    effectiveScore >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                    : effectiveScore >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                    effectiveScore >= 80 ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+                    : effectiveScore >= 60 ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20'
+                    : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
                   }`}>
                     Score: {effectiveScore}%
                   </span>
@@ -251,7 +251,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           )}
           {resource.isAssessment && !latestSub && (
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[11.5px] text-red-400 font-bold flex items-center gap-0.5">
+              <span className="text-[11.5px] text-red-600 dark:text-red-400 font-bold flex items-center gap-0.5">
                 <Target className="w-2.5 h-2.5" /> Not yet submitted
               </span>
             </div>

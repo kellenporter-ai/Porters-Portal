@@ -117,8 +117,8 @@ const SeverityPip: React.FC<{ severity: WarningSeverity }> = ({ severity }) =>
 const SignalChip: React.FC<{ signal: WarningSignal; compact?: boolean }> = ({ signal, compact }) => {
   const colorClass =
     signal.severity === 'intervene'
-      ? 'bg-red-500/15 text-red-400 border-red-500/30'
-      : 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30';
+      ? 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30'
+      : 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30';
 
   const ageDays = signal.createdAt ? alertAgeDays(signal.createdAt) : null;
   const isStale = ageDays !== null && ageDays >= STALE_DAYS;
@@ -220,7 +220,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
         <button
           type="button"
           onClick={() => onMessage?.(student)}
-          className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-400 transition"
+          className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-600 dark:text-purple-400 transition"
           aria-label={`Message ${student.name}`}
           title="Message"
         >
@@ -268,8 +268,8 @@ const SectionHeader: React.FC<{ severity: WarningSeverity; count: number }> = ({
     <h3
       className={`col-span-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold ${
         isIntervene
-          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
       }`}
     >
       <span className={`w-2 h-2 rounded-full ${isIntervene ? 'bg-red-500' : 'bg-yellow-400'}`} />
@@ -489,9 +489,9 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
 
   const headerTextClass =
     interveneCount > 0
-      ? 'text-red-400'
+      ? 'text-red-600 dark:text-red-400'
       : totalCount > 0
-      ? 'text-amber-400'
+      ? 'text-amber-600 dark:text-amber-400'
       : 'text-[var(--text-tertiary)]';
 
   const tabs: { id: FilterTab; label: string; count: number }[] = [
@@ -509,7 +509,7 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
       <div className="flex items-center justify-between p-6 pb-3">
         <div className="flex items-center gap-3">
           <AlertTriangle
-            className={`w-5 h-5 ${interveneCount > 0 ? 'text-red-400' : totalCount > 0 ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}
+            className={`w-5 h-5 ${interveneCount > 0 ? 'text-red-600 dark:text-red-400' : totalCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-muted)]'}`}
             aria-hidden="true"
           />
           <h3 className={`text-xl font-bold ${headerTextClass}`}>Early Warning</h3>
@@ -529,7 +529,7 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
               )}
             </div>
           ) : (
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/20 text-green-400">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/20 text-green-600 dark:text-green-400">
               All clear
             </span>
           )}
@@ -582,9 +582,9 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
               className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                 activeTab === tab.id
                   ? tab.id === 'intervene'
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                    ? 'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/40'
                     : tab.id === 'watch'
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
                     : 'bg-[var(--surface-glass-heavy)] text-[var(--text-primary)] border border-[var(--border)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
               }`}

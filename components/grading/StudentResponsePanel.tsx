@@ -40,7 +40,7 @@ function renderBlockQuestion(content: string): React.ReactNode {
     <details className="inline">
       <summary className="cursor-pointer list-none">
         {content.slice(0, 200)}
-        <span className="text-purple-400 ml-1">... (show full question)</span>
+        <span className="text-purple-600 dark:text-purple-400 ml-1">... (show full question)</span>
       </summary>
       <span className="block mt-1 text-[var(--text-secondary)]">{content.slice(200)}</span>
     </details>
@@ -323,23 +323,23 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
       <div className="flex-1 flex flex-col min-h-0">
         <div className={`px-4 py-3 border-b border-[var(--border)] flex items-center gap-3 ${isNotStarted ? 'bg-orange-500/[0.03]' : 'bg-cyan-500/[0.03]'}`}>
           <NavButtons />
-          {isNotStarted ? <Users className="w-4 h-4 text-orange-400" aria-hidden="true" /> : <Eye className="w-4 h-4 text-cyan-400" aria-hidden="true" />}
+          {isNotStarted ? <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" aria-hidden="true" /> : <Eye className="w-4 h-4 text-cyan-600 dark:text-cyan-400" aria-hidden="true" />}
           <h4 className="text-sm font-bold text-[var(--text-primary)]">{draftStudentName}</h4>
-          <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded ${isNotStarted ? 'bg-orange-500/20 text-orange-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+          <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded ${isNotStarted ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' : 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'}`}>
             {isNotStarted ? 'NOT STARTED' : 'DRAFT'}
           </span>
           <div className="ml-auto flex items-center gap-2">
             {!isNotStarted && (
               <button
                 onClick={handleSubmitOnBehalf}
-                className="text-[11.5px] text-green-400 hover:text-green-300 font-bold px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 transition flex items-center gap-0.5"
+                className="text-[11.5px] text-green-600 dark:text-green-400 hover:text-green-300 font-bold px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 transition flex items-center gap-0.5"
               >
                 <Send className="w-3 h-3" aria-hidden="true" /> Submit
               </button>
             )}
             <button
               onClick={handleNudge}
-              className={`text-[11.5px] font-bold px-2 py-1 rounded transition ${isNotStarted ? 'text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20' : 'text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20'}`}
+              className={`text-[11.5px] font-bold px-2 py-1 rounded transition ${isNotStarted ? 'text-orange-600 dark:text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20' : 'text-cyan-600 dark:text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20'}`}
             >
               Nudge
             </button>
@@ -357,7 +357,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                 <FileText className="w-12 h-12 mx-auto mb-3 text-[var(--text-muted)] opacity-30" aria-hidden="true" />
                 {isNotStarted ? (
                   <>
-                    <p className="text-orange-400/80 text-sm font-bold">Not Started</p>
+                    <p className="text-orange-600 dark:text-orange-400/80 text-sm font-bold">Not Started</p>
                     <p className="text-[var(--text-muted)] text-xs mt-1">This student hasn&apos;t opened the assessment yet.</p>
                   </>
                 ) : (
@@ -384,7 +384,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                   }
                   return (
                     <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${hasAnswer ? 'bg-cyan-900/10 border-cyan-500/20' : 'bg-[var(--surface-glass)] border-[var(--border)]'}`}>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasAnswer ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-500/20 text-[var(--text-muted)]'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasAnswer ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400' : 'bg-gray-500/20 text-[var(--text-muted)]'}`}>
                         {qi + 1}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -394,7 +394,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                         </div>
                         <div className="text-[11px] text-[var(--text-muted)]">
                           <span className="font-bold">Draft Answer:</span>{' '}
-                          <span className={hasAnswer ? 'text-cyan-400' : 'text-[var(--text-muted)] italic'}>{displayAnswer}</span>
+                          <span className={hasAnswer ? 'text-cyan-600 dark:text-cyan-400' : 'text-[var(--text-muted)] italic'}>{displayAnswer}</span>
                         </div>
                         {richRenderer}
                       </div>
@@ -411,7 +411,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                   : 'No answer';
                 return (
                   <div key={blockId} className="flex items-center gap-3 p-2 rounded-lg border bg-cyan-900/10 border-cyan-500/20">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11.5px] font-bold bg-cyan-500/20 text-cyan-400">?</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11.5px] font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400">?</div>
                     <span className="text-xs text-[var(--text-tertiary)] font-mono truncate">{blockId.slice(0, 12)}...</span>
                     <span className="text-xs text-cyan-300 truncate flex-1">{answerText}</span>
                   </div>
@@ -473,14 +473,14 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           {/* Metrics badges */}
           <div className="hidden md:flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
             <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
-            <span className="text-green-400">{formatEngagementTime(activeTime)}</span>
-            <span className={inactiveTime > 0 ? 'text-yellow-400' : 'text-[var(--text-muted)]'}>{formatEngagementTime(inactiveTime)} idle</span>
+            <span className="text-green-600 dark:text-green-400">{formatEngagementTime(activeTime)}</span>
+            <span className={inactiveTime > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]'}>{formatEngagementTime(inactiveTime)} idle</span>
             <span>{sub.metrics?.pasteCount || 0} pastes</span>
             {(sub.metrics?.wordCount != null && sub.metrics.wordCount > 0) && (
-              <span className="text-blue-400">{sub.metrics.wordCount} words</span>
+              <span className="text-blue-600 dark:text-blue-400">{sub.metrics.wordCount} words</span>
             )}
             {(sub.metrics?.wordsPerSecond != null && sub.metrics.wordsPerSecond > 0) && (
-              <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-400' : 'text-green-400'}>{sub.metrics.wordsPerSecond} w/s</span>
+              <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-600 dark:text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}>{sub.metrics.wordsPerSecond} w/s</span>
             )}
           </div>
 
@@ -522,12 +522,12 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                 const borderClass = isPending ? 'bg-amber-900/10 border-amber-500/20'
                   : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
                   : 'bg-red-900/10 border-red-500/20';
-                const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
-                  : blockResult?.correct ? 'bg-green-500/20 text-green-400'
-                  : 'bg-red-500/20 text-red-400';
-                const answerColor = isPending ? 'text-amber-400'
-                  : blockResult?.correct ? 'text-green-400'
-                  : 'text-red-400';
+                const iconClass = isPending ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                  : blockResult?.correct ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                  : 'bg-red-500/20 text-red-600 dark:text-red-400';
+                const answerColor = isPending ? 'text-amber-600 dark:text-amber-400'
+                  : blockResult?.correct ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400';
 
                 return (
                   <div key={block.id} className={`flex items-start gap-3 p-3 rounded-lg border ${borderClass}`}>
@@ -541,13 +541,13 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                       </div>
                       <div className="text-[11px] text-[var(--text-muted)]">
                         {isPending ? (
-                          <span className="text-amber-400 font-bold">Pending Review</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-bold">Pending Review</span>
                         ) : (
                           <>
                             <span className="font-bold">Answer:</span>{' '}
                             <span className={answerColor}>{displayAnswer}</span>
                             {!blockResult?.correct && block.type === 'MC' && block.correctAnswer !== undefined && block.options && (
-                              <span className="ml-2 text-green-400/60">
+                              <span className="ml-2 text-green-600 dark:text-green-400/60">
                                 (Correct: {block.options[block.correctAnswer]})
                               </span>
                             )}
@@ -576,9 +576,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                 : blockResult?.correct ? 'bg-green-900/10 border-green-500/20'
                 : blockResult ? 'bg-red-900/10 border-red-500/20'
                 : 'bg-[var(--surface-glass)] border-white/5';
-              const iconClass = isPending ? 'bg-amber-500/20 text-amber-400'
-                : blockResult?.correct ? 'bg-green-500/20 text-green-400'
-                : blockResult ? 'bg-red-500/20 text-red-400'
+              const iconClass = isPending ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                : blockResult?.correct ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                : blockResult ? 'bg-red-500/20 text-red-600 dark:text-red-400'
                 : 'bg-gray-500/20 text-[var(--text-tertiary)]';
               return (
                 <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${borderClass}`}>

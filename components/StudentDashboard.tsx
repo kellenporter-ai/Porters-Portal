@@ -464,12 +464,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase tracking-[0.15em] border ${rankDetails.tierColor}`}>
           {rankDetails.rankName} · Lvl {level}
         </span>
-        <span className="flex items-center gap-1 text-[12px] font-bold text-cyan-400" aria-label={`${displayCurrency} Cyber-Flux`}>
+        <span className="flex items-center gap-1 text-[12px] font-bold text-cyan-600 dark:text-cyan-400" aria-label={`${displayCurrency} Cyber-Flux`}>
           <Hexagon className="w-3.5 h-3.5" aria-hidden="true" />
           {displayCurrency}
         </span>
         {(user.gamification?.engagementStreak || 0) > 0 && (
-          <span className={`flex items-center gap-1 text-[12px] font-bold ${isLight ? 'text-orange-600' : 'text-orange-400'}`} aria-label={`${user.gamification?.engagementStreak} week engagement streak`}>
+          <span className={`flex items-center gap-1 text-[12px] font-bold ${isLight ? 'text-orange-600' : 'text-orange-600 dark:text-orange-400'}`} aria-label={`${user.gamification?.engagementStreak} week engagement streak`}>
             <Flame className="w-3.5 h-3.5" aria-hidden="true" />
             {user.gamification?.engagementStreak}w
           </span>
@@ -546,7 +546,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
         {/* Stat badges — compact inline */}
         <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2">
-            <div className="w-8 h-8 lg:w-6 lg:h-6 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 lg:w-6 lg:h-6 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
                 <Hexagon className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
             </div>
             <div className="flex items-baseline gap-1.5 lg:gap-1">
@@ -561,17 +561,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             const multiplier = getStreakMultiplier(streak);
             return (
                 <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
-                    <div className={`w-8 h-8 lg:w-6 lg:h-6 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-400'}`}>
+                    <div className={`w-8 h-8 lg:w-6 lg:h-6 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-600 dark:text-orange-400'}`}>
                         <Flame className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
                     </div>
                     <div className="flex items-baseline gap-1.5 lg:gap-1 flex-1 min-w-0">
                         <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
-                        <div className={`text-lg lg:text-base font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-400'}`}>{streak}w</div>
+                        <div className={`text-lg lg:text-base font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-600 dark:text-orange-400'}`}>{streak}w</div>
                     </div>
                     {multiplier > 1 && (
                         <div className="text-right shrink-0">
                             <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase">XP Bonus</div>
-                            <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
+                            <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-amber-700' : 'text-yellow-600 dark:text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
                         </div>
                     )}
                 </div>
@@ -581,10 +581,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         {/* Login Streak */}
         {(user.gamification?.loginStreak || 0) > 1 && (
             <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
-                <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} aria-hidden="true" />
+                <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-600 dark:text-purple-400'}`} aria-hidden="true" />
                 <div className="flex items-baseline gap-1.5 lg:gap-1">
                     <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
-                    <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
+                    <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-purple-700' : 'text-purple-600 dark:text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
                 </div>
             </div>
         )}
@@ -833,7 +833,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                           <div className="text-xs text-[var(--text-tertiary)] uppercase font-mono mt-1">{newlyAcquiredItem.rarity} {newlyAcquiredItem.slot}</div>
                           <div className="flex justify-center gap-5 mt-3 text-xs font-mono">
                               {Object.entries(newlyAcquiredItem.stats).map(([key, val]) => (
-                                  <span key={key} className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">+{val} {key.toUpperCase()}</span>
+                                  <span key={key} className="text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">+{val} {key.toUpperCase()}</span>
                               ))}
                           </div>
                       </div>

@@ -7,6 +7,7 @@ import { useToast } from '../ToastProvider';
 import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
 import { useIsMounted } from '../../lib/useIsMounted';
+import { getDifficultyClasses, getBossTierClasses } from '../../lib/difficultyPills';
 import BattleScene from './BattleScene';
 import BattleFeed from './BattleFeed';
 
@@ -74,7 +75,7 @@ const ModifierBadge: React.FC<{ modifier: BossModifier }> = ({ modifier }) => {
   const def = BOSS_MODIFIER_DEFS[modifier.type as BossModifierType];
   if (!def) return null;
   return (
-    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-[11.5px] font-bold text-pink-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
+    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-[11.5px] font-bold text-pink-600 dark:text-pink-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
       <Flame className="w-2.5 h-2.5" />
       {modifier.label || def.name}
       {def.hasValue && modifier.value !== undefined && <span className="text-pink-300 ml-0.5">{modifier.value}{def.unit}</span>}
@@ -97,14 +98,14 @@ const StudentEndgame: React.FC<{
   const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
 
   const tierLabel = rewardTier && rewardTier > 0 ? `#${rewardTier}` : null;
-  const tierColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-400', 'text-purple-400'];
+  const tierColors = ['text-yellow-600 dark:text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-600 dark:text-blue-400', 'text-purple-600 dark:text-purple-400'];
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Victory Banner */}
       <div className="text-center py-4">
-        <Crown className="w-10 h-10 text-yellow-400 mx-auto mb-2" />
-        <h4 className="text-lg font-black text-yellow-400">Boss Defeated!</h4>
+        <Crown className="w-10 h-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
+        <h4 className="text-lg font-black text-yellow-600 dark:text-yellow-400">Boss Defeated!</h4>
         <p className="text-xs text-[var(--text-muted)]">{quiz.bossName} has been vanquished</p>
       </div>
 
@@ -112,19 +113,19 @@ const StudentEndgame: React.FC<{
       {participated ? (
         <div className="text-center p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-yellow-500/20">
           {tierLabel && (
-            <div className={`text-2xl font-black ${tierColors[(rewardTier || 1) - 1] || 'text-gray-400'}`}>{tierLabel} Place</div>
+            <div className={`text-2xl font-black ${tierColors[(rewardTier || 1) - 1] || 'text-gray-600 dark:text-gray-400'}`}>{tierLabel} Place</div>
           )}
           <div className="flex items-center justify-center gap-4 mt-2 text-sm">
-            <span className="text-yellow-400 font-bold">{Math.round((quiz.rewards?.xp || 0) * (rewardMultiplier || 1))} XP</span>
+            <span className="text-yellow-600 dark:text-yellow-400 font-bold">{Math.round((quiz.rewards?.xp || 0) * (rewardMultiplier || 1))} XP</span>
             <span className="text-cyan-700 dark:text-cyan-400 font-bold">{Math.round((quiz.rewards?.flux || 0) * (rewardMultiplier || 1))} Flux</span>
             {rewardMultiplier && rewardMultiplier > 1 && (
-              <span className="text-pink-400 font-bold text-xs">({rewardMultiplier}x bonus!)</span>
+              <span className="text-pink-600 dark:text-pink-400 font-bold text-xs">({rewardMultiplier}x bonus!)</span>
             )}
           </div>
         </div>
       ) : participated === false ? (
         <div className="text-center p-3 rounded-xl bg-red-500/5 border border-red-500/20">
-          <p className="text-sm text-red-400 font-bold">Did not qualify for rewards</p>
+          <p className="text-sm text-red-600 dark:text-red-400 font-bold">Did not qualify for rewards</p>
           <p className="text-[11.5px] text-[var(--text-muted)] mt-1">Needed {BOSS_PARTICIPATION_MIN_ATTEMPTS} attempts and {BOSS_PARTICIPATION_MIN_CORRECT} correct answer</p>
         </div>
       ) : null}
@@ -134,16 +135,16 @@ const StudentEndgame: React.FC<{
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Swords className="w-3 h-3" /> Damage Dealt</div>
-            <div className="text-lg font-black text-amber-400">{stats.totalDamageDealt.toLocaleString()}</div>
+            <div className="text-lg font-black text-amber-600 dark:text-amber-400">{stats.totalDamageDealt.toLocaleString()}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Target className="w-3 h-3" /> Accuracy</div>
-            <div className="text-lg font-black text-green-400">{accuracy}%</div>
+            <div className="text-lg font-black text-green-600 dark:text-green-400">{accuracy}%</div>
             <div className="text-[11.5px] text-[var(--text-muted)]">{correct}/{attempted}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Zap className="w-3 h-3" /> Critical Hits</div>
-            <div className="text-lg font-black text-red-400">{stats.criticalHits}</div>
+            <div className="text-lg font-black text-red-600 dark:text-red-400">{stats.criticalHits}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Shield className="w-3 h-3" /> Damage Mitigated</div>
@@ -151,11 +152,11 @@ const StudentEndgame: React.FC<{
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> Longest Streak</div>
-            <div className="text-lg font-black text-purple-400">{stats.longestStreak}</div>
+            <div className="text-lg font-black text-purple-600 dark:text-purple-400">{stats.longestStreak}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Heart className="w-3 h-3" /> Healing Received</div>
-            <div className="text-lg font-black text-emerald-400">{stats.healingReceived}</div>
+            <div className="text-lg font-black text-emerald-700 dark:text-emerald-400">{stats.healingReceived}</div>
           </div>
         </div>
       )}
@@ -174,9 +175,7 @@ const StudentEndgame: React.FC<{
                 diff === 'MEDIUM' ? 'border-yellow-500/20 bg-yellow-500/5' :
                 'border-red-500/20 bg-red-500/5'
               }`}>
-                <div className={`text-[11.5px] font-bold uppercase ${
-                  diff === 'EASY' ? 'text-green-400' : diff === 'MEDIUM' ? 'text-yellow-400' : 'text-red-400'
-                }`}>{diff}</div>
+                <div className={`text-[11.5px] font-bold uppercase ${getDifficultyClasses(diff)}`}>{diff}</div>
                 <div className="text-sm font-black text-white">{pct}%</div>
                 <div className="text-[11.5px] text-[var(--text-tertiary)]">{c}/{t}</div>
               </div>
@@ -356,14 +355,10 @@ const QuizBossCard: React.FC<{
     <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/30 to-black/50 p-5 space-y-4">
       {/* Boss info */}
       <div>
-        <h4 className="text-lg font-black text-amber-400">
+        <h4 className="text-lg font-black text-amber-600 dark:text-amber-400">
           {quiz.bossName}
           {quiz.difficultyTier && quiz.difficultyTier !== 'NORMAL' && (
-            <span className={`ml-2 text-[11.5px] font-bold px-2 py-0.5 rounded ${
-              quiz.difficultyTier === 'HARD' ? 'text-amber-400 bg-amber-900/30' :
-              quiz.difficultyTier === 'NIGHTMARE' ? 'text-red-400 bg-red-900/30' :
-              'text-purple-400 bg-purple-900/30'
-            }`}>
+            <span className={`ml-2 text-[11.5px] font-bold px-2 py-0.5 rounded ${getBossTierClasses(quiz.difficultyTier)}`}>
               {quiz.difficultyTier}
             </span>
           )}
@@ -399,7 +394,7 @@ const QuizBossCard: React.FC<{
                   <div className="absolute inset-0 bg-red-500/20 animate-[flash_0.5s_ease-out]" />
                   {/* Content */}
                   <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/90 to-transparent p-4 text-center animate-in slide-in-from-top duration-300">
-                    <div className="text-lg font-black text-red-400 uppercase tracking-wider animate-[shake_0.4s_ease-in-out]">{showAbility.name}</div>
+                    <div className="text-lg font-black text-red-600 dark:text-red-400 uppercase tracking-wider animate-[shake_0.4s_ease-in-out]">{showAbility.name}</div>
                     <div className="text-xs text-red-300">
                       {showAbility.effect === 'AOE_DAMAGE' && `All students take ${showAbility.value} damage!`}
                       {showAbility.effect === 'HEAL_BOSS' && `Boss regenerates ${showAbility.value}% HP!`}
@@ -432,7 +427,7 @@ const QuizBossCard: React.FC<{
           {/* Boss HP bar */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-red-400 font-mono">{currentHp} HP</span>
+              <span className="text-red-600 dark:text-red-400 font-mono">{currentHp} HP</span>
               <span className="text-gray-600">{effectiveMaxHp}</span>
             </div>
             <div className="relative w-full bg-white/5 rounded-full h-3 overflow-hidden" role="progressbar" aria-valuenow={currentHp} aria-valuemin={0} aria-valuemax={effectiveMaxHp} aria-label="Boss health">
@@ -463,7 +458,7 @@ const QuizBossCard: React.FC<{
           {/* Player HP bar */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp === -1 ? playerMaxHp : playerHp}</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp === -1 ? playerMaxHp : playerHp}</span>
               <span className="text-gray-600">{playerMaxHp}</span>
             </div>
             <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden" role="progressbar" aria-valuenow={playerHp === -1 ? playerMaxHp : playerHp} aria-valuemin={0} aria-valuemax={playerMaxHp} aria-label="Your health">
@@ -475,10 +470,10 @@ const QuizBossCard: React.FC<{
             {/* Player Role Badge */}
             {answerResult?.playerRole && (
               <div className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold border ${
-                answerResult.playerRole === 'VANGUARD' ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' :
-                answerResult.playerRole === 'STRIKER' ? 'text-green-400 border-green-500/30 bg-green-500/10' :
-                answerResult.playerRole === 'SENTINEL' ? 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' :
-                'text-purple-400 border-purple-500/30 bg-purple-500/10'
+                answerResult.playerRole === 'VANGUARD' ? 'text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10' :
+                answerResult.playerRole === 'STRIKER' ? 'text-green-600 dark:text-green-400 border-green-500/30 bg-green-500/10' :
+                answerResult.playerRole === 'SENTINEL' ? 'text-yellow-600 dark:text-yellow-400 border-yellow-500/30 bg-yellow-500/10' :
+                'text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10'
               }`}>
                 {answerResult.playerRole === 'VANGUARD' && '⚔'}
                 {answerResult.playerRole === 'STRIKER' && '⚡'}
@@ -494,7 +489,7 @@ const QuizBossCard: React.FC<{
             <div role="alertdialog" aria-label={`Phase shift: ${showPhaseTransition.name}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-500">
               <div className="text-center space-y-4 animate-in zoom-in-95 duration-700">
                 <div className="text-6xl font-black text-red-500 animate-pulse">PHASE SHIFT</div>
-                <div className="text-2xl font-bold text-orange-400">{showPhaseTransition.name}</div>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{showPhaseTransition.name}</div>
                 {showPhaseTransition.dialogue && (
                   <div className="text-lg text-gray-300 italic max-w-md mx-auto">"{showPhaseTransition.dialogue}"</div>
                 )}
@@ -505,13 +500,13 @@ const QuizBossCard: React.FC<{
           {/* Knocked out state */}
           {knockedOut ? (
             <div role="alert" className="text-center py-8">
-              <XCircle className="w-12 h-12 text-red-400 mx-auto mb-2" />
-              <p className="text-sm font-bold text-red-400">Knocked Out!</p>
+              <XCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-2" />
+              <p className="text-sm font-bold text-red-600 dark:text-red-400">Knocked Out!</p>
               <p className="text-xs text-[var(--text-muted)] mt-1">The boss has defeated you. Gear up with better armor (Analysis) and health (Charisma) to survive longer.</p>
             </div>
           ) : allAnswered ? (
             <div className="text-center py-8">
-              <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-2" />
+              <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-2" />
               <p className="text-sm text-gray-300">All questions answered!</p>
               <p className="text-xs text-[var(--text-muted)] mt-1">Check back for more questions tomorrow.</p>
             </div>
@@ -519,11 +514,7 @@ const QuizBossCard: React.FC<{
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                 <span>Question {currentQuestion + 1} / {shuffledQuestions.length}</span>
-                <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${
-                  question.difficulty === 'HARD' ? 'bg-red-500/20 text-red-400' :
-                  question.difficulty === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-green-500/20 text-green-400'
-                }`}>
+                <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${getDifficultyClasses(question.difficulty)}`}>
                   {question.difficulty}
                   {question.damageBonus ? ` (+${question.damageBonus} dmg)` : ''}
                 </span>
@@ -545,8 +536,8 @@ const QuizBossCard: React.FC<{
                       onClick={() => handleLocalAnswer(quiz.id, question.id, idx)}
                       disabled={submitting || !!answerResult || knockedOut}
                       className={`w-full text-left p-4 rounded-xl border text-base transition-all ${
-                        showResult && isCorrect ? 'border-green-500/50 bg-green-500/10 text-green-400' :
-                        showResult && !isCorrect ? 'border-red-500/50 bg-red-500/10 text-red-400' :
+                        showResult && isCorrect ? 'border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400' :
+                        showResult && !isCorrect ? 'border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400' :
                         isSelected ? 'border-amber-500/30 bg-amber-500/10' :
                         'border-white/10 bg-white/5 hover:bg-white/10 text-gray-300'
                       }`}
@@ -554,8 +545,8 @@ const QuizBossCard: React.FC<{
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-mono text-gray-600 w-6">{String.fromCharCode(65 + idx)}.</span>
                         <span>{option}</span>
-                        {showResult && isCorrect && <CheckCircle2 className="w-5 h-5 text-green-400 ml-auto shrink-0" />}
-                        {showResult && !isCorrect && <XCircle className="w-5 h-5 text-red-400 ml-auto shrink-0" />}
+                        {showResult && isCorrect && <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 ml-auto shrink-0" />}
+                        {showResult && !isCorrect && <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 ml-auto shrink-0" />}
                       </div>
                     </button>
                   );
@@ -565,12 +556,12 @@ const QuizBossCard: React.FC<{
               {/* Answer result feedback */}
               {answerResult && answerResult.correct && (
                 <div role="status" aria-live="polite" className="text-center space-y-1">
-                  <div className="text-base text-amber-400 font-bold animate-bounce">
+                  <div className="text-base text-amber-600 dark:text-amber-400 font-bold animate-bounce">
                     <Zap className="w-5 h-5 inline mr-1" />
                     {answerResult.isCrit ? 'CRITICAL HIT! ' : ''}-{answerResult.damage} HP to boss!
                   </div>
                   {answerResult.healAmount && answerResult.healAmount > 0 && (
-                    <div className="text-sm text-emerald-400 font-bold">
+                    <div className="text-sm text-emerald-700 dark:text-emerald-400 font-bold">
                       <Heart className="w-4 h-4 inline mr-1" /> +{answerResult.healAmount} HP healed
                     </div>
                   )}
@@ -583,7 +574,7 @@ const QuizBossCard: React.FC<{
                 </div>
               )}
               {answerResult && !answerResult.correct && !answerResult.shieldBlocked && answerResult.playerDamage && answerResult.playerDamage > 0 && (
-                <div role="status" aria-live="polite" className="text-center text-sm text-red-400 font-bold animate-bounce">
+                <div role="status" aria-live="polite" className="text-center text-sm text-red-600 dark:text-red-400 font-bold animate-bounce">
                   <Heart className="w-4 h-4 inline mr-1" />
                   Boss hits you for {answerResult.playerDamage} damage!
                 </div>
@@ -612,9 +603,9 @@ const QuizBossCard: React.FC<{
           {/* Rewards */}
           <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-muted)] border-t border-white/5 pt-3">
             <span>Defeat rewards:</span>
-            <span className="text-yellow-400">{quiz.rewards.xp} XP</span>
+            <span className="text-yellow-600 dark:text-yellow-400">{quiz.rewards.xp} XP</span>
             <span className="text-cyan-700 dark:text-cyan-400">{quiz.rewards.flux} Flux</span>
-            {quiz.rewards.itemRarity && <span className="text-purple-400">{quiz.rewards.itemRarity} item</span>}
+            {quiz.rewards.itemRarity && <span className="text-purple-600 dark:text-purple-400">{quiz.rewards.itemRarity} item</span>}
           </div>
         </>
       )}
@@ -716,7 +707,7 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold text-amber-400 flex items-center gap-2">
+      <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
         <Brain className="w-5 h-5" /> Boss Quiz Challenge
       </h3>
 

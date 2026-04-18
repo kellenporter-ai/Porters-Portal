@@ -124,7 +124,7 @@ const ReportActions: React.FC<ReportActionsProps> = ({
         onClick={handleCopy}
         className="flex items-center gap-2 px-4 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition"
       >
-        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+        {copied ? <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
         {copied ? 'Copied!' : 'Copy as Text'}
       </button>
 

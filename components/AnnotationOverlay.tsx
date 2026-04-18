@@ -287,11 +287,11 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/20 rounded-lg">
-                <Info className="w-5 h-5 text-purple-400" />
+                <Info className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <h3 className="text-white font-semibold text-lg">Annotation Mode</h3>
             </div>
-            <div className="text-gray-400 text-sm space-y-3 mb-6">
+            <div className="text-gray-600 dark:text-gray-400 text-sm space-y-3 mb-6">
               <p>
                 You&apos;re about to enter annotation mode. While active, you can draw
                 directly on the content using the pen and eraser tools.
@@ -299,14 +299,14 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
               <p>When you&apos;re done, you have two options:</p>
               <ul className="list-none space-y-2 pl-1">
                 <li className="flex items-start gap-2">
-                  <Save className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                  <Save className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
                   <span>
                     <strong className="text-green-300">Save &amp; Exit</strong> — Your
                     annotations are preserved. You can return to them later.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <X className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                  <X className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
                   <span>
                     <strong className="text-red-300">Discard &amp; Exit</strong> — All
                     annotations are permanently deleted.
@@ -326,7 +326,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => { setShowWarning(false); setDontShowAgain(false); }}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition cursor-pointer"
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-white transition cursor-pointer"
               >
                 Cancel
               </button>

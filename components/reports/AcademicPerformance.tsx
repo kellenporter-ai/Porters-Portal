@@ -64,7 +64,7 @@ const AcademicPerformance: React.FC<AcademicPerformanceProps> = ({ submissions, 
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
           <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Avg Assessment</div>
-          <div className={`text-lg font-bold ${avgScore !== null ? (avgScore >= 75 ? 'text-emerald-400 print:text-emerald-600' : avgScore >= 50 ? 'text-yellow-400 print:text-yellow-600' : 'text-red-400 print:text-red-600') : 'text-[var(--text-muted)]'}`}>
+          <div className={`text-lg font-bold ${avgScore !== null ? (avgScore >= 75 ? 'text-emerald-700 dark:text-emerald-400 print:text-emerald-600' : avgScore >= 50 ? 'text-yellow-600 dark:text-yellow-400 print:text-yellow-600' : 'text-red-600 dark:text-red-400 print:text-red-600') : 'text-[var(--text-muted)]'}`}>
             {avgScore !== null ? `${avgScore}%` : 'N/A'}
           </div>
           <div className="text-[11.5px] text-[var(--text-muted)]">{assessmentResults.length} assessment{assessmentResults.length !== 1 ? 's' : ''}</div>
@@ -100,7 +100,7 @@ const AcademicPerformance: React.FC<AcademicPerformanceProps> = ({ submissions, 
                   <td className="px-4 py-2.5 text-[var(--text-tertiary)] print:text-gray-600">{r.classType}</td>
                   <td className="px-4 py-2.5 text-center">
                     {r.percentage !== null ? (
-                      <span className={`font-bold ${r.percentage >= 75 ? 'text-emerald-400' : r.percentage >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <span className={`font-bold ${r.percentage >= 75 ? 'text-emerald-700 dark:text-emerald-400' : r.percentage >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
                         {Math.round(r.percentage)}%
                       </span>
                     ) : (

@@ -58,11 +58,11 @@ class ErrorBoundary extends React.Component<Props, State> {
                             <span className="text-3xl">⚠️</span>
                         </div>
                         <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-3">System Malfunction</h1>
-                        <p className="text-gray-400 mb-6 text-sm">
+                        <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
                             Something unexpected happened. Your data is safe — try reloading.
                         </p>
                         {this.state.error && (
-                            <pre className="text-[11.5px] text-red-400/60 bg-black/40 p-3 rounded-xl mb-6 text-left overflow-auto max-h-24 font-mono">
+                            <pre className="text-[11.5px] text-red-600 dark:text-red-400/60 bg-black/40 p-3 rounded-xl mb-6 text-left overflow-auto max-h-24 font-mono">
                                 {this.state.error.message}
                             </pre>
                         )}
@@ -127,9 +127,9 @@ export class FeatureErrorBoundary extends React.Component<FeatureProps, FeatureS
         if (this.state.hasError) {
             return (
                 <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 text-center" role="alert">
-                    <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+                    <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400 mx-auto mb-3" />
                     <h3 className="text-sm font-bold text-white mb-1">{this.props.feature} failed to load</h3>
-                    <p className="text-xs text-gray-400 mb-4">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
                         {this.state.error?.message || 'An unexpected error occurred.'}
                     </p>
                     <button

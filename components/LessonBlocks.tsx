@@ -53,9 +53,9 @@ const TextBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
 
 const InfoBoxBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const variantStyles = {
-    tip: 'border-green-500/30 bg-green-500/5 text-green-400',
-    warning: 'border-amber-500/30 bg-amber-500/5 text-amber-400',
-    note: 'border-blue-500/30 bg-blue-500/5 text-blue-400',
+    tip: 'border-green-500/30 bg-green-500/5 text-green-600 dark:text-green-400',
+    warning: 'border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400',
+    note: 'border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400',
   };
   const style = variantStyles[block.variant || 'note'];
   return (
@@ -89,7 +89,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
   return (
     <div className="space-y-3">
       <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
-        <HelpCircle className="w-4 h-4 text-purple-400 shrink-0" />
+        <HelpCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
       <div className="space-y-2" role="radiogroup" aria-label={block.content} translate="no">
@@ -106,9 +106,9 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
                   ? 'border-purple-500/30 bg-purple-500/10 text-[var(--text-primary)]'
                   : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)]'
                 : answered && idx === block.correctAnswer
-                ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                ? 'border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400'
                 : answered && idx === selected && !isCorrect
-                ? 'border-red-500/50 bg-red-500/10 text-red-400'
+                ? 'border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400'
                 : selected === idx
                 ? 'border-purple-500/30 bg-purple-500/10 text-[var(--text-primary)]'
                 : 'border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)]'
@@ -117,8 +117,8 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-[var(--text-muted)] w-5">{String.fromCharCode(65 + idx)}.</span>
               <BlockText text={opt} />
-              {!readOnly && answered && idx === block.correctAnswer && <CheckCircle2 className="w-4 h-4 text-green-400 ml-auto" />}
-              {!readOnly && answered && idx === selected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 ml-auto" />}
+              {!readOnly && answered && idx === block.correctAnswer && <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 ml-auto" />}
+              {!readOnly && answered && idx === selected && !isCorrect && <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 ml-auto" />}
             </div>
           </button>
         ))}
@@ -131,7 +131,7 @@ const MCBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => 
       {!readOnly && answered && (
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className={`text-xs font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            <div className={`text-xs font-bold ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {isCorrect ? 'Correct!' : 'Incorrect — review the material above.'}
             </div>
             <button
@@ -172,7 +172,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
   return (
     <div className="space-y-3">
       <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
-        <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0" />
+        <MessageSquare className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
       <div className="flex gap-2 items-end">
@@ -203,7 +203,7 @@ const ShortAnswerBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boo
       </div>
       {!readOnly && answered && (
         <div className="flex items-center gap-3">
-          <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
+          <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
             {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? 'Correct!' : 'Response recorded'}</> : <><XCircle className="w-3 h-3" /> Not quite — review the material above.</>}
           </div>
           <button
@@ -230,7 +230,7 @@ const VocabularyBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block })
       className="w-full text-left p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition cursor-pointer"
     >
       <div className="flex items-start gap-3">
-        <BookOpen className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+        <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
         <div>
           <BlockText text={block.term} tag="div" className="text-sm font-bold text-[var(--text-primary)]" />
           {flipped ? (
@@ -265,7 +265,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
   return (
     <div className="space-y-3">
       <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
-        <ListChecks className="w-4 h-4 text-green-400 shrink-0" />
+        <ListChecks className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
       <div className="space-y-2" role="group" aria-label={block.content || 'Checklist'} translate="no">
@@ -279,10 +279,10 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
             className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border text-sm transition ${
               readOnly
                 ? checked.has(idx)
-                  ? 'border-purple-500/30 bg-purple-500/5 text-purple-400 line-through cursor-default'
+                  ? 'border-purple-500/30 bg-purple-500/5 text-purple-600 dark:text-purple-400 line-through cursor-default'
                   : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)] cursor-default'
                 : checked.has(idx)
-                ? 'border-green-500/30 bg-green-500/5 text-green-400 line-through'
+                ? 'border-green-500/30 bg-green-500/5 text-green-600 dark:text-green-400 line-through'
                 : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'
             }`}
           >
@@ -298,7 +298,7 @@ const ChecklistBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boole
         ))}
       </div>
       {!readOnly && allChecked && (
-        <div className="text-xs font-bold text-green-400 flex items-center gap-1">
+        <div className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3" /> All items completed!
         </div>
       )}
@@ -362,14 +362,14 @@ const VideoBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
 
 const ObjectivesBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 space-y-2">
-    <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+    <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
       <Target className="w-4 h-4" />
       {block.title || block.content || 'Learning Objectives'}
     </div>
     <ul className="space-y-1">
       {(block.items || []).map((item, idx) => (
         <li key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-          <span className="text-emerald-400 mt-0.5 shrink-0">•</span>
+          <span className="text-emerald-700 dark:text-emerald-400 mt-0.5 shrink-0">•</span>
           <BlockText text={item} />
         </li>
       ))}
@@ -393,7 +393,7 @@ const ExternalLinkBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block 
         <BlockText text={block.title || block.url} tag="div" className="text-sm font-bold text-purple-300 group-hover:text-purple-200 transition" />
         {block.content && <BlockText text={block.content} tag="div" className="text-xs text-[var(--text-tertiary)] mt-0.5" />}
       </div>
-      <div className="flex items-center gap-1 text-xs text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg shrink-0 ml-3">
+      <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg shrink-0 ml-3">
         {block.buttonLabel || 'Open'} <ExternalLink className="w-3 h-3" />
       </div>
     </div>
@@ -447,7 +447,7 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) 
           className="w-full text-left p-3 rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition cursor-pointer"
         >
           <div className="flex items-start gap-3">
-            <BookOpen className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+            <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <BlockText text={t.term} tag="div" className="text-sm font-bold text-[var(--text-primary)]" />
               {revealed.has(idx) ? (
@@ -465,13 +465,13 @@ const VocabListBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) 
 
 const ActivityBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => (
   <div className="border border-amber-500/20 bg-amber-500/5 rounded-xl p-4 space-y-2">
-    <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm">
       {block.icon && <span className="text-lg">{block.icon}</span>}
       <BlockText text={block.title || 'Activity'} />
     </div>
     <BlockText text={block.instructions || block.content} tag="div" className="text-sm text-[var(--text-secondary)]" />
     {block.url && (
-      <a href={safeUrl(block.url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition mt-1">
+      <a href={safeUrl(block.url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 hover:text-amber-300 transition mt-1">
         {block.buttonLabel || 'Open Activity'} <span aria-hidden="true">↗</span>
       </a>
     )}
@@ -540,27 +540,27 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       {/* Category columns */}
       <div className="grid grid-cols-2 gap-3" translate="no">
         <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 min-h-[80px]">
-          <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">{block.leftLabel || 'Category A'}</div>
+          <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">{block.leftLabel || 'Category A'}</div>
           <div className="space-y-1">
             {leftItems.map(idx => (
-              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-[var(--text-secondary)] bg-[var(--panel-bg)]' : submitted ? (items[idx].correct === 'left' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-[var(--text-secondary)] bg-[var(--panel-bg)]'}`}>
+              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-[var(--text-secondary)] bg-[var(--panel-bg)]' : submitted ? (items[idx].correct === 'left' ? 'text-green-600 dark:text-green-400 bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-500/10') : 'text-[var(--text-secondary)] bg-[var(--panel-bg)]'}`}>
                 <BlockText text={items[idx].text} />
                 {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-[var(--text-muted)] hover:text-red-400 text-xs">×</button>}
-                {!readOnly && submitted && items[idx].correct === 'left' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
-                {!readOnly && submitted && items[idx].correct !== 'left' && <XCircle className="w-3 h-3 text-red-400" />}
+                {!readOnly && submitted && items[idx].correct === 'left' && <CheckCircle2 className="w-3 h-3 text-green-600 dark:text-green-400" />}
+                {!readOnly && submitted && items[idx].correct !== 'left' && <XCircle className="w-3 h-3 text-red-600 dark:text-red-400" />}
               </div>
             ))}
           </div>
         </div>
         <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 min-h-[80px]">
-          <div className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">{block.rightLabel || 'Category B'}</div>
+          <div className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-2">{block.rightLabel || 'Category B'}</div>
           <div className="space-y-1">
             {rightItems.map(idx => (
-              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-[var(--text-secondary)] bg-[var(--panel-bg)]' : submitted ? (items[idx].correct === 'right' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10') : 'text-[var(--text-secondary)] bg-[var(--panel-bg)]'}`}>
+              <div key={idx} className={`flex items-center justify-between px-2 py-1 rounded text-sm ${readOnly ? 'text-[var(--text-secondary)] bg-[var(--panel-bg)]' : submitted ? (items[idx].correct === 'right' ? 'text-green-600 dark:text-green-400 bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-500/10') : 'text-[var(--text-secondary)] bg-[var(--panel-bg)]'}`}>
                 <BlockText text={items[idx].text} />
                 {!readOnly && !submitted && <button onClick={() => removeItem(idx)} aria-label={`Remove ${items[idx].text}`} className="text-[var(--text-muted)] hover:text-red-400 text-xs">×</button>}
-                {!readOnly && submitted && items[idx].correct === 'right' && <CheckCircle2 className="w-3 h-3 text-green-400" />}
-                {!readOnly && submitted && items[idx].correct !== 'right' && <XCircle className="w-3 h-3 text-red-400" />}
+                {!readOnly && submitted && items[idx].correct === 'right' && <CheckCircle2 className="w-3 h-3 text-green-600 dark:text-green-400" />}
+                {!readOnly && submitted && items[idx].correct !== 'right' && <XCircle className="w-3 h-3 text-red-600 dark:text-red-400" />}
               </div>
             ))}
           </div>
@@ -574,7 +574,7 @@ const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       )}
       {!readOnly && submitted && (
         <div className="flex items-center gap-3">
-          <div className={`text-xs font-bold ${correctCount === items.length ? 'text-green-400' : 'text-amber-400'}`}>
+          <div className={`text-xs font-bold ${correctCount === items.length ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
             {correctCount === items.length ? 'All correct!' : `${correctCount}/${items.length} correct`}
           </div>
           <button
@@ -808,7 +808,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
   return (
     <div className="space-y-3" role="list" aria-label={block.content || 'Ranking activity'}>
       <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
-        <GripVertical className="w-4 h-4 text-purple-400 shrink-0" />
+        <GripVertical className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
       <div className="space-y-1" translate="no">
@@ -826,8 +826,8 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
                 ? 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)]'
                 : submitted
                 ? item.origIdx === idx
-                  ? 'border-green-500/30 bg-green-500/5 text-green-400'
-                  : 'border-red-500/30 bg-red-500/5 text-red-400'
+                  ? 'border-green-500/30 bg-green-500/5 text-green-600 dark:text-green-400'
+                  : 'border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400'
                 : dragIdx === idx
                 ? 'border-purple-500/30 bg-purple-500/10 text-[var(--text-primary)]'
                 : 'border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'
@@ -836,8 +836,8 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
             <GripVertical className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
             <span className="text-xs font-mono text-[var(--text-muted)] w-5">{idx + 1}.</span>
             <BlockText text={item.item} className="flex-1" />
-            {!readOnly && submitted && item.origIdx === idx && <CheckCircle2 className="w-4 h-4 text-green-400" />}
-            {!readOnly && submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-400" />}
+            {!readOnly && submitted && item.origIdx === idx && <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />}
+            {!readOnly && submitted && item.origIdx !== idx && <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />}
             {!readOnly && !submitted && (
               <div className="flex gap-0.5">
                 <button onClick={() => idx > 0 && moveItem(idx, idx - 1)} disabled={idx === 0} aria-label="Move up" className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20"><ChevronRight className="w-3 h-3 -rotate-90" /></button>
@@ -854,7 +854,7 @@ const RankingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean
       )}
       {!readOnly && submitted && (
         <div className="flex items-center gap-3">
-          <div className={`text-xs font-bold ${correctCount === correctOrder.length ? 'text-green-400' : 'text-amber-400'}`}>
+          <div className={`text-xs font-bold ${correctCount === correctOrder.length ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
             {correctCount === correctOrder.length ? 'Perfect order!' : `${correctCount}/${correctOrder.length} in correct position`}
           </div>
           <button
@@ -899,7 +899,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
         </div>
       )}
       <div className="text-base text-[var(--text-primary)] font-medium flex items-center gap-2" translate="no">
-        <Link className="w-4 h-4 text-purple-400 shrink-0" />
+        <Link className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
         <BlockText text={block.content} />
       </div>
       <div className="flex gap-2 items-end">
@@ -930,7 +930,7 @@ const LinkedBlock: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onCo
       </div>
       {!readOnly && answered && (
         <div className="flex items-center gap-3">
-          <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-400' : 'text-amber-400'}`}>
+          <div className={`text-xs font-bold flex items-center gap-1 ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
             {isCorrect ? <><CheckCircle2 className="w-3 h-3" /> Correct!</> : <><XCircle className="w-3 h-3" /> {(block.acceptedAnswers || []).length > 0 ? 'Not quite — review the material above.' : 'Response recorded'}</>}
           </div>
           <button
@@ -1186,7 +1186,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                     onClick={() => { onExportPdf(); setShowActionsMenu(false); }}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)] transition text-left cursor-pointer"
                   >
-                    <FileDown className="w-3.5 h-3.5 text-blue-400" /> Export to PDF
+                    <FileDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Export to PDF
                   </button>
                 )}
                 {onExportPdf && onClearResponses && (
@@ -1194,7 +1194,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                     onClick={() => setShowClearConfirm('export-clear')}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass)] transition text-left cursor-pointer"
                   >
-                    <FileDown className="w-3.5 h-3.5 text-amber-400" /> Export & Clear
+                    <FileDown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Export & Clear
                   </button>
                 )}
                 {onClearResponses && hasAnyResponses && (
@@ -1202,7 +1202,7 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
                     <div className="border-t border-[var(--border)] my-1" />
                     <button
                       onClick={() => setShowClearConfirm('clear')}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/5 transition text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-600 dark:text-red-400 hover:text-red-300 hover:bg-red-500/5 transition text-left cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" /> Clear Responses
                     </button>

@@ -64,7 +64,7 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
           >
             {submitted ? (
               <div className="p-8 text-center">
-                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-[var(--text-primary)]">Report Submitted</h3>
                 <p className="text-sm text-[var(--text-tertiary)] mt-1">Thanks for helping improve Porter Portal!</p>
               </div>
@@ -72,7 +72,7 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
               <>
                 <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
                   <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-                    <Bug className="w-5 h-5 text-amber-400" /> Report an Issue
+                    <Bug className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Report an Issue
                   </h3>
                   <button onClick={() => setIsOpen(false)} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition">
                     <X className="w-5 h-5" />

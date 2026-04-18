@@ -14,9 +14,9 @@ interface AnnouncementManagerProps {
 }
 
 const PRIORITY_STYLES = {
-  INFO: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', icon: <Info className="w-4 h-4" /> },
-  WARNING: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', icon: <AlertTriangle className="w-4 h-4" /> },
-  URGENT: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', icon: <AlertOctagon className="w-4 h-4" /> },
+  INFO: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-600 dark:text-blue-400', icon: <Info className="w-4 h-4" /> },
+  WARNING: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-600 dark:text-yellow-400', icon: <AlertTriangle className="w-4 h-4" /> },
+  URGENT: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-600 dark:text-red-400', icon: <AlertOctagon className="w-4 h-4" /> },
 };
 
 const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds, availableSections = [] }) => {
@@ -63,7 +63,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
     <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <Megaphone className="w-5 h-5 text-orange-400" />
+          <Megaphone className="w-5 h-5 text-orange-600 dark:text-orange-400" />
           Announcements
         </h3>
         <button

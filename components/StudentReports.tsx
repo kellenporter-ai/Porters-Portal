@@ -103,7 +103,7 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
       {/* Page title + student picker */}
       <div className="mb-8 print:mb-4">
         <div className="flex items-center gap-3 mb-4 print:hidden">
-          <FileBarChart className="w-6 h-6 text-purple-400" />
+          <FileBarChart className="w-6 h-6 text-purple-600 dark:text-purple-400" />
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Student Reports</h1>
         </div>
 
@@ -205,7 +205,7 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center print:hidden">
           <UserCircle className="w-16 h-16 text-gray-700 mb-4" />
-          <h2 className="text-lg font-bold text-gray-400 mb-2">Select a Student</h2>
+          <h2 className="text-lg font-bold text-gray-600 dark:text-gray-400 mb-2">Select a Student</h2>
           <p className="text-sm text-gray-600 max-w-md">
             Search for a student above to generate their academic progress report. Reports include engagement data, assessment scores, behavioral metrics, and identified strengths and concerns.
           </p>

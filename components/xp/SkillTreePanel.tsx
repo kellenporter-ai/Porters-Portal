@@ -32,31 +32,31 @@ const SYNERGY_DEFINITIONS: SynergyDefinition[] = [
     specs: ['THEORIST', 'ANALYST'],
     label: 'Theorist × Analyst',
     bonus: '+5% accuracy bonus',
-    color: 'text-blue-400',
+    color: 'text-blue-600 dark:text-blue-400',
   },
   {
     specs: ['THEORIST', 'DIPLOMAT'],
     label: 'Theorist × Diplomat',
     bonus: '+8% group quest XP',
-    color: 'text-purple-400',
+    color: 'text-purple-600 dark:text-purple-400',
   },
   {
     specs: ['EXPERIMENTALIST', 'ANALYST'],
     label: 'Experimentalist × Analyst',
     bonus: '+10% lab score bonus',
-    color: 'text-yellow-400',
+    color: 'text-yellow-600 dark:text-yellow-400',
   },
   {
     specs: ['EXPERIMENTALIST', 'DIPLOMAT'],
     label: 'Experimentalist × Diplomat',
     bonus: '+5% Flux from crafting',
-    color: 'text-emerald-400',
+    color: 'text-emerald-700 dark:text-emerald-400',
   },
   {
     specs: ['ANALYST', 'DIPLOMAT'],
     label: 'Analyst × Diplomat',
     bonus: '+8% streak maintenance',
-    color: 'text-pink-400',
+    color: 'text-pink-600 dark:text-pink-400',
   },
 ];
 
@@ -188,18 +188,18 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
           <p className="text-[11.5px] text-[var(--text-muted)] mt-0.5">You earn 1 Skill Point every 2 levels</p>
         </div>
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5">
-          <Zap className="w-4 h-4 text-yellow-400" />
-          <span className="text-sm font-bold text-yellow-400">{skillPoints} SP</span>
+          <Zap className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+          <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{skillPoints} SP</span>
         </div>
       </div>
 
       {/* Permanence warning banner */}
       {!hasChosen && (
         <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-amber-300">Choose Carefully</p>
-            <p className="text-[11px] text-amber-400/70 mt-0.5">
+            <p className="text-[11px] text-amber-600 dark:text-amber-400/70 mt-0.5">
               Selecting a specialization is <span className="font-bold text-amber-300">permanent</span>. Once you unlock your first skill, you will not be able to change your specialization. Browse all four trees before deciding.
             </p>
           </div>
@@ -208,7 +208,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
 
       {hasChosen && (
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
-          <CheckCircle2 className="w-4 h-4 text-green-400" />
+          <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
           <span className="text-xs text-[var(--text-secondary)]">Specialization locked: <span className="font-bold text-[var(--text-primary)]">{SKILL_TREES[specialization!].icon} {SKILL_TREES[specialization!].name}</span></span>
         </div>
       )}
@@ -248,7 +248,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                 )}
               </div>
               <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1">{spec.description}</p>
-              {!hasChosen && isSelected && <p className="text-[11.5px] text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>}
+              {!hasChosen && isSelected && <p className="text-[11.5px] text-amber-600 dark:text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>}
             </button>
           );
         })}
@@ -304,7 +304,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm">{node.icon}</span>
                         <span className="text-xs font-bold text-[var(--text-primary)] truncate">{node.name}</span>
-                        {isUnlocked && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 ml-auto" />}
+                        {isUnlocked && <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400 ml-auto" />}
                         {!isUnlocked && !isUnlockable && <Lock className="w-3 h-3 text-gray-600 ml-auto" />}
                       </div>
                       <p className="text-[11.5px] text-[var(--text-tertiary)]">{node.description}</p>

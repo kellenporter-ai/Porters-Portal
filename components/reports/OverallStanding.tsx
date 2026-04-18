@@ -31,22 +31,22 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
-          <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1 print:text-purple-600" />
+          <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400 mx-auto mb-1 print:text-purple-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{xp.toLocaleString()}</div>
           <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
-          <Shield className="w-5 h-5 text-cyan-400 mx-auto mb-1 print:text-cyan-600" />
+          <Shield className="w-5 h-5 text-cyan-600 dark:text-cyan-400 mx-auto mb-1 print:text-cyan-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">Lv. {level}</div>
           <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Level</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
-          <Flame className="w-5 h-5 text-orange-400 mx-auto mb-1 print:text-orange-600" />
+          <Flame className="w-5 h-5 text-orange-600 dark:text-orange-400 mx-auto mb-1 print:text-orange-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{loginStreak}</div>
           <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Login Streak</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center print:border-gray-300 print:bg-gray-50">
-          <Zap className="w-5 h-5 text-yellow-400 mx-auto mb-1 print:text-yellow-600" />
+          <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mx-auto mb-1 print:text-yellow-600" />
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{currency}</div>
           <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
         </div>
@@ -81,9 +81,9 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
             'border-blue-500/50 bg-blue-500/10'
           }`}>
             <AlertTriangle className={`w-4 h-4 ${
-              highestAlert.riskLevel === 'CRITICAL' ? 'text-red-400' :
-              highestAlert.riskLevel === 'HIGH' ? 'text-orange-400' :
-              highestAlert.riskLevel === 'MODERATE' ? 'text-yellow-400' : 'text-blue-400'
+              highestAlert.riskLevel === 'CRITICAL' ? 'text-red-600 dark:text-red-400' :
+              highestAlert.riskLevel === 'HIGH' ? 'text-orange-600 dark:text-orange-400' :
+              highestAlert.riskLevel === 'MODERATE' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'
             }`} />
             <span className="text-xs font-bold text-[var(--text-primary)] print:text-black">{highestAlert.riskLevel}</span>
             <span className="text-[11.5px] text-[var(--text-tertiary)] print:text-[var(--text-tertiary)]">{highestAlert.reason.replace(/_/g, ' ')}</span>

@@ -54,9 +54,9 @@ function relativeDate(iso: string): string {
 function urgencyColor(iso: string): string {
   const diffMs = new Date(iso).getTime() - Date.now();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  if (diffDays < 0) return 'text-red-400 bg-red-500/10 border-red-500/20';
-  if (diffDays <= 1) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-  if (diffDays <= 3) return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+  if (diffDays < 0) return 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20';
+  if (diffDays <= 1) return 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20';
+  if (diffDays <= 3) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
   return 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border-[var(--border)]';
 }
 
@@ -313,14 +313,14 @@ const HomeTab: React.FC<HomeTabProps> = ({
           className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-purple-600/15 to-blue-600/15 border border-purple-500/30 hover:border-purple-500/50 transition-all motion-safe:hover:scale-[1.005] motion-safe:active:scale-[0.995] text-left group focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           <div className="w-12 h-12 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center shrink-0">
-            <Target className="w-6 h-6 text-purple-400" />
+            <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[11.5px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-0.5">Up Next</div>
             <div className="text-base font-bold text-[var(--text-primary)] truncate">{upNextAssignment.title}</div>
             <div className={`text-xs font-bold mt-0.5 ${
-              new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 0 ? 'text-red-400' :
-              new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 86400000 ? 'text-amber-400' :
+              new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 0 ? 'text-red-600 dark:text-red-400' :
+              new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 86400000 ? 'text-amber-600 dark:text-amber-400' :
               'text-[var(--text-tertiary)]'
             }`}>
               {relativeDate(upNextAssignment.dueDate!)}
@@ -334,7 +334,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
       {/* Active XP Event (compact inline) */}
       {activeEvent && (
         <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30">
-          <Zap className="w-5 h-5 text-blue-400 shrink-0" />
+          <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
           <span className="text-sm text-blue-300 font-bold flex-1">{activeEvent.title} — {activeEvent.multiplier}x XP active</span>
         </div>
       )}
@@ -344,31 +344,31 @@ const HomeTab: React.FC<HomeTabProps> = ({
         <QuickNavCard
           label="Resources"
           icon={<AnimatedIcon src="/assets/icons/icon-resources.png" alt="Resources" size={56} disableAnimation={performanceMode} />}
-          color="bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20"
+          color="bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20"
           onClick={() => onNavigate('Resources')}
         />
         <QuickNavCard
           label="Loadout"
           icon={<AnimatedIcon src="/assets/icons/icon-agent-loadout.png" alt="Loadout" size={56} disableAnimation={performanceMode} />}
-          color="bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
+          color="bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
           onClick={() => onNavigate('Agent Loadout')}
         />
         <QuickNavCard
           label="Progress"
           icon={<AnimatedIcon src="/assets/icons/icon-progress.png" alt="Progress" size={56} disableAnimation={performanceMode} />}
-          color="bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+          color="bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
           onClick={() => onNavigate('Progress')}
         />
         <QuickNavCard
           label="Badges"
           icon={<AnimatedIcon src="/assets/icons/icon-badges.png" alt="Badges" size={56} disableAnimation={performanceMode} />}
-          color="bg-yellow-500/10 border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20"
+          color="bg-yellow-500/10 border-yellow-500/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20"
           onClick={() => onNavigate('Badges')}
         />
         <QuickNavCard
           label="Calendar"
           icon={<AnimatedIcon src="/assets/icons/icon-calendar.png" alt="Calendar" size={56} disableAnimation={performanceMode} />}
-          color="bg-cyan-500/10 border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20"
+          color="bg-cyan-500/10 border-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20"
           onClick={() => onNavigate('Calendar')}
         />
       </div>
@@ -404,7 +404,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                       </div>
                     </div>
                     {a.isCompleted ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                     ) : (
                       <ChevronRight className="w-4 h-4 opacity-40 shrink-0" />
                     )}
@@ -463,8 +463,8 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] bg-white/[0.02] hover:bg-[var(--surface-glass)] transition text-left focus-visible:ring-2 focus-visible:ring-purple-500"
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  s.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
-                  s.status === 'FLAGGED' ? 'bg-red-500/20 text-red-400' :
+                  s.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' :
+                  s.status === 'FLAGGED' ? 'bg-red-500/20 text-red-600 dark:text-red-400' :
                   'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'
                 }`}>
                   <BookOpen className="w-4 h-4" />
@@ -474,7 +474,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   <div className="text-sm text-[var(--text-primary)] font-medium truncate">{s.assignmentTitle}</div>
                   <div className="text-xs text-[var(--text-tertiary)]">
                     {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                    {s.score > 0 && <span className="ml-2 text-yellow-400">{s.score}%</span>}
+                    {s.score > 0 && <span className="ml-2 text-yellow-600 dark:text-yellow-400">{s.score}%</span>}
                   </div>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />

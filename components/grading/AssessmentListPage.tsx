@@ -13,9 +13,9 @@ interface AssessmentListPageProps {
 
 function getClassBadgeStyle(classType: string): string {
   const lower = classType.toLowerCase();
-  if (lower.includes('ap') || lower.includes('physics')) return 'bg-blue-500/15 text-blue-400 border border-blue-500/25';
-  if (lower.includes('honors')) return 'bg-purple-500/15 text-purple-400 border border-purple-500/25';
-  if (lower.includes('forensic') || lower.includes('forensics')) return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25';
+  if (lower.includes('ap') || lower.includes('physics')) return 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25';
+  if (lower.includes('honors')) return 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25';
+  if (lower.includes('forensic') || lower.includes('forensics')) return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25';
   return 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] border border-[var(--border)]';
 }
 
@@ -104,7 +104,7 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                   <h3 className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-text)] transition leading-snug">
                     {assessment.title}
                     {hasClassroomLinks(assessment) && (
-                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11.5px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">
+                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11.5px] font-bold bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/20">
                         {(assessment.classroomLinks?.length ?? 0) > 1 ? `GC \u00d7${assessment.classroomLinks!.length}` : 'GC'}
                       </span>
                     )}
@@ -118,7 +118,7 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
 
                 {/* Due date */}
                 {assessment.dueDate && (
-                  <p className={`text-xs mb-3 ${isOverdue ? 'text-red-400' : 'text-[var(--text-tertiary)]'}`}>
+                  <p className={`text-xs mb-3 ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-tertiary)]'}`}>
                     Due {new Date(assessment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     {isOverdue && ' (overdue)'}
                   </p>
@@ -133,7 +133,7 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                         style={{ width: `${gradePct}%` }}
                       />
                     </div>
-                    <span className={`text-[11.5px] font-bold tabular-nums ${gradePct === 100 ? 'text-green-400' : 'text-[var(--text-tertiary)]'}`}>
+                    <span className={`text-[11.5px] font-bold tabular-nums ${gradePct === 100 ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-tertiary)]'}`}>
                       {statsLoading ? '—' : `${stats.graded}/${stats.submitted}`}
                     </span>
                   </div>
@@ -142,11 +142,11 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                 {/* Stats row */}
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-[var(--text-muted)]">
                   <span>{statsLoading ? '—' : `${stats.submitted} submitted`}</span>
-                  {assessment.rubric && <span className="text-green-400/80">{statsLoading ? '—' : `${stats.graded} graded`}</span>}
-                  {!statsLoading && stats.flagged > 0 && <span className="text-amber-400">{stats.flagged} flagged</span>}
-                  {!statsLoading && stats.aiFlagged > 0 && <span className="text-purple-400">{stats.aiFlagged} AI flagged</span>}
-                  {!statsLoading && stats.draft > 0 && <span className="text-cyan-400">{stats.draft} draft{stats.draft !== 1 ? 's' : ''}</span>}
-                  {!statsLoading && stats.notStarted > 0 && <span className="text-orange-400">{stats.notStarted} not started</span>}
+                  {assessment.rubric && <span className="text-green-600 dark:text-green-400/80">{statsLoading ? '—' : `${stats.graded} graded`}</span>}
+                  {!statsLoading && stats.flagged > 0 && <span className="text-amber-600 dark:text-amber-400">{stats.flagged} flagged</span>}
+                  {!statsLoading && stats.aiFlagged > 0 && <span className="text-purple-600 dark:text-purple-400">{stats.aiFlagged} AI flagged</span>}
+                  {!statsLoading && stats.draft > 0 && <span className="text-cyan-600 dark:text-cyan-400">{stats.draft} draft{stats.draft !== 1 ? 's' : ''}</span>}
+                  {!statsLoading && stats.notStarted > 0 && <span className="text-orange-600 dark:text-orange-400">{stats.notStarted} not started</span>}
                 </div>
               </button>
             );

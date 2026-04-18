@@ -148,7 +148,7 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
 
         {/* Level Distribution */}
         <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
-          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-cyan-400" /> Level Distribution</h3>
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" /> Level Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={levelDistribution}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
@@ -214,13 +214,13 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
 
         {/* Top 5 Performers */}
         <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
-          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-400" /> Top 5 Operatives</h3>
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" /> Top 5 Operatives</h3>
           <div className="space-y-2">
             {topPerformers.map((s, idx) => {
               const xp = s.gamification?.xp || 0;
               const lvl = s.gamification?.level || 1;
               const rd = getRankDetails(lvl);
-              const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-400', 'text-purple-400'];
+              const medalColors = ['text-yellow-600 dark:text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-600 dark:text-blue-400', 'text-purple-600 dark:text-purple-400'];
               return (
                 <div key={s.id} className="flex items-center gap-3 p-2 rounded-xl bg-[var(--panel-bg)] border border-[var(--border)]">
                   <span className={`text-sm font-black w-6 text-center ${medalColors[idx]}`}>#{idx + 1}</span>

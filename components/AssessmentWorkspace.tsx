@@ -84,7 +84,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
         {/* Top Bar */}
         <div className="flex items-center gap-4 px-5 py-3 border-b border-[var(--border)] bg-red-900/20 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <Shield className="w-4 h-4 text-red-400 shrink-0" />
+            <Shield className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
             <h1 className="text-base font-bold text-[var(--text-primary)] truncate">
               {activeAssignment.title}
             </h1>
@@ -170,7 +170,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   {/* Panel header */}
                   <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b border-[var(--border)] bg-[var(--surface-base)]">
                     <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-purple-400 shrink-0" />
+                      <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
                       <h2 className="text-base font-bold text-[var(--text-primary)]">
                         {selectedTakingQuestion.questionLabel}
                       </h2>
@@ -255,10 +255,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   // Grade color
   const gradeColor =
     (assessmentResult?.percentage ?? 0) >= 80
-      ? 'text-green-400'
+      ? 'text-green-600 dark:text-green-400'
       : (assessmentResult?.percentage ?? 0) >= 60
-        ? 'text-yellow-400'
-        : 'text-red-400';
+        ? 'text-yellow-600 dark:text-yellow-400'
+        : 'text-red-600 dark:text-red-400';
 
   // Helper: get the tier label for a question (lowest selected tier across skills)
   const getQuestionTierLabel = (questionId: string): RubricTierLabel | null => {
@@ -310,7 +310,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             </span>
           )}
           {assessmentResult && assessmentResult.xpEarned > 0 && (
-            <span className="flex items-center gap-1 text-sm text-amber-400 font-semibold">
+            <span className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 font-semibold">
               <Trophy className="w-3.5 h-3.5" />
               {assessmentResult.xpEarned} XP
             </span>
@@ -700,20 +700,20 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
 
     if (perBlock.needsReview) {
       return (
-        <span className="inline-flex items-center gap-1 text-[13px] font-medium text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-[13px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
           <Clock className="w-3 h-3" /> Pending Review
         </span>
       );
     }
     if (perBlock.correct) {
       return (
-        <span className="inline-flex items-center gap-1 text-[13px] font-medium text-green-400 bg-green-500/15 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-[13px] font-medium text-green-600 dark:text-green-400 bg-green-500/15 px-2 py-0.5 rounded-full">
           <Check className="w-3 h-3" /> Correct
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 text-[13px] font-medium text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-[13px] font-medium text-red-600 dark:text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full">
         <XCircle className="w-3 h-3" /> Incorrect
       </span>
     );
@@ -746,7 +746,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-purple-500/40 resize-y"
         />
         {savedIndicators[blockId] && (
-          <span className="absolute top-2 right-2 text-xs text-green-400 font-medium animate-pulse">
+          <span className="absolute top-2 right-2 text-xs text-green-600 dark:text-green-400 font-medium animate-pulse">
             Saved
           </span>
         )}

@@ -144,7 +144,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
     <div style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400">
+          <div className="p-2 bg-blue-500/20 rounded-xl text-blue-600 dark:text-blue-400">
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
@@ -193,7 +193,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
               </h3>
               <button
                 onClick={goToday}
-                className="text-[11.5px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider transition"
+                className="text-[11.5px] text-purple-600 dark:text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider transition"
               >
                 Today
               </button>
@@ -232,7 +232,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                         ${hasAssignments ? 'hover:bg-[var(--surface-glass)] cursor-pointer' : 'cursor-default'}
                       `}
                     >
-                      <span className={`text-[11px] font-bold ${day.isToday ? 'text-purple-400' : ''}`}>
+                      <span className={`text-[11px] font-bold ${day.isToday ? 'text-purple-600 dark:text-purple-400' : ''}`}>
                         {day.date.getDate()}
                       </span>
                       {hasAssignments && (
@@ -272,7 +272,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                   >
                     <div className="w-14 text-center">
                       <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
-                      <div className={`text-lg font-bold ${day.isToday ? 'text-purple-400' : 'text-[var(--text-secondary)]'}`}>{day.date.getDate()}</div>
+                      <div className={`text-lg font-bold ${day.isToday ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-secondary)]'}`}>{day.date.getDate()}</div>
                     </div>
                     <div className="flex-1 min-w-0">
                       {hasAssignments ? (
@@ -280,7 +280,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                           {day.assignments.map(a => (
                             <div key={a.id} className="flex items-center gap-2 text-xs">
                               <div className={`w-2 h-2 rounded-full shrink-0 ${a.isCompleted ? 'bg-emerald-400' : a.isOverdue ? 'bg-red-400' : a.classColor}`} />
-                              <span className={`truncate ${a.isCompleted ? 'text-[var(--text-muted)] line-through' : a.isOverdue ? 'text-red-400' : 'text-[var(--text-secondary)]'}`}>
+                              <span className={`truncate ${a.isCompleted ? 'text-[var(--text-muted)] line-through' : a.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-secondary)]'}`}>
                                 {a.title}
                               </span>
                             </div>
@@ -327,11 +327,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                   >
                     <div className="flex items-start gap-2">
                       {a.isCompleted ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
                       ) : a.isOverdue ? (
-                        <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                        <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                       ) : (
-                        <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                        <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                       )}
                       <div className="min-w-0">
                         <div className="text-sm text-[var(--text-secondary)] font-medium truncate">{a.title}</div>
@@ -349,7 +349,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           {/* Upcoming due dates */}
           <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
             <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" />
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               Upcoming Due Dates
             </h4>
             {upcoming.length > 0 ? (
@@ -366,8 +366,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                       <div className="text-sm text-[var(--text-secondary)] truncate">{a.title}</div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className={`text-[11.5px] font-bold ${
-                          daysLeft <= 1 ? 'text-red-400' :
-                          daysLeft <= 3 ? 'text-yellow-400' : 'text-[var(--text-muted)]'
+                          daysLeft <= 1 ? 'text-red-600 dark:text-red-400' :
+                          daysLeft <= 3 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]'
                         }`}>
                           {daysLeft === 0 ? 'Due today' :
                            daysLeft === 1 ? 'Due tomorrow' :
@@ -401,7 +401,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                 <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase">Pending</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-black text-red-400">
+                <div className="text-2xl font-black text-red-600 dark:text-red-400">
                   {classAssignments.filter(a => {
                     const sub = submissions.find(s => s.assignmentId === a.id && s.status !== 'STARTED');
                     return !sub && new Date(a.dueDate!) < new Date();

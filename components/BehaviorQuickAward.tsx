@@ -90,7 +90,7 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
       <div className="relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
           <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-            <Award className="w-5 h-5 text-amber-400" /> Quick Award
+            <Award className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Quick Award
           </h3>
           <button onClick={onClose} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"><X className="w-5 h-5" /></button>
         </div>
@@ -119,7 +119,7 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
                     {s.avatarUrl ? (
                       <img src={s.avatarUrl} alt="" loading="lazy" className="w-8 h-8 rounded-full border border-[var(--border)] object-cover" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">{s.name.charAt(0)}</div>
+                      <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-600 dark:text-purple-400">{s.name.charAt(0)}</div>
                     )}
                     <div className="flex-1">
                       <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-amber-300 transition">{s.name}</div>
@@ -135,7 +135,7 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
               <div className="mb-5 p-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-amber-400" />
+                    <Users className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span className="text-xs font-bold text-[var(--text-primary)]">{selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} selected</span>
                   </div>
                   <button onClick={() => setSelectedStudents([])} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">Change</button>
@@ -165,8 +165,8 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
                     <div className="text-2xl mb-1">{cat.icon}</div>
                     <div className="text-sm font-bold text-[var(--text-primary)]">{cat.name}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[11.5px] text-purple-400 font-bold flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" />{cat.xpAmount} XP</span>
-                      <span className="text-[11.5px] text-cyan-400 font-bold">+{cat.fluxAmount} Flux</span>
+                      <span className="text-[11.5px] text-purple-600 dark:text-purple-400 font-bold flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" />{cat.xpAmount} XP</span>
+                      <span className="text-[11.5px] text-cyan-600 dark:text-cyan-400 font-bold">+{cat.fluxAmount} Flux</span>
                     </div>
                   </button>
                   );

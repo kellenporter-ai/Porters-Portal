@@ -25,9 +25,9 @@ interface BankQuestion {
 }
 
 const TIER_COLORS: Record<number, { text: string; bg: string; border: string }> = {
-    1: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-    2: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-    3: { text: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+    1: { text: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+    2: { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+    3: { text: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -436,16 +436,16 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
             <div className="text-[var(--text-primary)]">
                 {/* Header stats */}
                 <div className="flex items-center gap-3 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-4 mb-4">
-                    <Database className="w-5 h-5 text-purple-400 shrink-0" />
+                    <Database className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0" />
                     <div className="flex-1">
                         <span className="text-[var(--text-primary)] font-bold text-sm">{assignment.title}</span>
                         <div className="text-xs mt-1">
                             {isLoading ? (
                                 <span className="text-[var(--text-muted)]">Loading...</span>
                             ) : questions.length > 0 ? (
-                                <span className="text-emerald-400">{questions.length} questions loaded</span>
+                                <span className="text-emerald-700 dark:text-emerald-400">{questions.length} questions loaded</span>
                             ) : (
-                                <span className="text-yellow-400">No question bank yet</span>
+                                <span className="text-yellow-600 dark:text-yellow-400">No question bank yet</span>
                             )}
                         </div>
                     </div>
@@ -485,7 +485,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                 {tab === 'manage' && (
                     <div className="space-y-3">
                         {isLoading ? (
-                            <div className="py-12 text-center"><Loader2 className="w-6 h-6 text-purple-400 animate-spin mx-auto" /></div>
+                            <div className="py-12 text-center"><Loader2 className="w-6 h-6 text-purple-600 dark:text-purple-400 animate-spin mx-auto" /></div>
                         ) : questions.length === 0 ? (
                             <div className="py-12 text-center">
                                 <Database className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-2" />
@@ -563,7 +563,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                                                 <div key={opt.id} className={`flex items-start gap-2 text-[11px] px-2 py-1.5 rounded-lg ${isCorrect ? 'bg-emerald-500/10 text-emerald-300' : 'text-[var(--text-tertiary)]'}`}>
                                                                     <span className="font-mono font-bold text-[11.5px] mt-0.5 shrink-0">{opt.id.toUpperCase()}.</span>
                                                                     <span>{opt.text}</span>
-                                                                    {isCorrect && <CheckCircle2 className="w-3 h-3 text-emerald-400 ml-auto shrink-0 mt-0.5" />}
+                                                                    {isCorrect && <CheckCircle2 className="w-3 h-3 text-emerald-700 dark:text-emerald-400 ml-auto shrink-0 mt-0.5" />}
                                                                 </div>
                                                             );
                                                         })}
@@ -577,7 +577,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                                         </div>
                                                     )}
                                                     <button onClick={() => handleDelete(q.id)} disabled={isSaving}
-                                                        className="flex items-center gap-1.5 text-[11.5px] font-bold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition">
+                                                        className="flex items-center gap-1.5 text-[11.5px] font-bold text-red-600 dark:text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition">
                                                         <Trash2 className="w-3 h-3" /> Delete Question
                                                     </button>
                                                 </div>
@@ -591,7 +591,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                             <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
                                 <span className="text-[11.5px] text-[var(--text-muted)]">Showing {filtered.length} of {questions.length}</span>
                                 <button onClick={handleClearAll} disabled={isSaving}
-                                    className="text-[11.5px] font-bold text-red-400/60 hover:text-red-400 transition flex items-center gap-1">
+                                    className="text-[11.5px] font-bold text-red-600 dark:text-red-400/60 hover:text-red-400 transition flex items-center gap-1">
                                     <Trash2 className="w-3 h-3" /> Clear Entire Bank
                                 </button>
                             </div>
@@ -636,7 +636,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                         {/* Parse Error */}
                         {parseError && (
                             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                                 <p className="text-red-300/70 text-xs">{parseError}</p>
                             </div>
                         )}
@@ -645,8 +645,8 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                         {pendingQuestions && (
                             <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                    <span className="text-emerald-400 font-bold text-sm">{pendingQuestions.length} questions parsed</span>
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">{pendingQuestions.length} questions parsed</span>
                                 </div>
                                 <div className="flex gap-3">
                                     {[1, 2, 3].map(tier => (
@@ -694,11 +694,11 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                             <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <BookOpen className="w-4 h-4 text-emerald-400" />
-                                        <span className="text-emerald-400 font-bold text-sm">{readingMaterial.title}</span>
+                                        <BookOpen className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                                        <span className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">{readingMaterial.title}</span>
                                     </div>
                                     <button onClick={handleDeleteReading} disabled={isSaving}
-                                        className="text-[11.5px] font-bold text-red-400/60 hover:text-red-400 transition flex items-center gap-1">
+                                        className="text-[11.5px] font-bold text-red-600 dark:text-red-400/60 hover:text-red-400 transition flex items-center gap-1">
                                         <Trash2 className="w-3 h-3" /> Remove
                                     </button>
                                 </div>
@@ -713,8 +713,8 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                 </div>
                                 <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
                                     {readingMaterial.sections.map((s, i) => (
-                                        <div key={i} className="text-[11px] text-gray-400 bg-black/20 px-3 py-2 rounded-lg flex items-center gap-2">
-                                            <span className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-400 text-[11.5px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                                        <div key={i} className="text-[11px] text-gray-600 dark:text-gray-400 bg-black/20 px-3 py-2 rounded-lg flex items-center gap-2">
+                                            <span className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11.5px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                                             <span className="truncate">{s.title}</span>
                                         </div>
                                     ))}
@@ -750,8 +750,8 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                 Upload Study Material JSON
                             </h4>
                             <label className="flex items-center justify-center gap-3 py-3 border-2 border-dashed border-white/15 rounded-xl hover:border-emerald-500/50 hover:bg-emerald-500/5 transition cursor-pointer">
-                                <FileJson className="w-4 h-4 text-gray-400" />
-                                <span className="text-xs text-gray-400 font-medium">Choose .json file</span>
+                                <FileJson className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Choose .json file</span>
                                 <input ref={readingFileRef} type="file" accept=".json,.txt" onChange={handleReadingFileSelect} className="hidden" />
                             </label>
                         </div>
@@ -759,7 +759,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                         {/* Reading parse error */}
                         {readingParseError && (
                             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                                 <p className="text-red-300/70 text-xs">{readingParseError}</p>
                             </div>
                         )}
@@ -768,17 +768,17 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                         {pendingReading && (
                             <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                    <span className="text-emerald-400 font-bold text-sm">{pendingReading.title}</span>
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">{pendingReading.title}</span>
                                 </div>
-                                <p className="text-xs text-gray-400">{pendingReading.sections.length} sections · ~{pendingReading.estimatedMinutes || '?'} min read</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{pendingReading.sections.length} sections · ~{pendingReading.estimatedMinutes || '?'} min read</p>
                                 <div className="flex gap-2">
                                     <button onClick={handleUploadReading} disabled={isSaving}
                                         className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
                                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                                         {isSaving ? 'Saving...' : 'Upload Study Material'}
                                     </button>
-                                    <button onClick={() => setPendingReading(null)} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl transition">
+                                    <button onClick={() => setPendingReading(null)} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-600 dark:text-gray-400 rounded-xl transition">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -789,7 +789,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
 
                 {/* Saving indicator */}
                 {isSaving && (
-                    <div className="flex items-center justify-center gap-2 py-2 text-xs text-purple-400">
+                    <div className="flex items-center justify-center gap-2 py-2 text-xs text-purple-600 dark:text-purple-400">
                         <Loader2 className="w-3 h-3 animate-spin" /> Saving...
                     </div>
                 )}

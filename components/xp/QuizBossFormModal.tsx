@@ -494,9 +494,9 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           <div className="border border-purple-500/20 rounded-xl bg-purple-500/5 p-3 flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-bold text-purple-300">Import Boss Config</div>
-              <div className="text-[11.5px] text-purple-500">Import a complete boss JSON from <code className="text-purple-400">/generate-questions</code> — includes stats, phases, abilities, loot & questions</div>
+              <div className="text-[11.5px] text-purple-500">Import a complete boss JSON from <code className="text-purple-600 dark:text-purple-400">/generate-questions</code> — includes stats, phases, abilities, loot & questions</div>
             </div>
-            <label className="flex-shrink-0 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-600/30 transition cursor-pointer flex items-center gap-1.5">
+            <label className="flex-shrink-0 px-4 py-2 bg-purple-600/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-600/30 transition cursor-pointer flex items-center gap-1.5">
               <Upload className="w-3.5 h-3.5" /> Import JSON
               <input ref={bossConfigFileRef} type="file" accept=".json" onChange={handleImportBossConfig} className="hidden" />
             </label>
@@ -514,7 +514,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
 
         {/* Boss Appearance Editor */}
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-amber-400 uppercase tracking-widest mb-3">Boss Appearance</label>
+          <label className="block text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-3">Boss Appearance</label>
           <div className="flex items-start gap-4">
             {/* Live preview */}
             <div className="flex-shrink-0 w-24 h-32 bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] flex items-center justify-center p-1">
@@ -529,7 +529,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
                     <button key={type} type="button" onClick={() => setQuizBossForm({ ...quizBossForm, bossType: type })}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
                         quizBossForm.bossType === type
-                          ? 'bg-amber-600/20 border-amber-500/40 text-amber-400'
+                          ? 'bg-amber-600/20 border-amber-500/40 text-amber-600 dark:text-amber-400'
                           : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-strong)]'
                       }`}>
                       {type.charAt(0) + type.slice(1).toLowerCase()}
@@ -551,7 +551,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
 
         {/* Difficulty & Scaling */}
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-red-400 uppercase tracking-widest mb-3">Difficulty & Scaling</label>
+          <label className="block text-[11.5px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-3">Difficulty & Scaling</label>
 
           {/* Difficulty Tier Selector */}
           <div className="mb-3">
@@ -559,10 +559,10 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
             <div className="grid grid-cols-4 gap-2">
               {(Object.entries(DIFFICULTY_TIER_DEFS) as [DifficultyTier, typeof DIFFICULTY_TIER_DEFS[DifficultyTier]][]).map(([tier]) => {
                 const tierClasses: Record<DifficultyTier, string> = {
-                  NORMAL:     'bg-gray-600/20 border-gray-500/40 text-gray-400',
-                  HARD:       'bg-amber-600/20 border-amber-500/40 text-amber-400',
-                  NIGHTMARE:  'bg-red-600/20 border-red-500/40 text-red-400',
-                  APOCALYPSE: 'bg-purple-600/20 border-purple-500/40 text-purple-400',
+                  NORMAL:     'bg-gray-600/20 border-gray-500/40 text-gray-600 dark:text-gray-400',
+                  HARD:       'bg-amber-600/20 border-amber-500/40 text-amber-600 dark:text-amber-400',
+                  NIGHTMARE:  'bg-red-600/20 border-red-500/40 text-red-600 dark:text-red-400',
+                  APOCALYPSE: 'bg-purple-600/20 border-purple-500/40 text-purple-600 dark:text-purple-400',
                 };
                 const def = DIFFICULTY_TIER_DEFS[tier];
                 return (
@@ -669,7 +669,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
 
         {/* Modifiers */}
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-pink-400 uppercase tracking-widest mb-3">Boss Modifiers ({formModifiers.length} active)</label>
+          <label className="block text-[11.5px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-widest mb-3">Boss Modifiers ({formModifiers.length} active)</label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {(Object.entries(BOSS_MODIFIER_DEFS) as [BossModifierType, typeof BOSS_MODIFIER_DEFS[BossModifierType]][]).map(([type, def]) => {
               const active = formModifiers.find(m => m.type === type);
@@ -702,11 +702,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         {/* Boss Phases */}
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
           <div className="flex items-center justify-between mb-3">
-            <label className="text-[11.5px] font-bold text-orange-400 uppercase tracking-widest">Boss Phases ({quizBossForm.phases.length})</label>
+            <label className="text-[11.5px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest">Boss Phases ({quizBossForm.phases.length})</label>
             <button type="button" onClick={() => setQuizBossForm(prev => ({
               ...prev,
               phases: [...prev.phases, { name: `Phase ${prev.phases.length + 1}`, hpThreshold: Math.max(10, 75 - prev.phases.length * 25), modifiers: [], dialogue: '' }],
-            }))} className="text-xs bg-orange-600/20 text-orange-400 px-3 py-1 rounded-lg hover:bg-orange-600/30 transition font-bold flex items-center gap-1">
+            }))} className="text-xs bg-orange-600/20 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-lg hover:bg-orange-600/30 transition font-bold flex items-center gap-1">
               <Plus className="w-3 h-3" /> Add Phase
             </button>
           </div>
@@ -774,11 +774,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         {/* Boss Abilities */}
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
           <div className="flex items-center justify-between mb-3">
-            <label className="text-[11.5px] font-bold text-cyan-400 uppercase tracking-widest">Boss Abilities ({quizBossForm.bossAbilities.length})</label>
+            <label className="text-[11.5px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">Boss Abilities ({quizBossForm.bossAbilities.length})</label>
             <button type="button" onClick={() => setQuizBossForm(prev => ({
               ...prev,
               bossAbilities: [...prev.bossAbilities, { id: Math.random().toString(36).substring(2, 8), name: 'New Ability', description: '', trigger: 'EVERY_N_QUESTIONS' as const, triggerValue: 5, effect: 'AOE_DAMAGE' as const, value: 10, duration: 0 }],
-            }))} className="text-xs bg-cyan-600/20 text-cyan-400 px-3 py-1 rounded-lg hover:bg-cyan-600/30 transition font-bold flex items-center gap-1">
+            }))} className="text-xs bg-cyan-600/20 text-cyan-600 dark:text-cyan-400 px-3 py-1 rounded-lg hover:bg-cyan-600/30 transition font-bold flex items-center gap-1">
               <Plus className="w-3 h-3" /> Add Ability
             </button>
           </div>
@@ -858,11 +858,11 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         {/* Boss Loot Table */}
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
           <div className="flex items-center justify-between mb-3">
-            <label className="text-[11.5px] font-bold text-emerald-400 uppercase tracking-widest">Boss Loot Table ({quizBossForm.lootTable.length})</label>
+            <label className="text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Boss Loot Table ({quizBossForm.lootTable.length})</label>
             <button type="button" onClick={() => setQuizBossForm(prev => ({
               ...prev,
               lootTable: [...prev.lootTable, { id: Math.random().toString(36).substring(2, 8), itemName: '', slot: 'AMULET' as EquipmentSlot, rarity: 'RARE' as ItemRarity, stats: {}, dropChance: 50, isExclusive: true }],
-            }))} className="text-xs bg-emerald-600/20 text-emerald-400 px-3 py-1 rounded-lg hover:bg-emerald-600/30 transition font-bold flex items-center gap-1">
+            }))} className="text-xs bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-lg hover:bg-emerald-600/30 transition font-bold flex items-center gap-1">
               <Plus className="w-3 h-3" /> Add Loot
             </button>
           </div>
@@ -949,7 +949,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         {/* Import from Question Banks */}
         {questionBanks.length > 0 && (
         <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-purple-400 uppercase tracking-widest mb-3">Import from Question Banks</label>
+          <label className="block text-[11.5px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-3">Import from Question Banks</label>
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {questionBanks.filter(b => b.classType === quizBossForm.classType || b.classType === 'GLOBAL' || quizBossForm.classType === 'GLOBAL').map(bank => (
               <div key={bank.id} className="flex items-center justify-between p-2 rounded-lg border border-[var(--border)] bg-[var(--panel-bg)]">
@@ -958,7 +958,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
                   <span className="text-[11.5px] text-[var(--text-muted)] ml-2">{bank.questions.length} questions</span>
                 </div>
                 <button type="button" onClick={() => importBankToBoss(bank)}
-                  className="px-2 py-1 bg-purple-600/20 text-purple-400 rounded text-[11.5px] font-bold hover:bg-purple-600/30 transition flex items-center gap-1">
+                  className="px-2 py-1 bg-purple-600/20 text-purple-600 dark:text-purple-400 rounded text-[11.5px] font-bold hover:bg-purple-600/30 transition flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Import All
                 </button>
               </div>
@@ -970,23 +970,23 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         {/* Questions */}
         <div className="border-t border-[var(--border)] pt-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <label className="text-[11.5px] font-bold text-amber-400 uppercase tracking-widest">Questions ({quizBossForm.questions.length})</label>
+            <label className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Questions ({quizBossForm.questions.length})</label>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={handleCopyQuizPrompt} className={`text-xs px-3 py-1 rounded-lg transition font-bold flex items-center gap-1 ${promptCopied ? 'bg-green-600/20 text-green-400' : 'bg-purple-600/20 text-purple-400 hover:bg-purple-600/30'}`}>
+              <button type="button" onClick={handleCopyQuizPrompt} className={`text-xs px-3 py-1 rounded-lg transition font-bold flex items-center gap-1 ${promptCopied ? 'bg-green-600/20 text-green-600 dark:text-green-400' : 'bg-purple-600/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600/30'}`}>
                 {promptCopied ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy AI Prompt</>}
               </button>
-              <label className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
+              <label className="text-xs bg-blue-600/20 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
                 <Upload className="w-3 h-3" /> Import JSON
                 <input ref={quizFileRef} type="file" accept=".json,.txt" onChange={handleImportQuizQuestions} className="hidden" />
               </label>
-              <button type="button" onClick={addQuizQuestion} className="text-xs bg-amber-600/20 text-amber-400 px-3 py-1 rounded-lg hover:bg-amber-600/30 transition font-bold flex items-center gap-1">
+              <button type="button" onClick={addQuizQuestion} className="text-xs bg-amber-600/20 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-lg hover:bg-amber-600/30 transition font-bold flex items-center gap-1">
                 <Plus className="w-3 h-3" /> Add Manual
               </button>
             </div>
           </div>
 
           {importError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400 flex items-center gap-2">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
               <X className="w-4 h-4 flex-shrink-0" />
               {importError}
               <button type="button" onClick={() => setImportError(null)} className="ml-auto text-red-500 hover:text-red-300"><X className="w-3 h-3" /></button>
@@ -997,7 +997,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
             <div className="text-center py-6 space-y-2">
               <FileJson className="w-8 h-8 mx-auto text-[var(--text-muted)] opacity-30" />
               <p className="text-xs text-[var(--text-muted)]">No questions yet.</p>
-              <p className="text-[11.5px] text-[var(--text-muted)]">Use <span className="text-purple-400">Copy AI Prompt</span> → paste into ChatGPT/Claude → save JSON → <span className="text-blue-400">Import JSON</span></p>
+              <p className="text-[11.5px] text-[var(--text-muted)]">Use <span className="text-purple-600 dark:text-purple-400">Copy AI Prompt</span> → paste into ChatGPT/Claude → save JSON → <span className="text-blue-600 dark:text-blue-400">Import JSON</span></p>
             </div>
           )}
 
@@ -1024,7 +1024,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
                       type="button"
                       onClick={() => updateQuizQuestion(qIdx, 'correctAnswer', optIdx)}
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
-                        q.correctAnswer === optIdx ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-gray-600 text-transparent hover:border-gray-400'
+                        q.correctAnswer === optIdx ? 'border-green-500 bg-green-500/20 text-green-600 dark:text-green-400' : 'border-gray-600 text-transparent hover:border-gray-400'
                       }`}
                       title="Mark as correct answer"
                     >

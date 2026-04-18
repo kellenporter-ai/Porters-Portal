@@ -31,7 +31,7 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({ student }) => {
           </span>
           <span className="text-xs text-gray-500">· Lv.{level}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-400 print:text-gray-600">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-600 dark:text-gray-400 print:text-gray-600">
           <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{student.email}</span>
           <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />Section: {student.section || 'Unassigned'}</span>
           {enrolledClasses.length > 0 && (

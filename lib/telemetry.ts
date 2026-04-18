@@ -195,7 +195,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   THRIVING: {
     label: 'Thriving',
     description: 'Consistently high engagement with strong original work.',
-    color: 'text-emerald-400',
+    color: 'text-emerald-700 dark:text-emerald-400',
     bgColor: 'bg-emerald-500/15',
     borderColor: 'border-emerald-500/30',
     icon: 'star',
@@ -203,7 +203,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   ON_TRACK: {
     label: 'On Track',
     description: 'Meeting expectations with steady engagement.',
-    color: 'text-blue-400',
+    color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-500/15',
     borderColor: 'border-blue-500/30',
     icon: 'check',
@@ -211,7 +211,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   COASTING: {
     label: 'Coasting',
     description: 'Below-average engagement — doing the minimum.',
-    color: 'text-yellow-400',
+    color: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-500/15',
     borderColor: 'border-yellow-500/30',
     icon: 'minus',
@@ -219,7 +219,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   SPRINTING: {
     label: 'Sprinting',
     description: 'Inconsistent: high bursts of activity with gaps between.',
-    color: 'text-orange-400',
+    color: 'text-orange-600 dark:text-orange-400',
     bgColor: 'bg-orange-500/15',
     borderColor: 'border-orange-500/30',
     icon: 'zap',
@@ -227,7 +227,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   STRUGGLING: {
     label: 'Struggling',
     description: 'Putting in effort but achieving low results — may need support.',
-    color: 'text-purple-400',
+    color: 'text-purple-600 dark:text-purple-400',
     bgColor: 'bg-purple-500/15',
     borderColor: 'border-purple-500/30',
     icon: 'help',
@@ -235,7 +235,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   DISENGAGING: {
     label: 'Disengaging',
     description: 'Activity is declining — was active but now trailing off.',
-    color: 'text-red-400',
+    color: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-500/15',
     borderColor: 'border-red-500/30',
     icon: 'trending-down',
@@ -243,7 +243,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   INACTIVE: {
     label: 'Inactive',
     description: 'No meaningful activity detected in the analysis window.',
-    color: 'text-gray-400',
+    color: 'text-gray-600 dark:text-gray-400',
     bgColor: 'bg-gray-500/15',
     borderColor: 'border-gray-500/30',
     icon: 'x',
@@ -251,7 +251,7 @@ export const BUCKET_META: Record<TelemetryBucket, {
   COPYING: {
     label: 'Copying',
     description: 'High paste-to-keystroke ratio — may indicate copy-paste behavior.',
-    color: 'text-rose-400',
+    color: 'text-rose-600 dark:text-rose-400',
     bgColor: 'bg-rose-500/15',
     borderColor: 'border-rose-500/30',
     icon: 'clipboard',

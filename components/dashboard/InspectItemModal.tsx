@@ -92,7 +92,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                   {runeword.bonusEffects && runeword.bonusEffects.length > 0 && (
                     <div className="mt-1">
                       {runeword.bonusEffects.map(eff => (
-                        <span key={eff.id} className="text-[11.5px] text-purple-400 font-bold">{eff.description}</span>
+                        <span key={eff.id} className="text-[11.5px] text-purple-600 dark:text-purple-400 font-bold">{eff.description}</span>
                       ))}
                     </div>
                   )}
@@ -118,7 +118,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                       <button
                         onClick={() => onUnsocketGem(i)}
                         disabled={isProcessing || currency < unsocketFlux}
-                        className="text-[8px] text-red-400/60 hover:text-red-400 font-bold transition disabled:opacity-30"
+                        className="text-[8px] text-red-600 dark:text-red-400/60 hover:text-red-400 font-bold transition disabled:opacity-30"
                         title={`Unsocket for ${unsocketFlux} Flux`}
                       >
                         Remove ({unsocketFlux} F)
@@ -211,7 +211,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                     const diff = newVal - oldVal;
                     if (diff === 0) return <span key={stat} className="text-[11.5px] text-[var(--text-muted)] font-mono">{stat.slice(0, 3).toUpperCase()}: ±0</span>;
                     return (
-                      <span key={stat} className={`text-[11.5px] font-mono font-bold ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <span key={stat} className={`text-[11.5px] font-mono font-bold ${diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         {stat.slice(0, 3).toUpperCase()}: {diff > 0 ? '▲' : '▼'}{Math.abs(diff)}
                       </span>
                     );
@@ -287,7 +287,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           <button
             onClick={onDisenchant}
             disabled={isProcessing}
-            className="col-span-2 py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-400 font-bold rounded-xl transition flex items-center justify-center gap-2"
+            className="col-span-2 py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-600 dark:text-red-400 font-bold rounded-xl transition flex items-center justify-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
             Salvage for {getDisenchantValue(inspectItem)} Flux

@@ -123,7 +123,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                           onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}}
                           autoFocus
                         />
-                        <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
+                        <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-600 dark:text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
                       </div>
                     )}
                     <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">Done</button>
@@ -131,7 +131,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                 ) : (
                   <button
                     onClick={() => { setEditingSectionId(student.id); setSectionInput(''); setCustomSectionInput(''); }}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition text-wrap ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-[var(--surface-glass)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'}`}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition text-wrap ${(student.classSections && Object.keys(student.classSections).length > 0) || student.section ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20' : 'bg-[var(--surface-glass)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'}`}
                   >
                     {student.classSections && Object.keys(student.classSections).length > 0
                       ? [...new Set(Object.values(student.classSections).filter(Boolean))].join(', ') || 'Assign'
@@ -141,7 +141,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
               </div>
               <div className="p-4 text-center w-32 shrink-0">
                 <div className="flex flex-col items-center gap-1">
-                  <span className={`text-[11.5px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                  <span className={`text-[11.5px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${student.isWhitelisted ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'}`}>
                     {student.isWhitelisted ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
                     {student.isWhitelisted ? 'Authorized' : 'Restricted'}
                   </span>
@@ -511,7 +511,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   <div className="flex items-center gap-1">
                     <select
                       onChange={e => { if (e.target.value) handleBulkSetSection(e.target.value, type); e.target.value = ''; }}
-                      className="bg-[var(--panel-bg)] border border-purple-500/30 text-purple-400 text-[11px] font-bold px-2 py-1.5 rounded-lg appearance-none focus:outline-none cursor-pointer"
+                      className="bg-[var(--panel-bg)] border border-purple-500/30 text-purple-600 dark:text-purple-400 text-[11px] font-bold px-2 py-1.5 rounded-lg appearance-none focus:outline-none cursor-pointer"
                       defaultValue=""
                     >
                       <option value="" disabled>Assign Section...</option>
@@ -521,7 +521,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   </div>
                   <button
                     onClick={() => handleRemoveFromClass(type)}
-                    className="text-xs text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition flex items-center gap-2"
+                    className="text-xs text-red-600 dark:text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition flex items-center gap-2"
                   >
                       <UserX className="w-3 h-3" /> Remove Selected
                   </button>
@@ -561,8 +561,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
               <div className="flex items-center gap-1">
                 <span>Operative</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'name' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -578,8 +578,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
               <div className="flex items-center gap-1 justify-center">
                 <span>Section</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'section' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -595,8 +595,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
               <div className="flex items-center gap-1 justify-center">
                 <span>System Status</span>
                 <span className="flex flex-col gap-px" aria-hidden="true">
-                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
-                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
+                  <ChevronUp className={`w-2.5 h-2.5 -mb-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'asc' ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
+                  <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${(classSort[type] || { col: 'name', dir: 'asc' }).col === 'status' && (classSort[type] || { col: 'name', dir: 'asc' }).dir === 'desc' ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] group-hover:text-[var(--text-tertiary)]'} transition`} />
                 </span>
               </div>
             </div>
@@ -662,7 +662,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   <h3 className="text-amber-200 font-bold text-sm uppercase tracking-widest flex items-center gap-2">
                       <Mail className="w-4 h-4" /> Pending Class Invitations ({pendingInvites.length})
                   </h3>
-                  <span className="text-[11.5px] text-amber-400 font-bold italic">Awaiting first login...</span>
+                  <span className="text-[11.5px] text-amber-600 dark:text-amber-400 font-bold italic">Awaiting first login...</span>
               </div>
               <div className="p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {pendingInvites.map(invite => (
@@ -821,10 +821,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
                           <td className="p-2 text-[var(--text-muted)]">{row.section || '—'}</td>
                           <td className="p-2 pr-3 text-right">
                             <span className={`text-[11.5px] font-bold uppercase px-2 py-0.5 rounded ${
-                              row.status === 'pending' ? 'bg-blue-500/20 text-blue-400' :
-                              row.status === 'success' ? 'bg-green-500/20 text-green-400' :
-                              row.status === 'duplicate' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-red-500/20 text-red-400'
+                              row.status === 'pending' ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' :
+                              row.status === 'success' ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
+                              row.status === 'duplicate' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
+                              'bg-red-500/20 text-red-600 dark:text-red-400'
                             }`}>{row.status}</span>
                           </td>
                         </tr>
@@ -835,15 +835,15 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
                 <div className="flex items-center justify-between text-[11.5px] text-[var(--text-muted)]">
                   <div className="flex gap-3">
-                    <span className="text-blue-400">{csvResults.filter(r => r.status === 'pending').length} ready</span>
-                    <span className="text-yellow-400">{csvResults.filter(r => r.status === 'duplicate').length} duplicates</span>
-                    <span className="text-red-400">{csvResults.filter(r => r.status === 'invalid').length} invalid</span>
-                    {csvResults.some(r => r.status === 'success') && <span className="text-green-400">{csvResults.filter(r => r.status === 'success').length} imported</span>}
+                    <span className="text-blue-600 dark:text-blue-400">{csvResults.filter(r => r.status === 'pending').length} ready</span>
+                    <span className="text-yellow-600 dark:text-yellow-400">{csvResults.filter(r => r.status === 'duplicate').length} duplicates</span>
+                    <span className="text-red-600 dark:text-red-400">{csvResults.filter(r => r.status === 'invalid').length} invalid</span>
+                    {csvResults.some(r => r.status === 'success') && <span className="text-green-600 dark:text-green-400">{csvResults.filter(r => r.status === 'success').length} imported</span>}
                   </div>
                 </div>
 
                 {csvResults.filter(r => r.status === 'duplicate').length > 0 && (
-                  <div className="flex items-start gap-2 text-[11.5px] text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2.5">
+                  <div className="flex items-start gap-2 text-[11.5px] text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2.5">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                     Duplicate emails are already on the whitelist and will be skipped.
                   </div>

@@ -104,7 +104,7 @@ const BossCard: React.FC<{
         {/* Damage display */}
         {isHit && lastHit && (
           <div className="text-center animate-bounce">
-            <span className={`text-xl font-black ${lastHit.isCrit ? 'text-yellow-400 text-2xl' : 'text-red-400'}`}>
+            <span className={`text-xl font-black ${lastHit.isCrit ? 'text-yellow-600 dark:text-yellow-400 text-2xl' : 'text-red-600 dark:text-red-400'}`}>
               -{lastHit.damage}{lastHit.isCrit && ' CRIT!'}
             </span>
           </div>
@@ -129,7 +129,7 @@ const BossCard: React.FC<{
                 <span className={`${id === userId ? 'text-cyan-700 dark:text-cyan-400 font-bold' : 'text-[var(--text-tertiary)]'}`}>
                   #{idx + 1} {data.name}
                 </span>
-                <span className="text-red-400 font-mono">{data.total} dmg</span>
+                <span className="text-red-600 dark:text-red-400 font-mono">{data.total} dmg</span>
               </div>
             ))}
           </div>
@@ -137,10 +137,10 @@ const BossCard: React.FC<{
 
         {/* Rewards preview */}
         <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-tertiary)] border-t border-[var(--border)] pt-3">
-          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400" /> {boss.completionRewards.xp} XP</span>
+          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-600 dark:text-yellow-400" /> {boss.completionRewards.xp} XP</span>
           <span className="flex items-center gap-1"><span className="text-cyan-700 dark:text-cyan-400">~</span> {boss.completionRewards.flux} Flux</span>
           {boss.completionRewards.itemRarity && (
-            <span className="text-purple-400">{boss.completionRewards.itemRarity} item</span>
+            <span className="text-purple-600 dark:text-purple-400">{boss.completionRewards.itemRarity} item</span>
           )}
         </div>
 
@@ -150,7 +150,7 @@ const BossCard: React.FC<{
           disabled={!!attacking}
           className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
             attacking === boss.id
-              ? 'bg-red-500/20 text-red-400 animate-pulse'
+              ? 'bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse'
               : 'bg-gradient-to-r from-red-600 to-orange-600 text-white hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/30'
           }`}
         >

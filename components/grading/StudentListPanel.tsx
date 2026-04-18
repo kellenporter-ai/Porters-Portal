@@ -52,10 +52,10 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
         <span className="text-xs text-[var(--text-muted)]">
           {studentGroups.length} submitted
           {hasDraftStudents.length > 0 && (
-            <span className="text-cyan-400"> &middot; {hasDraftStudents.length} draft{hasDraftStudents.length !== 1 ? 's' : ''}</span>
+            <span className="text-cyan-600 dark:text-cyan-400"> &middot; {hasDraftStudents.length} draft{hasDraftStudents.length !== 1 ? 's' : ''}</span>
           )}
           {notStartedStudents.length > 0 && (
-            <span className="text-orange-400"> &middot; {notStartedStudents.length} not started</span>
+            <span className="text-orange-600 dark:text-orange-400"> &middot; {notStartedStudents.length} not started</span>
           )}
         </span>
       </div>
@@ -66,7 +66,7 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
           <button
             key={key}
             onClick={() => onSort(key)}
-            className={`flex-1 text-center py-1.5 min-h-[44px] text-[11.5px] font-bold uppercase tracking-wider transition hover:bg-[var(--surface-glass)] ${assessmentSortKey === key ? 'text-purple-400' : 'text-[var(--text-muted)] hover:text-[var(--text-tertiary)]'}`}
+            className={`flex-1 text-center py-1.5 min-h-[44px] text-[11.5px] font-bold uppercase tracking-wider transition hover:bg-[var(--surface-glass)] ${assessmentSortKey === key ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] hover:text-[var(--text-tertiary)]'}`}
           >
             {label}
             {assessmentSortKey === key && (
@@ -102,7 +102,7 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
               >
                 <div className="shrink-0">
                   {group.hasRubricGrade ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-green-400" aria-hidden="true" />
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" aria-hidden="true" />
                   ) : (
                     <div className="w-3.5 h-3.5 rounded-full border border-[var(--border-strong)] bg-transparent" />
                   )}
@@ -112,26 +112,26 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                     <span className={`text-xs font-bold truncate ${isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
                       {group.userName}
                     </span>
-                    {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-400 shrink-0" aria-hidden="true" />}
+                    {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" aria-hidden="true" />}
                     {group.hasAISuggestion && !group.hasRubricGrade && (
-                      <Sparkles className="w-3 h-3 text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
+                      <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
                     )}
                     {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
-                      <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" aria-hidden="true" />
+                      <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
                     )}
                     {group.attemptCount > 1 && (
-                      <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
+                      <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
                         &times;{group.attemptCount}
                       </span>
                     )}
                     {group.isInProgress && (
-                      <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0">IN PROGRESS</span>
+                      <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0">IN PROGRESS</span>
                     )}
                     {group.latest.status === 'RETURNED' && (
-                      <span className="text-[11.5px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded shrink-0">RETURNED</span>
+                      <span className="text-[11.5px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded shrink-0">RETURNED</span>
                     )}
                     {group.attemptCount > 1 && group.latest.submittedAt && (Date.now() - new Date(group.latest.submittedAt).getTime() < 24 * 60 * 60 * 1000) && (
-                      <span className="text-[11.5px] font-bold bg-cyan-500/20 text-cyan-400 px-1 py-0.5 rounded shrink-0 animate-pulse">NEW</span>
+                      <span className="text-[11.5px] font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-1 py-0.5 rounded shrink-0 animate-pulse">NEW</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
@@ -143,7 +143,7 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                     )}
                   </div>
                 </div>
-                <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-400' : getScoreColor(displayPct)}`}>
+                <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-600 dark:text-blue-400' : getScoreColor(displayPct)}`}>
                   {group.isInProgress ? '\u2014' : `${displayPct}%`}
                 </span>
                 {/* Feedback read status badges */}
@@ -151,12 +151,12 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                   <div className="ml-1" aria-label="Feedback read status">
                     {group.best.feedbackReadAt ? (
                       group.best.feedbackReviewedAt ? (
-                        <span className="text-[11.5px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback reviewed">
+                        <span className="text-[11.5px] font-bold bg-green-500/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback reviewed">
                           <CheckCircle2 className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
                           Reviewed
                         </span>
                       ) : (
-                        <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback read">
+                        <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback read">
                           <Eye className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
                           Read
                         </span>
@@ -194,7 +194,7 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
             >
               <div className="shrink-0">
                 {isDraft ? (
-                  <Eye className="w-3.5 h-3.5 text-cyan-400/60" aria-hidden="true" />
+                  <Eye className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400/60" aria-hidden="true" />
                 ) : (
                   <div className="w-3.5 h-3.5 rounded-full border border-[var(--border)] bg-transparent opacity-30" />
                 )}
@@ -205,9 +205,9 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                     {student.name}
                   </span>
                   {isDraft ? (
-                    <span className="text-[11.5px] font-bold bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded shrink-0">DRAFT</span>
+                    <span className="text-[11.5px] font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 rounded shrink-0">DRAFT</span>
                   ) : (
-                    <span className="text-[11.5px] font-bold bg-orange-500/15 text-orange-400/70 px-1.5 py-0.5 rounded shrink-0">NOT STARTED</span>
+                    <span className="text-[11.5px] font-bold bg-orange-500/15 text-orange-600 dark:text-orange-400/70 px-1.5 py-0.5 rounded shrink-0">NOT STARTED</span>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
@@ -215,7 +215,7 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                     <span className="text-xs text-[var(--text-muted)]">{studentSection}</span>
                   )}
                   {isDraft && entry.type === 'draft' && entry.startedAt && (
-                    <span className="text-[11.5px] text-cyan-400/50">started {formatLastSeen(entry.startedAt)}</span>
+                    <span className="text-[11.5px] text-cyan-600 dark:text-cyan-400/50">started {formatLastSeen(entry.startedAt)}</span>
                   )}
                 </div>
               </div>

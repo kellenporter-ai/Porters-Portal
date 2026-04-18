@@ -67,15 +67,15 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
       >
         <div className="flex items-start gap-3">
           <div className={`mt-0.5 p-1.5 rounded-lg ${isCompleted ? 'bg-yellow-500/20' : 'bg-[var(--surface-glass)]'}`}>
-            {isClaimed ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
-             isCompleted ? <Gift className="w-4 h-4 text-yellow-400" /> :
-             <Target className="w-4 h-4 text-gray-400" />}
+            {isClaimed ? <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" /> :
+             isCompleted ? <Gift className="w-4 h-4 text-yellow-600 dark:text-yellow-400" /> :
+             <Target className="w-4 h-4 text-gray-600 dark:text-gray-400" />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-[var(--text-primary)]">{challenge.title}</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[11.5px] text-yellow-400 font-bold">+{challenge.xpReward} XP</span>
+                <span className="text-[11.5px] text-yellow-600 dark:text-yellow-400 font-bold">+{challenge.xpReward} XP</span>
                 {challenge.fluxReward && (
                   <span className="text-[11.5px] text-cyan-700 dark:text-cyan-400 font-bold">+{challenge.fluxReward}</span>
                 )}
@@ -117,7 +117,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-        <Calendar className="w-5 h-5 text-purple-400" /> Daily Challenges
+        <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" /> Daily Challenges
       </h3>
 
       <div className="space-y-2">
@@ -127,7 +127,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
       {weeklyChallenges.length > 0 && (
         <>
           <h4 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mt-4 flex items-center gap-1">
-            <Zap className="w-3 h-3 text-cyan-400" /> Weekly Challenge
+            <Zap className="w-3 h-3 text-cyan-600 dark:text-cyan-400" /> Weekly Challenge
           </h4>
           <div className="space-y-2">
             {weeklyChallenges.map(renderChallenge)}

@@ -22,9 +22,9 @@ interface ReviewQuestion {
 interface AnswerState { selected: string | string[] | null; linkedSelected?: string | null; submitted: boolean; correct: boolean; xpAwarded: boolean; penalty?: number; }
 
 const TIER_LABELS: Record<number, { name: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-    1: { name: 'Remember & Understand', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: <Brain className="w-4 h-4" /> },
-    2: { name: 'Apply & Analyze', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', icon: <Lightbulb className="w-4 h-4" /> },
-    3: { name: 'Evaluate & Create', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30', icon: <Star className="w-4 h-4" /> },
+    1: { name: 'Remember & Understand', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: <Brain className="w-4 h-4" /> },
+    2: { name: 'Apply & Analyze', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', icon: <Lightbulb className="w-4 h-4" /> },
+    3: { name: 'Evaluate & Create', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30', icon: <Star className="w-4 h-4" /> },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -210,7 +210,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
     const allAnswered = useMemo(() => selectedQuestions.length > 0 && selectedQuestions.every(q => answers[q.id]?.submitted), [selectedQuestions, answers]);
 
     if (isLoading) {
-        return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Loader2 className="w-8 h-8 text-purple-400 animate-spin" /><p className="text-[var(--text-tertiary)] text-sm">Loading questions...</p></div>);
+        return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400 animate-spin" /><p className="text-[var(--text-tertiary)] text-sm">Loading questions...</p></div>);
     }
     if (bankEmpty) {
         return (<div className="flex flex-col items-center justify-center py-20 gap-4"><Brain className="w-12 h-12 text-[var(--text-muted)]" /><p className="text-[var(--text-tertiary)] font-bold">No Questions Available</p><p className="text-[var(--text-muted)] text-sm text-center max-w-sm">Your teacher hasn&apos;t uploaded review questions for this resource yet.</p></div>);
@@ -220,20 +220,20 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
         <div className="h-full flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 bg-[var(--panel-bg)] border-b border-[var(--border)]">
                 <div className="flex items-center gap-3">
-                    <Brain className="w-5 h-5 text-purple-400" />
+                    <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     <span className="font-bold text-[var(--text-primary)] text-sm">Conceptual Review</span>
                     <span className="text-[11.5px] bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)] px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[11.5px] text-[var(--text-muted)]">/ {totalPossibleXP} XP</span></div>
-                    <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[11.5px] font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
+                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-600 dark:text-yellow-400" /><span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-600 dark:text-red-400">-{totalPenalty}</span>}<span className="text-[11.5px] text-[var(--text-muted)]">/ {totalPossibleXP} XP</span></div>
+                    <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[11.5px] font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
                 </div>
             </div>
             <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)] bg-[var(--panel-bg)]" role="tablist" aria-label="Question difficulty tiers">
                 {[1, 2, 3].map(tier => { const t = TIER_LABELS[tier]; const tQs = selectedQuestions.filter(q => q.tier === tier); const ans = tQs.filter(q => answers[q.id]?.submitted).length; const cor = tQs.filter(q => answers[q.id]?.correct).length; return (
                     <button key={tier} role="tab" aria-selected={activeTier === tier} aria-controls="review-question-panel" onClick={() => setActiveTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTier === tier ? `${t.bg} ${t.color} ${t.border} border` : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                         {t.icon}<span className="hidden sm:inline">{t.name}</span><span className="sm:hidden">Tier {tier}</span>
-                        {ans > 0 && <span className={`ml-1 text-[11.5px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>{cor}/{tQs.length}</span>}
+                        {ans > 0 && <span className={`ml-1 text-[11.5px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>{cor}/{tQs.length}</span>}
                     </button>);
                 })}
             </div>
@@ -249,7 +249,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                     return (
                         <div key={question.id} className={`rounded-2xl border transition-all ${isSubmitted ? isCorrect ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5' : isExpanded ? `${ts.border} ${ts.bg}` : 'border-[var(--border)] bg-[var(--surface-glass)] hover:border-[var(--border)]'}`}>
                             <button onClick={() => setExpandedQuestion(isExpanded ? null : question.id)} className="w-full p-4 flex items-start gap-3 text-left">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-black ${isSubmitted ? isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500/20 text-red-400' : `${ts.bg} ${ts.color}`}`}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-black ${isSubmitted ? isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500/20 text-red-600 dark:text-red-400' : `${ts.bg} ${ts.color}`}`}>
                                     {isSubmitted ? (isCorrect ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />) : idx + 1}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -258,7 +258,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                         <span className="text-[11.5px] text-[var(--text-muted)]">·</span>
                                         <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{TYPE_LABELS[question.type] || question.type}</span>
                                         <span className="text-[11.5px] text-yellow-500 font-bold ml-auto flex items-center gap-0.5"><Zap className="w-3 h-3" />{question.xp} XP</span>
-                                        <span className="text-[11.5px] text-red-400/60 font-bold flex items-center gap-0.5">-{Math.ceil(question.xp / 2)} if wrong</span>
+                                        <span className="text-[11.5px] text-red-600 dark:text-red-400/60 font-bold flex items-center gap-0.5">-{Math.ceil(question.xp / 2)} if wrong</span>
                                     </div>
                                     <p className="text-sm text-[var(--text-secondary)] font-medium leading-snug">{question.stem}</p>
                                 </div>
@@ -287,7 +287,7 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                             className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-[var(--text-muted)] text-white font-bold rounded-xl transition">{submittingId === question.id ? 'Submitting...' : 'Submit Answer'}</button>
                                     ) : (
                                         <div role="alert" className={`p-4 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
-                                            <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : `Incorrect — ${answer?.penalty || Math.ceil(question.xp / 2)} XP penalty`}</span></div>
+                                            <div className="flex items-center gap-2 mb-2">{isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400" /> : <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}<span className={`font-bold text-sm ${isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{isCorrect ? `Correct! +${question.xp} XP` : `Incorrect — ${answer?.penalty || Math.ceil(question.xp / 2)} XP penalty`}</span></div>
                                             <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">{question.explanation}</p>
                                         </div>
                                     )}
@@ -328,7 +328,7 @@ const RankingInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; o
         <p className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest flex items-center gap-1"><ArrowUpDown className="w-3 h-3" /> Click in order (first to last)</p>
         {selected.length > 0 && <div className="flex gap-1 flex-wrap mb-2">{selected.map((id, i) => {
             const opt = question.options.find(o => o.id === id); const rightPos = show && correctOrder[i] === id;
-            return (<span key={id} className={`text-[11.5px] font-bold px-2 py-1 rounded-lg ${show ? (rightPos ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30') : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>{i + 1}. {opt?.text.slice(0, 30)}{(opt?.text.length || 0) > 30 ? '...' : ''}</span>);
+            return (<span key={id} className={`text-[11.5px] font-bold px-2 py-1 rounded-lg ${show ? (rightPos ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30') : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>{i + 1}. {opt?.text.slice(0, 30)}{(opt?.text.length || 0) > 30 ? '...' : ''}</span>);
         })}</div>}
         <div role="group" aria-label="Ranking options">{question.options.map(opt => {
             const isSel = selected.includes(opt.id); const pos = selected.indexOf(opt.id);

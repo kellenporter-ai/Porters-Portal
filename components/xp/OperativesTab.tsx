@@ -43,8 +43,8 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
       <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
         <span>{label}</span>
         <span className="flex flex-col gap-px">
-          <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
-          <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+          <ChevronUp  className={`w-2.5 h-2.5 -mb-0.5 ${sortCol === col && sortDir === 'asc'  ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
+          <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
         </span>
       </div>
     </th>
@@ -203,7 +203,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                               }}
                               className="bg-[var(--backdrop)] border border-purple-500/30 rounded px-1.5 py-0.5 text-[11.5px] text-[var(--text-primary)] font-mono w-28 focus:outline-none focus:border-purple-500"
                             />
-                            <button onClick={() => handleSaveCodename(student.id)} className="text-green-400 hover:text-green-300" title="Save">
+                            <button onClick={() => handleSaveCodename(student.id)} className="text-green-600 dark:text-green-400 hover:text-green-300" title="Save">
                               <Check className="w-3 h-3" />
                             </button>
                             <button onClick={() => setEditingCodename(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]" title="Cancel">
@@ -221,7 +221,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                             </button>
                             <button
                               onClick={() => handleToggleCodenameLocked(student.id, !!student.gamification?.codenameLocked)}
-                              className={`transition ${student.gamification?.codenameLocked ? 'text-red-400 hover:text-red-300' : 'text-gray-600 hover:text-gray-400'}`}
+                              className={`transition ${student.gamification?.codenameLocked ? 'text-red-600 dark:text-red-400 hover:text-red-300' : 'text-gray-600 hover:text-gray-400'}`}
                               title={student.gamification?.codenameLocked ? 'Codename locked — click to unlock' : 'Click to lock codename'}
                             >
                               {student.gamification?.codenameLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
@@ -234,7 +234,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                   <div className="flex-1 py-3">
                     <div className="flex flex-wrap gap-1">
                       {classes.map(c => (
-                        <span key={c} className="text-[11.5px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 font-bold">{c}</span>
+                        <span key={c} className="text-[11.5px] bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 font-bold">{c}</span>
                       ))}
                     </div>
                   </div>
@@ -250,19 +250,19 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                     <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">{flux}</span>
                   </div>
                   <div className="w-16 py-3 text-center hidden xl:block">
-                    <span className="text-sm font-bold text-yellow-400">{getAggregateGearScore(student)}</span>
+                    <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{getAggregateGearScore(student)}</span>
                   </div>
                   <div className="w-40 py-3 text-right pr-4">
                     <div className="flex justify-end gap-1.5">
                       <button
                         onClick={() => onInspect(student)}
-                        className="px-2.5 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[11.5px] font-bold uppercase tracking-wide flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[11.5px] font-bold uppercase tracking-wide flex items-center gap-1"
                       >
                         <Briefcase className="w-3 h-3" /><span className="hidden lg:inline"> Inventory</span>
                       </button>
                       <button
                         onClick={() => onAdjustXP(student)}
-                        className="px-2.5 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20 text-[11.5px] font-bold uppercase tracking-wide flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-500/20 transition border border-green-500/20 text-[11.5px] font-bold uppercase tracking-wide flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /><span className="hidden lg:inline"> XP</span>
                       </button>

@@ -86,7 +86,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions }) =>
                             <span className="font-bold text-[var(--text-secondary)] text-sm block truncate">{sub.userName}</span>
                             <span className="text-[11.5px] text-[var(--text-muted)] font-medium uppercase tracking-tight line-clamp-1">{sub.assignmentTitle}</span>
                           </div>
-                          <span className="text-[11.5px] font-bold text-blue-400 bg-blue-900/30 px-2.5 py-1 rounded-full shrink-0 ml-2">{Math.round(sub.score)} XP</span>
+                          <span className="text-[11.5px] font-bold text-blue-600 dark:text-blue-400 bg-blue-900/30 px-2.5 py-1 rounded-full shrink-0 ml-2">{Math.round(sub.score)} XP</span>
                         </div>
                         <div className="text-[11.5px] text-[var(--text-muted)] border-t border-[var(--border)] pt-2 flex justify-between">
                           <span>{Math.round(sub.metrics.engagementTime / 60)}m active</span>
@@ -113,7 +113,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions }) =>
                           <tr key={sub.id} className="border-b border-[var(--border)] hover:bg-purple-500/5 transition text-xs">
                             <td className="py-2 px-3 font-medium text-[var(--text-secondary)] truncate max-w-[200px]">{sub.userName}</td>
                             <td className="py-2 px-3 text-[var(--text-muted)] truncate max-w-[250px]">{sub.assignmentTitle}</td>
-                            <td className="py-2 px-3 text-right font-bold text-blue-400">{Math.round(sub.score)}</td>
+                            <td className="py-2 px-3 text-right font-bold text-blue-600 dark:text-blue-400">{Math.round(sub.score)}</td>
                             <td className="py-2 px-3 text-right text-[var(--text-muted)]">{Math.round(sub.metrics.engagementTime / 60)}m</td>
                             <td className="py-2 px-3 text-right text-[var(--text-muted)]">{sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</td>
                           </tr>

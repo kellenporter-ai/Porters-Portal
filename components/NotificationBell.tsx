@@ -15,16 +15,16 @@ interface NotificationBellProps {
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  'QUEST_APPROVED': <Crosshair className="w-4 h-4 text-green-400" />,
-  'QUEST_REJECTED': <Crosshair className="w-4 h-4 text-red-400" />,
-  'LOOT_DROP': <Package className="w-4 h-4 text-yellow-400" />,
-  'NEW_MISSION': <Crosshair className="w-4 h-4 text-blue-400" />,
-  'NEW_RESOURCE': <Radio className="w-4 h-4 text-purple-400" />,
-  'LEVEL_UP': <ArrowUp className="w-4 h-4 text-amber-400" />,
-  'ANNOUNCEMENT': <Megaphone className="w-4 h-4 text-orange-400" />,
-  'XP_EVENT': <Zap className="w-4 h-4 text-cyan-400" />,
-  'AI_FLAGGED': <ShieldAlert className="w-4 h-4 text-purple-400" />,
-  'ASSESSMENT_GRADED': <ClipboardCheck className="w-4 h-4 text-green-400" />,
+  'QUEST_APPROVED': <Crosshair className="w-4 h-4 text-green-600 dark:text-green-400" />,
+  'QUEST_REJECTED': <Crosshair className="w-4 h-4 text-red-600 dark:text-red-400" />,
+  'LOOT_DROP': <Package className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />,
+  'NEW_MISSION': <Crosshair className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+  'NEW_RESOURCE': <Radio className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+  'LEVEL_UP': <ArrowUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+  'ANNOUNCEMENT': <Megaphone className="w-4 h-4 text-orange-600 dark:text-orange-400" />,
+  'XP_EVENT': <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />,
+  'AI_FLAGGED': <ShieldAlert className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+  'ASSESSMENT_GRADED': <ClipboardCheck className="w-4 h-4 text-green-600 dark:text-green-400" />,
 };
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, onUpdateSettings, dropUp }) => {
@@ -182,7 +182,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
           {showPushPrompt && (
             <div className="p-3 bg-purple-500/10 border-b border-purple-500/20">
               <div className="flex items-start gap-2">
-                <BellRing className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                <BellRing className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-[var(--text-secondary)] leading-tight">Get desktop alerts for quests, loot, and announcements?</p>
                   <div className="flex gap-2 mt-2">

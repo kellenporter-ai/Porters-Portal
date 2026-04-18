@@ -18,10 +18,10 @@ interface ProfileShowcaseProps {
 }
 
 const STAT_INFO = [
-  { key: 'tech', label: 'Tech', color: 'text-blue-400', bg: 'bg-blue-500' },
-  { key: 'focus', label: 'Focus', color: 'text-green-400', bg: 'bg-green-500' },
-  { key: 'analysis', label: 'Analysis', color: 'text-yellow-400', bg: 'bg-yellow-500' },
-  { key: 'charisma', label: 'Charisma', color: 'text-purple-400', bg: 'bg-purple-500' },
+  { key: 'tech', label: 'Tech', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500' },
+  { key: 'focus', label: 'Focus', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500' },
+  { key: 'analysis', label: 'Analysis', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500' },
+  { key: 'charisma', label: 'Charisma', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500' },
 ];
 
 const SLOT_ORDER: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', 'AMULET', 'RING1', 'RING2'];
@@ -111,7 +111,7 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition rounded"
                   title="Copy profile link"
                 >
-                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                  {copied ? <Check className="w-4 h-4 text-green-600 dark:text-green-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
               <p className={`text-sm font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
@@ -128,15 +128,15 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
                   <div className="text-[11.5px] text-[var(--text-muted)] font-mono">CLASS XP</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-black text-yellow-400">{gearScore}</div>
+                  <div className="text-xl font-black text-yellow-600 dark:text-yellow-400">{gearScore}</div>
                   <div className="text-[11.5px] text-[var(--text-muted)] font-mono">GEAR SCORE</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-black text-orange-400">{gam.engagementStreak || 0}w</div>
+                  <div className="text-xl font-black text-orange-600 dark:text-orange-400">{gam.engagementStreak || 0}w</div>
                   <div className="text-[11.5px] text-[var(--text-muted)] font-mono">STREAK</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-black text-purple-400">{unlockedAchievements.length}</div>
+                  <div className="text-xl font-black text-purple-600 dark:text-purple-400">{unlockedAchievements.length}</div>
                   <div className="text-[11.5px] text-[var(--text-muted)] font-mono">BADGES</div>
                 </div>
               </div>
@@ -207,11 +207,11 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
             {activeSets.length > 0 && (
               <div>
                 <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-2 flex items-center gap-1">
-                  <Star className="w-3 h-3 text-purple-400" /> Active Sets
+                  <Star className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Active Sets
                 </h3>
                 {activeSets.map(({ set, activeBonus }) => (
                   <div key={set.id} className="p-2 bg-purple-500/5 border border-purple-500/20 rounded-lg mb-1 text-xs">
-                    <span className="text-purple-400 font-bold">{set.name}</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-bold">{set.name}</span>
                     <span className="text-[var(--text-muted)] ml-1">— {activeBonus.label}</span>
                   </div>
                 ))}
@@ -224,14 +224,14 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
             {/* Achievement showcase */}
             <div>
               <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
-                <Trophy className="w-3 h-3 text-yellow-400" /> Achievements ({unlockedAchievements.length})
+                <Trophy className="w-3 h-3 text-yellow-600 dark:text-yellow-400" /> Achievements ({unlockedAchievements.length})
               </h3>
               {achievementDetails.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2">
                   {achievementDetails.slice(0, 12).map(a => (
                     <div key={a.id} className="text-center p-2 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
                       <div className="text-xl">{a.icon}</div>
-                      <div className="text-[11.5px] text-yellow-400 font-bold truncate mt-0.5">{a.title}</div>
+                      <div className="text-[11.5px] text-yellow-600 dark:text-yellow-400 font-bold truncate mt-0.5">{a.title}</div>
                     </div>
                   ))}
                 </div>
@@ -245,12 +245,12 @@ const ProfileShowcase: React.FC<ProfileShowcaseProps> = ({ user, classType, onCl
               <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3">Activity</h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs">
-                  <Flame className="w-3.5 h-3.5 text-orange-400" />
+                  <Flame className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
                   <span className="text-[var(--text-tertiary)]">Engagement Streak:</span>
-                  <span className="text-orange-400 font-bold">{gam.engagementStreak || 0} weeks</span>
+                  <span className="text-orange-600 dark:text-orange-400 font-bold">{gam.engagementStreak || 0} weeks</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                  <Zap className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                   <span className="text-[var(--text-tertiary)]">Total XP:</span>
                   <span className="text-cyan-700 dark:text-cyan-400 font-bold">{(gam.xp || 0).toLocaleString()}</span>
                 </div>

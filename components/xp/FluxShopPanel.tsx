@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind, Eye, EyeOff, CuboidIcon, Search } from 'lucide-react';
+import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind, Eye, EyeOff, CuboidIcon, Search, X } from 'lucide-react';
 import { FLUX_SHOP_ITEMS, AGENT_COSMETICS } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
@@ -207,14 +207,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
     }
   };
 
-  const getCategoryColor = (type: string) => {
-    switch (type) {
-      case 'XP_BOOST': return { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-700 dark:text-yellow-400', glow: 'shadow-yellow-500/10' };
-      case 'REROLL_TOKEN': return { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-700 dark:text-blue-400', glow: 'shadow-blue-500/10' };
-      case 'NAME_COLOR': return { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-700 dark:text-purple-400', glow: 'shadow-purple-500/10' };
-      case 'AGENT_COSMETIC': return { bg: 'bg-teal-500/10', border: 'border-teal-500/20', text: 'text-teal-700 dark:text-teal-400', glow: 'shadow-teal-500/10' };
-      default: return { bg: 'bg-gray-500/10', border: 'border-gray-500/20', text: 'text-gray-600 dark:text-gray-400', glow: 'shadow-gray-500/10' };
-    }
+  const getCategoryColor = (_type: string) => {
+    return { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-700 dark:text-cyan-400', glow: 'shadow-cyan-500/10' };
   };
 
   // Group non-cosmetic items by type; cosmetics and character models go into their own sections
@@ -288,6 +282,14 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cosmeticSubGroups, searchQuery]);
 
+  // Total visible item count across all filtered groups (for search affordance)
+  const totalFilteredCount = useMemo(() => {
+    let count = Object.values(filteredGrouped).reduce((a, b) => a + b.length, 0);
+    count += filteredCharacterModelItems.length;
+    count += Object.values(filteredCosmeticSubGroups).reduce((a, b) => a + b.length, 0);
+    return count;
+  }, [filteredGrouped, filteredCharacterModelItems, filteredCosmeticSubGroups]);
+
   return (
     <div className="space-y-4">
       {/* Full-width Header */}
@@ -299,13 +301,13 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           {/* Inline status pills */}
           {currentBoosts.map((boost, i) => (
             <div key={i} className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md">
-              <Clock className="w-3 h-3 text-yellow-400" />
+              <Clock className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
               <span className="text-[11.5px] font-bold text-yellow-300">+{Math.round((boost.value - 1) * 100)}% XP · {getTimeRemaining(boost.expiresAt)}</span>
             </div>
           ))}
           {rerollTokens > 0 && (
             <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md">
-              <RotateCcw className="w-3 h-3 text-blue-400" />
+              <RotateCcw className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <span className="text-[11.5px] font-bold text-blue-300">{rerollTokens} Reroll{rerollTokens !== 1 ? 's' : ''}</span>
             </div>
           )}
@@ -335,8 +337,18 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search items…"
                 aria-label="Search shop items"
-                className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-cyan-500/40 transition"
+                className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl pl-9 pr-24 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-cyan-500/40 transition"
               />
+              {searchQuery && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
+                    {totalFilteredCount} results
+                  </span>
+                  <button onClick={() => setSearchQuery('')} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" aria-label="Clear search">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Category Filter Tabs */}
@@ -399,7 +411,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         } ${colors.glow}`}
                       >
                         {isOwnedColor && (
-                          <span className="absolute top-2 right-2 text-[11.5px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-400 uppercase tracking-wide">
+                          <span className="absolute top-2 right-2 text-[11.5px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-600 dark:text-teal-400 uppercase tracking-wide">
                             Owned
                           </span>
                         )}
@@ -426,7 +438,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                           </div>
                           {isNameColor && isOwnedColor ? (
                             isActiveColor ? (
-                              <span className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold bg-teal-500/20 text-teal-400 cursor-default">
+                              <span className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold bg-teal-500/20 text-teal-600 dark:text-teal-400 cursor-default">
                                 <Check className="w-4 h-4" aria-hidden="true" />
                                 Active
                               </span>
@@ -438,8 +450,8 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                                 aria-label={`Equip ${item.name}`}
                                 className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent ${
                                   isPurchasing
-                                    ? 'bg-teal-500/20 text-teal-400/60 cursor-wait'
-                                    : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 hover:text-white active:scale-95'
+                                    ? 'bg-teal-500/20 text-teal-600 dark:text-teal-400/60 cursor-wait'
+                                    : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-600 dark:text-teal-400 hover:text-white active:scale-95'
                                 }`}
                               >
                                 {isPurchasing ? (
@@ -462,7 +474,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                                 atLimit
                                   ? 'bg-gray-500/20 text-[var(--text-muted)] cursor-not-allowed'
                                   : !affordable
-                                  ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
+                                  ? 'bg-red-500/10 text-red-600 dark:text-red-400/60 cursor-not-allowed'
                                   : isPurchasing
                                   ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 cursor-wait'
                                   : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:text-white active:scale-95'
@@ -501,7 +513,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           {(shopTab === 'all' || shopTab === 'models') && ENABLE_3D_AVATAR && filteredCharacterModelItems.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-1">
-                <CuboidIcon className="w-5 h-5 text-violet-400" aria-hidden="true" />
+                <CuboidIcon className="w-5 h-5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
                 <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">3D Character Models</h3>
               </div>
               <p className="text-xs text-[var(--text-muted)] px-1">Upgrade your operative with a new 3D character model. Free starters are always available.</p>
@@ -576,7 +588,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                             aria-label={`Purchase ${model.name} for ${model.cost} Flux`}
                             className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                               !affordable
-                                ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
+                                ? 'bg-red-500/10 text-red-600 dark:text-red-400/60 cursor-not-allowed'
                                 : isPurchasing
                                 ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 cursor-wait'
                                 : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:text-white active:scale-95'
@@ -680,7 +692,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                                   aria-pressed={previewCosmeticId === item.id}
                                   className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400 ${
                                     previewCosmeticId === item.id
-                                      ? 'bg-amber-500/20 text-amber-400'
+                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                       : 'bg-[var(--surface-glass)] text-[var(--text-muted)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-secondary)]'
                                   }`}
                                 >
@@ -757,7 +769,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                                 aria-pressed={previewCosmeticId === item.id}
                                 className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-teal-400 ${
                                   previewCosmeticId === item.id
-                                    ? 'bg-amber-500/20 text-amber-400'
+                                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                     : 'bg-[var(--surface-glass)] text-[var(--text-muted)] hover:bg-[var(--surface-glass-heavy)] hover:text-[var(--text-secondary)]'
                                 }`}
                               >
@@ -773,7 +785,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                             aria-label={`Purchase ${item.name} for ${item.cost} Flux`}
                             className={`mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent ${
                               !affordable
-                                ? 'bg-red-500/10 text-red-400/60 cursor-not-allowed'
+                                ? 'bg-red-500/10 text-red-600 dark:text-red-400/60 cursor-not-allowed'
                                 : isPurchasing
                                 ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 cursor-wait'
                                 : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:text-white active:scale-95'
@@ -805,7 +817,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
 
                 {/* Currency pill */}
                 <div className="flex items-center gap-2 bg-[var(--panel-bg)] px-3 py-1.5 rounded-xl border border-cyan-500/20 justify-center">
-                  <Hexagon className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                  <Hexagon className="w-4 h-4 text-cyan-600 dark:text-cyan-400" aria-hidden="true" />
                   <span className="text-sm font-bold text-[var(--text-primary)]">{currency.toLocaleString()}</span>
                   <span className="text-xs text-[var(--text-muted)] font-bold">Flux</span>
                 </div>
@@ -813,7 +825,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                 {/* Agent Preview Panel */}
                 <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 backdrop-blur-sm">
                   <div className="flex items-center gap-2 mb-4">
-                    <User className="w-4 h-4 text-teal-400" aria-hidden="true" />
+                    <User className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden="true" />
                     <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Agent Preview</h3>
                     {previewCosmeticId && (
                       <button

@@ -125,7 +125,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
       {/* ─── Engagement Trends ─── */}
       <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-cyan-400" />
+          <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
           Engagement Trends
         </h3>
         <p className="text-xs text-[var(--text-muted)] mb-4">Submissions and average engagement time over the last 30 days</p>
@@ -167,7 +167,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
         {/* ─── Completion Rates by Unit ─── */}
         <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
           <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-emerald-400" />
+            <BarChart3 className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
             Completion by Unit
           </h3>
           <p className="text-xs text-[var(--text-muted)] mb-4">Percentage of students who completed each unit&rsquo;s assignments</p>
@@ -250,7 +250,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
       {/* ─── Telemetry Bucket Breakdown ─── */}
       <section className="bg-[var(--surface-glass)] border border-[var(--border-strong)] rounded-3xl p-6 backdrop-blur-md">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-amber-400" />
+          <Activity className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           Engagement Bucket Breakdown
         </h3>
         <p className="text-xs text-[var(--text-muted)] mb-4">Distribution of students across behavioral engagement buckets</p>

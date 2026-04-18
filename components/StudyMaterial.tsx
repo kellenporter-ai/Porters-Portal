@@ -143,7 +143,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-full gap-4">
-                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400 animate-spin" />
                 <p className="text-[var(--text-tertiary)] text-sm">Loading study material...</p>
             </div>
         );
@@ -166,7 +166,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
             {/* HUD */}
             <div className="bg-[var(--panel-bg)] backdrop-blur-md px-4 py-2 flex justify-between items-center border-b border-[var(--border)] z-20 shrink-0">
                 <div className="flex items-center gap-4">
-                    <div className={`flex items-center gap-2 text-sm font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
+                    <div className={`flex items-center gap-2 text-sm font-bold ${isActive ? 'text-green-600 dark:text-green-400' : 'text-yellow-500'}`}>
                         {isActive ? <PlayCircle className="w-4 h-4" /> : <Clock className="w-4 h-4 animate-pulse" />}
                         {isActive ? 'Reading Active' : 'Away (Paused)'}
                     </div>
@@ -200,7 +200,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
                         {renderedSections.map((section, idx) => (
                             <div key={idx} className="group">
                                 <h2 className="text-lg font-bold text-purple-300 mb-4 flex items-center gap-3">
-                                    <span className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 text-xs font-black flex items-center justify-center shrink-0">{idx + 1}</span>
+                                    <span className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-black flex items-center justify-center shrink-0">{idx + 1}</span>
                                     {section.title}
                                 </h2>
                                 <div
@@ -212,7 +212,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
                     </div>
 
                     <div className="mt-12 mb-4 text-center">
-                        <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 text-xs font-bold px-4 py-2 rounded-full border border-emerald-500/20">
+                        <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold px-4 py-2 rounded-full border border-emerald-500/20">
                             <BookOpen className="w-3.5 h-3.5" />
                             Keep reading to earn engagement XP
                         </div>

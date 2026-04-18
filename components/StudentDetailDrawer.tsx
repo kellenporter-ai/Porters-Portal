@@ -182,17 +182,17 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
           {/* Quick Stats */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+              <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{xp.toLocaleString()}</div>
               <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
             </div>
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <Clock className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{totalTime}m</div>
               <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total Time</div>
             </div>
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <BookOpen className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+              <BookOpen className="w-5 h-5 text-emerald-700 dark:text-emerald-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{submissions.length}</div>
               <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Resources</div>
             </div>
@@ -200,12 +200,12 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
 
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <Package className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+              <Package className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{currency}</div>
               <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
             </div>
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <Flame className="w-5 h-5 text-red-400 mx-auto mb-1" />
+              <Flame className="w-5 h-5 text-red-600 dark:text-red-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{streak}w</div>
               <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Streak</div>
             </div>
@@ -252,8 +252,8 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                 {/* Recommendation */}
                 <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[11.5px] font-bold text-amber-400 uppercase tracking-widest">Recommended Action</span>
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Recommended Action</span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mb-2">{bp.recommendation.action}</p>
                   <div className="flex flex-wrap gap-1.5">
@@ -295,10 +295,10 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">7-Day Engagement</h4>
               <div className="flex items-center gap-1">
-                {engagementTrend.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-green-400" />}
-                {engagementTrend.trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-400" />}
+                {engagementTrend.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />}
+                {engagementTrend.trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
                 {engagementTrend.trend === 'flat' && <Minus className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />}
-                <span className={`text-[11.5px] font-bold uppercase ${engagementTrend.trend === 'up' ? 'text-green-400' : engagementTrend.trend === 'down' ? 'text-red-400' : 'text-[var(--text-tertiary)]'}`}>
+                <span className={`text-[11.5px] font-bold uppercase ${engagementTrend.trend === 'up' ? 'text-green-600 dark:text-green-400' : engagementTrend.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-tertiary)]'}`}>
                   {engagementTrend.trend === 'up' ? 'Trending Up' : engagementTrend.trend === 'down' ? 'Declining' : 'Stable'}
                 </span>
               </div>
@@ -363,7 +363,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                   {resourcePerformance.map((r, i) => {
                     const mins = Math.round(r.totalTime / 60);
                     const quality = r.totalKeystrokes > 20 && r.totalClicks > 5 ? 'high' : r.totalClicks > 2 ? 'medium' : 'low';
-                    const qualityColor = quality === 'high' ? 'text-green-400' : quality === 'medium' ? 'text-yellow-400' : 'text-red-400';
+                    const qualityColor = quality === 'high' ? 'text-green-600 dark:text-green-400' : quality === 'medium' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
                     const qualityBg = quality === 'high' ? 'bg-green-500' : quality === 'medium' ? 'bg-yellow-500' : 'bg-red-500';
                     return (
                       <div key={i} className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">

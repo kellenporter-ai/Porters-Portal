@@ -60,7 +60,7 @@ const InlineImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBloc
               </div>
             )}
           </button>
-          {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+          {error && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{error}</p>}
         </div>
       )}
       {block.url && <img src={block.url} alt={block.alt || ''} className="max-h-32 rounded-lg border border-[var(--border)] object-contain" onError={e => (e.currentTarget.style.display = 'none')} />}
@@ -113,10 +113,10 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
           <div><label htmlFor={`${block.id}-title`} className={labelClass}>Title</label><input id={`${block.id}-title`} type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} className={inputClass} /></div>
           {items.map((item, idx) => (
             <div key={idx} className="flex gap-2">
-              <Target className="w-4 h-4 text-emerald-400 mt-2 shrink-0" />
+              <Target className="w-4 h-4 text-emerald-700 dark:text-emerald-400 mt-2 shrink-0" />
               <label htmlFor={`ibe-objective-${block.id}-${idx}`} className="sr-only">{`Objective ${idx + 1}`}</label>
               <input id={`ibe-objective-${block.id}-${idx}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Objective ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, items: [...items, ''] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>
@@ -152,7 +152,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
     case 'INFO_BOX':
       return (
         <div className="space-y-2">
-          <div className="flex gap-2">{(['tip', 'warning', 'note'] as const).map(v => <button key={v} type="button" onClick={() => onUpdate({ ...block, variant: v })} className={`px-3 py-1 rounded-lg border text-xs font-bold capitalize transition ${block.variant === v ? (v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-400' : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-blue-500/20 border-blue-500/30 text-blue-400') : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)]'}`}>{v}</button>)}</div>
+          <div className="flex gap-2">{(['tip', 'warning', 'note'] as const).map(v => <button key={v} type="button" onClick={() => onUpdate({ ...block, variant: v })} className={`px-3 py-1 rounded-lg border text-xs font-bold capitalize transition ${block.variant === v ? (v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-600 dark:text-green-400' : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400' : 'bg-blue-500/20 border-blue-500/30 text-blue-600 dark:text-blue-400') : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)]'}`}>{v}</button>)}</div>
           <label htmlFor={`ibe-infobox-content-${block.id}`} className={labelClass}>Content</label>
           <textarea id={`ibe-infobox-content-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Content..." className={textareaClass} rows={2} />
         </div>
@@ -168,7 +168,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
               <button type="button" onClick={() => onUpdate({ ...block, correctAnswer: idx })} className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${block.correctAnswer === idx ? 'border-green-500 bg-green-500' : 'border-gray-600'}`}>{block.correctAnswer === idx && <div className="w-2 h-2 bg-white rounded-full" />}</button>
               <label htmlFor={`ibe-mc-option-${block.id}-${idx}`} className="sr-only">{`Option ${String.fromCharCode(65 + idx)}`}</label>
               <input id={`ibe-mc-option-${block.id}-${idx}`} type="text" value={opt} onChange={e => { const n = [...options]; n[idx] = e.target.value; onUpdate({ ...block, options: n }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} className={`flex-1 ${inputClass}`} />
-              {options.length > 2 && <button type="button" onClick={() => { const n = options.filter((_, i) => i !== idx); onUpdate({ ...block, options: n, correctAnswer: block.correctAnswer === idx ? 0 : (block.correctAnswer || 0) > idx ? (block.correctAnswer || 0) - 1 : block.correctAnswer }); }} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {options.length > 2 && <button type="button" onClick={() => { const n = options.filter((_, i) => i !== idx); onUpdate({ ...block, options: n, correctAnswer: block.correctAnswer === idx ? 0 : (block.correctAnswer || 0) > idx ? (block.correctAnswer || 0) - 1 : block.correctAnswer }); }} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           {options.length < 6 && <button type="button" onClick={() => onUpdate({ ...block, options: [...options, ''] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Option</button>}
@@ -186,7 +186,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
             <div key={idx} className="flex gap-2">
               <label htmlFor={`ibe-sa-answer-${block.id}-${idx}`} className="sr-only">{`Accepted answer ${idx + 1}`}</label>
               <input id={`ibe-sa-answer-${block.id}-${idx}`} type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} placeholder={`Answer ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: [...answers, ''] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Answer</button>
@@ -210,7 +210,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
               <input id={`ibe-vocablist-term-${block.id}-${idx}`} type="text" value={t.term} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], term: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Term" className={`flex-1 ${inputClass}`} />
               <label htmlFor={`ibe-vocablist-def-${block.id}-${idx}`} className="sr-only">{`Definition ${idx + 1}`}</label>
               <input id={`ibe-vocablist-def-${block.id}-${idx}`} type="text" value={t.definition} onChange={e => { const n = [...terms]; n[idx] = { ...n[idx], definition: e.target.value }; onUpdate({ ...block, terms: n }); }} placeholder="Definition" className={`flex-1 ${inputClass}`} />
-              {terms.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, terms: terms.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {terms.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, terms: terms.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, terms: [...terms, { term: '', definition: '' }] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Term</button>
@@ -227,7 +227,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
             <div key={idx} className="flex gap-2"><div className="w-5 h-5 rounded border-2 border-[var(--text-muted)] shrink-0 mt-1.5" />
               <label htmlFor={`ibe-checklist-item-${block.id}-${idx}`} className="sr-only">{`Checklist item ${idx + 1}`}</label>
               <input id={`ibe-checklist-item-${block.id}-${idx}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
-              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, items: [...items, ''] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Item</button>
@@ -260,7 +260,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
               <input id={`ibe-sort-item-${block.id}-${idx}`} type="text" value={item.text} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], text: e.target.value }; onUpdate({ ...block, sortItems: n }); }} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
               <label htmlFor={`ibe-sort-category-${block.id}-${idx}`} className="sr-only">{`Category for item ${idx + 1}`}</label>
               <select id={`ibe-sort-category-${block.id}-${idx}`} value={item.correct} onChange={e => { const n = [...sortItems]; n[idx] = { ...n[idx], correct: e.target.value as 'left' | 'right' }; onUpdate({ ...block, sortItems: n }); }} className={`w-28 ${inputClass}`}><option value="left">{block.leftLabel || 'Left'}</option><option value="right">{block.rightLabel || 'Right'}</option></select>
-              {sortItems.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, sortItems: sortItems.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {sortItems.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, sortItems: sortItems.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, sortItems: [...sortItems, { text: '', correct: 'left' }] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Item</button>
@@ -300,7 +300,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
               <input id={`ibe-col-label-${block.id}-${idx}`} type="text" value={col.label} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], label: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Label" className={`flex-1 ${inputClass}`} />
               <label htmlFor={`ibe-col-unit-${block.id}-${idx}`} className="sr-only">{`Column ${idx + 1} unit`}</label>
               <input id={`ibe-col-unit-${block.id}-${idx}`} type="text" value={col.unit || ''} onChange={e => { const n = [...columns]; n[idx] = { ...n[idx], unit: e.target.value }; onUpdate({ ...block, columns: n }); }} placeholder="Unit" className={`w-20 ${inputClass}`} />
-              {columns.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, columns: columns.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {columns.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, columns: columns.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, columns: [...columns, { key: `col${columns.length + 1}`, label: '', editable: true }] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Column</button>
@@ -326,7 +326,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
               <span className="text-xs font-mono text-[var(--text-muted)] mt-2 w-5 text-right">{idx + 1}.</span>
               <label htmlFor={`ibe-rank-item-${block.id}-${idx}`} className="sr-only">{`Rank item ${idx + 1}`}</label>
               <input id={`ibe-rank-item-${block.id}-${idx}`} type="text" value={item} onChange={e => { const n = [...items]; n[idx] = e.target.value; onUpdate({ ...block, items: n }); }} className={`flex-1 ${inputClass}`} />
-              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {items.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, items: items.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, items: [...items, ''] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Item</button>
@@ -346,7 +346,7 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
             <div key={idx} className="flex gap-2">
               <label htmlFor={`ibe-linked-answer-${block.id}-${idx}`} className="sr-only">{`Accepted answer ${idx + 1}`}</label>
               <input id={`ibe-linked-answer-${block.id}-${idx}`} type="text" value={ans} onChange={e => { const n = [...answers]; n[idx] = e.target.value; onUpdate({ ...block, acceptedAnswers: n }); }} className={`flex-1 ${inputClass}`} />
-              {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
+              {answers.length > 1 && <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: answers.filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
           ))}
           <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: [...answers, ''] })} className="text-xs text-[var(--accent-text)] flex items-center gap-1"><Plus className="w-3 h-3" /> Add Answer</button>

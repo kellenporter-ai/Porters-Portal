@@ -14,9 +14,9 @@ type FeedbackTab = 'new' | 'read' | 'reviewed';
 type SortKey = 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc';
 
 function gradeColor(pct: number): string {
-  if (pct >= 80) return 'text-emerald-400';
-  if (pct >= 60) return 'text-amber-400';
-  return 'text-red-400';
+  if (pct >= 80) return 'text-emerald-700 dark:text-emerald-400';
+  if (pct >= 60) return 'text-amber-600 dark:text-amber-400';
+  return 'text-red-600 dark:text-red-400';
 }
 
 function gradeBgColor(pct: number): string {
@@ -35,14 +35,6 @@ function classBadgeClasses(classType: string): string {
     return 'bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300 dark:bg-purple-500/20';
   }
   return 'bg-gray-500/15 text-gray-600 border-gray-500/30 dark:text-gray-300 dark:bg-gray-500/20';
-}
-
-/** Left border accent color for cards, matching class type. */
-function classBorderAccent(classType: string): string {
-  const lower = classType.toLowerCase();
-  if (lower.includes('physics')) return 'border-l-blue-500';
-  if (lower.includes('forensic')) return 'border-l-purple-500';
-  return 'border-l-gray-400';
 }
 
 /** Class filter pill styling. */
@@ -183,7 +175,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
       <button
         key={s.id}
         onClick={() => navigate(`/resources/${s.assignmentId}`)}
-        className={`w-full text-left bg-[var(--panel-bg)] border border-[var(--border)] border-l-[3px] ${classBorderAccent(classType)} rounded-xl p-5 transition-all focus-visible:ring-2 focus-visible:ring-purple-500 ${
+        className={`w-full text-left bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-5 transition-all focus-visible:ring-2 focus-visible:ring-purple-500 ${
           dimmed
             ? 'opacity-50'
             : 'hover:border-[var(--border-strong)] hover:bg-[var(--surface-glass)]'

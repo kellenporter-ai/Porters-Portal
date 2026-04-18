@@ -1105,7 +1105,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   if (isAssessment && sessionTokenError && !previewMode) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-8 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+        <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400 mb-4" />
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Cannot Start Assessment</h3>
         <p className="text-[var(--text-secondary)] text-sm max-w-md mb-4">{sessionTokenError}</p>
         <button
@@ -1130,7 +1130,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         {/* HUD */}
         <div className={`bg-[var(--surface-base)] px-4 ${hasSidebar ? 'py-1' : 'py-2'} flex flex-wrap justify-between items-center gap-y-1 border-b border-[var(--border)] z-20 shrink-0`}>
             <div className="flex items-center gap-4 flex-wrap">
-                <div className={`flex items-center gap-2 ${hasSidebar ? 'text-xs' : 'text-sm'} font-bold ${isActive ? 'text-green-400' : 'text-yellow-500'}`}>
+                <div className={`flex items-center gap-2 ${hasSidebar ? 'text-xs' : 'text-sm'} font-bold ${isActive ? 'text-green-600 dark:text-green-400' : 'text-yellow-500'}`}>
                     {isActive ? <PlayCircle className={hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} /> : <Clock className={`${hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} animate-pulse`} />}
                     {hasSidebar ? (isActive ? 'Active' : 'Paused') : (isActive ? 'Active Session' : 'Away (Paused)')}
                 </div>
@@ -1177,7 +1177,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     showReplayPrompt ? (
                         <div className="flex items-center gap-2 bg-[var(--backdrop)] rounded-lg px-3 py-1 border border-[var(--border)]">
                             <span className="text-[11.5px] text-[var(--text-tertiary)]">Replay from start?</span>
-                            <button onClick={handleReplayClick} className="text-[11.5px] font-bold text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
+                            <button onClick={handleReplayClick} className="text-[11.5px] font-bold text-green-600 dark:text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
                             <button onClick={() => setShowReplayPrompt(false)} className="text-[11.5px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded transition">Cancel</button>
                         </div>
                     ) : (
@@ -1201,7 +1201,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </button>
                 )}
                 {!hasSidebar && bridgeConnected && (
-                    <div className="flex items-center gap-1.5 text-[11.5px] text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
+                    <div className="flex items-center gap-1.5 text-[11.5px] text-green-600 dark:text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
                         <Zap className="w-3 h-3" /> XP Linked
                     </div>
                 )}
@@ -1211,7 +1211,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
                 {isAssessment && tabSwitchCount > 0 && (
-                    <div className="flex items-center gap-2 text-[11.5px] text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 uppercase font-bold tracking-widest">
+                    <div className="flex items-center gap-2 text-[11.5px] text-red-600 dark:text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 uppercase font-bold tracking-widest">
                         <AlertTriangle className="w-3 h-3" /> Tab Switch Detected ({tabSwitchCount})
                     </div>
                 )}

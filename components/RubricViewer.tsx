@@ -41,7 +41,7 @@ const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, s
           `}
         >
           {isAISuggested && !isSelected && (
-            <Sparkles className="absolute top-0.5 right-0.5 w-2 h-2 text-amber-400" />
+            <Sparkles className="absolute top-0.5 right-0.5 w-2 h-2 text-amber-600 dark:text-amber-400" />
           )}
           <span className="text-[11.5px] font-bold uppercase tracking-wider">{tier.label}</span>
           <span className={`text-[11.5px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>
@@ -96,7 +96,7 @@ const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questio
           <span className={`font-bold ${isSelected ? colors.text : 'text-[var(--text-tertiary)]'}`}>
             {tier.label} ({tier.percentage}%):
           </span>
-          {isAISuggested && !isSelected && <Sparkles className="w-3 h-3 text-amber-400 inline ml-1.5" aria-hidden="true" />}
+          {isAISuggested && !isSelected && <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 inline ml-1.5" aria-hidden="true" />}
           {' '}{tier.descriptor}
         </div>
       );
@@ -164,7 +164,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
           onClick={onAcceptAllAI}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-300 transition"
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           Accept All AI Suggestions
         </button>
       )}
@@ -203,7 +203,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
               )}
               <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold ${headerColors ? headerColors.text : 'text-[var(--text-primary)]'}`}>{question.questionLabel}</span>
               {hasAISuggestionInQuestion && !hasGrade && (
-                <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
               )}
               <span className={`text-[11.5px] ml-auto shrink-0 ${headerColors ? headerColors.text + ' opacity-70' : 'text-[var(--text-muted)]'}`}>
                 {question.skills.length} skill{question.skills.length !== 1 ? 's' : ''}
@@ -251,17 +251,17 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                       {aiSuggestion && (
                         <div className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} bg-amber-500/5 border-t border-amber-500/10`}>
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                            <span className="text-[11.5px] font-bold text-amber-400">AI Rationale</span>
+                            <Sparkles className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                            <span className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400">AI Rationale</span>
                             <span className={`text-[8px] ml-auto px-1.5 py-0.5 rounded-full font-bold ${
-                              aiSuggestion.confidence >= 0.75 ? 'bg-green-500/20 text-green-400'
-                              : aiSuggestion.confidence >= 0.5 ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-red-500/20 text-red-400'
+                              aiSuggestion.confidence >= 0.75 ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                              : aiSuggestion.confidence >= 0.5 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+                              : 'bg-red-500/20 text-red-600 dark:text-red-400'
                             }`}>
                               {Math.round(aiSuggestion.confidence * 100)}% confident
                             </span>
                           </div>
-                          <p className="text-[11.5px] text-amber-400/70 leading-relaxed">{aiSuggestion.rationale}</p>
+                          <p className="text-[11.5px] text-amber-600 dark:text-amber-400/70 leading-relaxed">{aiSuggestion.rationale}</p>
                         </div>
                       )}
 

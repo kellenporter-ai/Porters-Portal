@@ -185,7 +185,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                                 >
                                     <div className="w-10 text-center font-bold text-lg text-[var(--text-muted)] font-mono">
-                                        {i < 3 && i === 0 && <Trophy className="w-6 h-6 text-yellow-400 mx-auto" />}
+                                        {i < 3 && i === 0 && <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mx-auto" />}
                                         {i < 3 && i === 1 && <Medal className="w-6 h-6 text-gray-300 mx-auto" />}
                                         {i < 3 && i === 2 && <Medal className="w-6 h-6 text-amber-600 mx-auto" />}
                                         {i >= 3 && `#${i+1}`}

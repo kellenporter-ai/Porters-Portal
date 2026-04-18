@@ -94,7 +94,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   // Draft/not-started right panel
   if (viewingDraftUserId && !selectedGroup) {
     const isNotStartedRight = !draftUserIds.has(viewingDraftUserId);
-    const accentColor = isNotStartedRight ? 'text-orange-400' : 'text-cyan-400';
+    const accentColor = isNotStartedRight ? 'text-orange-600 dark:text-orange-400' : 'text-cyan-600 dark:text-cyan-400';
     const hasFeedbackMessages = draftFeedbackMessages.length > 0;
 
     return (
@@ -112,7 +112,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
         <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 p-3 flex flex-col gap-3">
           {/* Compact status info */}
           <div className={`flex items-start gap-2.5 p-3 rounded-lg border ${isNotStartedRight ? 'bg-orange-500/5 border-orange-500/20' : 'bg-cyan-500/5 border-cyan-500/20'}`}>
-            <FileText className={`w-4 h-4 shrink-0 mt-0.5 ${isNotStartedRight ? 'text-orange-400/60' : 'text-cyan-400/60'}`} aria-hidden="true" />
+            <FileText className={`w-4 h-4 shrink-0 mt-0.5 ${isNotStartedRight ? 'text-orange-600 dark:text-orange-400/60' : 'text-cyan-600 dark:text-cyan-400/60'}`} aria-hidden="true" />
             <div>
               <p className={`text-xs font-bold mb-0.5 ${accentColor}`}>
                 {isNotStartedRight ? 'Not yet started' : 'Draft \u2014 not yet submitted'}
@@ -196,10 +196,10 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
     <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-[var(--border)] flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
-        <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+        <h5 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
           <BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> Rubric Grading
           {isAlreadyGraded && (
-            <span className="text-[11.5px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
+            <span className="text-[11.5px] bg-green-500/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
           )}
         </h5>
       </div>
@@ -209,7 +209,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
         {/* AI flagged notice */}
         {sub.flaggedAsAI && (
           <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
-            <Bot className="w-4 h-4 text-purple-400 shrink-0" aria-hidden="true" />
+            <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" aria-hidden="true" />
             <span className="text-[11px] text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
           </div>
         )}
@@ -218,11 +218,11 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
         {sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade && (
           <div className="mb-3 p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg">
             <div className="flex items-center gap-2 mb-1.5">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+              <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
               <span className="text-[11px] font-bold text-amber-300">AI Suggested &mdash; Needs Review</span>
-              <span className="text-[11.5px] text-amber-400/60 ml-auto">{sub.aiSuggestedGrade.model}</span>
+              <span className="text-[11.5px] text-amber-600 dark:text-amber-400/60 ml-auto">{sub.aiSuggestedGrade.model}</span>
             </div>
-            <p className="text-[11.5px] text-amber-400/70 leading-relaxed">
+            <p className="text-[11.5px] text-amber-600 dark:text-amber-400/70 leading-relaxed">
               Suggested {sub.aiSuggestedGrade.overallPercentage}% by local LLM. Tiers are pre-filled below &mdash; review and adjust before saving.
             </p>
             <div className="flex gap-2 mt-2">
@@ -240,7 +240,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
         {/* Returned notice */}
         {isReturnedAttempt && (
           <div className="mx-3 mt-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
-            <Undo2 className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+            <Undo2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
             <span className="text-[11px] text-amber-300">This attempt was returned. Grades shown are from the prior review.</span>
           </div>
         )}
@@ -275,7 +275,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setSnippetsOpen(!snippetsOpen)}
-                  className="flex items-center gap-1 text-[11.5px] font-medium text-purple-400 hover:text-purple-300 transition"
+                  className="flex items-center gap-1 text-[11.5px] font-medium text-purple-600 dark:text-purple-400 hover:text-purple-300 transition"
                   aria-label="Open feedback snippets"
                 >
                   <FileText className="w-3 h-3" aria-hidden="true" />
@@ -352,7 +352,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
             {selectedGroup && (
               <button
                 onClick={() => setFeedbackFeedOpen(true)}
-                className="mt-2 flex items-center gap-1.5 text-[11.5px] font-medium text-purple-400 hover:text-purple-300 transition"
+                className="mt-2 flex items-center gap-1.5 text-[11.5px] font-medium text-purple-600 dark:text-purple-400 hover:text-purple-300 transition"
                 aria-label={`View all feedback for ${selectedGroup.userName}`}
               >
                 <BookOpen className="w-3 h-3" aria-hidden="true" />
@@ -383,7 +383,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               {sub.status !== 'RETURNED' && sub.status !== 'STARTED' && (
                 <button
                   onClick={onReturnToStudent}
-                  className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 rounded-lg transition"
+                  className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 rounded-lg transition"
                   aria-label={`Return assessment to ${selectedGroup.userName}`}
                 >
                   <Undo2 className="w-3.5 h-3.5" aria-hidden="true" /> Return to Student
@@ -409,7 +409,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               {nextUngraded?.group && (
                 <button
                   onClick={() => onSelectStudent(nextUngraded.group!.userId)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 px-3 py-2 rounded-lg transition"
+                  className="flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 px-3 py-2 rounded-lg transition"
                   aria-label="Grade next ungraded student"
                 >
                   Grade Next <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />

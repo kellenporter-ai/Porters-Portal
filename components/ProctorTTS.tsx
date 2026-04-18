@@ -148,7 +148,7 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       {/* Play/Pause */}
       <button
         onClick={handlePlayPause}
-        className={`p-1.5 rounded-lg transition ${isPlaying ? 'bg-amber-500/20 text-amber-400' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}`}
+        className={`p-1.5 rounded-lg transition ${isPlaying ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20'}`}
       >
         {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
       </button>

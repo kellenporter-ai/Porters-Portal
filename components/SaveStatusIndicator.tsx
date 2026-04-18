@@ -104,7 +104,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
         ? 'Saves failing \u2014 keep this tab open!'
         : 'Save failed \u2014 work backed up locally',
       className: prolongedError
-        ? 'text-red-400 bg-red-500/20 border-red-500/40 animate-pulse'
+        ? 'text-red-600 dark:text-red-400 bg-red-500/20 border-red-500/40 animate-pulse'
         : 'text-red-300 bg-red-500/10 border-red-500/20',
     },
     idle: { icon: null, text: '', className: '' },

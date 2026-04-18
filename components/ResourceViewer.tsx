@@ -500,7 +500,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {showBlockerModal && (
         <div className="fixed inset-0 z-[60] bg-[var(--backdrop)] flex items-center justify-center">
           <div className="bg-[var(--surface-raised)] border border-red-500/30 rounded-2xl p-6 max-w-sm mx-4">
-            <div className="flex items-center gap-2 text-red-400 mb-3">
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-3">
               <Shield className="w-5 h-5" />
               <h3 className="font-bold text-sm">Pause Assessment?</h3>
             </div>
@@ -623,7 +623,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       <div className={`relative flex items-center justify-between text-[var(--text-primary)] ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-[var(--surface-base)] border-[var(--border)]'} px-4 py-1.5 ${isAssessment ? '' : 'rounded-xl'} border overflow-hidden`}>
         <div className="flex items-center gap-4 min-w-0">
           <h2 className="text-sm font-bold truncate flex items-center gap-2">
-            {isAssessment && <Shield className="w-4 h-4 text-red-400 shrink-0" />}
+            {isAssessment && <Shield className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />}
             {activeAssignment.title}
             {isAssessment && (
               <span className="text-[11.5px] bg-red-600/80 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Assessment</span>
@@ -657,7 +657,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           {activeAssignment?.rubric && (activeAssignment.isAssessment || existingSubmission?.rubricGrade) && (
             <button
               onClick={() => setShowRubric(prev => !prev)}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition ${isLight ? 'text-amber-700 hover:text-amber-800 bg-amber-100 border border-amber-300' : 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20'}`}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition ${isLight ? 'text-amber-700 hover:text-amber-800 bg-amber-100 border border-amber-300' : 'text-amber-600 dark:text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20'}`}
             >
               <BookOpen className="w-3.5 h-3.5" /> Rubric
             </button>
@@ -683,7 +683,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
             </div>
           ) : isAssessment && isPreview ? (
-            <span className={`flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-lg border ${isLight ? 'text-amber-700 bg-amber-100 border-amber-300' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
+            <span className={`flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-lg border ${isLight ? 'text-amber-700 bg-amber-100 border-amber-300' : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
               <Eye className="w-3.5 h-3.5" /> Submit (Preview)
             </span>
           ) : (

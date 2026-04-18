@@ -49,11 +49,11 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
               i === 0 ? 'bg-amber-500/5 animate-in fade-in slide-in-from-top-1 duration-300' : 'opacity-60'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-[8px] font-bold text-purple-400 shrink-0">
+            <span className="w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-[8px] font-bold text-purple-600 dark:text-purple-400 shrink-0">
               {entry.userName.charAt(0)}
             </span>
             <span className="text-[var(--text-tertiary)] truncate flex-1">{entry.userName}</span>
-            <span className={`font-bold ${entry.isCrit ? 'text-yellow-300' : 'text-amber-400'}`}>
+            <span className={`font-bold ${entry.isCrit ? 'text-yellow-200 font-black drop-shadow-[0_0_6px_rgba(253,224,71,0.6)]' : 'text-amber-600 dark:text-amber-400'}`}>
               -{entry.damage}{entry.isCrit ? '!' : ''}
             </span>
           </div>

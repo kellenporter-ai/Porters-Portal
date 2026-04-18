@@ -587,7 +587,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
       );
     }
     if (row.courseWorkError) {
-      return <p className="text-xs text-red-400">{row.courseWorkError}</p>;
+      return <p className="text-xs text-red-600 dark:text-red-400">{row.courseWorkError}</p>;
     }
     if (!row.courseWorkLoaded) return null;
 
@@ -612,7 +612,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
         {!row.createNew ? (
           <button
             onClick={() => updateRow(row.portalSection, { createNew: true, selectedCourseWorkId: '' })}
-            className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition"
+            className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:text-green-300 transition"
             aria-label={`Create new assignment for ${row.portalSection}`}
           >
             <Plus className="w-3 h-3" />
@@ -621,7 +621,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
         ) : (
           <div className="space-y-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg p-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-green-400 font-medium">New</span>
+              <span className="text-xs text-green-600 dark:text-green-400 font-medium">New</span>
               {items.length > 0 && (
                 <button
                   onClick={() => updateRow(row.portalSection, { createNew: false })}
@@ -674,7 +674,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
-            <Link className="w-5 h-5 text-green-400" aria-hidden="true" />
+            <Link className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">
               {isLinked && !addingSectionLinks ? 'Google Classroom Link' : 'Link to Google Classroom'}
             </h2>
@@ -694,7 +694,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
           {isNewLinked && !addingSectionLinks && assignment.classroomLinks && (
             <div className="space-y-4">
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2 text-green-400 text-sm font-medium mb-2">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium mb-2">
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
                   Linked Sections
                 </div>
@@ -721,7 +721,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                             <button
                               onClick={() => handleUnlinkSection(link.portalSection || link.courseId)}
                               disabled={unlinkingSection === (link.portalSection || link.courseId)}
-                              className="text-xs text-red-400 hover:text-red-300 transition disabled:opacity-50"
+                              className="text-xs text-red-600 dark:text-red-400 hover:text-red-300 transition disabled:opacity-50"
                               aria-label={`Unlink ${link.portalSection || link.courseName}`}
                             >
                               {unlinkingSection === (link.portalSection || link.courseId)
@@ -736,14 +736,14 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                 </table>
               </div>
               {generalError && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                   {generalError}
                 </div>
               )}
               <button
                 onClick={handleUnlinkAll}
                 disabled={unlinking}
-                className="w-full flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg px-4 py-2.5 transition bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg px-4 py-2.5 transition bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50"
                 aria-label="Unlink all sections from Classroom"
               >
                 {unlinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
@@ -758,7 +758,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
             return (
             <div className="space-y-4">
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-2">
-                <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium">
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
                   Currently Linked
                 </div>
@@ -772,13 +772,13 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                 </div>
               </div>
               {generalError && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                   {generalError}
                 </div>
               )}
               <button
                 onClick={() => { setAddingSectionLinks(true); acquireToken(); }}
-                className="w-full flex items-center justify-center gap-2 text-sm text-green-400 hover:text-green-300 border border-green-500/20 hover:border-green-500/40 rounded-lg px-4 py-2.5 transition bg-green-500/10 hover:bg-green-500/20"
+                className="w-full flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400 hover:text-green-300 border border-green-500/20 hover:border-green-500/40 rounded-lg px-4 py-2.5 transition bg-green-500/10 hover:bg-green-500/20"
                 aria-label="Add section links to Google Classroom"
               >
                 <Plus className="w-4 h-4" />
@@ -787,7 +787,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
               <button
                 onClick={handleUnlinkLegacy}
                 disabled={unlinking}
-                className="w-full flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg px-4 py-2.5 transition bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg px-4 py-2.5 transition bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50"
                 aria-label="Unlink from Google Classroom"
               >
                 {unlinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
@@ -808,7 +808,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
               )}
               {authError && (
                 <div className="space-y-3">
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm text-red-400">
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm text-red-600 dark:text-red-400">
                     {authError}
                   </div>
                   <button
@@ -841,7 +841,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                         Loading courses...
                       </div>
                     ) : coursesError ? (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                         {coursesError}
                       </div>
                     ) : (
@@ -911,7 +911,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
 
                   {/* General error */}
                   {generalError && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                       {generalError}
                     </div>
                   )}
@@ -953,11 +953,11 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                         Loading courses...
                       </div>
                     ) : coursesError ? (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                         {coursesError}
                       </div>
                     ) : visibleCourses.length === 0 ? (
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-400">
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600 dark:text-yellow-400">
                         No active courses found. {courses.length > 0 ? 'All courses are hidden — use Manage to restore them.' : 'No active courses in your Google Classroom account.'}
                       </div>
                     ) : (
@@ -995,7 +995,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                           Loading Classroom assignments...
                         </div>
                       ) : courseWorkError ? (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                           {courseWorkError}
                         </div>
                       ) : (
@@ -1021,7 +1021,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                           {!createNew ? (
                             <button
                               onClick={() => { setCreateNew(true); setSelectedCourseWorkId(null); }}
-                              className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300 transition"
+                              className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 hover:text-green-300 transition"
                               aria-label="Create new Classroom assignment"
                             >
                               <Plus className="w-3.5 h-3.5" />
@@ -1030,7 +1030,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
                           ) : (
                             <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-4 space-y-3">
                               <div className="flex items-center justify-between">
-                                <span className="text-xs text-green-400 font-medium">New Assignment</span>
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">New Assignment</span>
                                 {courseWork.length > 0 && (
                                   <button
                                     onClick={() => setCreateNew(false)}
@@ -1071,7 +1071,7 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
 
                   {/* Error display */}
                   {generalError && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
                       {generalError}
                     </div>
                   )}

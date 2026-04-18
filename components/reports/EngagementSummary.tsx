@@ -59,10 +59,10 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions, buck
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest print:text-gray-700">Engagement Summary</h3>
         <div className="flex items-center gap-1.5">
-          {stats.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-400" />}
-          {stats.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-400" />}
+          {stats.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />}
+          {stats.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />}
           {stats.trend === 'flat' && <Minus className="w-4 h-4 text-[var(--text-tertiary)]" />}
-          <span className={`text-xs font-bold ${stats.trend === 'up' ? 'text-green-400' : stats.trend === 'down' ? 'text-red-400' : 'text-[var(--text-tertiary)]'}`}>
+          <span className={`text-xs font-bold ${stats.trend === 'up' ? 'text-green-600 dark:text-green-400' : stats.trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-tertiary)]'}`}>
             {stats.trend === 'up' ? 'Trending Up' : stats.trend === 'down' ? 'Declining' : 'Stable'}
           </span>
         </div>
@@ -71,7 +71,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions, buck
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: 'Total Time', value: `${stats.totalTime}m`, icon: <Activity className="w-4 h-4 text-blue-400 print:text-blue-600" /> },
+          { label: 'Total Time', value: `${stats.totalTime}m`, icon: <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400 print:text-blue-600" /> },
           { label: 'Avg / Submission', value: `${stats.avgTime}m` },
           { label: 'Submissions', value: String(stats.totalSubs) },
           { label: 'Activity Days', value: String(stats.activityDays) },

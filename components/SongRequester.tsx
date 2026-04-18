@@ -62,7 +62,7 @@ const SongRequester: React.FC<SongRequesterProps> = ({ user }) => {
           >
             {submitted ? (
               <div className="p-8 text-center">
-                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-[var(--text-primary)]">Request sent! 🎵</h3>
                 <p className="text-sm text-[var(--text-tertiary)] mt-1">Your song has been added to the queue.</p>
               </div>
@@ -70,7 +70,7 @@ const SongRequester: React.FC<SongRequesterProps> = ({ user }) => {
               <>
                 <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
                   <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-                    <Music className="w-5 h-5 text-purple-400" /> Request a Song
+                    <Music className="w-5 h-5 text-purple-600 dark:text-purple-400" /> Request a Song
                   </h3>
                   <button onClick={() => setIsOpen(false)} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition min-w-[44px] min-h-[44px] flex items-center justify-center">
                     <X className="w-5 h-5" />

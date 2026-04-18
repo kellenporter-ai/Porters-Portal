@@ -11,13 +11,13 @@ interface StreakDisplayProps {
 }
 
 const MILESTONE_COLORS: Record<number, string> = {
-  3: 'text-blue-400',
-  7: 'text-green-400',
-  14: 'text-purple-400',
-  21: 'text-amber-400',
-  30: 'text-red-400',
-  50: 'text-pink-400',
-  100: 'text-cyan-400',
+  3: 'text-blue-600 dark:text-blue-400',
+  7: 'text-green-600 dark:text-green-400',
+  14: 'text-purple-600 dark:text-purple-400',
+  21: 'text-amber-600 dark:text-amber-400',
+  30: 'text-red-600 dark:text-red-400',
+  50: 'text-pink-600 dark:text-pink-400',
+  100: 'text-cyan-600 dark:text-cyan-400',
 };
 
 /** Ensure all numeric fields have safe defaults to prevent NaN rendering */
@@ -73,10 +73,10 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
 
   if (!streak) return null;
 
-  const flameIntensity = streak.currentStreak >= 30 ? 'text-red-400 animate-pulse'
-    : streak.currentStreak >= 14 ? 'text-orange-400'
-    : streak.currentStreak >= 7 ? 'text-amber-400'
-    : streak.currentStreak >= 3 ? 'text-yellow-400'
+  const flameIntensity = streak.currentStreak >= 30 ? 'text-red-600 dark:text-red-400 animate-pulse'
+    : streak.currentStreak >= 14 ? 'text-orange-600 dark:text-orange-400'
+    : streak.currentStreak >= 7 ? 'text-amber-600 dark:text-amber-400'
+    : streak.currentStreak >= 3 ? 'text-yellow-600 dark:text-yellow-400'
     : 'text-[var(--text-muted)]';
 
   if (compact) {
@@ -89,7 +89,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
         {streak.freezeTokens > 0 && (
           <div className="flex items-center gap-0.5 ml-1" title={`${streak.freezeTokens} streak freeze${streak.freezeTokens !== 1 ? 's' : ''}`}>
             {Array.from({ length: streak.freezeTokens }).map((_, i) => (
-              <Snowflake key={i} className="w-3 h-3 text-cyan-400" />
+              <Snowflake key={i} className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
             ))}
           </div>
         )}
@@ -137,7 +137,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
           </div>
           <div className="flex items-center gap-1" title={`${streak.freezeTokens} / ${streak.maxFreezeTokens} freeze tokens`}>
             {Array.from({ length: streak.maxFreezeTokens }).map((_, i) => (
-              <Snowflake key={i} className={`w-5 h-5 ${i < streak.freezeTokens ? 'text-cyan-400' : 'text-gray-700'}`} />
+              <Snowflake key={i} className={`w-5 h-5 ${i < streak.freezeTokens ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-700'}`} />
             ))}
           </div>
         </div>

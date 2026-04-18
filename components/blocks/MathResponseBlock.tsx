@@ -195,7 +195,7 @@ function renderLatex(latex: string): string {
   try {
     return katex.renderToString(latex, { throwOnError: false, displayMode: true });
   } catch {
-    return '<span class="text-red-400 text-xs">Could not render — check your expression</span>';
+    return '<span class="text-red-600 dark:text-red-400 text-xs">Could not render — check your expression</span>';
   }
 }
 
@@ -678,7 +678,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
       <div className="space-y-1">
         {block.title && (
           <div className="text-sm text-[var(--text-primary)] font-medium flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-purple-400 shrink-0" />
+            <Calculator className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
             <BlockText text={block.title} />
           </div>
         )}
@@ -703,7 +703,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                           key={li}
                           className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
                         >
-                          <span className={`text-[11.5px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <span className={`text-[11.5px] select-none ${isNote ? 'text-blue-600 dark:text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
                           <div
                             dangerouslySetInnerHTML={{
                               __html: renderLatex(line.trim()),
@@ -742,7 +742,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
                           key={li}
                           className={`katex-preview flex items-center gap-2 ${isNote ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}
                         >
-                          <span className={`text-[11.5px] select-none ${isNote ? 'text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
+                          <span className={`text-[11.5px] select-none ${isNote ? 'text-blue-600 dark:text-blue-400/60' : 'text-[var(--text-muted)]'}`}>{isNote ? '\u2014' : '\u2022'}</span>
                           <div
                             dangerouslySetInnerHTML={{
                               __html: renderLatex(line.trim()),
@@ -869,7 +869,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
         <button
           type="button"
           onClick={addStep}
-          className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 text-xs font-medium transition"
+          className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 hover:text-purple-300 text-xs font-medium transition"
         >
           <Plus className="w-3.5 h-3.5" />
           Add Step
@@ -987,7 +987,7 @@ const MathResponseBlock: React.FC<MathResponseBlockProps> = ({
           </button>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="text-xs text-green-400 font-bold">
+            <span className="text-xs text-green-600 dark:text-green-400 font-bold">
               Submitted
             </span>
             <button

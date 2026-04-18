@@ -167,7 +167,7 @@ const MCBlockEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
               className={`flex-1 ${inputClass}`}
             />
             {options.length > 2 && (
-              <button type="button" onClick={() => removeOption(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition">
+              <button type="button" onClick={() => removeOption(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
@@ -218,7 +218,7 @@ const ShortAnswerEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBloc
               className={`flex-1 ${inputClass}`}
             />
             {answers.length > 1 && (
-              <button type="button" onClick={() => removeAnswer(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition">
+              <button type="button" onClick={() => removeAnswer(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
@@ -275,7 +275,7 @@ const ChecklistEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
             <div className="w-5 h-5 rounded border-2 border-[var(--text-muted)] shrink-0" />
             <input type="text" value={item} onChange={e => updateItem(idx, e.target.value)} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
             {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition">
+              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
@@ -301,9 +301,9 @@ const InfoBoxEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
             onClick={() => onUpdate({ ...block, variant: v })}
             className={`px-3 py-1.5 rounded-lg border text-xs font-bold capitalize transition ${
               block.variant === v
-                ? v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-400'
-                  : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
-                  : 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                ? v === 'tip' ? 'bg-green-500/20 border-green-500/30 text-green-600 dark:text-green-400'
+                  : v === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                  : 'bg-blue-500/20 border-blue-500/30 text-blue-600 dark:text-blue-400'
                 : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -427,7 +427,7 @@ const ImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => 
               </div>
             )}
           </button>
-          {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+          {error && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{error}</p>}
         </div>
       )}
 
@@ -499,10 +499,10 @@ const ObjectivesEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock
         <label className={labelClass}>Objectives</label>
         {items.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-emerald-400 shrink-0" />
+            <Target className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
             <input type="text" value={item} onChange={e => updateItem(idx, e.target.value)} placeholder={`Objective ${idx + 1}`} className={`flex-1 ${inputClass}`} />
             {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
             )}
           </div>
         ))}
@@ -588,7 +588,7 @@ const VocabListEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
             <input type="text" value={t.definition} onChange={e => updateTerm(idx, 'definition', e.target.value)} placeholder="Definition" className={inputClass} />
           </div>
           {terms.length > 1 && (
-            <button type="button" onClick={() => removeTerm(idx)} className="p-1 mt-1.5 text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
+            <button type="button" onClick={() => removeTerm(idx)} className="p-1 mt-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
           )}
         </div>
       ))}
@@ -661,7 +661,7 @@ const SortingEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
               <option value="right">{block.rightLabel || 'Right'}</option>
             </select>
             {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
             )}
           </div>
         ))}
@@ -740,7 +740,7 @@ const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
               Editable
             </label>
             {columns.length > 1 && (
-              <button type="button" onClick={() => removeColumn(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => removeColumn(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
             )}
           </div>
         ))}
@@ -789,7 +789,7 @@ const RankingEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) =
             <span className="text-xs font-mono text-[var(--text-muted)] w-5 text-right shrink-0">{idx + 1}.</span>
             <input type="text" value={item} onChange={e => updateItem(idx, e.target.value)} placeholder={`Item ${idx + 1}`} className={`flex-1 ${inputClass}`} />
             {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => removeItem(idx)} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition"><Trash2 className="w-3.5 h-3.5" /></button>
             )}
           </div>
         ))}
@@ -832,7 +832,7 @@ const LinkedEditor: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onU
               className={`flex-1 ${inputClass}`}
             />
             {(block.acceptedAnswers || []).length > 1 && (
-              <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: (block.acceptedAnswers || []).filter((_, i) => i !== idx) })} className="p-1 text-red-400 hover:bg-red-500/10 rounded transition">
+              <button type="button" onClick={() => onUpdate({ ...block, acceptedAnswers: (block.acceptedAnswers || []).filter((_, i) => i !== idx) })} className="p-1 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded transition">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
@@ -931,7 +931,7 @@ const JsonImportModal: React.FC<{
       <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-400" />
+            <Upload className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <h3 className="text-lg font-bold text-[var(--text-primary)]">Import Blocks from JSON</h3>
           </div>
           <button onClick={onClose} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"><X className="w-5 h-5" /></button>
@@ -971,7 +971,7 @@ const JsonImportModal: React.FC<{
           />
 
           {error && (
-            <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl p-3">{error}</div>
+            <div className="text-xs text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl p-3">{error}</div>
           )}
         </div>
 
@@ -1205,7 +1205,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
               {draggedBlock && draggedTypeInfo ? (
                 <div className="bg-purple-900/60 border border-purple-500/40 rounded-2xl p-3 shadow-2xl backdrop-blur-md">
                   <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-purple-400" />
+                    <GripVertical className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     <span className="text-[var(--text-tertiary)]">{draggedTypeInfo.icon}</span>
                     <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">{draggedTypeInfo.label}</span>
                   </div>

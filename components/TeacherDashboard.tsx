@@ -197,8 +197,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
                   ? key === 'bugs' ? 'bg-red-600/30 text-red-300'
                     : key === 'songs' ? 'bg-amber-600/30 text-amber-300'
                     : 'bg-purple-600/30 text-purple-300'
-                  : key === 'bugs' ? 'bg-red-500/20 text-red-400'
-                    : key === 'songs' ? 'bg-amber-500/20 text-amber-400'
+                  : key === 'bugs' ? 'bg-red-500/20 text-red-600 dark:text-red-400'
+                    : key === 'songs' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                     : 'bg-[var(--surface-glass)] text-[var(--text-muted)]'
               }`}>
                 {count}

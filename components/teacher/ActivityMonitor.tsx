@@ -206,7 +206,7 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
           aria-pressed={onlineOnly}
           className={`px-3 py-2 rounded-xl text-sm font-bold border transition shrink-0 ${
             onlineOnly
-              ? 'bg-green-500/20 border-green-500/40 text-green-400'
+              ? 'bg-green-500/20 border-green-500/40 text-green-600 dark:text-green-400'
               : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >

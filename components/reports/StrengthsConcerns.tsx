@@ -69,14 +69,14 @@ const StrengthsConcerns: React.FC<StrengthsConcernsProps> = ({ submissions, buck
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Strengths */}
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 print:border-emerald-300 print:bg-emerald-50">
-          <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 print:text-emerald-700">
+          <h4 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 print:text-emerald-700">
             <CheckCircle className="w-4 h-4" /> Strengths
           </h4>
           {strengths.length > 0 ? (
             <ul className="space-y-2">
               {strengths.map((s, i) => (
                 <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
-                  <span className="text-emerald-400 print:text-emerald-600 mt-0.5 shrink-0">+</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 print:text-emerald-600 mt-0.5 shrink-0">+</span>
                   {s}
                 </li>
               ))}
@@ -88,14 +88,14 @@ const StrengthsConcerns: React.FC<StrengthsConcernsProps> = ({ submissions, buck
 
         {/* Concerns */}
         <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4 print:border-red-300 print:bg-red-50">
-          <h4 className="text-xs font-bold text-red-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 print:text-red-700">
+          <h4 className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 print:text-red-700">
             <AlertTriangle className="w-4 h-4" /> Areas of Concern
           </h4>
           {concerns.length > 0 ? (
             <ul className="space-y-2">
               {concerns.map((c, i) => (
                 <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
-                  <span className="text-red-400 print:text-red-600 mt-0.5 shrink-0">!</span>
+                  <span className="text-red-600 dark:text-red-400 print:text-red-600 mt-0.5 shrink-0">!</span>
                   {c}
                 </li>
               ))}

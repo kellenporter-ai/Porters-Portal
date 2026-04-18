@@ -66,7 +66,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
     <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <KeyRound className="w-5 h-5 text-emerald-400" />
+          <KeyRound className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
           Enrollment Codes
         </h3>
         <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition">
@@ -96,7 +96,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
       {activeCodes.length === 0 && !showCreate ? (
         <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
-            <KeyRound className="w-8 h-8 text-emerald-400" />
+            <KeyRound className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
           </div>
           <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Active Enrollment Codes</h3>
           <p className="text-sm text-[var(--text-muted)] mb-1">Enrollment codes let students join specific classes and sections without manual approval.</p>
@@ -110,7 +110,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
           {activeCodes.map(c => (
             <div key={c.id} className="flex items-center justify-between p-3 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl group hover:border-emerald-500/20 transition">
               <div className="flex items-center gap-4">
-                <code className="text-lg font-mono font-bold text-emerald-400 tracking-widest">{c.code}</code>
+                <code className="text-lg font-mono font-bold text-emerald-700 dark:text-emerald-400 tracking-widest">{c.code}</code>
                 <span className="text-xs text-[var(--text-muted)]">{c.classType}</span>
                 {c.section && <span className="text-[11.5px] bg-[var(--accent-muted)] text-[var(--accent-text)] px-2 py-0.5 rounded">{c.section}</span>}
               </div>
@@ -119,7 +119,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
                   {c.usedCount} used{c.maxUses ? ` / ${c.maxUses}` : ''}
                 </span>
                 <button onClick={() => handleCopy(c.code, c.id)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" title="Copy code">
-                  {copiedId === c.id ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedId === c.id ? <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
                 <button onClick={() => handleDeactivate(c.id)} className="p-1.5 text-[var(--text-muted)] hover:text-red-400 transition" title="Deactivate">
                   <Ban className="w-3.5 h-3.5" />

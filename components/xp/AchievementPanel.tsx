@@ -39,7 +39,7 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-400" /> Achievements
+          <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" /> Achievements
         </h3>
         <span className="text-sm text-[var(--text-tertiary)]">
           {totalUnlocked}/{totalAchievements} unlocked
@@ -92,7 +92,7 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-bold ${isUnlocked ? 'text-yellow-400' : 'text-[var(--text-tertiary)]'}`}>
+                        <span className={`text-sm font-bold ${isUnlocked ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-tertiary)]'}`}>
                           {achievement.title}
                         </span>
                         {achievement.isSecret && !isUnlocked && <Lock className="w-3 h-3 text-gray-600" />}

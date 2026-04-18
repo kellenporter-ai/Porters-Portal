@@ -43,10 +43,10 @@ export const isTrivialAttempt = (s: Submission): boolean => {
 };
 
 export const getScoreColor = (pct: number): string =>
-  pct >= 80 ? 'text-green-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400';
+  pct >= 80 ? 'text-green-600 dark:text-green-400' : pct >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
 
 export const getTabSwitchColor = (count: number): string =>
-  count > 5 ? 'text-red-400' : count >= 3 ? 'text-yellow-400' : 'text-green-400';
+  count > 5 ? 'text-red-600 dark:text-red-400' : count >= 3 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400';
 
 export const computeTotalTime = (sub: Submission): number => {
   if (sub.submittedAt && sub.metrics?.startTime) {

@@ -123,7 +123,7 @@ export const StudentFeedbackFeed: React.FC<StudentFeedbackFeedProps> = ({
           </div>
         ) : error ? (
           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
           </div>
         ) : feedbackHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -175,7 +175,7 @@ export const StudentFeedbackFeed: React.FC<StudentFeedbackFeedProps> = ({
                     {/* Read status badge */}
                     <div className="flex items-center gap-1.5">
                       <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${
-                        isUnread ? 'text-purple-400' : 'text-[var(--text-muted)]'
+                        isUnread ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)]'
                       }`} aria-hidden="true" />
                       <span className={`text-[11.5px] font-medium px-1.5 py-0.5 rounded-full ${
                         readStatus === 'Unread'

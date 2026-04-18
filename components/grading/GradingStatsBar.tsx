@@ -61,7 +61,7 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
       {hasRubric && (
         <>
           <span>
-            <strong className={gradedCount === totalStudents && totalStudents > 0 ? 'text-green-400' : 'text-[var(--text-primary)]'}>
+            <strong className={gradedCount === totalStudents && totalStudents > 0 ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-primary)]'}>
               {gradedCount}/{totalStudents}
             </strong>{' '}
             <span className="text-[var(--text-tertiary)]">graded</span>
@@ -72,7 +72,7 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
       {flaggedCount > 0 && (
         <>
           <span>
-            <strong className="text-amber-400">{flaggedCount}</strong>{' '}
+            <strong className="text-amber-600 dark:text-amber-400">{flaggedCount}</strong>{' '}
             <span className="text-[var(--text-tertiary)]">flagged</span>
           </span>
           <Dot />
@@ -81,7 +81,7 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
       {aiFlaggedCount > 0 && (
         <>
           <span>
-            <strong className="text-purple-400">{aiFlaggedCount}</strong>{' '}
+            <strong className="text-purple-600 dark:text-purple-400">{aiFlaggedCount}</strong>{' '}
             <span className="text-[var(--text-tertiary)]">AI flagged</span>
           </span>
           <Dot />
@@ -90,7 +90,7 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
       {aiSuggestedCount > 0 && (
         <>
           <span>
-            <strong className="text-amber-400">{aiSuggestedCount}</strong>{' '}
+            <strong className="text-amber-600 dark:text-amber-400">{aiSuggestedCount}</strong>{' '}
             <span className="text-[var(--text-tertiary)]">AI suggested</span>
           </span>
           <Dot />
@@ -99,14 +99,14 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
       {hasDraftCount > 0 && (
         <>
           <span>
-            <strong className="text-cyan-400">{hasDraftCount}</strong>{' '}
+            <strong className="text-cyan-600 dark:text-cyan-400">{hasDraftCount}</strong>{' '}
             <span className="text-[var(--text-tertiary)]">draft</span>
           </span>
           <Dot />
         </>
       )}
       <span>
-        <strong className={notStartedCount > 0 ? 'text-orange-400' : 'text-[var(--text-primary)]'}>{notStartedCount}</strong>{' '}
+        <strong className={notStartedCount > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-[var(--text-primary)]'}>{notStartedCount}</strong>{' '}
         <span className="text-[var(--text-tertiary)]">not started</span>
       </span>
 
@@ -159,7 +159,7 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
           <button
             onClick={onClassroomPush}
             disabled={pushingToClassroom}
-            className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 border border-green-500/20 hover:border-green-500/40 rounded-lg px-2.5 py-1.5 transition bg-green-500/10 hover:bg-green-500/20 disabled:opacity-50"
+            className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:text-green-300 border border-green-500/20 hover:border-green-500/40 rounded-lg px-2.5 py-1.5 transition bg-green-500/10 hover:bg-green-500/20 disabled:opacity-50"
             aria-label="Push grades to Google Classroom"
           >
             {pushingToClassroom ? (

@@ -17,10 +17,10 @@ const RARITIES: ItemRarity[] = ['COMMON', 'UNCOMMON', 'RARE', 'UNIQUE'];
 const STAT_KEYS = ['tech', 'focus', 'analysis', 'charisma'] as const;
 
 const STAT_COLORS: Record<string, { bar: string; text: string }> = {
-    tech: { bar: 'bg-cyan-500', text: 'text-cyan-400' },
-    focus: { bar: 'bg-purple-500', text: 'text-purple-400' },
-    analysis: { bar: 'bg-yellow-500', text: 'text-yellow-400' },
-    charisma: { bar: 'bg-rose-500', text: 'text-rose-400' },
+    tech: { bar: 'bg-cyan-500', text: 'text-cyan-600 dark:text-cyan-400' },
+    focus: { bar: 'bg-purple-500', text: 'text-purple-600 dark:text-purple-400' },
+    analysis: { bar: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400' },
+    charisma: { bar: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
 };
 
 const VISUAL_IDS: Record<string, string[]> = {
@@ -177,17 +177,17 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                                             className="w-16 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] text-center focus:outline-none focus:border-cyan-500/50"
                                             onKeyDown={e => e.key === 'Enter' && handleGrantFluxCustom()}
                                         />
-                                        <button onClick={handleGrantFluxCustom} className="p-1.5 bg-cyan-500/10 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition" title="Apply"><Plus className="w-3.5 h-3.5" /></button>
+                                        <button onClick={handleGrantFluxCustom} className="p-1.5 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition" title="Apply"><Plus className="w-3.5 h-3.5" /></button>
                                     </div>
                                 </div>
                             </div>
                             <div className="bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] p-3 text-center min-w-[90px]">
                                 <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Gear Score</div>
-                                <div className="text-2xl font-black text-amber-400">{gearScore}</div>
+                                <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{gearScore}</div>
                             </div>
                             <div className="bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] p-3 text-center min-w-[70px]">
                                 <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Skill Pts</div>
-                                <div className="text-2xl font-black text-emerald-400">{user.gamification?.skillPoints || 0}</div>
+                                <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{user.gamification?.skillPoints || 0}</div>
                             </div>
                         </div>
 
@@ -513,10 +513,10 @@ const ItemDetailPanel: React.FC<{
                 </div>
                 <div className="flex gap-1 shrink-0">
                     {onDuplicate && (
-                        <button onClick={onDuplicate} className="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition cursor-pointer" title="Duplicate to inventory"><Copy className="w-3.5 h-3.5" /></button>
+                        <button onClick={onDuplicate} className="p-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-500/20 transition cursor-pointer" title="Duplicate to inventory"><Copy className="w-3.5 h-3.5" /></button>
                     )}
-                    <button onClick={onEdit} className="p-1.5 bg-amber-500/10 text-amber-400 rounded-lg hover:bg-amber-500/20 transition cursor-pointer" title="Edit item"><Edit3 className="w-3.5 h-3.5" /></button>
-                    <button onClick={onDelete} className="p-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition cursor-pointer" title="Delete item"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={onEdit} className="p-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-500/20 transition cursor-pointer" title="Edit item"><Edit3 className="w-3.5 h-3.5" /></button>
+                    <button onClick={onDelete} className="p-1.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-500/20 transition cursor-pointer" title="Delete item"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
             </div>
 
@@ -537,7 +537,7 @@ const ItemDetailPanel: React.FC<{
                     <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Affixes</div>
                     {item.affixes.map((a, i) => (
                         <div key={i} className="flex items-center gap-2 text-[11.5px]">
-                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${a.type === 'PREFIX' ? 'bg-blue-500/10 text-blue-400' : a.type === 'SUFFIX' ? 'bg-purple-500/10 text-purple-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${a.type === 'PREFIX' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : a.type === 'SUFFIX' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-orange-500/10 text-orange-600 dark:text-orange-400'}`}>
                                 {a.type}
                             </span>
                             <span className="text-[var(--text-primary)] font-bold">{a.name}</span>
@@ -554,7 +554,7 @@ const ItemDetailPanel: React.FC<{
                     <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Special Effects</div>
                     {item.effects.map(eff => (
                         <div key={eff.id} className="flex items-center gap-2 text-[11.5px]">
-                            <Sparkles className="w-3 h-3 text-orange-400" />
+                            <Sparkles className="w-3 h-3 text-orange-600 dark:text-orange-400" />
                             <span className="text-orange-300 font-bold">{eff.name}</span>
                             <span className="text-[var(--text-tertiary)]">{eff.description}</span>
                         </div>
@@ -685,7 +685,7 @@ const ItemEditorPanel: React.FC<{
             <div>
                 <div className="flex items-center justify-between mb-1">
                     <label className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Affixes</label>
-                    <button onClick={addAffix} className="text-[11.5px] text-emerald-400 hover:text-emerald-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
+                    <button onClick={addAffix} className="text-[11.5px] text-emerald-700 dark:text-emerald-400 hover:text-emerald-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
                 </div>
                 {item.affixes.map((a, i) => (
                     <div key={i} className="flex items-center gap-1.5 mb-1">
@@ -700,7 +700,7 @@ const ItemEditorPanel: React.FC<{
                         </select>
                         <input type="number" value={a.value} onChange={e => updateAffix(i, { value: parseInt(e.target.value) || 0 })} className="w-12 bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[11.5px] text-white text-center focus:outline-none" />
                         <input type="number" value={a.tier} onChange={e => updateAffix(i, { tier: parseInt(e.target.value) || 1 })} className="w-10 bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[11.5px] text-white text-center focus:outline-none" placeholder="T" />
-                        <button onClick={() => removeAffix(i)} className="p-0.5 text-red-400 hover:text-red-300 cursor-pointer"><X className="w-3 h-3" /></button>
+                        <button onClick={() => removeAffix(i)} className="p-0.5 text-red-600 dark:text-red-400 hover:text-red-300 cursor-pointer"><X className="w-3 h-3" /></button>
                     </div>
                 ))}
             </div>
@@ -709,7 +709,7 @@ const ItemEditorPanel: React.FC<{
             <div>
                 <div className="flex items-center justify-between mb-1">
                     <label className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Effects</label>
-                    <button onClick={addEffect} className="text-[11.5px] text-orange-400 hover:text-orange-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
+                    <button onClick={addEffect} className="text-[11.5px] text-orange-600 dark:text-orange-400 hover:text-orange-300 transition flex items-center gap-0.5 cursor-pointer"><Plus className="w-3 h-3" /> Add</button>
                 </div>
                 {(item.effects || []).map((eff, i) => (
                     <div key={i} className="flex items-center gap-1.5 mb-1">
@@ -720,7 +720,7 @@ const ItemEditorPanel: React.FC<{
                             <option value="XP_BOOST">XP_BOOST</option>
                             <option value="STAT_BOOST">STAT_BOOST</option>
                         </select>
-                        <button onClick={() => removeEffect(i)} className="p-0.5 text-red-400 hover:text-red-300 cursor-pointer"><X className="w-3 h-3" /></button>
+                        <button onClick={() => removeEffect(i)} className="p-0.5 text-red-600 dark:text-red-400 hover:text-red-300 cursor-pointer"><X className="w-3 h-3" /></button>
                     </div>
                 ))}
             </div>
@@ -770,7 +770,7 @@ const CustomItemLibraryPanel: React.FC<{
     return (
         <div className="rounded-xl border border-amber-500/20 bg-amber-900/10 p-3 space-y-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-[11.5px] font-bold text-amber-400 uppercase tracking-widest">Custom Item Library</h4>
+                <h4 className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Custom Item Library</h4>
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-40 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11.5px] text-[var(--text-primary)] focus:outline-none focus:border-amber-500/50" />
             </div>
             <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
@@ -784,7 +784,7 @@ const CustomItemLibraryPanel: React.FC<{
                             {Object.entries(item.stats).filter(([, v]) => v).map(([k, v]) => (
                                 <div key={k} className={`text-[8px] ${STAT_COLORS[k]?.text || 'text-[var(--text-tertiary)]'}`}>+{v} {k}</div>
                             ))}
-                            <button onClick={() => onGrant(item)} className="mt-auto text-[8px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-2 py-1 hover:bg-emerald-500/20 transition cursor-pointer">
+                            <button onClick={() => onGrant(item)} className="mt-auto text-[8px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded px-2 py-1 hover:bg-emerald-500/20 transition cursor-pointer">
                                 Grant
                             </button>
                         </div>

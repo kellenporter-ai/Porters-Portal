@@ -88,14 +88,14 @@ const BehavioralIndicators: React.FC<BehavioralIndicatorsProps> = ({ submissions
   }
 
   const colorMap = {
-    good: { text: 'text-emerald-400 print:text-emerald-600', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
-    warning: { text: 'text-yellow-400 print:text-yellow-600', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', dot: 'bg-yellow-500' },
-    danger: { text: 'text-red-400 print:text-red-600', bg: 'bg-red-500/10', border: 'border-red-500/20', dot: 'bg-red-500' },
+    good: { text: 'text-emerald-700 dark:text-emerald-400 print:text-emerald-600', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+    warning: { text: 'text-yellow-600 dark:text-yellow-400 print:text-yellow-600', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', dot: 'bg-yellow-500' },
+    danger: { text: 'text-red-600 dark:text-red-400 print:text-red-600', bg: 'bg-red-500/10', border: 'border-red-500/20', dot: 'bg-red-500' },
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest print:text-gray-700">Behavioral Indicators</h3>
+      <h3 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest print:text-gray-700">Behavioral Indicators</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {indicators.map(ind => {
           const colors = colorMap[ind.level as keyof typeof colorMap];

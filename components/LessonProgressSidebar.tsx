@@ -130,7 +130,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-[11px] font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-[var(--text-primary)]'}`}>
+            <span className={`text-[11px] font-black ${safePercent === 100 ? 'text-emerald-700 dark:text-emerald-400' : 'text-[var(--text-primary)]'}`}>
               {safePercent}
             </span>
           </div>
@@ -191,7 +191,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-sm font-black ${safePercent === 100 ? 'text-emerald-400' : 'text-[var(--text-primary)]'}`}>
+            <span className={`text-sm font-black ${safePercent === 100 ? 'text-emerald-700 dark:text-emerald-400' : 'text-[var(--text-primary)]'}`}>
               {safePercent}%
             </span>
           </div>
@@ -201,7 +201,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
         </div>
         <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
           <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {minutes}:{String(seconds).padStart(2, '0')}</span>
-          {xpEarned > 0 && <span className="text-amber-400">+{xpEarned}</span>}
+          {xpEarned > 0 && <span className="text-amber-600 dark:text-amber-400">+{xpEarned}</span>}
         </div>
       </div>
 
@@ -238,15 +238,15 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
                 isCurrent
                   ? 'bg-purple-500/20 text-purple-300'
                   : isComplete
-                  ? 'text-emerald-400/70 hover:bg-emerald-500/10'
+                  ? 'text-emerald-700 dark:text-emerald-400/70 hover:bg-emerald-500/10'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'
               }`}
             >
               <span className="shrink-0 w-3.5 h-3.5 flex items-center justify-center">
                 {isComplete ? (
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <CheckCircle2 className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                 ) : (
-                  <span className={isCurrent ? 'text-purple-400' : 'text-[var(--text-muted)]'}>
+                  <span className={isCurrent ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)]'}>
                     {BLOCK_TYPE_ICON[block.type] || <FileText className="w-3 h-3" />}
                   </span>
                 )}
@@ -255,7 +255,7 @@ const LessonProgressSidebar: React.FC<LessonProgressSidebarProps> = ({
                 {BLOCK_TYPE_LABEL[block.type] || block.type}
               </span>
               {isXP && !isComplete && (
-                <Star className="w-2.5 h-2.5 text-amber-400/60 shrink-0" />
+                <Star className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400/60 shrink-0" />
               )}
             </button>
           );

@@ -197,18 +197,18 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <label className="text-[11.5px] font-bold text-[var(--accent-text)] uppercase tracking-widest">Questions ({bankForm.questions.length})</label>
             <div className="flex items-center gap-2">
-              <label className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
+              <label className="text-xs bg-blue-600/20 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
                 <Upload className="w-3 h-3" /> Import JSON
                 <input ref={bankFileRef} type="file" accept=".json,.txt" onChange={handleImportBankQuestions} className="hidden" />
               </label>
-              <button type="button" onClick={addQuestion} className="text-xs bg-purple-600/20 text-purple-400 px-3 py-1 rounded-lg hover:bg-purple-600/30 transition font-bold flex items-center gap-1">
+              <button type="button" onClick={addQuestion} className="text-xs bg-purple-600/20 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-lg hover:bg-purple-600/30 transition font-bold flex items-center gap-1">
                 <Plus className="w-3 h-3" /> Add Manual
               </button>
             </div>
           </div>
 
           {bankImportError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-400 flex items-center gap-2 mb-3">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-600 dark:text-red-400 flex items-center gap-2 mb-3">
               <X className="w-4 h-4 flex-shrink-0" /> {bankImportError}
               <button type="button" onClick={() => setBankImportError(null)} className="ml-auto text-red-500 hover:text-red-300"><X className="w-3 h-3" /></button>
             </div>
@@ -234,7 +234,7 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
                 {q.options.map((opt, optIdx) => (
                   <div key={optIdx} className="flex items-center gap-1.5">
                     <button type="button" onClick={() => updateQuestionField(qIdx, 'correctAnswer', optIdx)}
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${q.correctAnswer === optIdx ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-gray-600 text-transparent hover:border-gray-400'}`}>
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${q.correctAnswer === optIdx ? 'border-green-500 bg-green-500/20 text-green-600 dark:text-green-400' : 'border-gray-600 text-transparent hover:border-gray-400'}`}>
                       <Check className="w-2.5 h-2.5" />
                     </button>
                     <input value={opt} onChange={e => updateOption(qIdx, optIdx, e.target.value)}

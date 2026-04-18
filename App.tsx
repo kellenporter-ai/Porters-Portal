@@ -88,7 +88,7 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
 
         <div className="bg-[var(--surface-sunken)] border border-[var(--border)] rounded-2xl p-6 mb-6 text-left">
           <label className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] mb-3">
-            <KeyRound className="w-4 h-4 text-emerald-400" />
+            <KeyRound className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
             Have an enrollment code?
           </label>
           <div className="flex gap-2">
@@ -98,7 +98,7 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
               onChange={e => handleCodeChange(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
               placeholder="XXXX-XXXX"
-              className="flex-1 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-4 py-3 text-center text-lg font-mono font-bold text-emerald-400 tracking-[0.2em] placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50 transition"
+              className="flex-1 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-4 py-3 text-center text-lg font-mono font-bold text-emerald-700 dark:text-emerald-400 tracking-[0.2em] placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50 transition"
               maxLength={9}
               disabled={isRedeeming || !!success}
             />
@@ -114,9 +114,9 @@ const AccessPendingScreen: React.FC<{ userName: string; userId: string; onLogout
           {!error && !success && code.length > 0 && code.replace('-', '').length < 4 && (
             <p className="mt-2 text-xs text-[var(--text-muted)]">Enter the full code from your teacher (4-8 characters)</p>
           )}
-          {error && <p className="mt-3 text-sm text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">{error}</p>}
+          {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">{error}</p>}
           {success && (
-            <p className="mt-3 text-sm text-emerald-400 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+            <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <CheckCircle className="w-4 h-4" /> {success}
             </p>
           )}

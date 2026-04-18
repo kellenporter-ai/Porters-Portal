@@ -72,9 +72,9 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const { variant = 'danger' } = state.options;
     const variantStyles = {
-        danger: { bg: 'bg-red-600 hover:bg-red-500', icon: 'text-red-400', border: 'border-red-500/30' },
-        warning: { bg: 'bg-amber-600 hover:bg-amber-500', icon: 'text-amber-400', border: 'border-amber-500/30' },
-        info: { bg: 'bg-purple-600 hover:bg-purple-500', icon: 'text-purple-400', border: 'border-purple-500/30' },
+        danger: { bg: 'bg-red-600 hover:bg-red-500', icon: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
+        warning: { bg: 'bg-amber-600 hover:bg-amber-500', icon: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
+        info: { bg: 'bg-purple-600 hover:bg-purple-500', icon: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/30' },
     }[variant];
 
     return (

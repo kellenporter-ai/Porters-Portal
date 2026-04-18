@@ -280,7 +280,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               {!isDragging && (
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
                   <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
-                  <div className="text-[11.5px] text-gray-400 font-mono">{item.rarity} {slot}</div>
+                  <div className="text-[11.5px] text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {slot}</div>
                   <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
                 </div>
@@ -410,7 +410,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     e.stopPropagation();
                     setShowCustomize(true);
                   }}
-                  className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[11.5px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
+                  className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-600 dark:text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[11.5px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
                 >
                   <UserIcon className="w-3.5 h-3.5" />
                   Edit DNA Profile
@@ -428,47 +428,47 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Tech</span>
-                    <span className="text-[11px] text-blue-400 font-bold">{playerStats.tech}</span>
+                    <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{playerStats.tech}</span>
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
-                      <span className="font-bold text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
+                      <span className="font-bold text-blue-600 dark:text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Focus</span>
-                    <span className="text-[11px] text-green-400 font-bold">{playerStats.focus}</span>
+                    <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">{playerStats.focus}</span>
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
-                      <span className="font-bold text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% · Crit damage: {combat.critMultiplier.toFixed(2)}x
+                      <span className="font-bold text-green-600 dark:text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% · Crit damage: {combat.critMultiplier.toFixed(2)}x
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Analysis</span>
-                    <span className="text-[11px] text-yellow-400 font-bold">{playerStats.analysis}</span>
+                    <span className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold">{playerStats.analysis}</span>
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
-                      <span className="font-bold text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
+                      <span className="font-bold text-yellow-600 dark:text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Charisma</span>
-                    <span className="text-[11px] text-purple-400 font-bold">{playerStats.charisma}</span>
+                    <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{playerStats.charisma}</span>
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
-                      <span className="font-bold text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
+                      <span className="font-bold text-purple-600 dark:text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
                     </div>
                   </div>
                   <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">HP</span>
-                    <span className="text-[11px] text-emerald-400 font-bold">{combat.maxHp}</span>
+                    <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">{combat.maxHp}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Armor</span>
-                    <span className="text-[11px] text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
+                    <span className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Crit</span>
-                    <span className="text-[11px] text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span>
+                    <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span>
                   </div>
                 </div>
               );
@@ -628,7 +628,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                 {gems.map(gem => (
                   <div key={gem.id} className="flex items-center gap-1 bg-black/30 rounded-md px-2 py-1 border border-[var(--border)]">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: gem.color }} />
-                    <span className="text-[11.5px] text-gray-400">{gem.name}</span>
+                    <span className="text-[11.5px] text-gray-600 dark:text-gray-400">{gem.name}</span>
                     <span className="text-[11.5px] font-bold" style={{ color: gem.color }}>+{gem.value} {gem.stat.slice(0, 3).toUpperCase()}</span>
                   </div>
                 ))}
@@ -643,7 +643,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
         <button
           type="button"
           onClick={() => setCodexOpen(!codexOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors"
         >
           Runeword Codex
           {codexOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -665,7 +665,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-[11px] font-bold ${isActive ? 'text-amber-300' : 'text-gray-300'}`}>{rw.name}</span>
                     {isActive && (
-                      <span className="text-[8px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">ACTIVE</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">ACTIVE</span>
                     )}
                     <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{rw.requiredSockets}s</span>
                   </div>
@@ -744,7 +744,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
     >
       {/* Header row: title + drag hint */}
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+        <h4 className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">
           Gear Storage ({filteredInventory.length})
         </h4>
         <span className="text-[11.5px] text-[var(--text-tertiary)] flex items-center gap-1">
@@ -829,7 +829,7 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
       {!isDragging && (
         <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
           <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
-          <div className="text-[11.5px] text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
+          <div className="text-[11.5px] text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
           <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
         </div>

@@ -51,7 +51,7 @@ const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
       <label className="block text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 px-1">Enrollment</label>
       <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)]">
         <label className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)] mb-2">
-          <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+          <KeyRound className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
           Join Another Class
         </label>
         <div className="flex gap-2">
@@ -61,7 +61,7 @@ const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
             onChange={e => handleCodeChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !isRedeeming) handleRedeem(); }}
             placeholder="XXXX-XXXX"
-            className="flex-1 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-400 tracking-widest placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
+            className="flex-1 bg-[var(--surface-sunken)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-700 dark:text-emerald-400 tracking-widest placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-purple-400 transition"
             maxLength={9}
             disabled={isRedeeming}
           />
@@ -73,9 +73,9 @@ const JoinClassSection: React.FC<{ userId: string }> = ({ userId }) => {
             {isRedeeming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Join'}
           </button>
         </div>
-        {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+        {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
         {success && (
-          <p className="mt-2 text-xs text-emerald-400 flex items-center gap-1.5">
+          <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
             <CheckCircle className="w-3.5 h-3.5" /> {success}
           </p>
         )}
@@ -164,7 +164,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
   }) => (
     <div className="flex items-center justify-between p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)] hover:border-[var(--border-accent)] transition">
       <div className="flex items-start gap-4">
-        <div className={`p-2 rounded-xl ${value ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>
+        <div className={`p-2 rounded-xl ${value ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>
           <Icon className="w-5 h-5" />
         </div>
         <div>
@@ -242,10 +242,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
               <div className="p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)]">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-[var(--text-secondary)] flex items-center gap-2">
-                    <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                    <Volume2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                     Master Volume
                   </label>
-                  <span className="text-xs font-mono text-purple-400">{Math.round((localSettings.soundVolume ?? 0.5) * 100)}%</span>
+                  <span className="text-xs font-mono text-purple-600 dark:text-purple-400">{Math.round((localSettings.soundVolume ?? 0.5) * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -270,7 +270,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, user, on
             {isPushSupported() ? (
               <div className="flex items-center justify-between p-4 bg-[var(--surface-glass)] rounded-2xl border border-[var(--border)] hover:border-[var(--border-accent)] transition">
                 <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-xl ${localSettings.pushNotifications ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>
+                  <div className={`p-2 rounded-xl ${localSettings.pushNotifications ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>
                     <BellRing className="w-5 h-5" />
                   </div>
                   <div>

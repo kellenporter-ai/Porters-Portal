@@ -25,10 +25,10 @@ export const useToast = (): ToastContextType => {
 };
 
 const ICONS: Record<ToastType, React.ReactNode> = {
-    success: <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />,
-    error: <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />,
-    info: <Info className="w-5 h-5 text-blue-400 shrink-0" />,
-    warning: <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />,
+    success: <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />,
+    error: <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />,
+    info: <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />,
+    warning: <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />,
 };
 
 const STYLES: Record<ToastType, string> = {

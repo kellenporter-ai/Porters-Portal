@@ -292,7 +292,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                     onClick={() => setCollapsedClasses(prev => { const n = new Set(prev); n.has(cls) ? n.delete(cls) : n.add(cls); return n; })}
                     className="w-full flex items-center gap-2 px-2 py-2 text-left hover:bg-purple-500/10 rounded-lg transition cursor-pointer"
                   >
-                    {isClassCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-purple-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
+                    {isClassCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />}
                     <span className="text-[11px] font-bold text-purple-300 truncate flex-1">{cls}</span>
                     <span className="text-[11.5px] text-purple-500/70 font-mono shrink-0">{total}</span>
                   </button>
@@ -340,28 +340,28 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                     onClick={() => onSelectResource(a.id)}
                                     className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}
                                   >
-                                    {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                                    {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                                     <span className="truncate flex-1">{a.title}</span>
-                                    {a.status === AssignmentStatus.ACTIVE && <span title="Visible to students" className="shrink-0 flex items-center"><Eye className="w-2.5 h-2.5 text-emerald-400/60" /></span>}
+                                    {a.status === AssignmentStatus.ACTIVE && <span title="Visible to students" className="shrink-0 flex items-center"><Eye className="w-2.5 h-2.5 text-emerald-700 dark:text-emerald-400/60" /></span>}
                                     <div className="flex items-center gap-1 shrink-0">
                                       {a.dueDate && (
-                                        <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                                        <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-600 dark:text-red-400' : diff <= 2 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                                           due {formatDueCompact(a.dueDate)}
                                         </span>
                                       )}
-                                      {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
-                                      {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
+                                      {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-600 dark:text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
+                                      {isNew && <span className="text-[7px] bg-green-500/20 text-green-600 dark:text-green-400 px-1 rounded font-bold">NEW</span>}
                                       {compactDate && <span className="text-[8px] text-[var(--text-muted)] font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
                                       {wasEdited && (
                                         <span className="text-[7px] text-[var(--text-muted)] font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                                           edited
                                         </span>
                                       )}
-                                      {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
-                                      {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
-                                      {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
+                                      {hasBlocks && <span className="text-[8px] text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
+                                      {hasHtml && <span className="text-[8px] text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
+                                      {isDraft && <span className="text-[8px] text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
                                       {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
-                                      {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
+                                      {isScheduled && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
                                     </div>
                                   </button>
                                   {isHovered && (
@@ -483,28 +483,28 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                         onClick={() => onSelectResource(a.id)}
                         className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] cursor-pointer ${selectedId === a.id ? 'text-purple-300' : a.isAssessment ? 'text-red-300 hover:text-red-200' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}
                       >
-                        {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
+                        {a.isAssessment ? <Shield className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" /> : catIcon ? <span className="shrink-0 text-[var(--text-muted)]">{catIcon}</span> : <Layers className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate flex-1">{a.title}</span>
-                        {a.status === AssignmentStatus.ACTIVE && <span title="Visible to students" className="shrink-0 flex items-center"><Eye className="w-2.5 h-2.5 text-emerald-400/60" /></span>}
+                        {a.status === AssignmentStatus.ACTIVE && <span title="Visible to students" className="shrink-0 flex items-center"><Eye className="w-2.5 h-2.5 text-emerald-700 dark:text-emerald-400/60" /></span>}
                         <div className="flex items-center gap-1 shrink-0">
                           {a.dueDate && (
-                            <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-400' : diff <= 2 ? 'text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+                            <span className={`text-[8px] font-mono ${(() => { const d = new Date(a.dueDate); const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)); return diff < 0 ? 'text-red-600 dark:text-red-400' : diff <= 2 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]'; })()}`} title={new Date(a.dueDate).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                               due {formatDueCompact(a.dueDate)}
                             </span>
                           )}
-                          {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
-                          {isNew && <span className="text-[7px] bg-green-500/20 text-green-400 px-1 rounded font-bold">NEW</span>}
+                          {a.isAssessment && <span className="text-[7px] bg-red-500/20 text-red-600 dark:text-red-400 px-1 rounded font-bold border border-red-500/30">ASSESS</span>}
+                          {isNew && <span className="text-[7px] bg-green-500/20 text-green-600 dark:text-green-400 px-1 rounded font-bold">NEW</span>}
                           {compactDate && <span className="text-[8px] text-[var(--text-muted)] font-mono" title={new Date(a.createdAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>{compactDate}</span>}
                           {wasEdited && (
                             <span className="text-[7px] text-[var(--text-muted)] font-mono" title={`Last edited ${new Date(a.updatedAt!).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                               edited
                             </span>
                           )}
-                          {hasBlocks && <span className="text-[8px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
-                          {hasHtml && <span className="text-[8px] text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
-                          {isDraft && <span className="text-[8px] text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
+                          {hasBlocks && <span className="text-[8px] text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
+                          {hasHtml && <span className="text-[8px] text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
+                          {isDraft && <span className="text-[8px] text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
                           {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
-                          {isScheduled && <span className="text-[8px] text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
+                          {isScheduled && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
                         </div>
                       </button>
                       {isHovered && (

@@ -19,10 +19,10 @@ interface PlayerInspectModalProps {
 }
 
 const STAT_LABELS = [
-  { key: 'tech', label: 'Tech', color: 'text-blue-400', icon: '💻' },
-  { key: 'focus', label: 'Focus', color: 'text-green-400', icon: '🧘' },
-  { key: 'analysis', label: 'Analysis', color: 'text-yellow-400', icon: '🔬' },
-  { key: 'charisma', label: 'Charisma', color: 'text-purple-400', icon: '🎤' },
+  { key: 'tech', label: 'Tech', color: 'text-blue-600 dark:text-blue-400', icon: '💻' },
+  { key: 'focus', label: 'Focus', color: 'text-green-600 dark:text-green-400', icon: '🧘' },
+  { key: 'analysis', label: 'Analysis', color: 'text-yellow-600 dark:text-yellow-400', icon: '🔬' },
+  { key: 'charisma', label: 'Charisma', color: 'text-purple-600 dark:text-purple-400', icon: '🎤' },
 ];
 
 const SLOT_ORDER: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', 'AMULET', 'RING1', 'RING2'];
@@ -127,12 +127,12 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
 
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-cyan-400" />
+                  <Zap className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                   <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold">{classXP.toLocaleString()} XP</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-yellow-400" />
-                  <span className="text-xs text-yellow-400 font-bold">{gearScore} GS</span>
+                  <Shield className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-xs text-yellow-600 dark:text-yellow-400 font-bold">{gearScore} GS</span>
                 </div>
               </div>
             </div>
@@ -192,12 +192,12 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
         {activeSets.length > 0 && (
           <div className="p-6 border-b border-[var(--border)]">
             <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
-              <Star className="w-3 h-3 text-purple-400" /> Set Bonuses
+              <Star className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Set Bonuses
             </h3>
             {activeSets.map(({ set, activeBonus }) => (
               <div key={set.id} className="p-2 bg-purple-500/5 border border-purple-500/20 rounded-lg mb-1">
-                <div className="text-xs font-bold text-purple-400">{set.name}</div>
-                <div className="text-[11.5px] text-gray-400">{activeBonus.label}: {activeBonus.effects.map(e => `+${e.value} ${e.stat}`).join(', ')}</div>
+                <div className="text-xs font-bold text-purple-600 dark:text-purple-400">{set.name}</div>
+                <div className="text-[11.5px] text-gray-600 dark:text-gray-400">{activeBonus.label}: {activeBonus.effects.map(e => `+${e.value} ${e.stat}`).join(', ')}</div>
               </div>
             ))}
           </div>
@@ -207,11 +207,11 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
         {(gam.unlockedAchievements?.length || 0) > 0 && (
           <div className="p-6">
             <h3 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-1">
-              <Trophy className="w-3 h-3 text-yellow-400" /> Achievements ({gam.unlockedAchievements?.length})
+              <Trophy className="w-3 h-3 text-yellow-600 dark:text-yellow-400" /> Achievements ({gam.unlockedAchievements?.length})
             </h3>
             <div className="flex flex-wrap gap-1">
               {gam.unlockedAchievements?.slice(0, 12).map((id: string) => (
-                <span key={id} className="text-[11.5px] bg-yellow-500/10 border border-yellow-500/20 rounded px-1.5 py-0.5 text-yellow-400">
+                <span key={id} className="text-[11.5px] bg-yellow-500/10 border border-yellow-500/20 rounded px-1.5 py-0.5 text-yellow-600 dark:text-yellow-400">
                   {id.replace(/_/g, ' ')}
                 </span>
               ))}

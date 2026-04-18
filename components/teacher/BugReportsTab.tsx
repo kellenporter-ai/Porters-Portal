@@ -10,9 +10,9 @@ import { useConfirm } from '../ConfirmDialog';
 import { FeatureErrorBoundary } from '../ErrorBoundary';
 
 const CATEGORY_BADGES: Record<string, { label: string; color: string }> = {
-  bug: { label: 'Bug', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  feature: { label: 'Feature', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  other: { label: 'Other', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
+  bug: { label: 'Bug', color: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30' },
+  feature: { label: 'Feature', color: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30' },
+  other: { label: 'Other', color: 'bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30' },
 };
 
 interface BugReportsTabProps {
@@ -223,7 +223,7 @@ Please analyze these issues, identify the root causes in the codebase, and imple
         <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-amber-400" />
+              <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest">AI Fix — Fix Bugs</span>
             </div>
             <button

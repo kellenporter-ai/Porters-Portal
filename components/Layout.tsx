@@ -301,9 +301,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       }
 
       const groupLightStyles: Record<NavGroup, { wrap: string; label: string }> = {
-        learning:   { wrap: 'bg-blue-50/80 border border-blue-100',    label: 'text-blue-700 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-600' },
-        operations: { wrap: 'bg-amber-50/70 border border-amber-100',  label: 'text-amber-800 dark:text-amber-600 hover:text-amber-900 dark:hover:text-amber-700' },
-        intel:      { wrap: 'bg-emerald-50/70 border border-emerald-100', label: 'text-emerald-700 dark:text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-700' },
+        learning:   { wrap: 'bg-blue-50/80 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10',    label: 'text-blue-700 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-600' },
+        operations: { wrap: 'bg-amber-50/70 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10',  label: 'text-amber-800 dark:text-amber-600 hover:text-amber-900 dark:hover:text-amber-700' },
+        intel:      { wrap: 'bg-emerald-50/70 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10', label: 'text-emerald-700 dark:text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-700' },
       };
 
       return (
@@ -415,7 +415,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 2a. Light mode: Tech circuit background image */}
       {isLight && (
-        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-[0.08]" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
       )}
 
       {/* 2b. Dark mode: Circuit board background image */}
@@ -433,13 +433,13 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* ChromeOS performance mode suggestion banner */}
       {showCrosBanner && (
-        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-3 bg-purple-900/95 border-b border-purple-500/30 backdrop-blur-md text-sm text-white animate-in slide-in-from-top duration-300">
-          <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-purple-100">On a Chromebook? Enable <strong>Performance Mode</strong> for smoother scrolling.</span>
+        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-3 bg-purple-100 dark:bg-purple-900/95 border-b border-purple-300 dark:border-purple-500/30 backdrop-blur-md text-sm text-purple-800 dark:text-white animate-in slide-in-from-top duration-300">
+          <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-purple-700 dark:text-purple-200">On a Chromebook? Enable <strong>Performance Mode</strong> for smoother scrolling.</span>
           <button onClick={enablePerfMode} className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold transition">
             Enable
           </button>
-          <button onClick={dismissCrosBanner} className="text-gray-400 hover:text-white transition" aria-label="Dismiss">
+          <button onClick={dismissCrosBanner} className="text-gray-600 dark:text-gray-400 hover:text-white transition" aria-label="Dismiss">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -473,7 +473,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <div className="relative w-4/5 max-w-xs bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] h-full flex flex-col p-6 animate-in slide-in-from-left duration-300 shadow-2xl">
                   <div className="flex justify-between items-center mb-8">
                       <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-inner border border-white/20">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold shadow-inner border border-purple-300/40 dark:border-white/20">
                               {user.name.charAt(0)}
                           </div>
                           <div>
@@ -500,7 +500,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                       </button>
                       <button
                           onClick={onLogout}
-                          className="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-xl transition"
+                          className="w-full flex items-center gap-3 p-3 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-xl transition"
                       >
                           <LogOut className="w-5 h-5" />
                           <span className="font-medium">Sign Out</span>
@@ -568,7 +568,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               </button>
               <button
                 onClick={onLogout}
-                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition"
                 aria-label="Sign out"
                 title="Sign Out"
               >
@@ -602,7 +602,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 </div>
                 <button
                   onClick={onLogout}
-                  className="p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
+                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
                   aria-label="Sign out"
                   title="Sign Out"
                 >

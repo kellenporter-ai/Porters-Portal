@@ -179,7 +179,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
             {showShield && (
                 <div className="absolute left-10 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
                     <div className="w-16 h-16 rounded-full border-4 border-cyan-400/60 bg-cyan-400/10 animate-[shieldPulse_0.8s_ease-out_forwards] flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" className="w-8 h-8 text-cyan-400 fill-current"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                        <svg viewBox="0 0 24 24" className="w-8 h-8 text-cyan-600 dark:text-cyan-400 fill-current"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                     </div>
                 </div>
             )}
@@ -201,7 +201,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
             {/* Heal effect */}
             {showHeal !== null && (
-                <div className="absolute left-8 bottom-12 text-base font-black text-emerald-400 animate-[floatUp_1.2s_ease-out_forwards] z-10 pointer-events-none">
+                <div className="absolute left-8 bottom-12 text-base font-black text-emerald-700 dark:text-emerald-400 animate-[floatUp_1.2s_ease-out_forwards] z-10 pointer-events-none">
                     +{showHeal} HP
                 </div>
             )}
@@ -243,10 +243,10 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 {/* Player role indicator */}
                 {playerRole && (
                     <div className={`absolute -top-4 left-0 right-0 text-center text-[8px] font-black tracking-wide ${
-                        playerRole === 'VANGUARD' ? 'text-blue-400' :
-                        playerRole === 'STRIKER' ? 'text-green-400' :
-                        playerRole === 'SENTINEL' ? 'text-yellow-400' :
-                        'text-purple-400'
+                        playerRole === 'VANGUARD' ? 'text-blue-600 dark:text-blue-400' :
+                        playerRole === 'STRIKER' ? 'text-green-600 dark:text-green-400' :
+                        playerRole === 'SENTINEL' ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-purple-600 dark:text-purple-400'
                     }`}>
                         {playerRole === 'VANGUARD' && '⚔'}
                         {playerRole === 'STRIKER' && '⚡'}
@@ -297,8 +297,8 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                             floatingDmg.isCrit ? 'text-2xl' : 'text-xl'
                         } ${
                             floatingDmg.side === 'right'
-                                ? `right-4 ${floatingDmg.isCrit ? 'text-yellow-300' : 'text-amber-400'}`
-                                : 'left-4 text-red-400'
+                                ? `right-4 ${floatingDmg.isCrit ? 'text-yellow-300' : 'text-amber-600 dark:text-amber-400'}`
+                                : 'left-4 text-red-600 dark:text-red-400'
                         }`}
                         style={{ top: '10%' }}
                     >

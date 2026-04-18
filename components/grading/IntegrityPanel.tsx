@@ -11,7 +11,7 @@ interface IntegrityPanelProps {
 const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx, onTogglePair }) => (
   <div className="bg-amber-900/10 border border-amber-500/20 rounded-3xl p-6 backdrop-blur-md space-y-4">
     <div className="flex items-center justify-between">
-      <h4 className="text-lg font-bold text-amber-400 flex items-center gap-2">
+      <h4 className="text-lg font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
         <Fingerprint className="w-5 h-5" aria-hidden="true" />
         Integrity Analysis
       </h4>
@@ -26,13 +26,13 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
 
     {report.flaggedPairs.length === 0 ? (
       <div className="text-center py-6">
-        <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400 opacity-40" aria-hidden="true" />
-        <p className="text-sm text-green-400 font-bold">No suspicious similarity detected</p>
+        <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-600 dark:text-green-400 opacity-40" aria-hidden="true" />
+        <p className="text-sm text-green-600 dark:text-green-400 font-bold">No suspicious similarity detected</p>
         <p className="text-xs text-[var(--text-muted)] mt-1">All student responses appear to be independently written.</p>
       </div>
     ) : (
       <div className="space-y-2">
-        <div className="text-xs text-amber-400/70 font-bold uppercase tracking-widest mb-2">
+        <div className="text-xs text-amber-600 dark:text-amber-400/70 font-bold uppercase tracking-widest mb-2">
           {report.flaggedPairs.length} suspicious pair{report.flaggedPairs.length !== 1 ? 's' : ''} found
         </div>
         {report.flaggedPairs.map((pair, idx) => {
@@ -48,7 +48,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
                 onClick={() => onTogglePair(idx)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTogglePair(idx); } }}
               >
-                <div className={`px-2 py-1 rounded-lg text-xs font-bold ${isHigh ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                <div className={`px-2 py-1 rounded-lg text-xs font-bold ${isHigh ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
                   {pair.overallSimilarity > 0 ? `${pair.overallSimilarity}%` : 'MC'}
                 </div>
                 <div className="flex-1 text-sm text-[var(--text-primary)]">
@@ -61,7 +61,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
                     <span>{pair.flaggedBlocks.length} similar response{pair.flaggedBlocks.length !== 1 ? 's' : ''}</span>
                   )}
                   {pair.mcMatchCount > 0 && (
-                    <span className="text-amber-400">{pair.mcMatchCount}/{pair.mcTotalWrong} shared wrong MC</span>
+                    <span className="text-amber-600 dark:text-amber-400">{pair.mcMatchCount}/{pair.mcTotalWrong} shared wrong MC</span>
                   )}
                 </div>
                 <ChevronRight className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`} aria-hidden="true" />
@@ -72,7 +72,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
                   {pair.flaggedBlocks.length > 0 ? pair.flaggedBlocks.map((block, bi) => (
                     <div key={bi} className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[11.5px] font-bold ${block.similarity >= 90 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-[11.5px] font-bold ${block.similarity >= 90 ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
                           {block.similarity}%
                         </span>
                         <span className="text-xs text-[var(--text-tertiary)]">
@@ -96,7 +96,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
                     </div>
                   )}
                   {pair.mcMatchCount > 0 && (
-                    <div className="mt-2 bg-amber-900/20 border border-amber-500/10 rounded-lg p-3 text-xs text-amber-400/80">
+                    <div className="mt-2 bg-amber-900/20 border border-amber-500/10 rounded-lg p-3 text-xs text-amber-600 dark:text-amber-400/80">
                       <span className="font-bold">MC Pattern:</span> {pair.mcMatchCount} of {pair.mcTotalWrong} incorrect MC answers are identical between these students.
                     </div>
                   )}

@@ -153,10 +153,10 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                           {/* Price tag */}
                           <div className={`absolute top-1.5 right-1.5 text-[8px] font-black px-1.5 py-0.5 rounded-full ${
                             model.cost === 0
-                              ? 'bg-emerald-500/20 text-emerald-400'
+                              ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
                               : owned
-                                ? 'bg-purple-500/20 text-purple-400'
-                                : 'bg-yellow-500/20 text-yellow-400'
+                                ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
+                                : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
                           }`}>
                             {model.cost === 0 ? 'FREE' : owned ? 'OWNED' : `${model.cost} \u26A1`}
                           </div>
@@ -370,7 +370,7 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
             {/* Avatar preview panel */}
             <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 backdrop-blur-sm max-w-xs mx-auto lg:max-w-none">
               <div className="flex items-center gap-2 mb-4">
-                <svg className="w-4 h-4 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-4 h-4 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                   <circle cx="12" cy="7" r="4"/>
                 </svg>

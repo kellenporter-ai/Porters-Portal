@@ -182,14 +182,14 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
           value={`${completionStats.rate}%`}
           sub={`${completionStats.completed} of ${completionStats.total} assignments`}
           icon={<CheckCircle2 className="w-4 h-4" />}
-          color="bg-emerald-500/20 text-emerald-400"
+          color="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
         />
         <StatCard
           label="Avg Score"
           value={completionStats.avgScore > 0 ? `${completionStats.avgScore}%` : '—'}
           sub={completionStats.scoredCount > 0 ? `Across ${completionStats.scoredCount} graded` : 'No graded work yet'}
           icon={<Target className="w-4 h-4" />}
-          color="bg-blue-500/20 text-blue-400"
+          color="bg-blue-500/20 text-blue-600 dark:text-blue-400"
         />
         <StatCard
           label="Engagement"
@@ -205,7 +205,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
             : '—'}
           sub={scoresOverTime.length >= 2 ? 'vs previous score' : 'Need 2+ scores'}
           icon={<TrendingUp className="w-4 h-4" />}
-          color="bg-purple-500/20 text-purple-400"
+          color="bg-purple-500/20 text-purple-600 dark:text-purple-400"
         />
       </div>
 
@@ -213,7 +213,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
         {/* ─── Scores Over Time ─── */}
         <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
           <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-cyan-400" />
+            <TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
             Scores Over Time
           </h3>
           {scoresOverTime.length > 0 ? (
@@ -243,7 +243,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
         {/* ─── Engagement Trends ─── */}
         <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
           <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" />
+            <Activity className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
             Engagement by Week
           </h3>
           {engagementByWeek.length > 0 ? (
@@ -272,7 +272,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
       {unitBreakdown.length > 0 && (
         <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4 mb-6">
           <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-4 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-400" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Completion by Unit
           </h3>
           <div className="space-y-3">
@@ -314,7 +314,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
                   <div className="text-[11.5px] text-[var(--text-muted)]">{a.ago} · {a.engagementMin}m engagement</div>
                 </div>
                 {a.score > 0 && (
-                  <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-400' : a.score >= 60 ? 'text-yellow-300' : 'text-red-400'}`}>
+                  <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-700 dark:text-emerald-400' : a.score >= 60 ? 'text-yellow-300' : 'text-red-600 dark:text-red-400'}`}>
                     {a.score}%
                   </div>
                 )}

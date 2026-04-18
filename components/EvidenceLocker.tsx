@@ -335,7 +335,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
         {/* Header Section */}
         <div className="bg-emerald-900/20 border border-emerald-500/30 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h2 className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
                     <Camera className="w-7 h-7" /> Weekly Evidence Log
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
@@ -348,7 +348,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                             >
                                 {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-emerald-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
                         </div>
                     ) : (
                         <span className="text-emerald-200/60 text-sm font-bold">{selectedClass}</span>
@@ -359,7 +359,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
             <div className="flex items-center gap-4">
                 <div className="bg-[var(--panel-bg)] px-4 py-2 rounded-lg border border-emerald-500/20 text-center">
                     <span className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest block">Cycle ID</span>
-                    <span className="font-mono text-emerald-400 font-bold">{currentWeekId}</span>
+                    <span className="font-mono text-emerald-700 dark:text-emerald-400 font-bold">{currentWeekId}</span>
                 </div>
                 <button 
                     onClick={generatePDF}
@@ -413,7 +413,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
             {/* Top: Image Upload Area (Takes available space) */}
             <div className="flex-1 flex flex-col min-h-0">
                 <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
+                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
                         <ImageIcon className="w-4 h-4" /> Evidence Capture ({selectedClass})
                     </h3>
                     {activeLog && (
@@ -429,7 +429,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                         <>
                             <img src={activeLog.imageUrl} alt={activeDay} loading="lazy" className="w-full h-full object-contain bg-black/20" />
                             <div className="absolute inset-0 bg-[var(--backdrop)] opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                <Upload className="w-8 h-8 text-emerald-400" />
+                                <Upload className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
                                 <span className="text-[var(--text-primary)] font-bold text-sm">Replace Evidence</span>
                             </div>
                         </>
@@ -458,7 +458,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
             {/* Bottom: Reflection Area (Fixed Height) */}
             <div className="h-48 md:h-56 flex flex-col flex-shrink-0">
                 <div className="mb-2">
-                    <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
+                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
                         <FileText className="w-4 h-4" /> Daily Reflection
                     </h3>
                 </div>
