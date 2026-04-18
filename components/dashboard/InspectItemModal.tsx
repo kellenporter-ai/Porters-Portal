@@ -45,7 +45,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               <div className={`text-lg font-bold ${inspectItem.runewordActive ? 'text-amber-300' : colors.text}`}>{inspectItem.name}</div>
               <div className="text-xs text-[var(--text-secondary)] font-mono uppercase">{inspectItem.rarity} {inspectItem.slot}</div>
               {inspectItem.runewordActive && (
-                <div className="text-[11.5px] font-bold text-amber-400 mt-0.5">{runeword?.name}</div>
+                <div className="text-[11.5px] font-bold text-amber-300 mt-0.5">{runeword?.name}</div>
               )}
             </div>
           </div>
@@ -79,12 +79,12 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               {/* Runeword banner */}
               {runeword && (
                 <div className="mb-3 text-center">
-                  <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">Runeword Active</div>
+                  <div className="text-xs font-bold text-amber-300 uppercase tracking-widest">Runeword Active</div>
                   <div className="text-lg font-black text-amber-300 mt-1">{runeword.name}</div>
                   <p className="text-[11.5px] text-amber-500/70 italic mt-1">{runeword.lore}</p>
                   <div className="flex justify-center gap-3 mt-2">
                     {Object.entries(runeword.bonusStats).map(([stat, val]) => (
-                      <span key={stat} className="text-[11.5px] font-mono font-bold text-amber-400">
+                      <span key={stat} className="text-[11.5px] font-mono font-bold text-amber-300">
                         +{val} {stat.slice(0, 3).toUpperCase()}
                       </span>
                     ))}
@@ -163,7 +163,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                     return (
                       <div className="mt-2 text-[11.5px] text-amber-500/60">
                         {possibleRws.map(rw => (
-                          <div key={rw.id}>Possible: <span className="font-bold text-amber-400/80">{rw.name}</span> — needs [{rw.pattern.join(' → ')}]</div>
+                          <div key={rw.id}>Possible: <span className="font-bold text-amber-300/80">{rw.name}</span> — needs [{rw.pattern.join(' → ')}]</div>
                         ))}
                       </div>
                     );

@@ -36,18 +36,18 @@ const CATEGORY_BADGE_ICONS: Record<string, React.ReactNode> = {
 /** Tailwind classes for the colored category badge pill. Fallback applied when key is missing. */
 const CATEGORY_COLORS: Record<string, string> = {
   'Lesson':       'bg-purple-500/15 text-purple-400 border-purple-500/25',
-  'Lab':          'bg-amber-500/15 text-amber-400 border-amber-500/25',
+  'Lab':          'bg-amber-500/15 text-amber-300 border-amber-500/25',
   'Simulation':   'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-  'Practice':     'bg-orange-500/15 text-orange-400 border-orange-500/25',
+  'Practice':     'bg-orange-500/15 text-orange-300 border-orange-500/25',
   'Supplemental': 'bg-gray-500/15 text-gray-400 border-gray-500/25',
 };
 
 /** Tailwind classes for the left icon square on unstarted resources (bg + text + hover shadow). */
 const CATEGORY_ICON_COLORS: Record<string, string> = {
   'Lesson':       'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20',
-  'Lab':          'bg-amber-500/10 text-amber-400 group-hover:shadow-amber-500/20',
+  'Lab':          'bg-amber-500/10 text-amber-300 group-hover:shadow-amber-500/20',
   'Simulation':   'bg-emerald-500/10 text-emerald-400 group-hover:shadow-emerald-500/20',
-  'Practice':     'bg-orange-500/10 text-orange-400 group-hover:shadow-orange-500/20',
+  'Practice':     'bg-orange-500/10 text-orange-300 group-hover:shadow-orange-500/20',
   'Supplemental': 'bg-gray-500/10 text-gray-400 group-hover:shadow-gray-500/20',
 };
 

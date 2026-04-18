@@ -196,7 +196,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
           value={`${totalEngagementMin}m`}
           sub="Total time on assignments"
           icon={<Clock className="w-4 h-4" />}
-          color="bg-amber-500/20 text-amber-400"
+          color="bg-amber-500/20 text-amber-300"
         />
         <StatCard
           label="Trend"
@@ -314,7 +314,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
                   <div className="text-[11.5px] text-[var(--text-muted)]">{a.ago} · {a.engagementMin}m engagement</div>
                 </div>
                 {a.score > 0 && (
-                  <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-400' : a.score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-400' : a.score >= 60 ? 'text-yellow-300' : 'text-red-400'}`}>
                     {a.score}%
                   </div>
                 )}

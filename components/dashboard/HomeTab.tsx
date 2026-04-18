@@ -1,11 +1,36 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Assignment, Submission, XPEvent } from '../../types';
 import {
-  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp, MessageSquare,
+  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp, MessageSquare, Sparkles, X,
 } from 'lucide-react';
 import AnimatedIcon from '../AnimatedIcon';
+
+// ─── Onboarding banner constants ─────────────
+const ONBOARDING_BANNER_DISMISS_KEY = 'onboarding-anim-banner-dismissed-v1';
+const PERFORMANCE_MODE_PREVIEW_KEY = 'pp-performance-mode-preview';
+
+function readBannerDismissed(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.localStorage.getItem(ONBOARDING_BANNER_DISMISS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function readPreviewPerfMode(): boolean | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const v = window.localStorage.getItem(PERFORMANCE_MODE_PREVIEW_KEY);
+    if (v === '1') return true;
+    if (v === '0') return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 interface HomeTabProps {
   assignments: Assignment[];
@@ -116,6 +141,33 @@ const HomeTab: React.FC<HomeTabProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // ── Onboarding "Reduce animation" banner ──
+  // No time-gate: HomeTab does not receive user.createdAt as a prop, and per
+  // the implementation constraints we may only modify this file. The dismiss
+  // is persisted forever in localStorage, so it still functions as a one-time
+  // welcome surface for each browser/profile.
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(readBannerDismissed);
+  const previewPerf = readPreviewPerfMode();
+  // Effective state shown by the toggle: prefer the saved server-side
+  // performanceMode prop, fall back to the local preview if user toggled here
+  // before opening Settings.
+  const [bannerPerfMode, setBannerPerfMode] = useState<boolean>(
+    () => (typeof previewPerf === 'boolean' ? previewPerf : !!performanceMode),
+  );
+
+  const dismissBanner = useCallback(() => {
+    try { window.localStorage.setItem(ONBOARDING_BANNER_DISMISS_KEY, '1'); } catch { /* noop */ }
+    setBannerDismissed(true);
+  }, []);
+
+  const togglePerfPreview = useCallback(() => {
+    setBannerPerfMode((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(PERFORMANCE_MODE_PREVIEW_KEY, next ? '1' : '0'); } catch { /* noop */ }
+      return next;
+    });
+  }, []);
+
   // Filter to active class, visible assignments only
   const classAssignments = useMemo(() =>
     assignments.filter(a => {
@@ -208,6 +260,50 @@ const HomeTab: React.FC<HomeTabProps> = ({
   return (
     <div key="home" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <h2 className="sr-only">Home</h2>
+
+      {/* Onboarding tip — Reduce animations */}
+      {!bannerDismissed && (
+        <div
+          role="region"
+          aria-label="Welcome tip: reduce interface animations"
+          className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl"
+        >
+          <Sparkles className="w-5 h-5 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-[var(--text-primary)]">Welcome!</div>
+            <div className="text-xs text-[var(--text-tertiary)]">
+              Want a calmer interface? Toggle this to reduce animations.
+              <span className="ml-1 text-[var(--text-muted)]">(Confirm in Settings to save.)</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={togglePerfPreview}
+            role="switch"
+            aria-checked={bannerPerfMode}
+            aria-label={`Reduce animations: currently ${bannerPerfMode ? 'on' : 'off'}`}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-purple-500 ${
+              bannerPerfMode
+                ? 'bg-purple-600/40 border-purple-500/60'
+                : 'bg-[var(--surface-glass-heavy)] border-[var(--border)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${
+                bannerPerfMode ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={dismissBanner}
+            aria-label="Dismiss onboarding tip"
+            className="shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-purple-500"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* New Feedback — compact banner linking to /feedback */}
       {unreadFeedbackItems.length > 0 && (

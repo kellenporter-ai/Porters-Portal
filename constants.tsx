@@ -31,6 +31,8 @@ export interface NavItem {
   iconSize?: number;
   role: 'ADMIN' | 'STUDENT';
   group?: NavGroup;
+  /** Optional small flavor label rendered beneath the primary name in the expanded sidebar (spy theme). */
+  flavor?: string;
   children?: { name: string; iconSrc: string; iconSize?: number }[];
 }
 
@@ -55,13 +57,13 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Feedback', iconSrc: '/assets/icons/icon-grading.png', role: 'STUDENT', group: 'learning' },
   { name: 'Calendar', iconSrc: '/assets/icons/icon-calendar.png', role: 'STUDENT', group: 'learning' },
   // Operations group
-  { name: 'Agent Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations' },
+  { name: 'Agent Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations', flavor: 'Loadout' },
   { name: 'Fortune', iconSrc: '/assets/icons/icon-fortune.png', role: 'STUDENT', group: 'operations' },
-  { name: 'Flux Shop', iconSrc: '/assets/icons/icon-flux-shop.png', role: 'STUDENT', group: 'operations' },
-  { name: 'Badges', iconSrc: '/assets/icons/icon-badges.png', role: 'STUDENT', group: 'operations', iconSize: 35 },
+  { name: 'Flux Shop', iconSrc: '/assets/icons/icon-flux-shop.png', role: 'STUDENT', group: 'operations', flavor: 'Flux' },
+  { name: 'Badges', iconSrc: '/assets/icons/icon-badges.png', role: 'STUDENT', group: 'operations', iconSize: 35, flavor: 'Achievements' },
   { name: 'Skills', iconSrc: '/assets/icons/icon-skills.png', role: 'STUDENT', group: 'operations', iconSize: 35 },
   // Intel group
-  { name: 'Intel Dossier', iconSrc: '/assets/icons/icon-intel-dossier.png', role: 'STUDENT', group: 'intel' },
+  { name: 'Intel Dossier', iconSrc: '/assets/icons/icon-intel-dossier.png', role: 'STUDENT', group: 'intel', flavor: 'Dossier' },
   { name: 'Progress', iconSrc: '/assets/icons/icon-progress.png', role: 'STUDENT', group: 'intel', iconSize: 48 },
   { name: 'Leaderboard', iconSrc: '/assets/icons/icon-leaderboard.png', role: 'STUDENT', group: 'intel', iconSize: 48 },
 ];

@@ -134,6 +134,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
+  // Mobile-only: collapse the Operative Status strip behind a "Stats" toggle (closed by default)
+  const [statsExpanded, setStatsExpanded] = useState(false);
 
   // Guard against duplicate level-up triggers from rapid re-renders
   const levelUpTriggeredRef = React.useRef(false);
@@ -373,8 +375,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         </section>
       )}
 
-      {/* ACTIVE EVENT BANNER */}
-      {activeEvent && (
+      {/* HERO CARD — active event when present, otherwise "Today" summary */}
+      {activeEvent ? (
         <div>
           <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 rounded-2xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(59,130,246,0.3)]" role="status" aria-live="polite">
             <div className="flex items-center gap-3">
@@ -391,10 +393,104 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
             </div>
           </div>
         </div>
+      ) : (
+        (() => {
+          const now = new Date();
+          const todayKey = now.toISOString().split('T')[0];
+          const friendlyDate = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+          const todayAssignments = assignments.filter(a => {
+            if (a.classType !== activeClass) return false;
+            if (a.status === 'DRAFT' || a.status === 'ARCHIVED') return false;
+            if (!a.dueDate) return false;
+            return a.dueDate.split('T')[0] === todayKey;
+          });
+          const unreadFeedbackCount = submissions.filter(s => {
+            if (s.userId !== user.id) return false;
+            const hasFeedback = !!(s.rubricGrade?.teacherFeedback && s.rubricGrade.teacherFeedback.trim());
+            const unreadFlag = s.hasUnreadStudent === true;
+            const unreadByReceipt = hasFeedback && !s.feedbackReadAt;
+            return unreadFlag || unreadByReceipt;
+          }).length;
+          const dueLine = todayAssignments.length === 0
+            ? 'Nothing due today.'
+            : todayAssignments.length <= 2
+              ? `Due today: ${todayAssignments.map(a => a.title).join(', ')}`
+              : `${todayAssignments.length} assignments due today.`;
+          const feedbackLine = unreadFeedbackCount > 0
+            ? `${unreadFeedbackCount} new piece${unreadFeedbackCount === 1 ? '' : 's'} of teacher feedback to review.`
+            : null;
+          const allCaughtUp = todayAssignments.length === 0 && unreadFeedbackCount === 0;
+          return (
+            <div>
+              <div
+                className="bg-gradient-to-r from-slate-700/30 to-slate-600/20 border border-[var(--border)] rounded-2xl p-4 flex items-start gap-3"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="bg-[var(--surface-glass)] text-[var(--text-primary)] p-2 rounded-lg shrink-0">
+                  <Sparkles className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[var(--text-primary)] font-bold text-lg">Today, {friendlyDate}</h3>
+                  {allCaughtUp ? (
+                    <p className="text-sm text-[var(--text-secondary)] mt-0.5">All caught up. Nothing due, no new feedback — solid place to be.</p>
+                  ) : (
+                    <div className="mt-1 space-y-0.5">
+                      <p className="text-sm text-[var(--text-primary)]">{dueLine}</p>
+                      {feedbackLine && (
+                        <p className="text-sm text-[var(--text-secondary)]">{feedbackLine}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()
       )}
 
-      {/* --- OPERATIVE STATUS: compact horizontal strip at all sizes --- */}
-      <aside aria-label="Player status" className="flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-3 lg:gap-3">
+      {/* --- OPERATIVE STATUS: mobile compact summary + toggle (hidden on lg+) --- */}
+      <div className="lg:hidden flex items-center gap-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl px-3 py-2 backdrop-blur-md">
+        <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase tracking-[0.15em] border ${rankDetails.tierColor}`}>
+          {rankDetails.rankName} · Lvl {level}
+        </span>
+        <span className="flex items-center gap-1 text-[12px] font-bold text-cyan-400" aria-label={`${displayCurrency} Cyber-Flux`}>
+          <Hexagon className="w-3.5 h-3.5" aria-hidden="true" />
+          {displayCurrency}
+        </span>
+        {(user.gamification?.engagementStreak || 0) > 0 && (
+          <span className={`flex items-center gap-1 text-[12px] font-bold ${isLight ? 'text-orange-600' : 'text-orange-400'}`} aria-label={`${user.gamification?.engagementStreak} week engagement streak`}>
+            <Flame className="w-3.5 h-3.5" aria-hidden="true" />
+            {user.gamification?.engagementStreak}w
+          </span>
+        )}
+        {enrolledClasses.length > 1 && (
+          <div className="relative ml-auto">
+            <select
+              value={activeClass}
+              onChange={handleClassChange}
+              aria-label="Switch active class"
+              className="bg-[var(--surface-sunken)] border border-[var(--border)] text-[var(--text-primary)] text-[11px] font-bold py-1 pl-2 pr-6 rounded-lg appearance-none focus:outline-none focus:border-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500"
+            >
+              {enrolledClasses.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-tertiary)] pointer-events-none" />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setStatsExpanded(v => !v)}
+          aria-expanded={statsExpanded}
+          aria-controls="operative-status-strip"
+          className={`${enrolledClasses.length > 1 ? '' : 'ml-auto'} flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1 focus-visible:ring-2 focus-visible:ring-purple-500 transition-colors`}
+        >
+          Stats
+          <ChevronDown className={`w-3 h-3 ${statsExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
+      </div>
+
+      {/* --- OPERATIVE STATUS: full horizontal strip (always visible on lg+, collapsible on mobile) --- */}
+      <aside id="operative-status-strip" aria-label="Player status" className={`${statsExpanded ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-3 lg:gap-3`}>
         {/* Identity card — avatar, name, rank, XP */}
         <div className={`bg-[var(--surface-glass)] border rounded-xl lg:rounded-xl p-3 lg:py-2 lg:px-3 backdrop-blur-md relative overflow-hidden group lg:flex-1 ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>

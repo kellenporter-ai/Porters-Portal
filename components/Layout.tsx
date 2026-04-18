@@ -3,6 +3,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
+
+// Display-name overrides for sidebar primary label (UX audit 2.2 — function-first dual naming).
+// The canonical NavItem.name remains the route/tab key; this map only affects what the user reads.
+const NAV_DISPLAY_NAMES: Record<string, string> = {
+  'Agent Loadout': 'Gear',
+  'Flux Shop': 'Shop',
+  'Intel Dossier': 'My Stats',
+};
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Zap, Bug, Music } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
@@ -10,6 +18,7 @@ import PortalLogo from './PortalLogo';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
+import CommandPalette, { CommandPaletteItem } from './CommandPalette';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
@@ -24,6 +33,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const { enabledFeatures } = useClassConfig();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
@@ -222,9 +233,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             <span className={`${isActive ? 'text-[var(--sidebar-text-active)]' : 'text-[var(--sidebar-text-muted)] group-hover:text-[var(--sidebar-text-active)]'}`}>
               <AnimatedIcon src={item.iconSrc} alt={item.name} size={item.iconSize || 40} disableAnimation={settings.performanceMode} />
             </span>
-            <span className="font-medium text-sm flex-1 text-left flex items-center gap-2">
-              {item.name}
-              {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
+            <span className="flex-1 text-left min-w-0">
+              <span className="flex items-center gap-2">
+                <span className="font-medium text-sm truncate">{NAV_DISPLAY_NAMES[item.name] ?? item.name}</span>
+                {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
+              </span>
+              {item.flavor && (
+                <span className="block text-[11px] font-mono text-[var(--text-tertiary,var(--sidebar-text-muted))] leading-tight mt-0.5 truncate">
+                  {item.flavor}
+                </span>
+              )}
             </span>
             {item.children && (
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-[var(--accent-text)]' : 'text-[var(--sidebar-text-muted)]'}`} />
@@ -321,6 +339,57 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     // Admin: render flat, respecting collapsed state
     return <>{filteredItems.map(i => renderNavButton(i, sidebarCollapsed && !forceExpanded))}</>;
   };
+
+  // Global Cmd+K / Ctrl+K listener for command palette (matches VS Code behavior — intercept even in inputs)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Build flat list of palette items from NAVIGATION, filtered by role + feature flags.
+  // Children are flattened as "Parent:Child" entries so the palette can jump to nested tabs.
+  const commandPaletteItems = React.useMemo<CommandPaletteItem[]>(() => {
+    const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
+      'Leaderboard': 'leaderboard',
+    };
+    const items: CommandPaletteItem[] = [];
+    NAVIGATION.forEach(item => {
+      if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return;
+      if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return;
+      if (user.role === UserRole.STUDENT && featureNavMap[item.name] && !enabledFeatures[featureNavMap[item.name]]) return;
+
+      if (item.children && item.children.length > 0) {
+        // Add the parent as a group entry (jumps to first child)
+        items.push({
+          ...item,
+          navTarget: `${item.name}:${item.children[0].name}`,
+          displayName: NAV_DISPLAY_NAMES[item.name] ?? item.name,
+        });
+        item.children.forEach(child => {
+          items.push({
+            name: child.name,
+            iconSrc: child.iconSrc,
+            iconSize: child.iconSize,
+            role: item.role,
+            navTarget: `${item.name}:${child.name}`,
+            displayName: `${NAV_DISPLAY_NAMES[item.name] ?? item.name} › ${child.name}`,
+          });
+        });
+      } else {
+        items.push({
+          ...item,
+          displayName: NAV_DISPLAY_NAMES[item.name] ?? item.name,
+        });
+      }
+    });
+    return items;
+  }, [user.role, enabledFeatures]);
 
   // Arrow key navigation within sidebar nav items
   const handleNavKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
@@ -605,6 +674,13 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
           })}
         </nav>
       )}
+
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelect={handleNavigate}
+        items={commandPaletteItems}
+      />
 
       <SettingsModal
         isOpen={isSettingsOpen}
