@@ -9,7 +9,6 @@ import AnimatedIcon from '../AnimatedIcon';
 
 // ─── Onboarding banner constants ─────────────
 const ONBOARDING_BANNER_DISMISS_KEY = 'onboarding-anim-banner-dismissed-v1';
-const PERFORMANCE_MODE_PREVIEW_KEY = 'pp-performance-mode-preview';
 
 function readBannerDismissed(): boolean {
   if (typeof window === 'undefined') return true;
@@ -17,18 +16,6 @@ function readBannerDismissed(): boolean {
     return window.localStorage.getItem(ONBOARDING_BANNER_DISMISS_KEY) === '1';
   } catch {
     return false;
-  }
-}
-
-function readPreviewPerfMode(): boolean | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const v = window.localStorage.getItem(PERFORMANCE_MODE_PREVIEW_KEY);
-    if (v === '1') return true;
-    if (v === '0') return false;
-    return null;
-  } catch {
-    return null;
   }
 }
 
@@ -43,6 +30,9 @@ interface HomeTabProps {
   userSection?: string;
   userClassSections?: Record<string, string>;
   performanceMode?: boolean;
+  /** Persist a new performanceMode value server-side. When provided, the
+   *  onboarding banner toggle saves directly instead of routing through Settings. */
+  onTogglePerformanceMode?: (enabled: boolean) => void | Promise<void>;
   /** Teacher name or display string, used in feedback attribution. */
   teacherName?: string;
 }
@@ -137,36 +127,31 @@ const HomeTab: React.FC<HomeTabProps> = ({
   userSection,
   userClassSections,
   performanceMode = false,
+  onTogglePerformanceMode,
   teacherName,
 }) => {
   const navigate = useNavigate();
 
   // ── Onboarding "Reduce animation" banner ──
-  // No time-gate: HomeTab does not receive user.createdAt as a prop, and per
-  // the implementation constraints we may only modify this file. The dismiss
-  // is persisted forever in localStorage, so it still functions as a one-time
-  // welcome surface for each browser/profile.
+  // The dismiss is persisted forever in localStorage so the banner only shows
+  // once per browser/profile. The toggle reads the live performanceMode prop
+  // and persists changes server-side via onTogglePerformanceMode.
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(readBannerDismissed);
-  const previewPerf = readPreviewPerfMode();
-  // Effective state shown by the toggle: prefer the saved server-side
-  // performanceMode prop, fall back to the local preview if user toggled here
-  // before opening Settings.
-  const [bannerPerfMode, setBannerPerfMode] = useState<boolean>(
-    () => (typeof previewPerf === 'boolean' ? previewPerf : !!performanceMode),
-  );
+  const bannerPerfMode = !!performanceMode;
 
   const dismissBanner = useCallback(() => {
     try { window.localStorage.setItem(ONBOARDING_BANNER_DISMISS_KEY, '1'); } catch { /* noop */ }
     setBannerDismissed(true);
   }, []);
 
-  const togglePerfPreview = useCallback(() => {
-    setBannerPerfMode((prev) => {
-      const next = !prev;
-      try { window.localStorage.setItem(PERFORMANCE_MODE_PREVIEW_KEY, next ? '1' : '0'); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
+  const togglePerfPreview = useCallback(async () => {
+    if (!onTogglePerformanceMode) return;
+    try {
+      await onTogglePerformanceMode(!bannerPerfMode);
+    } catch {
+      /* surfaced upstream */
+    }
+  }, [onTogglePerformanceMode, bannerPerfMode]);
 
   // Filter to active class, visible assignments only
   const classAssignments = useMemo(() =>
@@ -272,8 +257,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-[var(--text-primary)]">Welcome!</div>
             <div className="text-xs text-[var(--text-tertiary)]">
-              Want a calmer interface? Toggle this to reduce animations.
-              <span className="ml-1 text-[var(--text-muted)]">(Confirm in Settings to save.)</span>
+              Want a calmer interface? Toggle to reduce animations across the app.
             </div>
           </div>
           <button

@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Assignment, Submission, RPGItem, ClassConfig } from '../types';
+import { User, Assignment, Submission, RPGItem, ClassConfig, UserSettings } from '../types';
 import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
@@ -332,6 +332,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       }
   }, [user.id, activeClass, toast]);
 
+  const handleTogglePerformanceMode = useCallback(async (enabled: boolean) => {
+    const currentSettings: UserSettings = user.settings || { performanceMode: false, privacyMode: false, compactView: true, themeMode: 'dark' };
+    try {
+      await dataService.updateUserSettings(user.id, { ...currentSettings, performanceMode: enabled });
+    } catch (err) {
+      reportError(err, { context: 'handleTogglePerformanceMode' });
+      toast.error('Could not save your preference. Try again.');
+    }
+  }, [user.id, user.settings, toast]);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-5 h-full pb-6 lg:pb-8">
       {/* Mobile class selector — visible below lg where the sidebar selector is hidden */}
@@ -601,6 +611,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        userSection={user.section}
                        userClassSections={user.classSections}
                        performanceMode={user.settings?.performanceMode}
+                       onTogglePerformanceMode={handleTogglePerformanceMode}
                    />
                    </React.Suspense>
                  </FeatureErrorBoundary>
