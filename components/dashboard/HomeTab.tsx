@@ -1,11 +1,23 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Assignment, Submission, XPEvent } from '../../types';
 import {
-  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp, MessageSquare,
+  Clock, Target, Zap, ChevronRight, CheckCircle2, BookOpen, TrendingUp, MessageSquare, Sparkles, X,
 } from 'lucide-react';
 import AnimatedIcon from '../AnimatedIcon';
+
+// ─── Onboarding banner constants ─────────────
+const ONBOARDING_BANNER_DISMISS_KEY = 'onboarding-anim-banner-dismissed-v1';
+
+function readBannerDismissed(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.localStorage.getItem(ONBOARDING_BANNER_DISMISS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 interface HomeTabProps {
   assignments: Assignment[];
@@ -18,6 +30,9 @@ interface HomeTabProps {
   userSection?: string;
   userClassSections?: Record<string, string>;
   performanceMode?: boolean;
+  /** Persist a new performanceMode value server-side. When provided, the
+   *  onboarding banner toggle saves directly instead of routing through Settings. */
+  onTogglePerformanceMode?: (enabled: boolean) => void | Promise<void>;
   /** Teacher name or display string, used in feedback attribution. */
   teacherName?: string;
 }
@@ -90,7 +105,7 @@ const QuickNavCard: React.FC<{
     <div className="relative">
       {icon}
       {badge !== undefined && badge !== 0 && (
-        <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+        <span className="absolute -top-1.5 -right-2.5 bg-purple-500 text-white text-[11.5px] font-black rounded-full w-4 h-4 flex items-center justify-center">
           {badge}
         </span>
       )}
@@ -112,9 +127,31 @@ const HomeTab: React.FC<HomeTabProps> = ({
   userSection,
   userClassSections,
   performanceMode = false,
+  onTogglePerformanceMode,
   teacherName,
 }) => {
   const navigate = useNavigate();
+
+  // ── Onboarding "Reduce animation" banner ──
+  // The dismiss is persisted forever in localStorage so the banner only shows
+  // once per browser/profile. The toggle reads the live performanceMode prop
+  // and persists changes server-side via onTogglePerformanceMode.
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(readBannerDismissed);
+  const bannerPerfMode = !!performanceMode;
+
+  const dismissBanner = useCallback(() => {
+    try { window.localStorage.setItem(ONBOARDING_BANNER_DISMISS_KEY, '1'); } catch { /* noop */ }
+    setBannerDismissed(true);
+  }, []);
+
+  const togglePerfPreview = useCallback(async () => {
+    if (!onTogglePerformanceMode) return;
+    try {
+      await onTogglePerformanceMode(!bannerPerfMode);
+    } catch {
+      /* surfaced upstream */
+    }
+  }, [onTogglePerformanceMode, bannerPerfMode]);
 
   // Filter to active class, visible assignments only
   const classAssignments = useMemo(() =>
@@ -209,6 +246,49 @@ const HomeTab: React.FC<HomeTabProps> = ({
     <div key="home" className="space-y-6" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
       <h2 className="sr-only">Home</h2>
 
+      {/* Onboarding tip — Reduce animations */}
+      {!bannerDismissed && (
+        <div
+          role="region"
+          aria-label="Welcome tip: reduce interface animations"
+          className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl"
+        >
+          <Sparkles className="w-5 h-5 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-[var(--text-primary)]">Welcome!</div>
+            <div className="text-xs text-[var(--text-tertiary)]">
+              Want a calmer interface? Toggle to reduce animations across the app.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={togglePerfPreview}
+            role="switch"
+            aria-checked={bannerPerfMode}
+            aria-label={`Reduce animations: currently ${bannerPerfMode ? 'on' : 'off'}`}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-purple-500 ${
+              bannerPerfMode
+                ? 'bg-purple-600/40 border-purple-500/60'
+                : 'bg-[var(--surface-glass-heavy)] border-[var(--border)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${
+                bannerPerfMode ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={dismissBanner}
+            aria-label="Dismiss onboarding tip"
+            className="shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-purple-500"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* New Feedback — compact banner linking to /feedback */}
       {unreadFeedbackItems.length > 0 && (
         <button
@@ -236,7 +316,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
             <Target className="w-6 h-6 text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-0.5">Up Next</div>
+            <div className="text-[11.5px] font-bold text-[var(--accent-text)] uppercase tracking-widest mb-0.5">Up Next</div>
             <div className="text-base font-bold text-[var(--text-primary)] truncate">{upNextAssignment.title}</div>
             <div className={`text-xs font-bold mt-0.5 ${
               new Date(upNextAssignment.dueDate!).getTime() - Date.now() < 0 ? 'text-red-400' :

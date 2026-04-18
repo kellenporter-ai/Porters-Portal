@@ -105,7 +105,7 @@ const createEmptyBlock = (type: BlockType): LessonBlock => {
 
 const inputClass = "w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition";
 const textareaClass = "w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none focus:outline-none focus:border-purple-500/50 transition";
-const labelClass = "text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-1";
+const labelClass = "text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-1";
 
 // ──────────────────────────────────────────────
 // Original block editors
@@ -735,7 +735,7 @@ const DataTableEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock)
           <div key={idx} className="flex items-center gap-2">
             <input type="text" value={col.label} onChange={e => updateColumn(idx, 'label', e.target.value)} placeholder={`Column label`} className={`flex-1 ${inputClass}`} />
             <input type="text" value={col.unit || ''} onChange={e => updateColumn(idx, 'unit', e.target.value)} placeholder="Unit" className={`w-24 ${inputClass}`} />
-            <label className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] whitespace-nowrap">
+            <label className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] whitespace-nowrap">
               <input type="checkbox" checked={col.editable !== false} onChange={e => updateColumn(idx, 'editable', e.target.checked)} />
               Editable
             </label>
@@ -1230,7 +1230,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
                   const catTypes = BLOCK_TYPES.filter(bt => bt.category === cat);
                   return (
                     <div key={cat} className="mb-3 last:mb-0">
-                      <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
+                      <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
                       <div className="grid grid-cols-2 gap-1">
                         {catTypes.map(bt => (
                           <button
@@ -1242,7 +1242,7 @@ const LessonBlockEditor: React.FC<LessonBlockEditorProps> = ({ blocks, onChange 
                             <span className="text-[var(--text-muted)] group-hover:text-purple-400 transition">{bt.icon}</span>
                             <div>
                               <div className="text-xs font-bold text-[var(--text-secondary)]">{bt.label}</div>
-                              <div className="text-[10px] text-[var(--text-muted)]">{bt.description}</div>
+                              <div className="text-[11.5px] text-[var(--text-muted)]">{bt.description}</div>
                             </div>
                           </button>
                         ))}

@@ -47,7 +47,7 @@ const SongQueueTabInner: React.FC<SongQueueTabProps> = ({ songRequests }) => {
 
       {/* Song request list */}
       <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6">
-        <p className="text-[10px] text-[var(--text-muted)] mb-4">Playing via Amazon Music. Mark requests as played to keep the queue current.</p>
+        <p className="text-[11.5px] text-[var(--text-muted)] mb-4">Playing via Amazon Music. Mark requests as played to keep the queue current.</p>
         {(() => {
           const visible = showAllSongs ? songRequests : songRequests.filter(r => r.status === 'pending');
           if (visible.length === 0) {
@@ -96,13 +96,13 @@ const SongQueueTabInner: React.FC<SongQueueTabProps> = ({ songRequests }) => {
                         >
                           <Clipboard className="w-3.5 h-3.5" />
                         </button>
-                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${statusBadge}`}>
+                        <span className={`text-[11.5px] font-bold uppercase px-2 py-0.5 rounded border ${statusBadge}`}>
                           {req.status}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-                      <span className="text-[10px] text-[var(--text-muted)]">
+                      <span className="text-[11.5px] text-[var(--text-muted)]">
                         {req.userName} · {relTime}
                       </span>
                       {req.status === 'pending' && (
@@ -116,7 +116,7 @@ const SongQueueTabInner: React.FC<SongQueueTabProps> = ({ songRequests }) => {
                                 toast.error('Failed to update request.');
                               }
                             }}
-                            className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1.5 rounded-lg transition min-h-[44px]"
+                            className="flex items-center gap-1 text-[11.5px] font-bold text-green-600 bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1.5 rounded-lg transition min-h-[44px]"
                             title="Mark as played"
                           >
                             <Check className="w-3 h-3" /> Played
@@ -130,7 +130,7 @@ const SongQueueTabInner: React.FC<SongQueueTabProps> = ({ songRequests }) => {
                                 toast.error('Failed to update request.');
                               }
                             }}
-                            className="flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] px-2.5 py-1.5 rounded-lg transition min-h-[44px]"
+                            className="flex items-center gap-1 text-[11.5px] font-bold text-[var(--text-muted)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] px-2.5 py-1.5 rounded-lg transition min-h-[44px]"
                             title="Skip / dismiss"
                           >
                             <XIcon className="w-3 h-3" /> Skip

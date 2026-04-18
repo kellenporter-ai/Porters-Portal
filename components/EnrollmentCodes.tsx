@@ -112,10 +112,10 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
               <div className="flex items-center gap-4">
                 <code className="text-lg font-mono font-bold text-emerald-400 tracking-widest">{c.code}</code>
                 <span className="text-xs text-[var(--text-muted)]">{c.classType}</span>
-                {c.section && <span className="text-[10px] bg-[var(--accent-muted)] text-[var(--accent-text)] px-2 py-0.5 rounded">{c.section}</span>}
+                {c.section && <span className="text-[11.5px] bg-[var(--accent-muted)] text-[var(--accent-text)] px-2 py-0.5 rounded">{c.section}</span>}
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-[var(--text-muted)]">
+                <span className="text-[11.5px] text-[var(--text-muted)]">
                   {c.usedCount} used{c.maxUses ? ` / ${c.maxUses}` : ''}
                 </span>
                 <button onClick={() => handleCopy(c.code, c.id)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" title="Copy code">
@@ -132,14 +132,14 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
 
       {inactiveCodes.length > 0 && (
         <details className="mt-4">
-          <summary className="text-[10px] text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-secondary)] uppercase tracking-widest font-bold">
+          <summary className="text-[11.5px] text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-secondary)] uppercase tracking-widest font-bold">
             {inactiveCodes.length} expired code{inactiveCodes.length !== 1 ? 's' : ''}
           </summary>
           <div className="mt-2 space-y-1">
             {inactiveCodes.map(c => (
               <div key={c.id} className="flex items-center justify-between p-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg opacity-50">
                 <code className="text-sm font-mono text-[var(--text-muted)]">{c.code}</code>
-                <span className="text-[10px] text-[var(--text-muted)]">{c.classType} | {c.usedCount} used</span>
+                <span className="text-[11.5px] text-[var(--text-muted)]">{c.classType} | {c.usedCount} used</span>
               </div>
             ))}
           </div>

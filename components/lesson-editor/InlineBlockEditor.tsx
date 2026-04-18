@@ -8,7 +8,7 @@ import { dataService } from '../../services/dataService';
 // ──────────────────────────────────────────────
 export const inputClass = "w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition";
 export const textareaClass = "w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none focus:outline-none focus:border-purple-500/50 transition";
-export const labelClass = "text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-1";
+export const labelClass = "text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest block mb-1";
 
 const InlineImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => {
   const [mode, setMode] = useState<'url' | 'upload'>(block.url ? 'url' : 'upload');
@@ -56,7 +56,7 @@ const InlineImageEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBloc
               <div className="flex flex-col items-center gap-1 text-[var(--text-tertiary)]">
                 <Upload className="w-5 h-5" />
                 <span className="text-xs">Click to select an image</span>
-                <span className="text-[10px] text-[var(--text-muted)]">PNG, JPG, GIF, WebP — max 10 MB</span>
+                <span className="text-[11.5px] text-[var(--text-muted)]">PNG, JPG, GIF, WebP — max 10 MB</span>
               </div>
             )}
           </button>

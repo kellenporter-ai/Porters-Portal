@@ -18,9 +18,9 @@ const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'
 
 const StatCard = ({ label, value, sub, icon }: { label: string; value: string | number; sub?: string; icon: React.ReactNode }) => (
   <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-[var(--border)]">
-    <div className="flex items-center gap-2 mb-2 text-[var(--text-tertiary)]">{icon}<span className="text-[10px] font-bold uppercase tracking-widest">{label}</span></div>
+    <div className="flex items-center gap-2 mb-2 text-[var(--text-tertiary)]">{icon}<span className="text-[11.5px] font-bold uppercase tracking-widest">{label}</span></div>
     <div className="text-2xl font-black text-[var(--text-primary)]">{value}</div>
-    {sub && <div className="text-[10px] text-[var(--text-muted)] mt-1">{sub}</div>}
+    {sub && <div className="text-[11.5px] text-[var(--text-muted)] mt-1">{sub}</div>}
   </div>
 );
 
@@ -199,15 +199,15 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center">
               <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.total.toLocaleString()}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Total in Circulation</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total in Circulation</div>
             </div>
             <div className="text-center">
               <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.avg.toLocaleString()}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Avg per Student</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Avg per Student</div>
             </div>
             <div className="text-center">
               <div className="text-xl font-black text-cyan-700 dark:text-cyan-400">{fluxStats.max.toLocaleString()}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Max Holdings</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Max Holdings</div>
             </div>
           </div>
         </div>
@@ -227,11 +227,11 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
                   {s.avatarUrl && <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-[var(--border-strong)]" alt={s.name} loading="lazy" />}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-[var(--text-primary)] truncate">{s.name}</div>
-                    <div className={`text-[9px] font-mono ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
+                    <div className={`text-[11.5px] font-mono ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-black text-[var(--accent-text)]">{xp.toLocaleString()}</div>
-                    <div className="text-[9px] text-[var(--text-muted)]">Lv{lvl}</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)]">Lv{lvl}</div>
                   </div>
                 </div>
               );

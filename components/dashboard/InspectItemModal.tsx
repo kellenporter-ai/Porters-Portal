@@ -45,7 +45,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               <div className={`text-lg font-bold ${inspectItem.runewordActive ? 'text-amber-300' : colors.text}`}>{inspectItem.name}</div>
               <div className="text-xs text-[var(--text-secondary)] font-mono uppercase">{inspectItem.rarity} {inspectItem.slot}</div>
               {inspectItem.runewordActive && (
-                <div className="text-[10px] font-bold text-amber-400 mt-0.5">{runeword?.name}</div>
+                <div className="text-[11.5px] font-bold text-amber-300 mt-0.5">{runeword?.name}</div>
               )}
             </div>
           </div>
@@ -61,7 +61,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
 
           <div className="mt-4 flex gap-2 flex-wrap">
             {inspectItem.affixes.map((aff, i) => (
-              <span key={i} className="text-[9px] bg-[var(--panel-bg)] px-2 py-1 rounded border border-[var(--border)] text-[var(--text-tertiary)]">
+              <span key={i} className="text-[11.5px] bg-[var(--panel-bg)] px-2 py-1 rounded border border-[var(--border)] text-[var(--text-tertiary)]">
                 {aff.name} (T{aff.tier})
               </span>
             ))}
@@ -79,12 +79,12 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               {/* Runeword banner */}
               {runeword && (
                 <div className="mb-3 text-center">
-                  <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">Runeword Active</div>
+                  <div className="text-xs font-bold text-amber-300 uppercase tracking-widest">Runeword Active</div>
                   <div className="text-lg font-black text-amber-300 mt-1">{runeword.name}</div>
-                  <p className="text-[10px] text-amber-500/70 italic mt-1">{runeword.lore}</p>
+                  <p className="text-[11.5px] text-amber-500/70 italic mt-1">{runeword.lore}</p>
                   <div className="flex justify-center gap-3 mt-2">
                     {Object.entries(runeword.bonusStats).map(([stat, val]) => (
-                      <span key={stat} className="text-[10px] font-mono font-bold text-amber-400">
+                      <span key={stat} className="text-[11.5px] font-mono font-bold text-amber-300">
                         +{val} {stat.slice(0, 3).toUpperCase()}
                       </span>
                     ))}
@@ -92,7 +92,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                   {runeword.bonusEffects && runeword.bonusEffects.length > 0 && (
                     <div className="mt-1">
                       {runeword.bonusEffects.map(eff => (
-                        <span key={eff.id} className="text-[10px] text-purple-400 font-bold">{eff.description}</span>
+                        <span key={eff.id} className="text-[11.5px] text-purple-400 font-bold">{eff.description}</span>
                       ))}
                     </div>
                   )}
@@ -100,7 +100,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               )}
 
               {/* Socket visualization */}
-              <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-2">
+              <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-2">
                 <Hexagon className="w-3 h-3" /> Gem Sockets ({gems.length}/{sockets})
               </div>
               <div className="flex gap-2">
@@ -114,7 +114,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                       >
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: gem.color }} />
                       </div>
-                      <span className="text-[9px] text-[var(--text-tertiary)]">{gem.name}</span>
+                      <span className="text-[11.5px] text-[var(--text-tertiary)]">{gem.name}</span>
                       <button
                         onClick={() => onUnsocketGem(i)}
                         disabled={isProcessing || currency < unsocketFlux}
@@ -136,7 +136,7 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
               {/* Gem socketing UI */}
               {emptySlots > 0 && gemsInventory.length > 0 && (
                 <div className="mt-3 border-t border-[var(--border)] pt-3">
-                  <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mb-2">Socket a Gem ({FLUX_COSTS.ENCHANT} Flux)</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest mb-2">Socket a Gem ({FLUX_COSTS.ENCHANT} Flux)</div>
                   <div className="flex flex-wrap gap-2">
                     {gemsInventory.map((gem: ItemGem & { id?: string }) => (
                       <button
@@ -161,9 +161,9 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
                     );
                     if (possibleRws.length === 0) return null;
                     return (
-                      <div className="mt-2 text-[9px] text-amber-500/60">
+                      <div className="mt-2 text-[11.5px] text-amber-500/60">
                         {possibleRws.map(rw => (
-                          <div key={rw.id}>Possible: <span className="font-bold text-amber-400/80">{rw.name}</span> — needs [{rw.pattern.join(' → ')}]</div>
+                          <div key={rw.id}>Possible: <span className="font-bold text-amber-300/80">{rw.name}</span> — needs [{rw.pattern.join(' → ')}]</div>
                         ))}
                       </div>
                     );
@@ -199,19 +199,19 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
 
             return (
               <div className="col-span-2 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 mb-1">
-                <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Replacing Currently Equipped</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Replacing Currently Equipped</div>
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-xs font-bold ${ceColors.text}`}>{currentlyEquipped.name}</span>
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono">{currentlyEquipped.rarity}</span>
+                  <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{currentlyEquipped.rarity}</span>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {Array.from(allStats).map(stat => {
                     const newVal = (inspectItem.stats as Record<string, number>)[stat] || 0;
                     const oldVal = (currentlyEquipped.stats as Record<string, number>)[stat] || 0;
                     const diff = newVal - oldVal;
-                    if (diff === 0) return <span key={stat} className="text-[10px] text-[var(--text-muted)] font-mono">{stat.slice(0, 3).toUpperCase()}: ±0</span>;
+                    if (diff === 0) return <span key={stat} className="text-[11.5px] text-[var(--text-muted)] font-mono">{stat.slice(0, 3).toUpperCase()}: ±0</span>;
                     return (
-                      <span key={stat} className={`text-[10px] font-mono font-bold ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <span key={stat} className={`text-[11.5px] font-mono font-bold ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {stat.slice(0, 3).toUpperCase()}: {diff > 0 ? '▲' : '▼'}{Math.abs(diff)}
                       </span>
                     );
@@ -253,9 +253,9 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-purple-300">Recalibrate</span>
-              <span className="text-[10px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.RECALIBRATE} Flux</span>
+              <span className="text-[11.5px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.RECALIBRATE} Flux</span>
             </div>
-            <p className="text-[9px] text-[var(--text-muted)]">Reroll numeric values within current tier.</p>
+            <p className="text-[11.5px] text-[var(--text-muted)]">Reroll numeric values within current tier.</p>
           </button>
 
           <button
@@ -265,9 +265,9 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-red-300">Reforge</span>
-              <span className="text-[10px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.REFORGE} Flux</span>
+              <span className="text-[11.5px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.REFORGE} Flux</span>
             </div>
-            <p className="text-[9px] text-[var(--text-muted)]">Reroll all affixes. Keeps Rarity.</p>
+            <p className="text-[11.5px] text-[var(--text-muted)]">Reroll all affixes. Keeps Rarity.</p>
           </button>
 
           <button
@@ -277,9 +277,9 @@ const InspectItemModal: React.FC<InspectItemModalProps> = ({
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-yellow-300">Optimize Tier</span>
-              <span className="text-[10px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.OPTIMIZE} Flux</span>
+              <span className="text-[11.5px] bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 px-1.5 rounded">{FLUX_COSTS.OPTIMIZE} Flux</span>
             </div>
-            <p className="text-[9px] text-[var(--text-muted)]">Upgrade affix tiers to match current operative level.</p>
+            <p className="text-[11.5px] text-[var(--text-muted)]">Upgrade affix tiers to match current operative level.</p>
           </button>
 
           <div className="col-span-2 border-t border-[var(--border)] my-2"></div>

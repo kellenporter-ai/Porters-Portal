@@ -33,23 +33,15 @@ const CATEGORY_BADGE_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-2.5 h-2.5" />,
 };
 
-/** Tailwind classes for the colored category badge pill. Fallback applied when key is missing. */
-const CATEGORY_COLORS: Record<string, string> = {
-  'Lesson':       'bg-purple-500/15 text-purple-400 border-purple-500/25',
-  'Lab':          'bg-amber-500/15 text-amber-400 border-amber-500/25',
-  'Simulation':   'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-  'Practice':     'bg-orange-500/15 text-orange-400 border-orange-500/25',
-  'Supplemental': 'bg-gray-500/15 text-gray-400 border-gray-500/25',
-};
+/**
+ * Neutral pill style for the type badge. Per Claude Design audit (2026-04):
+ * status is the only colored dimension; type/timing/engagement render as
+ * neutral monospace metadata so a row no longer carries 4–5 semantic colors.
+ */
+const NEUTRAL_BADGE = 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] border-[var(--border)]';
 
-/** Tailwind classes for the left icon square on unstarted resources (bg + text + hover shadow). */
-const CATEGORY_ICON_COLORS: Record<string, string> = {
-  'Lesson':       'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20',
-  'Lab':          'bg-amber-500/10 text-amber-400 group-hover:shadow-amber-500/20',
-  'Simulation':   'bg-emerald-500/10 text-emerald-400 group-hover:shadow-emerald-500/20',
-  'Practice':     'bg-orange-500/10 text-orange-400 group-hover:shadow-orange-500/20',
-  'Supplemental': 'bg-gray-500/10 text-gray-400 group-hover:shadow-gray-500/20',
-};
+/** Neutral icon-square style for the left tile on unstarted resources. */
+const NEUTRAL_ICON_TILE = 'bg-[var(--surface-glass)] text-[var(--text-tertiary)]';
 
 type EnrichedAssignment = Assignment & { lastEngagement: string | null; engagementTime: number };
 
@@ -174,7 +166,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         className={`border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${
           resource.isAssessment
             ? 'bg-red-500/5 border-red-500/25 ring-1 ring-red-500/10 hover:border-red-400/50'
-            : `bg-[var(--surface-glass)] ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-[var(--border)]'}`
+            : `bg-[var(--surface-glass)] ${isModuleCompleted ? 'border-green-500/20' : 'border-[var(--border)]'}`
         }`}
         onClick={() => onStartAssignment && onStartAssignment(resource.id)}
       >
@@ -184,8 +176,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
-          isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110 shadow-lg group-hover:shadow-indigo-500/20' :
-          `${CATEGORY_ICON_COLORS[migrateResourceCategory(resource.category) || ''] ?? 'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20'} group-hover:scale-110 shadow-lg`
+          isLessonOnly ? `${NEUTRAL_ICON_TILE} group-hover:scale-110 shadow-lg` :
+          `${NEUTRAL_ICON_TILE} group-hover:scale-110 shadow-lg`
         }`}>
           {isModuleCompleted ? <CheckCircle2 className="w-6 h-6" /> :
             isSubstantial ? <CheckCircle2 className="w-6 h-6" /> :
@@ -197,16 +189,15 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           <div className="flex items-center gap-2">
             {(() => {
               const badgeLabel = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) ?? 'Supplemental');
-              const badgeColors = CATEGORY_COLORS[badgeLabel] ?? 'bg-gray-500/15 text-gray-400 border-gray-500/25';
               return (
-                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${badgeColors}`}>
+                <span className={`text-[11.5px] font-mono uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${NEUTRAL_BADGE}`}>
                   {CATEGORY_BADGE_ICONS[badgeLabel]}
                   {badgeLabel}
                 </span>
               );
             })()}
             {resource.isAssessment && (
-              <span className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest font-bold">
+              <span className="text-[11.5px] bg-red-600/80 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest font-bold">
                 Assessment
               </span>
             )}
@@ -228,7 +219,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                 const effectiveScore = latestSub.rubricGrade?.overallPercentage ?? latestSub.assessmentScore?.percentage ?? latestSub.score ?? 0;
                 const hasScore = latestSub.rubricGrade || latestSub.assessmentScore;
                 return hasScore && assessmentConfig.showScoreOnSubmit !== false ? (
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
+                  <span className={`text-[11.5px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
                     effectiveScore >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/20'
                     : effectiveScore >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     : 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -237,53 +228,53 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                   </span>
                 ) : null;
               })()}
-              <span className="text-[9px] text-[var(--text-muted)] font-bold">
+              <span className="text-[11.5px] text-[var(--text-muted)] font-bold">
                 {isUnlimitedAttempts
                   ? `Attempt ${latestSub.attemptNumber || 1}`
                   : `Attempt ${latestSub.attemptNumber || 1} of ${maxAttempts}`
                 }
               </span>
               {canStillRetake && (
-                <span className="text-[9px] text-purple-400 font-bold flex items-center gap-0.5">
+                <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono flex items-center gap-0.5">
                   <Play className="w-2.5 h-2.5 fill-current" /> Retake available
                 </span>
               )}
               {!canStillRetake && (
-                <span className="text-[9px] text-[var(--text-muted)] font-bold">
+                <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
                   {assessmentConfig.allowResubmission === false ? 'No retakes allowed' : 'No retakes left'}
                 </span>
               )}
               {latestSub.flaggedAsAI && (
-                <span className="text-[9px] text-purple-400 font-bold">Flagged</span>
+                <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">Flagged</span>
               )}
             </div>
           )}
           {resource.isAssessment && !latestSub && (
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[9px] text-red-400 font-bold flex items-center gap-0.5">
+              <span className="text-[11.5px] text-red-400 font-bold flex items-center gap-0.5">
                 <Target className="w-2.5 h-2.5" /> Not yet submitted
               </span>
             </div>
           )}
           <div className="flex items-center gap-3 mt-1">
             {resource.createdAt && (
-              <span className="text-[9px] text-[var(--text-muted)] font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
+              <span className="text-[11.5px] text-[var(--text-muted)] font-bold flex items-center gap-0.5" title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}>
                 <Calendar size={10} /> Posted {formatRelativeDate(resource.createdAt)}
               </span>
             )}
             {resource.lastEngagement && (
-              <span className="text-[9px] text-emerald-400 font-bold">{engMin}m engaged</span>
+              <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">{engMin}m engaged</span>
             )}
             {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
-              <span className="text-[9px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
+              <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">Best: {completion.bestScore}%</span>
             )}
             {hasLessonBlocks && (
-              <span className="text-[9px] text-indigo-400 font-bold flex items-center gap-0.5">
+              <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono flex items-center gap-0.5">
                 <GraduationCap className="w-3 h-3" /> {resource.lessonBlocks!.length} blocks
               </span>
             )}
             {hasDue && (
-              <span className={`text-[9px] font-bold flex items-center gap-0.5 ${dueColor}`} title={dueDate!.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
+              <span className={`text-[11.5px] font-bold flex items-center gap-0.5 ${dueColor}`} title={dueDate!.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}>
                 <Clock className="w-3 h-3" />
                 {daysUntilDue <= 0 ? `Overdue (${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : daysUntilDue === 1 ? `Due tomorrow (${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : `Due ${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (in ${daysUntilDue}d)`}
               </span>
@@ -292,8 +283,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         </div>
         <div className="flex flex-col items-center gap-1.5">
           {hasUnreadFeedback && (
-            <div title="New teacher feedback" role="status" aria-label="New teacher feedback available" className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40">
-              <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+            <div title="New teacher feedback" role="status" aria-label="New teacher feedback available" className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--surface-glass)] border border-[var(--border)]">
+              <MessageSquare className="w-3 h-3 text-[var(--text-tertiary)]" />
             </div>
           )}
           <div className="opacity-0 group-hover:opacity-100 transition">
@@ -319,7 +310,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         />
         {searchQuery && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <span className="text-[10px] text-[var(--text-muted)] font-mono">
+            <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
               {Object.values(filteredUnitGroups).reduce((a, b) => a + b.length, 0)} results
             </span>
             <button onClick={() => setSearchQuery('')} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition" aria-label="Clear search">
@@ -336,7 +327,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           <button
             key={option}
             onClick={() => setSortBy(option)}
-            className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-colors ${
+            className={`px-2 py-0.5 rounded-full text-[11.5px] font-medium transition-colors ${
               sortBy === option
                 ? 'bg-[var(--accent-muted)] text-[var(--accent-text)] border border-purple-500/30'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
@@ -364,7 +355,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                   {expandedUnits.has(unit) ? <ChevronDown className="w-4 h-4 text-[var(--accent-text)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
                   <span className="font-bold text-sm text-[var(--text-secondary)] uppercase tracking-wider">{unit}</span>
                 </div>
-                <span className="text-[10px] bg-[var(--surface-glass)] text-[var(--text-muted)] px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
+                <span className="text-[11.5px] bg-[var(--surface-glass)] text-[var(--text-muted)] px-2 py-0.5 rounded-full font-mono">{items.length} Files</span>
               </button>
 
               {expandedUnits.has(unit) && (

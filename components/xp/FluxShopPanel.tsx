@@ -300,19 +300,19 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
           {currentBoosts.map((boost, i) => (
             <div key={i} className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-md">
               <Clock className="w-3 h-3 text-yellow-400" />
-              <span className="text-[10px] font-bold text-yellow-300">+{Math.round((boost.value - 1) * 100)}% XP · {getTimeRemaining(boost.expiresAt)}</span>
+              <span className="text-[11.5px] font-bold text-yellow-300">+{Math.round((boost.value - 1) * 100)}% XP · {getTimeRemaining(boost.expiresAt)}</span>
             </div>
           ))}
           {rerollTokens > 0 && (
             <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md">
               <RotateCcw className="w-3 h-3 text-blue-400" />
-              <span className="text-[10px] font-bold text-blue-300">{rerollTokens} Reroll{rerollTokens !== 1 ? 's' : ''}</span>
+              <span className="text-[11.5px] font-bold text-blue-300">{rerollTokens} Reroll{rerollTokens !== 1 ? 's' : ''}</span>
             </div>
           )}
           {nameColor && (
             <div className="flex items-center gap-1 bg-[var(--surface-glass)] border border-[var(--border)] px-2 py-0.5 rounded-md">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: nameColor }} aria-hidden="true" />
-              <span className="text-[10px] font-bold text-[var(--text-secondary)]">Name Color</span>
+              <span className="text-[11.5px] font-bold text-[var(--text-secondary)]">Name Color</span>
             </div>
           )}
         </div>
@@ -399,7 +399,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         } ${colors.glow}`}
                       >
                         {isOwnedColor && (
-                          <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-400 uppercase tracking-wide">
+                          <span className="absolute top-2 right-2 text-[11.5px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-400 uppercase tracking-wide">
                             Owned
                           </span>
                         )}
@@ -533,18 +533,18 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-bold text-[var(--text-primary)] text-sm">{model.name}</h4>
                             {model.cost === 0 && (
-                              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                              <span className="text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                                 Free
                               </span>
                             )}
                             {isOwned && model.cost > 0 && (
-                              <span className="text-[10px] font-bold text-violet-700 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded">
+                              <span className="text-[11.5px] font-bold text-violet-700 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded">
                                 Owned
                               </span>
                             )}
                           </div>
                           <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{model.description}</p>
-                          <p className="text-[10px] text-[var(--text-muted)] mt-1">{model.fileSizeKB}KB</p>
+                          <p className="text-[11.5px] text-[var(--text-muted)] mt-1">{model.fileSizeKB}KB</p>
                         </div>
                         {/* Action button inline */}
                         {isOwned ? (
@@ -621,7 +621,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                   <div className="flex items-center gap-2 px-1 ml-2">
                     <span className={subColors.text} aria-hidden="true">{getCosmeticSubIcon(visualType)}</span>
                     <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">{getCosmeticSubLabel(visualType)}</h4>
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono ml-auto">{subColors.price} Flux each</span>
+                    <span className="text-[11.5px] text-[var(--text-muted)] font-mono ml-auto">{subColors.price} Flux each</span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
@@ -665,7 +665,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h4 className="font-bold text-[var(--text-primary)] text-sm">{item.name}</h4>
-                                  <span className={`text-[10px] font-bold ${subColors.text} ${subColors.bg} border ${subColors.border} px-1.5 py-0.5 rounded`}>
+                                  <span className={`text-[11.5px] font-bold ${subColors.text} ${subColors.bg} border ${subColors.border} px-1.5 py-0.5 rounded`}>
                                     Owned
                                   </span>
                                 </div>
@@ -876,14 +876,14 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-bold text-[var(--text-primary)]">{previewCosmeticDef.name}</span>
-                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                            <span className="text-[11.5px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                               Preview
                             </span>
                           </div>
                           <p className="text-xs text-[var(--text-tertiary)] mt-1">{previewCosmeticDef.description}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: previewCosmeticDef.color }} aria-hidden="true" />
-                            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{previewCosmeticDef.visualType}</span>
+                            <span className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-wider">{previewCosmeticDef.visualType}</span>
                           </div>
                         </div>
                       ) : (
@@ -894,7 +894,7 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                               const id = activeCosmetics?.[slot];
                               const slotDef = id ? cosmeticDefMap[id] : null;
                               return slotDef ? (
-                                <span key={slot} className="text-[10px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-1.5 py-0.5 rounded">
+                                <span key={slot} className="text-[11.5px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-1.5 py-0.5 rounded">
                                   {slotDef.name}
                                 </span>
                               ) : null;

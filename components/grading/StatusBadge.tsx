@@ -67,7 +67,7 @@ const STATUS_CONFIG: Record<GradingStatus, { label: string; className: string; i
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'sm' }) => {
   const config = STATUS_CONFIG[status];
-  const sizeClass = size === 'md' ? 'px-3 py-1.5 text-xs' : 'px-2.5 py-1 text-[10px]';
+  const sizeClass = size === 'md' ? 'px-3 py-1.5 text-xs' : 'px-2.5 py-1 text-[11.5px]';
   return (
     <span className={`${sizeClass} rounded-full font-bold flex items-center gap-1 w-fit ${config.className}`}>
       {config.icon}

@@ -176,10 +176,10 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete })
                 </div>
                 <div className="flex items-center gap-2">
                     {material.estimatedMinutes && (
-                        <span className="text-[10px] text-[var(--text-muted)] font-mono">~{material.estimatedMinutes} min read</span>
+                        <span className="text-[11.5px] text-[var(--text-muted)] font-mono">~{material.estimatedMinutes} min read</span>
                     )}
                     {!isActive && (
-                        <div className="flex items-center gap-2 text-[10px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
+                        <div className="flex items-center gap-2 text-[11.5px] text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 uppercase font-bold tracking-widest">
                             <AlertTriangle className="w-3 h-3" /> Scroll to earn XP
                         </div>
                     )}

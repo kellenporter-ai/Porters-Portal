@@ -56,7 +56,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
                   <span className="text-[var(--text-muted)] mx-2">&harr;</span>
                   <span className="font-bold">{pair.studentB.userName}</span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-[var(--text-tertiary)]">
+                <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-tertiary)]">
                   {pair.flaggedBlocks.length > 0 && (
                     <span>{pair.flaggedBlocks.length} similar response{pair.flaggedBlocks.length !== 1 ? 's' : ''}</span>
                   )}
@@ -72,7 +72,7 @@ const IntegrityPanel: React.FC<IntegrityPanelProps> = ({ report, expandedPairIdx
                   {pair.flaggedBlocks.length > 0 ? pair.flaggedBlocks.map((block, bi) => (
                     <div key={bi} className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${block.similarity >= 90 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-[11.5px] font-bold ${block.similarity >= 90 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
                           {block.similarity}%
                         </span>
                         <span className="text-xs text-[var(--text-tertiary)]">

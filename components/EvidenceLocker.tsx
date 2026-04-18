@@ -358,7 +358,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
             </div>
             <div className="flex items-center gap-4">
                 <div className="bg-[var(--panel-bg)] px-4 py-2 rounded-lg border border-emerald-500/20 text-center">
-                    <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest block">Cycle ID</span>
+                    <span className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest block">Cycle ID</span>
                     <span className="font-mono text-emerald-400 font-bold">{currentWeekId}</span>
                 </div>
                 <button 
@@ -395,7 +395,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                                 : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)]'
                         }`}
                     >
-                        <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isActive ? 'text-emerald-100' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>Day {DAYS_OF_WEEK.indexOf(day) + 1}</span>
+                        <span className={`text-[11.5px] font-bold uppercase tracking-widest mb-1 ${isActive ? 'text-emerald-100' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>Day {DAYS_OF_WEEK.indexOf(day) + 1}</span>
                         <span className="font-bold text-sm">{day}</span>
                         {dayLog && (
                             <div className={`absolute top-2 right-2 ${isActive ? 'text-emerald-200' : 'text-emerald-500'}`}>
@@ -417,7 +417,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                         <ImageIcon className="w-4 h-4" /> Evidence Capture ({selectedClass})
                     </h3>
                     {activeLog && (
-                        <div className="text-[9px] bg-[var(--panel-bg)] px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-tertiary)] font-mono flex items-center gap-1">
+                        <div className="text-[11.5px] bg-[var(--panel-bg)] px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-tertiary)] font-mono flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatExifDate(activeLog.exifDate) || formatExifDate(activeLog.timestamp)}
                         </div>
@@ -448,7 +448,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                             )}
                             <div className="text-center">
                                 <span className="text-sm font-bold uppercase tracking-widest block">Upload Photo</span>
-                                <span className="text-[10px] opacity-60">Supports JPG, PNG, WEBP</span>
+                                <span className="text-[11.5px] opacity-60">Supports JPG, PNG, WEBP</span>
                             </div>
                         </button>
                     )}
@@ -477,7 +477,7 @@ const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ user }) => {
                             <ChevronRight className="w-6 h-6" />
                         </div>
                         <p className="font-medium text-sm">Reflection Locked</p>
-                        <p className="text-[10px] mt-1 max-w-[200px]">Upload evidence photo to unlock the reflection journal for this day.</p>
+                        <p className="text-[11.5px] mt-1 max-w-[200px]">Upload evidence photo to unlock the reflection journal for this day.</p>
                     </div>
                 )}
             </div>

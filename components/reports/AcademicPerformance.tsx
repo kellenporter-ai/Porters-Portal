@@ -58,21 +58,21 @@ const AcademicPerformance: React.FC<AcademicPerformanceProps> = ({ submissions, 
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Completion Rate</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Completion Rate</div>
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{completionStats.rate}%</div>
-          <div className="text-[10px] text-[var(--text-muted)]">{completionStats.attempted}/{completionStats.total} resources</div>
+          <div className="text-[11.5px] text-[var(--text-muted)]">{completionStats.attempted}/{completionStats.total} resources</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Avg Assessment</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Avg Assessment</div>
           <div className={`text-lg font-bold ${avgScore !== null ? (avgScore >= 75 ? 'text-emerald-400 print:text-emerald-600' : avgScore >= 50 ? 'text-yellow-400 print:text-yellow-600' : 'text-red-400 print:text-red-600') : 'text-[var(--text-muted)]'}`}>
             {avgScore !== null ? `${avgScore}%` : 'N/A'}
           </div>
-          <div className="text-[10px] text-[var(--text-muted)]">{assessmentResults.length} assessment{assessmentResults.length !== 1 ? 's' : ''}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)]">{assessmentResults.length} assessment{assessmentResults.length !== 1 ? 's' : ''}</div>
         </div>
         <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 print:border-gray-300 print:bg-gray-50">
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total Submissions</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total Submissions</div>
           <div className="text-lg font-bold text-[var(--text-primary)] print:text-black">{submissions.filter(s => s.status !== 'STARTED').length}</div>
-          <div className="text-[10px] text-[var(--text-muted)]">completed</div>
+          <div className="text-[11.5px] text-[var(--text-muted)]">completed</div>
         </div>
       </div>
 
@@ -82,10 +82,10 @@ const AcademicPerformance: React.FC<AcademicPerformanceProps> = ({ submissions, 
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-[var(--border)] print:border-gray-300">
-                <th className="text-left px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Assessment</th>
-                <th className="text-left px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Class</th>
-                <th className="text-center px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Score</th>
-                <th className="text-right px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[10px]">Date</th>
+                <th className="text-left px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[11.5px]">Assessment</th>
+                <th className="text-left px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[11.5px]">Class</th>
+                <th className="text-center px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[11.5px]">Score</th>
+                <th className="text-right px-4 py-2.5 text-[var(--text-muted)] font-bold uppercase tracking-widest text-[11.5px]">Date</th>
               </tr>
             </thead>
             <tbody>

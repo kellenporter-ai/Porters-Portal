@@ -165,11 +165,11 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               <div>
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">{student.name}</h2>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>{rankDetails.rankName}</span>
-                  <span className="text-[10px] text-[var(--text-muted)]">· Lv.{level}</span>
+                  <span className={`text-[11.5px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>{rankDetails.rankName}</span>
+                  <span className="text-[11.5px] text-[var(--text-muted)]">· Lv.{level}</span>
                 </div>
                 {student.gamification?.codename && (
-                  <div className="text-[10px] text-[var(--accent-text)] italic">"{student.gamification.codename}"</div>
+                  <div className="text-[11.5px] text-[var(--accent-text)] italic">"{student.gamification.codename}"</div>
                 )}
               </div>
             </div>
@@ -184,17 +184,17 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
               <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{xp.toLocaleString()}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total XP</div>
             </div>
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
               <Clock className="w-5 h-5 text-blue-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{totalTime}m</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total Time</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Total Time</div>
             </div>
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
               <BookOpen className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{submissions.length}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Resources</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Resources</div>
             </div>
           </div>
 
@@ -202,12 +202,12 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
               <Package className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{currency}</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Cyber-Flux</div>
             </div>
             <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 text-center">
               <Flame className="w-5 h-5 text-red-400 mx-auto mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{streak}w</div>
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Streak</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Streak</div>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
             <div className="space-y-2">
               {Object.entries(playerStats).map(([stat, val]) => (
                 <div key={stat} className="flex items-center gap-3">
-                  <span className="text-[10px] text-[var(--text-tertiary)] uppercase w-16 font-bold">{stat}</span>
+                  <span className="text-[11.5px] text-[var(--text-tertiary)] uppercase w-16 font-bold">{stat}</span>
                   <div className="flex-1 h-2 bg-[var(--surface-glass)] rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all" style={{ width: `${Math.min(100, val)}%` }} />
                   </div>
@@ -236,13 +236,13 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               <div className={`border rounded-2xl p-4 ${meta.borderColor} ${meta.bgColor}`}>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Engagement Bucket</h4>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${meta.color} border ${meta.borderColor}`}>
+                  <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${meta.color} border ${meta.borderColor}`}>
                     {meta.label}
                   </span>
                 </div>
                 <p className="text-xs text-[var(--text-secondary)] mb-3">{meta.description}</p>
                 {/* Metrics snapshot */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[var(--text-tertiary)] mb-3">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[var(--text-tertiary)] mb-3">
                   <span>ES: {bp.engagementScore}</span>
                   <span>Subs: {bp.metrics.submissionCount}</span>
                   <span>Days Active: {bp.metrics.activityDays}/7</span>
@@ -253,12 +253,12 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                 <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Recommended Action</span>
+                    <span className="text-[11.5px] font-bold text-amber-400 uppercase tracking-widest">Recommended Action</span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mb-2">{bp.recommendation.action}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {bp.recommendation.categories.map(cat => (
-                      <span key={cat} className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)]">
+                      <span key={cat} className="px-2 py-0.5 rounded-full text-[11.5px] font-bold bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)]">
                         {cat}
                       </span>
                     ))}
@@ -274,7 +274,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                   if (classAssignments.length === 0) return null;
                   return (
                     <div className="mt-3">
-                      <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Suggested Resources</div>
+                      <div className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Suggested Resources</div>
                       <div className="space-y-1">
                         {classAssignments.map(a => (
                           <div key={a.id} className="flex items-center gap-2 py-1 text-xs">
@@ -298,7 +298,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                 {engagementTrend.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-green-400" />}
                 {engagementTrend.trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-400" />}
                 {engagementTrend.trend === 'flat' && <Minus className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />}
-                <span className={`text-[10px] font-bold uppercase ${engagementTrend.trend === 'up' ? 'text-green-400' : engagementTrend.trend === 'down' ? 'text-red-400' : 'text-[var(--text-tertiary)]'}`}>
+                <span className={`text-[11.5px] font-bold uppercase ${engagementTrend.trend === 'up' ? 'text-green-400' : engagementTrend.trend === 'down' ? 'text-red-400' : 'text-[var(--text-tertiary)]'}`}>
                   {engagementTrend.trend === 'up' ? 'Trending Up' : engagementTrend.trend === 'down' ? 'Declining' : 'Stable'}
                 </span>
               </div>
@@ -315,7 +315,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                     />
                     <span className="text-[8px] text-[var(--text-muted)]">{day.label}</span>
                     {/* Tooltip */}
-                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-[var(--surface-overlay)] border border-[var(--border)] rounded px-2 py-1 text-[10px] text-[var(--text-primary)] whitespace-nowrap z-10 pointer-events-none">
+                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-[var(--surface-overlay)] border border-[var(--border)] rounded px-2 py-1 text-[11.5px] text-[var(--text-primary)] whitespace-nowrap z-10 pointer-events-none">
                       {day.time}m · {day.subs} sub{day.subs !== 1 ? 's' : ''}
                     </div>
                   </div>
@@ -334,7 +334,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                     <span className="text-sm font-bold text-[var(--text-primary)]">{cb.cls}</span>
                     <span className="text-xs text-[var(--accent-text)] font-bold">{cb.classXp.toLocaleString()} XP</span>
                   </div>
-                  <div className="flex gap-4 text-[10px] text-[var(--text-tertiary)]">
+                  <div className="flex gap-4 text-[11.5px] text-[var(--text-tertiary)]">
                     <span><Shield className="w-3 h-3 inline mr-0.5" />{cb.gearScore} GS</span>
                     <span><Package className="w-3 h-3 inline mr-0.5" />{cb.inventoryCount} items</span>
                     <span><BookOpen className="w-3 h-3 inline mr-0.5" />{cb.resourcesViewed} viewed</span>
@@ -354,7 +354,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
               >
                 <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest flex items-center gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5" /> Resource Performance
-                  <span className="text-[9px] text-[var(--text-muted)] normal-case tracking-normal font-normal ml-1">({resourcePerformance.length})</span>
+                  <span className="text-[11.5px] text-[var(--text-muted)] normal-case tracking-normal font-normal ml-1">({resourcePerformance.length})</span>
                 </h4>
                 {resourcesExpanded ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
               </button>
@@ -370,11 +370,11 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="min-w-0 flex-1">
                             <div className="text-xs text-[var(--text-primary)] font-bold truncate">{r.title}</div>
-                            <div className="text-[9px] text-[var(--text-muted)]">{r.classType} · {r.category}</div>
+                            <div className="text-[11.5px] text-[var(--text-muted)]">{r.classType} · {r.category}</div>
                           </div>
                           <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${qualityBg}`} title={`${quality} engagement`} />
                         </div>
-                        <div className="grid grid-cols-4 gap-2 text-[10px]">
+                        <div className="grid grid-cols-4 gap-2 text-[11.5px]">
                           <div>
                             <div className="text-[var(--text-muted)]">Time</div>
                             <div className="text-[var(--text-primary)] font-bold">{mins}m</div>
@@ -393,7 +393,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                           </div>
                         </div>
                         {r.lastVisit && (
-                          <div className="text-[9px] text-[var(--text-muted)] mt-1.5">
+                          <div className="text-[11.5px] text-[var(--text-muted)] mt-1.5">
                             Last visited {new Date(r.lastVisit).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                           </div>
                         )}
@@ -419,9 +419,9 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                       <div className={`w-2 h-2 rounded-full ${engMin >= 5 ? 'bg-green-500' : engMin >= 1 ? 'bg-yellow-500' : 'bg-gray-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-[var(--text-primary)] font-bold truncate">{s.assignmentTitle}</div>
-                        <div className="text-[10px] text-[var(--text-muted)]">{s.classType} · {engMin}m engaged</div>
+                        <div className="text-[11.5px] text-[var(--text-muted)]">{s.classType} · {engMin}m engaged</div>
                       </div>
-                      <div className="text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+                      <div className="text-[11.5px] text-[var(--text-muted)] whitespace-nowrap">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '—'}
                       </div>
                     </div>
@@ -432,7 +432,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
           </div>
 
           {/* Meta */}
-          <div className="text-[10px] text-[var(--text-muted)] space-y-1 pb-4">
+          <div className="text-[11.5px] text-[var(--text-muted)] space-y-1 pb-4">
             <div>Email: {student.email}</div>
             <div>Section: {student.section || 'Unassigned'}</div>
             <div>Enrolled: {enrolledClasses.join(', ') || 'None'}</div>

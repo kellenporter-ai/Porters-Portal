@@ -3,6 +3,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
+
+// Display-name overrides for sidebar primary label (UX audit 2.2 — function-first dual naming).
+// The canonical NavItem.name remains the route/tab key; this map only affects what the user reads.
+const NAV_DISPLAY_NAMES: Record<string, string> = {
+  'Agent Loadout': 'Gear',
+  'Flux Shop': 'Shop',
+  'Intel Dossier': 'My Stats',
+};
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Zap, Bug, Music } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
@@ -10,6 +18,7 @@ import PortalLogo from './PortalLogo';
 import { sfx } from '../lib/sfx';
 import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
+import CommandPalette, { CommandPaletteItem } from './CommandPalette';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
@@ -24,6 +33,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const { enabledFeatures } = useClassConfig();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
@@ -108,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   // Persist collapsed groups in localStorage
   const [collapsedGroups, setCollapsedGroups] = useState<Set<NavGroup>>(() => {
     try {
-      const stored = localStorage.getItem('nav-collapsed-groups');
+      const stored = localStorage.getItem('nav-collapsed-groups-v2');
       return stored ? new Set(JSON.parse(stored) as NavGroup[]) : new Set();
     } catch { return new Set(); }
   });
@@ -117,7 +128,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev);
       if (next.has(group)) next.delete(group); else next.add(group);
-      localStorage.setItem('nav-collapsed-groups', JSON.stringify([...next]));
+      localStorage.setItem('nav-collapsed-groups-v2', JSON.stringify([...next]));
       return next;
     });
   }, []);
@@ -222,9 +233,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             <span className={`${isActive ? 'text-[var(--sidebar-text-active)]' : 'text-[var(--sidebar-text-muted)] group-hover:text-[var(--sidebar-text-active)]'}`}>
               <AnimatedIcon src={item.iconSrc} alt={item.name} size={item.iconSize || 40} disableAnimation={settings.performanceMode} />
             </span>
-            <span className="font-medium text-sm flex-1 text-left flex items-center gap-2">
-              {item.name}
-              {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
+            <span className="flex-1 text-left min-w-0">
+              <span className="flex items-center gap-2">
+                <span className="font-medium text-sm truncate">{NAV_DISPLAY_NAMES[item.name] ?? item.name}</span>
+                {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
+              </span>
+              {item.flavor && (
+                <span className="block text-[11px] font-mono text-[var(--text-tertiary,var(--sidebar-text-muted))] leading-tight mt-0.5 truncate">
+                  {item.flavor}
+                </span>
+              )}
             </span>
             {item.children && (
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedParent === item.name ? 'rotate-180' : ''} ${isChildActive(item) ? 'text-[var(--accent-text)]' : 'text-[var(--sidebar-text-muted)]'}`} />
@@ -300,7 +318,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 <button
                   onClick={() => toggleGroup(group)}
                   aria-expanded={!isCollapsed}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
                 >
                   <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                   {NAV_GROUP_LABELS[group]}
@@ -321,6 +339,57 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     // Admin: render flat, respecting collapsed state
     return <>{filteredItems.map(i => renderNavButton(i, sidebarCollapsed && !forceExpanded))}</>;
   };
+
+  // Global Cmd+K / Ctrl+K listener for command palette (matches VS Code behavior — intercept even in inputs)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Build flat list of palette items from NAVIGATION, filtered by role + feature flags.
+  // Children are flattened as "Parent:Child" entries so the palette can jump to nested tabs.
+  const commandPaletteItems = React.useMemo<CommandPaletteItem[]>(() => {
+    const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
+      'Leaderboard': 'leaderboard',
+    };
+    const items: CommandPaletteItem[] = [];
+    NAVIGATION.forEach(item => {
+      if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return;
+      if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return;
+      if (user.role === UserRole.STUDENT && featureNavMap[item.name] && !enabledFeatures[featureNavMap[item.name]]) return;
+
+      if (item.children && item.children.length > 0) {
+        // Add the parent as a group entry (jumps to first child)
+        items.push({
+          ...item,
+          navTarget: `${item.name}:${item.children[0].name}`,
+          displayName: NAV_DISPLAY_NAMES[item.name] ?? item.name,
+        });
+        item.children.forEach(child => {
+          items.push({
+            name: child.name,
+            iconSrc: child.iconSrc,
+            iconSize: child.iconSize,
+            role: item.role,
+            navTarget: `${item.name}:${child.name}`,
+            displayName: `${NAV_DISPLAY_NAMES[item.name] ?? item.name} › ${child.name}`,
+          });
+        });
+      } else {
+        items.push({
+          ...item,
+          displayName: NAV_DISPLAY_NAMES[item.name] ?? item.name,
+        });
+      }
+    });
+    return items;
+  }, [user.role, enabledFeatures]);
 
   // Arrow key navigation within sidebar nav items
   const handleNavKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
@@ -346,12 +415,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 2a. Light mode: Tech circuit background image */}
       {isLight && (
-        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url('/assets/light-bg.png')" }}></div>
       )}
 
       {/* 2b. Dark mode: Circuit board background image */}
       {!isLight && (
-        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
       )}
 
       {/* 3. Glass Overlay */}
@@ -409,7 +478,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                           </div>
                           <div>
                               <p className="text-sm font-bold text-[var(--sidebar-text)]">{settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}</p>
-                              <p className="text-[10px] text-[var(--sidebar-text-muted)]">{user.role}</p>
+                              <p className="text-[11.5px] text-[var(--sidebar-text-muted)]">{user.role}</p>
                           </div>
                       </div>
                       <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]" aria-label="Close navigation menu">
@@ -463,7 +532,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <div className="min-w-0 flex-1">
                 <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">Porter's Portal</h1>
                 <div className="flex items-center gap-1">
-                  <p className="text-[10px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
+                  <p className="text-[11.5px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
                     {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
                   </p>
                   <button
@@ -599,12 +668,19 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 }`}
               >
                 <AnimatedIcon src={item.iconSrc} alt={item.name} size={32} disableAnimation={settings.performanceMode} groupHover={false} />
-                <span className="text-[10px] font-bold">{item.name}</span>
+                <span className="text-[11.5px] font-bold">{item.name}</span>
               </button>
             );
           })}
         </nav>
       )}
+
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelect={handleNavigate}
+        items={commandPaletteItems}
+      />
 
       <SettingsModal
         isOpen={isSettingsOpen}

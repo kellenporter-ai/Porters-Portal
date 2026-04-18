@@ -34,7 +34,7 @@ const StatBar: React.FC<{ label: string; value: number; max: number; color: stri
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="absolute -top-10 left-0 hidden group-hover:block z-20 w-56 p-2 bg-[var(--backdrop)] border border-[var(--border-strong)] rounded-lg text-[10px] text-[var(--text-secondary)] shadow-xl">
+      <div className="absolute -top-10 left-0 hidden group-hover:block z-20 w-56 p-2 bg-[var(--backdrop)] border border-[var(--border-strong)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
         {description}
       </div>
     </div>
@@ -48,10 +48,10 @@ const MetricCard: React.FC<{ label: string; value: string | number; sub?: string
   <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
     <div className="flex items-center gap-2 mb-1">
       <span className="text-[var(--text-muted)]">{icon}</span>
-      <span className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{label}</span>
+      <span className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{label}</span>
     </div>
     <div className={`text-lg font-black ${color} leading-tight`}>{value}</div>
-    {sub && <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{sub}</div>}
+    {sub && <div className="text-[11.5px] text-[var(--text-muted)] mt-0.5">{sub}</div>}
   </div>
 );
 
@@ -190,7 +190,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         </div>
         <div className="text-right">
           <div className={`text-sm font-black ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>{rankDetails.rankName}</div>
-          <div className="text-[10px] text-[var(--text-muted)]">Level {level}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)]">Level {level}</div>
         </div>
       </div>
 
@@ -220,19 +220,19 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           {/* Derived combat readouts */}
           <div className="grid grid-cols-4 gap-2 pt-3 border-t border-[var(--border)]">
             <div className="text-center">
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Max HP</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Max HP</div>
               <div className="text-sm font-black text-emerald-400">{combat.maxHp}</div>
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Armor</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Armor</div>
               <div className="text-sm font-black text-yellow-400">{combat.armorPercent.toFixed(0)}%</div>
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Crit %</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Crit %</div>
               <div className="text-sm font-black text-green-400">{(combat.critChance * 100).toFixed(0)}%</div>
             </div>
             <div className="text-center">
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold">Crit Dmg</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Crit Dmg</div>
               <div className="text-sm font-black text-red-400">{combat.critMultiplier.toFixed(2)}x</div>
             </div>
           </div>
@@ -240,8 +240,8 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           {/* Stat source breakdown */}
           {(Object.keys(gemStats).length > 0 || Object.keys(runewordStats).length > 0 || Object.keys(setBonusStats).length > 0) && (
             <div className="pt-3 border-t border-[var(--border)] space-y-2">
-              <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Stat Sources</div>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Stat Sources</div>
+              <div className="grid grid-cols-2 gap-1.5 text-[11.5px]">
                 <div className="flex justify-between text-[var(--text-muted)]"><span>Base Stats</span><span className="text-[var(--text-tertiary)]">10 each</span></div>
                 {Object.keys(gemStats).length > 0 && (
                   <div className="flex justify-between text-cyan-700/70 dark:text-cyan-400/70"><span>Gems</span><span>+{Object.values(gemStats).reduce((a, b) => a + b, 0)}</span></div>
@@ -277,7 +277,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
                     <span className="text-[var(--text-secondary)]">{source.label}</span>
                     <span className={`font-bold ${source.textColor}`}>~{source.xp.toLocaleString()} XP</span>
                   </div>
-                  <div className="text-[10px] text-[var(--text-muted)]">{source.desc}</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)]">{source.desc}</div>
                 </div>
               </div>
             ))}
@@ -291,7 +291,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
                 <span className="text-orange-400 font-bold">Streak Bonus Active</span>
                 <span className="ml-auto text-sm font-black text-yellow-400">+{Math.round((streakMultiplier - 1) * 100)}%</span>
               </div>
-              <div className="text-[10px] text-[var(--text-muted)] mt-1">{streak}-week engagement streak &middot; All XP earnings boosted</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] mt-1">{streak}-week engagement streak &middot; All XP earnings boosted</div>
             </div>
           )}
 
@@ -319,7 +319,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
 
           {/* Why this bucket */}
           <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] space-y-2">
-            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Why this classification</div>
+            <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Why this classification</div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">Active time (7d)</span>
@@ -342,16 +342,16 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
 
           {/* Recommendation */}
           <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
-            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-1">How to level up your status</div>
+            <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-1">How to level up your status</div>
             <p className="text-sm text-[var(--text-secondary)]">{bucketInfo.recommendation.studentTip}</p>
           </div>
 
           {/* Recommended resources */}
           <div>
-            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Recommended for you</div>
+            <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Recommended for you</div>
             <div className="flex flex-wrap gap-1.5">
               {bucketInfo.recommendation.categories.map(cat => (
-                <span key={cat} className="text-[10px] bg-[var(--surface-glass)] border border-[var(--border-strong)] px-2.5 py-1 rounded-full text-[var(--text-secondary)] font-medium">
+                <span key={cat} className="text-[11.5px] bg-[var(--surface-glass)] border border-[var(--border-strong)] px-2.5 py-1 rounded-full text-[var(--text-secondary)] font-medium">
                   {cat}
                 </span>
               ))}
@@ -368,7 +368,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
           <div className="flex items-end gap-2 h-32">
             {activityTimeline.map((day, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="text-[9px] text-[var(--text-muted)] font-mono">{day.minutes}m</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] font-mono">{day.minutes}m</div>
                 <div className="w-full bg-[var(--surface-glass)] rounded-t-lg relative flex-1 flex items-end">
                   <div
                     className={`w-full rounded-t-lg transition-all duration-500 ${
@@ -377,7 +377,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
                     style={{ height: `${Math.max(day.minutes > 0 ? 8 : 0, (day.minutes / maxDayMinutes) * 100)}%` }}
                   />
                 </div>
-                <div className="text-[9px] text-[var(--text-muted)] font-bold">{day.label}</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] font-bold">{day.label}</div>
                 {day.count > 0 && (
                   <div className="text-[8px] text-[var(--text-muted)]">{day.count} res</div>
                 )}
@@ -387,7 +387,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
 
           {/* Submission status breakdown */}
           <div className="pt-3 border-t border-[var(--border)]">
-            <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Submission Quality</div>
+            <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Submission Quality</div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               {statusBreakdown.SUCCESS > 0 && (
                 <div className="flex items-center gap-2">
@@ -432,7 +432,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Offense */}
           <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-red-500/10 space-y-2">
-            <div className="text-[10px] text-red-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
+            <div className="text-[11.5px] text-red-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
               <Swords className="w-3 h-3" /> Offense
             </div>
             <div className="text-sm text-[var(--text-secondary)]">
@@ -441,14 +441,14 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
               {playerStats.tech <= 20 && playerStats.tech > 10 && <span className="text-yellow-400"> Moderate damage output.</span>}
               {playerStats.tech <= 10 && <span className="text-red-400"> Low damage — equip Tech gear to improve.</span>}
             </div>
-            <div className="text-[10px] text-[var(--text-muted)]">
+            <div className="text-[11.5px] text-[var(--text-muted)]">
               Crit chance: <span className="text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span> (from {playerStats.focus} Focus)
             </div>
           </div>
 
           {/* Defense */}
           <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-yellow-500/10 space-y-2">
-            <div className="text-[10px] text-yellow-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
+            <div className="text-[11.5px] text-yellow-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
               <Shield className="w-3 h-3" /> Defense
             </div>
             <div className="text-sm text-[var(--text-secondary)]">
@@ -461,7 +461,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
 
           {/* Survivability */}
           <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-emerald-500/10 space-y-2">
-            <div className="text-[10px] text-emerald-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
+            <div className="text-[11.5px] text-emerald-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
               <Heart className="w-3 h-3" /> Survivability
             </div>
             <div className="text-sm text-[var(--text-secondary)]">
@@ -475,7 +475,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
 
         {/* Improvement tips */}
         <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)]">
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Recommendations</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest mb-2">Recommendations</div>
           <div className="space-y-1.5">
             {gearScore < 100 && (
               <div className="flex items-start gap-2 text-[11px] text-[var(--text-tertiary)]">

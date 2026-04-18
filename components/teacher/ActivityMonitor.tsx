@@ -252,7 +252,7 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
         {/* Header */}
         <div role="rowgroup">
           <div
-            className="flex items-center border-b border-[var(--border)] text-[10px] uppercase font-bold text-[var(--text-muted)]"
+            className="flex items-center border-b border-[var(--border)] text-[11.5px] uppercase font-bold text-[var(--text-muted)]"
             role="row"
           >
             <div className="p-3 w-10 shrink-0" role="columnheader">

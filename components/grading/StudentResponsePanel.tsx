@@ -82,7 +82,7 @@ function renderBarChart(chartData: { initial?: Array<{ value: number; labelHTML:
             <div className="flex gap-2 mt-0.5">
               {bars.map((bar, i) => (
                 <div key={i} className="flex flex-col items-center">
-                  <div className="text-[10px] text-[var(--text-secondary)] font-mono">{bar.value}</div>
+                  <div className="text-[11.5px] text-[var(--text-secondary)] font-mono">{bar.value}</div>
                   <div
                     className="w-6 rounded-t"
                     style={{
@@ -325,21 +325,21 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           <NavButtons />
           {isNotStarted ? <Users className="w-4 h-4 text-orange-400" aria-hidden="true" /> : <Eye className="w-4 h-4 text-cyan-400" aria-hidden="true" />}
           <h4 className="text-sm font-bold text-[var(--text-primary)]">{draftStudentName}</h4>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isNotStarted ? 'bg-orange-500/20 text-orange-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+          <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded ${isNotStarted ? 'bg-orange-500/20 text-orange-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
             {isNotStarted ? 'NOT STARTED' : 'DRAFT'}
           </span>
           <div className="ml-auto flex items-center gap-2">
             {!isNotStarted && (
               <button
                 onClick={handleSubmitOnBehalf}
-                className="text-[10px] text-green-400 hover:text-green-300 font-bold px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 transition flex items-center gap-0.5"
+                className="text-[11.5px] text-green-400 hover:text-green-300 font-bold px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 transition flex items-center gap-0.5"
               >
                 <Send className="w-3 h-3" aria-hidden="true" /> Submit
               </button>
             )}
             <button
               onClick={handleNudge}
-              className={`text-[10px] font-bold px-2 py-1 rounded transition ${isNotStarted ? 'text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20' : 'text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20'}`}
+              className={`text-[11.5px] font-bold px-2 py-1 rounded transition ${isNotStarted ? 'text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20' : 'text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20'}`}
             >
               Nudge
             </button>
@@ -411,7 +411,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                   : 'No answer';
                 return (
                   <div key={blockId} className="flex items-center gap-3 p-2 rounded-lg border bg-cyan-900/10 border-cyan-500/20">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-cyan-500/20 text-cyan-400">?</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11.5px] font-bold bg-cyan-500/20 text-cyan-400">?</div>
                     <span className="text-xs text-[var(--text-tertiary)] font-mono truncate">{blockId.slice(0, 12)}...</span>
                     <span className="text-xs text-cyan-300 truncate flex-1">{answerText}</span>
                   </div>
@@ -488,7 +488,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           {sub.flaggedAsAI ? (
             <button
               onClick={onUnflagAI}
-              className="flex items-center gap-1 bg-gray-600 hover:bg-gray-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition"
+              className="flex items-center gap-1 bg-gray-600 hover:bg-gray-500 text-white text-[11.5px] font-bold px-2.5 py-1 rounded-lg transition"
               aria-label="Remove AI flag"
             >
               <Undo2 className="w-3 h-3" aria-hidden="true" />
@@ -497,7 +497,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           ) : (
             <button
               onClick={onFlagAsAI}
-              className="flex items-center gap-1 bg-red-600/80 hover:bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition"
+              className="flex items-center gap-1 bg-red-600/80 hover:bg-red-500 text-white text-[11.5px] font-bold px-2.5 py-1 rounded-lg transition"
               aria-label="Flag as AI suspected"
             >
               <Bot className="w-3 h-3" aria-hidden="true" />
@@ -582,7 +582,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                 : 'bg-gray-500/20 text-[var(--text-tertiary)]';
               return (
                 <div key={blockId} className={`flex items-center gap-3 p-2 rounded-lg border ${borderClass}`}>
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${iconClass}`}>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11.5px] font-bold ${iconClass}`}>
                     {isPending ? <Clock className="w-3 h-3" aria-hidden="true" /> : blockResult?.correct ? <CheckCircle className="w-3 h-3" aria-hidden="true" /> : blockResult ? <AlertTriangle className="w-3 h-3" aria-hidden="true" /> : '?'}
                   </div>
                   <span className="text-xs text-[var(--text-tertiary)] font-mono truncate">{blockId.slice(0, 12)}...</span>

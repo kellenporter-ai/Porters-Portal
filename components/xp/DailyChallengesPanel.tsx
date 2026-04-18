@@ -75,9 +75,9 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-[var(--text-primary)]">{challenge.title}</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-yellow-400 font-bold">+{challenge.xpReward} XP</span>
+                <span className="text-[11.5px] text-yellow-400 font-bold">+{challenge.xpReward} XP</span>
                 {challenge.fluxReward && (
-                  <span className="text-[10px] text-cyan-700 dark:text-cyan-400 font-bold">+{challenge.fluxReward}</span>
+                  <span className="text-[11.5px] text-cyan-700 dark:text-cyan-400 font-bold">+{challenge.fluxReward}</span>
                 )}
               </div>
             </div>
@@ -95,7 +95,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
-                <span className="text-[9px] text-[var(--text-muted)] font-mono">{current}/{challenge.target}</span>
+                <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{current}/{challenge.target}</span>
               </div>
             )}
 

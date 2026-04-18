@@ -74,7 +74,7 @@ const ModifierBadge: React.FC<{ modifier: BossModifier }> = ({ modifier }) => {
   const def = BOSS_MODIFIER_DEFS[modifier.type as BossModifierType];
   if (!def) return null;
   return (
-    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-[9px] font-bold text-pink-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
+    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-[11.5px] font-bold text-pink-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
       <Flame className="w-2.5 h-2.5" />
       {modifier.label || def.name}
       {def.hasValue && modifier.value !== undefined && <span className="text-pink-300 ml-0.5">{modifier.value}{def.unit}</span>}
@@ -125,7 +125,7 @@ const StudentEndgame: React.FC<{
       ) : participated === false ? (
         <div className="text-center p-3 rounded-xl bg-red-500/5 border border-red-500/20">
           <p className="text-sm text-red-400 font-bold">Did not qualify for rewards</p>
-          <p className="text-[10px] text-[var(--text-muted)] mt-1">Needed {BOSS_PARTICIPATION_MIN_ATTEMPTS} attempts and {BOSS_PARTICIPATION_MIN_CORRECT} correct answer</p>
+          <p className="text-[11.5px] text-[var(--text-muted)] mt-1">Needed {BOSS_PARTICIPATION_MIN_ATTEMPTS} attempts and {BOSS_PARTICIPATION_MIN_CORRECT} correct answer</p>
         </div>
       ) : null}
 
@@ -133,28 +133,28 @@ const StudentEndgame: React.FC<{
       {stats && (
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><Swords className="w-3 h-3" /> Damage Dealt</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Swords className="w-3 h-3" /> Damage Dealt</div>
             <div className="text-lg font-black text-amber-400">{stats.totalDamageDealt.toLocaleString()}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><Target className="w-3 h-3" /> Accuracy</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Target className="w-3 h-3" /> Accuracy</div>
             <div className="text-lg font-black text-green-400">{accuracy}%</div>
-            <div className="text-[10px] text-[var(--text-muted)]">{correct}/{attempted}</div>
+            <div className="text-[11.5px] text-[var(--text-muted)]">{correct}/{attempted}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><Zap className="w-3 h-3" /> Critical Hits</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Zap className="w-3 h-3" /> Critical Hits</div>
             <div className="text-lg font-black text-red-400">{stats.criticalHits}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><Shield className="w-3 h-3" /> Damage Mitigated</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Shield className="w-3 h-3" /> Damage Mitigated</div>
             <div className="text-lg font-black text-cyan-700 dark:text-cyan-400">{stats.damageReduced}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> Longest Streak</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> Longest Streak</div>
             <div className="text-lg font-black text-purple-400">{stats.longestStreak}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[9px] text-gray-500 uppercase font-bold mb-1"><Heart className="w-3 h-3" /> Healing Received</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Heart className="w-3 h-3" /> Healing Received</div>
             <div className="text-lg font-black text-emerald-400">{stats.healingReceived}</div>
           </div>
         </div>
@@ -174,11 +174,11 @@ const StudentEndgame: React.FC<{
                 diff === 'MEDIUM' ? 'border-yellow-500/20 bg-yellow-500/5' :
                 'border-red-500/20 bg-red-500/5'
               }`}>
-                <div className={`text-[9px] font-bold uppercase ${
+                <div className={`text-[11.5px] font-bold uppercase ${
                   diff === 'EASY' ? 'text-green-400' : diff === 'MEDIUM' ? 'text-yellow-400' : 'text-red-400'
                 }`}>{diff}</div>
                 <div className="text-sm font-black text-white">{pct}%</div>
-                <div className="text-[9px] text-gray-500">{c}/{t}</div>
+                <div className="text-[11.5px] text-[var(--text-tertiary)]">{c}/{t}</div>
               </div>
             );
           })}
@@ -359,7 +359,7 @@ const QuizBossCard: React.FC<{
         <h4 className="text-lg font-black text-amber-400">
           {quiz.bossName}
           {quiz.difficultyTier && quiz.difficultyTier !== 'NORMAL' && (
-            <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded ${
+            <span className={`ml-2 text-[11.5px] font-bold px-2 py-0.5 rounded ${
               quiz.difficultyTier === 'HARD' ? 'text-amber-400 bg-amber-900/30' :
               quiz.difficultyTier === 'NIGHTMARE' ? 'text-red-400 bg-red-900/30' :
               'text-purple-400 bg-purple-900/30'
@@ -474,7 +474,7 @@ const QuizBossCard: React.FC<{
             </div>
             {/* Player Role Badge */}
             {answerResult?.playerRole && (
-              <div className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+              <div className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold border ${
                 answerResult.playerRole === 'VANGUARD' ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' :
                 answerResult.playerRole === 'STRIKER' ? 'text-green-400 border-green-500/30 bg-green-500/10' :
                 answerResult.playerRole === 'SENTINEL' ? 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' :
@@ -519,7 +519,7 @@ const QuizBossCard: React.FC<{
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                 <span>Question {currentQuestion + 1} / {shuffledQuestions.length}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${
                   question.difficulty === 'HARD' ? 'bg-red-500/20 text-red-400' :
                   question.difficulty === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
                   'bg-green-500/20 text-green-400'
@@ -593,7 +593,7 @@ const QuizBossCard: React.FC<{
 
           {/* Participation requirement (subtle) */}
           {progress && !bossDefeated && !knockedOut && !allAnswered && (
-            <div className="text-[9px] text-gray-600 text-center pt-1">
+            <div className="text-[11.5px] text-[var(--text-tertiary)] text-center pt-1">
               {(progress.combatStats?.questionsAttempted || 0) < BOSS_PARTICIPATION_MIN_ATTEMPTS || (progress.combatStats?.questionsCorrect || 0) < BOSS_PARTICIPATION_MIN_CORRECT ? (
                 <span>
                   Rewards: {progress.combatStats?.questionsAttempted || 0}/{BOSS_PARTICIPATION_MIN_ATTEMPTS} attempts
@@ -610,7 +610,7 @@ const QuizBossCard: React.FC<{
           <BattleFeed bossId={quiz.id} maxEntries={5} />
 
           {/* Rewards */}
-          <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] border-t border-white/5 pt-3">
+          <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-muted)] border-t border-white/5 pt-3">
             <span>Defeat rewards:</span>
             <span className="text-yellow-400">{quiz.rewards.xp} XP</span>
             <span className="text-cyan-700 dark:text-cyan-400">{quiz.rewards.flux} Flux</span>

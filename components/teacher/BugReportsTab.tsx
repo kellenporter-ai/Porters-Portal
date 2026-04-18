@@ -166,7 +166,7 @@ Please analyze these issues, identify the root causes in the codebase, and imple
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${badge.color}`}>{badge.label}</span>
+                        <span className={`text-[11.5px] font-bold uppercase px-2 py-0.5 rounded border ${badge.color}`}>{badge.label}</span>
                         <span className="text-xs text-[var(--text-muted)] truncate">{report.userName}</span>
                         {report.resolved && <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />}
                       </div>
@@ -194,7 +194,7 @@ Please analyze these issues, identify the root causes in the codebase, and imple
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                    <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
                       {new Date(report.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {!report.resolved && !isEditing && (
@@ -237,7 +237,7 @@ Please analyze these issues, identify the root causes in the codebase, and imple
 
           {selectedBugs.size > 0 && (
             <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
-              <span className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest">{selectedBugs.size} report{selectedBugs.size !== 1 ? 's' : ''} selected</span>
+              <span className="text-[11.5px] font-bold text-[var(--accent-text)] uppercase tracking-widest">{selectedBugs.size} report{selectedBugs.size !== 1 ? 's' : ''} selected</span>
               <div className="mt-2 space-y-1">
                 {bugReports.filter(r => selectedBugs.has(r.id!)).map(r => (
                   <div key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] bg-[var(--panel-bg)] rounded-lg px-3 py-2">
@@ -253,7 +253,7 @@ Please analyze these issues, identify the root causes in the codebase, and imple
           )}
 
           <div>
-            <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 block">
+            <label className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 block">
               Additional Context
             </label>
             <textarea

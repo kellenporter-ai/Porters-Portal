@@ -107,14 +107,14 @@ const BlockTypePalette: React.FC<{ onSelect: (type: BlockType) => void; onClose:
     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl shadow-2xl p-3 z-50 w-full max-w-[480px] max-h-[50vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
       {categories.map(cat => (
         <div key={cat} className="mb-2 last:mb-0">
-          <div className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
+          <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest px-2 mb-1">{cat}</div>
           <div className="grid grid-cols-2 gap-1">
             {BLOCK_TYPES.filter(bt => bt.category === cat).map(bt => (
               <button key={bt.type} type="button" onClick={() => { onSelect(bt.type); onClose(); }} className="flex items-center gap-2 p-2 rounded-lg text-left hover:bg-[var(--surface-glass)] transition group">
                 <span className="text-[var(--text-muted)] group-hover:text-purple-400 transition">{bt.icon}</span>
                 <div>
                   <div className="text-[11px] font-bold text-[var(--text-secondary)]">{bt.label}</div>
-                  <div className="text-[9px] text-[var(--text-muted)]">{bt.description}</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)]">{bt.description}</div>
                 </div>
               </button>
             ))}
@@ -715,7 +715,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
               <span className="text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
                 {isNewResource ? 'New Resource' : resTitle}
               </span>
-              <div className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border transition-all duration-500 ${
+              <div className={`flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border transition-all duration-500 ${
                 autoSaveStatus === 'saving' ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' :
                 hasUnsavedChanges ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
                 autoSaveStatus === 'saved' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' :
@@ -737,18 +737,18 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
         <div className="flex items-center gap-2">
           {isEditing && (
             <>
-              <button type="button" onClick={() => setShowJsonImport(!showJsonImport)} className="flex items-center gap-1.5 text-[10px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/20 uppercase font-bold tracking-wider transition">
+              <button type="button" onClick={() => setShowJsonImport(!showJsonImport)} className="flex items-center gap-1.5 text-[11.5px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/20 uppercase font-bold tracking-wider transition">
                 <Upload className="w-3 h-3" /> Paste JSON
               </button>
-              <button type="button" onClick={() => setPreviewMode(!previewMode)} className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${previewMode ? 'text-purple-300 bg-purple-500/20 border-purple-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
+              <button type="button" onClick={() => setPreviewMode(!previewMode)} className={`flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${previewMode ? 'text-purple-300 bg-purple-500/20 border-purple-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
                 <Eye className="w-3 h-3" /> {previewMode ? 'Edit' : 'Preview'}
               </button>
               {selectedAssignment?.id && !isNewResource && (
-                <button type="button" onClick={() => window.open(`/resources/${selectedAssignment.id}`, '_blank')} className="flex items-center gap-1.5 text-[10px] text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg border border-amber-500/20 uppercase font-bold tracking-wider transition">
+                <button type="button" onClick={() => window.open(`/resources/${selectedAssignment.id}`, '_blank')} className="flex items-center gap-1.5 text-[11.5px] text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg border border-amber-500/20 uppercase font-bold tracking-wider transition">
                   <Eye className="w-3 h-3" /> Student View
                 </button>
               )}
-              <button type="button" onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} className="flex items-center gap-1.5 text-[10px] text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-40 px-3 py-1.5 rounded-lg border border-emerald-500/20 uppercase font-bold tracking-wider transition">
+              <button type="button" onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} className="flex items-center gap-1.5 text-[11.5px] text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-40 px-3 py-1.5 rounded-lg border border-emerald-500/20 uppercase font-bold tracking-wider transition">
                 <Save className="w-3 h-3" /> {isSaving ? 'Saving...' : 'Save'}
               </button>
             </>
@@ -848,7 +848,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2"><label className={labelClass}>Title</label><input type="text" value={resTitle} onChange={e => { setResTitle(e.target.value); setHasUnsavedChanges(true); }} placeholder="Resource title..." className={inputClass} /></div>
                     <UnitSelector value={resUnit} onChange={(val) => { setResUnit(val); setHasUnsavedChanges(true); }} existingUnits={existingUnits} />
-                    <div><label className={labelClass}>Category</label><select value={resCategory} onChange={e => { setResCategory(e.target.value as ResourceCategory); setHasUnsavedChanges(true); }} className={inputClass}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>{isAssessment && (<p className="text-[10px] text-[var(--text-muted)] mt-1">Assessment mode is active — category is used for admin organization only.</p>)}</div>
+                    <div><label className={labelClass}>Category</label><select value={resCategory} onChange={e => { setResCategory(e.target.value as ResourceCategory); setHasUnsavedChanges(true); }} className={inputClass}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>{isAssessment && (<p className="text-[11.5px] text-[var(--text-muted)] mt-1">Assessment mode is active — category is used for admin organization only.</p>)}</div>
                   </div>
 
                   <div>
@@ -899,7 +899,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                           <div className="flex items-center gap-2">
                             <label className="text-[11px] text-gray-400">Max attempts:</label>
                             <input type="number" min={0} value={assessmentConfig.maxAttempts} onChange={e => { setAssessmentConfig(prev => ({ ...prev, maxAttempts: parseInt(e.target.value) || 0 })); setHasUnsavedChanges(true); }} className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white" />
-                            <span className="text-[10px] text-gray-500">0 = unlimited</span>
+                            <span className="text-[11.5px] text-[var(--text-tertiary)]">0 = unlimited</span>
                           </div>
                         )}
                         <label className="flex items-center gap-2 text-[11px] text-gray-300 cursor-pointer">
@@ -930,27 +930,27 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                             }}
                             placeholder="Paste rubric markdown here..."
                             rows={4}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-[var(--text-muted)] font-mono resize-y focus:outline-none focus:border-purple-500/50 transition"
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11.5px] text-white placeholder-[var(--text-muted)] font-mono resize-y focus:outline-none focus:border-purple-500/50 transition"
                           />
                           {rubricErrors.length > 0 && (
                             <div className="mt-1 space-y-0.5">
                               {rubricErrors.map((err, i) => (
-                                <div key={i} className="text-[10px] text-red-400">{err}</div>
+                                <div key={i} className="text-[11.5px] text-red-400">{err}</div>
                               ))}
                             </div>
                           )}
                           {parsedRubric && (
-                            <div className="mt-1 text-[10px] text-green-400">
+                            <div className="mt-1 text-[11.5px] text-green-400">
                               Rubric parsed: {parsedRubric.questions.length} question{parsedRubric.questions.length !== 1 ? 's' : ''}, {parsedRubric.questions.reduce((acc, q) => acc + q.skills.length, 0)} skill{parsedRubric.questions.reduce((acc, q) => acc + q.skills.length, 0) !== 1 ? 's' : ''}
                             </div>
                           )}
                           {parsedRubric && (
                             <details className="mt-2">
-                              <summary className="text-[10px] text-gray-500 cursor-pointer hover:text-gray-300 transition">
+                              <summary className="text-[11.5px] text-[var(--text-tertiary)] cursor-pointer hover:text-gray-300 transition">
                                 Preview rubric
                               </summary>
                               <div className="mt-2 max-h-64 overflow-y-auto custom-scrollbar">
-                                <React.Suspense fallback={<div className="text-[10px] text-gray-500">Loading preview...</div>}>
+                                <React.Suspense fallback={<div className="text-[11.5px] text-[var(--text-tertiary)]">Loading preview...</div>}>
                                   <RubricViewer rubric={parsedRubric} mode="view" />
                                 </React.Suspense>
                               </div>
@@ -971,7 +971,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                       <Brain aria-hidden="true" className="w-4 h-4 text-teal-400" />
                       <div className="text-left">
                         <div className="text-xs font-bold text-teal-300">Review Questions</div>
-                        <div className="text-[10px] text-gray-400">Manage the conceptual review question bank for this resource</div>
+                        <div className="text-[11.5px] text-gray-400">Manage the conceptual review question bank for this resource</div>
                       </div>
                     </button>
                   )}
@@ -1024,7 +1024,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                                   </div>
                                   <button type="button" onClick={() => setExpandedBlock(isExpanded ? null : block.id)} className="flex items-center gap-3 flex-1 min-w-0">
                                     <span className="text-gray-500">{typeInfo?.icon}</span>
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
+                                    <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
                                     <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(block)}</span>
                                   </button>
                                   <div className="flex items-center gap-0.5 shrink-0">
@@ -1063,7 +1063,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                               <GripVertical className="w-3.5 h-3.5" />
                             </div>
                             <span className="text-gray-500">{typeInfo?.icon}</span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
+                            <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
                             <span className="text-xs text-gray-400 truncate flex-1">{getBlockSummary(activeBlock)}</span>
                           </div>
                         </div>
@@ -1134,7 +1134,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                 placeholder="Search blocks by type or content..."
                 className="flex-1 bg-transparent text-sm text-white placeholder-[var(--text-muted)] focus:outline-none"
               />
-              <kbd className="text-[9px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">ESC</kbd>
+              <kbd className="text-[11.5px] text-[var(--text-tertiary)] bg-white/5 px-1.5 py-0.5 rounded border border-white/10">ESC</kbd>
             </div>
             <div className="max-h-[40vh] overflow-y-auto custom-scrollbar">
               {blocks.length === 0 ? (
@@ -1165,9 +1165,9 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition border-b border-white/5 last:border-b-0"
                       >
-                        <span className="text-[10px] text-gray-600 font-mono w-5 shrink-0 text-right">{index + 1}</span>
+                        <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono w-5 shrink-0 text-right">{index + 1}</span>
                         <span className="text-gray-500 shrink-0">{typeInfo?.icon}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider w-20 shrink-0">{typeInfo?.label}</span>
+                        <span className="text-[11.5px] font-bold text-gray-400 uppercase tracking-wider w-20 shrink-0">{typeInfo?.label}</span>
                         <span className="text-xs text-gray-500 truncate flex-1">{getBlockSummary(block).slice(0, 50)}</span>
                       </button>
                     );

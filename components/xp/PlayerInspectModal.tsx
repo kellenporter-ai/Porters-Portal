@@ -123,7 +123,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               <p className={`text-xs font-mono uppercase tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                 {rankDetails.rankName}
               </p>
-              <p className="text-[10px] text-[var(--text-muted)] mt-1">{evolutionTier.name} - Level {level}</p>
+              <p className="text-[11.5px] text-[var(--text-muted)] mt-1">{evolutionTier.name} - Level {level}</p>
 
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-1">
@@ -169,7 +169,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               if (!item) {
                 return (
                   <div key={slot} className="p-2 bg-[var(--surface-glass)] rounded-lg border border-[var(--border)]">
-                    <div className="text-[10px] text-[var(--text-muted)] font-mono">{slot}</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)] font-mono">{slot}</div>
                     <div className="text-xs text-[var(--text-muted)] italic">Empty</div>
                   </div>
                 );
@@ -180,7 +180,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
                   <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-6 h-6" />
                   <div className="min-w-0">
                     <div className={`text-xs font-bold truncate ${colors.text}`}>{item.name}</div>
-                    <div className="text-[9px] text-[var(--text-muted)]">{item.rarity}</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)]">{item.rarity}</div>
                   </div>
                 </div>
               );
@@ -197,7 +197,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
             {activeSets.map(({ set, activeBonus }) => (
               <div key={set.id} className="p-2 bg-purple-500/5 border border-purple-500/20 rounded-lg mb-1">
                 <div className="text-xs font-bold text-purple-400">{set.name}</div>
-                <div className="text-[10px] text-gray-400">{activeBonus.label}: {activeBonus.effects.map(e => `+${e.value} ${e.stat}`).join(', ')}</div>
+                <div className="text-[11.5px] text-gray-400">{activeBonus.label}: {activeBonus.effects.map(e => `+${e.value} ${e.stat}`).join(', ')}</div>
               </div>
             ))}
           </div>
@@ -211,7 +211,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
             </h3>
             <div className="flex flex-wrap gap-1">
               {gam.unlockedAchievements?.slice(0, 12).map((id: string) => (
-                <span key={id} className="text-[10px] bg-yellow-500/10 border border-yellow-500/20 rounded px-1.5 py-0.5 text-yellow-400">
+                <span key={id} className="text-[11.5px] bg-yellow-500/10 border border-yellow-500/20 rounded px-1.5 py-0.5 text-yellow-400">
                   {id.replace(/_/g, ' ')}
                 </span>
               ))}

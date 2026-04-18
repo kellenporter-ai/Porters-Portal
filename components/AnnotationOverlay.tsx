@@ -264,7 +264,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
       {!isActive ? (
         <button
           onClick={handleActivate}
-          className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors cursor-pointer ${
+          className={`flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors cursor-pointer ${
             hasSavedAnnotations
               ? 'text-amber-300 bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
               : 'text-purple-300 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
@@ -275,7 +275,7 @@ const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({ containerRef, onA
           {hasSavedAnnotations ? 'Resume Notes' : 'Annotate'}
         </button>
       ) : (
-        <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest text-green-300 bg-green-500/15 border-green-500/25">
+        <span className="flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest text-green-300 bg-green-500/15 border-green-500/25">
           <Pen className="w-3 h-3 animate-pulse" />
           Drawing
         </span>

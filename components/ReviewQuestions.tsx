@@ -222,18 +222,18 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                 <div className="flex items-center gap-3">
                     <Brain className="w-5 h-5 text-purple-400" />
                     <span className="font-bold text-[var(--text-primary)] text-sm">Conceptual Review</span>
-                    <span className="text-[10px] bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)] px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
+                    <span className="text-[11.5px] bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)] px-2 py-0.5 rounded-full font-mono">{allQuestions.length} in bank</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[10px] text-[var(--text-muted)]">/ {totalPossibleXP} XP</span></div>
-                    <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
+                    <div className="flex items-center gap-2" aria-live="polite"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm font-bold text-yellow-400">{totalXPEarned}</span>{totalPenalty > 0 && <span className="text-sm font-bold text-red-400">-{totalPenalty}</span>}<span className="text-[11.5px] text-[var(--text-muted)]">/ {totalPossibleXP} XP</span></div>
+                    <button onClick={handleNewSet} className="flex items-center gap-1.5 text-[11.5px] font-bold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg border border-purple-500/30 transition"><RefreshCw className="w-3 h-3" /> New Set</button>
                 </div>
             </div>
             <div className="flex gap-2 px-4 py-3 border-b border-[var(--border)] bg-[var(--panel-bg)]" role="tablist" aria-label="Question difficulty tiers">
                 {[1, 2, 3].map(tier => { const t = TIER_LABELS[tier]; const tQs = selectedQuestions.filter(q => q.tier === tier); const ans = tQs.filter(q => answers[q.id]?.submitted).length; const cor = tQs.filter(q => answers[q.id]?.correct).length; return (
                     <button key={tier} role="tab" aria-selected={activeTier === tier} aria-controls="review-question-panel" onClick={() => setActiveTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTier === tier ? `${t.bg} ${t.color} ${t.border} border` : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}>
                         {t.icon}<span className="hidden sm:inline">{t.name}</span><span className="sm:hidden">Tier {tier}</span>
-                        {ans > 0 && <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>{cor}/{tQs.length}</span>}
+                        {ans > 0 && <span className={`ml-1 text-[11.5px] px-1.5 py-0.5 rounded-full ${cor === tQs.length ? 'bg-emerald-500/20 text-emerald-400' : 'bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]'}`}>{cor}/{tQs.length}</span>}
                     </button>);
                 })}
             </div>
@@ -254,11 +254,11 @@ const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ assignment }) => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <span className={`text-[9px] font-bold uppercase tracking-wider ${ts.color}`}>{question.bloomsLevel}</span>
-                                        <span className="text-[9px] text-[var(--text-muted)]">·</span>
-                                        <span className="text-[9px] text-[var(--text-muted)] font-mono">{TYPE_LABELS[question.type] || question.type}</span>
-                                        <span className="text-[9px] text-yellow-500 font-bold ml-auto flex items-center gap-0.5"><Zap className="w-3 h-3" />{question.xp} XP</span>
-                                        <span className="text-[9px] text-red-400/60 font-bold flex items-center gap-0.5">-{Math.ceil(question.xp / 2)} if wrong</span>
+                                        <span className={`text-[11.5px] font-bold uppercase tracking-wider ${ts.color}`}>{question.bloomsLevel}</span>
+                                        <span className="text-[11.5px] text-[var(--text-muted)]">·</span>
+                                        <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{TYPE_LABELS[question.type] || question.type}</span>
+                                        <span className="text-[11.5px] text-yellow-500 font-bold ml-auto flex items-center gap-0.5"><Zap className="w-3 h-3" />{question.xp} XP</span>
+                                        <span className="text-[11.5px] text-red-400/60 font-bold flex items-center gap-0.5">-{Math.ceil(question.xp / 2)} if wrong</span>
                                     </div>
                                     <p className="text-sm text-[var(--text-secondary)] font-medium leading-snug">{question.stem}</p>
                                 </div>
@@ -313,7 +313,7 @@ const MCInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSele
 
 const MultiSelectInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSelect: (q: string, o: string, t: string) => void }> = ({ question, answer, onSelect }) => {
     const selected = (answer?.selected as string[]) || []; const correctIds = question.correctAnswer as string[];
-    return (<div className="space-y-2" role="group" aria-label="Select all that apply"><p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">Select all that apply</p>{question.options.map(opt => {
+    return (<div className="space-y-2" role="group" aria-label="Select all that apply"><p className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest">Select all that apply</p>{question.options.map(opt => {
         const isSel = selected.includes(opt.id); const show = answer?.submitted; const right = correctIds.includes(opt.id);
         return (<button key={opt.id} role="checkbox" aria-checked={isSel} onClick={() => onSelect(question.id, opt.id, 'multiple_select')} disabled={answer?.submitted}
             className={`w-full text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-3 ${show ? (right ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300' : isSel ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-[var(--border)] text-[var(--text-muted)]') : isSel ? 'border-purple-500/50 bg-purple-500/10 text-[var(--text-primary)]' : 'border-[var(--border)] hover:border-[var(--border)] text-[var(--text-secondary)]'}`}>
@@ -325,10 +325,10 @@ const MultiSelectInput: React.FC<{ question: ReviewQuestion; answer?: AnswerStat
 const RankingInput: React.FC<{ question: ReviewQuestion; answer?: AnswerState; onSelect: (q: string, o: string, t: string) => void }> = ({ question, answer, onSelect }) => {
     const selected = (answer?.selected as string[]) || []; const show = answer?.submitted; const correctOrder = question.correctAnswer as string[];
     return (<div className="space-y-2">
-        <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest flex items-center gap-1"><ArrowUpDown className="w-3 h-3" /> Click in order (first to last)</p>
+        <p className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest flex items-center gap-1"><ArrowUpDown className="w-3 h-3" /> Click in order (first to last)</p>
         {selected.length > 0 && <div className="flex gap-1 flex-wrap mb-2">{selected.map((id, i) => {
             const opt = question.options.find(o => o.id === id); const rightPos = show && correctOrder[i] === id;
-            return (<span key={id} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${show ? (rightPos ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30') : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>{i + 1}. {opt?.text.slice(0, 30)}{(opt?.text.length || 0) > 30 ? '...' : ''}</span>);
+            return (<span key={id} className={`text-[11.5px] font-bold px-2 py-1 rounded-lg ${show ? (rightPos ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30') : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>{i + 1}. {opt?.text.slice(0, 30)}{(opt?.text.length || 0) > 30 ? '...' : ''}</span>);
         })}</div>}
         <div role="group" aria-label="Ranking options">{question.options.map(opt => {
             const isSel = selected.includes(opt.id); const pos = selected.indexOf(opt.id);

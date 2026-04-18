@@ -91,7 +91,7 @@ export const StudentFeedbackFeed: React.FC<StudentFeedbackFeedProps> = ({
           <BookOpen className="w-4 h-4 text-[var(--text-muted)] shrink-0" aria-hidden="true" />
           <div>
             <h5 className="text-xs font-bold text-[var(--text-primary)] truncate">{studentName}</h5>
-            <p className="text-[10px] text-[var(--text-muted)] truncate">{assignmentTitle}</p>
+            <p className="text-[11.5px] text-[var(--text-muted)] truncate">{assignmentTitle}</p>
           </div>
         </div>
         <button
@@ -160,7 +160,7 @@ export const StudentFeedbackFeed: React.FC<StudentFeedbackFeedProps> = ({
                       <span className="text-xs font-bold text-[var(--text-primary)]">
                         {entry.score}%
                       </span>
-                      <span className="text-[10px] text-[var(--text-muted)]">
+                      <span className="text-[11.5px] text-[var(--text-muted)]">
                         graded {formatDate(entry.gradedAt)}
                       </span>
                     </div>
@@ -177,7 +177,7 @@ export const StudentFeedbackFeed: React.FC<StudentFeedbackFeedProps> = ({
                       <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${
                         isUnread ? 'text-purple-400' : 'text-[var(--text-muted)]'
                       }`} aria-hidden="true" />
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                      <span className={`text-[11.5px] font-medium px-1.5 py-0.5 rounded-full ${
                         readStatus === 'Unread'
                           ? 'bg-purple-500/20 text-purple-300'
                           : readStatus === 'Read'
@@ -193,7 +193,7 @@ export const StudentFeedbackFeed: React.FC<StudentFeedbackFeedProps> = ({
             </div>
 
             {/* Footer indicator */}
-            <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+            <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-[11.5px] text-[var(--text-muted)]">
               <span>{feedbackHistory.length} feedback entry{feedbackHistory.length !== 1 ? 'ies' : ''}</span>
               <span>Sorted: newest first</span>
             </div>

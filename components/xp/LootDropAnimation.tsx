@@ -99,7 +99,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
           <div className="animate-in zoom-in fade-in duration-500 space-y-4">
             {/* Item card */}
             <div className={`mx-auto w-64 p-6 rounded-2xl border ${colors.border} ${colors.bg} shadow-2xl ${rarityGlow[item.rarity]}`}>
-              <div className={`text-[10px] font-mono uppercase tracking-widest ${colors.text} mb-2`}>
+              <div className={`text-[11.5px] font-mono uppercase tracking-widest ${colors.text} mb-2`}>
                 {item.rarity}
               </div>
               <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
               {item.affixes.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-[var(--border)]">
                   {item.affixes.map((affix, i) => (
-                    <div key={i} className="text-[10px] text-[var(--text-tertiary)]">
+                    <div key={i} className="text-[11.5px] text-[var(--text-tertiary)]">
                       {affix.name}: +{affix.value} {affix.stat} (T{affix.tier})
                     </div>
                   ))}
@@ -136,7 +136,7 @@ const LootDropAnimation: React.FC<LootDropAnimationProps> = ({ item, onClose }) 
 
               {/* Set indicator */}
               {item.setId && (
-                <div className="mt-2 text-[10px] text-[var(--accent-text)] font-bold">
+                <div className="mt-2 text-[11.5px] text-[var(--accent-text)] font-bold">
                   Part of a set
                 </div>
               )}

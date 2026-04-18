@@ -176,26 +176,26 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
     <Modal isOpen={isOpen} onClose={onClose} title={editingBank ? 'Edit Question Bank' : 'New Question Bank'} maxWidth="max-w-2xl">
       <form onSubmit={handleSaveBank} className="space-y-4 text-[var(--text-primary)] p-2 max-h-[70vh] overflow-y-auto">
         <div>
-          <label className="block text-[10px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Bank Name</label>
+          <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Bank Name</label>
           <input value={bankForm.name} onChange={e => setBankForm({ ...bankForm, name: e.target.value })} required className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] font-bold" placeholder="e.g. AP Physics Unit 3 Questions" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Class</label>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Class</label>
             <select value={bankForm.classType} onChange={e => setBankForm({ ...bankForm, classType: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] font-bold text-sm">
               <option value="GLOBAL">All Classes</option>
               {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Description</label>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Description</label>
             <input value={bankForm.description} onChange={e => setBankForm({ ...bankForm, description: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] text-sm" placeholder="Optional description" />
           </div>
         </div>
 
         <div className="border-t border-[var(--border)] pt-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <label className="text-[10px] font-bold text-[var(--accent-text)] uppercase tracking-widest">Questions ({bankForm.questions.length})</label>
+            <label className="text-[11.5px] font-bold text-[var(--accent-text)] uppercase tracking-widest">Questions ({bankForm.questions.length})</label>
             <div className="flex items-center gap-2">
               <label className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/30 transition font-bold flex items-center gap-1 cursor-pointer">
                 <Upload className="w-3 h-3" /> Import JSON
@@ -244,13 +244,13 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
               </div>
               <div className="flex items-center gap-2">
                 <select value={q.difficulty} onChange={e => updateQuestionField(qIdx, 'difficulty', e.target.value as 'EASY' | 'MEDIUM' | 'HARD')}
-                  className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-1 text-[var(--text-primary)] text-[10px] font-bold">
+                  className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-1 text-[var(--text-primary)] text-[11.5px] font-bold">
                   <option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
                 </select>
                 <div className="flex items-center gap-1">
-                  <label className="text-[9px] text-[var(--text-muted)]">Bonus:</label>
+                  <label className="text-[11.5px] text-[var(--text-muted)]">Bonus:</label>
                   <input type="number" value={q.damageBonus} onChange={e => updateQuestionField(qIdx, 'damageBonus', parseInt(e.target.value) || 0)}
-                    className="w-14 bg-[var(--panel-bg)] border border-[var(--border)] rounded p-1 text-[var(--text-primary)] text-[10px] font-bold" min={0} />
+                    className="w-14 bg-[var(--panel-bg)] border border-[var(--border)] rounded p-1 text-[var(--text-primary)] text-[11.5px] font-bold" min={0} />
                 </div>
               </div>
             </div>

@@ -102,19 +102,19 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-[var(--text-primary)]">{progress.length}</div>
-                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Participants</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Participants</div>
               </div>
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-amber-400">{progress.reduce((s, p) => s + (p.combatStats?.totalDamageDealt || 0), 0).toLocaleString()}</div>
-                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total Damage</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Damage</div>
               </div>
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-green-400">{progress.reduce((s, p) => s + (p.combatStats?.questionsCorrect || 0), 0)}</div>
-                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total Correct</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Correct</div>
               </div>
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
                 <div className="text-2xl font-black text-red-400">{progress.reduce((s, p) => s + (p.combatStats?.criticalHits || 0), 0)}</div>
-                <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Total Crits</div>
+                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Crits</div>
               </div>
             </div>
             <button
@@ -145,7 +145,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                       {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-[var(--border)]" alt="" loading="lazy" />}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-[var(--text-primary)] truncate">{student?.name || prog.userId}</div>
-                        <div className="flex gap-2 text-[10px] text-[var(--text-muted)]">
+                        <div className="flex gap-2 text-[11.5px] text-[var(--text-muted)]">
                           <span className="text-amber-400 font-bold">{stats?.totalDamageDealt?.toLocaleString() || 0} dmg</span>
                           <span>{stats?.questionsCorrect || 0}/{stats?.questionsAttempted || 0} correct</span>
                           <span>{stats?.criticalHits || 0} crits</span>
@@ -156,7 +156,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                         {participated ? (
                           <span className={`text-xs font-bold ${idx < 5 ? medalColors[idx] : 'text-[var(--text-tertiary)]'}`}>{multiplier}x</span>
                         ) : (
-                          <span className="text-[10px] text-red-400 font-bold">DNQ</span>
+                          <span className="text-[11.5px] text-red-400 font-bold">DNQ</span>
                         )}
                       </div>
                     </div>
@@ -169,22 +169,22 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
           {quiz.questions.length > 0 && (
             <div>
               <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><AlertTriangle className="w-4 h-4 text-orange-400" /> Question Analytics</h4>
-              <div className="text-[10px] text-[var(--text-muted)] mb-3">Accuracy rates based on per-difficulty aggregation across all participants.</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] mb-3">Accuracy rates based on per-difficulty aggregation across all participants.</div>
 
               {/* Most Missed */}
               {mostMissed.length > 0 && mostMissed[0].estimatedAccuracy < 70 && (
                 <div className="mb-4 p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
-                  <div className="text-[10px] font-bold text-red-400 uppercase mb-2">Most Challenging Questions (Consider Re-teaching)</div>
+                  <div className="text-[11.5px] font-bold text-red-400 uppercase mb-2">Most Challenging Questions (Consider Re-teaching)</div>
                   <div className="space-y-2">
                     {mostMissed.filter(q => q.estimatedAccuracy < 70).map(q => (
                       <div key={q.id} className="flex items-start gap-2">
-                        <span className="text-[10px] text-red-400 font-bold mt-0.5">Q{quiz.questions.indexOf(q) + 1}</span>
+                        <span className="text-[11.5px] text-red-400 font-bold mt-0.5">Q{quiz.questions.indexOf(q) + 1}</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-[var(--text-primary)] truncate">{q.stem}</div>
                           <div className="flex gap-2 mt-0.5">
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${q.difficulty === 'EASY' ? 'bg-green-500/10 text-green-400' : q.difficulty === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>{q.difficulty}</span>
-                            <span className="text-[9px] text-[var(--text-muted)]">{q.estimatedAccuracy}% accuracy</span>
-                            <span className="text-[9px] text-green-400">Answer: {q.options[q.correctAnswer]}</span>
+                            <span className={`text-[11.5px] px-1.5 py-0.5 rounded font-bold ${q.difficulty === 'EASY' ? 'bg-green-500/10 text-green-400' : q.difficulty === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>{q.difficulty}</span>
+                            <span className="text-[11.5px] text-[var(--text-muted)]">{q.estimatedAccuracy}% accuracy</span>
+                            <span className="text-[11.5px] text-green-400">Answer: {q.options[q.correctAnswer]}</span>
                           </div>
                         </div>
                       </div>
@@ -196,7 +196,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
               {/* Full Question Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead><tr className="text-[9px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
+                  <thead><tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
                     <th className="pb-2 pl-2">#</th>
                     <th className="pb-2">Question</th>
                     <th className="pb-2 text-center">Difficulty</th>
@@ -209,7 +209,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                         <td className="py-2 pl-2 font-bold text-[var(--text-muted)]">{idx + 1}</td>
                         <td className="py-2 text-[var(--text-primary)] max-w-[300px] truncate">{q.stem}</td>
                         <td className="py-2 text-center">
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${q.difficulty === 'EASY' ? 'bg-green-500/10 text-green-400' : q.difficulty === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>{q.difficulty}</span>
+                          <span className={`text-[11.5px] px-1.5 py-0.5 rounded font-bold ${q.difficulty === 'EASY' ? 'bg-green-500/10 text-green-400' : q.difficulty === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>{q.difficulty}</span>
                         </td>
                         <td className="py-2 text-center">
                           <span className={`font-bold ${q.estimatedAccuracy >= 70 ? 'text-green-400' : q.estimatedAccuracy >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
@@ -226,12 +226,12 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
               {/* Suggested Difficulty Adjustments */}
               {questionAnalytics.some(q => (q.difficulty === 'EASY' && q.estimatedAccuracy < 50) || (q.difficulty === 'HARD' && q.estimatedAccuracy > 80)) && (
                 <div className="mt-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-                  <div className="text-[10px] font-bold text-amber-400 uppercase mb-2">Suggested Difficulty Adjustments</div>
+                  <div className="text-[11.5px] font-bold text-amber-400 uppercase mb-2">Suggested Difficulty Adjustments</div>
                   <div className="space-y-1">
                     {questionAnalytics
                       .filter(q => (q.difficulty === 'EASY' && q.estimatedAccuracy < 50) || (q.difficulty === 'HARD' && q.estimatedAccuracy > 80))
                       .map(q => (
-                        <div key={q.id} className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-2">
+                        <div key={q.id} className="text-[11.5px] text-[var(--text-tertiary)] flex items-center gap-2">
                           <span className="font-bold text-[var(--text-primary)]">Q{quiz.questions.indexOf(q) + 1}:</span>
                           {q.difficulty === 'EASY' && q.estimatedAccuracy < 50 && (
                             <span>Marked as <span className="text-green-400">EASY</span> but only {q.estimatedAccuracy}% accuracy — consider upgrading to <span className="text-yellow-400">MEDIUM</span></span>
@@ -252,7 +252,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
             <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><Eye className="w-4 h-4" /> All Participants</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead><tr className="text-[9px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
+                <thead><tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
                   <th className="pb-2 pl-2">#</th>
                   <th className="pb-2">Student</th>
                   <th className="pb-2 text-center">Damage</th>
@@ -286,8 +286,8 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                           <td className="py-2 text-center text-purple-400">{s?.longestStreak || 0}</td>
                           <td className="py-2 text-center text-cyan-700 dark:text-cyan-400">{s?.damageReduced || 0}</td>
                           <td className="py-2 text-center">{participated
-                            ? <span className="text-green-400 text-[9px] font-bold">QUALIFIED</span>
-                            : <span className="text-red-400 text-[9px] font-bold">DNQ</span>}
+                            ? <span className="text-green-400 text-[11.5px] font-bold">QUALIFIED</span>
+                            : <span className="text-red-400 text-[11.5px] font-bold">DNQ</span>}
                           </td>
                         </tr>
                       );
@@ -309,9 +309,9 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                 const color = diff === 'EASY' ? 'green' : diff === 'MEDIUM' ? 'yellow' : 'red';
                 return (
                   <div key={diff} className={`bg-${color}-500/5 border border-${color}-500/20 rounded-xl p-3 text-center`}>
-                    <div className={`text-[10px] font-bold text-${color}-400 uppercase mb-1`}>{diff}</div>
+                    <div className={`text-[11.5px] font-bold text-${color}-400 uppercase mb-1`}>{diff}</div>
                     <div className="text-lg font-black text-[var(--text-primary)]">{accuracy}%</div>
-                    <div className="text-[10px] text-[var(--text-muted)]">{totalCorrect}/{total} correct</div>
+                    <div className="text-[11.5px] text-[var(--text-muted)]">{totalCorrect}/{total} correct</div>
                   </div>
                 );
               })}

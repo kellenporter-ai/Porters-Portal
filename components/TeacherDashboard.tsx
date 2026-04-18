@@ -192,7 +192,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           >
             {label}
             {count > 0 && (
-              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11.5px] font-bold ${
                 overviewTab === key
                   ? key === 'bugs' ? 'bg-red-600/30 text-red-300'
                     : key === 'songs' ? 'bg-amber-600/30 text-amber-300'

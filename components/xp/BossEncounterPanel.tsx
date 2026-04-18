@@ -121,7 +121,7 @@ const BossCard: React.FC<{
         {/* Mini leaderboard */}
         {leaderboard.length > 0 && (
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] uppercase tracking-widest">
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest">
               <Users className="w-3 h-3" /> Top Attackers
             </div>
             {leaderboard.map(([id, data], idx) => (
@@ -136,7 +136,7 @@ const BossCard: React.FC<{
         )}
 
         {/* Rewards preview */}
-        <div className="flex items-center gap-3 text-[10px] text-gray-500 border-t border-[var(--border)] pt-3">
+        <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-tertiary)] border-t border-[var(--border)] pt-3">
           <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400" /> {boss.completionRewards.xp} XP</span>
           <span className="flex items-center gap-1"><span className="text-cyan-700 dark:text-cyan-400">~</span> {boss.completionRewards.flux} Flux</span>
           {boss.completionRewards.itemRarity && (
@@ -157,7 +157,7 @@ const BossCard: React.FC<{
           <Crosshair className="w-4 h-4" />
           {attacking === boss.id ? 'Attacking...' : 'Attack!'}
         </button>
-        <p className="text-[10px] text-[var(--text-muted)] text-center">Damage scales with your equipped gear stats</p>
+        <p className="text-[11.5px] text-[var(--text-muted)] text-center">Damage scales with your equipped gear stats</p>
       </div>
     </div>
   );

@@ -82,7 +82,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   });
 
   return (
-    <div className="max-w-4xl mx-auto pt-8">
+    <div className="w-full max-w-6xl mx-auto pt-8 px-4">
         <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 dark:from-purple-400 to-pink-700 dark:to-pink-600 mb-2">
                 Class Rankings
@@ -143,8 +143,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                 <div className={`text-center ${isFirst ? 'mt-2' : 'mt-1'}`}>
                                     <div className={`font-bold truncate max-w-[100px] ${isFirst ? 'text-sm text-[var(--text-primary)]' : 'text-xs text-[var(--text-secondary)]'} ${isPrivate ? 'italic' : ''}`}>{displayName}</div>
                                     <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
-                                    <div className={`text-[9px] font-mono uppercase ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
-                                    <button onClick={() => handleInspect(u.id)} className="mt-1 text-[10px] text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
+                                    <div className={`text-[11.5px] font-mono uppercase ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
+                                    <button onClick={() => handleInspect(u.id)} className="mt-1 text-[11.5px] text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
                                         <Eye className="w-3 h-3" /> Inspect
                                     </button>
                                 </div>
@@ -198,7 +198,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                             frameId={u.gamification?.activeCosmetics?.frame}
                                             size={48}
                                         />
-                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[var(--surface-raised)] rounded-full flex items-center justify-center text-[9px] font-bold border border-[var(--border)] text-[var(--text-primary)]">
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[var(--surface-raised)] rounded-full flex items-center justify-center text-[11.5px] font-bold border border-[var(--border)] text-[var(--text-primary)]">
                                             {level}
                                         </div>
                                     </div>
@@ -208,7 +208,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                             {displayName}
                                             {isPrivate && <Lock className="w-3 h-3 text-[var(--text-muted)] inline ml-1" />}
                                         </h3>
-                                        <span className={`text-[10px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
+                                        <span className={`text-[11.5px] font-mono uppercase font-bold tracking-widest ${rankDetails.tierColor.split(' ').slice(1).join(' ')}`}>
                                             {rankDetails.rankName}
                                         </span>
                                     </div>
@@ -217,7 +217,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                         <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500">
                                             {classXP.toLocaleString()}
                                         </div>
-                                        <div className="text-[9px] text-[var(--text-muted)] font-mono tracking-widest">CLASS XP</div>
+                                        <div className="text-[11.5px] text-[var(--text-muted)] font-mono tracking-widest">CLASS XP</div>
                                     </div>
                                     <button
                                         onClick={() => handleInspect(u.id)}

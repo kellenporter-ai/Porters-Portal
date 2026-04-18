@@ -289,7 +289,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
                       <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
                       <span className="text-lg font-bold text-[var(--text-primary)]">{b.value}</span>
                     </div>
-                    <div className="text-[10px] text-[var(--text-tertiary)]">
+                    <div className="text-[11.5px] text-[var(--text-tertiary)]">
                       {totalProfiled > 0 ? Math.round((b.value / totalProfiled) * 100) : 0}% of class
                     </div>
                   </div>

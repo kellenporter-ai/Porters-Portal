@@ -23,10 +23,10 @@ const StatCard: React.FC<{
   <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
     <div className="flex items-center gap-2 mb-2">
       <div className={`p-2 rounded-lg ${color}`}>{icon}</div>
-      <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{label}</span>
+      <span className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest">{label}</span>
     </div>
     <div className="text-2xl font-black text-[var(--text-primary)] leading-tight">{value}</div>
-    {sub && <div className="text-[10px] text-[var(--text-muted)] mt-1">{sub}</div>}
+    {sub && <div className="text-[11.5px] text-[var(--text-muted)] mt-1">{sub}</div>}
   </div>
 );
 
@@ -196,7 +196,7 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
           value={`${totalEngagementMin}m`}
           sub="Total time on assignments"
           icon={<Clock className="w-4 h-4" />}
-          color="bg-amber-500/20 text-amber-400"
+          color="bg-amber-500/20 text-amber-300"
         />
         <StatCard
           label="Trend"
@@ -311,10 +311,10 @@ const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ assignments, subm
                 }`} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-[var(--text-secondary)] truncate">{a.title}</div>
-                  <div className="text-[10px] text-[var(--text-muted)]">{a.ago} · {a.engagementMin}m engagement</div>
+                  <div className="text-[11.5px] text-[var(--text-muted)]">{a.ago} · {a.engagementMin}m engagement</div>
                 </div>
                 {a.score > 0 && (
-                  <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-400' : a.score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  <div className={`text-sm font-bold ${a.score >= 80 ? 'text-emerald-400' : a.score >= 60 ? 'text-yellow-300' : 'text-red-400'}`}>
                     {a.score}%
                   </div>
                 )}

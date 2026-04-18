@@ -102,7 +102,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
         <div className="flex flex-1 min-h-0">
           {/* Sidebar — rubric skills */}
           <div className="w-[200px] shrink-0 bg-[var(--surface-glass)] border-r border-[var(--border)] flex flex-col p-3 gap-1 overflow-y-auto">
-            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-1 px-1">
+            <p className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-1 px-1">
               Rubric
             </p>
             {takingQuestions.map((question) => (

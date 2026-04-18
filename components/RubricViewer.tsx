@@ -43,8 +43,8 @@ const TierButtonStrip = React.memo<TierButtonStripProps>(({ tiers, questionId, s
           {isAISuggested && !isSelected && (
             <Sparkles className="absolute top-0.5 right-0.5 w-2 h-2 text-amber-400" />
           )}
-          <span className="text-[9px] font-bold uppercase tracking-wider">{tier.label}</span>
-          <span className={`text-[9px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>
+          <span className="text-[11.5px] font-bold uppercase tracking-wider">{tier.label}</span>
+          <span className={`text-[11.5px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-[var(--text-muted)]'}`}>
             {tier.percentage}%
           </span>
         </button>
@@ -205,7 +205,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
               {hasAISuggestionInQuestion && !hasGrade && (
                 <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
               )}
-              <span className={`text-[10px] ml-auto shrink-0 ${headerColors ? headerColors.text + ' opacity-70' : 'text-[var(--text-muted)]'}`}>
+              <span className={`text-[11.5px] ml-auto shrink-0 ${headerColors ? headerColors.text + ' opacity-70' : 'text-[var(--text-muted)]'}`}>
                 {question.skills.length} skill{question.skills.length !== 1 ? 's' : ''}
               </span>
             </button>
@@ -230,7 +230,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                     >
                       {/* Skill text */}
                       <div className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} border-b border-[var(--border)]`}>
-                        <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-[var(--text-secondary)] italic leading-relaxed`}>{skill.skillText}</p>
+                        <p className={`${compact ? 'text-[11.5px]' : 'text-[11px]'} text-[var(--text-secondary)] italic leading-relaxed`}>{skill.skillText}</p>
                       </div>
 
                       {/* Tier quick-select strip (only in view mode — grade and results use TierDescriptorList) */}
@@ -252,7 +252,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                         <div className={`${compact ? 'px-2 py-1.5' : 'px-3 py-2'} bg-amber-500/5 border-t border-amber-500/10`}>
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                            <span className="text-[9px] font-bold text-amber-400">AI Rationale</span>
+                            <span className="text-[11.5px] font-bold text-amber-400">AI Rationale</span>
                             <span className={`text-[8px] ml-auto px-1.5 py-0.5 rounded-full font-bold ${
                               aiSuggestion.confidence >= 0.75 ? 'bg-green-500/20 text-green-400'
                               : aiSuggestion.confidence >= 0.5 ? 'bg-yellow-500/20 text-yellow-400'
@@ -261,7 +261,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                               {Math.round(aiSuggestion.confidence * 100)}% confident
                             </span>
                           </div>
-                          <p className="text-[9px] text-amber-400/70 leading-relaxed">{aiSuggestion.rationale}</p>
+                          <p className="text-[11.5px] text-amber-400/70 leading-relaxed">{aiSuggestion.rationale}</p>
                         </div>
                       )}
 
@@ -286,7 +286,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                               className="w-full px-3 py-1.5 text-left hover:bg-[var(--surface-glass)] transition flex items-center gap-1"
                             >
                               <ChevronRight className={`w-2.5 h-2.5 text-[var(--text-muted)] transition-transform ${isSkillExpanded ? 'rotate-90' : ''}`} />
-                              <span className="text-[9px] text-[var(--text-muted)]">
+                              <span className="text-[11.5px] text-[var(--text-muted)]">
                                 {isSkillExpanded ? 'Hide' : 'Show'} tier descriptions
                               </span>
                             </button>
@@ -301,7 +301,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                                 return (
                                   <div
                                     key={tier.label}
-                                    className={`rounded-lg px-3 py-2 border text-[10px] leading-relaxed transition-all ${
+                                    className={`rounded-lg px-3 py-2 border text-[11.5px] leading-relaxed transition-all ${
                                       isSelected
                                         ? `${colors.bg} ${colors.border} ${colors.text}`
                                         : 'border-[var(--border)] text-[var(--text-muted)]'
