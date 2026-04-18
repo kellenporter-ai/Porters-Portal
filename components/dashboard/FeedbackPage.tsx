@@ -262,7 +262,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-5xl mx-auto px-4 py-6">
       {/* Glass container */}
       <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md">
         {/* Header with back button */}

@@ -33,23 +33,15 @@ const CATEGORY_BADGE_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-2.5 h-2.5" />,
 };
 
-/** Tailwind classes for the colored category badge pill. Fallback applied when key is missing. */
-const CATEGORY_COLORS: Record<string, string> = {
-  'Lesson':       'bg-purple-500/15 text-purple-400 border-purple-500/25',
-  'Lab':          'bg-amber-500/15 text-amber-300 border-amber-500/25',
-  'Simulation':   'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-  'Practice':     'bg-orange-500/15 text-orange-300 border-orange-500/25',
-  'Supplemental': 'bg-gray-500/15 text-gray-400 border-gray-500/25',
-};
+/**
+ * Neutral pill style for the type badge. Per Claude Design audit (2026-04):
+ * status is the only colored dimension; type/timing/engagement render as
+ * neutral monospace metadata so a row no longer carries 4–5 semantic colors.
+ */
+const NEUTRAL_BADGE = 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] border-[var(--border)]';
 
-/** Tailwind classes for the left icon square on unstarted resources (bg + text + hover shadow). */
-const CATEGORY_ICON_COLORS: Record<string, string> = {
-  'Lesson':       'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20',
-  'Lab':          'bg-amber-500/10 text-amber-300 group-hover:shadow-amber-500/20',
-  'Simulation':   'bg-emerald-500/10 text-emerald-400 group-hover:shadow-emerald-500/20',
-  'Practice':     'bg-orange-500/10 text-orange-300 group-hover:shadow-orange-500/20',
-  'Supplemental': 'bg-gray-500/10 text-gray-400 group-hover:shadow-gray-500/20',
-};
+/** Neutral icon-square style for the left tile on unstarted resources. */
+const NEUTRAL_ICON_TILE = 'bg-[var(--surface-glass)] text-[var(--text-tertiary)]';
 
 type EnrichedAssignment = Assignment & { lastEngagement: string | null; engagementTime: number };
 
@@ -174,7 +166,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         className={`border hover:border-purple-500/40 p-4 rounded-xl transition-all cursor-pointer group flex items-center gap-4 ${
           resource.isAssessment
             ? 'bg-red-500/5 border-red-500/25 ring-1 ring-red-500/10 hover:border-red-400/50'
-            : `bg-[var(--surface-glass)] ${isModuleCompleted ? 'border-green-500/20' : hasLessonBlocks ? 'border-indigo-500/10' : 'border-[var(--border)]'}`
+            : `bg-[var(--surface-glass)] ${isModuleCompleted ? 'border-green-500/20' : 'border-[var(--border)]'}`
         }`}
         onClick={() => onStartAssignment && onStartAssignment(resource.id)}
       >
@@ -184,8 +176,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           isModuleCompleted ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           isSubstantial ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
           resource.lastEngagement ? 'bg-green-500/10 text-green-400' :
-          isLessonOnly ? 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110 shadow-lg group-hover:shadow-indigo-500/20' :
-          `${CATEGORY_ICON_COLORS[migrateResourceCategory(resource.category) || ''] ?? 'bg-purple-500/10 text-purple-400 group-hover:shadow-purple-500/20'} group-hover:scale-110 shadow-lg`
+          isLessonOnly ? `${NEUTRAL_ICON_TILE} group-hover:scale-110 shadow-lg` :
+          `${NEUTRAL_ICON_TILE} group-hover:scale-110 shadow-lg`
         }`}>
           {isModuleCompleted ? <CheckCircle2 className="w-6 h-6" /> :
             isSubstantial ? <CheckCircle2 className="w-6 h-6" /> :
@@ -197,9 +189,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
           <div className="flex items-center gap-2">
             {(() => {
               const badgeLabel = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) ?? 'Supplemental');
-              const badgeColors = CATEGORY_COLORS[badgeLabel] ?? 'bg-gray-500/15 text-gray-400 border-gray-500/25';
               return (
-                <span className={`text-[11.5px] font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${badgeColors}`}>
+                <span className={`text-[11.5px] font-mono uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 flex-shrink-0 ${NEUTRAL_BADGE}`}>
                   {CATEGORY_BADGE_ICONS[badgeLabel]}
                   {badgeLabel}
                 </span>
@@ -244,17 +235,17 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
                 }
               </span>
               {canStillRetake && (
-                <span className="text-[11.5px] text-purple-400 font-bold flex items-center gap-0.5">
+                <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono flex items-center gap-0.5">
                   <Play className="w-2.5 h-2.5 fill-current" /> Retake available
                 </span>
               )}
               {!canStillRetake && (
-                <span className="text-[11.5px] text-[var(--text-muted)] font-bold">
+                <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
                   {assessmentConfig.allowResubmission === false ? 'No retakes allowed' : 'No retakes left'}
                 </span>
               )}
               {latestSub.flaggedAsAI && (
-                <span className="text-[11.5px] text-purple-400 font-bold">Flagged</span>
+                <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">Flagged</span>
               )}
             </div>
           )}
@@ -272,13 +263,13 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
               </span>
             )}
             {resource.lastEngagement && (
-              <span className="text-[11.5px] text-emerald-400 font-bold">{engMin}m engaged</span>
+              <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">{engMin}m engaged</span>
             )}
             {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && (
-              <span className="text-[11.5px] text-amber-400 font-bold">Best: {completion.bestScore}%</span>
+              <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono">Best: {completion.bestScore}%</span>
             )}
             {hasLessonBlocks && (
-              <span className="text-[11.5px] text-indigo-400 font-bold flex items-center gap-0.5">
+              <span className="text-[11.5px] text-[var(--text-tertiary)] font-mono flex items-center gap-0.5">
                 <GraduationCap className="w-3 h-3" /> {resource.lessonBlocks!.length} blocks
               </span>
             )}
@@ -292,8 +283,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({ unitGroups, expandedUnits, 
         </div>
         <div className="flex flex-col items-center gap-1.5">
           {hasUnreadFeedback && (
-            <div title="New teacher feedback" role="status" aria-label="New teacher feedback available" className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40">
-              <MessageSquare className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+            <div title="New teacher feedback" role="status" aria-label="New teacher feedback available" className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--surface-glass)] border border-[var(--border)]">
+              <MessageSquare className="w-3 h-3 text-[var(--text-tertiary)]" />
             </div>
           )}
           <div className="opacity-0 group-hover:opacity-100 transition">

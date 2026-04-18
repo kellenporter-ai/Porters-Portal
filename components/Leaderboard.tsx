@@ -82,7 +82,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   });
 
   return (
-    <div className="max-w-4xl mx-auto pt-8">
+    <div className="max-w-6xl mx-auto pt-8 px-4">
         <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 dark:from-purple-400 to-pink-700 dark:to-pink-600 mb-2">
                 Class Rankings
