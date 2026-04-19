@@ -146,6 +146,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
     const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
       'Leaderboard': 'leaderboard',
+      'Boss Encounters': 'bossFights',
     };
 
     const filteredItems = NAVIGATION.filter(item => {
@@ -357,6 +358,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const commandPaletteItems = React.useMemo<CommandPaletteItem[]>(() => {
     const featureNavMap: Record<string, keyof typeof enabledFeatures> = {
       'Leaderboard': 'leaderboard',
+      'Boss Encounters': 'bossFights',
     };
     const items: CommandPaletteItem[] = [];
     NAVIGATION.forEach(item => {

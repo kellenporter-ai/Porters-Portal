@@ -85,6 +85,9 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   const [isSavingResourceOrder, setIsSavingResourceOrder] = useState(false);
   const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set());
   const [expandedAllClassUnits, setExpandedAllClassUnits] = useState<Set<string>>(new Set());
+  // Pending display-label edits per unit (null = not yet touched; string = in-flight edit value)
+  const [pendingUnitLabels, setPendingUnitLabels] = useState<Record<string, string>>({});
+  const [savingUnitLabel, setSavingUnitLabel] = useState<string | null>(null);
 
   // Computed: filtered units for single-class view
   const filteredUnits = useMemo(() => {
@@ -168,6 +171,54 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
     } catch { toast.error('Failed to save resource order.'); }
     finally { setIsSavingResourceOrder(false); }
   }, [pendingResourceOrder, filterClass, classConfigs, toast]);
+
+  // Save per-unit display label (writes to classConfig.unitMeta via existing saveClassConfig path)
+  const handleSaveUnitLabel = useCallback(async (unit: string, rawValue: string) => {
+    if (filterClass === 'All Classes') return;
+    const trimmed = rawValue.trim();
+    const existing = classConfigs?.find(c => c.className === filterClass);
+    const existingLabel = existing?.unitMeta?.[unit]?.displayNumber ?? '';
+    if (trimmed === (existingLabel ?? '')) return; // no-op
+    setSavingUnitLabel(unit);
+    try {
+      const nextUnitMeta = { ...(existing?.unitMeta ?? {}) };
+      if (trimmed.length === 0) {
+        // Clear the label — store null so reader treats it as hidden
+        nextUnitMeta[unit] = { ...(nextUnitMeta[unit] ?? {}), displayNumber: null };
+      } else {
+        nextUnitMeta[unit] = { ...(nextUnitMeta[unit] ?? {}), displayNumber: trimmed };
+      }
+      if (existing) {
+        await dataService.saveClassConfig({ ...existing, unitMeta: nextUnitMeta });
+      } else {
+        await dataService.saveClassConfig({
+          id: filterClass,
+          className: filterClass,
+          unitOrder: undefined,
+          unitMeta: nextUnitMeta,
+          features: { evidenceLocker: false, leaderboard: false, bossFights: true },
+        } as ClassConfig);
+      }
+      toast.success('Unit label saved');
+      setPendingUnitLabels(prev => {
+        const next = { ...prev };
+        delete next[unit];
+        return next;
+      });
+    } catch {
+      toast.error('Failed to save unit label');
+    } finally {
+      setSavingUnitLabel(null);
+    }
+  }, [filterClass, classConfigs, toast]);
+
+  // Resolve current label for a unit (pending edit wins, else saved value, else empty string)
+  const currentUnitLabel = useCallback((unit: string): string => {
+    if (Object.prototype.hasOwnProperty.call(pendingUnitLabels, unit)) return pendingUnitLabels[unit];
+    if (filterClass === 'All Classes') return '';
+    const saved = classConfigs?.find(c => c.className === filterClass)?.unitMeta?.[unit]?.displayNumber;
+    return typeof saved === 'string' ? saved : '';
+  }, [pendingUnitLabels, filterClass, classConfigs]);
 
   // Save unit order handler
   const handleSaveUnitOrder = useCallback(async () => {
@@ -413,6 +464,31 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                 >
                   {expandedUnits.has(unit) ? <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
                   <span className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest truncate flex-1">{unit}</span>
+                  {filterClass !== 'All Classes' && (
+                    <input
+                      type="text"
+                      value={currentUnitLabel(unit)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setPendingUnitLabels(prev => ({ ...prev, [unit]: v }));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      onBlur={(e) => handleSaveUnitLabel(unit, e.target.value)}
+                      disabled={savingUnitLabel === unit}
+                      maxLength={8}
+                      placeholder="label"
+                      aria-label={`Display label for ${unit}`}
+                      title="Display label shown on the student Resources zone (e.g. 11, 10A, Lab). Leave blank to hide."
+                      className="w-14 shrink-0 bg-[var(--panel-bg)] border border-[var(--border)] rounded px-1.5 py-0.5 text-[10.5px] font-mono text-[var(--text-secondary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition disabled:opacity-40"
+                    />
+                  )}
                   <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{items.length}</span>
                   {filterClass !== 'All Classes' && items.length > 1 && (
                     <button

@@ -28,6 +28,12 @@ export interface ClassConfig {
   className: string;
   unitOrder?: string[];
   resourceOrder?: Record<string, string[]>;
+  /** Per-unit display metadata. Key = unit name (same key as resourceOrder). */
+  unitMeta?: Record<string, {
+    /** Display label for the zone watermark (e.g., "11", "10A", "Lab Unit").
+     *  null/empty/missing = hide watermark and omit "Unit X · " header prefix. */
+    displayNumber?: string | null;
+  }>;
   features: {
     evidenceLocker: boolean;
     leaderboard: boolean;

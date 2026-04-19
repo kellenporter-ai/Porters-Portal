@@ -42,7 +42,7 @@ const BossEncounterPanel = lazyWithRetry(() => import('./xp/BossEncounterPanel')
 const BossQuizPanel = lazyWithRetry(() => import('./xp/BossQuizPanel'));
 const FluxShopPanel = lazyWithRetry(() => import('./xp/FluxShopPanel'));
 
-type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR';
+type StudentTab = 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'BOSS';
 
 interface StudentDashboardProps {
   user: User;
@@ -612,6 +612,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        userClassSections={user.classSections}
                        performanceMode={user.settings?.performanceMode}
                        onTogglePerformanceMode={handleTogglePerformanceMode}
+                       userName={user.name ? user.name.split(' ')[0] : undefined}
+                       userCodename={user.gamification?.codename}
+                       userLevel={user.gamification?.level}
+                       loginStreak={user.gamification?.loginStreak || 0}
                    />
                    </React.Suspense>
                  </FeatureErrorBoundary>
@@ -746,27 +750,31 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                  </FeatureErrorBoundary>
              )}
 
+             {activeTab === 'BOSS' && (
+                 enabledFeatures.bossFights ? (
+                 <div className="space-y-6">
+                     <FeatureErrorBoundary feature="Boss Encounters">
+                       <React.Suspense fallback={<GamificationSkeleton />}>
+                       <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
+                       </React.Suspense>
+                     </FeatureErrorBoundary>
+                     <FeatureErrorBoundary feature="Boss Quiz">
+                       <React.Suspense fallback={<GamificationSkeleton />}>
+                       <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+                       </React.Suspense>
+                     </FeatureErrorBoundary>
+                 </div>
+                 ) : (
+                 <div className="text-center py-12 text-[var(--text-secondary)]">
+                     <p className="text-sm">Boss Encounters are not enabled for this class.</p>
+                 </div>
+                 )
+             )}
+
            </div>
           </div>
       </main>
 
-      {/* BOSS ENCOUNTERS — Full-width panel */}
-      {enabledFeatures.bossFights && (
-      <div>
-          <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl p-6 backdrop-blur-md space-y-6">
-              <FeatureErrorBoundary feature="Boss Encounters">
-                <React.Suspense fallback={<GamificationSkeleton />}>
-                <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-                </React.Suspense>
-              </FeatureErrorBoundary>
-              <FeatureErrorBoundary feature="Boss Quiz">
-                <React.Suspense fallback={<GamificationSkeleton />}>
-                <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
-                </React.Suspense>
-              </FeatureErrorBoundary>
-          </div>
-      </div>
-      )}
 
       {/* Profile Showcase */}
       {showProfile && (

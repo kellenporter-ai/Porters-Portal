@@ -29,6 +29,7 @@ export const STUDENT_ROUTES = {
   FORENSICS: '/forensics',
   LEADERBOARD: '/leaderboard',
   FEEDBACK: '/feedback',
+  BOSS: '/boss',
 } as const;
 
 // XP Command sub-routes (nested under /xp)
@@ -70,6 +71,7 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Forensics': STUDENT_ROUTES.FORENSICS,
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
   'Feedback': STUDENT_ROUTES.FEEDBACK,
+  'Boss Encounters': STUDENT_ROUTES.BOSS,
 };
 
 /** Reverse lookup: URL path → old tab name (for Layout active state) */
@@ -78,7 +80,7 @@ export const PATH_TO_TAB: Record<string, string> = Object.fromEntries(
 );
 
 /** Map student tab name → StudentDashboard tab prop */
-export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR'> = {
+export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'BOSS'> = {
   'Home': 'HOME',
   'Resources': 'RESOURCES',
   'Agent Loadout': 'LOADOUT',
@@ -89,6 +91,7 @@ export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 
   'Intel Dossier': 'INTEL',
   'Progress': 'PROGRESS',
   'Calendar': 'CALENDAR',
+  'Boss Encounters': 'BOSS',
 };
 
 /** Student paths that render via StudentDashboard */
@@ -103,4 +106,5 @@ export const STUDENT_DASHBOARD_PATHS = new Set([
   STUDENT_ROUTES.INTEL,
   STUDENT_ROUTES.PROGRESS,
   STUDENT_ROUTES.CALENDAR,
+  STUDENT_ROUTES.BOSS,
 ]);
