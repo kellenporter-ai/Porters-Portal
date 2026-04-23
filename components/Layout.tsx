@@ -7,7 +7,7 @@ import { NAVIGATION, NavItem, NavGroup } from '../constants';
 // Display-name overrides for sidebar primary label (UX audit 2.2 — function-first dual naming).
 // The canonical NavItem.name remains the route/tab key; this map only affects what the user reads.
 const NAV_DISPLAY_NAMES: Record<string, string> = {
-  'Agent Loadout': 'Gear',
+  'Loadout': 'Gear',
   'Flux Shop': 'Shop',
   'Intel Dossier': 'My Stats',
 };

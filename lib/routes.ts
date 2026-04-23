@@ -60,7 +60,7 @@ export const TAB_TO_PATH: Record<string, string> = {
   // Student
   'Home': STUDENT_ROUTES.HOME,
   'Resources': STUDENT_ROUTES.RESOURCES,
-  'Agent Loadout': STUDENT_ROUTES.LOADOUT,
+  'Loadout': STUDENT_ROUTES.LOADOUT,
   'Badges': STUDENT_ROUTES.BADGES,
   'Skills': STUDENT_ROUTES.SKILLS,
   'Fortune': STUDENT_ROUTES.FORTUNE,
@@ -83,7 +83,7 @@ export const PATH_TO_TAB: Record<string, string> = Object.fromEntries(
 export const STUDENT_TAB_MAP: Record<string, 'HOME' | 'RESOURCES' | 'LOADOUT' | 'ACHIEVEMENTS' | 'SKILLS' | 'FORTUNE' | 'FLUX_SHOP' | 'INTEL' | 'PROGRESS' | 'CALENDAR' | 'BOSS'> = {
   'Home': 'HOME',
   'Resources': 'RESOURCES',
-  'Agent Loadout': 'LOADOUT',
+  'Loadout': 'LOADOUT',
   'Badges': 'ACHIEVEMENTS',
   'Skills': 'SKILLS',
   'Fortune': 'FORTUNE',

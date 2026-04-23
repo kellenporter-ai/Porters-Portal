@@ -639,7 +639,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
 
              {activeTab === 'LOADOUT' && (
-               <FeatureErrorBoundary feature="Agent Loadout">
+               <FeatureErrorBoundary feature="Loadout">
                  <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                  <AgentLoadoutTab user={user} activeClass={activeClass} level={level} />
                  </React.Suspense>

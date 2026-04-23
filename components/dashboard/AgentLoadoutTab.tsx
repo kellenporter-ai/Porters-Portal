@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { User, RPGItem, EquipmentSlot, ItemSlot } from '../../types';
-import { User as UserIcon, GripVertical, Diamond, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, RPGItem, EquipmentSlot, ItemSlot, PLAYER_ROLE_DEFS } from '../../types';
+import { User as UserIcon, GripVertical, Diamond, ChevronDown, ChevronUp, Sword, Zap, Shield, Crown, Plus } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
-import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats } from '../../lib/gamification';
+import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats, derivePlayerRole, calculateGearScore } from '../../lib/gamification';
 import { getClassProfile } from '../../lib/classProfile';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
@@ -50,7 +50,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [draggedItem, setDraggedItem] = useState<RPGItem | null>(null);
-  const [rightTab, setRightTab] = useState<RightPanelTab>('agent');
+  const [rightTab, setRightTab] = useState<RightPanelTab>('loadout');
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState<RPGItem | null>(null);
 
   const classProfile = useMemo(() => getClassProfile(user, activeClass), [user, activeClass]);
   const equipped = classProfile.equipped;
@@ -66,6 +67,43 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     });
     return base;
   }, [equipped]);
+
+  const role = useMemo(() => derivePlayerRole(playerStats), [playerStats]);
+  const gearScore = useMemo(() => calculateGearScore(equipped), [equipped]);
+
+  // --- Auto-equip best ---
+  const handleAutoEquip = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    let count = 0;
+    try {
+      for (const slot of ALL_EQUIP_SLOTS) {
+        const accepted = slotAccepts(slot);
+        const candidates = inventory.filter(i => accepted.includes(i.slot));
+        if (candidates.length === 0) continue;
+        const best = candidates.reduce((a, b) => {
+          const aSum = Object.values(a.stats || {}).reduce((s, v) => s + (v as number), 0);
+          const bSum = Object.values(b.stats || {}).reduce((s, v) => s + (v as number), 0);
+          return bSum > aSum ? b : a;
+        });
+        const alreadyEquipped = Object.values(equipped).some(e => e?.id === best.id);
+        if (!alreadyEquipped) {
+          await dataService.equipItem(user.id, best, activeClass);
+          count++;
+        }
+      }
+      if (count > 0) {
+        sfx.equip();
+        toast.success(`Auto-equipped ${count} item${count > 1 ? 's' : ''}.`);
+      } else {
+        toast.info('No upgrades available.');
+      }
+    } catch {
+      toast.error('Auto-equip failed.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   // --- DnD sensors ---
   const sensors = useSensors(
@@ -259,8 +297,11 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     });
 
     const isCompatible = draggedItem && slotAccepts(slot).includes(draggedItem.slot);
+    const isSelectedCompatible = selectedInventoryItem && slotAccepts(slot).includes(selectedInventoryItem.slot);
     const highlightClass = isOver && isCompatible ? 'ring-2 ring-purple-500 scale-110' :
-                           draggedItem && isCompatible ? 'ring-1 ring-purple-500/40 animate-pulse' : '';
+                           draggedItem && isCompatible ? 'ring-1 ring-purple-500/40 animate-pulse' :
+                           selectedInventoryItem && isSelectedCompatible ? 'ring-2 ring-green-500/60' : '';
+    const dimClass = (draggedItem && !isCompatible) || (selectedInventoryItem && !isSelectedCompatible) ? 'opacity-30 grayscale' : '';
 
     return (
       <div ref={setDropRef} className="relative w-full h-full hover:z-50">
@@ -270,8 +311,18 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
           {...listeners}
           className={`w-full h-full min-w-[64px] min-h-[64px] rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
             isDragging ? 'opacity-30 scale-90 border-dashed' : 'hover:scale-105 cursor-grab active:cursor-grabbing'
-          } ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass}`}
-          onClick={() => !isDragging && item && setInspectItem(item)}
+          } ${colors.border} ${colors.bg} ${colors.shimmer} ${colors.glow} ${highlightClass} ${dimClass}`}
+          onClick={() => {
+            if (isDragging) return;
+            if (selectedInventoryItem && isSelectedCompatible) {
+              handleEquip(selectedInventoryItem);
+              setSelectedInventoryItem(null);
+            } else if (selectedInventoryItem) {
+              setSelectedInventoryItem(null);
+            } else if (item) {
+              setInspectItem(item);
+            }
+          }}
         >
           {item ? (
             <>
@@ -282,14 +333,17 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
                   <div className="text-[11.5px] text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {slot}</div>
                   <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--surface-raised)] border-b border-r border-[var(--border)] rotate-45"></div>
                 </div>
               )}
             </>
           ) : (
-            <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">{
-              { HEAD: 'HEAD', HANDS: 'HANDS', RING1: 'RING', RING2: 'RING', AMULET: 'AMUL.', CHEST: 'CHEST', BELT: 'BELT', FEET: 'FEET', WEAPON1: 'WPN 1', WEAPON2: 'WPN 2' }[slot] || slot.slice(0, 4)
-            }</span>
+            <>
+              <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">{
+                { HEAD: 'Head', HANDS: 'Hands', RING1: 'Ring', RING2: 'Ring', AMULET: 'Amulet', CHEST: 'Chest', BELT: 'Belt', FEET: 'Feet', WEAPON1: 'Weapon', WEAPON2: 'Off-Hand' }[slot] || slot.slice(0, 4)
+              }</span>
+              <span className="text-[9px] text-[var(--text-muted)] mt-0.5 flex items-center gap-0.5"><Plus className="w-2.5 h-2.5" /> Empty</span>
+            </>
           )}
         </div>
       </div>
@@ -311,6 +365,10 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                 equipped={equipped}
                 draggedItem={draggedItem}
                 onInspect={setInspectItem}
+                selectedItem={selectedInventoryItem}
+                onSelectItem={setSelectedInventoryItem}
+                onAutoEquip={handleAutoEquip}
+                isProcessing={isProcessing}
               />
             </div>
 
@@ -320,17 +378,17 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, hsla(${(classProfile.appearance?.hue || 0) + 200}, 60%, 25%, 0.3) 0%, transparent 70%)` }}></div>
 
               {/* Tab switcher */}
-              <div className="relative z-10 flex gap-1 bg-black/30 rounded-xl p-1 mb-2 self-center">
+              <div className="relative z-10 flex gap-1 bg-[var(--surface-glass-heavy)] rounded-xl p-1 mb-2 self-center border border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setRightTab('agent')}
                   className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
                     rightTab === 'agent'
                       ? 'bg-purple-600 text-white shadow-lg'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
                 >
-                  Agent
+                  Avatar
                 </button>
                 <button
                   type="button"
@@ -338,7 +396,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
                     rightTab === 'loadout'
                       ? 'bg-purple-600 text-white shadow-lg'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
                 >
                   Loadout
@@ -349,11 +407,11 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
                     rightTab === 'gems'
                       ? 'bg-purple-600 text-white shadow-lg'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
                 >
                   <Diamond className="w-3 h-3 inline-block mr-1 -mt-px" />
-                  Gems
+                  Gem Codex
                 </button>
               </div>
 
@@ -423,13 +481,50 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
           <div className="mt-3">
             {(() => {
               const combat = deriveCombatStats(playerStats);
+              const roleDef = PLAYER_ROLE_DEFS[role];
+              const RoleIcon = { Sword, Zap, Shield, Crown }[roleDef.icon] || Sword;
+              const roleColorMap: Record<string, { bg: string; border: string; text: string }> = {
+                blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-600 dark:text-blue-400' },
+                green: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-600 dark:text-green-400' },
+                yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-600 dark:text-yellow-400' },
+                purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-600 dark:text-purple-400' },
+              };
+              const rc = roleColorMap[roleDef.color] || roleColorMap.blue;
+              const StatBar = ({ value, color }: { value: number; color: string }) => {
+                const filled = Math.min(5, Math.max(1, Math.ceil((value - 5) / 10)));
+                const cmap: Record<string, string> = { blue: 'bg-blue-400', green: 'bg-green-400', yellow: 'bg-yellow-400', purple: 'bg-purple-400' };
+                const c = cmap[color] || 'bg-gray-400';
+                return (
+                  <div className="flex gap-0.5 ml-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className={`w-1.5 h-1 rounded-sm ${i < filled ? c : 'bg-[var(--border)]'}`} />
+                    ))}
+                  </div>
+                );
+              };
               return (
                 <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-[var(--surface-sunken)] rounded-xl px-4 py-2.5 border border-[var(--border)]">
+                  {/* Role Badge */}
+                  <div className="flex items-center gap-1.5 group relative cursor-help">
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${rc.bg} border ${rc.border}`}>
+                      <RoleIcon className={`w-3 h-3 ${rc.text}`} />
+                      <span className={`text-[11px] font-bold ${rc.text}`}>{roleDef.name}</span>
+                    </div>
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-52 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
+                      <span className={`font-bold ${rc.text}`}>{roleDef.name}</span> — {roleDef.description}
+                    </div>
+                  </div>
+                  {/* Gear Score */}
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                    <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{gearScore} GS</span>
+                  </div>
+                  <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Tech</span>
                     <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{playerStats.tech}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
+                    <StatBar value={playerStats.tech} color="blue" />
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
                       <span className="font-bold text-blue-600 dark:text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
                     </div>
                   </div>
@@ -437,7 +532,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Focus</span>
                     <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">{playerStats.focus}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
+                    <StatBar value={playerStats.focus} color="green" />
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
                       <span className="font-bold text-green-600 dark:text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% · Crit damage: {combat.critMultiplier.toFixed(2)}x
                     </div>
                   </div>
@@ -445,7 +541,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Analysis</span>
                     <span className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold">{playerStats.analysis}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
+                    <StatBar value={playerStats.analysis} color="yellow" />
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
                       <span className="font-bold text-yellow-600 dark:text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
                     </div>
                   </div>
@@ -453,7 +550,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Charisma</span>
                     <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{playerStats.charisma}</span>
-                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[11.5px] text-gray-300 shadow-xl">
+                    <StatBar value={playerStats.charisma} color="purple" />
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
                       <span className="font-bold text-purple-600 dark:text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
                     </div>
                   </div>
@@ -560,6 +658,33 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
     return ids;
   }, [equipped]);
 
+  // Runeword progress for equipped items
+  const runewordProgress = useMemo(() => {
+    const progress: { itemName: string; runewordName: string; current: number; required: number; color: string }[] = [];
+    Object.values(equipped).filter(Boolean).forEach(item => {
+      const rpgItem = item as RPGItem;
+      if (!rpgItem.gems || rpgItem.gems.length === 0) return;
+      if (rpgItem.runewordActive) return;
+      const currentPattern = rpgItem.gems.map(g => g.name.replace(/\s*\(T\d+\)/, ''));
+      for (const rw of RUNEWORD_DEFINITIONS) {
+        if (rw.requiredSockets !== (rpgItem.sockets || 0)) continue;
+        const matchesPrefix = currentPattern.every((gemName, i) => gemName === rw.pattern[i]);
+        if (matchesPrefix && currentPattern.length < rw.pattern.length) {
+          const legend = GEM_LEGEND.find(g => g.name === rw.pattern[0]);
+          progress.push({
+            itemName: rpgItem.name,
+            runewordName: rw.name,
+            current: currentPattern.length,
+            required: rw.pattern.length,
+            color: legend?.color || '#f59e0b',
+          });
+          break;
+        }
+      }
+    });
+    return progress;
+  }, [equipped]);
+
   // Group gems by base name (strip tier info)
   const gemGroups = useMemo(() => {
     const groups: Record<string, typeof gemsInventory> = {};
@@ -578,8 +703,8 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
   if (gemsInventory.length === 0) {
     return (
       <div className="flex-1 w-full relative z-10 flex flex-col items-center justify-center gap-3 text-center px-6">
-        <Diamond className="w-10 h-10 text-gray-700" />
-        <p className="text-[11px] text-gray-600 leading-relaxed">
+        <Diamond className="w-10 h-10 text-[var(--text-muted)]" />
+        <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
           No gems yet. Earn gems from fortune wheel spins, boss victories, and daily login rewards.
         </p>
       </div>
@@ -589,7 +714,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
   return (
     <div className="flex-1 w-full relative z-10 overflow-y-auto custom-scrollbar px-2 pb-2">
       {/* Gem Purpose Legend */}
-      <div className="mb-3 bg-black/20 rounded-lg px-3 py-2 border border-[var(--border)]">
+      <div className="mb-3 bg-[var(--surface-glass)] rounded-lg px-3 py-2 border border-[var(--border)]">
         {GEM_LEGEND.map(g => (
           <div key={g.name} className="flex items-center gap-2 py-0.5">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color }} />
@@ -611,7 +736,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
           gems.forEach(g => { tierCounts[g.tier] = (tierCounts[g.tier] || 0) + 1; });
 
           return (
-            <div key={baseName} className="bg-black/20 rounded-lg px-3 py-2 border border-[var(--border)]">
+            <div key={baseName} className="bg-[var(--surface-glass)] rounded-lg px-3 py-2 border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}60` }} />
                 <span className="text-[11px] font-bold" style={{ color }}>{baseName}</span>
@@ -624,11 +749,20 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                   ))}
                 </div>
               )}
+              {/* Gem upgrade hints */}
+              {Object.entries(tierCounts).filter(([, count]) => count >= 3).map(([tier]) => (
+                <div key={`upgrade-${tier}`} className="text-[10px] text-[var(--text-muted)] mb-1.5 flex items-center gap-1">
+                  <span className="px-1 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]">{tierCounts[Number(tier)]}x T{tier}</span>
+                  <span>&rarr;</span>
+                  <span className="px-1 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] font-bold">1x T{Number(tier) + 1}</span>
+                  <span className="italic">(future feature)</span>
+                </div>
+              ))}
               <div className="flex flex-wrap gap-1.5">
                 {gems.map(gem => (
                   <div key={gem.id} className="flex items-center gap-1 bg-black/30 rounded-md px-2 py-1 border border-[var(--border)]">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: gem.color }} />
-                    <span className="text-[11.5px] text-gray-600 dark:text-gray-400">{gem.name}</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{gem.name}</span>
                     <span className="text-[11.5px] font-bold" style={{ color: gem.color }}>+{gem.value} {gem.stat.slice(0, 3).toUpperCase()}</span>
                   </div>
                 ))}
@@ -638,12 +772,31 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
         })}
       </div>
 
+      {/* Runeword Progress */}
+      {runewordProgress.length > 0 && (
+        <div className="mb-3 bg-[var(--surface-glass)] rounded-lg px-3 py-2 border border-[var(--border)]">
+          <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">In Progress</div>
+          {runewordProgress.map((rp, i) => (
+            <div key={i} className="flex items-center gap-2 mb-1.5 last:mb-0">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: rp.color, boxShadow: `0 0 6px ${rp.color}60` }} />
+              <span className="text-[11.5px] text-[var(--text-secondary)] truncate">{rp.itemName}</span>
+              <span className="text-[11.5px] text-[var(--text-tertiary)] mx-0.5">&rarr;</span>
+              <span className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400">{rp.runewordName}</span>
+              <span className="text-[11px] text-[var(--text-muted)] ml-auto">{rp.current}/{rp.required}</span>
+              <div className="w-16 h-1.5 rounded-full bg-[var(--surface-glass-heavy)] overflow-hidden">
+                <div className="h-full rounded-full bg-amber-500/60" style={{ width: `${(rp.current / rp.required) * 100}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Runeword Codex */}
-      <div className="bg-black/20 rounded-lg border border-[var(--border)]">
+      <div className="bg-[var(--surface-glass)] rounded-lg border border-[var(--border)]">
         <button
           type="button"
           onClick={() => setCodexOpen(!codexOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider hover:text-[var(--text-secondary)] transition-colors"
         >
           Runeword Codex
           {codexOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -663,7 +816,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                   style={isActive ? { boxShadow: '0 0 12px rgba(245,158,11,0.15)' } : undefined}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[11px] font-bold ${isActive ? 'text-amber-300' : 'text-gray-300'}`}>{rw.name}</span>
+                    <span className={`text-[11px] font-bold ${isActive ? 'text-amber-300' : 'text-[var(--text-secondary)]'}`}>{rw.name}</span>
                     {isActive && (
                       <span className="text-[8px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">ACTIVE</span>
                     )}
@@ -675,9 +828,9 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                       const legend = GEM_LEGEND.find(g => g.name === gemName);
                       return (
                         <div key={i} className="flex items-center gap-0.5">
-                          {i > 0 && <span className="text-[8px] text-gray-700">+</span>}
+                          {i > 0 && <span className="text-[8px] text-[var(--text-muted)]">+</span>}
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: legend?.color || '#666' }} />
-                          <span className="text-[8px] text-gray-500">{gemName}</span>
+                          <span className="text-[8px] text-[var(--text-muted)]">{gemName}</span>
                         </div>
                       );
                     })}
@@ -724,9 +877,13 @@ interface InventoryGridProps {
   equipped: Partial<Record<EquipmentSlot, RPGItem>>;
   draggedItem: RPGItem | null;
   onInspect: (item: RPGItem) => void;
+  selectedItem: RPGItem | null;
+  onSelectItem: (item: RPGItem | null) => void;
+  onAutoEquip: () => void;
+  isProcessing: boolean;
 }
 
-const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect }) => {
+const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect, selectedItem, onSelectItem, onAutoEquip, isProcessing }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
   const isDroppingEquipped = draggedItem && Object.values(equipped).some(e => (e as RPGItem | null)?.id === draggedItem.id);
   const [activeTab, setActiveTab] = useState<GearTab>('ALL');
@@ -742,14 +899,24 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
         isDroppingEquipped ? 'border-purple-500/40 bg-purple-900/5' : isOver ? 'border-purple-500/50 bg-purple-900/10' : 'border-[var(--border)]'
       }`}
     >
-      {/* Header row: title + drag hint */}
+      {/* Header row: title + actions */}
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">
           Gear Storage ({filteredInventory.length})
         </h4>
-        <span className="text-[11.5px] text-[var(--text-tertiary)] flex items-center gap-1">
-          <GripVertical className="w-3 h-3" /> Drag to equip
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onAutoEquip}
+            disabled={isProcessing || inventory.length === 0}
+            className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition disabled:opacity-40"
+          >
+            Auto-Equip Best
+          </button>
+          <span className="text-[11.5px] text-[var(--text-secondary)] flex items-center gap-1">
+            <GripVertical className="w-3 h-3" /> Drag to equip
+          </span>
+        </div>
       </div>
       {/* Filter tabs */}
       <div className="flex gap-1 mb-3">
@@ -760,8 +927,8 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             onClick={() => setActiveTab(tab)}
             className={`px-2.5 py-1 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
               activeTab === tab
-                ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
-                : 'text-gray-600 hover:text-gray-400 hover:bg-[var(--surface-glass)] border border-transparent'
+                ? 'bg-purple-600 text-white border border-purple-600'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] border border-transparent'
             }`}
           >
             {tab === 'ALL' ? 'All' : tab === 'ARMOR' ? 'Armor' : tab === 'HANDS' ? 'Hands' : tab === 'JEWELRY' ? 'Jewelry' : 'Weapons'}
@@ -775,6 +942,8 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             item={item}
             equipped={equipped}
             onInspect={onInspect}
+            selectedItem={selectedItem}
+            onSelectItem={onSelectItem}
           />
         ))}
         {Array.from({ length: Math.max(0, 16 - filteredInventory.length) }).map((_, i) => (
@@ -805,11 +974,14 @@ interface DraggableInventoryItemProps {
   item: RPGItem;
   equipped: Partial<Record<EquipmentSlot, RPGItem>>;
   onInspect: (item: RPGItem) => void;
+  selectedItem: RPGItem | null;
+  onSelectItem: (item: RPGItem | null) => void;
 }
 
-const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect }) => {
+const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect, selectedItem, onSelectItem }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
+  const isSelected = selectedItem?.id === item.id;
   const colors = getAssetColors(item.rarity);
 
   return (
@@ -817,10 +989,17 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      onClick={() => !isDragging && onInspect(item)}
+      onClick={() => {
+        if (isDragging) return;
+        if (isSelected) {
+          onInspect(item);
+        } else {
+          onSelectItem(item);
+        }
+      }}
       className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center relative group transition-all duration-200 ${
         isDragging ? 'opacity-30 scale-90 border-dashed' : 'cursor-grab active:cursor-grabbing opacity-80 hover:opacity-100 hover:scale-105'
-      } ${isEquipped ? 'ring-2 ring-white/50 opacity-100' : ''} ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
+      } ${isEquipped ? 'ring-2 ring-green-500/60 opacity-100' : ''} ${isSelected ? 'ring-2 ring-purple-600 dark:ring-white' : ''} ${colors.bg} ${colors.border} ${colors.shimmer} ${isEquipped ? colors.glow : ''}`}
     >
       <ItemIcon visualId={item.visualId} slot={item.slot} rarity={item.rarity} size="w-8 h-8" />
       {isEquipped && (
@@ -831,7 +1010,7 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
           <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
           <div className="text-[11.5px] text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
           <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-b border-r border-white/15 rotate-45"></div>
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--surface-raised)] border-b border-r border-[var(--border)] rotate-45"></div>
         </div>
       )}
     </div>

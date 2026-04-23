@@ -625,7 +625,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
 
           {/* Secondary tiles */}
           {[
-            { label: 'Loadout', nav: 'Agent Loadout', icon: '/assets/icons/icon-agent-loadout.png' },
+            { label: 'Loadout', nav: 'Loadout', icon: '/assets/icons/icon-agent-loadout.png' },
             { label: 'Progress', nav: 'Progress', icon: '/assets/icons/icon-progress.png' },
             { label: 'Badges', nav: 'Badges', icon: '/assets/icons/icon-badges.png' },
             { label: 'Calendar', nav: 'Calendar', icon: '/assets/icons/icon-calendar.png' },

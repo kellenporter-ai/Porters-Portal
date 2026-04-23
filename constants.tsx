@@ -57,7 +57,7 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Feedback', iconSrc: '/assets/icons/icon-grading.png', role: 'STUDENT', group: 'learning' },
   { name: 'Calendar', iconSrc: '/assets/icons/icon-calendar.png', role: 'STUDENT', group: 'learning' },
   // Operations group
-  { name: 'Agent Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations', flavor: 'Loadout' },
+  { name: 'Loadout', iconSrc: '/assets/icons/icon-agent-loadout.png', role: 'STUDENT', group: 'operations', flavor: 'Gear' },
   { name: 'Fortune', iconSrc: '/assets/icons/icon-fortune.png', role: 'STUDENT', group: 'operations' },
   { name: 'Flux Shop', iconSrc: '/assets/icons/icon-flux-shop.png', role: 'STUDENT', group: 'operations', flavor: 'Flux' },
   { name: 'Badges', iconSrc: '/assets/icons/icon-badges.png', role: 'STUDENT', group: 'operations', iconSize: 35, flavor: 'Achievements' },
