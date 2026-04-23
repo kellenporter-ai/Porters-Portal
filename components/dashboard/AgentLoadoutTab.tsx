@@ -440,9 +440,9 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               ) : rightTab === 'loadout' ? (
                 <>
                   {/* LOADOUT VIEW — equipment grid, no avatar */}
-                  <div className="flex-1 w-full relative z-10 grid gap-2 p-2" style={{
+                  <div className="flex-1 w-full relative z-10 grid gap-2 p-2 content-center" style={{
                     gridTemplateColumns: '1fr 1.2fr 1fr',
-                    gridTemplateRows: '1fr 1fr 0.8fr 0.8fr',
+                    gridTemplateRows: 'auto auto auto auto',
                     gridTemplateAreas: `
                       "weapon1  head    weapon2"
                       "weapon1  chest   weapon2"

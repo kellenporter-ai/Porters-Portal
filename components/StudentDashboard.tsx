@@ -343,7 +343,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, [user.id, user.settings, toast]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-5 h-full pb-6 lg:pb-8">
+    <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-5 h-full pb-6 lg:pb-8 content-start">
       {/* Mobile class selector — visible below lg where the sidebar selector is hidden */}
       {enrolledClasses.length > 1 && (
         <div className="lg:hidden relative">
