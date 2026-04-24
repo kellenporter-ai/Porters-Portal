@@ -22,7 +22,32 @@ export const calculateFeedback = (
   metrics: TelemetryMetrics,
   thresholds: TelemetryThresholds = DEFAULT_THRESHOLDS
 ): { status: Submission['status'], feedback: string } => {
-  const { pasteCount, engagementTime, keystrokes } = metrics;
+  const { pasteCount, engagementTime, keystrokes, autoInsertCount } = metrics;
+
+  // Chunked pastes: student copying in tiny fragments to avoid detection
+  if (pasteCount > 15) {
+    return {
+      status: 'FLAGGED',
+      feedback: "Elevated paste count — student may be assembling an answer from multiple sources."
+    };
+  }
+
+  // High paste density: more than one paste per 10 words
+  const wordCount = metrics.wordCount || 0;
+  if (pasteCount > 0 && wordCount > 0 && wordCount / pasteCount < 10) {
+    return {
+      status: 'FLAGGED',
+      feedback: "High paste density — frequent small pastes detected."
+    };
+  }
+
+  // Auto-insert suspicion: Grammarly, dictation, mobile auto-suggest used heavily with low engagement
+  if ((autoInsertCount || 0) > 5 && engagementTime < 300) {
+    return {
+      status: 'FLAGGED',
+      feedback: "Heavy auto-insert/dictation detected with low engagement — verify original work."
+    };
+  }
 
   // AI Usage Suspicion: High pastes, very low engagement time
   if (pasteCount > thresholds.flagPasteCount && engagementTime < thresholds.flagMinEngagement) {
@@ -92,6 +117,7 @@ export const createInitialMetrics = (): TelemetryMetrics => ({
   engagementTime: 0,
   keystrokes: 0,
   clickCount: 0,
+  autoInsertCount: 0,
   startTime: Date.now(),
   lastActive: Date.now(),
   tabSwitchCount: 0,

@@ -21,7 +21,7 @@ export function processBlockText(text: string): string {
   // Markdown bold: **text**
   result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   // Markdown italic: *text* (but not inside already-processed tags)
-  result = result.replace(/(?<![<\/\w])\*([^*]+)\*(?![>])/g, '<em>$1</em>');
+  result = result.replace(/(?<![</\w])\*([^*]+)\*(?![>])/g, '<em>$1</em>');
   // Newlines to <br>
   result = result.replace(/\n/g, '<br/>');
   return result;

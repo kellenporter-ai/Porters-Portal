@@ -36,7 +36,7 @@ interface MathResponseBlockProps {
 function isPlainTextLine(line: string): boolean {
   const trimmed = line.trim();
   if (!trimmed || trimmed.length < 4) return false;
-  if (/[=^_{}()\[\]/\\]/.test(trimmed)) return false;
+  if (/[[\]=^_{}()/\\]/.test(trimmed)) return false;
   if (/[\u0370-\u03FF\u00B2\u00B3\u00D7\u00F7\u00B1\u2248\u2260\u2265\u2264\u2192]/.test(trimmed)) return false;
   const tokens = trimmed.split(/\s+/);
   if (tokens.length < 2) return false;

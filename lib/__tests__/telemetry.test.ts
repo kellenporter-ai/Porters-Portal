@@ -92,6 +92,33 @@ describe('calculateFeedback', () => {
     // pasteCount must be > threshold, not >=
     expect(result.status).not.toBe('FLAGGED');
   });
+
+  it('returns FLAGGED for chunked pastes (>15)', () => {
+    const metrics = makeMetrics({ pasteCount: 16, keystrokes: 200, engagementTime: 600 });
+    const result = calculateFeedback(metrics);
+    expect(result.status).toBe('FLAGGED');
+    expect(result.feedback).toContain('assembling an answer');
+  });
+
+  it('returns FLAGGED for high paste density', () => {
+    const metrics = makeMetrics({ pasteCount: 5, wordCount: 30, keystrokes: 200, engagementTime: 600 });
+    const result = calculateFeedback(metrics);
+    expect(result.status).toBe('FLAGGED');
+    expect(result.feedback).toContain('paste density');
+  });
+
+  it('returns FLAGGED for heavy auto-insert with low engagement', () => {
+    const metrics = makeMetrics({ autoInsertCount: 6, engagementTime: 200, keystrokes: 50 });
+    const result = calculateFeedback(metrics);
+    expect(result.status).toBe('FLAGGED');
+    expect(result.feedback).toContain('dictation');
+  });
+
+  it('does not flag low paste density', () => {
+    const metrics = makeMetrics({ pasteCount: 2, wordCount: 100, keystrokes: 200, engagementTime: 600 });
+    const result = calculateFeedback(metrics);
+    expect(result.status).not.toBe('FLAGGED');
+  });
 });
 
 // ─── generateTeacherSummary ───

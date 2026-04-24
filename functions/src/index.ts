@@ -641,7 +641,14 @@ const DEFAULT_THRESHOLDS: TelemetryThresholds = {
 };
 
 function calculateFeedbackServerSide(
-  metrics: { pasteCount: number; engagementTime: number; keystrokes: number; tabSwitchCount?: number },
+  metrics: {
+    pasteCount: number;
+    engagementTime: number;
+    keystrokes: number;
+    tabSwitchCount?: number;
+    wordCount?: number;
+    wordsPerSecond?: number;
+  },
   thresholds: Partial<TelemetryThresholds> = {},
   context?: { responseCount?: number; hasWrittenResponses?: boolean }
 ): { status: string; feedback: string } {
@@ -672,6 +679,33 @@ function calculateFeedbackServerSide(
   // Assessment-specific: excessive tab switching
   if ((metrics.tabSwitchCount || 0) > 5) {
     return { status: "FLAGGED", feedback: "Excessive tab switching during assessment." };
+  }
+
+  // ── NEW: Metric cross-validation (catches fabricated client metrics) ──
+
+  // Chunked pastes: student copying in tiny fragments to avoid detection
+  if (metrics.pasteCount > 15) {
+    return { status: "FLAGGED", feedback: "Elevated paste count — student may be assembling an answer from multiple sources." };
+  }
+
+  // High paste density: more than one paste per 10 words
+  if (metrics.pasteCount > 0 && metrics.wordCount && metrics.wordCount > 0 && metrics.wordCount / metrics.pasteCount < 10) {
+    return { status: "FLAGGED", feedback: "High paste density — frequent small pastes detected." };
+  }
+
+  // Impossible typing speed
+  if (metrics.wordsPerSecond && metrics.wordsPerSecond > 3.0 && metrics.keystrokes > 0) {
+    return { status: "FLAGGED", feedback: "Impossible typing speed detected — possible automated input or macro." };
+  }
+
+  // Words present with zero keystrokes (dictation, dev tools, ghost submission)
+  if (metrics.keystrokes === 0 && metrics.wordCount && metrics.wordCount > 20) {
+    return { status: "FLAGGED", feedback: "Text present with zero keystrokes — possible dictation, paste, or automated input." };
+  }
+
+  // Word-to-keystroke ratio too high (paste or auto-insert)
+  if (metrics.keystrokes > 0 && metrics.wordCount && metrics.wordCount > 0 && metrics.wordCount / metrics.keystrokes > 0.5) {
+    return { status: "FLAGGED", feedback: "Word-to-keystroke ratio is implausibly high — possible paste or auto-insert." };
   }
 
   // AI Usage Suspicion: High pastes, very low engagement time
@@ -1777,6 +1811,7 @@ export const submitEngagement = onCall(async (request) => {
 
   // Create submission
   const validatedMetrics = { engagementTime, keystrokes, pasteCount, tabSwitchCount };
+  const { status: engagementStatus, feedback: engagementFeedback } = calculateFeedbackServerSide(validatedMetrics, thresholds);
   const submission = {
     userId: uid,
     userName: request.data.userName || "Student",
@@ -1784,7 +1819,8 @@ export const submitEngagement = onCall(async (request) => {
     assignmentTitle: assignmentTitle || "",
     metrics: { engagementTime, keystrokes, pasteCount, clickCount, tabSwitchCount, startTime: metrics.startTime || 0, lastActive: metrics.lastActive || 0 },
     submittedAt: new Date().toISOString(),
-    status: calculateFeedbackServerSide(validatedMetrics, thresholds).status,
+    status: engagementStatus,
+    feedback: engagementFeedback,
     score: xpEarned,
     privateComments: [],
     hasUnreadAdmin: false,
@@ -2077,35 +2113,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     return true;
   });
 
-  ({ status } = calculateFeedbackServerSide({
-    pasteCount: metrics.pasteCount || 0,
-    engagementTime: validatedEngagement,
-    keystrokes: metrics.keystrokes || 0,
-    tabSwitchCount: metrics.tabSwitchCount || 0,
-  }, assessmentThresholds, {
-    responseCount: nonEmptyResponses.length,
-    hasWrittenResponses: nonEmptyResponses.length > 0,
-  }));
-
-  if (status === "FLAGGED") {
-    logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
-      `clientEngagement=${metrics.engagementTime}s, serverElapsed=${Math.round(serverElapsedSec)}s, ` +
-      `validatedEngagement=${Math.round(validatedEngagement)}s, keystrokes=${metrics.keystrokes}, ` +
-      `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}`);
-  }
-
-  // 5b. Look up student's section for this class
-  let userSection: string | undefined;
-  if (classType) {
-    const userSnap = await db.doc(`users/${uid}`).get();
-    if (userSnap.exists) {
-      const userData = userSnap.data()!;
-      userSection = userData.classSections?.[classType]
-        ?? ((userData.classType === classType || (userData.enrolledClasses || []).includes(classType)) ? userData.section : undefined);
-    }
-  }
-
-  // 5c. Calculate word count from short-answer responses
+  // 5b. Calculate word count from short-answer responses (moved BEFORE feedback calculation)
   let totalWordCount = 0;
   for (const block of blocks) {
     if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
@@ -2117,6 +2125,38 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     }
   }
   const wordsPerSecond = validatedEngagement > 0 ? Math.round((totalWordCount / validatedEngagement) * 100) / 100 : 0;
+
+  // 5c. Calculate telemetry status (now with word metrics for cross-validation)
+  let feedback = "Assignment submitted successfully.";
+  ({ status, feedback } = calculateFeedbackServerSide({
+    pasteCount: metrics.pasteCount || 0,
+    engagementTime: validatedEngagement,
+    keystrokes: metrics.keystrokes || 0,
+    tabSwitchCount: metrics.tabSwitchCount || 0,
+    wordCount: totalWordCount,
+    wordsPerSecond,
+  }, assessmentThresholds, {
+    responseCount: nonEmptyResponses.length,
+    hasWrittenResponses: nonEmptyResponses.length > 0,
+  }));
+
+  if (status === "FLAGGED") {
+    logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
+      `clientEngagement=${metrics.engagementTime}s, serverElapsed=${Math.round(serverElapsedSec)}s, ` +
+      `validatedEngagement=${Math.round(validatedEngagement)}s, keystrokes=${metrics.keystrokes}, ` +
+      `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}, feedback="${feedback}"`);
+  }
+
+  // 5d. Look up student's section for this class
+  let userSection: string | undefined;
+  if (classType) {
+    const userSnap = await db.doc(`users/${uid}`).get();
+    if (userSnap.exists) {
+      const userData = userSnap.data()!;
+      userSection = userData.classSections?.[classType]
+        ?? ((userData.classType === classType || (userData.enrolledClasses || []).includes(classType)) ? userData.section : undefined);
+    }
+  }
 
   // 6. Create submission doc
   const assessmentSubmission = {
@@ -2141,6 +2181,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     },
     submittedAt: new Date().toISOString(),
     status,
+    feedback,
     score: percentage,
     isAssessment: true,
     attemptNumber,
@@ -2407,6 +2448,25 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
   const metricsEngagement = snap ? (Number(snap.engagementTime) || 0) : elapsed;
   const wordsPerSecond = metricsEngagement > 0 ? Math.round((totalWordCount / metricsEngagement) * 100) / 100 : 0;
 
+  // 9c. Run telemetry validation (same as submitAssessment)
+  const responseCount = Object.keys(responses).filter(k => {
+    const r = responses[k];
+    if (!r) return false;
+    if (typeof r === 'object') {
+      const obj = r as Record<string, unknown>;
+      return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0);
+    }
+    return typeof r === 'string' ? r.trim().length > 0 : true;
+  }).length;
+  const { status: behalfStatus, feedback: behalfFeedback } = calculateFeedbackServerSide({
+    pasteCount: Number(snap?.pasteCount) || 0,
+    engagementTime: metricsEngagement,
+    keystrokes: Number(snap?.keystrokes) || 0,
+    tabSwitchCount: Number(snap?.tabSwitchCount) || 0,
+    wordCount: totalWordCount,
+    wordsPerSecond,
+  }, {}, { responseCount, hasWrittenResponses: responseCount > 0 });
+
   // 10. Build submission doc + atomic write (session mark + submission in one transaction)
   const submissionDoc = {
     userId,
@@ -2443,7 +2503,8 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
       wordsPerSecond,
     },
     submittedAt: new Date().toISOString(),
-    status: "NORMAL",
+    status: behalfStatus,
+    feedback: behalfFeedback,
     score: percentage,
     isAssessment: true,
     attemptNumber,

@@ -72,10 +72,21 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   onExit,
   onReviewWork,
 }) => {
+  // Hooks must be called before any conditional return
+  const [takingSelectedSkill, setTakingSelectedSkill] = useState<string | null>(null);
+  const [selected, setSelected] = useState<SidebarSelection>(() => {
+    const rubric = activeAssignment.rubric;
+    const questions = rubric?.questions ?? [];
+    const rubricGrade = existingSubmission?.rubricGrade;
+    const hasFeedback = !!rubricGrade?.teacherFeedback;
+    return questions.length > 0
+      ? { type: 'skill', questionId: questions[0].id }
+      : hasFeedback ? { type: 'feedback' } : { type: 'mywork' };
+  });
+
   // ---- Taking mode ----
   if (mode === 'taking') {
     const takingQuestions = activeAssignment.rubric?.questions ?? [];
-    const [takingSelectedSkill, setTakingSelectedSkill] = useState<string | null>(null);
 
     const selectedTakingQuestion = takingQuestions.find((q) => q.id === takingSelectedSkill);
 
@@ -243,14 +254,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
     existingSubmission?.blockResponses &&
     Object.keys(existingSubmission.blockResponses).length > 0;
 
-  // Default selection: first rubric question, or feedback, or mywork
-  const defaultSelection: SidebarSelection = questions.length > 0
-    ? { type: 'skill', questionId: questions[0].id }
-    : hasFeedback
-      ? { type: 'feedback' }
-      : { type: 'mywork' };
-
-  const [selected, setSelected] = useState<SidebarSelection>(defaultSelection);
+  // selected is initialized at the top level via useState lazy initializer
 
   // Grade color
   const gradeColor =

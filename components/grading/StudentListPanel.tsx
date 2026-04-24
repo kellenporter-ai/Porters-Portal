@@ -117,7 +117,9 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                       <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
                     )}
                     {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
-                      <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                      <span title={group.latest.feedback || "Server integrity flag"}>
+                        <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                      </span>
                     )}
                     {group.attemptCount > 1 && (
                       <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>

@@ -476,6 +476,11 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
             <span className="text-green-600 dark:text-green-400">{formatEngagementTime(activeTime)}</span>
             <span className={inactiveTime > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]'}>{formatEngagementTime(inactiveTime)} idle</span>
             <span>{sub.metrics?.pasteCount || 0} pastes</span>
+            {(sub.metrics?.autoInsertCount != null && sub.metrics.autoInsertCount > 0) && (
+              <span className="text-amber-600 dark:text-amber-400" title="Auto-inserts include dictation, Grammarly, mobile auto-suggest">
+                {sub.metrics.autoInsertCount} auto
+              </span>
+            )}
             {(sub.metrics?.wordCount != null && sub.metrics.wordCount > 0) && (
               <span className="text-blue-600 dark:text-blue-400">{sub.metrics.wordCount} words</span>
             )}
@@ -509,6 +514,27 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
 
       {/* Center panel body */}
       <div className="overflow-y-auto custom-scrollbar p-4 flex-1 min-h-0">
+        {/* Integrity flag banner */}
+        {sub.status === 'FLAGGED' && (
+          <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                  ⚠️ Server Integrity Flag
+                </p>
+                {sub.feedback && (
+                  <p className="text-xs text-red-500/90 dark:text-red-400/90 mt-0.5">
+                    {sub.feedback}
+                  </p>
+                )}
+                <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                  {sub.metrics?.keystrokes || 0} keystrokes · {sub.metrics?.pasteCount || 0} pastes · {sub.metrics?.wordCount || 0} words in {formatEngagementTime(sub.metrics?.engagementTime || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
           <div className="space-y-2">
             {selectedAssessment.lessonBlocks

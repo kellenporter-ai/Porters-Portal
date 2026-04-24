@@ -562,6 +562,19 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     handleInteraction();
   }, [handleInteraction]);
 
+  const handleBeforeInput = useCallback((e: InputEvent) => {
+    const inputType = e.inputType;
+    if (inputType === 'insertFromPaste' || inputType === 'insertFromDrop') {
+      // Catches programmatic paste and drag-and-drop that bypass native paste event
+      metricsRef.current.pasteCount++;
+      handleInteraction();
+    } else if (inputType === 'insertReplacementText' || inputType === 'insertFromComposition') {
+      // Catches Grammarly rewrites, mobile auto-suggest, dictation, IME composition
+      metricsRef.current.autoInsertCount = (metricsRef.current.autoInsertCount || 0) + 1;
+      handleInteraction();
+    }
+  }, [handleInteraction]);
+
   const handleClick = useCallback(() => {
     metricsRef.current.clickCount++;
     handleInteraction();
@@ -624,6 +637,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   useEffect(() => {
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('paste', handlePaste);
+      window.addEventListener('drop', handlePaste); // Treat drag-and-drop as paste
+      window.addEventListener('beforeinput', handleBeforeInput as EventListener);
       window.addEventListener('click', handleClick);
       window.addEventListener('mousemove', throttledInteraction);
       window.addEventListener('scroll', handleInteraction);
@@ -632,13 +647,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       return () => {
           window.removeEventListener('keydown', handleKeyDown);
           window.removeEventListener('paste', handlePaste);
+          window.removeEventListener('drop', handlePaste);
+          window.removeEventListener('beforeinput', handleBeforeInput as EventListener);
           window.removeEventListener('click', handleClick);
           window.removeEventListener('mousemove', throttledInteraction);
           window.removeEventListener('scroll', handleInteraction);
           window.removeEventListener('pointerdown', throttledInteraction);
           window.removeEventListener('pointermove', throttledInteraction);
       };
-  }, [handleKeyDown, handlePaste, handleClick, handleInteraction, throttledInteraction]);
+  }, [handleKeyDown, handlePaste, handleBeforeInput, handleClick, handleInteraction, throttledInteraction]);
 
   // Assessment: Track tab switches (visibilitychange only — blur fires on iframe focus)
   useEffect(() => {
@@ -669,6 +686,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           keystrokes: m.keystrokes,
           pasteCount: m.pasteCount,
           clickCount: m.clickCount,
+          autoInsertCount: m.autoInsertCount || 0,
           tabSwitchCount: m.tabSwitchCount || 0,
           startTime: m.startTime,
           lastActive: Date.now(),

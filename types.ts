@@ -149,6 +149,7 @@ export interface TelemetryMetrics {
   engagementTime: number;
   keystrokes: number;
   clickCount: number;
+  autoInsertCount?: number;  // Grammarly, mobile auto-suggest, dictation, IME composition
   startTime: number;
   lastActive: number;
   // Assessment-specific telemetry
@@ -538,6 +539,7 @@ export interface Submission {
   metrics: TelemetryMetrics;
   submittedAt?: string; 
   status: 'FLAGGED' | 'SUCCESS' | 'SUPPORT_NEEDED' | 'NORMAL' | 'STARTED' | 'RETURNED';
+  feedback?: string;  // Server-generated explanation for FLAGGED / SUPPORT_NEEDED status
   score: number;
   privateComments: Comment[];
   hasUnreadAdmin?: boolean;
