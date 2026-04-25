@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { User, XPEvent, BossQuizEvent } from '../../types';
+import { User, XPEvent, BossEvent } from '../../types';
 import { BarChart3, TrendingUp, Users, Trophy, Zap } from 'lucide-react';
 import { getRankDetails } from '../../lib/gamification';
 import { useChartTheme } from '../../lib/useChartTheme';
@@ -11,7 +11,7 @@ import { useChartTheme } from '../../lib/useChartTheme';
 interface GamificationAnalyticsTabProps {
   students: User[];
   events: XPEvent[];
-  quizBosses: BossQuizEvent[];
+  quizBosses: BossEvent[];
 }
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];

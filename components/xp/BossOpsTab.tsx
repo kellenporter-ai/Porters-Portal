@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { BossQuizEvent, BossQuestionBank, DIFFICULTY_TIER_DEFS } from '../../types';
+import { BossEvent, BossQuestionBank, DIFFICULTY_TIER_DEFS } from '../../types';
 import { Brain, Trash2, Pencil, Plus, Swords, Database, BarChart3, Copy } from 'lucide-react';
 
 interface BossOpsTabProps {
-  quizBosses: BossQuizEvent[];
+  quizBosses: BossEvent[];
   questionBanks: BossQuestionBank[];
-  onEditQuizBoss: (quiz: BossQuizEvent) => void;
-  onCloneQuizBoss: (quiz: BossQuizEvent) => void;
-  onToggleQuizBoss: (quiz: BossQuizEvent) => void;
-  onDeleteQuizBoss: (quiz: BossQuizEvent) => void;
+  onEditQuizBoss: (quiz: BossEvent) => void;
+  onCloneQuizBoss: (quiz: BossEvent) => void;
+  onToggleQuizBoss: (quiz: BossEvent) => void;
+  onDeleteQuizBoss: (quiz: BossEvent) => void;
   onEditBank: (bank: BossQuestionBank) => void;
   onDeleteBank: (bank: BossQuestionBank) => void;
   onCreateBank: () => void;
-  onOpenEndgameView: (quiz: BossQuizEvent) => void;
+  onOpenEndgameView: (quiz: BossEvent) => void;
 }
 
 const BossOpsTab: React.FC<BossOpsTabProps> = ({
@@ -105,7 +105,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                     <p className="text-sm text-[var(--text-muted)] truncate">{quiz.description}</p>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <span className="text-[11.5px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">
-                        {quiz.questions.length} Questions
+                        {(quiz.questions || []).length} Questions
                       </span>
                       <span className="text-[11.5px] font-bold text-red-700 dark:text-red-400 bg-red-500/10 dark:bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">
                         HP: {(quiz.currentHp ?? (quiz.scaledMaxHp ?? quiz.maxHp)).toLocaleString()}/{(quiz.scaledMaxHp ?? quiz.maxHp).toLocaleString()}{quiz.scaledMaxHp && quiz.scaledMaxHp !== quiz.maxHp ? ` (base: ${quiz.maxHp.toLocaleString()})` : ''}
@@ -202,7 +202,7 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                     onClick={() => {
                       const deadline = new Date();
                       deadline.setDate(deadline.getDate() + 7);
-                      const cloned: BossQuizEvent = {
+                      const cloned: BossEvent = {
                         ...JSON.parse(JSON.stringify(quiz)),
                         id: '',
                         bossName: `Copy of ${quiz.bossName}`,

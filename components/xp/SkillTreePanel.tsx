@@ -1,164 +1,61 @@
 
 import React, { useState, useMemo } from 'react';
-import { SpecializationType } from '../../types';
-import { SKILL_TREES, SKILL_NODES, canUnlockSkill } from '../../lib/achievements';
+import { SpecializationId } from '../../types';
+import {
+  SKILL_TREES_V2,
+  SKILL_NODES_V2,
+  canUnlockSkillV2,
+  getActiveSynergiesV2,
+  specIsInSynergyV2,
+  SPEC_COLORS_V2,
+  SPECIALIZATIONS,
+  getTrialBossForSpec,
+} from '../../lib/specializations';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
-import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles } from 'lucide-react';
-
-// ========================================
-// SYNERGY DEFINITIONS
-// ========================================
-
-type SynergyPairKey = `${SpecializationType}×${SpecializationType}`;
-
-interface SynergyDefinition {
-  specs: [SpecializationType, SpecializationType];
-  label: string;
-  bonus: string;
-  color: string; // tailwind text color class for the bonus
-}
-
-const SYNERGY_DEFINITIONS: SynergyDefinition[] = [
-  {
-    specs: ['THEORIST', 'EXPERIMENTALIST'],
-    label: 'Theorist × Experimentalist',
-    bonus: '+10% experiment XP',
-    color: 'text-cyan-700 dark:text-cyan-400',
-  },
-  {
-    specs: ['THEORIST', 'ANALYST'],
-    label: 'Theorist × Analyst',
-    bonus: '+5% accuracy bonus',
-    color: 'text-blue-600 dark:text-blue-400',
-  },
-  {
-    specs: ['THEORIST', 'DIPLOMAT'],
-    label: 'Theorist × Diplomat',
-    bonus: '+8% group quest XP',
-    color: 'text-purple-600 dark:text-purple-400',
-  },
-  {
-    specs: ['EXPERIMENTALIST', 'ANALYST'],
-    label: 'Experimentalist × Analyst',
-    bonus: '+10% lab score bonus',
-    color: 'text-yellow-600 dark:text-yellow-400',
-  },
-  {
-    specs: ['EXPERIMENTALIST', 'DIPLOMAT'],
-    label: 'Experimentalist × Diplomat',
-    bonus: '+5% Flux from crafting',
-    color: 'text-emerald-700 dark:text-emerald-400',
-  },
-  {
-    specs: ['ANALYST', 'DIPLOMAT'],
-    label: 'Analyst × Diplomat',
-    bonus: '+8% streak maintenance',
-    color: 'text-pink-600 dark:text-pink-400',
-  },
-];
-
-// Build a lookup map: canonical pair key → definition
-const SYNERGY_MAP = new Map<SynergyPairKey, SynergyDefinition>();
-for (const def of SYNERGY_DEFINITIONS) {
-  const [a, b] = def.specs;
-  SYNERGY_MAP.set(`${a}×${b}`, def);
-}
-
-/**
- * Returns the ordered canonical key for any two specs so map lookups are
- * consistent regardless of argument order.
- */
-function synergyKey(a: SpecializationType, b: SpecializationType): SynergyPairKey {
-  const order: SpecializationType[] = ['THEORIST', 'EXPERIMENTALIST', 'ANALYST', 'DIPLOMAT'];
-  return order.indexOf(a) < order.indexOf(b)
-    ? `${a}×${b}`
-    : `${b}×${a}`;
-}
-
-/**
- * Given the student's unlocked skill IDs, determine which specialization trees
- * have at least one unlocked skill and return the active SynergyDefinitions.
- */
-function getActiveSynergies(unlockedSkills: string[]): SynergyDefinition[] {
-  const allSpecs: SpecializationType[] = ['THEORIST', 'EXPERIMENTALIST', 'ANALYST', 'DIPLOMAT'];
-
-  // Which specs have at least one unlocked skill?
-  const activeSpecs = allSpecs.filter(spec =>
-    SKILL_NODES.some(n => n.specialization === spec && unlockedSkills.includes(n.id))
-  );
-
-  if (activeSpecs.length < 2) return [];
-
-  const synergies: SynergyDefinition[] = [];
-  for (let i = 0; i < activeSpecs.length; i++) {
-    for (let j = i + 1; j < activeSpecs.length; j++) {
-      const key = synergyKey(activeSpecs[i], activeSpecs[j]);
-      const def = SYNERGY_MAP.get(key);
-      if (def) synergies.push(def);
-    }
-  }
-  return synergies;
-}
-
-/**
- * Returns true if the given spec is part of any active synergy.
- */
-function specIsInSynergy(spec: SpecializationType, activeSynergies: SynergyDefinition[]): boolean {
-  return activeSynergies.some(s => s.specs.includes(spec));
-}
-
-// ========================================
-// SPEC DISPLAY COLORS
-// ========================================
-
-const SPEC_COLORS: Record<SpecializationType, string> = {
-  THEORIST: 'from-blue-500 to-cyan-500',
-  EXPERIMENTALIST: 'from-green-500 to-emerald-500',
-  ANALYST: 'from-yellow-500 to-orange-500',
-  DIPLOMAT: 'from-purple-500 to-pink-500',
-};
-
-// Ring glow color for synergy badge per spec
-const SPEC_SYNERGY_RING: Record<SpecializationType, string> = {
-  THEORIST: 'ring-blue-400/60',
-  EXPERIMENTALIST: 'ring-emerald-400/60',
-  ANALYST: 'ring-yellow-400/60',
-  DIPLOMAT: 'ring-purple-400/60',
-};
+import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles, Sword, Shield, Crosshair, Brain } from 'lucide-react';
 
 // ========================================
 // COMPONENT
 // ========================================
 
 interface SkillTreePanelProps {
-  specialization?: SpecializationType;
+  specialization?: SpecializationId;
   skillPoints: number;
   unlockedSkills: string[];
+  level?: number;
+  onStartTrial?: (specId: SpecializationId) => void;
 }
 
-const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPoints, unlockedSkills }) => {
-  const [selectedSpec, setSelectedSpec] = useState<SpecializationType | null>(specialization || null);
+const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
+  specialization,
+  skillPoints,
+  unlockedSkills,
+  level = 1,
+  onStartTrial,
+}) => {
+  const [selectedSpec, setSelectedSpec] = useState<SpecializationId | null>(specialization || null);
   const [unlocking, setUnlocking] = useState<string | null>(null);
+  const [showTrialInfo, setShowTrialInfo] = useState<SpecializationId | null>(null);
   const toast = useToast();
   const { confirm } = useConfirm();
 
   const hasChosen = !!specialization;
-  const activeSpec = selectedSpec || 'THEORIST';
-  const treeNodes = SKILL_NODES.filter(n => n.specialization === activeSpec);
+  const activeSpec = selectedSpec || 'JUGGERNAUT';
+  const treeNodes = SKILL_NODES_V2.filter(n => n.specialization === activeSpec);
   const tiers = [1, 2, 3, 4];
 
   // Synergy state — pure client-side derivation from unlockedSkills
-  const activeSynergies = useMemo(() => getActiveSynergies(unlockedSkills), [unlockedSkills]);
+  const activeSynergies = useMemo(() => getActiveSynergiesV2(unlockedSkills), [unlockedSkills]);
 
   const handleUnlock = async (skillId: string) => {
     if (unlocking) return;
 
     // If this is the first skill unlock, confirm specialization choice
     if (!hasChosen) {
-      const specName = SKILL_TREES[activeSpec].name;
+      const specName = SKILL_TREES_V2[activeSpec].name;
       const confirmed = await confirm({
         title: 'Permanent Specialization',
         message: `You are about to commit to the ${specName} specialization. This choice is PERMANENT and cannot be changed. Are you sure?`,
@@ -180,12 +77,35 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
     setUnlocking(null);
   };
 
+  const handleSelectSpec = (specId: SpecializationId) => {
+    if (hasChosen && specialization !== specId) return;
+    setSelectedSpec(specId);
+    setShowTrialInfo(null);
+  };
+
+  const handleStartTrial = (specId: SpecializationId) => {
+    if (!onStartTrial) {
+      toast.info('Trial battles are not yet available.');
+      return;
+    }
+    onStartTrial(specId);
+  };
+
+  const specDef = SPECIALIZATIONS[activeSpec];
+  const isLocked = hasChosen && specialization !== activeSpec;
+  const canChoose = !hasChosen && level >= specDef.unlockLevel;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-[var(--text-primary)]">Specialization</h3>
-          <p className="text-[11.5px] text-[var(--text-muted)] mt-0.5">You earn 1 Skill Point every 2 levels</p>
+          <h3 className="text-xl font-bold text-[var(--text-primary)]">Combat Specialization</h3>
+          <p className="text-[11.5px] text-[var(--text-muted)] mt-0.5">
+            {hasChosen
+              ? 'Your specialization defines your combat role and available skills.'
+              : 'Choose a combat specialization to unlock skill trees and role bonuses.'}
+          </p>
         </div>
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5">
           <Zap className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
@@ -200,43 +120,57 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
           <div>
             <p className="text-sm font-bold text-amber-300">Choose Carefully</p>
             <p className="text-[11px] text-amber-600 dark:text-amber-400/70 mt-0.5">
-              Selecting a specialization is <span className="font-bold text-amber-300">permanent</span>. Once you unlock your first skill, you will not be able to change your specialization. Browse all four trees before deciding.
+              Selecting a specialization is <span className="font-bold text-amber-300">permanent</span>. Once you unlock your first skill, you will not be able to change your specialization. Browse all eight trees before deciding.
             </p>
           </div>
         </div>
       )}
 
+      {/* Locked specialization indicator */}
       {hasChosen && (
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
           <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-          <span className="text-xs text-[var(--text-secondary)]">Specialization locked: <span className="font-bold text-[var(--text-primary)]">{SKILL_TREES[specialization!].icon} {SKILL_TREES[specialization!].name}</span></span>
+          <span className="text-xs text-[var(--text-secondary)]">
+            Specialization locked:{" "}
+            <span className="font-bold text-[var(--text-primary)]">
+              {SKILL_TREES_V2[specialization!].icon} {SKILL_TREES_V2[specialization!].name}
+            </span>
+          </span>
         </div>
       )}
 
-      {/* Spec selector */}
-      <div className="grid grid-cols-2 gap-3">
-        {(Object.entries(SKILL_TREES) as [SpecializationType, typeof SKILL_TREES[SpecializationType]][]).map(([key, spec]) => {
+      {/* Spec selector — 4×2 grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        {(Object.entries(SKILL_TREES_V2) as [SpecializationId, typeof SKILL_TREES_V2[SpecializationId]][]).map(([key, spec]) => {
           const isSelected = activeSpec === key;
-          const isLocked = hasChosen && specialization !== key;
-          const hasSynergy = specIsInSynergy(key, activeSynergies);
+          const isLockedChoice = hasChosen && specialization !== key;
+          const hasSynergy = specIsInSynergyV2(key, activeSynergies);
+          const specInfo = SPECIALIZATIONS[key];
+          const meetsLevel = level >= specInfo.unlockLevel;
+          const colors = SPEC_COLORS_V2[key];
+
           return (
             <button
               key={key}
-              onClick={() => !isLocked && setSelectedSpec(key)}
-              disabled={isLocked}
+              onClick={() => !isLockedChoice && meetsLevel && handleSelectSpec(key)}
+              disabled={isLockedChoice || !meetsLevel}
               className={`relative p-3 rounded-xl border text-left transition-all ${
                 isSelected
-                  ? `border-white/30 bg-gradient-to-br ${SPEC_COLORS[key]} bg-opacity-10`
-                  : isLocked
+                  ? `border-white/30 bg-gradient-to-br ${colors.gradient} bg-opacity-10`
+                  : isLockedChoice
                   ? 'border-[var(--border)] bg-[var(--surface-glass)] opacity-40 cursor-not-allowed'
+                  : !meetsLevel
+                  ? 'border-[var(--border)] bg-[var(--surface-glass)] opacity-50 cursor-not-allowed'
                   : 'border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] cursor-pointer'
-              } ${hasSynergy ? `ring-2 ${SPEC_SYNERGY_RING[key]}` : ''}`}
+              } ${hasSynergy ? `ring-2 ${colors.ring}` : ''}`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg">{spec.icon}</span>
                 <span className="font-bold text-sm text-[var(--text-primary)]">{spec.name}</span>
-                {isLocked && <Lock className="w-3 h-3 text-gray-500 ml-auto" />}
-                {/* Synergy glow badge */}
+                {isLockedChoice && <Lock className="w-3 h-3 text-gray-500 ml-auto" />}
+                {!meetsLevel && !isLockedChoice && (
+                  <span className="ml-auto text-[9px] font-bold text-gray-500">Lv.{specInfo.unlockLevel}</span>
+                )}
                 {hasSynergy && (
                   <span
                     className="ml-auto flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/10 border border-white/20 animate-pulse motion-reduce:animate-none"
@@ -247,8 +181,10 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                   </span>
                 )}
               </div>
-              <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1">{spec.description}</p>
-              {!hasChosen && isSelected && <p className="text-[11.5px] text-amber-600 dark:text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>}
+              <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1 line-clamp-2">{spec.description}</p>
+              {!hasChosen && isSelected && meetsLevel && (
+                <p className="text-[11.5px] text-amber-600 dark:text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>
+              )}
             </button>
           );
         })}
@@ -276,6 +212,96 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
         </div>
       )}
 
+      {/* Spec detail card (when browsing or locked in) */}
+      <div className={`p-4 rounded-xl border ${isLocked ? 'opacity-50' : ''} bg-gradient-to-br from-[var(--surface-glass)] to-transparent`}
+        style={{ borderColor: SPEC_COLORS_V2[activeSpec].hex + '40' }}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <h4 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <span>{SKILL_TREES_V2[activeSpec].icon}</span>
+              {SKILL_TREES_V2[activeSpec].name}
+            </h4>
+            <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1">{specDef.description}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${SPEC_COLORS_V2[activeSpec].bg} ${SPEC_COLORS_V2[activeSpec].text} border border-current opacity-60`}>
+              {specDef.baseRole}
+            </span>
+          </div>
+        </div>
+
+        {/* Base bonuses */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {specDef.bonuses.map((bonus, i) => (
+            <div key={i} className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${SPEC_COLORS_V2[activeSpec].bg} border border-current opacity-40`}>
+              {bonus.type === 'DAMAGE_BOOST' && <Sword className="w-3 h-3" />}
+              {bonus.type === 'ARMOR_BOOST' && <Shield className="w-3 h-3" />}
+              {bonus.type === 'CRIT_BOOST' && <Crosshair className="w-3 h-3" />}
+              {bonus.type === 'HEALING_BOOST' && <Crosshair className="w-3 h-3" />}
+              {bonus.type === 'HINT_BOOST' && <Brain className="w-3 h-3" />}
+              {bonus.type === 'SPEED_BOOST' && <Zap className="w-3 h-3" />}
+              <span className={`text-[11px] font-bold ${SPEC_COLORS_V2[activeSpec].text}`}>
+                {bonus.type.replace('_', ' ')} {bonus.value > 0 && bonus.value < 1 ? `+${(bonus.value * 100).toFixed(0)}%` : `+${bonus.value}`}
+              </span>
+              <span className="text-[10px] text-[var(--text-muted)]">({bonus.condition})</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Trial boss info (only when not yet chosen) */}
+        {!hasChosen && canChoose && (
+          <div className="mt-3 pt-3 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11.5px] font-bold text-[var(--text-secondary)]">Unlock Challenge</p>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  Defeat the trial boss to permanently unlock this specialization.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTrialInfo(showTrialInfo === activeSpec ? null : activeSpec)}
+                className="px-3 py-1.5 rounded-lg bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+              >
+                {showTrialInfo === activeSpec ? 'Hide' : 'View Trial'}
+              </button>
+            </div>
+
+            {showTrialInfo === activeSpec && (
+              <div className="mt-2 p-3 rounded-lg bg-black/20 border border-[var(--border)]">
+                {(() => {
+                  const trial = getTrialBossForSpec(activeSpec);
+                  if (!trial) return <p className="text-[11px] text-[var(--text-muted)]">No trial available.</p>;
+                  return (
+                    <>
+                      <p className="text-sm font-bold text-[var(--text-primary)]">{trial.name}</p>
+                      <p className="text-[11px] text-[var(--text-tertiary)] mt-1">{trial.description}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-muted)]">
+                          HP: {trial.maxHp}
+                        </span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-muted)]">
+                          Dmg/Answer: {trial.damagePerCorrect}
+                        </span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-muted)]">
+                          Min Accuracy: {(trial.requiredToPass.minAccuracy * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleStartTrial(activeSpec)}
+                        className={`mt-3 w-full py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r ${SPEC_COLORS_V2[activeSpec].gradient} hover:opacity-90 transition`}
+                      >
+                        Start Trial
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Skill nodes */}
       <div className="space-y-4">
         {tiers.map(tier => {
@@ -283,11 +309,11 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
           return (
             <div key={tier}>
               <p className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Tier {tier}</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {tierNodes.map(node => {
                   const isUnlocked = unlockedSkills.includes(node.id);
-                  const canUnlock = !isUnlocked && canUnlockSkill(node.id, unlockedSkills) && skillPoints >= node.cost;
-                  const isUnlockable = canUnlockSkill(node.id, unlockedSkills);
+                  const canUnlock = !isUnlocked && canUnlockSkillV2(node.id, unlockedSkills) && skillPoints >= node.cost;
+                  const isUnlockable = canUnlockSkillV2(node.id, unlockedSkills);
 
                   return (
                     <div
@@ -309,8 +335,15 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({ specialization, skillPo
                       </div>
                       <p className="text-[11.5px] text-[var(--text-tertiary)]">{node.description}</p>
                       {!isUnlocked && (
-                        <div className="mt-1 text-[11.5px] font-mono text-[var(--text-muted)]">
-                          Cost: {node.cost} SP
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-[11.5px] font-mono text-[var(--text-muted)]">
+                            Cost: {node.cost} SP
+                          </span>
+                          {node.effect.condition && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-muted)]">
+                              {node.effect.condition}
+                            </span>
+                          )}
                         </div>
                       )}
                       {unlocking === node.id && (

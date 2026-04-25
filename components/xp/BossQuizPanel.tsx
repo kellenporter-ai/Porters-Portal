@@ -1,45 +1,16 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BossQuizEvent, BossQuizProgress, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
+import { BossEvent, BossEventProgress, BossQuizQuestion, BossIntent, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
-import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords } from 'lucide-react';
+import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords, BrainCircuit } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
 import { useIsMounted } from '../../lib/useIsMounted';
 import { getDifficultyClasses, getBossTierClasses } from '../../lib/difficultyPills';
 import BattleScene from './BattleScene';
 import BattleFeed from './BattleFeed';
 
-// Seeded PRNG (mulberry32) — deterministic random from a 32-bit seed
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-// Simple string → 32-bit hash
-function hashString(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
-  }
-  return h;
-}
-
-// Fisher-Yates shuffle with a seeded PRNG — returns index mapping
-function seededShuffle<T>(arr: T[], seed: number): T[] {
-  const shuffled = [...arr];
-  const rand = mulberry32(seed);
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
 
 interface BossQuizPanelProps {
   userId: string;
@@ -62,7 +33,7 @@ interface BossQuizPanelProps {
 function useQuizBossHealth(quizId: string, maxHp: number): number {
   const [currentHp, setCurrentHp] = useState(maxHp);
   useEffect(() => {
-    const unsub = dataService.subscribeToBossQuizShards(quizId, (totalDamage) => {
+    const unsub = dataService.subscribeToBossEventShards(quizId, (totalDamage) => {
       setCurrentHp(Math.max(0, maxHp - totalDamage));
     });
     return () => unsub();
@@ -85,8 +56,8 @@ const ModifierBadge: React.FC<{ modifier: BossModifier }> = ({ modifier }) => {
 
 // Student endgame view after boss is defeated
 const StudentEndgame: React.FC<{
-  quiz: BossQuizEvent;
-  progress: BossQuizProgress | null;
+  quiz: BossEvent;
+  progress: BossEventProgress | null;
 }> = ({ quiz, progress }) => {
   const stats = progress?.combatStats;
   const rewardTier = (progress as Record<string, unknown> | null)?.rewardTier as number | undefined;
@@ -189,10 +160,10 @@ const StudentEndgame: React.FC<{
 
 // Individual quiz boss card that subscribes to its own shards
 const QuizBossCard: React.FC<{
-  quiz: BossQuizEvent;
+  quiz: BossEvent;
   userId: string;
   onAnswer: (quizId: string, questionId: string, answer: number, callbacks: {
-    onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: { bossType: string; hue: number } } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
+    onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
   }) => void;
   playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
   playerAppearance?: BossQuizPanelProps['playerAppearance'];
@@ -203,17 +174,11 @@ const QuizBossCard: React.FC<{
   const currentHp = useQuizBossHealth(quiz.id, effectiveMaxHp);
   const hpPercent = (currentHp / effectiveMaxHp) * 100;
 
-  // Shuffle questions deterministically per student so each sees a unique order
-  const shuffledQuestions = React.useMemo(
-    () => seededShuffle(quiz.questions, hashString(userId + quiz.id)),
-    [quiz.questions, userId, quiz.id]
-  );
-
   // Subscribe to player's progress for this quiz
-  const [progress, setProgress] = useState<BossQuizProgress | null>(null);
+  const [progress, setProgress] = useState<BossEventProgress | null>(null);
   const [progressLoaded, setProgressLoaded] = useState(false);
   useEffect(() => {
-    const unsub = dataService.subscribeToBossQuizProgress(userId, quiz.id, (p) => {
+    const unsub = dataService.subscribeToBossEventProgress(userId, quiz.id, (p) => {
       setProgress(p);
       setProgressLoaded(true);
     });
@@ -227,12 +192,16 @@ const QuizBossCard: React.FC<{
   }, [playerStats]);
 
   // Per-card state — initialized from persisted progress once it loads
-  const [currentQuestion, setCurrentQuestion] = useState<number>(-1); // -1 = waiting for progress
+  const [currentQuestionData, setCurrentQuestionData] = useState<BossQuizQuestion | null>(null);
+  const [bossIntent, setBossIntent] = useState<BossIntent | null>(null);
+  const [questionLoading, setQuestionLoading] = useState(false);
+  const [questionsComplete, setQuestionsComplete] = useState(false);
+  const [attemptStats, setAttemptStats] = useState<{ accuracy: number; correct: number; attempted: number } | null>(null);
   const [playerHp, setPlayerHp] = useState<number>(-1);
   const [playerMaxHp, setPlayerMaxHp] = useState<number>(derivedMaxHp);
   const [knockedOut, setKnockedOut] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: { bossType: string; hue: number } } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
+  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
   const [showPhaseTransition, setShowPhaseTransition] = useState<{ phase: number; name: string; dialogue?: string } | null>(null);
   const [showAbility, setShowAbility] = useState<{ name: string; effect: string; value: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -252,20 +221,39 @@ const QuizBossCard: React.FC<{
   };
   useEffect(() => () => timerRefs.current.forEach(clearTimeout), []);
 
-  // Once progress loads, initialize question index and HP from server state (runs only once)
+  // Fetch next question from server (adaptive selection)
+  const fetchNextQuestion = React.useCallback(async () => {
+    setQuestionLoading(true);
+    try {
+      const result = await dataService.getNextBossQuestion(quiz.id);
+      if (result.complete) {
+        setQuestionsComplete(true);
+        setCurrentQuestionData(null);
+        setBossIntent(null);
+      } else {
+        setCurrentQuestionData(result.question || null);
+        setBossIntent((result.bossIntent as BossIntent) || null);
+        setQuestionsComplete(false);
+      }
+      if (result.attemptStats) {
+        setAttemptStats(result.attemptStats);
+      }
+    } catch (err) {
+      console.error('Failed to fetch next question:', err);
+    } finally {
+      setQuestionLoading(false);
+    }
+  }, [quiz.id]);
+
+  // Once progress loads, initialize HP from server state and fetch first question
   useEffect(() => {
     if (!progressLoaded) return;
-    if (currentQuestion !== -1) return; // already initialized
+    if (currentQuestionData !== null || questionsComplete) return; // already initialized
 
     if (progress) {
-      // Skip questions the student already answered (by matching against shuffled order)
-      const answeredSet = new Set(progress.answeredQuestions || []);
-      const firstUnanswered = shuffledQuestions.findIndex(q => !answeredSet.has(q.id));
-      setCurrentQuestion(firstUnanswered === -1 ? shuffledQuestions.length : firstUnanswered);
-
       // Restore HP — use server value if valid, otherwise derive from stats
-      const serverHp = progress.currentHp;
-      const maxHp = progress.maxHp > 0 ? progress.maxHp : derivedMaxHp;
+      const serverHp = progress.currentHp ?? -1;
+      const maxHp = (progress.maxHp ?? 0) > 0 ? progress.maxHp! : derivedMaxHp;
       setPlayerMaxHp(maxHp);
       if (serverHp >= 0) {
         setPlayerHp(serverHp);
@@ -275,10 +263,12 @@ const QuizBossCard: React.FC<{
       }
     } else {
       // No progress yet — fresh start
-      setCurrentQuestion(0);
       setPlayerHp(derivedMaxHp);
       setPlayerMaxHp(derivedMaxHp);
     }
+
+    // Fetch first question from server
+    fetchNextQuestion();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressLoaded]);
 
@@ -289,8 +279,8 @@ const QuizBossCard: React.FC<{
 
   const playerHpPercent = playerMaxHp > 0 ? ((playerHp === -1 ? playerMaxHp : playerHp) / playerMaxHp) * 100 : 100;
 
-  const question = currentQuestion >= 0 ? shuffledQuestions[currentQuestion % shuffledQuestions.length] : undefined;
-  const allAnswered = currentQuestion >= shuffledQuestions.length;
+  const question = currentQuestionData;
+  const allAnswered = questionsComplete;
   const bossDefeated = currentHp <= 0;
 
   const handleLocalAnswer = async (quizId: string, questionId: string, answer: number) => {
@@ -341,9 +331,9 @@ const QuizBossCard: React.FC<{
 
         if (!result.knockedOut) {
           safeTimeout(() => {
-            setCurrentQuestion(prev => prev + 1);
             setSelectedAnswer(null);
             setAnswerResult(null);
+            fetchNextQuestion();
           }, 2000);
         }
         setSubmitting(false);
@@ -421,6 +411,9 @@ const QuizBossCard: React.FC<{
               playerRole={answerResult?.playerRole}
               phaseTransition={showPhaseTransition}
               triggeredAbility={showAbility}
+              breakBarConfig={(quiz as unknown as import('../../types').BossEvent).breakBarConfig}
+              bossIntent={bossIntent}
+              subjectTheme={(quiz as unknown as import('../../types').BossEvent).subjectTheme || 'default'}
             />
           </div>
 
@@ -497,12 +490,50 @@ const QuizBossCard: React.FC<{
             </div>
           )}
 
-          {/* Knocked out state */}
+          {/* Knocked out state — Study Hall */}
           {knockedOut ? (
-            <div role="alert" className="text-center py-8">
+            <div role="alert" className="text-center py-6 space-y-4">
               <XCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-2" />
-              <p className="text-sm font-bold text-red-600 dark:text-red-400">Knocked Out!</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">The boss has defeated you. Gear up with better armor (Analysis) and health (Charisma) to survive longer.</p>
+              <div>
+                <p className="text-sm font-bold text-red-600 dark:text-red-400">Knocked Out!</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Every defeat is a lesson. Review your performance and try again!</p>
+              </div>
+
+              {/* Study Report Mini */}
+              {progress?.combatStats && (
+                <div className="bg-black/30 rounded-xl p-4 border border-white/5 text-left space-y-2">
+                  <div className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase">Study Report</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>Accuracy: <span className="text-amber-400">{Math.round((progress.combatStats.questionsCorrect / Math.max(1, progress.combatStats.questionsAttempted)) * 100)}%</span></div>
+                    <div>Damage Dealt: <span className="text-amber-400">{progress.combatStats.totalDamageDealt}</span></div>
+                    <div>Best Streak: <span className="text-amber-400">{progress.combatStats.longestStreak}</span></div>
+                    <div>Crits: <span className="text-amber-400">{progress.combatStats.criticalHits}</span></div>
+                  </div>
+                  <div className="text-[11.5px] text-[var(--text-muted)] pt-1 border-t border-white/5">
+                    {progress.combatStats.incorrectByDifficulty.HARD > 0 && (
+                      <span>Focus on HARD questions — you missed {progress.combatStats.incorrectByDifficulty.HARD}. </span>
+                    )}
+                    {progress.combatStats.bossDamageTaken > 50 && (
+                      <span>Consider equipping more Analysis (armor) gear. </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setKnockedOut(false);
+                  setPlayerHp(playerMaxHp);
+                  setSelectedAnswer(null);
+                  setAnswerResult(null);
+                  setQuestionsComplete(false);
+                  fetchNextQuestion();
+                }}
+                className="px-6 py-2.5 bg-amber-600/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-xl text-sm font-bold hover:bg-amber-600/30 transition"
+              >
+                Start New Attempt
+              </button>
             </div>
           ) : allAnswered ? (
             <div className="text-center py-8">
@@ -510,10 +541,21 @@ const QuizBossCard: React.FC<{
               <p className="text-sm text-gray-300">All questions answered!</p>
               <p className="text-xs text-[var(--text-muted)] mt-1">Check back for more questions tomorrow.</p>
             </div>
+          ) : questionLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-pulse flex flex-col items-center gap-3">
+                <div className="h-4 w-3/4 bg-white/10 rounded" />
+                <div className="space-y-2.5 w-full">
+                  <div className="h-12 w-full bg-white/10 rounded-xl" />
+                  <div className="h-12 w-full bg-white/10 rounded-xl" />
+                  <div className="h-12 w-full bg-white/10 rounded-xl" />
+                </div>
+              </div>
+            </div>
           ) : question ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>Question {currentQuestion + 1} / {shuffledQuestions.length}</span>
+                <span>Question {(attemptStats?.attempted || 0) + 1} / {quiz.questions?.length || '?'}</span>
                 <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${getDifficultyClasses(question.difficulty)}`}>
                   {question.difficulty}
                   {question.damageBonus ? ` (+${question.damageBonus} dmg)` : ''}
@@ -614,14 +656,14 @@ const QuizBossCard: React.FC<{
 };
 
 const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, userClassSections, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
-  const [allQuizzes, setAllQuizzes] = useState<BossQuizEvent[]>([]);
+  const [allQuizzes, setAllQuizzes] = useState<BossEvent[]>([]);
   const [quizzesLoaded, setQuizzesLoaded] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
     try {
-      unsub = dataService.subscribeToBossQuizzes(classType, (q) => { setAllQuizzes(q); setQuizzesLoaded(true); });
+      unsub = dataService.subscribeToBossEvents(classType, (q) => { setAllQuizzes(q as BossEvent[]); setQuizzesLoaded(true); });
     } catch {
       setQuizzesLoaded(true);
       // Firestore permission error — feature not available for this user
@@ -644,10 +686,10 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     quizId: string,
     questionId: string,
     answer: number,
-    callbacks: { onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: { bossType: string; hue: number } } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
+    callbacks: { onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
   ) => {
     try {
-      const result = await dataService.answerBossQuiz(quizId, questionId, answer);
+      const result = await dataService.answerBossEvent(quizId, questionId, answer);
       if (result.alreadyAnswered) {
         toast.info('Already answered this question!');
       } else if (result.correct) {
@@ -682,28 +724,41 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     return (
       <div className="space-y-4" role="status" aria-label="Loading">
         <div className="animate-pulse flex items-center gap-2">
-          <div className="w-5 h-5 bg-white/10 rounded" />
-          <div className="h-5 w-44 bg-white/10 rounded" />
+          <div className="w-5 h-5 bg-[var(--text-muted)]/20 rounded" />
+          <div className="h-5 w-44 bg-[var(--text-muted)]/20 rounded" />
         </div>
-        <div className="animate-pulse rounded-2xl border border-amber-500/20 bg-amber-950/30 p-5 space-y-4">
+        <div className="animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)]/60 p-5 space-y-4">
           {/* Boss name + HP bar area */}
-          <div className="h-5 w-48 bg-white/10 rounded" />
-          <div className="h-3 w-64 bg-white/10 rounded" />
-          <div className="h-3 w-full bg-white/10 rounded-full" />
+          <div className="h-5 w-48 bg-[var(--text-muted)]/15 rounded" />
+          <div className="h-3 w-64 bg-[var(--text-muted)]/15 rounded" />
+          <div className="h-3 w-full bg-[var(--text-muted)]/15 rounded-full" />
           {/* Question area */}
-          <div className="h-4 w-3/4 bg-white/10 rounded" />
+          <div className="h-4 w-3/4 bg-[var(--text-muted)]/15 rounded" />
           {/* Answer options */}
           <div className="space-y-2.5">
-            <div className="h-12 w-full bg-white/10 rounded-xl" />
-            <div className="h-12 w-full bg-white/10 rounded-xl" />
-            <div className="h-12 w-full bg-white/10 rounded-xl" />
+            <div className="h-12 w-full bg-[var(--text-muted)]/15 rounded-xl" />
+            <div className="h-12 w-full bg-[var(--text-muted)]/15 rounded-xl" />
+            <div className="h-12 w-full bg-[var(--text-muted)]/15 rounded-xl" />
           </div>
         </div>
       </div>
     );
   }
 
-  if (quizzes.length === 0) return null;
+  if (quizzes.length === 0) return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-bold text-[var(--text-secondary)] flex items-center gap-2">
+        <BrainCircuit className="w-5 h-5 text-amber-500" /> Boss Quiz Challenge
+      </h3>
+      <div className="text-center py-10 px-6 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-glass)]/50">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
+          <BrainCircuit className="w-7 h-7 text-amber-500/60" />
+        </div>
+        <p className="text-sm font-semibold text-[var(--text-secondary)] mb-1">No quiz challenges available</p>
+        <p className="text-xs text-[var(--text-muted)] max-w-[260px] mx-auto">Your teacher hasn&apos;t deployed a quiz boss yet. Check back later for a new challenge.</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">

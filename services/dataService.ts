@@ -1,6 +1,6 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossQuiz, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist } from '../lib/firebase';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -1515,11 +1515,6 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'bossQuizDamageLog', quizId }));
   },
 
-  answerBossQuiz: async (quizId: string, questionId: string, answer: number) => {
-    const result = await callAnswerBossQuiz({ quizId, questionId, answer });
-    return result.data as { correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean; bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean };
-  },
-
   scaleBossHp: async (quizId: string) => {
     const result = await callScaleBossHp({ quizId });
     return result.data as { scaledMaxHp: number; originalMaxHp: number };
@@ -1583,6 +1578,116 @@ export const dataService = {
     return onSnapshot(ref, (snap) => {
       callback(snap.exists() ? (snap.data() as import('../types').BossQuizProgress) : null);
     }, () => callback(null));
+  },
+
+  // --- UNIFIED BOSS EVENTS (v2) ---
+
+  subscribeToBossEvents: (classType: string, callback: (events: import('../types').BossEvent[]) => void) => {
+    const q = query(collection(db, 'boss_events'), where('isActive', '==', true));
+    return resilientSnapshot('boss_events', q, (snapshot: any) => {
+      const events = snapshot.docs
+        .map((d: any) => ({ id: d.id, ...d.data() } as import('../types').BossEvent))
+        .filter((e: import('../types').BossEvent) => e.classType === classType || e.classType === 'GLOBAL');
+      callback(events);
+    });
+  },
+
+  subscribeToAllBossEvents: (callback: (events: import('../types').BossEvent[]) => void) => {
+    const q = collection(db, 'boss_events');
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as import('../types').BossEvent)));
+    }, (error: unknown) => reportError(error, { subscription: 'allBossEvents' }));
+  },
+
+  subscribeToBossEventShards: (eventId: string, callback: (totalDamage: number) => void) => {
+    const shardsRef = collection(db, `boss_events/${eventId}/shards`);
+    return onSnapshot(shardsRef, (snapshot) => {
+      let totalDamage = 0;
+      snapshot.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
+      callback(totalDamage);
+    }, (error: unknown) => reportError(error, { subscription: 'bossEventShards', eventId }));
+  },
+
+  subscribeToBossEventDamageLog: (eventId: string, callback: (log: { userId: string; userName: string; damage: number; isCrit?: boolean; timestamp: string; attemptNumber?: number }[]) => void) => {
+    const logRef = collection(db, `boss_events/${eventId}/damage_log`);
+    return onSnapshot(logRef, (snapshot) => {
+      const entries = snapshot.docs.map((d) => d.data() as { userId: string; userName: string; damage: number; isCrit?: boolean; timestamp: string; attemptNumber?: number });
+      callback(entries);
+    }, (error: unknown) => reportError(error, { subscription: 'bossEventDamageLog', eventId }));
+  },
+
+  answerBossEvent: async (eventId: string, questionId: string, answer: number, timeTakenMs?: number) => {
+    const result = await callAnswerBossEvent({ eventId, questionId, answer, timeTakenMs });
+    return result.data as {
+      correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean;
+      bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number;
+      knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean;
+      attemptNumber?: number; attemptsRemaining?: number;
+      phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null;
+      activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[];
+      nextDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+      nextBossIntent?: { type: string; warningText: string; icon: string; targetSubject?: string } | null;
+    };
+  },
+
+  getNextBossQuestion: async (eventId: string) => {
+    const result = await callGetNextBossQuestion({ eventId });
+    return result.data as {
+      complete?: boolean;
+      message?: string;
+      question?: import('../types').BossQuizQuestion;
+      bossIntent?: { type: string; warningText: string; icon: string; targetSubject?: string } | null;
+      remainingCount?: number;
+      attemptStats?: { accuracy: number; correct: number; attempted: number };
+    };
+  },
+
+  startSpecializationTrial: async (specializationId: string) => {
+    const result = await callStartSpecializationTrial({ specializationId });
+    return result.data as { trialEventId: string; message: string };
+  },
+
+  completeSpecializationTrial: async (trialEventId: string) => {
+    const result = await callCompleteSpecializationTrial({ trialEventId });
+    return result.data as {
+      success: boolean;
+      specializationId?: string;
+      message: string;
+      stats?: { correct: number; attempted: number; accuracy: number };
+    };
+  },
+
+  useConsumable: async (eventId: string, consumableId: string) => {
+    const result = await callUseConsumable({ eventId, consumableId });
+    return result.data as { success: boolean; consumableId: string; effect: Record<string, unknown>; remainingCurrency: number };
+  },
+
+  saveBossEvent: async (event: import('../types').BossEvent) => {
+    const ref = doc(db, 'boss_events', event.id);
+    await setDoc(ref, event);
+  },
+
+  toggleBossEventActive: async (eventId: string, isActive: boolean) => {
+    const ref = doc(db, 'boss_events', eventId);
+    await updateDoc(ref, { isActive });
+  },
+
+  deleteBossEvent: async (eventId: string) => {
+    const ref = doc(db, 'boss_events', eventId);
+    await deleteDoc(ref);
+  },
+
+  subscribeToBossEventProgress: (userId: string, eventId: string, callback: (progress: import('../types').BossEventProgress | null) => void) => {
+    const ref = doc(db, 'boss_event_progress', `${userId}_${eventId}`);
+    return onSnapshot(ref, (snap) => {
+      callback(snap.exists() ? (snap.data() as import('../types').BossEventProgress) : null);
+    }, () => callback(null));
+  },
+
+  getBossEventAllProgress: async (eventId: string) => {
+    const q = query(collection(db, 'boss_event_progress'), where('eventId', '==', eventId));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data() as import('../types').BossEventProgress);
   },
 
   // --- KNOWLEDGE-GATED LOOT ---
@@ -2075,6 +2180,18 @@ export const dataService = {
       reportError(error, { method: 'getStudentFeedbackHistory', studentUid });
       return [];
     }
+  },
+
+  // --- ONE-TIME MIGRATION UTILITIES ---
+
+  migrateBossesToEvents: async () => {
+    const result = await callMigrateBossesToEvents({});
+    return result.data as { migratedEncounters: number; migratedQuizzes: number; errors: string[] };
+  },
+
+  migrateBossQuizProgress: async () => {
+    const result = await callMigrateBossQuizProgress({});
+    return result.data as { migrated: number; errors: string[] };
   },
 
 };

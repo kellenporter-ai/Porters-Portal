@@ -329,9 +329,11 @@ export interface User {
     activeDailyChallenges?: DailyChallengeProgress[];
 
     // === SKILL TREE ===
-    specialization?: SpecializationType;
+    specialization?: SpecializationId;
     skillPoints?: number;
     unlockedSkills?: string[]; // Skill node IDs
+    // === TOPIC MASTERY (horizontal progression) ===
+    topicMastery?: TopicMastery[];
 
     // === SEASONAL ===
     ownedCosmetics?: string[]; // Cosmetic IDs
@@ -717,14 +719,21 @@ export interface SkillNode {
   id: string;
   name: string;
   description: string;
-  specialization: SpecializationType;
+  specialization: SpecializationId;
   tier: number; // 1-4 (depth in tree)
   cost: number; // Skill points required
   prerequisites: string[]; // Skill node IDs that must be unlocked first
   effect: {
-    type: 'STAT_BOOST' | 'XP_MULTIPLIER' | 'FLUX_DISCOUNT' | 'CRAFT_BONUS' | 'STREAK_BONUS' | 'QUEST_BONUS';
+    type: 'STAT_BOOST' | 'XP_MULTIPLIER' | 'FLUX_DISCOUNT' | 'CRAFT_BONUS' | 'STREAK_BONUS' | 'QUEST_BONUS' |
+          'DAMAGE_BOOST_TOPIC' | 'ARMOR_BOOST_TOPIC' | 'CRIT_BOOST_TOPIC' | 'HINT_EFFECTIVENESS' |
+          'CONSUMABLE_EFFICIENCY' | 'PHASE_CHECKPOINT' | 'REVIVE_CHANCE' | 'SPEED_BOOST' |
+          'BOSS_DAMAGE_RESIST' | 'TOPIC_MASTERY_XP' | 'SPECIALIZATION_UNLOCK' | 'BONUS_DAMAGE_LOW_HP' |
+          'DODGE_CHANCE' | 'LIFESTEAL' | 'REFLECT_DAMAGE' | 'COOLDOWN_REDUCTION' | 'AREA_HEAL' |
+          'DAMAGE_BUFF_ALLY' | 'SHIELD_ALLY' | 'EXECUTE_THRESHOLD' | 'STUN_CHANCE' | 'HEALING_BOOST';
     stat?: string;
+    topic?: string;
     value: number;
+    condition?: string;
   };
   icon: string;
 }
@@ -749,22 +758,77 @@ export interface ItemSet {
 // BOSS ENCOUNTERS
 // ========================================
 
+// ========================================
+// UNIFIED BOSS EVENTS (v2)
+// ========================================
+
+export type BossMode = 'QUIZ' | 'AUTO_ATTACK' | 'HYBRID';
+
+export interface BossEvent {
+  id: string;
+  mode: BossMode;
+  bossName: string;
+  description: string;
+  maxHp: number;
+  currentHp: number;
+  scaledMaxHp?: number;
+  classType: string;
+  isActive: boolean;
+  deadline: string;
+  scheduledAt?: string | null;
+  // Mode-specific fields
+  questions?: BossQuizQuestion[];
+  damagePerCorrect?: number;
+  xpRewardPerHit?: number;
+  // Shared
+  rewards: { xp: number; flux: number; itemRarity?: ItemRarity };
+  targetSections?: string[];
+  bossAppearance?: BossAppearance;
+  modifiers?: BossModifier[];
+  difficultyTier?: DifficultyTier;
+  autoScale?: AutoScaleConfig;
+  // Phase system (v2)
+  phases?: BossPhase[];
+  currentPhase?: number;
+  bossAbilities?: BossAbility[];
+  activeAbilities?: ActiveBossAbility[];
+  triggeredAbilityIds?: string[];
+  lootTable?: BossLootEntry[];
+  // Visual & UX (v2)
+  breakBarConfig?: BreakBarConfig;
+  subjectTheme?: 'physics' | 'forensics' | 'chemistry' | 'biology' | 'default';
+  // Meta
+  participantCount?: number;
+  totalQuestionsAnswered?: number;
+  totalAttacksDealt?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ActiveBossAbility {
+  abilityId: string;
+  effect: BossAbilityEffect;
+  value: number;
+  remainingQuestions: number;
+}
+
+// @deprecated Use BossEvent instead
 export interface BossEncounter {
   id: string;
   name: string;
   description: string;
   maxHp: number;
   currentHp: number;
-  classType?: string; // Class-specific or GLOBAL
-  xpRewardPerHit: number; // XP for contributing
+  classType?: string;
+  xpRewardPerHit: number;
   completionRewards: {
     xp: number;
     flux: number;
     itemRarity?: ItemRarity;
   };
-  deadline: string; // ISO date — boss despawns
+  deadline: string;
   isActive: boolean;
-  imageUrl?: string; // Boss visual
+  imageUrl?: string;
   damageLog: { userId: string; userName: string; damage: number; timestamp: string }[];
 }
 
@@ -802,6 +866,7 @@ export interface BossPhase {
   bossAppearance?: BossAppearance; // Visual change on phase transition
   dialogue?: string;               // Boss says something dramatic
   damagePerCorrect?: number;       // Override base damage for this phase
+  abilityChance?: number;          // Chance (0-1) for boss to use an ability this phase
 }
 
 // --- Boss Abilities ---
@@ -884,14 +949,42 @@ export interface BossQuizEvent {
   triggeredAbilityIds?: string[];  // HP_THRESHOLD abilities that already fired (prevent re-trigger)
 }
 
+export type DistractorType = 'CORRECT' | 'COMMON_ERROR' | 'PARTIAL_TRUTH' | 'PLAUSIBLE_DISTRACTOR' | 'REVERSED_CONCEPT' | 'UNIT_ERROR' | 'OVERGENERALIZATION';
+
 export interface BossQuizQuestion {
   id: string;
   stem: string;
   options: string[];
   correctAnswer: number; // Index
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  damageBonus?: number; // Extra damage for hard questions
-  bankId?: string; // Source question bank (if imported)
+  damageBonus?: number;
+  bankId?: string;
+  // v2 fields
+  topicId?: string;
+  distractorTypes?: DistractorType[];
+  explanation?: string; // Why the correct answer is right
+  variantParameters?: Record<string, number>;
+}
+
+export interface QuestionTemplate {
+  id: string;
+  baseStem: string; // Template with placeholders, e.g. "What is the force on a {mass}kg object accelerating at {acceleration}m/s²?"
+  parameterRanges: Record<string, { min: number; max: number; step: number }>;
+  correctAnswerFormula: string; // e.g. "mass * acceleration"
+  distractorFormulas: string[];
+  topicId: string;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+}
+
+export interface QuestionVariant {
+  id: string;
+  templateId: string;
+  stem: string;
+  options: string[];
+  correctAnswer: number;
+  parameters: Record<string, number>;
+  topicId: string;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
 }
 
 // ========================================
@@ -921,6 +1014,9 @@ export type BossModifierType =
   | 'ARMOR_BREAK'           // Boss ignores armor
   | 'HEALING_WAVE'          // Heal X HP on correct answer
   | 'SHIELD_WALL'           // First N wrong answers blocked per student
+  | 'SELF_DAMAGE_ON_WRONG'  // Student takes extra damage on wrong answer
+  | 'INCREASED_DAMAGE_TAKEN'// Student takes increased damage from all sources
+  | 'SELF_HEAL_ON_CORRECT'  // Student heals on correct answer
   | 'STREAK_BONUS'          // +X damage per consecutive correct
   | 'GLASS_CANNON'          // 2x player damage, 0 armor
   | 'LAST_STAND'            // +50% damage when below 25% HP
@@ -945,6 +1041,9 @@ export const BOSS_MODIFIER_DEFS: Record<BossModifierType, { name: string; descri
   GLASS_CANNON:         { name: 'Glass Cannon',      description: '2x player damage but armor is disabled',              hasValue: false, defaultValue: 0,   unit: '' },
   LAST_STAND:           { name: 'Last Stand',        description: '+50% damage when below 25% HP',                       hasValue: false, defaultValue: 0,   unit: '' },
   TIME_PRESSURE:        { name: 'Time Pressure',     description: 'Lose HP each question regardless of answer',          hasValue: true,  defaultValue: 5,   unit: 'HP/question' },
+  SELF_DAMAGE_ON_WRONG: { name: 'Self Damage',       description: 'Take extra damage on wrong answers',                  hasValue: true,  defaultValue: 5,   unit: 'HP' },
+  INCREASED_DAMAGE_TAKEN:{ name: 'Vulnerability',    description: 'Take increased damage from all sources',              hasValue: true,  defaultValue: 1.2, unit: 'x dmg' },
+  SELF_HEAL_ON_CORRECT: { name: 'Self Heal',         description: 'Heal HP on each correct answer',                      hasValue: true,  defaultValue: 3,   unit: 'HP' },
 };
 
 // ========================================
@@ -979,6 +1078,93 @@ export interface BossQuizProgress {
   maxHp: number;
   lastUpdated: string;
   combatStats: BossQuizCombatStats;
+}
+
+// ========================================
+// UNIFIED BOSS EVENT PROGRESS (v2)
+// ========================================
+
+export interface BossEventAttempt {
+  attemptNumber: number;
+  answeredQuestions: string[];
+  currentHp: number;
+  maxHp: number;
+  combatStats: BossQuizCombatStats;
+  status: 'active' | 'completed' | 'abandoned';
+  startedAt: string;
+  endedAt?: string;
+  checkpointPhase?: number; // Phase to resume from (0 = start)
+}
+
+export interface BossEventProgress {
+  userId: string;
+  eventId: string;
+  attempts: BossEventAttempt[];
+  bestAttemptNumber?: number;
+  totalDamageDealt: number;
+  participationMet: boolean;
+  rewardClaimed: boolean;
+  // Legacy fields for migration
+  answeredQuestions?: string[];
+  currentHp?: number;
+  maxHp?: number;
+  combatStats?: BossQuizCombatStats;
+}
+
+// ========================================
+// TOPIC MASTERY
+// ========================================
+
+export interface TopicMastery {
+  topicId: string;
+  topicName: string;
+  level: number; // 1-100
+  accuracyHistory: number[]; // Last 20 answers (1 = correct, 0 = wrong)
+  currentAccuracy: number;
+  questionsAnswered: number;
+  questionsCorrect: number;
+  lastUpdated: string;
+}
+
+// ========================================
+// SPECIALIZATIONS (Job System)
+// ========================================
+
+export type SpecializationId =
+  | 'JUGGERNAUT' | 'BERSERKER'
+  | 'SNIPER' | 'SPEEDSTER'
+  | 'GUARDIAN' | 'CLERIC'
+  | 'TACTICIAN' | 'SCHOLAR';
+
+export interface Specialization {
+  id: SpecializationId;
+  name: string;
+  description: string;
+  baseRole: PlayerRole;
+  unlockLevel: number;
+  trialBossId?: string;
+  bonuses: {
+    type: 'DAMAGE_BOOST' | 'ARMOR_BOOST' | 'CRIT_BOOST' | 'HEALING_BOOST' | 'HINT_BOOST' | 'SPEED_BOOST' | 'DAMAGE_BUFF_ALLY';
+    value: number;
+    condition?: string;
+  }[];
+}
+
+export interface TrialBoss {
+  id: string;
+  specializationId: SpecializationId;
+  name: string;
+  description: string;
+  maxHp: number;
+  questions: BossQuizQuestion[];
+  damagePerCorrect: number;
+  modifiers: BossModifier[];
+  phases: BossPhase[];
+  requiredToPass: {
+    minAccuracy: number;
+    minQuestionsCorrect: number;
+    mustSurvive: boolean;
+  };
 }
 
 // Tiered reward multipliers for top 5 damage dealers
@@ -1028,7 +1214,22 @@ export interface SeasonalCosmetic {
 // FLUX SHOP CONSUMABLES
 // ========================================
 
-export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC' | 'CHARACTER_MODEL';
+export type ConsumableType = 'XP_BOOST' | 'REROLL_TOKEN' | 'NAME_COLOR' | 'AGENT_COSMETIC' | 'CHARACTER_MODEL' | 'BATTLE_CONSUMABLE';
+
+export type BattleConsumableType = 'SECOND_WIND' | 'STUDY_GUIDE' | 'ADRENALINE_SHOT' | 'TEAM_MEDKIT';
+
+export interface BattleConsumable {
+  id: BattleConsumableType;
+  name: string;
+  description: string;
+  icon: string;
+  cost: number; // Flux cost
+  effect: {
+    type: 'HEAL' | 'HINT' | 'DAMAGE_BOOST' | 'TEAM_HEAL';
+    value: number;
+    selfDamage?: number;
+  };
+}
 
 export type CosmeticVisualType = 'AURA' | 'PARTICLE' | 'FRAME' | 'TRAIL';
 
@@ -1296,6 +1497,91 @@ export interface StreakData {
   milestones: number[];       // Days reached (3, 7, 14, 21, 30)
 }
 
+
+// ========================================
+// BREAK BAR SYSTEM
+// ========================================
+
+export interface BreakBarConfig {
+  segments: number; // 2-4
+  colors: string[]; // Per-segment color
+  transitionAnimations: {
+    type: 'shatter' | 'transform' | 'invulnerable';
+    durationMs: number;
+    dialogue: string;
+    soundEffect: string;
+  }[];
+}
+
+// ========================================
+// BOSS INTENT SYSTEM
+// ========================================
+
+export interface BossIntent {
+  type: 'attack' | 'heal' | 'channel' | 'enrage';
+  targetSubject?: string;
+  warningText: string;
+  icon: string;
+}
+
+// ========================================
+// BOSS DIALOGUE
+// ========================================
+
+export type BossDialogueTrigger =
+  | 'first_encounter'
+  | 'phase_transition'
+  | 'student_struggling'
+  | 'student_dominating'
+  | 'ability_trigger'
+  | 'knockout'
+  | 'victory';
+
+export interface BossDialogueEntry {
+  id: string;
+  triggers: {
+    type: BossDialogueTrigger;
+    conditions?: Record<string, unknown>;
+  }[];
+  text: string;
+  emotion: 'neutral' | 'angry' | 'impressed' | 'mocking' | 'worried' | 'excited';
+}
+
+// ========================================
+// STUDY REPORT (Post-Defeat)
+// ========================================
+
+export interface StudyReport {
+  missedTopics: { topic: string; count: number }[];
+  recommendedResources: string[];
+  suggestedMiniBosses: string[];
+  earnedXp: number;
+  earnedFlux: number;
+  itemsDropped: RPGItem[];
+  overallAccuracy: number;
+  strongestTopic?: string;
+  weakestTopic?: string;
+}
+
+// ========================================
+// BOSS PRESETS
+// ========================================
+
+export interface BossPreset {
+  id: string;
+  name: string;
+  description: string;
+  mode: BossMode;
+  difficultyTier: DifficultyTier;
+  modifiers: BossModifier[];
+  phases: BossPhase[];
+  bossAbilities: BossAbility[];
+  damagePerCorrect: number;
+  rewards: { xp: number; flux: number; itemRarity?: ItemRarity };
+  targetUseCase: string;
+  breakBarConfig?: BreakBarConfig;
+  subjectTheme?: 'physics' | 'forensics' | 'chemistry' | 'biology' | 'default';
+}
 
 // ========================================
 // TYPE GUARDS — validate Firestore data at deserialization boundaries

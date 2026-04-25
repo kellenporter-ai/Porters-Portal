@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BossQuizEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DifficultyTier, DIFFICULTY_TIER_DEFS, AutoScaleConfig, BossPhase, BossAbility, BossAbilityEffect, BOSS_ABILITY_EFFECT_DEFS, BossLootEntry, EquipmentSlot, ItemRarity } from '../../types';
+import { BossEvent, BossQuestionBank, BossType, BossModifierType, BossModifier, BOSS_MODIFIER_DEFS, DifficultyTier, DIFFICULTY_TIER_DEFS, AutoScaleConfig, BossPhase, BossAbility, BossAbilityEffect, BOSS_ABILITY_EFFECT_DEFS, BossLootEntry, EquipmentSlot, ItemRarity } from '../../types';
 import { Plus, Trash2, Check, X, Copy, Upload, FileJson } from 'lucide-react';
 import BossAvatar from './BossAvatar';
+import { BOSS_PRESETS, getBossPresetById } from '../../lib/bossPresets';
 import SectionPicker from '../SectionPicker';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../ToastProvider';
@@ -12,7 +13,7 @@ import { reportError } from '../../lib/errorReporting';
 interface QuizBossFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  editingQuizBoss: BossQuizEvent | null;
+  editingQuizBoss: BossEvent | null;
   questionBanks: BossQuestionBank[];
   availableSections: string[];
 }
@@ -46,6 +47,9 @@ interface QuizBossFormState {
   phases: BossPhase[];
   bossAbilities: BossAbility[];
   lootTable: BossLootEntry[];
+  breakBarSegments: number;
+  breakBarColors: string[];
+  subjectTheme: 'physics' | 'forensics' | 'chemistry' | 'biology' | 'default';
 }
 
 const emptyForm = (): QuizBossFormState => {
@@ -70,6 +74,9 @@ const emptyForm = (): QuizBossFormState => {
     phases: [],
     bossAbilities: [],
     lootTable: [],
+    breakBarSegments: 1,
+    breakBarColors: ['#ef4444'],
+    subjectTheme: 'default',
   };
 };
 
@@ -123,6 +130,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   const [promptCopied, setPromptCopied] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [collapsed, setCollapsed] = useState({ modifiers: true, phases: true, abilities: true, loot: true });
   const quizFileRef = useRef<HTMLInputElement>(null);
   const bossConfigFileRef = useRef<HTMLInputElement>(null);
 
@@ -140,7 +148,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           rewardFlux: editingQuizBoss.rewards?.flux || 100,
           rewardItemRarity: editingQuizBoss.rewards?.itemRarity || '',
           deadline: editingQuizBoss.deadline ? editingQuizBoss.deadline.slice(0, 16) : '',
-          questions: editingQuizBoss.questions.map(q => ({ ...q, damageBonus: q.damageBonus || 0 })),
+          questions: (editingQuizBoss.questions || []).map(q => ({ ...q, damageBonus: q.damageBonus || 0 })),
           targetSections: editingQuizBoss.targetSections || [],
           bossType: editingQuizBoss.bossAppearance?.bossType || 'BRUTE',
           bossHue: editingQuizBoss.bossAppearance?.hue ?? 0,
@@ -149,6 +157,9 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           phases: editingQuizBoss.phases || [],
           bossAbilities: editingQuizBoss.bossAbilities || [],
           lootTable: editingQuizBoss.lootTable || [],
+          breakBarSegments: editingQuizBoss.breakBarConfig?.segments || 1,
+          breakBarColors: editingQuizBoss.breakBarConfig?.colors || ['#ef4444'],
+          subjectTheme: editingQuizBoss.subjectTheme || 'default',
         });
         setFormModifiers(editingQuizBoss.modifiers || []);
       } else {
@@ -313,6 +324,9 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         rewardFlux: (boss.rewards as Record<string, unknown>)?.flux as number || 100,
         rewardItemRarity: ((boss.rewards as Record<string, unknown>)?.itemRarity as string) || '',
         deadline: defaultDeadline.toISOString().slice(0, 16),
+        breakBarSegments: (boss as unknown as import('../../types').BossEvent).breakBarConfig?.segments || 1,
+        breakBarColors: (boss as unknown as import('../../types').BossEvent).breakBarConfig?.colors || ['#ef4444'],
+        subjectTheme: (boss as unknown as import('../../types').BossEvent).subjectTheme || 'default',
         questions: ((boss.questions as Array<Record<string, unknown>>) || []).map(q => ({
           id: (q.id as string) || Math.random().toString(36).substring(2, 10),
           stem: (q.stem as string) || '',
@@ -387,6 +401,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       const usedBankIds = [...new Set(quizBossForm.questions.map(q => q.bankId).filter(Boolean))] as string[];
       const quizData: Record<string, unknown> = {
         id: editingQuizBoss?.id || Math.random().toString(36).substring(2, 12),
+        mode: 'QUIZ',
         bossName: quizBossForm.bossName,
         description: quizBossForm.description,
         maxHp: quizBossForm.maxHp,
@@ -418,8 +433,16 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         ...(quizBossForm.phases.length > 0 ? { phases: quizBossForm.phases } : {}),
         ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
         ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
+        ...(quizBossForm.breakBarSegments > 1 ? {
+          breakBarConfig: {
+            segments: quizBossForm.breakBarSegments,
+            colors: quizBossForm.breakBarColors.slice(0, quizBossForm.breakBarSegments),
+            transitionAnimations: [],
+          }
+        } : {}),
+        ...(quizBossForm.subjectTheme !== 'default' ? { subjectTheme: quizBossForm.subjectTheme } : {}),
       };
-      await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
+      await dataService.saveBossEvent(JSON.parse(JSON.stringify(quizData)) as unknown as BossEvent);
       toast.success(editingQuizBoss?.id ? 'Quiz boss updated.' : 'Quiz boss deployed!');
       onClose();
     } catch (err) {
@@ -442,6 +465,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
       const usedBankIds = [...new Set(quizBossForm.questions.map(q => q.bankId).filter(Boolean))] as string[];
       const quizData: Record<string, unknown> = {
         id: Math.random().toString(36).substring(2, 12),
+        mode: 'QUIZ',
         bossName: quizBossForm.bossName,
         description: quizBossForm.description,
         maxHp: quizBossForm.maxHp,
@@ -473,8 +497,16 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         ...(quizBossForm.phases.length > 0 ? { phases: quizBossForm.phases } : {}),
         ...(quizBossForm.bossAbilities.length > 0 ? { bossAbilities: quizBossForm.bossAbilities } : {}),
         ...(quizBossForm.lootTable.length > 0 ? { lootTable: quizBossForm.lootTable } : {}),
+        ...(quizBossForm.breakBarSegments > 1 ? {
+          breakBarConfig: {
+            segments: quizBossForm.breakBarSegments,
+            colors: quizBossForm.breakBarColors.slice(0, quizBossForm.breakBarSegments),
+            transitionAnimations: [],
+          }
+        } : {}),
+        ...(quizBossForm.subjectTheme !== 'default' ? { subjectTheme: quizBossForm.subjectTheme } : {}),
       };
-      await dataService.saveBossQuiz(JSON.parse(JSON.stringify(quizData)) as unknown as BossQuizEvent);
+      await dataService.saveBossEvent(JSON.parse(JSON.stringify(quizData)) as unknown as BossEvent);
       toast.success('Quiz boss saved as draft (inactive).');
       onClose();
     } catch (err) {
@@ -486,8 +518,8 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={editingQuizBoss ? 'Edit Quiz Boss' : 'Deploy Quiz Boss'} maxWidth="max-w-2xl">
-      <form onSubmit={handleSaveQuizBoss} className="space-y-4 text-[var(--text-primary)] p-2 max-h-[70vh] overflow-y-auto">
+    <Modal isOpen={isOpen} onClose={onClose} title={editingQuizBoss ? 'Edit Quiz Boss' : 'Deploy Quiz Boss'} maxWidth="max-w-4xl w-[95vw]">
+      <form onSubmit={handleSaveQuizBoss} className="text-[var(--text-primary)] p-3 max-h-[85vh] overflow-y-auto space-y-3">
 
         {/* Import Full Boss Config (from /generate-questions skill) */}
         {!editingQuizBoss && (
@@ -503,31 +535,82 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           </div>
         )}
 
-        <div>
-          <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Boss Name</label>
-          <input value={quizBossForm.bossName} onChange={e => setQuizBossForm({ ...quizBossForm, bossName: e.target.value })} required className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] font-bold" placeholder="e.g. The Knowledge Sphinx" />
+        {/* Preset Selector */}
+        {!editingQuizBoss && (
+          <div>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Quick Start Preset</label>
+            <div className="grid grid-cols-2 gap-2">
+              {BOSS_PRESETS.map(preset => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    const p = getBossPresetById(preset.id);
+                    if (!p) return;
+                    setQuizBossForm(prev => ({
+                      ...prev,
+                      bossName: p.name,
+                      description: p.description,
+                      maxHp: p.difficultyTier === 'NORMAL' ? 1000 : p.difficultyTier === 'HARD' ? 1500 : p.difficultyTier === 'NIGHTMARE' ? 2500 : 4000,
+                      damagePerCorrect: p.damagePerCorrect,
+                      difficultyTier: p.difficultyTier,
+                      modifiers: p.modifiers,
+                      phases: p.phases,
+                      bossAbilities: p.bossAbilities,
+                      rewardXp: p.rewards.xp,
+                      rewardFlux: p.rewards.flux,
+                      rewardItemRarity: p.rewards.itemRarity || '',
+                      breakBarSegments: p.breakBarConfig?.segments || 1,
+                      breakBarColors: p.breakBarConfig?.colors || ['#ef4444'],
+                      subjectTheme: p.subjectTheme || 'default',
+                    }));
+                    setFormModifiers(p.modifiers);
+                    toast.success(`Loaded "${p.name}" preset`);
+                  }}
+                  className="px-3 py-2 rounded-xl text-xs font-bold border border-[var(--border)] bg-[var(--panel-bg)] text-[var(--text-secondary)] hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition text-left"
+                >
+                  <div className="font-bold">{preset.name}</div>
+                  <div className="text-[10px] text-[var(--text-muted)] font-normal">{preset.targetUseCase}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2">
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Boss Name</label>
+            <input value={quizBossForm.bossName} onChange={e => setQuizBossForm({ ...quizBossForm, bossName: e.target.value })} required className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm" placeholder="e.g. The Knowledge Sphinx" />
+          </div>
+          <div>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Target Class</label>
+            <select value={quizBossForm.classType} onChange={e => setQuizBossForm({ ...quizBossForm, classType: e.target.value, targetSections: [] })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm">
+              <option value="GLOBAL">All Classes</option>
+              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
         </div>
         <div>
           <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Description</label>
-          <textarea value={quizBossForm.description} onChange={e => setQuizBossForm({ ...quizBossForm, description: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] resize-none h-16" placeholder="A mythical beast that can only be defeated by knowledge..." />
+          <textarea value={quizBossForm.description} onChange={e => setQuizBossForm({ ...quizBossForm, description: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] resize-none h-12 text-sm" placeholder="A mythical beast that can only be defeated by knowledge..." />
         </div>
 
         {/* Boss Appearance Editor */}
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-3">Boss Appearance</label>
-          <div className="flex items-start gap-4">
+        <div className="border border-[var(--border)] rounded-xl p-3 bg-[var(--panel-bg)]">
+          <label className="block text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-2">Boss Appearance</label>
+          <div className="flex items-start gap-3">
             {/* Live preview */}
-            <div className="flex-shrink-0 w-24 h-32 bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] flex items-center justify-center p-1">
+            <div className="flex-shrink-0 w-16 h-20 bg-[var(--panel-bg)] rounded-lg border border-[var(--border)] flex items-center justify-center p-0.5">
               <BossAvatar bossType={quizBossForm.bossType} hue={quizBossForm.bossHue} />
             </div>
             {/* Controls */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-2">
               <div>
                 <label className="block text-[11.5px] text-[var(--text-muted)] mb-1">Boss Type</label>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   {(['BRUTE', 'PHANTOM', 'SERPENT', 'SKELETON', 'GOLEM', 'SLIME', 'ORC'] as BossType[]).map(type => (
                     <button key={type} type="button" onClick={() => setQuizBossForm({ ...quizBossForm, bossType: type })}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                      className={`flex-1 px-1.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                         quizBossForm.bossType === type
                           ? 'bg-amber-600/20 border-amber-500/40 text-amber-600 dark:text-amber-400'
                           : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-strong)]'
@@ -538,10 +621,10 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-[11.5px] text-[var(--text-muted)] mb-1">Color Hue: {quizBossForm.bossHue}&deg;</label>
+                <label className="block text-[11.5px] text-[var(--text-muted)] mb-0.5">Hue: {quizBossForm.bossHue}&deg;</label>
                 <input type="range" min="0" max="360" value={quizBossForm.bossHue}
                   onChange={e => setQuizBossForm({ ...quizBossForm, bossHue: parseInt(e.target.value) })}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
                   style={{ background: 'linear-gradient(to right, hsl(0,80%,50%), hsl(60,80%,50%), hsl(120,80%,50%), hsl(180,80%,50%), hsl(240,80%,50%), hsl(300,80%,50%), hsl(360,80%,50%))' }}
                 />
               </div>
@@ -549,9 +632,56 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           </div>
         </div>
 
+        {/* Visual Settings — Break Bar & Subject Theme */}
+        <div className="border border-[var(--border)] rounded-xl p-3 bg-[var(--panel-bg)]">
+          <label className="block text-[11.5px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-2">Visual Settings</label>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11.5px] text-[var(--text-muted)] mb-1">Break Bar Segments</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map(n => (
+                  <button key={n} type="button"
+                    onClick={() => {
+                      const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
+                      setQuizBossForm({ ...quizBossForm, breakBarSegments: n, breakBarColors: colors.slice(0, n) });
+                    }}
+                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                      quizBossForm.breakBarSegments === n
+                        ? 'bg-cyan-600/20 border-cyan-500/40 text-cyan-600 dark:text-cyan-400'
+                        : 'bg-[var(--panel-bg)] border-[var(--border)] text-[var(--text-muted)]'
+                    }`}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {quizBossForm.breakBarSegments > 1 && (
+                <div className="mt-2 flex gap-1">
+                  {quizBossForm.breakBarColors.slice(0, quizBossForm.breakBarSegments).map((c, i) => (
+                    <div key={i} className="flex-1 h-2 rounded-sm" style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-[11.5px] text-[var(--text-muted)] mb-1">Subject Theme</label>
+              <select
+                value={quizBossForm.subjectTheme}
+                onChange={e => setQuizBossForm({ ...quizBossForm, subjectTheme: e.target.value as typeof quizBossForm.subjectTheme })}
+                className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-2 text-[var(--text-primary)] text-xs font-bold"
+              >
+                <option value="default">Default (Amber)</option>
+                <option value="physics">Physics (Blue)</option>
+                <option value="forensics">Forensics (Purple)</option>
+                <option value="chemistry">Chemistry (Green)</option>
+                <option value="biology">Biology (Red)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Difficulty & Scaling */}
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-3">Difficulty & Scaling</label>
+        <div className="border border-[var(--border)] rounded-xl p-3 bg-[var(--panel-bg)]">
+          <label className="block text-[11.5px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-2">Difficulty & Scaling</label>
 
           {/* Difficulty Tier Selector */}
           <div className="mb-3">
@@ -621,56 +751,53 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Max HP</label>
-            <input type="number" value={quizBossForm.maxHp} onChange={e => setQuizBossForm({ ...quizBossForm, maxHp: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2.5 text-[var(--text-primary)] font-bold text-sm" />
+            <input type="number" value={quizBossForm.maxHp} onChange={e => setQuizBossForm({ ...quizBossForm, maxHp: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm" />
           </div>
           <div>
-            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Dmg Per Correct</label>
-            <input type="number" value={quizBossForm.damagePerCorrect} onChange={e => setQuizBossForm({ ...quizBossForm, damagePerCorrect: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2.5 text-[var(--text-primary)] font-bold text-sm" />
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Dmg / Correct</label>
+            <input type="number" value={quizBossForm.damagePerCorrect} onChange={e => setQuizBossForm({ ...quizBossForm, damagePerCorrect: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm" />
           </div>
           <div>
-            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Target Class</label>
-            <select value={quizBossForm.classType} onChange={e => setQuizBossForm({ ...quizBossForm, classType: e.target.value, targetSections: [] })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2.5 text-[var(--text-primary)] font-bold text-sm">
-              <option value="GLOBAL">All Classes</option>
-              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Reward XP</label>
+            <input type="number" value={quizBossForm.rewardXp} onChange={e => setQuizBossForm({ ...quizBossForm, rewardXp: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm" />
+          </div>
+          <div>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Reward Flux</label>
+            <input type="number" value={quizBossForm.rewardFlux} onChange={e => setQuizBossForm({ ...quizBossForm, rewardFlux: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm" />
           </div>
         </div>
 
         <SectionPicker availableSections={availableSections} selectedSections={quizBossForm.targetSections} onChange={s => setQuizBossForm({ ...quizBossForm, targetSections: s })} />
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2">
             <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Deadline</label>
-            <input type="datetime-local" value={quizBossForm.deadline} onChange={e => setQuizBossForm({ ...quizBossForm, deadline: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2.5 text-[var(--text-primary)] font-bold text-sm" />
+            <input type="datetime-local" value={quizBossForm.deadline} onChange={e => setQuizBossForm({ ...quizBossForm, deadline: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] font-bold text-sm" />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-[11.5px] text-[var(--text-muted)] mb-1 px-1">Reward XP</label>
-              <input type="number" value={quizBossForm.rewardXp} onChange={e => setQuizBossForm({ ...quizBossForm, rewardXp: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-2 text-[var(--text-primary)] text-sm font-bold" />
-            </div>
-            <div>
-              <label className="block text-[11.5px] text-[var(--text-muted)] mb-1 px-1">Flux</label>
-              <input type="number" value={quizBossForm.rewardFlux} onChange={e => setQuizBossForm({ ...quizBossForm, rewardFlux: parseInt(e.target.value) || 0 })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-2 text-[var(--text-primary)] text-sm font-bold" />
-            </div>
-            <div>
-              <label className="block text-[11.5px] text-[var(--text-muted)] mb-1 px-1">Loot</label>
-              <select value={quizBossForm.rewardItemRarity} onChange={e => setQuizBossForm({ ...quizBossForm, rewardItemRarity: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg p-2 text-[var(--text-primary)] text-xs font-bold">
-                <option value="">None</option>
-                <option value="UNCOMMON">Uncommon</option>
-                <option value="RARE">Rare</option>
-                <option value="UNIQUE">Unique</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase mb-1 px-1">Loot Rarity</label>
+            <select value={quizBossForm.rewardItemRarity} onChange={e => setQuizBossForm({ ...quizBossForm, rewardItemRarity: e.target.value })} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-2 text-[var(--text-primary)] text-sm font-bold">
+              <option value="">None</option>
+              <option value="UNCOMMON">Uncommon</option>
+              <option value="RARE">Rare</option>
+              <option value="UNIQUE">Unique</option>
+            </select>
           </div>
         </div>
 
         {/* Modifiers */}
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-widest mb-3">Boss Modifiers ({formModifiers.length} active)</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="border border-[var(--border)] rounded-xl bg-[var(--panel-bg)] overflow-hidden">
+          <button type="button" onClick={() => setCollapsed(c => ({ ...c, modifiers: !c.modifiers }))}
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-white/5 transition">
+            <label className="text-[11.5px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-widest cursor-pointer">Boss Modifiers ({formModifiers.length} active)</label>
+            <span className="text-[var(--text-muted)] text-xs">{collapsed.modifiers ? '▸' : '▾'}</span>
+          </button>
+          {!collapsed.modifiers && (
+          <>
+          <div className="px-3 pb-3 grid grid-cols-2 md:grid-cols-3 gap-2">
             {(Object.entries(BOSS_MODIFIER_DEFS) as [BossModifierType, typeof BOSS_MODIFIER_DEFS[BossModifierType]][]).map(([type, def]) => {
               const active = formModifiers.find(m => m.type === type);
               return (
@@ -697,20 +824,30 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               ⚠ Double or Nothing and Glass Cannon cannot both multiply damage. Only Double or Nothing's 2× will apply.
             </div>
           )}
+          </>
+          )}
         </div>
 
         {/* Boss Phases */}
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-[11.5px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest">Boss Phases ({quizBossForm.phases.length})</label>
-            <button type="button" onClick={() => setQuizBossForm(prev => ({
-              ...prev,
-              phases: [...prev.phases, { name: `Phase ${prev.phases.length + 1}`, hpThreshold: Math.max(10, 75 - prev.phases.length * 25), modifiers: [], dialogue: '' }],
-            }))} className="text-xs bg-orange-600/20 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-lg hover:bg-orange-600/30 transition font-bold flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add Phase
+        <div className="border border-[var(--border)] rounded-xl bg-[var(--panel-bg)] overflow-hidden">
+          <div className="flex items-center justify-between p-3">
+            <button type="button" onClick={() => setCollapsed(c => ({ ...c, phases: !c.phases }))}
+              className="flex-1 flex items-center justify-between text-left hover:bg-white/5 transition -m-3 p-3 rounded-xl">
+              <label className="text-[11.5px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest cursor-pointer">Boss Phases ({quizBossForm.phases.length})</label>
+              <span className="text-[var(--text-muted)] text-xs">{collapsed.phases ? '▸' : '▾'}</span>
             </button>
+            {!collapsed.phases && (
+              <button type="button" onClick={() => setQuizBossForm(prev => ({
+                ...prev,
+                phases: [...prev.phases, { name: `Phase ${prev.phases.length + 1}`, hpThreshold: Math.max(10, 75 - prev.phases.length * 25), modifiers: [], dialogue: '' }],
+              }))} className="ml-3 text-xs bg-orange-600/20 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-lg hover:bg-orange-600/30 transition font-bold flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            )}
           </div>
-          <p className="text-[11.5px] text-[var(--text-muted)] mb-2">Boss changes form at HP thresholds. Each phase can add new modifiers and change appearance.</p>
+          {!collapsed.phases && (
+          <>
+          <p className="text-[11.5px] text-[var(--text-muted)] mb-2 px-3">Boss changes form at HP thresholds. Each phase can add new modifiers and change appearance.</p>
 
           {quizBossForm.phases.map((phase, idx) => (
             <div key={idx} className="bg-[var(--panel-bg)] rounded-lg border border-[var(--border)] p-3 mb-2 space-y-2">
@@ -769,20 +906,29 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               </div>
             </div>
           ))}
+          </>
+          )}
         </div>
 
         {/* Boss Abilities */}
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-[11.5px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">Boss Abilities ({quizBossForm.bossAbilities.length})</label>
-            <button type="button" onClick={() => setQuizBossForm(prev => ({
-              ...prev,
-              bossAbilities: [...prev.bossAbilities, { id: Math.random().toString(36).substring(2, 8), name: 'New Ability', description: '', trigger: 'EVERY_N_QUESTIONS' as const, triggerValue: 5, effect: 'AOE_DAMAGE' as const, value: 10, duration: 0 }],
-            }))} className="text-xs bg-cyan-600/20 text-cyan-600 dark:text-cyan-400 px-3 py-1 rounded-lg hover:bg-cyan-600/30 transition font-bold flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add Ability
+        <div className="border border-[var(--border)] rounded-xl bg-[var(--panel-bg)] overflow-hidden">
+          <div className="flex items-center justify-between p-3">
+            <button type="button" onClick={() => setCollapsed(c => ({ ...c, abilities: !c.abilities }))}
+              className="flex-1 flex items-center justify-between text-left hover:bg-white/5 transition -m-3 p-3 rounded-xl">
+              <label className="text-[11.5px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest cursor-pointer">Boss Abilities ({quizBossForm.bossAbilities.length})</label>
+              <span className="text-[var(--text-muted)] text-xs">{collapsed.abilities ? '▸' : '▾'}</span>
             </button>
+            {!collapsed.abilities && (
+              <button type="button" onClick={() => setQuizBossForm(prev => ({
+                ...prev,
+                bossAbilities: [...prev.bossAbilities, { id: Math.random().toString(36).substring(2, 8), name: 'New Ability', description: '', trigger: 'EVERY_N_QUESTIONS' as const, triggerValue: 5, effect: 'AOE_DAMAGE' as const, value: 10, duration: 0 }],
+              }))} className="ml-3 text-xs bg-cyan-600/20 text-cyan-600 dark:text-cyan-400 px-3 py-1 rounded-lg hover:bg-cyan-600/30 transition font-bold flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            )}
           </div>
-
+          {!collapsed.abilities && (
+          <div className="px-3 pb-3">
           {quizBossForm.bossAbilities.map((ability, idx) => (
             <div key={ability.id} className="bg-[var(--panel-bg)] rounded-lg border border-[var(--border)] p-3 mb-2 space-y-2">
               <div className="flex items-center gap-2">
@@ -853,19 +999,29 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               </div>
             </div>
           ))}
+          </div>
+          )}
         </div>
 
         {/* Boss Loot Table */}
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Boss Loot Table ({quizBossForm.lootTable.length})</label>
-            <button type="button" onClick={() => setQuizBossForm(prev => ({
-              ...prev,
-              lootTable: [...prev.lootTable, { id: Math.random().toString(36).substring(2, 8), itemName: '', slot: 'AMULET' as EquipmentSlot, rarity: 'RARE' as ItemRarity, stats: {}, dropChance: 50, isExclusive: true }],
-            }))} className="text-xs bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-lg hover:bg-emerald-600/30 transition font-bold flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add Loot
+        <div className="border border-[var(--border)] rounded-xl bg-[var(--panel-bg)] overflow-hidden">
+          <div className="flex items-center justify-between p-3">
+            <button type="button" onClick={() => setCollapsed(c => ({ ...c, loot: !c.loot }))}
+              className="flex-1 flex items-center justify-between text-left hover:bg-white/5 transition -m-3 p-3 rounded-xl">
+              <label className="text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest cursor-pointer">Boss Loot Table ({quizBossForm.lootTable.length})</label>
+              <span className="text-[var(--text-muted)] text-xs">{collapsed.loot ? '▸' : '▾'}</span>
             </button>
+            {!collapsed.loot && (
+              <button type="button" onClick={() => setQuizBossForm(prev => ({
+                ...prev,
+                lootTable: [...prev.lootTable, { id: Math.random().toString(36).substring(2, 8), itemName: '', slot: 'AMULET' as EquipmentSlot, rarity: 'RARE' as ItemRarity, stats: {}, dropChance: 50, isExclusive: true }],
+              }))} className="ml-3 text-xs bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-lg hover:bg-emerald-600/30 transition font-bold flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            )}
           </div>
+          {!collapsed.loot && (
+          <>
           <p className="text-[11.5px] text-[var(--text-muted)] mb-2">Unique items that can only drop from this boss. Top contributors have priority.</p>
 
           {quizBossForm.lootTable.map((loot, idx) => (
@@ -944,13 +1100,15 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
               </label>
             </div>
           ))}
+          </>
+          )}
         </div>
 
         {/* Import from Question Banks */}
         {questionBanks.length > 0 && (
-        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--panel-bg)]">
-          <label className="block text-[11.5px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-3">Import from Question Banks</label>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
+        <div className="border border-[var(--border)] rounded-xl p-3 bg-[var(--panel-bg)]">
+          <label className="block text-[11.5px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Import from Question Banks</label>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
             {questionBanks.filter(b => b.classType === quizBossForm.classType || b.classType === 'GLOBAL' || quizBossForm.classType === 'GLOBAL').map(bank => (
               <div key={bank.id} className="flex items-center justify-between p-2 rounded-lg border border-[var(--border)] bg-[var(--panel-bg)]">
                 <div className="flex-1 min-w-0">
@@ -968,8 +1126,8 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
         )}
 
         {/* Questions */}
-        <div className="border-t border-[var(--border)] pt-4">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="border border-[var(--border)] rounded-xl p-3 bg-[var(--panel-bg)]">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <label className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Questions ({quizBossForm.questions.length})</label>
             <div className="flex items-center gap-2">
               <button type="button" onClick={handleCopyQuizPrompt} className={`text-xs px-3 py-1 rounded-lg transition font-bold flex items-center gap-1 ${promptCopied ? 'bg-green-600/20 text-green-600 dark:text-green-400' : 'bg-purple-600/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600/30'}`}>
@@ -1066,14 +1224,14 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
           ))}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 sticky bottom-0 bg-[var(--bg)]/80 backdrop-blur-md p-3 -mx-3 -mb-3 border-t border-[var(--border)]">
           {!editingQuizBoss && (
             <button type="button" onClick={handleSaveDraft} disabled={isSaving}
-              className="flex-1 bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              className="flex-1 bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
               {isSaving ? 'Saving...' : 'Save Draft'}
             </button>
           )}
-          <button type="submit" disabled={isSaving} className={`${editingQuizBoss ? 'w-full' : 'flex-[2]'} bg-amber-600 text-white font-bold py-4 rounded-2xl shadow-xl transition-all hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed`}>
+          <button type="submit" disabled={isSaving} className={`${editingQuizBoss ? 'w-full' : 'flex-[2]'} bg-amber-600 text-white font-bold py-3 rounded-xl shadow-lg transition-all hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed`}>
             {isSaving ? 'Saving...' : editingQuizBoss ? 'Update Quiz Boss' : 'Deploy Quiz Boss'}
           </button>
         </div>

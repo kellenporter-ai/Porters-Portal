@@ -101,16 +101,20 @@ describe('getVisibleAchievements', () => {
 
 // ─── Skill Trees ───
 describe('Skill Trees', () => {
-  it('defines all four specializations', () => {
+  it('defines all eight specializations', () => {
     const specs = Object.keys(SKILL_TREES);
-    expect(specs).toContain('THEORIST');
-    expect(specs).toContain('EXPERIMENTALIST');
-    expect(specs).toContain('ANALYST');
-    expect(specs).toContain('DIPLOMAT');
+    expect(specs).toContain('JUGGERNAUT');
+    expect(specs).toContain('BERSERKER');
+    expect(specs).toContain('SNIPER');
+    expect(specs).toContain('SPEEDSTER');
+    expect(specs).toContain('GUARDIAN');
+    expect(specs).toContain('CLERIC');
+    expect(specs).toContain('TACTICIAN');
+    expect(specs).toContain('SCHOLAR');
   });
 
   it('each tree has 6 nodes', () => {
-    for (const spec of ['THEORIST', 'EXPERIMENTALIST', 'ANALYST', 'DIPLOMAT'] as const) {
+    for (const spec of ['JUGGERNAUT', 'BERSERKER', 'SNIPER', 'SPEEDSTER', 'GUARDIAN', 'CLERIC', 'TACTICIAN', 'SCHOLAR'] as const) {
       expect(getSkillTree(spec).length).toBe(6);
     }
   });
@@ -141,29 +145,29 @@ describe('Skill Trees', () => {
 // ─── canUnlockSkill ───
 describe('canUnlockSkill', () => {
   it('allows tier 1 skills with empty unlock list', () => {
-    expect(canUnlockSkill('th_1', [])).toBe(true);
-    expect(canUnlockSkill('ex_1', [])).toBe(true);
+    expect(canUnlockSkill('jug_1', [])).toBe(true);
+    expect(canUnlockSkill('ber_1', [])).toBe(true);
   });
 
   it('blocks tier 2 skills without prerequisites', () => {
-    expect(canUnlockSkill('th_3', [])).toBe(false);
+    expect(canUnlockSkill('jug_3', [])).toBe(false);
   });
 
   it('allows tier 2 skills when prerequisites met', () => {
-    expect(canUnlockSkill('th_3', ['th_1'])).toBe(true);
+    expect(canUnlockSkill('jug_3', ['jug_1'])).toBe(true);
   });
 
   it('blocks tier 3 skills when only one prerequisite met', () => {
-    // th_5 requires th_3 and th_4
-    expect(canUnlockSkill('th_5', ['th_3'])).toBe(false);
+    // jug_5 requires jug_3 and jug_4
+    expect(canUnlockSkill('jug_5', ['jug_3'])).toBe(false);
   });
 
   it('allows tier 3 skills when all prerequisites met', () => {
-    expect(canUnlockSkill('th_5', ['th_3', 'th_4'])).toBe(true);
+    expect(canUnlockSkill('jug_5', ['jug_3', 'jug_4'])).toBe(true);
   });
 
   it('returns false for non-existent skill', () => {
-    expect(canUnlockSkill('nonexistent', ['th_1'])).toBe(false);
+    expect(canUnlockSkill('nonexistent', ['jug_1'])).toBe(false);
   });
 });
 

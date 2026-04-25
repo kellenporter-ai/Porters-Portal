@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
 import Avatar3D from '../dashboard/Avatar3D';
 import BossAvatar from './BossAvatar';
-import { BossAppearance } from '../../types';
+import { BossAppearance, BreakBarConfig, BossIntent } from '../../types';
 
 interface BattleSceneProps {
     playerAppearance?: {
@@ -27,6 +27,12 @@ interface BattleSceneProps {
     playerRole?: string;
     phaseTransition?: { phase: number; name: string; dialogue?: string } | null;
     triggeredAbility?: { name: string; effect: string; value: number } | null;
+    /** Break bar config for segmented boss HP visualization */
+    breakBarConfig?: BreakBarConfig;
+    /** Current boss intent (what the boss is about to do) */
+    bossIntent?: BossIntent | null;
+    /** Subject theme for color-coded particles */
+    subjectTheme?: 'physics' | 'forensics' | 'chemistry' | 'biology' | 'default';
 }
 
 const BattleScene: React.FC<BattleSceneProps> = ({
@@ -45,6 +51,9 @@ const BattleScene: React.FC<BattleSceneProps> = ({
     playerRole,
     phaseTransition,
     triggeredAbility,
+    breakBarConfig,
+    bossIntent,
+    subjectTheme = 'default',
 }) => {
     const [showSlash, setShowSlash] = useState(false);
     const [showImpact, setShowImpact] = useState(false);
@@ -59,6 +68,16 @@ const BattleScene: React.FC<BattleSceneProps> = ({
 
     const bossType = bossAppearance?.bossType || 'BRUTE';
     const bossHue = bossAppearance?.hue ?? 0;
+
+    // Subject-themed damage colors
+    const SUBJECT_COLORS: Record<string, { primary: string; crit: string; secondary: string }> = {
+      physics:    { primary: '#3b82f6', crit: '#60a5fa', secondary: '#1d4ed8' },
+      forensics:  { primary: '#a855f7', crit: '#c084fc', secondary: '#7e22ce' },
+      chemistry:  { primary: '#22c55e', crit: '#4ade80', secondary: '#15803d' },
+      biology:    { primary: '#ef4444', crit: '#f87171', secondary: '#b91c1c' },
+      default:    { primary: '#f59e0b', crit: '#fbbf24', secondary: '#d97706' },
+    };
+    const themeColors = SUBJECT_COLORS[subjectTheme] || SUBJECT_COLORS.default;
 
     // Spawn particles at a position with random scatter directions
     const spawnParticles = (side: 'left' | 'right', color: string, count: number) => {
@@ -80,7 +99,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
         if (attackState === 'player-attack' && damage) {
             setShowSlash(true);
             setFloatingDmg({ value: damage, side: 'right', isCrit });
-            spawnParticles('right', isCrit ? '#fbbf24' : '#f59e0b', isCrit ? 12 : 6);
+            spawnParticles('right', isCrit ? themeColors.crit : themeColors.primary, isCrit ? 12 : 6);
 
             if (isCrit) {
                 setShowCritFlash(true);
@@ -121,7 +140,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 return () => { clearTimeout(t1); clearTimeout(t2); };
             }
         }
-    }, [attackState, damage, isCrit, healAmount, shieldBlocked]);
+    }, [attackState, damage, isCrit, healAmount, shieldBlocked, themeColors]);
 
     // Phase transition — brief red screen flash
     useEffect(() => {
@@ -323,15 +342,68 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 <div style={{ transform: attackState === 'boss-attack' ? 'scaleX(-1)' : undefined }}>
                     <BossAvatar bossType={bossType} hue={bossHue} />
                 </div>
-                {/* Boss HP micro-bar */}
-                <div className="absolute -bottom-1 left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                            bossHpPercent > 50 ? 'bg-red-500' : bossHpPercent > 25 ? 'bg-orange-500' : 'bg-yellow-500'
-                        }`}
-                        style={{ width: `${bossHpPercent}%` }}
-                    />
-                </div>
+                {/* Boss Intent Shelf */}
+                {bossIntent && (
+                    <div className="absolute -top-8 left-0 right-0 flex justify-center">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm animate-pulse">
+                            <span className="text-xs">{bossIntent.icon}</span>
+                            <span className="text-[10px] font-bold text-white/90">{bossIntent.warningText}</span>
+                            {bossIntent.targetSubject && (
+                                <span className="text-[10px] text-white/60">({bossIntent.targetSubject})</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Boss HP bar — Break Bar style if config provided */}
+                {breakBarConfig ? (
+                    <div className="absolute -bottom-2 left-0 right-0">
+                        {/* Segmented break bar */}
+                        <div className="flex gap-0.5 h-2">
+                            {(() => {
+                                const segWidth = 100 / breakBarConfig.segments;
+                                const segments = [];
+                                for (let i = 0; i < breakBarConfig.segments; i++) {
+                                    const segStart = i * segWidth;
+                                    const segEnd = (i + 1) * segWidth;
+                                    const isBroken = bossHpPercent <= segStart;
+                                    const isActive = bossHpPercent > segStart && bossHpPercent <= segEnd;
+                                    const fillPercent = isActive
+                                        ? ((bossHpPercent - segStart) / segWidth) * 100
+                                        : isBroken ? 0 : 100;
+                                    segments.push(
+                                        <div key={i} className="flex-1 h-full bg-white/10 rounded-sm overflow-hidden relative">
+                                            <div
+                                                className="h-full rounded-sm transition-all duration-500"
+                                                style={{
+                                                    width: `${fillPercent}%`,
+                                                    backgroundColor: breakBarConfig.colors[i] || '#ef4444',
+                                                    boxShadow: isActive ? `0 0 8px ${breakBarConfig.colors[i]}` : 'none',
+                                                }}
+                                            />
+                                            {isBroken && (
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="w-full h-px bg-white/20" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+                                return segments;
+                            })()}
+                        </div>
+                    </div>
+                ) : (
+                    /* Simple HP bar fallback */
+                    <div className="absolute -bottom-1 left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                                bossHpPercent > 50 ? 'bg-red-500' : bossHpPercent > 25 ? 'bg-orange-500' : 'bg-yellow-500'
+                            }`}
+                            style={{ width: `${bossHpPercent}%` }}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Keyframe animations injected via style tag */}
@@ -381,6 +453,15 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 @keyframes particleBurst {
                     0% { opacity: 1; transform: translate(0, 0) scale(1); }
                     100% { opacity: 0; transform: translate(var(--px, 20px), var(--py, -30px)) scale(0); }
+                }
+                @keyframes segmentShatter {
+                    0% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.8; transform: scale(1.1) rotate(2deg); }
+                    100% { opacity: 0; transform: scale(0.8) translateY(4px); }
+                }
+                @keyframes intentPulse {
+                    0%, 100% { opacity: 0.7; transform: scale(1); }
+                    50% { opacity: 1; transform: scale(1.05); }
                 }
             `}</style>
         </div>

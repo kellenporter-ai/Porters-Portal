@@ -1,5 +1,5 @@
 
-import { Achievement, AchievementCategory, SkillNode, SpecializationType, ItemSet, FortuneWheelPrize, DailyChallenge, EvolutionTier, SeasonalCosmetic } from '../types';
+import { Achievement, AchievementCategory, ItemSet, FortuneWheelPrize, DailyChallenge, EvolutionTier, SeasonalCosmetic } from '../types';
 
 // ========================================
 // ACHIEVEMENT DEFINITIONS
@@ -78,58 +78,11 @@ export const getVisibleAchievements = (unlockedIds: string[]): Achievement[] =>
   ACHIEVEMENTS.filter(a => !a.isSecret || unlockedIds.includes(a.id));
 
 // ========================================
-// SKILL TREE DEFINITIONS
+// SKILL TREES — DEPRECATED: moved to lib/specializations.ts
+// Re-exported for backward compatibility during migration.
 // ========================================
 
-export const SKILL_TREES: Record<SpecializationType, { name: string; description: string; color: string; icon: string }> = {
-  THEORIST: { name: 'Theorist', description: 'Master of physics theory and mathematical modeling', color: 'blue', icon: '🧮' },
-  EXPERIMENTALIST: { name: 'Experimentalist', description: 'Expert in lab work and hands-on experimentation', color: 'green', icon: '🔬' },
-  ANALYST: { name: 'Analyst', description: 'Data-driven problem solver and pattern recognizer', color: 'yellow', icon: '📊' },
-  DIPLOMAT: { name: 'Diplomat', description: 'Collaborative leader who excels in group work', color: 'purple', icon: '🤝' },
-};
-
-export const SKILL_NODES: SkillNode[] = [
-  // THEORIST TREE
-  { id: 'th_1', name: 'Equation Mind', description: '+5 Analysis from equipment', specialization: 'THEORIST', tier: 1, cost: 1, prerequisites: [], effect: { type: 'STAT_BOOST', stat: 'analysis', value: 5 }, icon: '📐' },
-  { id: 'th_2', name: 'Deep Thinker', description: '+10% XP from review questions', specialization: 'THEORIST', tier: 1, cost: 1, prerequisites: [], effect: { type: 'XP_MULTIPLIER', value: 0.10 }, icon: '🧠' },
-  { id: 'th_3', name: 'Theoretical Framework', description: '+8 Analysis from equipment', specialization: 'THEORIST', tier: 2, cost: 2, prerequisites: ['th_1'], effect: { type: 'STAT_BOOST', stat: 'analysis', value: 8 }, icon: '📏' },
-  { id: 'th_4', name: 'Thought Experiment', description: '+15% XP from study materials', specialization: 'THEORIST', tier: 2, cost: 2, prerequisites: ['th_2'], effect: { type: 'XP_MULTIPLIER', value: 0.15 }, icon: '💭' },
-  { id: 'th_5', name: 'Unified Theory', description: '+12 Analysis, +5 Tech', specialization: 'THEORIST', tier: 3, cost: 3, prerequisites: ['th_3', 'th_4'], effect: { type: 'STAT_BOOST', stat: 'analysis', value: 12 }, icon: '🌌' },
-  { id: 'th_6', name: 'Grand Theorem', description: '+25% XP from all sources', specialization: 'THEORIST', tier: 4, cost: 5, prerequisites: ['th_5'], effect: { type: 'XP_MULTIPLIER', value: 0.25 }, icon: '✨' },
-
-  // EXPERIMENTALIST TREE
-  { id: 'ex_1', name: 'Lab Safety', description: '+5 Tech from equipment', specialization: 'EXPERIMENTALIST', tier: 1, cost: 1, prerequisites: [], effect: { type: 'STAT_BOOST', stat: 'tech', value: 5 }, icon: '🥽' },
-  { id: 'ex_2', name: 'Hands-On Learning', description: '+10% XP from engagement', specialization: 'EXPERIMENTALIST', tier: 1, cost: 1, prerequisites: [], effect: { type: 'XP_MULTIPLIER', value: 0.10 }, icon: '🔧' },
-  { id: 'ex_3', name: 'Precision Tools', description: '+8 Tech from equipment', specialization: 'EXPERIMENTALIST', tier: 2, cost: 2, prerequisites: ['ex_1'], effect: { type: 'STAT_BOOST', stat: 'tech', value: 8 }, icon: '⚙️' },
-  { id: 'ex_4', name: 'Data Collection', description: 'Crafting costs 20% less Flux', specialization: 'EXPERIMENTALIST', tier: 2, cost: 2, prerequisites: ['ex_2'], effect: { type: 'FLUX_DISCOUNT', value: 0.20 }, icon: '📋' },
-  { id: 'ex_5', name: 'Breakthrough', description: '+12 Tech, crafting improves tier by +1', specialization: 'EXPERIMENTALIST', tier: 3, cost: 3, prerequisites: ['ex_3', 'ex_4'], effect: { type: 'CRAFT_BONUS', value: 1 }, icon: '💡' },
-  { id: 'ex_6', name: 'Master Inventor', description: '+20% better craft results', specialization: 'EXPERIMENTALIST', tier: 4, cost: 5, prerequisites: ['ex_5'], effect: { type: 'CRAFT_BONUS', value: 2 }, icon: '🏗️' },
-
-  // ANALYST TREE
-  { id: 'an_1', name: 'Pattern Recognition', description: '+5 Focus from equipment', specialization: 'ANALYST', tier: 1, cost: 1, prerequisites: [], effect: { type: 'STAT_BOOST', stat: 'focus', value: 5 }, icon: '🔍' },
-  { id: 'an_2', name: 'Streak Amplifier', description: 'Streak bonuses increased by 50%', specialization: 'ANALYST', tier: 1, cost: 1, prerequisites: [], effect: { type: 'STREAK_BONUS', value: 0.50 }, icon: '📈' },
-  { id: 'an_3', name: 'Critical Analysis', description: '+8 Focus from equipment', specialization: 'ANALYST', tier: 2, cost: 2, prerequisites: ['an_1'], effect: { type: 'STAT_BOOST', stat: 'focus', value: 8 }, icon: '🎯' },
-  { id: 'an_4', name: 'Efficiency Expert', description: '+15% XP from engagement time', specialization: 'ANALYST', tier: 2, cost: 2, prerequisites: ['an_2'], effect: { type: 'XP_MULTIPLIER', value: 0.15 }, icon: '⚡' },
-  { id: 'an_5', name: 'Predictive Model', description: '+12 Focus, streak bonus doubled', specialization: 'ANALYST', tier: 3, cost: 3, prerequisites: ['an_3', 'an_4'], effect: { type: 'STREAK_BONUS', value: 1.0 }, icon: '🔮' },
-  { id: 'an_6', name: 'Omniscient', description: '+30% XP from all quiz answers', specialization: 'ANALYST', tier: 4, cost: 5, prerequisites: ['an_5'], effect: { type: 'XP_MULTIPLIER', value: 0.30 }, icon: '👁️' },
-
-  // DIPLOMAT TREE
-  { id: 'di_1', name: 'Team Player', description: '+5 Charisma from equipment', specialization: 'DIPLOMAT', tier: 1, cost: 1, prerequisites: [], effect: { type: 'STAT_BOOST', stat: 'charisma', value: 5 }, icon: '🤝' },
-  { id: 'di_2', name: 'Group Synergy', description: '+20% XP from group quests', specialization: 'DIPLOMAT', tier: 1, cost: 1, prerequisites: [], effect: { type: 'QUEST_BONUS', value: 0.20 }, icon: '👥' },
-  { id: 'di_3', name: 'Inspiring Presence', description: '+8 Charisma from equipment', specialization: 'DIPLOMAT', tier: 2, cost: 2, prerequisites: ['di_1'], effect: { type: 'STAT_BOOST', stat: 'charisma', value: 8 }, icon: '✊' },
-  { id: 'di_4', name: 'Peer Mentor', description: '+50% tutoring rewards', specialization: 'DIPLOMAT', tier: 2, cost: 2, prerequisites: ['di_2'], effect: { type: 'QUEST_BONUS', value: 0.50 }, icon: '📚' },
-  { id: 'di_5', name: 'Natural Leader', description: '+12 Charisma, party size +1', specialization: 'DIPLOMAT', tier: 3, cost: 3, prerequisites: ['di_3', 'di_4'], effect: { type: 'STAT_BOOST', stat: 'charisma', value: 12 }, icon: '🌟' },
-  { id: 'di_6', name: 'Commander', description: 'All party members get +10% XP', specialization: 'DIPLOMAT', tier: 4, cost: 5, prerequisites: ['di_5'], effect: { type: 'XP_MULTIPLIER', value: 0.10 }, icon: '👑' },
-];
-
-export const getSkillTree = (spec: SpecializationType): SkillNode[] =>
-  SKILL_NODES.filter(n => n.specialization === spec);
-
-export const canUnlockSkill = (skillId: string, unlockedSkills: string[]): boolean => {
-  const skill = SKILL_NODES.find(n => n.id === skillId);
-  if (!skill) return false;
-  return skill.prerequisites.every(prereq => unlockedSkills.includes(prereq));
-};
+export { SKILL_TREES_V2 as SKILL_TREES, SKILL_NODES_V2 as SKILL_NODES, canUnlockSkillV2 as canUnlockSkill, getSkillTreeV2 as getSkillTree } from './specializations';
 
 // ========================================
 // ITEM SET DEFINITIONS
@@ -252,8 +205,8 @@ export const generateDailyChallenges = (date: string): DailyChallenge[] => {
     selected.push({ ...dailyTemplates[idx], id: `daily_${date}_${i}`, date });
   }
 
-  // On Mondays, also add a weekly challenge
-  const dayOfWeek = new Date(date).getDay();
+  // On Mondays, also add a weekly challenge (interpret date in local timezone)
+  const dayOfWeek = new Date(date + 'T00:00:00').getDay();
   if (dayOfWeek === 1) {
     const weeklyTemplates = CHALLENGE_TEMPLATES.filter(t => t.isWeekly);
     const wIdx = seed % weeklyTemplates.length;

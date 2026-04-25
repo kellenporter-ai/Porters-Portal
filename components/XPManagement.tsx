@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, XPEvent, RPGItem, EquipmentSlot, BossQuizEvent, BossQuestionBank, BossQuizProgress, getSectionsForClass, CustomItem } from '../types';
+import { User, XPEvent, RPGItem, EquipmentSlot, BossEvent, BossQuestionBank, BossEventProgress, getSectionsForClass, CustomItem } from '../types';
 import { useClassConfig } from '../lib/AppDataContext';
 import { Zap, Plus, Trash2, Brain } from 'lucide-react';
 import EndgameStatsModal from './xp/EndgameStatsModal';
@@ -48,23 +48,23 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   });
 
   // Quiz Boss / Question Bank modal state (form state managed inside modals)
-  const [quizBosses, setQuizBosses] = useState<BossQuizEvent[]>([]);
+  const [quizBosses, setQuizBosses] = useState<BossEvent[]>([]);
   const [isQuizBossModalOpen, setIsQuizBossModalOpen] = useState(false);
-  const [editingQuizBoss, setEditingQuizBoss] = useState<BossQuizEvent | null>(null);
+  const [editingQuizBoss, setEditingQuizBoss] = useState<BossEvent | null>(null);
   const [questionBanks, setQuestionBanks] = useState<BossQuestionBank[]>([]);
   const [isQuestionBankModalOpen, setIsQuestionBankModalOpen] = useState(false);
   const [editingBank, setEditingBank] = useState<BossQuestionBank | null>(null);
 
   // Admin endgame view state
-  const [endgameQuiz, setEndgameQuiz] = useState<BossQuizEvent | null>(null);
-  const [endgameProgress, setEndgameProgress] = useState<BossQuizProgress[]>([]);
+  const [endgameQuiz, setEndgameQuiz] = useState<BossEvent | null>(null);
+  const [endgameProgress, setEndgameProgress] = useState<BossEventProgress[]>([]);
   const [loadingEndgame, setLoadingEndgame] = useState(false);
 
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
 
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
-    const unsubQuizBosses = dataService.subscribeToAllBossQuizzes(setQuizBosses);
+    const unsubQuizBosses = dataService.subscribeToAllBossEvents(setQuizBosses);
     const unsubBanks = dataService.subscribeToBossQuestionBanks(setQuestionBanks);
     const unsubCustomItems = dataService.subscribeToCustomItems(setCustomItems);
     return () => { unsubEvents(); unsubQuizBosses(); unsubBanks(); unsubCustomItems(); };
@@ -195,13 +195,13 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       } catch { toast.error('Failed to update lock.'); }
   };
 
-  const handleToggleQuizBoss = async (quiz: BossQuizEvent) => {
-      await dataService.toggleBossQuizActive(quiz.id, !quiz.isActive);
+  const handleToggleQuizBoss = async (quiz: BossEvent) => {
+      await dataService.toggleBossEventActive(quiz.id, !quiz.isActive);
   };
 
-  const handleDeleteQuizBoss = async (quiz: BossQuizEvent) => {
+  const handleDeleteQuizBoss = async (quiz: BossEvent) => {
       if (!await confirm({ message: `Delete quiz boss "${quiz.bossName}"? This cannot be undone.`, confirmLabel: "Delete" })) return;
-      await dataService.deleteBossQuiz(quiz.id);
+      await dataService.deleteBossEvent(quiz.id);
       toast.success('Quiz boss deleted.');
   };
 
@@ -211,11 +211,11 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       toast.success('Question bank deleted.');
   };
 
-  const openEndgameView = async (quiz: BossQuizEvent) => {
+  const openEndgameView = async (quiz: BossEvent) => {
       setEndgameQuiz(quiz);
       setLoadingEndgame(true);
       try {
-          const progress = await dataService.getBossQuizAllProgress(quiz.id);
+          const progress = await dataService.getBossEventAllProgress(quiz.id);
           setEndgameProgress(progress);
       } catch { toast.error('Failed to load endgame data.'); }
       setLoadingEndgame(false);

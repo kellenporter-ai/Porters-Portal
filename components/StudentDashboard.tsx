@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Assignment, Submission, RPGItem, ClassConfig, UserSettings } from '../types';
+import { User, Assignment, Submission, RPGItem, ClassConfig, UserSettings, SpecializationId } from '../types';
 import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
@@ -35,6 +35,7 @@ const ResourcesTab = lazyWithRetry(() => import('./dashboard/ResourcesTab'));
 const AgentLoadoutTab = lazyWithRetry(() => import('./dashboard/AgentLoadoutTab'));
 const BadgesTab = lazyWithRetry(() => import('./dashboard/BadgesTab'));
 const ProgressDashboard = lazyWithRetry(() => import('./dashboard/ProgressDashboard'));
+const TopicMasteryAnalytics = lazyWithRetry(() => import('./dashboard/TopicMasteryAnalytics'));
 const CalendarView = lazyWithRetry(() => import('./dashboard/CalendarView'));
 const SkillTreePanel = lazyWithRetry(() => import('./xp/SkillTreePanel'));
 const FortuneWheel = lazyWithRetry(() => import('./xp/FortuneWheel'));
@@ -80,6 +81,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       safeImport(() => import('./dashboard/AgentLoadoutTab'));
       safeImport(() => import('./dashboard/BadgesTab'));
       safeImport(() => import('./dashboard/ProgressDashboard'));
+      safeImport(() => import('./dashboard/TopicMasteryAnalytics'));
       safeImport(() => import('./dashboard/CalendarView'));
       safeImport(() => import('./xp/SkillTreePanel'));
       safeImport(() => import('./xp/FortuneWheel'));
@@ -659,9 +661,20 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      <FeatureErrorBoundary feature="Skill Tree">
                        <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                        <SkillTreePanel
-                           specialization={user.gamification?.specialization}
+                           specialization={user.gamification?.specialization as SpecializationId | undefined}
                            skillPoints={user.gamification?.skillPoints || 0}
                            unlockedSkills={user.gamification?.unlockedSkills || []}
+                           level={user.gamification?.level || 1}
+                           onStartTrial={async (specId) => {
+                             try {
+                               const result = await dataService.startSpecializationTrial(specId);
+                               toast.success(result.message);
+                               // Navigate to boss tab to play the trial
+                               onNavigate('BOSS');
+                             } catch (err) {
+                               toast.error(err instanceof Error ? err.message : 'Failed to start trial');
+                             }
+                           }}
                        />
                        </React.Suspense>
                      </FeatureErrorBoundary>
@@ -726,15 +739,24 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              )}
 
              {activeTab === 'PROGRESS' && (
-                 <FeatureErrorBoundary feature="Progress">
-                   <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
-                   <ProgressDashboard
-                       assignments={assignments}
-                       submissions={submissions}
-                       activeClass={activeClass}
-                   />
-                   </React.Suspense>
-                 </FeatureErrorBoundary>
+                 <div className="space-y-6">
+                   <FeatureErrorBoundary feature="Progress">
+                     <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
+                     <ProgressDashboard
+                         assignments={assignments}
+                         submissions={submissions}
+                         activeClass={activeClass}
+                     />
+                     </React.Suspense>
+                   </FeatureErrorBoundary>
+                   <FeatureErrorBoundary feature="Topic Mastery">
+                     <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
+                     <TopicMasteryAnalytics
+                         topicMastery={user.gamification?.topicMastery || []}
+                     />
+                     </React.Suspense>
+                   </FeatureErrorBoundary>
+                 </div>
              )}
 
              {activeTab === 'CALENDAR' && (

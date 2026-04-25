@@ -4,7 +4,7 @@ import { BossEncounter } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
-import { Sword, Shield, Clock, Users, Zap, Crosshair } from 'lucide-react';
+import { Sword, Shield, Clock, Users, Zap, Crosshair, ShieldCheck } from 'lucide-react';
 
 interface BossEncounterPanelProps {
   userId: string;
@@ -209,13 +209,15 @@ const BossEncounterPanel: React.FC<BossEncounterPanelProps> = ({ userId, userNam
 
   if (bosses.length === 0) return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-        <Sword className="w-5 h-5" /> Active Threats
+      <h3 className="text-lg font-bold text-[var(--text-secondary)] flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-emerald-500" /> Active Threats
       </h3>
-      <div className="text-center py-12 px-6">
-        <Sword className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-30" />
-        <p className="text-sm text-[var(--text-muted)] mb-1">No active boss encounters</p>
-        <p className="text-xs text-[var(--text-muted)]">Your teacher will deploy a boss when the time comes. Prepare your loadout.</p>
+      <div className="text-center py-10 px-6 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-glass)]/50">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
+          <ShieldCheck className="w-7 h-7 text-emerald-500/60" />
+        </div>
+        <p className="text-sm font-semibold text-[var(--text-secondary)] mb-1">The realm is peaceful</p>
+        <p className="text-xs text-[var(--text-muted)] max-w-[260px] mx-auto">No active threats right now. Your teacher will deploy a boss when the time comes — prepare your loadout.</p>
       </div>
     </div>
   );

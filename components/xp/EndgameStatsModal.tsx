@@ -1,33 +1,68 @@
 
 import React, { useMemo, useCallback } from 'react';
-import { User, BossQuizEvent, BossQuizProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
+import { User, BossEvent, BossEventProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
 import { Crown, Eye, Download, AlertTriangle } from 'lucide-react';
 import Modal from '../Modal';
 import { getDifficultyClasses } from '../../lib/difficultyPills';
 
 interface EndgameStatsModalProps {
-  quiz: BossQuizEvent | null;
-  progress: BossQuizProgress[];
+  quiz: BossEvent | null;
+  progress: BossEventProgress[];
   loading: boolean;
   users: User[];
   onClose: () => void;
+}
+
+// Helper: normalize combat stats from legacy top-level or attempts array
+function getCombatStats(p: BossEventProgress): import('../../types').BossQuizCombatStats | undefined {
+  if (p.combatStats) return p.combatStats;
+  const attempts = p.attempts || [];
+  if (attempts.length === 0) return undefined;
+  // Aggregate across all attempts
+  const agg = attempts[0].combatStats;
+  for (let i = 1; i < attempts.length; i++) {
+    const cs = attempts[i].combatStats;
+    if (!cs) continue;
+    agg.totalDamageDealt += cs.totalDamageDealt;
+    agg.criticalHits += cs.criticalHits;
+    agg.damageReduced += cs.damageReduced;
+    agg.bossDamageTaken += cs.bossDamageTaken;
+    agg.correctByDifficulty.EASY += cs.correctByDifficulty.EASY;
+    agg.correctByDifficulty.MEDIUM += cs.correctByDifficulty.MEDIUM;
+    agg.correctByDifficulty.HARD += cs.correctByDifficulty.HARD;
+    agg.incorrectByDifficulty.EASY += cs.incorrectByDifficulty.EASY;
+    agg.incorrectByDifficulty.MEDIUM += cs.incorrectByDifficulty.MEDIUM;
+    agg.incorrectByDifficulty.HARD += cs.incorrectByDifficulty.HARD;
+    agg.longestStreak = Math.max(agg.longestStreak, cs.longestStreak);
+    agg.currentStreak = Math.max(agg.currentStreak, cs.currentStreak);
+    agg.shieldBlocksUsed += cs.shieldBlocksUsed;
+    agg.healingReceived += cs.healingReceived;
+    agg.questionsAttempted += cs.questionsAttempted;
+    agg.questionsCorrect += cs.questionsCorrect;
+  }
+  return agg;
+}
+
+function getAnsweredQuestions(p: BossEventProgress): string[] {
+  if (p.answeredQuestions) return p.answeredQuestions;
+  return (p.attempts || []).flatMap(a => a.answeredQuestions || []);
 }
 
 const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, loading, users, onClose }) => {
   // --- Per-question analytics ---
   const questionAnalytics = useMemo(() => {
     if (!quiz) return [];
-    return quiz.questions.map(q => {
+    return (quiz.questions || []).map(q => {
       let attempts = 0;
       progress.forEach(p => {
-        if (p.answeredQuestions?.includes(q.id)) {
+        if (getAnsweredQuestions(p).includes(q.id)) {
           attempts++;
         }
       });
       // Use difficulty-based aggregation as best approximation
       const diff = q.difficulty;
-      const totalCorrectDiff = progress.reduce((s, p) => s + (p.combatStats?.correctByDifficulty?.[diff] || 0), 0);
-      const totalIncorrectDiff = progress.reduce((s, p) => s + (p.combatStats?.incorrectByDifficulty?.[diff] || 0), 0);
+      const totalCorrectDiff = progress.reduce((s, p) => s + (getCombatStats(p)?.correctByDifficulty?.[diff] || 0), 0);
+      const totalIncorrectDiff = progress.reduce((s, p) => s + (getCombatStats(p)?.incorrectByDifficulty?.[diff] || 0), 0);
       const totalDiff = totalCorrectDiff + totalIncorrectDiff;
       // Per-question estimate: use total attempts for this question and difficulty-level accuracy
       const diffAccuracy = totalDiff > 0 ? totalCorrectDiff / totalDiff : 0;
@@ -51,10 +86,10 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
   const handleExportCSV = useCallback(() => {
     if (!quiz) return;
     const headers = ['Rank', 'Student', 'Email', 'Damage', 'Correct', 'Attempted', 'Accuracy%', 'Crits', 'Streak', 'Mitigated', 'Status'];
-    const sorted = [...progress].sort((a, b) => (b.combatStats?.totalDamageDealt || 0) - (a.combatStats?.totalDamageDealt || 0));
+    const sorted = [...progress].sort((a, b) => (b.totalDamageDealt || 0) - (a.totalDamageDealt || 0));
     const rows = sorted.map((prog, idx) => {
       const student = users.find(u => u.id === prog.userId);
-      const s = prog.combatStats;
+      const s = getCombatStats(prog);
       const attempted = s?.questionsAttempted || 0;
       const correct = s?.questionsCorrect || 0;
       const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
@@ -106,15 +141,15 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                 <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Participants</div>
               </div>
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{progress.reduce((s, p) => s + (p.combatStats?.totalDamageDealt || 0), 0).toLocaleString()}</div>
+                <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{progress.reduce((s, p) => s + (p.totalDamageDealt || 0), 0).toLocaleString()}</div>
                 <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Damage</div>
               </div>
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-green-600 dark:text-green-400">{progress.reduce((s, p) => s + (p.combatStats?.questionsCorrect || 0), 0)}</div>
+                <div className="text-2xl font-black text-green-600 dark:text-green-400">{progress.reduce((s, p) => s + (getCombatStats(p)?.questionsCorrect || 0), 0)}</div>
                 <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Correct</div>
               </div>
               <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-red-600 dark:text-red-400">{progress.reduce((s, p) => s + (p.combatStats?.criticalHits || 0), 0)}</div>
+                <div className="text-2xl font-black text-red-600 dark:text-red-400">{progress.reduce((s, p) => s + (getCombatStats(p)?.criticalHits || 0), 0)}</div>
                 <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Crits</div>
               </div>
             </div>
@@ -132,11 +167,11 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
             <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2 mb-3"><Crown className="w-4 h-4" /> Top Damage Dealers</h4>
             <div className="space-y-2">
               {[...progress]
-                .sort((a, b) => (b.combatStats?.totalDamageDealt || 0) - (a.combatStats?.totalDamageDealt || 0))
+                .sort((a, b) => (b.totalDamageDealt || 0) - (a.totalDamageDealt || 0))
                 .slice(0, 5)
                 .map((prog, idx) => {
                   const student = users.find(u => u.id === prog.userId);
-                  const stats = prog.combatStats;
+                  const stats = getCombatStats(prog);
                   const multiplier = idx < BOSS_REWARD_TIERS.length ? BOSS_REWARD_TIERS[idx] : 1;
                   const participated = (stats?.questionsAttempted || 0) >= BOSS_PARTICIPATION_MIN_ATTEMPTS && (stats?.questionsCorrect || 0) >= BOSS_PARTICIPATION_MIN_CORRECT;
                   const medalColors = ['text-yellow-600 dark:text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-600 dark:text-blue-400', 'text-purple-600 dark:text-purple-400'];
@@ -167,7 +202,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
           </div>
 
           {/* Per-Question Analytics */}
-          {quiz.questions.length > 0 && (
+          {(quiz.questions || []).length > 0 && (
             <div>
               <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" /> Question Analytics</h4>
               <div className="text-[11.5px] text-[var(--text-muted)] mb-3">Accuracy rates based on per-difficulty aggregation across all participants.</div>
@@ -179,7 +214,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                   <div className="space-y-2">
                     {mostMissed.filter(q => q.estimatedAccuracy < 70).map(q => (
                       <div key={q.id} className="flex items-start gap-2">
-                        <span className="text-[11.5px] text-red-600 dark:text-red-400 font-bold mt-0.5">Q{quiz.questions.indexOf(q) + 1}</span>
+                        <span className="text-[11.5px] text-red-600 dark:text-red-400 font-bold mt-0.5">Q{(quiz.questions || []).indexOf(q) + 1}</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-[var(--text-primary)] truncate">{q.stem}</div>
                           <div className="flex gap-2 mt-0.5">
@@ -233,7 +268,7 @@ const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, l
                       .filter(q => (q.difficulty === 'EASY' && q.estimatedAccuracy < 50) || (q.difficulty === 'HARD' && q.estimatedAccuracy > 80))
                       .map(q => (
                         <div key={q.id} className="text-[11.5px] text-[var(--text-tertiary)] flex items-center gap-2">
-                          <span className="font-bold text-[var(--text-primary)]">Q{quiz.questions.indexOf(q) + 1}:</span>
+                          <span className="font-bold text-[var(--text-primary)]">Q{(quiz.questions || []).indexOf(q) + 1}:</span>
                           {q.difficulty === 'EASY' && q.estimatedAccuracy < 50 && (
                             <span>Marked as <span className="text-green-600 dark:text-green-400">EASY</span> but only {q.estimatedAccuracy}% accuracy — consider upgrading to <span className="text-yellow-600 dark:text-yellow-400">MEDIUM</span></span>
                           )}

@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { User, RPGItem, EquipmentSlot, ItemSlot, PLAYER_ROLE_DEFS } from '../../types';
+import { User, RPGItem, EquipmentSlot, ItemSlot, PLAYER_ROLE_DEFS, SpecializationId } from '../../types';
 import { User as UserIcon, GripVertical, Diamond, ChevronDown, ChevronUp, Sword, Zap, Shield, Crown, Plus } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
 import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats, derivePlayerRole, calculateGearScore } from '../../lib/gamification';
+import { SPECIALIZATIONS, SKILL_TREES_V2, SPEC_COLORS_V2 } from '../../lib/specializations';
 import { getClassProfile } from '../../lib/classProfile';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
@@ -16,7 +17,7 @@ import InspectItemModal from './InspectItemModal';
 import ItemIcon from '../ItemIcon';
 import { RUNEWORD_DEFINITIONS } from '../../lib/runewords';
 
-type RightPanelTab = 'agent' | 'loadout' | 'gems';
+type RightPanelTab = 'agent' | 'loadout' | 'gems' | 'mastery';
 
 // Inline modifier: snaps the drag overlay center to the cursor position.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -413,6 +414,17 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   <Diamond className="w-3 h-3 inline-block mr-1 -mt-px" />
                   Gem Codex
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setRightTab('mastery')}
+                  className={`px-4 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wider transition-all ${
+                    rightTab === 'mastery'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Mastery
+                </button>
               </div>
 
               {rightTab === 'agent' ? (
@@ -457,8 +469,13 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                     ))}
                   </div>
                 </>
-              ) : (
+              ) : rightTab === 'gems' ? (
                 <GemsPanel gemsInventory={gemsInventory} equipped={equipped} />
+              ) : (
+                <MasteryPanel
+                  user={user}
+                  level={level}
+                />
               )}
 
               {rightTab === 'agent' && (
@@ -518,6 +535,23 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30">
                     <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{gearScore} GS</span>
                   </div>
+                  {/* Specialization Badge */}
+                  {(() => {
+                    const spec = user.gamification?.specialization as SpecializationId | undefined;
+                    if (!spec || !SPEC_COLORS_V2[spec]) return null;
+                    return (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg border"
+                        style={{
+                          backgroundColor: SPEC_COLORS_V2[spec].hex + '15',
+                          borderColor: SPEC_COLORS_V2[spec].hex + '40',
+                        }}
+                      >
+                        <span className="text-[11px] font-bold" style={{ color: SPEC_COLORS_V2[spec].hex }}>
+                          {SKILL_TREES_V2[spec].icon} {SKILL_TREES_V2[spec].name}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -1013,6 +1047,137 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--surface-raised)] border-b border-r border-[var(--border)] rotate-45"></div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ============================================================
+// MASTERY PANEL — Specialization + Topic Mastery Dashboard
+// ============================================================
+
+interface MasteryPanelProps {
+  user: User;
+  level: number;
+}
+
+const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
+  const specialization = user.gamification?.specialization as SpecializationId | undefined;
+  const topicMastery = user.gamification?.topicMastery || [];
+  const unlockedSkills = user.gamification?.unlockedSkills || [];
+
+  const specDef = specialization ? SPECIALIZATIONS[specialization] : null;
+  const specTree = specialization ? SKILL_TREES_V2[specialization] : null;
+  const specColors = specialization ? SPEC_COLORS_V2[specialization] : null;
+
+  // Calculate mastery stats
+  const totalTopics = topicMastery.length;
+  const avgAccuracy = totalTopics > 0
+    ? topicMastery.reduce((sum, t) => sum + t.currentAccuracy, 0) / totalTopics
+    : 0;
+  const maxMasteryTopics = topicMastery.filter(t => t.level >= 5).length;
+
+  return (
+    <div className="flex-1 w-full relative z-10 overflow-y-auto custom-scrollbar px-2 pb-2">
+      {/* Specialization Card */}
+      <div className={`p-3 rounded-xl border mb-3 ${specColors ? '' : 'border-[var(--border)] bg-[var(--surface-glass)]'}`}
+        style={specColors ? { borderColor: specColors.hex + '40', background: `linear-gradient(135deg, ${specColors.hex}10, transparent)` } : undefined}
+      >
+        {specDef && specTree && specColors ? (
+          <>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${specColors.gradient} flex items-center justify-center text-lg shadow-lg`}>
+                {specTree.icon}
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[var(--text-primary)]">{specTree.name}</h4>
+                <p className="text-[11px] text-[var(--text-tertiary)]">{specDef.baseRole} · Lv.{level}</p>
+              </div>
+            </div>
+            <p className="text-[11.5px] text-[var(--text-secondary)] mt-2">{specDef.description}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {specDef.bonuses.map((b, i) => (
+                <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${specColors.bg} ${specColors.text} border-current opacity-60`}>
+                  {b.type.replace(/_/g, ' ')} {b.value < 1 ? `+${(b.value * 100).toFixed(0)}%` : `+${b.value}`}
+                </span>
+              ))}
+            </div>
+            <div className="mt-2 text-[11px] text-[var(--text-muted)]">
+              {unlockedSkills.length} skill{unlockedSkills.length !== 1 ? 's' : ''} unlocked
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-sm font-bold text-[var(--text-primary)]">No Specialization</p>
+            <p className="text-[11px] text-[var(--text-tertiary)] mt-1">
+              Visit the Skill Tree tab to choose a combat specialization.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Topic Mastery Summary */}
+      <div className="p-3 rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-bold text-[var(--text-primary)]">Topic Mastery</h4>
+          <span className="text-[11px] text-[var(--text-muted)]">{totalTopics} topics</span>
+        </div>
+        {totalTopics > 0 ? (
+          <>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="flex-1">
+                <p className="text-[11px] text-[var(--text-muted)]">Avg Accuracy</p>
+                <p className="text-lg font-bold text-[var(--text-primary)]">{(avgAccuracy * 100).toFixed(0)}%</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] text-[var(--text-muted)]">Max Mastery</p>
+                <p className="text-lg font-bold text-[var(--text-primary)]">{maxMasteryTopics}</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] text-[var(--text-muted)]">Questions</p>
+                <p className="text-lg font-bold text-[var(--text-primary)]">
+                  {topicMastery.reduce((s, t) => s + t.questionsAnswered, 0)}
+                </p>
+              </div>
+            </div>
+            {/* Topic bars */}
+            <div className="space-y-2">
+              {topicMastery
+                .sort((a, b) => b.currentAccuracy - a.currentAccuracy)
+                .slice(0, 8)
+                .map(topic => (
+                  <div key={topic.topicId}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[11.5px] font-semibold text-[var(--text-secondary)] truncate">{topic.topicId}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-[var(--text-muted)]">Lv.{topic.level}</span>
+                        <span className="text-[11px] font-bold text-[var(--text-primary)]">{(topic.currentAccuracy * 100).toFixed(0)}%</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--surface-glass-heavy)] overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          topic.currentAccuracy >= 0.8 ? 'bg-green-500' :
+                          topic.currentAccuracy >= 0.6 ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${topic.currentAccuracy * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+            </div>
+            {topicMastery.length > 8 && (
+              <p className="text-[11px] text-[var(--text-muted)] mt-2 text-center">
+                +{topicMastery.length - 8} more topics
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-[11.5px] text-[var(--text-tertiary)] text-center py-4">
+            Complete boss fights and quizzes to build topic mastery. Mastery improves your damage and unlocks skill tree bonuses.
+          </p>
+        )}
+      </div>
     </div>
   );
 };

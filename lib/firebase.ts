@@ -58,7 +58,11 @@ export const callAddSocket = httpsCallable(functions, 'addSocket');
 export const callSocketGem = httpsCallable(functions, 'socketGem');
 export const callUnsocketGem = httpsCallable(functions, 'unsocketGem');
 export const callDealBossDamage = httpsCallable(functions, 'dealBossDamage');
-export const callAnswerBossQuiz = httpsCallable(functions, 'answerBossQuiz');
+export const callAnswerBossEvent = httpsCallable(functions, 'answerBossEvent');
+export const callGetNextBossQuestion = httpsCallable(functions, 'getNextBossQuestion');
+export const callStartSpecializationTrial = httpsCallable(functions, 'startSpecializationTrial');
+export const callCompleteSpecializationTrial = httpsCallable(functions, 'completeSpecializationTrial');
+export const callUseConsumable = httpsCallable(functions, 'useConsumable');
 export const callClaimKnowledgeLoot = httpsCallable(functions, 'claimKnowledgeLoot');
 export const callPurchaseCosmetic = httpsCallable(functions, 'purchaseCosmetic');
 export const callClaimDailyChallenge = httpsCallable(functions, 'claimDailyChallenge');
@@ -75,6 +79,8 @@ export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment')
 export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');
 export const callBackfillWordCount = httpsCallable(functions, 'backfillWordCount');
 export const callScaleBossHp = httpsCallable(functions, 'scaleBossHp');
+export const callMigrateBossesToEvents = httpsCallable(functions, 'migrateBossesToEvents');
+export const callMigrateBossQuizProgress = httpsCallable(functions, 'migrateBossQuizProgress');
 
 // Flux Shop Cloud Functions
 export const callPurchaseFluxItem = httpsCallable(functions, 'purchaseFluxItem');
