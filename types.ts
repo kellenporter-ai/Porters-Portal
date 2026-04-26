@@ -713,7 +713,8 @@ export interface FortuneWheelPrize {
 // SKILL TREES / SPECIALIZATIONS
 // ========================================
 
-export type SpecializationType = 'THEORIST' | 'EXPERIMENTALIST' | 'ANALYST' | 'DIPLOMAT';
+// Legacy V1 specializations removed. Use SpecializationId (combat specs) from lib/specializations.ts.
+// export type SpecializationType = 'THEORIST' | 'EXPERIMENTALIST' | 'ANALYST' | 'DIPLOMAT';
 
 export interface SkillNode {
   id: string;

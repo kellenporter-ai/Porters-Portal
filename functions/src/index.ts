@@ -3042,6 +3042,7 @@ export const spinFortuneWheel = onCall(async (request) => {
 
 // Server-side skill cost map — prevents client from sending a fake cost
 const SKILL_COSTS: Record<string, number> = {
+  // ═══ V1 (legacy — kept for migration reference) ═══
   // THEORIST
   th_1: 1, th_2: 1, th_3: 2, th_4: 2, th_5: 3, th_6: 5,
   // EXPERIMENTALIST
@@ -3050,6 +3051,24 @@ const SKILL_COSTS: Record<string, number> = {
   an_1: 1, an_2: 1, an_3: 2, an_4: 2, an_5: 3, an_6: 5,
   // DIPLOMAT
   di_1: 1, di_2: 1, di_3: 2, di_4: 2, di_5: 3, di_6: 5,
+
+  // ═══ V2 (combat specializations) ═══
+  // JUGGERNAUT
+  jug_1: 1, jug_2: 1, jug_3: 2, jug_4: 2, jug_5: 3, jug_6: 5,
+  // BERSERKER
+  ber_1: 1, ber_2: 1, ber_3: 2, ber_4: 2, ber_5: 3, ber_6: 5,
+  // SNIPER
+  sni_1: 1, sni_2: 1, sni_3: 2, sni_4: 2, sni_5: 3, sni_6: 5,
+  // SPEEDSTER
+  spd_1: 1, spd_2: 1, spd_3: 2, spd_4: 2, spd_5: 3, spd_6: 5,
+  // GUARDIAN
+  grd_1: 1, grd_2: 1, grd_3: 2, grd_4: 2, grd_5: 3, grd_6: 5,
+  // CLERIC
+  clr_1: 1, clr_2: 1, clr_3: 2, clr_4: 2, clr_5: 3, clr_6: 5,
+  // TACTICIAN
+  tac_1: 1, tac_2: 1, tac_3: 2, tac_4: 2, tac_5: 3, tac_6: 5,
+  // SCHOLAR
+  sch_1: 1, sch_2: 1, sch_3: 2, sch_4: 2, sch_5: 3, sch_6: 5,
 };
 
 export const unlockSkill = onCall(async (request) => {
@@ -6136,4 +6155,139 @@ export const migrateBossQuizProgress = onCall(async (request) => {
 
   logger.info("migrateBossQuizProgress complete", { migrated, errorCount: errors.length });
   return { migrated, errors: errors.slice(0, 20) };
+});
+
+
+// ==========================================
+// SPECIALIZATION V1 → V2 MIGRATION
+// ==========================================
+
+const V1_SPECIALIZATIONS = ['THEORIST', 'EXPERIMENTALIST', 'ANALYST', 'DIPLOMAT'] as const;
+
+const V1_SKILL_COSTS: Record<string, number> = {
+  th_1: 1, th_2: 1, th_3: 2, th_4: 2, th_5: 3, th_6: 5,
+  ex_1: 1, ex_2: 1, ex_3: 2, ex_4: 2, ex_5: 3, ex_6: 5,
+  an_1: 1, an_2: 1, an_3: 2, an_4: 2, an_5: 3, an_6: 5,
+  di_1: 1, di_2: 1, di_3: 2, di_4: 2, di_5: 3, di_6: 5,
+};
+
+/**
+ * Migrate users from the old V1 academic specializations (THEORIST, EXPERIMENTALIST,
+ * ANALYST, DIPLOMAT) to the new V2 combat system.  Refunds all spent skill points,
+ * clears the old specialization and unlockedSkills, and resets the student so they
+ * can pick a new combat spec and complete a trial boss like any new player.
+ *
+ * Admin-only. Idempotent — safe to run multiple times (already-migrated users are skipped).
+ */
+export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+
+  const db = admin.firestore();
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+  const userData = userSnap.data()!;
+  if (userData.role !== 'admin' && userData.role !== 'teacher') {
+    throw new HttpsError("permission-denied", "Admin or teacher required.");
+  }
+
+  let migrated = 0;
+  let skipped = 0;
+  let errors: string[] = [];
+
+  // Firestore 'in' queries are limited to 10 values — we have 4, so we're safe.
+  const usersQuery = await db
+    .collection('users')
+    .where('gamification.specialization', 'in', V1_SPECIALIZATIONS)
+    .get();
+
+  for (const doc of usersQuery.docs) {
+    const data = doc.data();
+    const gam = data.gamification || {};
+    const spec = gam.specialization as string;
+    const unlockedSkills: string[] = gam.unlockedSkills || [];
+
+    try {
+      // Calculate total points spent in the old system
+      const spent = unlockedSkills.reduce((sum: number, skillId: string) => {
+        return sum + (V1_SKILL_COSTS[skillId] || 0);
+      }, 0);
+
+      const currentSkillPoints = gam.skillPoints || 0;
+      const refund = spent;
+
+      const updates: Record<string, unknown> = {
+        'gamification.specialization': admin.firestore.FieldValue.delete(),
+        'gamification.unlockedSkills': admin.firestore.FieldValue.delete(),
+        'gamification.skillPoints': currentSkillPoints + refund,
+        'gamification.specializationMigratedAt': new Date().toISOString(),
+        'gamification.specializationMigratedFrom': spec,
+        'gamification.specializationMigratedRefund': refund,
+      };
+
+      // If they had no skill points field before, make sure it exists
+      if (typeof gam.skillPoints === 'undefined') {
+        updates['gamification.skillPoints'] = refund;
+      }
+
+      await doc.ref.update(updates);
+      migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${doc.id}: ${msg}`);
+    }
+  }
+
+  // Also catch users who have V1 skills in unlockedSkills but no specialization set
+  // (edge case — handle by scanning all users with unlockedSkills and checking for V1 IDs)
+  const allUsersWithSkills = await db
+    .collection('users')
+    .where('gamification.unlockedSkills', '!=', null)
+    .get();
+
+  for (const doc of allUsersWithSkills.docs) {
+    const data = doc.data();
+    const gam = data.gamification || {};
+    const spec = gam.specialization;
+    const unlockedSkills: string[] = gam.unlockedSkills || [];
+
+    // Skip if already handled above (has V1 specialization)
+    if (V1_SPECIALIZATIONS.includes(spec)) continue;
+
+    // Check if any skill is a V1 skill
+    const hasV1Skills = unlockedSkills.some((id: string) => V1_SKILL_COSTS[id] !== undefined);
+    if (!hasV1Skills) continue;
+
+    try {
+      const spent = unlockedSkills.reduce((sum: number, skillId: string) => {
+        return sum + (V1_SKILL_COSTS[skillId] || 0);
+      }, 0);
+
+      const currentSkillPoints = gam.skillPoints || 0;
+
+      const updates: Record<string, unknown> = {
+        'gamification.unlockedSkills': admin.firestore.FieldValue.delete(),
+        'gamification.skillPoints': currentSkillPoints + spent,
+        'gamification.specializationMigratedAt': new Date().toISOString(),
+        'gamification.specializationMigratedRefund': spent,
+      };
+
+      if (spec) {
+        updates['gamification.specializationMigratedFrom'] = spec;
+      }
+
+      await doc.ref.update(updates);
+      migrated++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${doc.id} (orphan): ${msg}`);
+    }
+  }
+
+  logger.info("migrateSpecializationsV1ToV2 complete", {
+    migrated,
+    skipped,
+    errorCount: errors.length,
+  });
+
+  return { migrated, skipped, errors: errors.slice(0, 20) };
 });
