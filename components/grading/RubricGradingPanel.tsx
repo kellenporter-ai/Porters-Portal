@@ -127,16 +127,16 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
 
           {/* Feedback section */}
           <div className="flex flex-col gap-2">
-            <label className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-1.5">
+            <label htmlFor="draft-feedback" className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-1.5">
               <MessageSquare className="w-3 h-3" aria-hidden="true" /> Teacher Feedback
             </label>
             <textarea
+              id="draft-feedback"
               value={draftFeedbackDraft}
               onChange={e => onDraftFeedbackChange(e.target.value)}
               placeholder="Write feedback or guidance for this student..."
               rows={4}
               className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
-              aria-label="Teacher feedback for draft student"
             />
             <button
               onClick={onSendDraftFeedback}
@@ -269,7 +269,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
         <>
           <div className="px-4 py-2 border-t border-[var(--border)]">
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+              <label htmlFor="graded-feedback" className="text-[11.5px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                 Teacher Feedback
               </label>
               <div className="relative">
@@ -293,10 +293,11 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               </div>
             </div>
             <textarea
+              id="graded-feedback"
               value={feedbackDraft}
               onChange={e => onFeedbackChange(e.target.value)}
               placeholder="Optional feedback for the student..."
-              rows={2}
+              rows={4}
               className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition resize-none"
             />
 

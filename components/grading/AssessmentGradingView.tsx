@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Search, Shield, FileText } from 'lucide-react';
+import { ChevronRight, Search, Shield, FileText, Users, FileCheck, ClipboardList } from 'lucide-react';
 import type { User, Assignment, Submission } from '../../types';
 import { useGradingState } from './useGradingState';
 import GradingStatsBar from './GradingStatsBar';
@@ -70,6 +70,8 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     draftFeedbackMessages,
     isSendingDraftFeedback,
     handleSendDraftFeedback,
+    mobileTab,
+    setMobileTab,
     batchAcceptingAI,
     batchAcceptProgress,
     csvMaxPoints,
@@ -209,6 +211,36 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
         />
       )}
 
+      {/* Mobile tab switcher */}
+      {selectedAssessmentId && hasSubs && (
+        <div className="flex lg:hidden bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-1" role="tablist" aria-label="Grading panels">
+          <button
+            role="tab"
+            aria-selected={mobileTab === 'list'}
+            onClick={() => setMobileTab('list')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'list' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+          >
+            <Users className="w-3.5 h-3.5" aria-hidden="true" /> List
+          </button>
+          <button
+            role="tab"
+            aria-selected={mobileTab === 'response'}
+            onClick={() => setMobileTab('response')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'response' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+          >
+            <FileCheck className="w-3.5 h-3.5" aria-hidden="true" /> Response
+          </button>
+          <button
+            role="tab"
+            aria-selected={mobileTab === 'rubric'}
+            onClick={() => setMobileTab('rubric')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'rubric' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+          >
+            <ClipboardList className="w-3.5 h-3.5" aria-hidden="true" /> Rubric
+          </button>
+        </div>
+      )}
+
       {/* 3-Panel Grading View */}
       {selectedAssessmentId && hasSubs && (
         <div
@@ -222,27 +254,29 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
           tabIndex={0}
         >
           {/* Left: Student List */}
-          <StudentListPanel
-            assessmentId={selectedAssessmentId}
-            assessmentClassType={selectedAssessment?.classType || ''}
-            studentGroups={studentGroups}
-            unifiedList={unifiedList}
-            hasDraftStudents={hasDraftStudents}
-            notStartedStudents={notStartedStudents}
-            gradingStudentId={gradingStudentId}
-            viewingDraftUserId={viewingDraftUserId}
-            assessmentSortKey={assessmentSortKey}
-            assessmentSortDesc={assessmentSortDesc}
-            assessmentSectionFilter={assessmentSectionFilter}
-            availableSections={availableSections}
-            onSort={handleSort}
-            onSelectStudent={selectStudent}
-            onSelectDraft={selectDraftStudent}
-            onSelectNotStarted={selectNotStartedStudent}
-          />
+          <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} lg:flex flex-col`}>
+            <StudentListPanel
+              assessmentId={selectedAssessmentId}
+              assessmentClassType={selectedAssessment?.classType || ''}
+              studentGroups={studentGroups}
+              unifiedList={unifiedList}
+              hasDraftStudents={hasDraftStudents}
+              notStartedStudents={notStartedStudents}
+              gradingStudentId={gradingStudentId}
+              viewingDraftUserId={viewingDraftUserId}
+              assessmentSortKey={assessmentSortKey}
+              assessmentSortDesc={assessmentSortDesc}
+              assessmentSectionFilter={assessmentSectionFilter}
+              availableSections={availableSections}
+              onSort={handleSort}
+              onSelectStudent={(id) => { selectStudent(id); setMobileTab('response'); }}
+              onSelectDraft={(id) => { selectDraftStudent(id); setMobileTab('response'); }}
+              onSelectNotStarted={(id) => { selectNotStartedStudent(id); setMobileTab('response'); }}
+            />
+          </div>
 
           {/* Center: Student Work */}
-          <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+          <div className={`${mobileTab === 'response' ? 'flex' : 'hidden'} lg:flex flex-1 min-w-0 min-h-0 flex-col`}>
             <StudentResponsePanel
               selectedGroup={selectedGroup}
               sub={sub}
@@ -264,30 +298,32 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
           </div>
 
           {/* Right: Rubric Grading */}
-          <RubricGradingPanel
-            selectedGroup={selectedGroup}
-            sub={sub}
-            selectedAssessment={selectedAssessment}
-            rubricDraft={rubricDraft}
-            feedbackDraft={feedbackDraft}
-            isSavingRubric={isSavingRubric}
-            viewingDraftUserId={viewingDraftUserId}
-            draftUserIds={draftUserIds}
-            unifiedList={unifiedList}
-            gradingStudentId={gradingStudentId}
-            draftFeedbackDraft={draftFeedbackDraft}
-            draftFeedbackMessages={draftFeedbackMessages}
-            isSendingDraftFeedback={isSendingDraftFeedback}
-            onFeedbackChange={setFeedbackDraft}
-            onGradeChange={handleRubricGradeChange}
-            onAcceptAllAI={handleAcceptAllAI}
-            onDismissAISuggestion={handleDismissAISuggestion}
-            onSaveRubric={handleSaveRubric}
-            onReturnToStudent={handleReturnToStudent}
-            onSelectStudent={selectStudent}
-            onDraftFeedbackChange={setDraftFeedbackDraft}
-            onSendDraftFeedback={handleSendDraftFeedback}
-          />
+          <div className={`${mobileTab === 'rubric' ? 'flex' : 'hidden'} lg:flex flex-col`}>
+            <RubricGradingPanel
+              selectedGroup={selectedGroup}
+              sub={sub}
+              selectedAssessment={selectedAssessment}
+              rubricDraft={rubricDraft}
+              feedbackDraft={feedbackDraft}
+              isSavingRubric={isSavingRubric}
+              viewingDraftUserId={viewingDraftUserId}
+              draftUserIds={draftUserIds}
+              unifiedList={unifiedList}
+              gradingStudentId={gradingStudentId}
+              draftFeedbackDraft={draftFeedbackDraft}
+              draftFeedbackMessages={draftFeedbackMessages}
+              isSendingDraftFeedback={isSendingDraftFeedback}
+              onFeedbackChange={setFeedbackDraft}
+              onGradeChange={handleRubricGradeChange}
+              onAcceptAllAI={handleAcceptAllAI}
+              onDismissAISuggestion={handleDismissAISuggestion}
+              onSaveRubric={handleSaveRubric}
+              onReturnToStudent={handleReturnToStudent}
+              onSelectStudent={selectStudent}
+              onDraftFeedbackChange={setDraftFeedbackDraft}
+              onSendDraftFeedback={handleSendDraftFeedback}
+            />
+          </div>
         </div>
       )}
 

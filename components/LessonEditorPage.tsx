@@ -6,7 +6,7 @@ import {
   Image, Play, Target, Minus, ExternalLink, Code, List, Zap,
   ArrowUpDown, Table, BarChart3, Link, Upload, Save, X,
   ChevronRight, Settings, Loader2, CalendarClock, FileText, CheckCircle, Rocket, Shield, Brain,
-  PenTool, Calculator, Search
+  PenTool, Calculator, Search, AlertTriangle
 } from 'lucide-react';
 import {
   DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay,
@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDebounce } from '../lib/rateLimiting';
 import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass, migrateResourceCategory } from '../types';
 import { parseRubricMarkdown, validateRubric } from '../lib/rubricParser';
+import { validateBlock } from '../lib/validateBlock';
 import LessonBlocks from './LessonBlocks';
 import SectionPicker from './SectionPicker';
 
@@ -1008,12 +1009,14 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                     {blocks.map((block, index) => {
                       const typeInfo = getBlockTypeInfo(block.type);
                       const isExpanded = expandedBlock === block.id;
+                      const blockErrors = validateBlock(block);
+                      const hasErrors = blockErrors.length > 0;
 
                       return (
                         <React.Fragment key={block.id}>
                           <SortableBlockRow id={block.id}>
                             {(dragHandleProps) => (
-                              <div id={block.id} className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
+                              <div id={block.id} className={`border rounded-2xl transition-all ${isExpanded ? 'bg-white/5 border-purple-500/30 shadow-lg shadow-purple-500/5' : hasErrors ? 'bg-white/[0.02] border-amber-500/30 hover:border-amber-500/50' : 'bg-white/[0.02] border-white/5 hover:border-white/15'}`}>
                                 <div className="w-full flex items-center gap-3 px-4 py-3 text-left">
                                   <div
                                     {...dragHandleProps}
@@ -1027,6 +1030,12 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                                     <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider w-24 shrink-0">{typeInfo?.label}</span>
                                     <span className="text-xs text-gray-600 dark:text-gray-400 truncate flex-1">{getBlockSummary(block)}</span>
                                   </button>
+                                  {hasErrors && (
+                                    <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-md px-1.5 py-0.5" title={blockErrors.join('; ')}>
+                                      <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                                      {blockErrors.length}
+                                    </span>
+                                  )}
                                   <div className="flex items-center gap-0.5 shrink-0">
                                     <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronUp className="w-3.5 h-3.5" /></button>
                                     <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-gray-600 hover:text-white disabled:opacity-20 transition"><ChevronDown className="w-3.5 h-3.5" /></button>

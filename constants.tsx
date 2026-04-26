@@ -23,7 +23,7 @@ export const CLASS_CONFIGS = {
   }
 };
 
-export type NavGroup = 'learning' | 'operations' | 'intel';
+export type NavGroup = 'learning' | 'operations' | 'intel' | 'admin_ops' | 'classroom' | 'systems';
 
 export interface NavItem {
   name: string;
@@ -37,14 +37,16 @@ export interface NavItem {
 }
 
 export const NAVIGATION: NavItem[] = [
-  // Admin navigation
-  { name: 'Dashboard', iconSrc: '/assets/icons/icon-dashboard.png', role: 'ADMIN' },
-  { name: 'Grading', iconSrc: '/assets/icons/icon-grading.png', role: 'ADMIN' },
-  { name: 'Resource Editor', iconSrc: '/assets/icons/icon-resource-editor.png', role: 'ADMIN' },
-  { name: 'User Management', iconSrc: '/assets/icons/icon-user-management.png', role: 'ADMIN' },
-  { name: 'Enrollment Codes', iconSrc: '/assets/icons/icon-enrollment-codes.png', role: 'ADMIN' },
-  { name: 'Student Reports', iconSrc: '/assets/icons/icon-student-reports.png', role: 'ADMIN' },
-  { name: 'XP Command', iconSrc: '/assets/icons/icon-xp-command.png', role: 'ADMIN', children: [
+  // Admin navigation — Operations group
+  { name: 'Dashboard', iconSrc: '/assets/icons/icon-dashboard.png', role: 'ADMIN', group: 'admin_ops' },
+  { name: 'Grading', iconSrc: '/assets/icons/icon-grading.png', role: 'ADMIN', group: 'admin_ops' },
+  { name: 'Student Reports', iconSrc: '/assets/icons/icon-student-reports.png', role: 'ADMIN', group: 'admin_ops' },
+  // Classroom group
+  { name: 'Resource Editor', iconSrc: '/assets/icons/icon-resource-editor.png', role: 'ADMIN', group: 'classroom' },
+  { name: 'User Management', iconSrc: '/assets/icons/icon-user-management.png', role: 'ADMIN', group: 'classroom' },
+  { name: 'Enrollment Codes', iconSrc: '/assets/icons/icon-enrollment-codes.png', role: 'ADMIN', group: 'classroom' },
+  // Systems group
+  { name: 'XP Command', iconSrc: '/assets/icons/icon-xp-command.png', role: 'ADMIN', group: 'systems', children: [
     { name: 'Operatives', iconSrc: '/assets/icons/icon-operatives.png' },
     { name: 'XP Protocols', iconSrc: '/assets/icons/icon-xp-protocols.png' },
     { name: 'Boss Ops', iconSrc: '/assets/icons/icon-boss-ops.png' },

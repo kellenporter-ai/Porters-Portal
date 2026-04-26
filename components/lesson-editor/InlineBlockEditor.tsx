@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { LessonBlock } from '../../types';
-import { Plus, Trash2, Target, Upload, Link } from 'lucide-react';
+import { Plus, Trash2, Target, Upload, Link, Search } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 
 // ──────────────────────────────────────────────
@@ -79,6 +79,7 @@ interface InlineBlockEditorProps {
 }
 
 const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks, onUpdate }) => {
+  const [linkedSearch, setLinkedSearch] = useState('');
   switch (block.type) {
     case 'TEXT':
       return (
@@ -335,10 +336,30 @@ const InlineBlockEditor: React.FC<InlineBlockEditorProps> = ({ block, allBlocks,
     }
     case 'LINKED': {
       const linkable = allBlocks.filter(b => b.id !== block.id && ['MC', 'SHORT_ANSWER', 'RANKING'].includes(b.type));
+      const filteredLinkable = linkedSearch.trim()
+        ? linkable.filter(b => (b.content || '').toLowerCase().includes(linkedSearch.toLowerCase()) || b.type.toLowerCase().includes(linkedSearch.toLowerCase()))
+        : linkable;
       const answers = block.acceptedAnswers || [''];
       return (
         <div className="space-y-2">
-          <div><label htmlFor={`${block.id}-linked-block`} className={labelClass}>Reference Block</label><select id={`${block.id}-linked-block`} value={block.linkedBlockId || ''} onChange={e => onUpdate({ ...block, linkedBlockId: e.target.value })} className={inputClass}><option value="">Select...</option>{linkable.map(b => <option key={b.id} value={b.id}>{b.type}: {(b.content || '').slice(0, 40)}</option>)}</select></div>
+          <div>
+            <label htmlFor={`${block.id}-linked-block`} className={labelClass}>Reference Block</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" aria-hidden="true" />
+              <input
+                type="text"
+                value={linkedSearch}
+                onChange={e => setLinkedSearch(e.target.value)}
+                placeholder="Search blocks..."
+                className={`${inputClass} pl-8 text-xs`}
+                aria-label="Search reference blocks"
+              />
+            </div>
+            <select id={`${block.id}-linked-block`} value={block.linkedBlockId || ''} onChange={e => onUpdate({ ...block, linkedBlockId: e.target.value })} className={`${inputClass} mt-1`}>
+              <option value="">{filteredLinkable.length === 0 ? 'No matching blocks' : 'Select...'}</option>
+              {filteredLinkable.map(b => <option key={b.id} value={b.id}>{b.type}: {(b.content || '').slice(0, 40)}</option>)}
+            </select>
+          </div>
           <label htmlFor={`ibe-linked-question-${block.id}`} className={labelClass}>Follow-up Question</label>
           <textarea id={`ibe-linked-question-${block.id}`} value={block.content} onChange={e => onUpdate({ ...block, content: e.target.value })} placeholder="Follow-up question..." className={textareaClass} rows={2} />
           <label className={labelClass}>Accepted Answers</label>

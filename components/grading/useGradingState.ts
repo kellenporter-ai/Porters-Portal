@@ -78,6 +78,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   const [gradingAttemptId, setGradingAttemptId] = useState<string | null>(null);
   const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
   const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'list' | 'response' | 'rubric'>('list');
   const [expandedPairIdx, setExpandedPairIdx] = useState<number | null>(null);
   const [assessmentSubmissions, setAssessmentSubmissions] = useState<Submission[]>([]);
   const [draftSessions, setDraftSessions] = useState<Array<{ userId: string; startedAt: string }>>([]);
@@ -699,6 +700,8 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setFeedbackDraft,
     isSavingRubric,
     currentUnifiedIndex,
+    mobileTab,
+    setMobileTab,
     // Filter/search state
     assessmentSearch,
     setAssessmentSearch,

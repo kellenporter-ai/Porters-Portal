@@ -109,11 +109,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     if (parent) setExpandedParent(parent.name);
   }, [activeTab]);
 
-  // Group labels for student nav sections
+  // Group labels for nav sections
   const NAV_GROUP_LABELS: Record<NavGroup, string> = {
     learning: 'Learning',
     operations: 'Operations',
     intel: 'Intel',
+    admin_ops: 'Operations',
+    classroom: 'Classroom',
+    systems: 'Systems',
   };
 
   // Persist collapsed groups in localStorage
@@ -277,10 +280,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       );
     };
 
-    // For student role: split items into ungrouped + grouped sections
-    if (user.role === UserRole.STUDENT) {
+    // For roles with grouped nav: split into ungrouped + grouped sections
+    const hasGroups = filteredItems.some(i => i.group);
+    if (hasGroups) {
       const ungrouped = filteredItems.filter(i => !i.group);
-      const groups: NavGroup[] = ['learning', 'operations', 'intel'];
+      const groups = Array.from(new Set(filteredItems.map(i => i.group).filter(Boolean))) as NavGroup[];
 
       // Collapsed sidebar: icon-only, no group headers
       if (sidebarCollapsed && !forceExpanded) {
@@ -305,6 +309,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         learning:   { wrap: 'bg-blue-50/80 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10',    label: 'text-blue-700 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-600' },
         operations: { wrap: 'bg-amber-50/70 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10',  label: 'text-amber-800 dark:text-amber-600 hover:text-amber-900 dark:hover:text-amber-700' },
         intel:      { wrap: 'bg-emerald-50/70 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10', label: 'text-emerald-700 dark:text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-700' },
+        admin_ops:  { wrap: 'bg-purple-50/70 dark:bg-purple-500/5 border border-purple-100 dark:border-purple-500/10',  label: 'text-purple-700 dark:text-purple-500 hover:text-purple-800 dark:hover:text-purple-600' },
+        classroom:  { wrap: 'bg-sky-50/70 dark:bg-sky-500/5 border border-sky-100 dark:border-sky-500/10',    label: 'text-sky-700 dark:text-sky-500 hover:text-sky-800 dark:hover:text-sky-600' },
+        systems:    { wrap: 'bg-slate-100/70 dark:bg-slate-500/5 border border-slate-200 dark:border-slate-500/10', label: 'text-slate-700 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300' },
       };
 
       return (
