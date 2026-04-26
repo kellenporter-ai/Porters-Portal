@@ -505,6 +505,47 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     updateBlocks(next);
   }, [blocks, updateBlocks]);
 
+  const convertBlock = useCallback((index: number, newType: BlockType) => {
+    const block = blocks[index];
+    if (block.type === newType) return;
+    const converted: LessonBlock = { ...block, type: newType };
+    // When converting to TEXT, strip type-specific fields that don't apply
+    if (newType === 'TEXT') {
+      delete (converted as Partial<LessonBlock>).options;
+      delete (converted as Partial<LessonBlock>).correctAnswer;
+      delete (converted as Partial<LessonBlock>).acceptedAnswers;
+      delete (converted as Partial<LessonBlock>).term;
+      delete (converted as Partial<LessonBlock>).definition;
+      delete (converted as Partial<LessonBlock>).items;
+      delete (converted as Partial<LessonBlock>).variant;
+      delete (converted as Partial<LessonBlock>).icon;
+      delete (converted as Partial<LessonBlock>).title;
+      delete (converted as Partial<LessonBlock>).subtitle;
+      delete (converted as Partial<LessonBlock>).url;
+      delete (converted as Partial<LessonBlock>).caption;
+      delete (converted as Partial<LessonBlock>).alt;
+      delete (converted as Partial<LessonBlock>).buttonLabel;
+      delete (converted as Partial<LessonBlock>).openInNewTab;
+      delete (converted as Partial<LessonBlock>).height;
+      delete (converted as Partial<LessonBlock>).terms;
+      delete (converted as Partial<LessonBlock>).instructions;
+      delete (converted as Partial<LessonBlock>).leftLabel;
+      delete (converted as Partial<LessonBlock>).rightLabel;
+      delete (converted as Partial<LessonBlock>).sortItems;
+      delete (converted as Partial<LessonBlock>).columns;
+      delete (converted as Partial<LessonBlock>).trials;
+      delete (converted as Partial<LessonBlock>).rowLabels;
+      delete (converted as Partial<LessonBlock>).rows;
+    }
+    // When converting to INFO_BOX from TEXT, add default variant
+    if (newType === 'INFO_BOX' && !converted.variant) {
+      converted.variant = 'note';
+    }
+    const next = [...blocks];
+    next[index] = converted;
+    updateBlocks(next);
+  }, [blocks, updateBlocks]);
+
   // ── Drag-and-drop reordering ──
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const blockIds = useMemo(() => blocks.map(b => b.id), [blocks]);
@@ -1049,6 +1090,20 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
 
                                 {isExpanded && (
                                   <div className="px-4 pb-4 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <span className="text-[11px] text-[var(--text-muted)] uppercase tracking-wider font-bold">Convert to</span>
+                                      <select
+                                        value={block.type}
+                                        onChange={(e) => convertBlock(index, e.target.value as BlockType)}
+                                        className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs text-[var(--text-secondary)] focus:outline-none focus:border-purple-500/50 cursor-pointer"
+                                        aria-label="Convert block type"
+                                      >
+                                        {BLOCK_TYPES.filter(bt => bt.category === 'Content' || bt.category === 'Assessment').map(bt => (
+                                          <option key={bt.type} value={bt.type}>{bt.label}</option>
+                                        ))}
+                                      </select>
+                                      <span className="text-[10px] text-[var(--text-muted)] italic">Warning: may lose type-specific data</span>
+                                    </div>
                                     <InlineBlockEditor block={block} allBlocks={blocks} onUpdate={(updated) => { const next = [...blocks]; next[index] = updated; updateBlocks(next); }} />
                                   </div>
                                 )}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import { ExternalLink, Link, Unlink, Loader2, ChevronDown, Plus, X, Eye, EyeOff } from 'lucide-react';
 import { Assignment, ClassroomLink, ClassroomLinkEntry, User, getSectionsForClass } from '../types';
 import { callClassroomListCourses, callClassroomListCourseWork, callClassroomCreateCourseWork, auth } from '../lib/firebase';
@@ -89,6 +90,8 @@ const ClassroomLinkModal: React.FC<ClassroomLinkModalProps> = ({
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, isOpen);
   // Tracks component mount state for async callbacks that can't use useEffect cleanup directly
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);

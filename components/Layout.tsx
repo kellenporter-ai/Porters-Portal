@@ -10,6 +10,11 @@ const NAV_DISPLAY_NAMES: Record<string, string> = {
   'Loadout': 'Gear',
   'Flux Shop': 'Shop',
   'Intel Dossier': 'My Stats',
+  'Resource Editor': 'Lesson Editor',
+  'XP Command': 'Gamification',
+  'Operatives': 'Students',
+  'XP Protocols': 'Rewards',
+  'Boss Ops': 'Boss Battles',
 };
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Zap, Bug, Music } from 'lucide-react';
@@ -190,8 +195,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               aria-current={isActive && !item.children ? 'page' : undefined}
               className={`group relative w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
                 isActive
-                  ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] shadow-md border border-[var(--accent)]/30'
-                  : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)]'
+                  ? 'bg-[var(--accent-muted)]/70 text-[var(--sidebar-text-active)] border-l-4 border-l-[var(--accent)]'
+                  : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)] hover:pl-7'
               }`}
             >
               <span className={isActive ? 'text-[var(--sidebar-text-active)]' : ''}>
@@ -230,7 +235,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             aria-expanded={item.children ? expandedParent === item.name : undefined}
             className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
               isActive
-                ? item.children ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] border border-[var(--accent)]/20' : 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)] shadow-md border border-[var(--accent)]/30'
+                ? item.children ? 'bg-[var(--accent-muted)]/70 text-[var(--sidebar-text-active)] border-l-4 border-l-[var(--accent)]' : 'bg-[var(--accent-muted)]/70 text-[var(--sidebar-text-active)] border-l-4 border-l-[var(--accent)]'
                 : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)] hover:pl-7'
             }`}
           >
@@ -265,7 +270,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                     aria-current={childActive ? 'page' : undefined}
                     className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                       childActive
-                        ? 'bg-[var(--accent-muted)] text-[var(--sidebar-text-active)]'
+                        ? 'bg-[var(--accent-muted)]/70 text-[var(--sidebar-text-active)] border-l-2 border-l-[var(--accent)]'
                         : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)]'
                     }`}
                   >
@@ -442,7 +447,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* ChromeOS performance mode suggestion banner */}
       {showCrosBanner && (
-        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-3 bg-purple-100 dark:bg-purple-900/95 border-b border-purple-300 dark:border-purple-500/30 backdrop-blur-md text-sm text-purple-800 dark:text-white animate-in slide-in-from-top duration-300">
+        <div className="fixed top-0 left-0 right-0 z-[var(--z-sticky)] flex items-center justify-center gap-3 px-4 py-3 bg-purple-100 dark:bg-purple-900/95 border-b border-purple-300 dark:border-purple-500/30 backdrop-blur-md text-sm text-purple-800 dark:text-white animate-in slide-in-from-top duration-300">
           <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span className="text-purple-700 dark:text-purple-200">On a Chromebook? Enable <strong>Performance Mode</strong> for smoother scrolling.</span>
           <button onClick={enablePerfMode} className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold transition">
@@ -474,7 +479,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div className="fixed inset-0 z-[var(--z-drawer)] lg:hidden flex">
               {/* Backdrop */}
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setIsMobileMenuOpen(false)}></div>
 
@@ -520,7 +525,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       )}
 
       {/* Desktop Sidebar — visible at lg breakpoint and above */}
-      <aside className={`p-4 hidden lg:flex flex-col z-10 transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-64' : 'w-72'}`}>
+      <aside className={`p-4 hidden lg:flex flex-col z-[var(--z-drawer)] transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-64' : 'w-72'}`}>
         <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn`}>
           {/* Header */}
           {sidebarCollapsed ? (

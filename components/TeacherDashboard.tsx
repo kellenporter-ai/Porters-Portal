@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFocusTrap } from '../lib/useFocusTrap';
 import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, BugReport, SongRequest } from '../types';
 import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, ClipboardCheck, Megaphone, Trophy } from 'lucide-react';
@@ -26,6 +27,7 @@ interface TeacherDashboardProps {
 
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments = [], submissions = [] }) => {
   const toast = useToast();
+  const navigate = useNavigate();
   const { classConfigs } = useClassConfig();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -131,30 +133,35 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       </div>
 
       {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Quick actions">
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick actions">
         <button
-          onClick={() => { setAdminTab('dashboard'); setOverviewTab('students'); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+          onClick={() => navigate('/grading')}
+          className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-purple-900/20 transition"
+          title="G"
         >
-          <ClipboardCheck className="w-3.5 h-3.5" aria-hidden="true" /> Grade Submissions
+          <ClipboardCheck className="w-4 h-4" aria-hidden="true" /> Grade Submissions
         </button>
+        <div className="w-px h-5 bg-[var(--border)] mx-1" />
         <button
           onClick={() => { setAdminTab('dashboard'); setOverviewTab('announcements'); }}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+          title="A"
         >
-          <Megaphone className="w-3.5 h-3.5" aria-hidden="true" /> Create Announcement
+          <Megaphone className="w-3.5 h-3.5" aria-hidden="true" /> Announcement
         </button>
         <button
           onClick={() => setShowBehaviorAward(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+          title="X"
         >
           <Trophy className="w-3.5 h-3.5" aria-hidden="true" /> Award XP
         </button>
         <button
-          onClick={() => setAdminTab('analytics')}
+          onClick={() => navigate('/reports')}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+          title="R"
         >
-          <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> View Reports
+          <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Reports
         </button>
       </div>
 
@@ -172,23 +179,23 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {/* STAT STRIP */}
       <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl px-6 flex items-center gap-6 h-12" role="group" aria-label="Class overview statistics">
-        <div className="flex items-center gap-2 shrink-0">
+        <button onClick={() => navigate('/users')} className="flex items-center gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer">
           <Users className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
           <span className="text-lg font-bold text-[var(--text)]">{totalStudents}</span>
           <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Students</span>
-        </div>
+        </button>
         <div className="w-px h-5 bg-[var(--border)] shrink-0" />
-        <div className="flex items-center gap-2 shrink-0">
+        <button onClick={() => navigate('/xp/Operatives')} className="flex items-center gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer">
           <Zap className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
           <span className="text-lg font-bold text-[var(--text)]">{totalXP.toLocaleString()}</span>
           <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">XP Awarded</span>
-        </div>
+        </button>
         <div className="w-px h-5 bg-[var(--border)] shrink-0" />
-        <div className="flex items-center gap-2 shrink-0">
+        <button onClick={() => navigate('/reports')} className="flex items-center gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer">
           <FileText className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
           <span className="text-lg font-bold text-[var(--text)]">{totalResourcesAccessed}</span>
           <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Resources Viewed</span>
-        </div>
+        </button>
         <div className="w-px h-5 bg-[var(--border)] shrink-0" />
         <div className="flex items-center gap-2 shrink-0">
           <Clock className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />

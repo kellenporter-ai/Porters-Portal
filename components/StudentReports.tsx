@@ -21,6 +21,7 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [daysRange, setDaysRange] = useState(30);
+  const [activeClassFilter, setActiveClassFilter] = useState<string>('all');
 
   // Per-student subscriptions
   const [studentSubmissions, setStudentSubmissions] = useState<Submission[]>([]);
@@ -81,14 +82,30 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
       .sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
   }, [studentSubmissions, daysRange]);
 
-  // Search results
+  // Available classes for tabs
+  const availableClasses = useMemo(() => {
+    const set = new Set<string>();
+    students.forEach(s => {
+      if (s.enrolledClasses?.length) s.enrolledClasses.forEach(c => set.add(c));
+      else if (s.classType) set.add(s.classType);
+    });
+    return Array.from(set).sort();
+  }, [students]);
+
+  // Search results (filtered by class tab + query)
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return students.slice(0, 20);
+    let filtered = students;
+    if (activeClassFilter !== 'all') {
+      filtered = filtered.filter(u =>
+        u.enrolledClasses?.includes(activeClassFilter) || u.classType === activeClassFilter
+      );
+    }
+    if (!searchQuery.trim()) return filtered.slice(0, 20);
     const q = searchQuery.toLowerCase();
-    return students
+    return filtered
       .filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
       .slice(0, 20);
-  }, [students, searchQuery]);
+  }, [students, searchQuery, activeClassFilter]);
 
   const handleSelectStudent = useCallback((id: string) => {
     setSelectedStudentId(id);
@@ -114,7 +131,28 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
         </div>
 
         {/* Student picker */}
-        <div className="relative print:hidden">
+        <div className="relative print:hidden space-y-3">
+          {/* Class filter tabs */}
+          {availableClasses.length > 1 && (
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar">
+              <button
+                onClick={() => { setActiveClassFilter('all'); setShowDropdown(true); }}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap ${activeClassFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-white/5 text-[var(--text-muted)] hover:text-white hover:bg-white/10'}`}
+              >
+                All Classes
+              </button>
+              {availableClasses.map(cls => (
+                <button
+                  key={cls}
+                  onClick={() => { setActiveClassFilter(cls); setShowDropdown(true); }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap ${activeClassFilter === cls ? 'bg-purple-600 text-white' : 'bg-white/5 text-[var(--text-muted)] hover:text-white hover:bg-white/10'}`}
+                >
+                  {cls}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
@@ -151,7 +189,7 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm text-white font-medium truncate">{u.name}</div>
-                        <div className="text-[11.5px] text-[var(--text-tertiary)] truncate">{u.email} · {u.section || 'No section'}</div>
+                        <div className="text-[11.5px] text-[var(--text-tertiary)] truncate">{u.email} · {u.section || 'No section'} · {u.enrolledClasses?.join(', ') || u.classType || 'No class'}</div>
                       </div>
                       <div className="text-[11.5px] text-[var(--text-tertiary)] shrink-0">Lv.{u.gamification?.level || 1}</div>
                     </button>

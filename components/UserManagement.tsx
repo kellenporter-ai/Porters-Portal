@@ -2,12 +2,13 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser, getUserSectionForClass } from '../types';
-import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle, Zap } from 'lucide-react';
 import Modal from './Modal';
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
+import BehaviorQuickAward from './BehaviorQuickAward';
 
 interface UserManagementProps {
   users: User[];
@@ -71,7 +72,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
               style={{ transform: `translateY(${virtualRow.start}px)` }}
             >
               <div className="p-4 text-center w-12 shrink-0">
-                <button onClick={() => toggleUser(student.id)} className="text-[var(--text-muted)] hover:text-purple-400 transition">
+                <button onClick={() => toggleUser(student.id)} className="text-[var(--text-muted)] hover:text-purple-400 transition" aria-label={selectedUsers.has(student.id) ? 'Deselect student' : 'Select student'}>
                   {selectedUsers.has(student.id) ? (
                     <CheckSquare className="w-4 h-4 text-purple-500" />
                   ) : (
@@ -123,7 +124,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                           onKeyDown={e => { if (e.key === 'Enter' && customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}}
                           autoFocus
                         />
-                        <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-600 dark:text-green-400 hover:text-green-300 p-1"><Plus className="w-3 h-3" /></button>
+                        <button onClick={() => { if (customSectionInput.trim()) { const classes = student.enrolledClasses?.length ? student.enrolledClasses : [student.classType].filter(Boolean); if (classes[0]) handleSetSection(student.id, customSectionInput.trim(), classes[0]); }}} className="text-green-600 dark:text-green-400 hover:text-green-300 p-1" aria-label="Add custom section"><Plus className="w-3 h-3" /></button>
                       </div>
                     )}
                     <button onClick={() => { setEditingSectionId(null); setSectionInput(''); setCustomSectionInput(''); }} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">Done</button>
@@ -155,6 +156,7 @@ const VirtualizedStudentRowsInner: React.FC<VirtualizedStudentRowsProps> = ({
                   onClick={() => isUncategorized ? handleDeleteUser(student.id, student.name) : handleRemoveSingleUserFromClass(student, classType)}
                   className="text-[var(--text-muted)] hover:text-red-400 transition p-2 rounded-lg hover:bg-[var(--surface-glass)] min-w-[32px] min-h-[32px] flex items-center justify-center"
                   title={isUncategorized ? "Permanently Delete" : "Remove from this Class"}
+                  aria-label={isUncategorized ? "Permanently delete student" : "Remove student from class"}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -180,6 +182,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const [targetClass, setTargetClass] = useState<ClassType>(DefaultClassTypes.AP_PHYSICS);
   const [isWhitelistOpen, setIsWhitelistOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [showBulkAward, setShowBulkAward] = useState(false);
   const [classSort, setClassSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({});
 
   const handleClassSort = (type: string, col: string) => {
@@ -247,6 +250,12 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   const handleBulkSetSection = async (section: string, classType?: string) => {
     if (selectedUsers.size === 0) return;
+    const ok = await confirm({
+      title: 'Bulk Section Update',
+      message: `Set section to "${section || 'none'}" for ${selectedUsers.size} selected students${classType ? ` in ${classType}` : ''}?`,
+      confirmLabel: 'Update',
+    });
+    if (!ok) return;
     try {
       await Promise.all(Array.from(selectedUsers).map(id =>
         classType ? dataService.updateUserClassSection(id, classType, section) : dataService.updateUserSection(id, section)
@@ -293,22 +302,28 @@ const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   const handleEnroll = async () => {
-    if (selectedUsers.size > 0) {
-        const updates = (Array.from(selectedUsers) as string[]).map(async (userId) => {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                const current = user.enrolledClasses || [];
-                // If moving from Uncategorized to a real class, remove Uncategorized
-                const updated = Array.from(new Set([
-                    ...current.filter(c => c !== DefaultClassTypes.UNCATEGORIZED), 
-                    targetClass
-                ]));
-                await dataService.updateUserEnrolledClasses(userId, updated);
-            }
-        });
-        await Promise.all(updates);
-        setSelectedUsers(new Set());
-    }
+    if (selectedUsers.size === 0) return;
+    const ok = await confirm({
+      title: 'Bulk Class Enrollment',
+      message: `Grant ${targetClass} access to ${selectedUsers.size} selected students?`,
+      confirmLabel: 'Enroll',
+    });
+    if (!ok) return;
+    const updates = (Array.from(selectedUsers) as string[]).map(async (userId) => {
+        const user = users.find(u => u.id === userId);
+        if (user) {
+            const current = user.enrolledClasses || [];
+            // If moving from Uncategorized to a real class, remove Uncategorized
+            const updated = Array.from(new Set([
+                ...current.filter(c => c !== DefaultClassTypes.UNCATEGORIZED), 
+                targetClass
+            ]));
+            await dataService.updateUserEnrolledClasses(userId, updated);
+        }
+    });
+    await Promise.all(updates);
+    setSelectedUsers(new Set());
+    toast.success(`Enrolled ${selectedUsers.size} students in ${targetClass}`);
   };
 
   const handleRemoveFromClass = async (classTypeToRemove: string) => {
@@ -500,6 +515,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     onClick={() => handleEditGroup(type, config)}
                     className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--surface-glass-heavy)] transition"
                     title="Edit Class Configuration"
+                    aria-label="Edit class configuration"
                 >
                     <Settings className="w-4 h-4" />
                 </button>
@@ -525,6 +541,12 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   >
                       <UserX className="w-3 h-3" /> Remove Selected
                   </button>
+                  <button
+                    onClick={() => setShowBulkAward(true)}
+                    className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg hover:bg-amber-500/20 transition flex items-center gap-2"
+                  >
+                      <Zap className="w-3 h-3" /> Award XP
+                  </button>
                 </>
               )}
               {!isUncategorized && (
@@ -544,7 +566,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           <div className="bg-[var(--panel-bg)] border-b border-[var(--border)] text-[11.5px] uppercase font-bold text-[var(--text-tertiary)] flex items-center">
             <div className="w-12 p-4 text-center shrink-0">
               {classStudents.length > 0 && (
-                  <button onClick={() => toggleSelectAll(type)} className="hover:text-purple-400 transition">
+                  <button onClick={() => toggleSelectAll(type)} className="hover:text-purple-400 transition" aria-label="Select all students">
                     <Square className="w-4 h-4" />
                   </button>
               )}
@@ -678,6 +700,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             onClick={() => handleCancelInvite(invite.email)}
                             className="p-1.5 text-[var(--text-muted)] hover:text-red-400 transition hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100"
                             title="Cancel Invitation"
+                            aria-label="Cancel invitation"
                           >
                               <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -865,6 +888,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
           </div>
         )}
       </Modal>
+
+      <BehaviorQuickAward
+        students={users}
+        isOpen={showBulkAward}
+        onClose={() => setShowBulkAward(false)}
+        preSelectedStudents={users.filter(u => selectedUsers.has(u.id))}
+      />
 
       <Modal isOpen={isGroupModalOpen} onClose={() => setIsGroupModalOpen(false)} title={isEditingGroup ? "Edit Class Node Config" : "Initialize New Class Node"}>
           <form onSubmit={handleGroupSubmit} className="space-y-4">

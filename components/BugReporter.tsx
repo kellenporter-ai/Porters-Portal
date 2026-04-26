@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import { Bug, X, Send, CheckCircle } from 'lucide-react';
 import { User } from '../types';
 import { dataService } from '../services/dataService';
@@ -17,8 +18,18 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [cooldown, setCooldown] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
+
+  useFocusTrap(containerRef, isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!description.trim() || cooldown) return;
@@ -56,7 +67,7 @@ const BugReporter: React.FC<BugReporterProps> = ({ user }) => {
     <>
       {/* Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setIsOpen(false)}>
+        <div ref={containerRef} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setIsOpen(false)} role="dialog" aria-modal="true" aria-label="Report an Issue">
           <div className="absolute inset-0 bg-[var(--backdrop)] backdrop-blur-sm" />
           <div
             className="relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300"

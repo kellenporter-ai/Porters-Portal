@@ -218,7 +218,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
             role="tab"
             aria-selected={mobileTab === 'list'}
             onClick={() => setMobileTab('list')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'list' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'list' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
           >
             <Users className="w-3.5 h-3.5" aria-hidden="true" /> List
           </button>
@@ -226,7 +226,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
             role="tab"
             aria-selected={mobileTab === 'response'}
             onClick={() => setMobileTab('response')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'response' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'response' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
           >
             <FileCheck className="w-3.5 h-3.5" aria-hidden="true" /> Response
           </button>
@@ -234,7 +234,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
             role="tab"
             aria-selected={mobileTab === 'rubric'}
             onClick={() => setMobileTab('rubric')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'rubric' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2 rounded-lg text-xs font-bold transition ${mobileTab === 'rubric' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)]'}`}
           >
             <ClipboardList className="w-3.5 h-3.5" aria-hidden="true" /> Rubric
           </button>

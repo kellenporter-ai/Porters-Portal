@@ -1,5 +1,6 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import { User, BehaviorCategory, DEFAULT_BEHAVIOR_CATEGORIES } from '../types';
 import { Award, Search, X, Zap, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -18,13 +19,22 @@ interface BehaviorQuickAwardProps {
   students: User[];
   isOpen: boolean;
   onClose: () => void;
+  preSelectedStudents?: User[];
 }
 
-const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpen, onClose }) => {
+const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpen, onClose, preSelectedStudents }) => {
   const toast = useToast();
   const [search, setSearch] = useState('');
-  const [selectedStudents, setSelectedStudents] = useState<User[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<User[]>(preSelectedStudents || []);
   const [awarding, setAwarding] = useState(false);
+
+  // Reset pre-selected students when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedStudents(preSelectedStudents || []);
+      setSearch('');
+    }
+  }, [isOpen, preSelectedStudents]);
   const categories = DEFAULT_BEHAVIOR_CATEGORIES;
 
   const filtered = useMemo(() => {
@@ -41,7 +51,17 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
 
   const isSelected = (id: string) => selectedStudents.some(s => s.id === id);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const lastAwardRef = useRef(0);
+
+  useFocusTrap(containerRef, isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isOpen, onClose]);
   const handleAward = async (cat: BehaviorCategory) => {
     if (selectedStudents.length === 0) return;
     const now = Date.now();
@@ -85,7 +105,7 @@ const BehaviorQuickAward: React.FC<BehaviorQuickAwardProps> = ({ students, isOpe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div ref={containerRef} className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Quick Award">
       <div className="absolute inset-0 bg-[var(--backdrop)] backdrop-blur-sm" />
       <div className="relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">

@@ -98,7 +98,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
     const hasFeedbackMessages = draftFeedbackMessages.length > 0;
 
     return (
-      <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-[var(--border)] flex flex-col">
+      <div className="w-full lg:w-[380px] lg:min-w-[380px] border-t lg:border-t-0 lg:border-l border-[var(--border)] flex flex-col lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)]">
         {/* Header */}
         <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
           <h5 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${accentColor}`}>
@@ -384,7 +384,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               {sub.status !== 'RETURNED' && sub.status !== 'STARTED' && (
                 <button
                   onClick={onReturnToStudent}
-                  className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 rounded-lg transition"
+                  className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 min-h-[44px] rounded-lg transition"
                   aria-label={`Return assessment to ${selectedGroup.userName}`}
                 >
                   <Undo2 className="w-3.5 h-3.5" aria-hidden="true" /> Return to Student
@@ -395,7 +395,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               <button
                 onClick={onSaveRubric}
                 disabled={isSavingRubric}
-                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-50"
+                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2 min-h-[44px] rounded-lg transition disabled:opacity-50"
                 aria-label={isAlreadyGraded ? 'Update grade' : 'Save grade'}
               >
                 {isSavingRubric ? (
@@ -410,7 +410,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               {nextUngraded?.group && (
                 <button
                   onClick={() => onSelectStudent(nextUngraded.group!.userId)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 px-3 py-2 rounded-lg transition"
+                  className="flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 px-3 py-2 min-h-[44px] rounded-lg transition"
                   aria-label="Grade next ungraded student"
                 >
                   Grade Next <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />

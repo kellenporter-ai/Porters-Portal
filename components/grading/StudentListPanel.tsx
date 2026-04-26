@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle, Bot, Sparkles, AlertTriangle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, Bot, Sparkles, AlertTriangle, Eye, EyeOff, CheckCircle2, Search } from 'lucide-react';
 import type { StudentGroup, UnifiedEntry } from './gradingHelpers';
 import type { User } from '../../types';
 import { getScoreColor, formatLastSeen } from './gradingHelpers';
@@ -41,8 +41,17 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
   onSelectDraft,
   onSelectNotStarted,
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const getUnifiedId = (entry: UnifiedEntry): string =>
     entry.type === 'submitted' ? entry.group.userId : entry.student.id;
+
+  const filteredList = searchQuery.trim()
+    ? unifiedList.filter(entry => {
+        const name = entry.type === 'submitted' ? entry.group.userName : entry.student.name;
+        return name.toLowerCase().includes(searchQuery.trim().toLowerCase());
+      })
+    : unifiedList;
 
   return (
     <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-[var(--border)] flex flex-col">
@@ -58,6 +67,21 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
             <span className="text-orange-600 dark:text-orange-400"> &middot; {notStartedStudents.length} not started</span>
           )}
         </span>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-glass)]">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" aria-hidden="true" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search students..."
+            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
+            aria-label="Search students"
+          />
+        </div>
       </div>
 
       {/* Sort bar */}
@@ -78,7 +102,12 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
 
       {/* Student list */}
       <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0">
-        {unifiedList.map(entry => {
+        {filteredList.length === 0 && searchQuery.trim() && (
+          <div className="px-4 py-8 text-center">
+            <p className="text-xs text-[var(--text-muted)]">No students match "{searchQuery}"</p>
+          </div>
+        )}
+        {filteredList.map(entry => {
           const entryId = getUnifiedId(entry);
           const isSelected = entryId === gradingStudentId || entryId === viewingDraftUserId;
 

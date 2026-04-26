@@ -167,10 +167,19 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
   const visibleSignals = signals.slice(0, 2);
   const extraCount = signals.length - visibleSignals.length;
 
+  const [isExpanded, setIsExpanded] = useState(false);
+  const displayedSignals = isExpanded ? signals : visibleSignals;
+  const displayedExtraCount = isExpanded ? 0 : extraCount;
+
   return (
     <div
-      className={`group flex flex-col gap-1.5 p-2.5 rounded-xl border ${cardBorder} contain-layout`}
+      className={`group flex flex-col gap-1.5 p-2.5 rounded-xl border ${cardBorder} contain-layout cursor-pointer ${topSeverity === 'intervene' ? 'lg:col-span-2' : ''}`}
       style={{ contain: 'layout style' }}
+      onClick={() => setIsExpanded(v => !v)}
+      role="button"
+      tabIndex={0}
+      aria-expanded={isExpanded}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(v => !v); } }}
     >
       {/* Row 1: Avatar + name + severity pip */}
       <div className="flex items-center gap-2 min-w-0">
@@ -203,23 +212,23 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
         </span>
       )}
 
-      {/* Row 3: Signal chips (first 2 + overflow badge) */}
+      {/* Row 3: Signal chips */}
       <div className="flex flex-wrap gap-1">
-        {visibleSignals.map((sig) => (
+        {displayedSignals.map((sig) => (
           <SignalChip key={sig.kind} signal={sig} compact />
         ))}
-        {extraCount > 0 && (
+        {displayedExtraCount > 0 && (
           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11.5px] font-semibold bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)]">
-            +{extraCount}
+            +{displayedExtraCount} more
           </span>
         )}
       </div>
 
-      {/* Row 4: Action buttons — icon-only, shown on hover (always on touch) */}
-      <div className="flex items-center gap-1 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Row 4: Action buttons — always visible for mobile accessibility */}
+      <div className="flex items-center gap-1 pt-0.5">
         <button
           type="button"
-          onClick={() => onMessage?.(student)}
+          onClick={e => { e.stopPropagation(); onMessage?.(student); }}
           className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-600 dark:text-purple-400 transition"
           aria-label={`Message ${student.name}`}
           title="Message"
@@ -228,7 +237,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => onViewProfile?.(student)}
+          onClick={e => { e.stopPropagation(); onViewProfile?.(student); }}
           className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] transition"
           aria-label={`View profile for ${student.name}`}
           title="View Profile"
@@ -238,7 +247,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
         {ewsSignal?.alertId ? (
           <button
             type="button"
-            onClick={() => onDismiss(ewsSignal.alertId!)}
+            onClick={e => { e.stopPropagation(); onDismiss(ewsSignal.alertId!); }}
             className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-glass)] hover:bg-red-500/10 border border-[var(--border)] hover:border-red-500/30 text-[var(--text-muted)] hover:text-red-400 transition"
             aria-label={`Dismiss alert for ${student.name}`}
             title="Dismiss server alert"
@@ -248,7 +257,7 @@ const CompactStudentCard: React.FC<CompactStudentCardProps> = ({
         ) : (
           <button
             type="button"
-            onClick={() => onHide(student.id)}
+            onClick={e => { e.stopPropagation(); onHide(student.id); }}
             className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] transition"
             aria-label={`Hide ${student.name} from view`}
             title="Hide from view"

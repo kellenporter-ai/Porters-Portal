@@ -413,7 +413,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                       {isScheduled && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
                                     </div>
                                   </button>
-                                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10 transition-opacity">
                                     {isDraft && (
                                       <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy" aria-label="Quick deploy resource">
                                         <Rocket className="w-3 h-3" />
@@ -577,7 +577,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                           {isScheduled && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
                         </div>
                       </button>
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10 transition-opacity">
                         {isDraft && (
                           <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy" aria-label="Quick deploy resource">
                             <Rocket className="w-3 h-3" />

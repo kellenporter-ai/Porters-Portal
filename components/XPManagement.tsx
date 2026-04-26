@@ -260,7 +260,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
                   {event.isActive && <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500 text-white text-[11.5px] font-black uppercase tracking-widest animate-pulse"><div className="w-1.5 h-1.5 rounded-full bg-white"></div>LIVE</div>}
                   <div className="flex justify-between items-start mb-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${event.isActive ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-600 dark:text-gray-400'}`}><Zap className="w-6 h-6" /></div>
-                    <button onClick={() => dataService.deleteXPEvent(event.id)} className="p-2 text-gray-600 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={async () => { if (await confirm({ title: 'Delete Protocol', message: `Remove "${event.title}"? This cannot be undone.`, variant: 'danger', confirmLabel: 'Delete' })) { await dataService.deleteXPEvent(event.id); } }} className="p-2 text-gray-600 hover:text-red-400 transition" aria-label="Delete XP protocol"><Trash2 className="w-4 h-4" /></button>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-1">{event.title}</h3>
                   <div className="flex items-center gap-2 mb-4"><span className="text-3xl font-black text-blue-600 dark:text-blue-400">{event.multiplier}x</span><span className="text-xs text-gray-500 font-bold uppercase tracking-widest">Multiplier</span></div>
