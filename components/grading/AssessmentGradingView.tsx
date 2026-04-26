@@ -254,7 +254,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
           tabIndex={0}
         >
           {/* Left: Student List */}
-          <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} lg:flex flex-col`}>
+          <div className={`${mobileTab === 'list' ? 'flex' : 'hidden'} lg:contents`}>
             <StudentListPanel
               assessmentId={selectedAssessmentId}
               assessmentClassType={selectedAssessment?.classType || ''}
@@ -298,7 +298,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
           </div>
 
           {/* Right: Rubric Grading */}
-          <div className={`${mobileTab === 'rubric' ? 'flex' : 'hidden'} lg:flex flex-col`}>
+          <div className={`${mobileTab === 'rubric' ? 'flex' : 'hidden'} lg:contents`}>
             <RubricGradingPanel
               selectedGroup={selectedGroup}
               sub={sub}
