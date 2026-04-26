@@ -26,9 +26,12 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
       return;
     }
     // Split on sentence-ending punctuation followed by whitespace
+    // Safe split without lookbehind (Safari-compatible)
     const sentences = textContent
       .replace(/\n+/g, '. ')
-      .split(/(?<=[.!?])\s+/)
+      .split(/([.!?])\s+/)
+      .map((s, i, arr) => i % 2 === 0 ? s + (arr[i + 1] || '') : '')
+      .filter(Boolean)
       .map(s => s.trim())
       .filter(s => s.length > 2);
     sentencesRef.current = sentences;

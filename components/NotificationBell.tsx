@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import { Notification, UserSettings } from '../types';
 import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, BellRing, ShieldAlert, ClipboardCheck } from 'lucide-react';
 import { dataService } from '../services/dataService';
@@ -36,6 +37,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+
+  useFocusTrap(panelRef, isOpen);
 
   const prevUnreadRef = useRef(0);
 

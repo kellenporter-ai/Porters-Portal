@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavItem } from '../constants';
 import { Search } from 'lucide-react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 export interface CommandPaletteItem extends NavItem {
   /** Optional override for what handleNavigate should be called with (e.g. "Parent:Child" for nested children). */
@@ -35,6 +36,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Respect prefers-reduced-motion
   const prefersReducedMotion = useMemo(() => {
@@ -110,10 +112,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
     onClose();
   };
 
+  useFocusTrap(containerRef, open);
+
   const animClass = prefersReducedMotion ? '' : 'animate-in fade-in zoom-in-95 duration-150';
 
   return (
     <div
+      ref={containerRef}
       className="fixed inset-0 z-[80] flex items-start justify-center pt-[15vh] px-4"
       role="dialog"
       aria-modal="true"

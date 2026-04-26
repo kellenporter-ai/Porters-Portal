@@ -1,7 +1,8 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, BugReport, SongRequest } from '../types';
-import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3 } from 'lucide-react';
+import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, ClipboardCheck, Megaphone, Trophy } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
@@ -127,6 +128,34 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Analytics
           </button>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Quick actions">
+        <button
+          onClick={() => { setAdminTab('dashboard'); setOverviewTab('students'); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+        >
+          <ClipboardCheck className="w-3.5 h-3.5" aria-hidden="true" /> Grade Submissions
+        </button>
+        <button
+          onClick={() => { setAdminTab('dashboard'); setOverviewTab('announcements'); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+        >
+          <Megaphone className="w-3.5 h-3.5" aria-hidden="true" /> Create Announcement
+        </button>
+        <button
+          onClick={() => setShowBehaviorAward(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+        >
+          <Trophy className="w-3.5 h-3.5" aria-hidden="true" /> Award XP
+        </button>
+        <button
+          onClick={() => setAdminTab('analytics')}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+        >
+          <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> View Reports
+        </button>
       </div>
 
       {adminTab === 'analytics' && (
@@ -298,69 +327,113 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--backdrop)] backdrop-blur-sm"
           onClick={() => setShowNudgeModal(false)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowNudgeModal(false); }}
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="nudge-modal-title"
-            className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-md shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="nudge-modal-title" className="text-lg font-bold text-[var(--text-primary)] mb-1">
-              Send Nudge to {nudgeTarget.studentName}
-            </h3>
-            <p className="text-xs text-[var(--text-tertiary)] mb-4">This sends a private notification only visible to this student.</p>
-            <textarea
-              ref={(el) => { if (el) el.focus(); }}
-              aria-label="Nudge message"
-              className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-secondary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-              rows={4}
-              value={nudgeMessage}
-              onChange={(e) => setNudgeMessage(e.target.value)}
-              placeholder="Write a message..."
-            />
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setShowNudgeModal(false)}
-                className="px-4 py-2 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-bold transition"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={nudgeSending || !nudgeMessage.trim()}
-                onClick={async () => {
-                  setNudgeSending(true);
-                  try {
-                    await dataService.createAnnouncement({
-                      title: 'Check-in from your teacher',
-                      content: nudgeMessage.trim(),
-                      classType: nudgeTarget.classType,
-                      priority: 'INFO',
-                      createdAt: new Date().toISOString(),
-                      createdBy: 'Admin',
-                      targetStudentIds: [nudgeTarget.studentId],
-                    });
-                    toast.success(`Nudge sent to ${nudgeTarget.studentName}`);
-                    setShowNudgeModal(false);
-                    setNudgeTarget(null);
-                    setNudgeMessage('');
-                  } catch (err: any) {
-                    toast.error(err.message || 'Failed to send nudge');
-                    reportError(err, { context: 'EWS nudge send' });
-                  } finally {
-                    setNudgeSending(false);
-                  }
-                }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition flex items-center gap-2"
-              >
-                {nudgeSending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Send Nudge
-              </button>
-            </div>
-          </div>
+          <NudgeModal
+            nudgeTarget={nudgeTarget}
+            nudgeMessage={nudgeMessage}
+            setNudgeMessage={setNudgeMessage}
+            nudgeSending={nudgeSending}
+            setNudgeSending={setNudgeSending}
+            setShowNudgeModal={setShowNudgeModal}
+            setNudgeTarget={setNudgeTarget}
+            toast={toast}
+          />
         </div>
       )}
+    </div>
+  );
+};
+
+/* ── Nudge Modal (focus trap + global Escape) ─────────────────────────── */
+interface NudgeModalProps {
+  nudgeTarget: { studentId: string; studentName: string; defaultMessage: string; classType: string };
+  nudgeMessage: string;
+  setNudgeMessage: (v: string) => void;
+  nudgeSending: boolean;
+  setNudgeSending: (v: boolean) => void;
+  setShowNudgeModal: (v: boolean) => void;
+  setNudgeTarget: (v: null) => void;
+  toast: ReturnType<typeof useToast>;
+}
+
+const NudgeModal: React.FC<NudgeModalProps> = ({
+  nudgeTarget, nudgeMessage, setNudgeMessage, nudgeSending, setNudgeSending,
+  setShowNudgeModal, setNudgeTarget, toast,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, true);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowNudgeModal(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [setShowNudgeModal]);
+
+  const handleSend = async () => {
+    setNudgeSending(true);
+    try {
+      await dataService.createAnnouncement({
+        title: 'Check-in from your teacher',
+        content: nudgeMessage.trim(),
+        classType: nudgeTarget.classType,
+        priority: 'INFO',
+        createdAt: new Date().toISOString(),
+        createdBy: 'Admin',
+        targetStudentIds: [nudgeTarget.studentId],
+      });
+      toast.success(`Nudge sent to ${nudgeTarget.studentName}`);
+      setShowNudgeModal(false);
+      setNudgeTarget(null);
+      setNudgeMessage('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send nudge');
+      reportError(err, { context: 'EWS nudge send' });
+    } finally {
+      setNudgeSending(false);
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="nudge-modal-title"
+      className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-md shadow-xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 id="nudge-modal-title" className="text-lg font-bold text-[var(--text-primary)] mb-1">
+        Send Nudge to {nudgeTarget.studentName}
+      </h3>
+      <p className="text-xs text-[var(--text-tertiary)] mb-4">This sends a private notification only visible to this student.</p>
+      <textarea
+        aria-label="Nudge message"
+        className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-secondary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+        rows={4}
+        value={nudgeMessage}
+        onChange={(e) => setNudgeMessage(e.target.value)}
+        placeholder="Write a message..."
+      />
+      <div className="flex justify-end gap-3 mt-4">
+        <button
+          onClick={() => setShowNudgeModal(false)}
+          className="px-4 py-2 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-bold transition"
+        >
+          Cancel
+        </button>
+        <button
+          disabled={nudgeSending || !nudgeMessage.trim()}
+          onClick={handleSend}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition flex items-center gap-2"
+        >
+          {nudgeSending && <Loader2 className="w-4 h-4 animate-spin" />}
+          Send Nudge
+        </button>
+      </div>
     </div>
   );
 };

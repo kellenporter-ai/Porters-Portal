@@ -6,6 +6,7 @@ import { Upload, Copy, CheckCircle2, Loader2, FileJson, AlertTriangle, Trash2, D
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
 import Modal from './Modal';
+import { useConfirm } from './ConfirmDialog';
 
 interface ReadingSection { title: string; content: string; }
 interface ReadingMaterial { title: string; description?: string; sections: ReadingSection[]; estimatedMinutes?: number; }
@@ -124,6 +125,7 @@ type Tab = 'manage' | 'add' | 'reading';
 
 const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, isOpen, onClose }) => {
     const toast = useToast();
+    const { confirm } = useConfirm();
     const fileRef = useRef<HTMLInputElement>(null);
 
     // Bank state
@@ -206,6 +208,13 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
 
     // Delete single question
     const handleDelete = async (qId: string) => {
+        const ok = await confirm({
+            title: 'Delete Question',
+            message: 'Are you sure you want to remove this question? This cannot be undone.',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+        });
+        if (!ok) return;
         const updated = questions.filter(q => q.id !== qId);
         await saveBank(updated);
         toast.success('Question removed.');
@@ -214,6 +223,13 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
 
     // Clear entire bank
     const handleClearAll = async () => {
+        const ok = await confirm({
+            title: 'Clear Entire Bank',
+            message: `This will permanently delete all ${questions.length} questions. This cannot be undone.`,
+            variant: 'danger',
+            confirmLabel: 'Clear All',
+        });
+        if (!ok) return;
         try {
             await deleteDoc(doc(db, 'question_banks', assignment.id));
             setQuestions([]);
@@ -296,6 +312,13 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
 
     // Delete reading material
     const handleDeleteReading = async () => {
+        const ok = await confirm({
+            title: 'Remove Study Material',
+            message: 'Are you sure you want to remove this reading material? This cannot be undone.',
+            variant: 'danger',
+            confirmLabel: 'Remove',
+        });
+        if (!ok) return;
         setIsSaving(true);
         try {
             await deleteDoc(doc(db, 'reading_materials', assignment.id));

@@ -79,7 +79,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   const [showUnitOrder, setShowUnitOrder] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
-  const [hoverResourceId, setHoverResourceId] = useState<string | null>(null);
+
   const [showResourceOrder, setShowResourceOrder] = useState<string | null>(null); // unit name being reordered
   const [pendingResourceOrder, setPendingResourceOrder] = useState<string[] | null>(null); // ordered assignment IDs
   const [isSavingResourceOrder, setIsSavingResourceOrder] = useState(false);
@@ -367,7 +367,6 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                             {isUnitExpanded && items.map(a => {
                               const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
                               const hasHtml = !!a.contentUrl;
-                              const isHovered = hoverResourceId === a.id;
                               const isDraft = a.status === AssignmentStatus.DRAFT;
                               const isArchived = a.status === AssignmentStatus.ARCHIVED;
                               const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
@@ -379,9 +378,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               return (
                                 <div
                                   key={a.id}
-                                  onMouseEnter={() => setHoverResourceId(a.id)}
-                                  onMouseLeave={() => setHoverResourceId(null)}
-                                  className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${
+
+                                  className={`relative ml-2 rounded-lg transition group ${isArchived ? 'opacity-50' : ''} ${
                                     selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30'
                                     : a.isAssessment ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10'
                                     : 'hover:bg-[var(--surface-glass)] border border-transparent'
@@ -415,26 +413,24 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                       {isScheduled && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
                                     </div>
                                   </button>
-                                  {isHovered && (
-                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10">
-                                      {isDraft && (
-                                        <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
-                                          <Rocket className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                      {a.status === AssignmentStatus.ACTIVE && (
-                                        <button onClick={(e) => { e.stopPropagation(); dataService.updateAssignmentStatus(a.id, AssignmentStatus.DRAFT).then(() => toast.success('Set to Draft')).catch(() => toast.error('Failed to update status')); }} className="p-1 text-[var(--text-muted)] hover:text-yellow-400 transition cursor-pointer" title="Hide from students (set to Draft)" aria-label="Hide from students (set to Draft)">
-                                          <EyeOff className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                      <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
-                                        {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                    {isDraft && (
+                                      <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy" aria-label="Quick deploy resource">
+                                        <Rocket className="w-3 h-3" />
                                       </button>
-                                      <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer" title="Delete">
-                                        <Trash2 className="w-3 h-3" />
+                                    )}
+                                    {a.status === AssignmentStatus.ACTIVE && (
+                                      <button onClick={(e) => { e.stopPropagation(); dataService.updateAssignmentStatus(a.id, AssignmentStatus.DRAFT).then(() => toast.success('Set to Draft')).catch(() => toast.error('Failed to update status')); }} className="p-1 text-[var(--text-muted)] hover:text-yellow-400 transition cursor-pointer" title="Hide from students (set to Draft)" aria-label="Hide from students (set to Draft)">
+                                        <EyeOff className="w-3 h-3" />
                                       </button>
-                                    </div>
-                                  )}
+                                    )}
+                                    <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'} aria-label={isArchived ? 'Restore resource' : 'Archive resource'}>
+                                      {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer" title="Delete" aria-label="Delete resource">
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -535,7 +531,6 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                 {expandedUnits.has(unit) && sortResources(items, unit).map(a => {
                   const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
                   const hasHtml = !!a.contentUrl;
-                  const isHovered = hoverResourceId === a.id;
                   const isDraft = a.status === AssignmentStatus.DRAFT;
                   const isArchived = a.status === AssignmentStatus.ARCHIVED;
                   const isScheduled = !!a.scheduledAt && new Date(a.scheduledAt) > new Date();
@@ -547,9 +542,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                   return (
                     <div
                       key={a.id}
-                      onMouseEnter={() => setHoverResourceId(a.id)}
-                      onMouseLeave={() => setHoverResourceId(null)}
-                      className={`relative ml-2 rounded-lg transition ${isArchived ? 'opacity-50' : ''} ${
+
+                      className={`relative ml-2 rounded-lg transition group ${isArchived ? 'opacity-50' : ''} ${
                         selectedId === a.id ? 'bg-purple-500/20 border border-purple-500/30'
                         : a.isAssessment ? 'bg-red-500/5 border border-red-500/20 hover:bg-red-500/10'
                         : 'hover:bg-[var(--surface-glass)] border border-transparent'
@@ -583,26 +577,24 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                           {isScheduled && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 rounded font-mono"><CalendarClock className="w-2.5 h-2.5 inline" /></span>}
                         </div>
                       </button>
-                      {isHovered && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10">
-                          {isDraft && (
-                            <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy">
-                              <Rocket className="w-3 h-3" />
-                            </button>
-                          )}
-                          {a.status === AssignmentStatus.ACTIVE && (
-                            <button onClick={(e) => { e.stopPropagation(); dataService.updateAssignmentStatus(a.id, AssignmentStatus.DRAFT).then(() => toast.success('Set to Draft')).catch(() => toast.error('Failed to update status')); }} className="p-1 text-[var(--text-muted)] hover:text-yellow-400 transition cursor-pointer" title="Hide from students (set to Draft)" aria-label="Hide from students (set to Draft)">
-                              <EyeOff className="w-3 h-3" />
-                            </button>
-                          )}
-                          <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'}>
-                            {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg px-1 py-0.5 shadow-xl z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        {isDraft && (
+                          <button onClick={(e) => { e.stopPropagation(); onQuickDeploy(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-emerald-400 transition cursor-pointer" title="Quick Deploy" aria-label="Quick deploy resource">
+                            <Rocket className="w-3 h-3" />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer" title="Delete">
-                            <Trash2 className="w-3 h-3" />
+                        )}
+                        {a.status === AssignmentStatus.ACTIVE && (
+                          <button onClick={(e) => { e.stopPropagation(); dataService.updateAssignmentStatus(a.id, AssignmentStatus.DRAFT).then(() => toast.success('Set to Draft')).catch(() => toast.error('Failed to update status')); }} className="p-1 text-[var(--text-muted)] hover:text-yellow-400 transition cursor-pointer" title="Hide from students (set to Draft)" aria-label="Hide from students (set to Draft)">
+                            <EyeOff className="w-3 h-3" />
                           </button>
-                        </div>
-                      )}
+                        )}
+                        <button onClick={(e) => { e.stopPropagation(); onArchive(a.id, a.status); }} className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition cursor-pointer" title={isArchived ? 'Restore' : 'Archive'} aria-label={isArchived ? 'Restore resource' : 'Archive resource'}>
+                          {isArchived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(a.id); }} className="p-1 text-[var(--text-muted)] hover:text-red-400 transition cursor-pointer" title="Delete" aria-label="Delete resource">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}

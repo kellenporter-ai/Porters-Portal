@@ -1,6 +1,7 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFocusTrap } from '../lib/useFocusTrap';
 import { User, Submission, Assignment, StudentBucketProfile, TelemetryBucket } from '../types';
 import { X, Zap, Clock, BookOpen, Shield, Flame, Package, TrendingDown, TrendingUp, Minus, Lightbulb, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { getRankDetails, calculatePlayerStats, calculateGearScore } from '../lib/gamification';
@@ -17,6 +18,8 @@ interface StudentDetailDrawerProps {
 
 const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, submissions, assignments, bucketProfiles = [], onClose }) => {
   const [resourcesExpanded, setResourcesExpanded] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(drawerRef, true);
   const level = student.gamification?.level || 1;
   const xp = student.gamification?.xp || 0;
   const currency = student.gamification?.currency || 0;
@@ -147,7 +150,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
       {/* Backdrop overlay — click to close */}
       <div className="fixed inset-0 z-[9998] bg-[var(--backdrop)] animate-in fade-in duration-200" onClick={onClose} />
 
-      <div className="fixed top-0 right-0 bottom-0 z-[9999] w-full xl:max-w-lg">
+      <div ref={drawerRef} className="fixed top-0 right-0 bottom-0 z-[9999] w-full xl:max-w-lg">
         <div className="relative w-full bg-[var(--surface-base)] border-l border-[var(--border)] h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300 shadow-2xl">
 
           {/* Header */}

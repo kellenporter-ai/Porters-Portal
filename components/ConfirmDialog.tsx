@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 interface ConfirmOptions {
     title?: string;
@@ -29,13 +30,17 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const resolveRef = useRef<((value: boolean) => void) | null>(null);
     const confirmBtnRef = useRef<HTMLButtonElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
         return new Promise((resolve) => {
+            if (state.isOpen) {
+                resolveRef.current?.(false);
+            }
             resolveRef.current = resolve;
             setState({ isOpen: true, options });
         });
-    }, []);
+    }, [state.isOpen]);
 
     const handleConfirm = useCallback(() => {
         resolveRef.current?.(true);
@@ -59,16 +64,17 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     }, [state.isOpen]);
 
-    // Handle escape and enter keys
+    // Handle escape key only (Enter handled natively by focused button)
     useEffect(() => {
         if (!state.isOpen) return;
         const handleKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') handleCancel();
-            if (e.key === 'Enter') handleConfirm();
         };
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
-    }, [state.isOpen, handleCancel, handleConfirm]);
+    }, [state.isOpen, handleCancel]);
+
+    useFocusTrap(containerRef, state.isOpen);
 
     const { variant = 'danger' } = state.options;
     const variantStyles = {
@@ -82,11 +88,12 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
             {children}
             {state.isOpen && (
                 <div 
+                    ref={containerRef}
                     className="fixed inset-0 flex items-center justify-center p-4"
                     style={{ zIndex: 99999 }}
                     role="dialog" 
                     aria-modal="true"
-                    aria-label="Confirmation dialog"
+                    aria-labelledby="confirm-dialog-title"
                 >
                     <div
                         className="absolute inset-0 bg-[var(--backdrop)] backdrop-blur-sm"
@@ -101,7 +108,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                             </div>
                             <div>
                                 {state.options.title && (
-                                    <h3 className="font-bold text-[var(--text-primary)] text-sm mb-1">{state.options.title}</h3>
+                                    <h3 id="confirm-dialog-title" className="font-bold text-[var(--text-primary)] text-sm mb-1">{state.options.title}</h3>
                                 )}
                                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{state.options.message}</p>
                             </div>
