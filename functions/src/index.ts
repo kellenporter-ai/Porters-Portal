@@ -3661,7 +3661,8 @@ export const answerBossEvent = onCall(async (request) => {
   // Get or create current attempt
   let currentAttempt = progress.attempts.find((a: { status: string }) => a.status === 'active');
   if (!currentAttempt) {
-    if (progress.attempts.length >= BOSS_EVENT_MAX_ATTEMPTS) {
+    // Trials allow unlimited attempts
+    if (!event.isTrial && progress.attempts.length >= BOSS_EVENT_MAX_ATTEMPTS) {
       return {
         error: 'MAX_ATTEMPTS_REACHED',
         message: `You have used all ${BOSS_EVENT_MAX_ATTEMPTS} attempts for this boss.`,
@@ -4194,59 +4195,87 @@ export const startSpecializationTrial = onCall(async (request) => {
     return { trialEventId, message: "Continuing your trial..." };
   }
 
-  // Get class type for question selection
   const classType = userData.classType || 'GLOBAL';
 
-  // Fetch questions from the class question bank (up to 10)
-  const bankQuery = await db.collection('question_banks')
-    .where('classType', '==', classType)
-    .limit(1)
-    .get();
+  // Tutorial questions — teach the class mechanics
+  const TRIAL_QUESTIONS: Record<string, Array<{ id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; topicId: string }>> = {
+    JUGGERNAUT: [
+      { id: 'trial_q_0', stem: 'What is the Juggernaut\'s primary combat role?', options: ['Healer', 'Tank / Vanguard', 'Speedster', 'Sniper'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'When does Juggernaut deal bonus damage?', options: ['When HP is below 25%', 'When HP is above 75%', 'On fast answers', 'On streaks'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What does the "Iron Skin" skill provide?', options: ['+15% damage', '+15% armor', '+15% speed', '+15% crit chance'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What happens when Juggernaut\'s HP drops below 30% with "Unstoppable"?', options: ['Deal more damage', '+25% armor and +15% damage', 'Heal allies', 'Dodge attacks'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What is Juggernaut\'s ultimate "Colossus" best known for?', options: ['Dealing massive crit damage', 'Immunity to stun + heavy armor', 'Healing the party', 'Speed boosts'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    BERSERKER: [
+      { id: 'trial_q_0', stem: 'What describes the Berserker\'s playstyle?', options: ['Safe and steady', 'High risk, high reward', 'Support and healing', 'Precision strikes'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'When does Berserker deal maximum damage?', options: ['At full HP', 'When HP is below 40%', 'On streaks', 'With fast answers'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What does "Reckless Assault" trade for more damage?', options: ['Speed', 'Armor', 'HP', 'Crit chance'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What does "Execute" do?', options: ['Heals you', 'Bosses below 15% HP take +25% damage from you', 'Blocks boss attacks', 'Speeds up answers'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What is unique about "Rampage"?', options: ['It heals allies', '+35% damage and lifesteal when HP < 25%', 'It dodges attacks', 'It stuns the boss'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    SNIPER: [
+      { id: 'trial_q_0', stem: 'What is the Sniper\'s specialty?', options: ['Healing', 'Streak mastery and precision', 'Raw endurance', 'Speed'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'When does Sniper deal bonus damage?', options: ['When HP is low', 'On streaks of 3+ correct answers', 'On wrong answers', 'At random'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What does "Quick Draw" reward?', options: ['Slow, careful answers', 'Fast answers under 50% time', 'Wrong answers', 'Skipping questions'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What happens at a 5-answer streak with "Focus Fire"?', options: ['+25% crit chance', '+25% armor', 'Healing', 'Speed boost'], correctAnswer: 0, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What makes "One Shot" powerful?', options: ['First correct answer each attempt deals +50% damage', 'It heals you', 'It blocks damage', 'It speeds up time'], correctAnswer: 0, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    SPEEDSTER: [
+      { id: 'trial_q_0', stem: 'What is the Speedster\'s specialty?', options: ['Heavy armor', 'Dodging and fast answers', 'Healing', 'Raw damage'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'What does "Nimble" provide?', options: ['+20% dodge chance', '+20% damage', '+20% armor', '+20% healing'], correctAnswer: 0, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What bonus does "Haste" give on fast answers?', options: ['Only damage', '+15% damage AND +5 HP heal', 'Armor', 'Crit chance'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What happens after dodging with "Phase Shift"?', options: ['Nothing', 'Next answer gets +25% damage', 'You heal', 'Boss gets stunned'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What is "Time Warp" known for?', options: ['+50% dodge, fast answer damage, and speed', 'Healing', 'Armor', 'Stunning bosses'], correctAnswer: 0, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    GUARDIAN: [
+      { id: 'trial_q_0', stem: 'What is the Guardian\'s primary role?', options: ['Solo damage dealer', 'Protecting allies', 'Healer', 'Speedster'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'What does "Aegis" do for nearby allies?', options: ['Nothing', '+5% armor', '+20% damage', 'Healing'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What does "Bulwark" reflect back to the boss?', options: ['10% damage', '10% healing', 'Nothing', 'Speed'], correctAnswer: 0, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'When does "Rescue" activate?', options: ['When you answer correctly', 'When an ally drops below 25% HP', 'At random', 'Never'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What makes "Immortal" unique?', options: ['It deals massive damage', 'Survive a lethal hit once per attempt at 1 HP', 'It heals allies', 'It speeds up answers'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    CLERIC: [
+      { id: 'trial_q_0', stem: 'What is the Cleric\'s primary role?', options: ['Damage dealer', 'Healer and support', 'Tank', 'Speedster'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'What does "First Aid" do?', options: ['Deals damage', 'Heals +5 HP on correct answers', 'Armor boost', 'Speed boost'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What does "Inspiration" do for allies?', options: ['Nothing', 'Gives nearest ally +3% damage on correct answers', 'Heals them directly', 'Speeds them up'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What does "Sanctuary" do?', options: ['Heals only you', 'All party members heal +8 HP per correct answer', 'Damages the boss', 'Speed boost'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What triggers "Divine Intervention"?', options: ['Any correct answer', 'Once per attempt, fully heals all allies when any hits 0 HP', 'Randomly', 'Never'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    TACTICIAN: [
+      { id: 'trial_q_0', stem: 'What is the Tactician\'s specialty?', options: ['Raw damage', 'Strategic debuffs and boss vulnerabilities', 'Healing', 'Speed'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'What does "Scan Weakness" do?', options: ['Heals you', '+10% damage after boss phase transition', 'Armor boost', 'Speed boost'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'What does "Prepared Mind" improve?', options: ['Damage', 'Hint effectiveness by 15%', 'Armor', 'Speed'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What does "Vulnerability Scan" do for the party?', options: ['Nothing', 'All party +15% damage for 15s after you answer correctly', 'Heals party', 'Speeds up party'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What does "Checkmate" do when the boss is below 20% HP?', options: ['Nothing', 'All party +30% damage', 'Heals party', 'Stuns boss'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+    SCHOLAR: [
+      { id: 'trial_q_0', stem: 'What is the Scholar\'s specialty?', options: ['Raw damage', 'Topic mastery and knowledge power', 'Healing', 'Speed'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_1', stem: 'What does "Deep Study" do?', options: ['+20% faster topic mastery advancement', '+20% damage', '+20% armor', '+20% speed'], correctAnswer: 0, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_2', stem: 'When does "Applied Knowledge" deal bonus damage?', options: ['Always', 'When topic mastery >= 0.6', 'On streaks', 'On fast answers'], correctAnswer: 1, difficulty: 'EASY', topicId: 'trial' },
+      { id: 'trial_q_3', stem: 'What does "Cross-Domain" reward?', options: ['Nothing', 'Skills from 2+ trees unlocked: +10% all damage', 'Armor', 'Healing'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'trial' },
+      { id: 'trial_q_4', stem: 'What does "Omniscient" raise?', options: ['All topic mastery caps', 'Only damage', 'Only armor', 'Only speed'], correctAnswer: 0, difficulty: 'MEDIUM', topicId: 'trial' },
+    ],
+  };
 
-  let questions: Array<Record<string, unknown>> = [];
-  if (!bankQuery.empty) {
-    const bank = bankQuery.docs[0].data();
-    const allQuestions = (bank.questions as Array<Record<string, unknown>>) || [];
-    // Shuffle and take up to 10
-    questions = allQuestions
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 10)
-      .map((q, i) => ({
-        id: `trial_q_${i}`,
-        stem: q.stem as string,
-        options: q.options as string[],
-        correctAnswer: q.correctAnswer as number,
-        difficulty: q.difficulty as string || 'MEDIUM',
-        topicId: q.topicId as string || 'general',
-      }));
-  }
-
-  // Fallback questions if no bank available
-  if (questions.length === 0) {
-    questions = [
-      { id: 'trial_q_0', stem: 'What is 2 + 2?', options: ['3', '4', '5', '6'], correctAnswer: 1, difficulty: 'EASY', topicId: 'math' },
-      { id: 'trial_q_1', stem: 'What is the capital of France?', options: ['London', 'Berlin', 'Paris', 'Madrid'], correctAnswer: 2, difficulty: 'EASY', topicId: 'geography' },
-      { id: 'trial_q_2', stem: 'Solve for x: 2x = 10', options: ['4', '5', '6', '8'], correctAnswer: 1, difficulty: 'MEDIUM', topicId: 'math' },
-    ];
-  }
+  const questions = TRIAL_QUESTIONS[specializationId] || TRIAL_QUESTIONS['JUGGERNAUT'];
 
   // Create trial boss event
   const trialBoss = {
     id: trialEventId,
     mode: 'QUIZ',
-    bossName: `${specializationId} Trial`,
-    description: `Prove your worth to unlock the ${specializationId} specialization.`,
-    maxHp: 100,
-    currentHp: 100,
-    scaledMaxHp: 100,
+    bossName: `${specializationId} Tutorial`,
+    description: `Learn how to play the ${specializationId} specialization. Answer the tutorial questions to unlock this class.`,
+    maxHp: 50,
+    currentHp: 50,
+    scaledMaxHp: 50,
     classType,
     isActive: true,
     deadline: new Date(Date.now() + 3600000).toISOString(), // 1 hour
     questions,
     damagePerCorrect: 10,
-    rewards: { xp: 50, flux: 10 },
+    rewards: { xp: 25, flux: 5 },
     modifiers: [],
-    phases: [{ name: 'Trial', hpThreshold: 100, modifiers: [], dialogue: 'Prove yourself.' }],
+    phases: [{ name: 'Tutorial', hpThreshold: 100, modifiers: [], dialogue: 'Learn your class.' }],
     currentPhase: 0,
     participantCount: 0,
     createdAt: new Date().toISOString(),
@@ -4267,7 +4296,7 @@ export const startSpecializationTrial = onCall(async (request) => {
     rewardClaimed: false,
   });
 
-  return { trialEventId, message: `Trial started! Defeat the ${specializationId} trial boss to unlock this specialization.` };
+  return { trialEventId, message: `Tutorial started! Answer the questions to learn the ${specializationId} specialization and unlock it.` };
 });
 
 export const completeSpecializationTrial = onCall(async (request) => {
@@ -4321,8 +4350,8 @@ export const completeSpecializationTrial = onCall(async (request) => {
   const accuracy = attempted > 0 ? correct / attempted : 0;
   const survived = (bestAttempt?.currentHp as number || 0) > 0;
 
-  // Pass criteria: 70% accuracy, at least 5 correct, survived
-  const passed = accuracy >= 0.70 && correct >= 5 && survived;
+  // Pass criteria: at least 3 correct out of 5, and survived
+  const passed = correct >= 3 && survived;
 
   if (passed) {
     // Unlock specialization
@@ -4344,7 +4373,7 @@ export const completeSpecializationTrial = onCall(async (request) => {
 
   return {
     success: false,
-    message: "Trial failed. You need 70% accuracy, at least 5 correct answers, and must survive.",
+    message: "Trial failed. You need at least 3 correct answers and must survive. Try again!",
     stats: { correct, attempted, accuracy: Math.round(accuracy * 100) },
   };
 });

@@ -798,6 +798,9 @@ export interface BossEvent {
   // Visual & UX (v2)
   breakBarConfig?: BreakBarConfig;
   subjectTheme?: 'physics' | 'forensics' | 'chemistry' | 'biology' | 'default';
+  // Trial
+  isTrial?: boolean;
+  trialSpecializationId?: SpecializationId;
   // Meta
   participantCount?: number;
   totalQuestionsAnswered?: number;

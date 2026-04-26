@@ -670,7 +670,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                const result = await dataService.startSpecializationTrial(specId);
                                toast.success(result.message);
                                // Navigate to boss tab to play the trial
-                               onNavigate('BOSS');
+                               onNavigate('Boss Encounters');
                              } catch (err) {
                                toast.error(err instanceof Error ? err.message : 'Failed to start trial');
                              }

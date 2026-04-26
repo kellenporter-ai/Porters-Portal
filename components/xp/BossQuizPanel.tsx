@@ -283,6 +283,28 @@ const QuizBossCard: React.FC<{
   const allAnswered = questionsComplete;
   const bossDefeated = currentHp <= 0;
 
+  // Trial completion — auto-evaluate when trial boss is defeated or all questions answered
+  const trialEvaluatedRef = useRef(false);
+  const cardToast = useToast();
+  useEffect(() => {
+    if (!quiz.isTrial || trialEvaluatedRef.current) return;
+    if (bossDefeated || allAnswered) {
+      trialEvaluatedRef.current = true;
+      dataService.completeSpecializationTrial(quiz.id)
+        .then((result) => {
+          if (result.success) {
+            cardToast.success(result.message);
+          } else {
+            cardToast.error(result.message);
+          }
+        })
+        .catch((err) => {
+          cardToast.error(err instanceof Error ? err.message : 'Trial evaluation failed');
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz.isTrial, quiz.id, bossDefeated, allAnswered]);
+
   const handleLocalAnswer = async (quizId: string, questionId: string, answer: number) => {
     if (submitting || knockedOut) return;
     setSubmitting(true);
