@@ -49,6 +49,17 @@ code, .font-mono, kbd, pre, samp {
   --warning: #d97706;
   --error: #dc2626;
   --info: #2563eb;
+
+  /* ═══ Z-Index Layer Scale ═══
+     Layering contract — higher number = higher in stack.
+     Use these CSS variables instead of arbitrary z-index values.
+   */
+  --z-dropdown:    10;  /* menus, popovers, tooltips */
+  --z-sticky:      20;  /* sticky headers, banners */
+  --z-drawer:      30;  /* side panels, mobile nav */
+  --z-modal:       40;  /* dialogs, confirmation overlays */
+  --z-toast:       60;  /* notifications (above modals) */
+  --z-skip-link:   70;  /* accessibility skip-to-content */
 }
 
 .dark {

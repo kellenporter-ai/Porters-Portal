@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { User, Assignment, Submission, RPGItem, ClassConfig, UserSettings, SpecializationId } from '../types';
 import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
 
@@ -20,10 +20,10 @@ import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import GamificationSkeleton from './GamificationSkeleton';
 import LootDropAnimation from './xp/LootDropAnimation';
-import ProfileShowcase from './ProfileShowcase';
+const ProfileShowcase = lazyWithRetry(() => import('./ProfileShowcase'));
 import { getStreakMultiplier } from '../lib/achievements';
 import { STUDENT_TAB_MAP } from '../lib/routes';
-import IntelDossier from './IntelDossier';
+const IntelDossier = lazyWithRetry(() => import('./IntelDossier'));
 import { useTheme } from '../lib/ThemeContext';
 
 // Reverse map: StudentTab key → nav name (for ARIA tabpanel IDs matching Layout's aria-controls)
@@ -728,12 +728,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'INTEL' && (
                  <div key="intel" style={{ animation: 'tabEnter 0.3s ease-out both' }}>
                      <FeatureErrorBoundary feature="Intel Dossier">
-                       <IntelDossier
-                           user={user}
-                           submissions={submissions}
-                           assignments={assignments}
-                           activeClass={activeClass}
-                       />
+                       <Suspense fallback={<GamificationSkeleton />}>
+                         <IntelDossier
+                             user={user}
+                             submissions={submissions}
+                             assignments={assignments}
+                             activeClass={activeClass}
+                         />
+                       </Suspense>
                      </FeatureErrorBoundary>
                  </div>
              )}
@@ -800,7 +802,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
       {/* Profile Showcase */}
       {showProfile && (
-          <ProfileShowcase user={user} classType={activeClass} onClose={() => setShowProfile(false)} />
+          <Suspense fallback={<GamificationSkeleton />}>
+            <ProfileShowcase user={user} classType={activeClass} onClose={() => setShowProfile(false)} />
+          </Suspense>
       )}
 
       {/* Loot Drop Animation */}

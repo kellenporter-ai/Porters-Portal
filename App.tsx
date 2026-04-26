@@ -20,6 +20,7 @@ import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
 import { ThemeProvider } from './lib/ThemeContext';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
+import NotFound from './components/NotFound';
 import SongRequester from './components/SongRequester';
 import StreakDisplay from './components/StreakDisplay';
 import RouteSkeleton from './components/RouteSkeleton';
@@ -433,7 +434,7 @@ const App: React.FC = () => {
 
           {/* ─── Default + catch-all ─── */}
           <Route path="/" element={<Navigate to={defaultPath} replace />} />
-          <Route path="*" element={<Navigate to={defaultPath} replace />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
 

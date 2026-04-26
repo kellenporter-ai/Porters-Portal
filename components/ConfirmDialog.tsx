@@ -90,7 +90,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 <div 
                     ref={containerRef}
                     className="fixed inset-0 flex items-center justify-center p-4"
-                    style={{ zIndex: 99999 }}
+                    style={{ zIndex: 'var(--z-modal)' }}
                     role="dialog" 
                     aria-modal="true"
                     aria-labelledby="confirm-dialog-title"

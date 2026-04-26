@@ -64,7 +64,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         <ToastContext.Provider value={value}>
             {children}
             {/* Toast container — fixed top-center, above most UI */}
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4" role="status" aria-live="polite">
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[var(--z-toast)] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4" role="status" aria-live="polite">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
