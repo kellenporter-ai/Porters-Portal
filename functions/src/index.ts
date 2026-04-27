@@ -4187,12 +4187,20 @@ export const startSpecializationTrial = onCall(async (request) => {
     throw new HttpsError("failed-precondition", `Reach level 10 to unlock specializations. You are level ${level}.`);
   }
 
+  const { force } = request.data;
+
   // Check if trial already in progress
   const trialEventId = `trial_${uid}_${specializationId}`;
   const trialRef = db.doc(`boss_events/${trialEventId}`);
+  const progressRef = db.doc(`boss_event_progress/${uid}_${trialEventId}`);
   const trialSnap = await trialRef.get();
-  if (trialSnap.exists && trialSnap.data()?.isActive) {
+  if (trialSnap.exists && trialSnap.data()?.isActive && !force) {
     return { trialEventId, message: "Continuing your trial..." };
+  }
+
+  // If forcing a restart, clean up old progress
+  if (force) {
+    await progressRef.delete().catch(() => {});
   }
 
   const classType = userData.classType || 'GLOBAL';
@@ -4286,7 +4294,6 @@ export const startSpecializationTrial = onCall(async (request) => {
   await trialRef.set(trialBoss);
 
   // Initialize progress
-  const progressRef = db.doc(`boss_event_progress/${uid}_${trialEventId}`);
   await progressRef.set({
     userId: uid,
     eventId: trialEventId,
@@ -4353,15 +4360,15 @@ export const completeSpecializationTrial = onCall(async (request) => {
   // Pass criteria: at least 3 correct out of 5, and survived
   const passed = correct >= 3 && survived;
 
+  // Deactivate trial after evaluation so the result can be shown
+  await trialRef.update({ isActive: false });
+
   if (passed) {
     // Unlock specialization
     await userRef.update({
       'gamification.specialization': specId,
       'gamification.skillPoints': admin.firestore.FieldValue.increment(1),
     });
-
-    // Clean up trial
-    await trialRef.update({ isActive: false });
 
     return {
       success: true,
@@ -4373,7 +4380,7 @@ export const completeSpecializationTrial = onCall(async (request) => {
 
   return {
     success: false,
-    message: "Trial failed. You need at least 3 correct answers and must survive. Try again!",
+    message: "Tutorial complete — you didn't pass this time. Review the class skills and try again!",
     stats: { correct, attempted, accuracy: Math.round(accuracy * 100) },
   };
 });

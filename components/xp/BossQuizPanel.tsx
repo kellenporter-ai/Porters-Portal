@@ -4,7 +4,7 @@ import { BossEvent, BossEventProgress, BossQuizQuestion, BossIntent, BossModifie
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
-import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords, BrainCircuit } from 'lucide-react';
+import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords, BrainCircuit, Award, RotateCcw, ArrowRight } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
 import { useIsMounted } from '../../lib/useIsMounted';
 import { getDifficultyClasses, getBossTierClasses } from '../../lib/difficultyPills';
@@ -158,6 +158,84 @@ const StudentEndgame: React.FC<{
   );
 };
 
+// Trial completion endgame — shown when tutorial is finished (pass or fail)
+const TrialEndgame: React.FC<{
+  result: { success: boolean; message: string; specializationId?: string; stats?: { correct: number; attempted: number; accuracy: number } };
+  specId?: string;
+}> = ({ result, specId }) => {
+  const stats = result.stats;
+  const passed = result.success;
+
+  return (
+    <div className="text-center py-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {passed ? (
+        <>
+          <Award className="w-14 h-14 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
+          <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">Specialization Unlocked!</h4>
+          <p className="text-sm text-[var(--text-secondary)]">
+            You passed the {specId} tutorial.
+          </p>
+        </>
+      ) : (
+        <>
+          <XCircle className="w-14 h-14 text-red-600 dark:text-red-400 mx-auto mb-1" />
+          <h4 className="text-xl font-black text-red-600 dark:text-red-400">Tutorial Complete</h4>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {result.message}
+          </p>
+        </>
+      )}
+
+      {stats && (
+        <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+          <div className="bg-black/30 rounded-xl p-2 border border-white/5">
+            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">Correct</div>
+            <div className="text-lg font-black text-green-600 dark:text-green-400">{stats.correct}</div>
+          </div>
+          <div className="bg-black/30 rounded-xl p-2 border border-white/5">
+            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">Attempted</div>
+            <div className="text-lg font-black text-[var(--text-primary)]">{stats.attempted}</div>
+          </div>
+          <div className="bg-black/30 rounded-xl p-2 border border-white/5">
+            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">Accuracy</div>
+            <div className="text-lg font-black text-amber-600 dark:text-amber-400">{stats.accuracy}%</div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
+        {passed ? (
+          <button
+            type="button"
+            onClick={() => { window.location.href = '/skills'; }}
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold rounded-xl text-sm hover:opacity-90 transition"
+          >
+            <ArrowRight className="w-4 h-4" />
+            Go to Skills
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={async () => {
+              if (!specId) return;
+              try {
+                await dataService.startSpecializationTrial(specId, true);
+                window.location.reload();
+              } catch (err) {
+                alert(err instanceof Error ? err.message : 'Failed to restart tutorial');
+              }
+            }}
+            className="flex items-center gap-2 px-6 py-2.5 bg-amber-600/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-sm hover:bg-amber-600/30 transition"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Try Again
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Individual quiz boss card that subscribes to its own shards
 const QuizBossCard: React.FC<{
   quiz: BossEvent;
@@ -284,6 +362,7 @@ const QuizBossCard: React.FC<{
   const bossDefeated = currentHp <= 0;
 
   // Trial completion — auto-evaluate when trial boss is defeated or all questions answered
+  const [trialResult, setTrialResult] = useState<{ success: boolean; message: string; specializationId?: string; stats?: { correct: number; attempted: number; accuracy: number } } | null>(null);
   const trialEvaluatedRef = useRef(false);
   const cardToast = useToast();
   useEffect(() => {
@@ -292,6 +371,7 @@ const QuizBossCard: React.FC<{
       trialEvaluatedRef.current = true;
       dataService.completeSpecializationTrial(quiz.id)
         .then((result) => {
+          setTrialResult(result);
           if (result.success) {
             cardToast.success(result.message);
           } else {
@@ -557,6 +637,8 @@ const QuizBossCard: React.FC<{
                 Start New Attempt
               </button>
             </div>
+          ) : trialResult ? (
+            <TrialEndgame result={trialResult} specId={quiz.trialSpecializationId} />
           ) : allAnswered ? (
             <div className="text-center py-8">
               <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-2" />

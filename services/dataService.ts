@@ -1642,8 +1642,8 @@ export const dataService = {
     };
   },
 
-  startSpecializationTrial: async (specializationId: string) => {
-    const result = await callStartSpecializationTrial({ specializationId });
+  startSpecializationTrial: async (specializationId: string, force?: boolean) => {
+    const result = await callStartSpecializationTrial({ specializationId, force });
     return result.data as { trialEventId: string; message: string };
   },
 
