@@ -1,5 +1,6 @@
 
 import React, { useMemo, useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Assignment, Submission, RPGItem, ClassConfig, UserSettings, SpecializationId } from '../types';
 import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
 
@@ -61,6 +62,7 @@ interface StudentDashboardProps {
 }
 
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, submissions, classConfigs, enabledFeatures, onNavigate, onStartAssignment, studentTab = 'HOME' }) => {
+  const navigate = useNavigate();
   const toast = useToast();
   const isMounted = useIsMounted();
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
@@ -669,8 +671,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                              try {
                                const result = await dataService.startSpecializationTrial(specId);
                                toast.success(result.message);
-                               // Navigate to boss tab to play the trial
-                               onNavigate('Boss Encounters');
+                               // Navigate directly to /boss to play the trial
+                               navigate('/boss');
                              } catch (err) {
                                toast.error(err instanceof Error ? err.message : 'Failed to start trial');
                              }

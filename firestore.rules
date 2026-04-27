@@ -329,6 +329,32 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // BOSS EVENTS (Unified v2 — quiz + encounter)
+    // ==========================================
+    match /boss_events/{eventId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+
+      // Distributed damage shards — students need read access for real-time HP
+      match /shards/{shardId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Admin SDK only
+      }
+
+      // Damage log — students can read (leaderboard display)
+      match /damage_log/{entryId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Admin SDK only
+      }
+    }
+
+    // Boss event progress — students can read their own progress
+    match /boss_event_progress/{progressId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin SDK only
+    }
+
+    // ==========================================
     // DAILY CHALLENGES
     // ==========================================
     match /daily_challenges/{challengeId} {
