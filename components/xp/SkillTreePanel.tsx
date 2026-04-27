@@ -36,13 +36,15 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
   level = 1,
   onStartTrial,
 }) => {
-  const [selectedSpec, setSelectedSpec] = useState<SpecializationId | null>(specialization || null);
+  const [selectedSpec, setSelectedSpec] = useState<SpecializationId | null>(
+    (specialization && SKILL_TREES_V2[specialization]) ? specialization : null
+  );
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [showTrialInfo, setShowTrialInfo] = useState<SpecializationId | null>(null);
   const toast = useToast();
   const { confirm } = useConfirm();
 
-  const hasChosen = !!specialization;
+  const hasChosen = !!(specialization && SKILL_TREES_V2[specialization]);
   const activeSpec = selectedSpec || 'JUGGERNAUT';
   const treeNodes = SKILL_NODES_V2.filter(n => n.specialization === activeSpec);
   const tiers = [1, 2, 3, 4];
