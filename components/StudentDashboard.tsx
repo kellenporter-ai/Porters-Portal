@@ -756,7 +756,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                    <FeatureErrorBoundary feature="Topic Mastery">
                      <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                      <TopicMasteryAnalytics
-                         topicMastery={user.gamification?.topicMastery || []}
+                         topicMastery={user.gamification?.topicMastery}
                      />
                      </React.Suspense>
                    </FeatureErrorBoundary>

@@ -4,7 +4,7 @@ import { User as UserIcon, GripVertical, Diamond, ChevronDown, ChevronUp, Sword,
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { getEventCoordinates } from '@dnd-kit/utilities';
 import { dataService } from '../../services/dataService';
-import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats, derivePlayerRole, calculateGearScore } from '../../lib/gamification';
+import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, deriveCombatStats, derivePlayerRole, calculateGearScore, normalizeTopicMastery } from '../../lib/gamification';
 import { SPECIALIZATIONS, SKILL_TREES_V2, SPEC_COLORS_V2 } from '../../lib/specializations';
 import { getClassProfile } from '../../lib/classProfile';
 import { sfx } from '../../lib/sfx';
@@ -1062,8 +1062,8 @@ interface MasteryPanelProps {
 
 const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
   const specialization = user.gamification?.specialization as SpecializationId | undefined;
-  const topicMastery = user.gamification?.topicMastery || [];
-  const unlockedSkills = user.gamification?.unlockedSkills || [];
+  const topicMastery = normalizeTopicMastery(user.gamification?.topicMastery);
+  const unlockedSkills = Array.isArray(user.gamification?.unlockedSkills) ? user.gamification.unlockedSkills : [];
 
   const specDef = specialization ? SPECIALIZATIONS[specialization] : null;
   const specTree = specialization ? SKILL_TREES_V2[specialization] : null;

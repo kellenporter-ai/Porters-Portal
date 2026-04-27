@@ -1,5 +1,5 @@
 
-import { ItemRarity, RPGItem, EquipmentSlot, User, PlayerRole } from '../types';
+import { ItemRarity, RPGItem, EquipmentSlot, User, PlayerRole, TopicMastery } from '../types';
 import { RUNEWORD_DEFINITIONS } from './runewords';
 import { getActiveSetBonuses } from './achievements';
 
@@ -472,6 +472,14 @@ export const getRunewordForItem = (item: RPGItem) => {
     if (!item.runewordActive) return null;
     return RUNEWORD_DEFINITIONS.find(r => r.id === item.runewordActive) || null;
 };
+
+/** Firestore sometimes stores topicMastery as a map instead of an array.
+ *  Normalize to an array so .filter(), .reduce(), .sort() work safely. */
+export function normalizeTopicMastery(raw: unknown): TopicMastery[] {
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === 'object') return Object.values(raw) as TopicMastery[];
+    return [];
+}
 
 export const getAssetColors = (rarity: ItemRarity): { border: string; text: string; bg: string; glow: string; shimmer: string } => {
     switch(rarity) {

@@ -1,13 +1,15 @@
 
 import React, { useMemo } from 'react';
 import { TopicMastery } from '../../types';
+import { normalizeTopicMastery } from '../../lib/gamification';
 import { TrendingUp, Target, BookOpen, Award, AlertTriangle } from 'lucide-react';
 
 interface TopicMasteryAnalyticsProps {
-  topicMastery: TopicMastery[];
+  topicMastery: TopicMastery[] | Record<string, TopicMastery> | undefined;
 }
 
-const TopicMasteryAnalytics: React.FC<TopicMasteryAnalyticsProps> = ({ topicMastery }) => {
+const TopicMasteryAnalytics: React.FC<TopicMasteryAnalyticsProps> = ({ topicMastery: rawTopicMastery }) => {
+  const topicMastery = normalizeTopicMastery(rawTopicMastery);
   const stats = useMemo(() => {
     const total = topicMastery.length;
     const avgAccuracy = total > 0
