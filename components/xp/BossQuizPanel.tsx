@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BossEvent, BossEventProgress, BossQuizQuestion, BossIntent, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
+import { BossEvent, BossEventProgress, BossQuizQuestion, BossIntent, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, SpecializationId } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
@@ -27,6 +27,7 @@ interface BossQuizPanelProps {
   };
   playerEquipped?: Record<string, { rarity?: string; visualId?: string } | null | undefined>;
   playerEvolutionLevel?: number;
+  userSpecialization?: SpecializationId;
 }
 
 // Aggregates distributed shard damage for a single quiz boss
@@ -160,20 +161,34 @@ const StudentEndgame: React.FC<{
 
 // Trial completion endgame — shown when tutorial is finished (pass or fail)
 const TrialEndgame: React.FC<{
-  result: { success: boolean; message: string; specializationId?: string; stats?: { correct: number; attempted: number; accuracy: number } };
+  result: { success: boolean; passed?: boolean; message: string; specializationId?: string; stats?: { correct: number; attempted: number; accuracy: number } };
   specId?: string;
-}> = ({ result, specId }) => {
+  committed?: boolean;
+  committing?: boolean;
+  onCommit?: () => void;
+}> = ({ result, specId, committed, committing, onCommit }) => {
   const stats = result.stats;
-  const passed = result.success;
+  const passed = result.passed ?? result.success;
 
   return (
     <div className="text-center py-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {passed ? (
+      {passed && committed ? (
         <>
           <Award className="w-14 h-14 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
           <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">Specialization Unlocked!</h4>
           <p className="text-sm text-[var(--text-secondary)]">
-            You passed the {specId} tutorial.
+            You have committed to the {specId} specialization.
+          </p>
+        </>
+      ) : passed && !committed ? (
+        <>
+          <Award className="w-14 h-14 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
+          <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">Tutorial Passed!</h4>
+          <p className="text-sm text-[var(--text-secondary)]">
+            You passed the {specId} tutorial. Do you want to commit to this specialization?
+          </p>
+          <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto">
+            You can only have one specialization. Choose carefully — this cannot be changed later.
           </p>
         </>
       ) : (
@@ -204,7 +219,7 @@ const TrialEndgame: React.FC<{
       )}
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
-        {passed ? (
+        {passed && committed ? (
           <button
             type="button"
             onClick={() => { window.location.href = '/skills'; }}
@@ -213,6 +228,43 @@ const TrialEndgame: React.FC<{
             <ArrowRight className="w-4 h-4" />
             Go to Skills
           </button>
+        ) : passed && !committed ? (
+          <>
+            <button
+              type="button"
+              onClick={onCommit}
+              disabled={committing}
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold rounded-xl text-sm hover:opacity-90 transition disabled:opacity-50"
+            >
+              {committing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  Committing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Yes, Commit to {specId}
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!specId) return;
+                try {
+                  await dataService.declineSpecialization(specId);
+                  window.location.reload();
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : 'Failed to decline specialization');
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 text-[var(--text-secondary)] font-bold rounded-xl text-sm hover:bg-white/10 transition"
+            >
+              <XCircle className="w-4 h-4" />
+              Not Now
+            </button>
+          </>
         ) : (
           <button
             type="button"
@@ -362,7 +414,9 @@ const QuizBossCard: React.FC<{
   const bossDefeated = currentHp <= 0;
 
   // Trial completion — auto-evaluate when trial boss is defeated or all questions answered
-  const [trialResult, setTrialResult] = useState<{ success: boolean; message: string; specializationId?: string; stats?: { correct: number; attempted: number; accuracy: number } } | null>(null);
+  const [trialResult, setTrialResult] = useState<{ success: boolean; passed?: boolean; message: string; specializationId?: string; stats?: { correct: number; attempted: number; accuracy: number } } | null>(null);
+  const [committed, setCommitted] = useState(false);
+  const [committing, setCommitting] = useState(false);
   const trialEvaluatedRef = useRef(false);
   const cardToast = useToast();
   useEffect(() => {
@@ -372,7 +426,7 @@ const QuizBossCard: React.FC<{
       dataService.completeSpecializationTrial(quiz.id)
         .then((result) => {
           setTrialResult(result);
-          if (result.success) {
+          if (result.passed) {
             cardToast.success(result.message);
           } else {
             cardToast.error(result.message);
@@ -384,6 +438,20 @@ const QuizBossCard: React.FC<{
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quiz.isTrial, quiz.id, bossDefeated, allAnswered]);
+
+  const handleCommit = async () => {
+    if (!quiz.trialSpecializationId) return;
+    setCommitting(true);
+    try {
+      const result = await dataService.commitSpecialization(quiz.trialSpecializationId);
+      setCommitted(true);
+      cardToast.success(result.message);
+    } catch (err) {
+      cardToast.error(err instanceof Error ? err.message : 'Failed to commit specialization');
+    } finally {
+      setCommitting(false);
+    }
+  };
 
   const handleLocalAnswer = async (quizId: string, questionId: string, answer: number) => {
     if (submitting || knockedOut) return;
@@ -638,7 +706,13 @@ const QuizBossCard: React.FC<{
               </button>
             </div>
           ) : trialResult ? (
-            <TrialEndgame result={trialResult} specId={quiz.trialSpecializationId} />
+            <TrialEndgame
+              result={trialResult}
+              specId={quiz.trialSpecializationId}
+              committed={committed}
+              committing={committing}
+              onCommit={handleCommit}
+            />
           ) : allAnswered ? (
             <div className="text-center py-8">
               <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-2" />
@@ -759,7 +833,7 @@ const QuizBossCard: React.FC<{
   );
 };
 
-const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, userClassSections, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel }) => {
+const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSection, userClassSections, playerStats, playerAppearance, playerEquipped, playerEvolutionLevel, userSpecialization }) => {
   const [allQuizzes, setAllQuizzes] = useState<BossEvent[]>([]);
   const [quizzesLoaded, setQuizzesLoaded] = useState(false);
   const toast = useToast();
@@ -775,13 +849,17 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     return () => unsub?.();
   }, [classType]);
 
-  // Filter by section and scheduled time
+  // Filter by section, scheduled time, and remove trials for other specializations
   const quizzes = allQuizzes.filter(q => {
     if (q.scheduledAt && new Date(q.scheduledAt) > new Date()) return false;
     if (q.targetSections?.length) {
       const quizClass = q.classType !== 'GLOBAL' ? q.classType : classType;
       const studentSection = userClassSections?.[quizClass] || userClassSections?.[classType] || userSection || '';
       if (!q.targetSections.includes(studentSection)) return false;
+    }
+    // Hide trial bosses for specializations the user does not have (or already has a different one)
+    if (q.isTrial && userSpecialization && q.trialSpecializationId !== userSpecialization) {
+      return false;
     }
     return true;
   });

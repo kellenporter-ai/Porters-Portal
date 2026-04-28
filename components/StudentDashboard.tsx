@@ -786,7 +786,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                      </FeatureErrorBoundary>
                      <FeatureErrorBoundary feature="Boss Quiz">
                        <React.Suspense fallback={<GamificationSkeleton />}>
-                       <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} />
+                       <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} userSpecialization={user.gamification?.specialization as import('../types').SpecializationId | undefined} />
                        </React.Suspense>
                      </FeatureErrorBoundary>
                  </div>

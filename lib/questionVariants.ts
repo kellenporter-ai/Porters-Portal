@@ -250,7 +250,7 @@ export function validateDistractorQuality(question: BossQuizQuestion): Distracto
   }
 
   // Check numeric spread (for numeric answers)
-  const numericOptions = question.options.map(o => Number(o.replace(/[^0-9.\-]/g, ''))).filter(n => !isNaN(n));
+  const numericOptions = question.options.map(o => Number(o.replace(/[^0-9.-]/g, ''))).filter(n => !isNaN(n));
   if (numericOptions.length >= 2) {
     const sorted = [...numericOptions].sort((a, b) => a - b);
     const ranges = sorted.slice(1).map((v, i) => v - sorted[i]);

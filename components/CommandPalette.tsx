@@ -79,8 +79,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
     el?.scrollIntoView({ block: 'nearest' });
   }, [activeIdx, open]);
 
-  if (!open) return null;
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -113,6 +111,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
   };
 
   useFocusTrap(containerRef, open);
+
+  if (!open) return null;
 
   const animClass = prefersReducedMotion ? '' : 'animate-in fade-in zoom-in-95 duration-150';
 

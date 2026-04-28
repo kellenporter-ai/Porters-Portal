@@ -4337,11 +4337,6 @@ export const completeSpecializationTrial = onCall(async (request) => {
 
   const specId = trial.trialSpecializationId;
 
-  // Check if already has specialization
-  if (userData.gamification?.specialization) {
-    return { success: false, message: "You already have a specialization." };
-  }
-
   // Evaluate trial results
   const attempts = progress.attempts || [];
   const bestAttempt = attempts.reduce((best: Record<string, unknown> | null, a: Record<string, unknown>) => {
@@ -4360,29 +4355,136 @@ export const completeSpecializationTrial = onCall(async (request) => {
   // Pass criteria: at least 3 correct out of 5, and survived
   const passed = correct >= 3 && survived;
 
-  // Deactivate trial after evaluation so the result can be shown
-  await trialRef.update({ isActive: false });
+  // Mark trial as evaluated but keep it active so the user can see the result
+  // and choose whether to commit or decline.
+  await trialRef.update({
+    trialPassed: passed,
+    trialCompletedAt: new Date().toISOString(),
+  });
+
+  // If user already has a specialization, deactivate this trial immediately
+  // since they cannot commit to another one.
+  if (userData.gamification?.specialization) {
+    await trialRef.update({ isActive: false });
+    return {
+      success: false,
+      passed: false,
+      message: "You already have a specialization.",
+      stats: { correct, attempted, accuracy: Math.round(accuracy * 100) },
+    };
+  }
 
   if (passed) {
-    // Unlock specialization
-    await userRef.update({
-      'gamification.specialization': specId,
-      'gamification.skillPoints': admin.firestore.FieldValue.increment(1),
-    });
-
     return {
       success: true,
+      passed: true,
       specializationId: specId,
-      message: `Congratulations! You have unlocked the ${specId} specialization.`,
+      message: `You passed the ${specId} tutorial! Confirm below to commit to this specialization.`,
       stats: { correct, attempted, accuracy: Math.round(accuracy * 100) },
     };
   }
 
   return {
     success: false,
+    passed: false,
     message: "Tutorial complete — you didn't pass this time. Review the class skills and try again!",
     stats: { correct, attempted, accuracy: Math.round(accuracy * 100) },
   };
+});
+
+export const commitSpecialization = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { specializationId } = request.data;
+  if (!specializationId) {
+    throw new HttpsError("invalid-argument", "Specialization ID required.");
+  }
+
+  const db = admin.firestore();
+  const trialEventId = `trial_${uid}_${specializationId}`;
+  const trialRef = db.doc(`boss_events/${trialEventId}`);
+  const userRef = db.doc(`users/${uid}`);
+
+  const [trialSnap, userSnap] = await Promise.all([
+    trialRef.get(), userRef.get(),
+  ]);
+
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const userData = userSnap.data()!;
+
+  // Check if already has specialization
+  if (userData.gamification?.specialization) {
+    throw new HttpsError("failed-precondition", "You already have a specialization.");
+  }
+
+  // Verify the trial exists and was passed
+  if (!trialSnap.exists) {
+    throw new HttpsError("not-found", "Trial not found. Complete the tutorial first.");
+  }
+
+  const trial = trialSnap.data()!;
+  if (!trial.isTrial || trial.trialSpecializationId !== specializationId) {
+    throw new HttpsError("failed-precondition", "Invalid trial for this specialization.");
+  }
+  if (trial.trialPassed !== true) {
+    throw new HttpsError("failed-precondition", "You must pass the tutorial before committing to this specialization.");
+  }
+
+  // Commit specialization
+  await userRef.update({
+    'gamification.specialization': specializationId,
+    'gamification.skillPoints': admin.firestore.FieldValue.increment(1),
+  });
+
+  // Deactivate the committed trial and any other active trials for this user
+  const batch = db.batch();
+  batch.update(trialRef, { isActive: false });
+
+  // Find and deactivate any other active trials
+  const allTrialsQuery = await db.collection('boss_events')
+    .where('isTrial', '==', true)
+    .where('isActive', '==', true)
+    .get();
+
+  for (const docSnap of allTrialsQuery.docs) {
+    const data = docSnap.data();
+    if (data.id && typeof data.id === 'string' && data.id.startsWith(`trial_${uid}_`) && docSnap.id !== trialEventId) {
+      batch.update(docSnap.ref, { isActive: false });
+    }
+  }
+
+  await batch.commit();
+
+  return {
+    success: true,
+    message: `Congratulations! You have committed to the ${specializationId} specialization.`,
+  };
+});
+
+export const declineSpecialization = onCall(async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { specializationId } = request.data;
+  if (!specializationId) {
+    throw new HttpsError("invalid-argument", "Specialization ID required.");
+  }
+
+  const db = admin.firestore();
+  const trialEventId = `trial_${uid}_${specializationId}`;
+  const trialRef = db.doc(`boss_events/${trialEventId}`);
+
+  const trialSnap = await trialRef.get();
+  if (!trialSnap.exists) {
+    throw new HttpsError("not-found", "Trial not found.");
+  }
+
+  const trial = trialSnap.data()!;
+  if (!trial.isTrial || trial.trialSpecializationId !== specializationId) {
+    throw new HttpsError("failed-precondition", "Invalid trial for this specialization.");
+  }
+
+  await trialRef.update({ isActive: false });
+
+  return { success: true, message: `You declined the ${specializationId} specialization. You can retake the tutorial later.` };
 });
 
 // ==========================================
