@@ -169,12 +169,27 @@ export const onGradePosted = onDocumentUpdated(
     logger.info(`Queued grade notification email for ${email}`);
   },
 );
+/**
+ * Helper: detect Google API auth errors (expired or revoked token).
+ */
+function isGoogleAuthError(err: unknown): boolean {
+  const code = (err as { code?: number }).code;
+  const status = (err as { response?: { status?: number } }).response?.status;
+  return code === 401 || code === 403 || status === 401 || status === 403;
+}
+
 /** Server-side item catalog — must mirror client FLUX_SHOP_ITEMS */
 async function createClassroomClient(accessToken: string) {
-  const { google } = await import("googleapis");
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: accessToken });
-  return google.classroom({ version: "v1", auth: oauth2Client });
+  try {
+    const { google } = await import("googleapis");
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    return google.classroom({ version: "v1", auth: oauth2Client });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("Failed to load googleapis module", { error: msg });
+    throw new HttpsError("internal", `Google Classroom client initialization failed: ${msg}`);
+  }
 }
 /**
  * Helper: sleep for exponential backoff.
@@ -192,7 +207,14 @@ export const classroomListCourses = onCall({ memory: "512MiB" }, async (request)
     throw new HttpsError("invalid-argument", "Missing accessToken.");
   }
 
-  const classroom = await createClassroomClient(accessToken);
+  let classroom;
+  try {
+    classroom = await createClassroomClient(accessToken);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomListCourses client error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
+  }
   try {
     const courses: { id: string | null | undefined; name: string | null | undefined; section: string | null | undefined; descriptionHeading: string | null | undefined; ownerId: string | null | undefined; courseState: string | null | undefined }[] = [];
     let pageToken: string | undefined;
@@ -208,6 +230,11 @@ export const classroomListCourses = onCall({ memory: "512MiB" }, async (request)
     } while (pageToken);
     return { courses };
   } catch (err: unknown) {
+    if (isGoogleAuthError(err)) {
+      const msg = err instanceof Error ? err.message : "Google authentication failed.";
+      logger.error("classroomListCourses auth error", { error: msg });
+      throw new HttpsError("unauthenticated", `Google Classroom token expired or invalid. Please re-authenticate. (${msg})`);
+    }
     const msg = err instanceof Error ? err.message : "Unknown error";
     logger.error("classroomListCourses error", { error: msg });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
@@ -226,7 +253,14 @@ export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (reque
     throw new HttpsError("invalid-argument", "Missing courseId.");
   }
 
-  const classroom = await createClassroomClient(accessToken);
+  let classroom;
+  try {
+    classroom = await createClassroomClient(accessToken);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomListCourseWork client error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
+  }
   try {
     const courseWork: { id: string | null | undefined; title: string | null | undefined; maxPoints: number | null | undefined; state: string | null | undefined }[] = [];
     let pageToken: string | undefined;
@@ -243,6 +277,11 @@ export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (reque
     } while (pageToken);
     return { courseWork };
   } catch (err: unknown) {
+    if (isGoogleAuthError(err)) {
+      const msg = err instanceof Error ? err.message : "Google authentication failed.";
+      logger.error("classroomListCourseWork auth error", { error: msg });
+      throw new HttpsError("unauthenticated", `Google Classroom token expired or invalid. Please re-authenticate. (${msg})`);
+    }
     const msg = err instanceof Error ? err.message : "Unknown error";
     logger.error("classroomListCourseWork error", { error: msg });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
@@ -267,7 +306,14 @@ export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (req
     throw new HttpsError("invalid-argument", "Invalid maxPoints.");
   }
 
-  const classroom = await createClassroomClient(accessToken);
+  let classroom;
+  try {
+    classroom = await createClassroomClient(accessToken);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomCreateCourseWork client error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
+  }
   try {
     const res = await classroom.courses.courseWork.create({
       courseId,
@@ -286,6 +332,11 @@ export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (req
       },
     };
   } catch (err: unknown) {
+    if (isGoogleAuthError(err)) {
+      const msg = err instanceof Error ? err.message : "Google authentication failed.";
+      logger.error("classroomCreateCourseWork auth error", { error: msg });
+      throw new HttpsError("unauthenticated", `Google Classroom token expired or invalid. Please re-authenticate. (${msg})`);
+    }
     const msg = err instanceof Error ? err.message : "Unknown error";
     logger.error("classroomCreateCourseWork error", { error: msg });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
@@ -306,6 +357,15 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
   }
   if (!assignmentId || typeof assignmentId !== "string") {
     throw new HttpsError("invalid-argument", "Missing assignmentId.");
+  }
+
+  let classroom;
+  try {
+    classroom = await createClassroomClient(accessToken);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    logger.error("classroomPushGrades client error", { error: msg });
+    throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
 
   try {
@@ -406,7 +466,6 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
   const linkResults = await Promise.allSettled(
     linkEntries.map(async (entry) => {
       const { courseId, courseWorkId } = entry;
-      const classroom = await createClassroomClient(accessToken);
 
       // Fetch live maxPoints for this entry
       let maxPoints: number;
@@ -442,11 +501,16 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
       let entrySkipped = 0;
       const entryErrors: string[] = [];
 
-      const portalEmails = Object.entries(emailMap).filter(([, uid]) => uid in filteredScores);
+      const allPortalEmails = Object.entries(emailMap).filter(([, uid]) => uid in filteredScores);
       logger.info("classroomPushGrades matching", {
         portalSection: entry.portalSection ?? "all",
-        portalEmailCount: portalEmails.length,
+        portalEmailCount: allPortalEmails.length,
       });
+
+      // Process in chunks of 100 to respect Google API limits
+      const chunkSize = 100;
+      for (let chunkIdx = 0; chunkIdx < allPortalEmails.length; chunkIdx += chunkSize) {
+        const portalEmails = allPortalEmails.slice(chunkIdx, chunkIdx + chunkSize);
 
       for (const [email, userId] of portalEmails) {
         // Look up this student's submission directly by email
@@ -506,6 +570,12 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
         if (!success && entryErrors[entryErrors.length - 1]?.startsWith(email) === false) {
           entryErrors.push(`${email}: Max retries exceeded`);
         }
+      }
+
+      // Small delay between chunks to avoid rate limits
+      if (chunkIdx + chunkSize < allPortalEmails.length) {
+        await sleep(1000);
+      }
       }
 
       logger.info("classroomPushGrades entry complete", {

@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { verifyAuth, verifyAdmin } from "./core";
+import { verifyAdmin } from "./core";
 
 // ==========================================
 // ONE-TIME MIGRATION — sync classXp for single-class students
@@ -12,24 +12,27 @@ export const migrateClassXp = onCall(async (request) => {
   const dryRun = request.data?.dryRun !== false; // default true for safety
 
   const db = admin.firestore();
-
   const BATCH_SIZE = 400;
-  const toUpdate: { id: string; name: string; classType: string; currentClassXp: number; totalXp: number }[] = [];
 
   let skippedMultiClass = 0;
   let skippedAlreadyCorrect = 0;
   let skippedNoClass = 0;
   let skippedNoXp = 0;
   let totalScanned = 0;
+  let updated = 0;
+
+  const preview: { name: string; classType: string; from: number; to: number; gain: number }[] = [];
 
   let lastDoc: any = null;
   while (true) {
-    let query = db.collection("users").where("role", "==", "STUDENT").limit(499);
+    let query = db.collection("users").where("role", "==", "STUDENT").limit(500);
     if (lastDoc) query = query.startAfter(lastDoc);
     const snapshot = await query.get();
     if (snapshot.empty) break;
     lastDoc = snapshot.docs[snapshot.docs.length - 1];
     totalScanned += snapshot.size;
+
+    const toUpdate: { id: string; classType: string; totalXp: number }[] = [];
 
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -50,45 +53,47 @@ export const migrateClassXp = onCall(async (request) => {
 
       if (currentClassXp >= totalXp) { skippedAlreadyCorrect++; return; }
 
-      toUpdate.push({
-        id: doc.id,
-        name: data.name || doc.id,
-        classType: singleClass,
-        currentClassXp,
-        totalXp,
-      });
-    });
-    if (snapshot.size < 499) break;
-  }
-
-  if (!dryRun && toUpdate.length > 0) {
-    for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
-      const chunk = toUpdate.slice(i, i + BATCH_SIZE);
-      const batch = db.batch();
-      chunk.forEach(({ id, classType, totalXp }) => {
-        batch.update(db.doc(`users/${id}`), {
-          [`gamification.classXp.${classType}`]: totalXp,
+      if (preview.length < 20) {
+        preview.push({
+          name: data.name || doc.id,
+          classType: singleClass,
+          from: currentClassXp,
+          to: totalXp,
+          gain: totalXp - currentClassXp,
         });
-      });
-      await batch.commit();
+      }
+
+      toUpdate.push({ id: doc.id, classType: singleClass, totalXp });
+    });
+
+    if (!dryRun && toUpdate.length > 0) {
+      for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
+        const chunk = toUpdate.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        chunk.forEach(({ id, classType, totalXp }) => {
+          batch.update(db.doc(`users/${id}`), {
+            [`gamification.classXp.${classType}`]: totalXp,
+          });
+        });
+        await batch.commit();
+        updated += chunk.length;
+      }
+    } else {
+      updated += toUpdate.length;
     }
+
+    if (snapshot.size < 500) break;
   }
 
   return {
     dryRun,
     totalScanned,
-    updated: toUpdate.length,
+    updated,
     skippedMultiClass,
     skippedAlreadyCorrect,
     skippedNoClass,
     skippedNoXp,
-    preview: toUpdate.slice(0, 20).map(u => ({
-      name: u.name,
-      classType: u.classType,
-      from: u.currentClassXp,
-      to: u.totalXp,
-      gain: u.totalXp - u.currentClassXp,
-    })),
+    preview,
   };
 });
 // ==========================================
@@ -107,6 +112,7 @@ export const backfillAssignmentDates = onCall(async (request) => {
 
   let updated = 0;
   let skipped = 0;
+  let totalScanned = 0;
   let lastDoc: any = null;
 
   while (true) {
@@ -115,6 +121,7 @@ export const backfillAssignmentDates = onCall(async (request) => {
     const snap = await query.get();
     if (snap.empty) break;
     lastDoc = snap.docs[snap.docs.length - 1];
+    totalScanned += snap.size;
 
     const batch = db.batch();
     let batchCount = 0;
@@ -140,8 +147,8 @@ export const backfillAssignmentDates = onCall(async (request) => {
     if (snap.size < 499) break;
   }
 
-  logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}`);
-  return { updated, skipped };
+  logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}`);
+  return { updated, skipped, totalScanned };
 });
 /**
  * Backfills wordCount and wordsPerSecond for existing assessment submissions.
@@ -155,6 +162,7 @@ export const backfillWordCount = onCall(async (request) => {
 
   let updated = 0;
   let skipped = 0;
+  let totalScanned = 0;
   let lastDoc: any = null;
 
   while (true) {
@@ -165,6 +173,7 @@ export const backfillWordCount = onCall(async (request) => {
     const snap = await query.get();
     if (snap.empty) break;
     lastDoc = snap.docs[snap.docs.length - 1];
+    totalScanned += snap.size;
 
     // Firestore batches max 500 writes
     let batch = db.batch();
@@ -212,8 +221,8 @@ export const backfillWordCount = onCall(async (request) => {
     if (snap.size < 499) break;
   }
 
-  logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}`);
-  return { updated, skipped };
+  logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}`);
+  return { updated, skipped, totalScanned };
 });
 // ==========================================
 // ONE-TIME MIGRATION FUNCTIONS
@@ -224,17 +233,18 @@ export const backfillWordCount = onCall(async (request) => {
  * Admin-only. Idempotent — safe to run multiple times (overwrites existing boss_events docs).
  */
 export const migrateBossesToEvents = onCall(async (request) => {
-  const uid = verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
 
-  // Verify admin
-  const db = admin.firestore();
-  const userSnap = await db.doc(`users/${uid}`).get();
-  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-  const userData = userSnap.data()!;
-  if (userData.role !== 'admin' && userData.role !== 'teacher') {
-    throw new HttpsError("permission-denied", "Admin or teacher required.");
+  // Input validation
+  const { dryRun = false, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRun !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
   }
 
+  const db = admin.firestore();
   let migratedEncounters = 0;
   let migratedQuizzes = 0;
   let errors: string[] = [];
@@ -244,15 +254,17 @@ export const migrateBossesToEvents = onCall(async (request) => {
   for (const doc of encounters.docs) {
     const data = doc.data();
     try {
-      await db.doc(`boss_events/${doc.id}`).set({
-        ...data,
-        mode: 'AUTO_ATTACK',
-        bossName: data.name || data.bossName || 'Unknown Boss',
-        rewards: data.completionRewards || data.rewards || { xp: 0, flux: 0 },
-        bossAppearance: data.bossAppearance || { bossType: 'GOLEM', hue: 0 },
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        await db.doc(`boss_events/${doc.id}`).set({
+          ...data,
+          mode: 'AUTO_ATTACK',
+          bossName: data.name || data.bossName || 'Unknown Boss',
+          rewards: data.completionRewards || data.rewards || { xp: 0, flux: 0 },
+          bossAppearance: data.bossAppearance || { bossType: 'GOLEM', hue: 0 },
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
       migratedEncounters++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -265,12 +277,14 @@ export const migrateBossesToEvents = onCall(async (request) => {
   for (const doc of quizzes.docs) {
     const data = doc.data();
     try {
-      await db.doc(`boss_events/${doc.id}`).set({
-        ...data,
-        mode: 'QUIZ',
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      if (!dryRun) {
+        await db.doc(`boss_events/${doc.id}`).set({
+          ...data,
+          mode: 'QUIZ',
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
       migratedQuizzes++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -279,12 +293,13 @@ export const migrateBossesToEvents = onCall(async (request) => {
   }
 
   logger.info("migrateBossesToEvents complete", {
+    dryRun,
     migratedEncounters,
     migratedQuizzes,
     errorCount: errors.length,
   });
 
-  return { migratedEncounters, migratedQuizzes, errors: errors.slice(0, 20) };
+  return { dryRun, migratedEncounters, migratedQuizzes, errors: errors.slice(0, 20) };
 });
 /**
  * Migrate legacy boss_quiz_progress documents into unified boss_event_progress.
@@ -292,16 +307,18 @@ export const migrateBossesToEvents = onCall(async (request) => {
  * Admin-only. Idempotent.
  */
 export const migrateBossQuizProgress = onCall(async (request) => {
-  const uid = verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
 
-  const db = admin.firestore();
-  const userSnap = await db.doc(`users/${uid}`).get();
-  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-  const userData = userSnap.data()!;
-  if (userData.role !== 'admin' && userData.role !== 'teacher') {
-    throw new HttpsError("permission-denied", "Admin or teacher required.");
+  // Input validation
+  const { dryRun = false, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRun !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
   }
 
+  const db = admin.firestore();
   let migrated = 0;
   let errors: string[] = [];
 
@@ -334,19 +351,21 @@ export const migrateBossQuizProgress = onCall(async (request) => {
         endedAt: (data.currentHp ?? 100) <= 0 ? data.lastUpdated || now : undefined,
       };
 
-      await db.doc(`boss_event_progress/${doc.id}`).set({
-        userId: data.userId,
-        eventId: data.quizId,
-        attempts: [attempt],
-        totalDamageDealt: attempt.combatStats.totalDamageDealt,
-        participationMet: (attempt.combatStats.questionsAttempted || 0) >= 5 && (attempt.combatStats.questionsCorrect || 0) >= 1,
-        rewardClaimed: false,
-        // Legacy fields preserved for safety
-        answeredQuestions: data.answeredQuestions,
-        currentHp: data.currentHp,
-        maxHp: data.maxHp,
-        combatStats: data.combatStats,
-      });
+      if (!dryRun) {
+        await db.doc(`boss_event_progress/${doc.id}`).set({
+          userId: data.userId,
+          eventId: data.quizId,
+          attempts: [attempt],
+          totalDamageDealt: attempt.combatStats.totalDamageDealt,
+          participationMet: (attempt.combatStats.questionsAttempted || 0) >= 5 && (attempt.combatStats.questionsCorrect || 0) >= 1,
+          rewardClaimed: false,
+          // Legacy fields preserved for safety
+          answeredQuestions: data.answeredQuestions,
+          currentHp: data.currentHp,
+          maxHp: data.maxHp,
+          combatStats: data.combatStats,
+        });
+      }
       migrated++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -354,8 +373,8 @@ export const migrateBossQuizProgress = onCall(async (request) => {
     }
   }
 
-  logger.info("migrateBossQuizProgress complete", { migrated, errorCount: errors.length });
-  return { migrated, errors: errors.slice(0, 20) };
+  logger.info("migrateBossQuizProgress complete", { dryRun, migrated, errorCount: errors.length });
+  return { dryRun, migrated, errors: errors.slice(0, 20) };
 });
 // SPECIALIZATION V1 → V2 MIGRATION
 // ==========================================
@@ -378,16 +397,18 @@ const V1_SKILL_COSTS: Record<string, number> = {
  * Admin-only. Idempotent — safe to run multiple times (already-migrated users are skipped).
  */
 export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
-  const uid = verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
 
-  const db = admin.firestore();
-  const userSnap = await db.doc(`users/${uid}`).get();
-  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-  const userData = userSnap.data()!;
-  if (userData.role !== 'admin' && userData.role !== 'teacher') {
-    throw new HttpsError("permission-denied", "Admin or teacher required.");
+  // Input validation
+  const { dryRun = false, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRun !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
   }
 
+  const db = admin.firestore();
   let migrated = 0;
   let skipped = 0;
   let errors: string[] = [];
@@ -427,7 +448,9 @@ export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
         updates['gamification.skillPoints'] = refund;
       }
 
-      await doc.ref.update(updates);
+      if (!dryRun) {
+        await doc.ref.update(updates);
+      }
       migrated++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -473,7 +496,9 @@ export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
         updates['gamification.specializationMigratedFrom'] = spec;
       }
 
-      await doc.ref.update(updates);
+      if (!dryRun) {
+        await doc.ref.update(updates);
+      }
       migrated++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -482,10 +507,11 @@ export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
   }
 
   logger.info("migrateSpecializationsV1ToV2 complete", {
+    dryRun,
     migrated,
     skipped,
     errorCount: errors.length,
   });
 
-  return { migrated, skipped, errors: errors.slice(0, 20) };
+  return { dryRun, migrated, skipped, errors: errors.slice(0, 20) };
 });

@@ -256,14 +256,44 @@ export const awardXP = onCall({ memory: "256MiB" }, async (request) => {
   }
   const db = admin.firestore();
   const userRef = db.collection("users").doc(userId);
+  const rateLimitRef = db.collection("xp_rate_limits").doc(userId);
   await db.runTransaction(async (t) => {
-    const snap = await t.get(userRef);
-    if (!snap.exists) throw new HttpsError("not-found", "User not found.");
-    const data = snap.data()!;
+    const [userSnap, rateSnap] = await Promise.all([
+      t.get(userRef),
+      t.get(rateLimitRef),
+    ]);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    // Rate limiting: 5-second gap + 5000 XP/day cap
+    const now = Date.now();
+    const today = new Date().toISOString().slice(0, 10);
+    const rateData = rateSnap.exists ? rateSnap.data()! : null;
+    if (rateData) {
+      const lastAwardAt = typeof rateData.lastAwardAt === "number" ? rateData.lastAwardAt : 0;
+      if (now - lastAwardAt < 5000) {
+        throw new HttpsError("resource-exhausted", "XP award rate limited. Please wait at least 5 seconds between awards.");
+      }
+      const dayKey = rateData.dayKey || "";
+      const dailyTotal = typeof rateData.dailyTotal === "number" ? rateData.dailyTotal : 0;
+      const currentDaily = dayKey === today ? dailyTotal : 0;
+      if (currentDaily + xpAmount > 5000) {
+        throw new HttpsError("resource-exhausted", "Daily XP cap of 5000 reached.");
+      }
+    }
+
+    const data = userSnap.data()!;
     const result = buildXPUpdates(data, xpAmount, classType);
     const achievementResult = checkAndUnlockAchievements(data, result.updates, true);
     const finalUpdates = { ...result.updates, ...achievementResult.rewardUpdates };
     t.update(userRef, finalUpdates);
+
+    const currentDailyTotal = (rateData?.dayKey === today && typeof rateData?.dailyTotal === "number") ? rateData.dailyTotal : 0;
+    t.set(rateLimitRef, {
+      lastAwardAt: now,
+      dailyTotal: currentDailyTotal + xpAmount,
+      dayKey: today,
+    });
+
     if (achievementResult.newUnlocks.length > 0) {
       await writeAchievementNotifications(db, userId, achievementResult.newUnlocks);
     }
@@ -360,6 +390,10 @@ export const disenchantItem = onCall({ memory: "256MiB" }, async (request) => {
 export const craftItem = onCall({ memory: "256MiB" }, async (request) => {
   const userId = verifyAuth(request.auth);
   const { targetRarity, classType } = request.data || {};
+  const VALID_RARITIES = ["COMMON", "UNCOMMON", "RARE", "UNIQUE"];
+  if (typeof targetRarity === "string" && !VALID_RARITIES.includes(targetRarity)) {
+    throw new HttpsError("invalid-argument", `targetRarity must be one of: ${VALID_RARITIES.join(", ")}`);
+  }
   const rarity = typeof targetRarity === "string" ? targetRarity : "COMMON";
   const cost = FLUX_COSTS[`CRAFT_${rarity}`] || FLUX_COSTS.CRAFT_COMMON;
   const db = admin.firestore();

@@ -26,11 +26,16 @@ export const sundayReset = onSchedule(
     let lastDoc: any = null;
 
     while (true) {
-      let query = db.collection("evidence").limit(499);
-      if (lastDoc) query = query.startAfter(lastDoc);
-      const evidenceSnap = await query.get();
+      let evidenceSnap: FirebaseFirestore.QuerySnapshot;
+      try {
+        let query = db.collection("evidence").limit(499);
+        if (lastDoc) query = query.startAfter(lastDoc);
+        evidenceSnap = await query.get();
+      } catch (err) {
+        logger.error("sundayReset: Evidence query failed, aborting.", err);
+        break;
+      }
       if (evidenceSnap.empty) break;
-      lastDoc = evidenceSnap.docs[evidenceSnap.docs.length - 1];
 
       // Delete images from Storage
       for (const docSnap of evidenceSnap.docs) {
@@ -52,8 +57,14 @@ export const sundayReset = onSchedule(
       // Batch delete Firestore docs
       const chunk = db.batch();
       evidenceSnap.docs.forEach((d) => chunk.delete(d.ref));
-      await chunk.commit();
-      count += evidenceSnap.size;
+      try {
+        await chunk.commit();
+        count += evidenceSnap.size;
+      } catch (err) {
+        logger.error("sundayReset: Batch delete failed, skipping to next batch.", err);
+      }
+
+      lastDoc = evidenceSnap.docs[evidenceSnap.docs.length - 1];
       if (evidenceSnap.size < 499) break;
     }
 
@@ -91,13 +102,13 @@ export const dailyAnalysis = onSchedule(
     let lastUserDoc: any = null;
     while (true) {
       let uQuery = db.collection("users")
-        .where("role", "==", "STUDENT").limit(499);
+        .where("role", "==", "STUDENT").limit(1000);
       if (lastUserDoc) uQuery = uQuery.startAfter(lastUserDoc);
       const uSnap = await uQuery.get();
       if (uSnap.empty) break;
       lastUserDoc = uSnap.docs[uSnap.docs.length - 1];
       allUserDocs.push(...uSnap.docs);
-      if (uSnap.size < 499) break;
+      if (uSnap.size < 1000) break;
     }
     if (allUserDocs.length === 0) {
       logger.info("dailyAnalysis: No students found. Skipping.");
@@ -110,13 +121,13 @@ export const dailyAnalysis = onSchedule(
     let lastSubDoc: any = null;
     while (true) {
       let sQuery = db.collection("submissions")
-        .where("submittedAt", ">=", windowStartISO).limit(499);
+        .where("submittedAt", ">=", windowStartISO).limit(1000);
       if (lastSubDoc) sQuery = sQuery.startAfter(lastSubDoc);
       const sSnap = await sQuery.get();
       if (sSnap.empty) break;
       lastSubDoc = sSnap.docs[sSnap.docs.length - 1];
       allSubDocs.push(...sSnap.docs);
-      if (sSnap.size < 499) break;
+      if (sSnap.size < 1000) break;
     }
     const submissionsSnap = { docs: allSubDocs };
 
@@ -410,13 +421,22 @@ export const dailyAnalysis = onSchedule(
     const timestamp = new Date().toISOString();
 
     // Clear old bucket profiles and write fresh ones
-    const oldBuckets = await db.collection("student_buckets").get();
     let batch = db.batch();
     let count = 0;
-    for (const d of oldBuckets.docs) {
-      batch.delete(d.ref);
-      count++;
-      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    let lastBucketDoc: any = null;
+    while (true) {
+      let bQuery = db.collection("student_buckets").limit(1000);
+      if (lastBucketDoc) bQuery = bQuery.startAfter(lastBucketDoc);
+      const oldBuckets = await bQuery.get();
+      if (oldBuckets.empty) break;
+      lastBucketDoc = oldBuckets.docs[oldBuckets.docs.length - 1];
+
+      for (const d of oldBuckets.docs) {
+        batch.delete(d.ref);
+        count++;
+        if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+      }
+      if (oldBuckets.size < 1000) break;
     }
     if (count % 499 !== 0) await batch.commit();
 
@@ -440,14 +460,23 @@ export const dailyAnalysis = onSchedule(
     }
 
     // Clear old undismissed alerts before writing new ones
-    const oldAlerts = await db.collection("student_alerts")
-      .where("isDismissed", "==", false).get();
     batch = db.batch();
     count = 0;
-    for (const d of oldAlerts.docs) {
-      batch.delete(d.ref);
-      count++;
-      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    let lastAlertDoc: any = null;
+    while (true) {
+      let aQuery = db.collection("student_alerts")
+        .where("isDismissed", "==", false).limit(1000);
+      if (lastAlertDoc) aQuery = aQuery.startAfter(lastAlertDoc);
+      const oldAlerts = await aQuery.get();
+      if (oldAlerts.empty) break;
+      lastAlertDoc = oldAlerts.docs[oldAlerts.docs.length - 1];
+
+      for (const d of oldAlerts.docs) {
+        batch.delete(d.ref);
+        count++;
+        if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+      }
+      if (oldAlerts.size < 1000) break;
     }
     if (count % 499 !== 0) await batch.commit();
 
@@ -543,7 +572,7 @@ export const checkStreaksAtRisk = onSchedule(
       let query = db.collection("users")
         .where("role", "==", "STUDENT")
         .where("isWhitelisted", "==", true)
-        .limit(499);
+        .limit(500);
       if (lastDoc) query = query.startAfter(lastDoc);
       const studentsSnap = await query.get();
       if (studentsSnap.empty) break;
@@ -595,7 +624,7 @@ export const checkStreaksAtRisk = onSchedule(
         await Promise.all(emailPromises.slice(i, i + 100));
       }
 
-      if (studentsSnap.size < 499) break;
+      if (studentsSnap.size < 500) break;
     }
 
     logger.info(`Streak-at-risk: queued ${emailsSent} warning emails (week: ${currentWeekId})`);

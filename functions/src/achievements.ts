@@ -47,6 +47,16 @@ export const ACHIEVEMENT_DEFS: {
   // NOTE: ITEMS_COLLECTED, GEAR_SCORE, STAT_THRESHOLD badges rely on client-computed
   // gear/inventory data and are not checked server-side.
 ];
+
+// Runtime validation: ensure no duplicate achievement IDs
+const seenIds = new Set<string>();
+for (const def of ACHIEVEMENT_DEFS) {
+  if (seenIds.has(def.id)) {
+    throw new Error(`Duplicate achievement ID in ACHIEVEMENT_DEFS: ${def.id}`);
+  }
+  seenIds.add(def.id);
+}
+
 /**
  * Check all achievement conditions against current (projected) gamification state
  * and return updates needed to unlock any newly met achievements + their rewards.
@@ -72,9 +82,9 @@ export function checkAndUnlockAchievements(
   const projectedBosses = pendingUpdates["gamification.bossesDefeated"] ?? (gam.bossesDefeated || 0);
   const projectedSpins = pendingUpdates["gamification.wheelSpins"] ?? (gam.wheelSpins || 0);
   const projectedCrafts = pendingUpdates["gamification.itemsCrafted"] ?? (gam.itemsCrafted || 0);
-  const projectedStreak = gam.engagementStreak || 0;
-  const projectedLoginStreak = gam.loginStreak || 0;
-  const projectedChallenges = gam.challengesCompleted || 0;
+  const projectedStreak = pendingUpdates["gamification.engagementStreak"] ?? (gam.engagementStreak || 0);
+  const projectedLoginStreak = pendingUpdates["gamification.loginStreak"] ?? (gam.loginStreak || 0);
+  const projectedChallenges = pendingUpdates["gamification.challengesCompleted"] ?? (gam.challengesCompleted || 0);
 
   const conditionValues: Record<string, number> = {
     XP_TOTAL: projectedXp,
@@ -143,6 +153,7 @@ export function checkAndUnlockAchievements(
 
   return { newUnlocks, rewardUpdates };
 }
+
 /**
  * Write ACHIEVEMENT_UNLOCKED notifications for newly unlocked badges.
  * Only call from non-transactional contexts (boss defeats, etc.).
@@ -154,18 +165,38 @@ export async function writeAchievementNotifications(
   newUnlocks: string[],
 ): Promise<void> {
   if (newUnlocks.length === 0) return;
+
+  // Deduplicate against existing notifications to prevent races/retries from creating duplicates
+  const existingSnap = await db
+    .collection("notifications")
+    .where("userId", "==", userId)
+    .where("type", "==", "ACHIEVEMENT_UNLOCKED")
+    .where("achievementId", "in", newUnlocks)
+    .get();
+
+  const alreadyNotified = new Set<string>();
+  for (const doc of existingSnap.docs) {
+    const achievementId = doc.data().achievementId as string;
+    if (achievementId) alreadyNotified.add(achievementId);
+  }
+
   const timestamp = new Date().toISOString();
-  const writes = newUnlocks.map((achievementId) => {
-    const def = ACHIEVEMENT_DEFS.find((d) => d.id === achievementId);
-    return db.collection("notifications").add({
-      type: "ACHIEVEMENT_UNLOCKED",
-      userId,
-      achievementId,
-      message: `Achievement unlocked: ${achievementId}`,
-      xpReward: def?.xpReward || 0,
-      fluxReward: def?.fluxReward || 0,
-      timestamp,
+  const writes = newUnlocks
+    .filter((achievementId) => !alreadyNotified.has(achievementId))
+    .map((achievementId) => {
+      const def = ACHIEVEMENT_DEFS.find((d) => d.id === achievementId);
+      return db.collection("notifications").add({
+        type: "ACHIEVEMENT_UNLOCKED",
+        userId,
+        achievementId,
+        message: `Achievement unlocked: ${achievementId}`,
+        xpReward: def?.xpReward || 0,
+        fluxReward: def?.fluxReward || 0,
+        timestamp,
+      });
     });
-  });
-  await Promise.allSettled(writes);
+
+  if (writes.length > 0) {
+    await Promise.allSettled(writes);
+  }
 }

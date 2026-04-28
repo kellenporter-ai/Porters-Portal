@@ -7,10 +7,29 @@ import * as logger from "firebase-functions/logger";
 // ADMIN SETUP — Set Custom Claims
 // ==========================================
 
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://porters-portal.web.app",
+  "https://porters-portal.firebaseapp.com",
+];
+
+function validateOrigin(req: any, res: any): boolean {
+  const origin = req.headers.origin as string | undefined;
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    res.status(403).send("FORBIDDEN: Invalid or missing Origin header.");
+    return false;
+  }
+  return true;
+}
+
 // Call this ONCE via browser URL after deploy to bootstrap your admin account.
 // Requires the X-Admin-Secret header to match the ADMIN_BOOTSTRAP_SECRET env var.
 export const setAdminClaim = onRequest(async (req, res) => {
   try {
+    // Validate origin to prevent CSRF
+    if (!validateOrigin(req, res)) return;
+
     // Authenticate the request with a secret token
     const secret = req.headers["x-admin-secret"];
     const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
@@ -43,6 +62,9 @@ export const setAdminClaim = onRequest(async (req, res) => {
 
 export const fixCors = onRequest(async (req, res) => {
   try {
+    // Validate origin to prevent CSRF
+    if (!validateOrigin(req, res)) return;
+
     // Authenticate the request with a secret token
     const secret = req.headers["x-admin-secret"];
     const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
@@ -55,10 +77,9 @@ export const fixCors = onRequest(async (req, res) => {
       return;
     }
 
-    const allowedOrigin = process.env.ALLOWED_ORIGIN || "https://porters-portal.web.app";
     const bucket = admin.storage().bucket();
     await bucket.setCorsConfiguration([{
-      origin: [allowedOrigin],
+      origin: ALLOWED_ORIGINS,
       method: ["GET", "HEAD", "OPTIONS"],
       maxAgeSeconds: 3600,
     }]);

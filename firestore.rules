@@ -39,9 +39,9 @@ service cloud.firestore {
     // USER PROFILES
     // ==========================================
     match /users/{userId} {
-      // All authenticated users can read profiles (needed for leaderboard + class roster).
-      // Sensitive data (if any) should be stored in a separate subcollection.
-      allow read: if isAuthenticated();
+      // Students can read their own profile; admin can read all.
+      // Public profile data (leaderboard, class roster) is served from a separate collection.
+      allow read: if isOwner(userId) || isAdmin();
       
       // Users can create their own profile on first login
       allow create: if isOwner(userId);
@@ -64,7 +64,7 @@ service cloud.firestore {
             && (
               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['gamification'])
               || request.resource.data.gamification.diff(resource.data.gamification).affectedKeys()
-                  .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeQuests', 'selectedCharacterModel', 'dismissedAnnouncements'])
+                  .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeDailyChallenges', 'selectedCharacterModel', 'dismissedAnnouncements'])
             ));
       
       // Only admin can delete user profiles
@@ -75,8 +75,8 @@ service cloud.firestore {
     // WHITELIST (allowed_emails)
     // ==========================================
     match /allowed_emails/{email} {
-      // Anyone authenticated can check if they're whitelisted (needed for login flow)
-      allow read: if isAuthenticated();
+      // Admin-only: prevents email enumeration
+      allow read: if isAdmin();
       
       // Only admin can manage the whitelist
       allow write: if isAdmin();
@@ -108,7 +108,7 @@ service cloud.firestore {
         request.resource.data.isAssessment != true &&
         request.resource.data.keys().hasOnly([
           'userId', 'userName', 'assignmentId', 'assignmentTitle',
-          'metrics', 'status', 'score', 'submittedAt', 'classType', 'section',
+          'metrics', 'submittedAt', 'classType', 'section',
           'blockResponses', 'lessonId', 'lessonTitle'
         ]);
 
@@ -444,8 +444,8 @@ service cloud.firestore {
     // ENROLLMENT CODES
     // ==========================================
     match /enrollment_codes/{codeId} {
-      // Admin can read all codes; students can read to validate a code
-      allow read: if isAuthenticated();
+      // Admin-only: prevents code enumeration
+      allow read: if isAdmin();
       // Only admin can create codes
       allow create: if isAdmin();
       // Redemption now handled by Cloud Function (atomic transaction) — admin-only direct updates

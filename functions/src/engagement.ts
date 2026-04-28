@@ -340,7 +340,7 @@ export const updateStreak = onCall(async (request) => {
       (lastYear === d.getUTCFullYear() && lastWeekNum === weekNum - 1) ||
       (lastYear === d.getUTCFullYear() - 1 && weekNum === 1 && lastWeekNum >= 52);
 
-    const newStreak = isConsecutive ? currentStreak + 1 : 1;
+    const newStreak = Math.min(isConsecutive ? currentStreak + 1 : 1, 999);
 
     transaction.update(userRef, {
       "gamification.engagementStreak": newStreak,
@@ -459,9 +459,18 @@ export const spinFortuneWheel = onCall(async (request) => {
 
     const data = userSnap.data()!;
     const gam = data.gamification || {};
-    const today = new Date().toISOString().split("T")[0];
+    const now = Date.now();
+    const oneHourAgo = now - 3600000; // 1 hour in ms
+    const lastSpinAt = gam.lastWheelSpinAt;
+    const lastSpinDate = gam.lastWheelSpin;
 
-    if (gam.lastWheelSpin === today) {
+    if (lastSpinAt) {
+      const lastSpinTime = new Date(lastSpinAt).getTime();
+      if (lastSpinTime > oneHourAgo) {
+        const minutesLeft = Math.ceil((lastSpinTime - oneHourAgo) / 60000);
+        throw new HttpsError("failed-precondition", `Wheel on cooldown. Try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`);
+      }
+    } else if (lastSpinDate === new Date().toISOString().split("T")[0]) {
       throw new HttpsError("failed-precondition", "Already spun today. Come back tomorrow!");
     }
 
@@ -479,7 +488,8 @@ export const spinFortuneWheel = onCall(async (request) => {
     }
 
     const updates: Record<string, unknown> = {
-      "gamification.lastWheelSpin": today,
+      "gamification.lastWheelSpinAt": new Date().toISOString(),
+      "gamification.lastWheelSpin": new Date().toISOString().split("T")[0],
     };
     // Start from current currency minus wheel cost
     let currencyAfter = (gam.currency || 0) - WHEEL_COST;

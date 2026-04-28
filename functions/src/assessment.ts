@@ -26,7 +26,7 @@ function gradeAssessmentBlocks(
       let isCorrect = false;
       let needsReview = false;
 
-      if (block.type === "MC" && resp?.selected === block.correctAnswer) {
+      if (block.type === "MC" && String(resp?.selected ?? "").trim() === String(block.correctAnswer ?? "").trim()) {
         isCorrect = true;
       }
       if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
@@ -194,32 +194,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   let status: string = "CLEAN";
   let xpEarned = 0;
 
-  // Everything after token claim is wrapped in try/catch for compensating rollback
-  try {
-
-  // 3. Read assignment to get answer keys
-  const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
-  if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
-  const assignment = assignmentSnap.data()!;
-
-  if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
-
-  // Validate student is enrolled in the class offering this assessment
-  if (assignment.classType) {
-    const studentSnap = await db.doc(`users/${uid}`).get();
-    const studentData = studentSnap.data();
-    const enrolledClasses: string[] = studentData?.enrolledClasses || [];
-    const studentClassType = studentData?.classType;
-    if (!enrolledClasses.includes(assignment.classType) && studentClassType !== assignment.classType) {
-      throw new HttpsError("permission-denied", "Not enrolled in the class for this assessment.");
-    }
-  }
-
-  // 3. Grade auto-gradable blocks
-  const blocks = assignment.lessonBlocks || [];
-  ({ correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses));
-
-  // 4. Determine attempt number
+  // Pre-read attempt number (outside transaction — where() not allowed in transactions)
   const existingSubs = await db.collection("submissions")
     .where("userId", "==", uid)
     .where("assignmentId", "==", assignmentId)
@@ -228,7 +203,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   const activeSubmissions = existingSubs.docs.filter(d => d.data().status !== "RETURNED");
   attemptNumber = activeSubmissions.length + 1;
 
-  // 5. Calculate telemetry status
+  // Pre-read telemetry thresholds
   let assessmentThresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
     const configSnap = await db.collection("class_configs")
@@ -237,139 +212,153 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
       assessmentThresholds = configSnap.docs[0].data().telemetryThresholds || {};
     }
   }
-  // 5a. Server-side elapsed time validation
-  // If we have a session token, use its server-recorded startedAt for elapsed time
-  // (much more trustworthy than client-reported startTime).
-  // Otherwise fall back to client-reported startTime.
-  const serverNow = Date.now();
-  const effectiveStartTime = sessionStartedAt || metrics.startTime || serverNow;
-  const serverElapsedSec = Math.max(0, (serverNow - effectiveStartTime) / 1000);
-  // Use the lesser of client-reported engagement and server-computed elapsed time.
-  // This prevents students from fabricating high engagement times via direct API calls.
-  const validatedEngagement = metrics.engagementTime > 0
-    ? Math.min(metrics.engagementTime, serverElapsedSec + 5) // +5s grace for network latency
-    : 0;
 
-  // Count non-empty responses to assess plausibility
-  const responseKeys = Object.keys(responses || {});
-  const nonEmptyResponses = responseKeys.filter(key => {
-    const r = responses[key];
-    if (!r) return false;
-    if (typeof r === 'string') return r.trim().length > 0;
-    if (typeof r === 'object') {
-      // Check for common response shapes: { selected, answer, placements, order, elements, steps, initial }
-      const obj = r as Record<string, unknown>;
-      return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0) ||
-        (obj.placements && Object.keys(obj.placements as Record<string, unknown>).length > 0) ||
-        (Array.isArray(obj.order) && obj.order.length > 0) ||
-        (Array.isArray(obj.elements) && obj.elements.length > 0) || // DRAWING
-        (Array.isArray(obj.steps) && obj.steps.length > 0) || // MATH_RESPONSE
-        (Array.isArray(obj.initial)); // BAR_CHART
+  // Everything after token claim is wrapped in try/catch for compensating rollback
+  try {
+
+  // Wrap grading + write in a transaction for atomicity
+  const txResult = await db.runTransaction(async (transaction) => {
+    // 3. Read assignment to get answer keys
+    const assignmentSnap = await transaction.get(db.doc(`assignments/${assignmentId}`));
+    if (!assignmentSnap.exists) throw new HttpsError("not-found", "Assignment not found");
+    const assignment = assignmentSnap.data()!;
+
+    if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
+
+    // Validate student is enrolled in the class offering this assessment
+    let userSection: string | undefined;
+    if (assignment.classType) {
+      const studentSnap = await transaction.get(db.doc(`users/${uid}`));
+      const studentData = studentSnap.data();
+      const enrolledClasses: string[] = studentData?.enrolledClasses || [];
+      const studentClassType = studentData?.classType;
+      if (!enrolledClasses.includes(assignment.classType) && studentClassType !== assignment.classType) {
+        throw new HttpsError("permission-denied", "Not enrolled in the class for this assessment.");
+      }
+      userSection = studentData?.classSections?.[classType]
+        ?? ((studentData?.classType === classType || (studentData?.enrolledClasses || []).includes(classType)) ? studentData?.section : undefined);
     }
-    return true;
-  });
 
-  // 5b. Calculate word count from short-answer responses (moved BEFORE feedback calculation)
-  let totalWordCount = 0;
-  for (const block of blocks) {
-    if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
-      const resp = responses[block.id];
-      const answerText = typeof resp?.answer === "string" ? resp.answer.trim() : "";
-      if (answerText.length > 0) {
-        totalWordCount += answerText.split(/\s+/).length;
+    // 3. Grade auto-gradable blocks
+    const blocks = assignment.lessonBlocks || [];
+    const gradeResult = gradeAssessmentBlocks(blocks, responses);
+
+    // 5a. Server-side elapsed time validation
+    const serverNow = Date.now();
+    const effectiveStartTime = sessionStartedAt || metrics.startTime || serverNow;
+    const serverElapsedSec = Math.max(0, (serverNow - effectiveStartTime) / 1000);
+    // Use the lesser of client-reported engagement and server-computed elapsed time.
+    const validatedEngagement = metrics.engagementTime > 0
+      ? Math.min(metrics.engagementTime, serverElapsedSec + 5)
+      : 0;
+
+    // Count non-empty responses to assess plausibility
+    const responseKeys = Object.keys(responses || {});
+    const nonEmptyResponses = responseKeys.filter(key => {
+      const r = responses[key];
+      if (!r) return false;
+      if (typeof r === 'string') return r.trim().length > 0;
+      if (typeof r === 'object') {
+        const obj = r as Record<string, unknown>;
+        return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0) ||
+          (obj.placements && Object.keys(obj.placements as Record<string, unknown>).length > 0) ||
+          (Array.isArray(obj.order) && obj.order.length > 0) ||
+          (Array.isArray(obj.elements) && obj.elements.length > 0) ||
+          (Array.isArray(obj.steps) && obj.steps.length > 0) ||
+          (Array.isArray(obj.initial));
+      }
+      return true;
+    });
+
+    // 5b. Calculate word count from short-answer responses
+    let totalWordCount = 0;
+    for (const block of blocks) {
+      if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
+        const resp = responses[block.id];
+        const answerText = typeof resp?.answer === "string" ? resp.answer.trim() : "";
+        if (answerText.length > 0) {
+          totalWordCount += answerText.split(/\s+/).length;
+        }
       }
     }
-  }
-  const wordsPerSecond = validatedEngagement > 0 ? Math.round((totalWordCount / validatedEngagement) * 100) / 100 : 0;
+    const wordsPerSecond = validatedEngagement > 0 ? Math.round((totalWordCount / validatedEngagement) * 100) / 100 : 0;
 
-  // 5c. Calculate telemetry status (now with word metrics for cross-validation)
-  let feedback = "Assignment submitted successfully.";
-  ({ status, feedback } = calculateFeedbackServerSide({
-    pasteCount: metrics.pasteCount || 0,
-    engagementTime: validatedEngagement,
-    keystrokes: metrics.keystrokes || 0,
-    tabSwitchCount: metrics.tabSwitchCount || 0,
-    wordCount: totalWordCount,
-    wordsPerSecond,
-  }, assessmentThresholds, {
-    responseCount: nonEmptyResponses.length,
-    hasWrittenResponses: nonEmptyResponses.length > 0,
-  }));
-
-  if (status === "FLAGGED") {
-    logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
-      `clientEngagement=${metrics.engagementTime}s, serverElapsed=${Math.round(serverElapsedSec)}s, ` +
-      `validatedEngagement=${Math.round(validatedEngagement)}s, keystrokes=${metrics.keystrokes}, ` +
-      `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}, feedback="${feedback}"`);
-  }
-
-  // 5d. Look up student's section for this class
-  let userSection: string | undefined;
-  if (classType) {
-    const userSnap = await db.doc(`users/${uid}`).get();
-    if (userSnap.exists) {
-      const userData = userSnap.data()!;
-      userSection = userData.classSections?.[classType]
-        ?? ((userData.classType === classType || (userData.enrolledClasses || []).includes(classType)) ? userData.section : undefined);
-    }
-  }
-
-  // 6. Create submission doc
-  const assessmentSubmission = {
-    userId: uid,
-    userName: userName || "Student",
-    assignmentId,
-    assignmentTitle: assignment.title || "",
-    metrics: {
-      engagementTime: validatedEngagement,
-      clientReportedEngagement: metrics.engagementTime || 0,
-      keystrokes: metrics.keystrokes || 0,
+    // 5c. Calculate telemetry status
+    let feedback = "Assignment submitted successfully.";
+    let txStatus = "CLEAN";
+    ({ status: txStatus, feedback } = calculateFeedbackServerSide({
       pasteCount: metrics.pasteCount || 0,
-      clickCount: metrics.clickCount || 0,
-      startTime: metrics.startTime || 0,
-      lastActive: metrics.lastActive || 0,
+      engagementTime: validatedEngagement,
+      keystrokes: metrics.keystrokes || 0,
       tabSwitchCount: metrics.tabSwitchCount || 0,
-      perBlockTiming: metrics.perBlockTiming || {},
-      typingCadence: metrics.typingCadence || {},
-      serverElapsedSec: Math.round(serverElapsedSec),
       wordCount: totalWordCount,
       wordsPerSecond,
-    },
-    submittedAt: new Date().toISOString(),
-    status,
-    feedback,
-    score: percentage,
-    isAssessment: true,
-    attemptNumber,
-    assessmentScore: { correct, total, percentage, perBlock },
-    blockResponses: responses,
-    privateComments: [],
-    hasUnreadAdmin: true,
-    hasUnreadStudent: false,
-    classType: classType || "",
-    ...(userSection ? { userSection } : {}),
-    ...(sessionToken ? { sessionToken } : {}),
-  };
+    }, assessmentThresholds, {
+      responseCount: nonEmptyResponses.length,
+      hasWrittenResponses: nonEmptyResponses.length > 0,
+    }));
 
-  // Phase 2: Batch write — submission create + draft delete
-  // Token already claimed in Phase 1, so no transaction needed here
-  if (tokenRef) {
-    const batch = db.batch();
-    // Create submission
+    if (txStatus === "FLAGGED") {
+      logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
+        `clientEngagement=${metrics.engagementTime}s, serverElapsed=${Math.round(serverElapsedSec)}s, ` +
+        `validatedEngagement=${Math.round(validatedEngagement)}s, keystrokes=${metrics.keystrokes}, ` +
+        `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}, feedback="${feedback}"`);
+    }
+
+    // 6. Create submission doc
+    const assessmentSubmission = {
+      userId: uid,
+      userName: userName || "Student",
+      assignmentId,
+      assignmentTitle: assignment.title || "",
+      metrics: {
+        engagementTime: validatedEngagement,
+        clientReportedEngagement: metrics.engagementTime || 0,
+        keystrokes: metrics.keystrokes || 0,
+        pasteCount: metrics.pasteCount || 0,
+        clickCount: metrics.clickCount || 0,
+        startTime: metrics.startTime || 0,
+        lastActive: metrics.lastActive || 0,
+        tabSwitchCount: metrics.tabSwitchCount || 0,
+        perBlockTiming: metrics.perBlockTiming || {},
+        typingCadence: metrics.typingCadence || {},
+        serverElapsedSec: Math.round(serverElapsedSec),
+        wordCount: totalWordCount,
+        wordsPerSecond,
+      },
+      submittedAt: new Date().toISOString(),
+      status: txStatus,
+      feedback,
+      score: gradeResult.percentage,
+      isAssessment: true,
+      attemptNumber,
+      assessmentScore: gradeResult,
+      blockResponses: responses,
+      privateComments: [],
+      hasUnreadAdmin: true,
+      hasUnreadStudent: false,
+      classType: classType || "",
+      ...(userSection ? { userSection } : {}),
+      ...(sessionToken ? { sessionToken } : {}),
+    };
+
+    // Atomic write: submission create + draft delete
     const submissionRef = db.collection("submissions").doc();
-    batch.set(submissionRef, assessmentSubmission);
-    // Delete draft — prevents stale data on retakes
+    transaction.set(submissionRef, assessmentSubmission);
     const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
-    batch.delete(draftRef);
-    await batch.commit();
-  } else {
-    // No session token path — should not reach here (thrown above), but safety fallback
-    await db.collection("submissions").add(assessmentSubmission);
-  }
+    transaction.delete(draftRef);
+
+    return { gradeResult, status: txStatus, feedback };
+  });
+
+  correct = txResult.gradeResult.correct;
+  total = txResult.gradeResult.total;
+  percentage = txResult.gradeResult.percentage;
+  perBlock = txResult.gradeResult.perBlock;
+  status = txResult.status;
 
   } catch (err) {
     // Compensating action: un-claim token so student can retry
-    // Only runs if submission batch was NOT yet committed
     if (tokenRef) {
       try {
         await tokenRef.update({ used: false, usedAt: admin.firestore.FieldValue.delete() });
@@ -378,7 +367,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
         logger.error(`submitAssessment: failed to unclaim token for uid=${uid}`, rollbackErr);
       }
     }
-    throw err; // Re-throw the original error
+    throw err;
   }
 
   // 7. Award XP scaled by percentage (outside try/catch — XP failure must NOT
@@ -503,8 +492,12 @@ export const returnAssessment = onCall(async (request) => {
 // SUBMIT ON BEHALF — Admin submits student's draft work
 // ==========================================
 export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) => {
-  // 1. Verify admin
-  await verifyAdmin(request.auth);
+  // 1. Verify auth and admin status
+  const callerUid = request.auth?.uid;
+  if (!callerUid) throw new HttpsError("unauthenticated", "Must be logged in.");
+
+  const callerUser = await admin.auth().getUser(callerUid);
+  const isAdmin = !!callerUser.customClaims?.admin;
 
   // 2. Validate input
   const { userId, assignmentId } = request.data;
@@ -541,6 +534,16 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
   if (!assignment.isAssessment) {
     logger.error("submitOnBehalf: Not an assessment", { userId, assignmentId });
     throw new HttpsError("invalid-argument", "Not an assessment");
+  }
+
+  // Verify caller is admin or teacher of this class
+  if (!isAdmin) {
+    const callerSnap = await db.doc(`users/${callerUid}`).get();
+    const callerData = callerSnap.exists ? callerSnap.data()! : {};
+    const teacherClasses = callerData.teacherClasses || [];
+    if (!assignment.classType || !teacherClasses.includes(assignment.classType)) {
+      throw new HttpsError("permission-denied", "Admin or teacher of this class required.");
+    }
   }
 
   // 5. Grade using shared helper
@@ -746,18 +749,19 @@ export const uploadQuestionBank = onCall(async (request) => {
   }
 
   // Validate question structure
+  const VALID_QUESTION_TYPES = ["MC", "SHORT_ANSWER", "SORTING", "RANKING", "LINKED", "DRAWING", "MATH_RESPONSE", "BAR_CHART", "DATA_TABLE", "CHECKLIST"];
   const valid = questions.every((q: Record<string, unknown>) =>
     typeof q.id === "string" && (q.id as string).length > 0 &&
     typeof q.tier === "string" &&
-    typeof q.type === "string" &&
+    typeof q.type === "string" && VALID_QUESTION_TYPES.includes(q.type as string) &&
     typeof q.stem === "string" && (q.stem as string).length > 0 &&
     Array.isArray(q.options) && (q.options as unknown[]).length >= 2 &&
-    q.correctAnswer !== undefined &&
+    q.correctAnswer !== undefined && q.correctAnswer !== null && q.correctAnswer !== "" &&
     (typeof q.xp === "undefined" || (typeof q.xp === "number" && q.xp >= 0 && q.xp <= 50)));
   if (!valid) {
     throw new HttpsError(
       "invalid-argument",
-      "Some questions have invalid structure. Required: id (string), tier (string), type (string), stem (string), options (array, 2+), correctAnswer, xp (0-50 if provided).",
+      "Some questions have invalid structure. Required: id (non-empty string), tier (string), type (valid block type), stem (non-empty string), options (array, 2+), correctAnswer (non-empty), xp (0-50 if provided).",
     );
   }
 
