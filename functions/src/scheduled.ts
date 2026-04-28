@@ -1,0 +1,603 @@
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as admin from "firebase-admin";
+import * as logger from "firebase-functions/logger";
+import { verifyAdmin } from "./core";
+import { queueEmail } from "./classroom";
+
+// ==========================================
+// SCHEDULED FUNCTIONS
+// ==========================================
+
+// Weekly reset — Cleans up evidence locker uploads (images in Storage + Firestore docs)
+// to keep storage costs down. NO other data is touched — submissions, assignments, etc.
+// all persist indefinitely.
+export const sundayReset = onSchedule(
+  { schedule: "59 23 * * 0", timeZone: "America/New_York" },
+  async () => {
+    const db = admin.firestore();
+    const bucket = admin.storage().bucket();
+
+    logger.info("Starting weekly evidence cleanup...");
+
+    // 1. Delete uploaded images from Storage + Firestore docs in paginated batches
+    let storageDeleted = 0;
+    let count = 0;
+    let lastDoc: any = null;
+
+    while (true) {
+      let query = db.collection("evidence").limit(499);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const evidenceSnap = await query.get();
+      if (evidenceSnap.empty) break;
+      lastDoc = evidenceSnap.docs[evidenceSnap.docs.length - 1];
+
+      // Delete images from Storage
+      for (const docSnap of evidenceSnap.docs) {
+        const data = docSnap.data();
+        if (data.imageUrl) {
+          try {
+            const urlPath = decodeURIComponent(new URL(data.imageUrl).pathname);
+            const match = urlPath.match(/\/o\/(.+)/);
+            if (match) {
+              await bucket.file(match[1]).delete().catch(() => {});
+              storageDeleted++;
+            }
+          } catch {
+            // File may already be deleted — not critical
+          }
+        }
+      }
+
+      // Batch delete Firestore docs
+      const chunk = db.batch();
+      evidenceSnap.docs.forEach((d) => chunk.delete(d.ref));
+      await chunk.commit();
+      count += evidenceSnap.size;
+      if (evidenceSnap.size < 499) break;
+    }
+
+    logger.info(`Deleted ${storageDeleted} evidence images from Storage.`);
+    logger.info(`Deleted ${count} evidence documents from Firestore.`);
+  }
+);
+// ==========================================
+// EARLY WARNING SYSTEM — Predictive Analytics
+// ==========================================
+
+/**
+ * dailyAnalysis — Runs every day at 6 AM EST.
+ * Computes an Engagement Score (ES) per student, compares against class
+ * mean/std-dev, and writes alerts for at-risk students.
+ *
+ * ES = (timeOnTask weight 0.4) + (submissionCount weight 0.3) + (resourceClicks weight 0.3)
+ * All components are normalized to 0-100 before weighting.
+ */
+export const dailyAnalysis = onSchedule(
+  { schedule: "0 6 * * *", timeZone: "America/New_York" },
+  async () => {
+    const db = admin.firestore();
+    const now = new Date();
+
+    // Analysis window: last 7 days of submissions
+    const windowStart = new Date(now);
+    windowStart.setDate(windowStart.getDate() - 7);
+    const windowStartISO = windowStart.toISOString();
+
+    logger.info(`dailyAnalysis: Analyzing submissions since ${windowStartISO}`);
+
+    // 1. Fetch all students (paginated)
+    const allUserDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let lastUserDoc: any = null;
+    while (true) {
+      let uQuery = db.collection("users")
+        .where("role", "==", "STUDENT").limit(499);
+      if (lastUserDoc) uQuery = uQuery.startAfter(lastUserDoc);
+      const uSnap = await uQuery.get();
+      if (uSnap.empty) break;
+      lastUserDoc = uSnap.docs[uSnap.docs.length - 1];
+      allUserDocs.push(...uSnap.docs);
+      if (uSnap.size < 499) break;
+    }
+    if (allUserDocs.length === 0) {
+      logger.info("dailyAnalysis: No students found. Skipping.");
+      return;
+    }
+    const usersSnap = { docs: allUserDocs, empty: false };
+
+    // 2. Fetch recent submissions (paginated)
+    const allSubDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let lastSubDoc: any = null;
+    while (true) {
+      let sQuery = db.collection("submissions")
+        .where("submittedAt", ">=", windowStartISO).limit(499);
+      if (lastSubDoc) sQuery = sQuery.startAfter(lastSubDoc);
+      const sSnap = await sQuery.get();
+      if (sSnap.empty) break;
+      lastSubDoc = sSnap.docs[sSnap.docs.length - 1];
+      allSubDocs.push(...sSnap.docs);
+      if (sSnap.size < 499) break;
+    }
+    const submissionsSnap = { docs: allSubDocs };
+
+    // Build per-student metrics
+    const studentMetrics: Map<string, {
+      totalTime: number;       // seconds of engagement
+      submissionCount: number; // number of submissions
+      totalClicks: number;     // total click count
+      totalPastes: number;     // total paste count
+      totalKeystrokes: number; // total keystroke count
+      totalXP: number;         // XP earned in window
+      activityDays: Set<string>; // distinct YYYY-MM-DD dates with submissions
+      classTypes: Set<string>;
+    }> = new Map();
+
+    // Initialize all students with zero metrics
+    usersSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      const classes = data.enrolledClasses || (data.classType ? [data.classType] : []);
+      studentMetrics.set(doc.id, {
+        totalTime: 0,
+        submissionCount: 0,
+        totalClicks: 0,
+        totalPastes: 0,
+        totalKeystrokes: 0,
+        totalXP: 0,
+        activityDays: new Set(),
+        classTypes: new Set(classes),
+      });
+    });
+
+    // Aggregate submission data
+    submissionsSnap.docs.forEach((doc) => {
+      const sub = doc.data();
+      const existing = studentMetrics.get(sub.userId);
+      if (!existing) return; // Not a current student
+      existing.totalTime += Number(sub.metrics?.engagementTime || 0);
+      existing.submissionCount += 1;
+      existing.totalClicks += Number(sub.metrics?.clickCount || 0);
+      existing.totalPastes += Number(sub.metrics?.pasteCount || 0);
+      existing.totalKeystrokes += Number(sub.metrics?.keystrokes || 0);
+      existing.totalXP += Number(sub.score || 0);
+      // Track distinct activity days
+      if (sub.submittedAt) {
+        existing.activityDays.add(String(sub.submittedAt).split("T")[0]);
+      }
+    });
+
+    // 3. Compute Engagement Scores per class
+    // Group students by class for relative comparison
+    const classBuckets: Map<string, { studentId: string; name: string; es: number; metrics: typeof studentMetrics extends Map<string, infer V> ? V : never }[]> = new Map();
+
+    usersSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      const m = studentMetrics.get(doc.id);
+      if (!m) return;
+
+      // Normalize each component to 0-100 range
+      // Time: 0 = 0, 3600s (1hr) = 100 (capped)
+      const timeNorm = Math.min(100, (m.totalTime / 3600) * 100);
+      // Submissions: 0 = 0, 10 submissions = 100 (capped)
+      const subNorm = Math.min(100, (m.submissionCount / 10) * 100);
+      // Clicks: 0 = 0, 200 clicks = 100 (capped)
+      const clickNorm = Math.min(100, (m.totalClicks / 200) * 100);
+
+      const es = (timeNorm * 0.4) + (subNorm * 0.3) + (clickNorm * 0.3);
+
+      const classes = data.enrolledClasses || (data.classType ? [data.classType] : ["Uncategorized"]);
+      for (const cls of classes) {
+        if (!classBuckets.has(cls)) classBuckets.set(cls, []);
+        classBuckets.get(cls)!.push({
+          studentId: doc.id,
+          name: data.name || "Unknown",
+          es,
+          metrics: m,
+        });
+      }
+    });
+
+    // 4. For each class, compute mean/stddev and flag outliers
+    const alerts: {
+      studentId: string;
+      studentName: string;
+      classType: string;
+      riskLevel: string;
+      reason: string;
+      message: string;
+      engagementScore: number;
+      classMean: number;
+      classStdDev: number;
+      bucket?: string;
+    }[] = [];
+
+    // Bucket profiles for ALL students (not just at-risk)
+    const bucketProfiles: {
+      studentId: string;
+      studentName: string;
+      classType: string;
+      bucket: string;
+      engagementScore: number;
+      metrics: {
+        totalTime: number;
+        submissionCount: number;
+        totalClicks: number;
+        totalPastes: number;
+        totalKeystrokes: number;
+        avgPasteRatio: number;
+        activityDays: number;
+      };
+      recommendation: {
+        categories: string[];
+        action: string;
+        studentTip: string;
+      };
+    }[] = [];
+
+    classBuckets.forEach((students, classType) => {
+      if (students.length < 3) return; // Need enough students for meaningful stats
+
+      const scores = students.map((s) => s.es);
+      const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const variance = scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length;
+      const stdDev = Math.sqrt(variance);
+
+      // Skip if everyone is at zero (e.g. summer break)
+      if (mean < 1) return;
+
+      for (const student of students) {
+        const zScore = stdDev > 0 ? (student.es - mean) / stdDev : 0;
+
+        // CRITICAL: ES is more than 2 std devs below mean AND below 10 absolute
+        if (zScore < -2 && student.es < 10) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "CRITICAL",
+            reason: "LOW_ENGAGEMENT",
+            message: `Engagement score (${student.es.toFixed(1)}) is critically below class average (${mean.toFixed(1)}). No meaningful activity detected this week.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        // HIGH: ES is 1.5+ std devs below mean
+        } else if (zScore < -1.5) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "HIGH",
+            reason: "LOW_ENGAGEMENT",
+            message: `Engagement score (${student.es.toFixed(1)}) is significantly below class average (${mean.toFixed(1)}). Student may need intervention.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        // MODERATE: ES is 1+ std devs below mean
+        } else if (zScore < -1) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "MODERATE",
+            reason: "LOW_ENGAGEMENT",
+            message: `Engagement score (${student.es.toFixed(1)}) is below class average (${mean.toFixed(1)}). Monitor for declining trend.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // STRUGGLING: High effort (lots of time/keystrokes) but low XP yield
+        if (student.metrics.totalTime > 1800 && student.metrics.totalXP < 50 && student.metrics.submissionCount >= 2) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "MODERATE",
+            reason: "STRUGGLING",
+            message: `High engagement time (${Math.round(student.metrics.totalTime / 60)}m) but low XP earned (${student.metrics.totalXP}). Student may be struggling with material.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // NO ACTIVITY: Zero submissions in the analysis window
+        if (student.metrics.submissionCount === 0) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "HIGH",
+            reason: "NO_ACTIVITY",
+            message: "No submissions recorded in the past 7 days. Student may be disengaged.",
+            engagementScore: 0,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // HIGH PASTE RATE: Consistently high paste counts
+        if (student.metrics.totalPastes > 15 && student.metrics.submissionCount >= 3) {
+          alerts.push({
+            studentId: student.studentId,
+            studentName: student.name,
+            classType,
+            riskLevel: "MODERATE",
+            reason: "HIGH_PASTE_RATE",
+            message: `High paste frequency (${student.metrics.totalPastes} pastes across ${student.metrics.submissionCount} submissions). May indicate copy-paste behavior.`,
+            engagementScore: Math.round(student.es * 10) / 10,
+            classMean: Math.round(mean * 10) / 10,
+            classStdDev: Math.round(stdDev * 10) / 10,
+          });
+        }
+
+        // ── TELEMETRY BUCKET CLASSIFICATION ──
+        const m = student.metrics;
+        const pasteRatio = (m.totalKeystrokes + m.totalPastes) > 0
+          ? m.totalPastes / (m.totalKeystrokes + m.totalPastes) : 0;
+        const days = m.activityDays.size;
+
+        let bucket = "ON_TRACK";
+        if (m.submissionCount === 0 && m.totalTime < 60) {
+          bucket = "INACTIVE";
+        } else if (pasteRatio > 0.4 && m.submissionCount >= 2 && m.totalPastes > 8) {
+          bucket = "COPYING";
+        } else if (m.totalTime > 1800 && m.submissionCount >= 2 && m.totalXP < 50) {
+          bucket = "STRUGGLING";
+        } else if (zScore < -0.5 && days <= 2 && m.submissionCount >= 1 && m.submissionCount <= 3) {
+          bucket = "DISENGAGING";
+        } else if (m.totalTime > 1800 && days <= 2 && m.submissionCount >= 3) {
+          bucket = "SPRINTING";
+        } else if (zScore < -0.5 && zScore >= -1.5) {
+          bucket = "COASTING";
+        } else if (zScore > 0.75 && m.submissionCount >= 4 && pasteRatio < 0.15 && days >= 3) {
+          bucket = "THRIVING";
+        }
+
+        // Recommendation engine (server-side mirror of client getBucketRecommendation)
+        const recMap: Record<string, { categories: string[]; action: string; studentTip: string }> = {
+          THRIVING: { categories: ["Simulation", "Supplemental", "Article"], action: "Challenge with advanced or supplemental material. Consider peer-tutoring role.", studentTip: "You're crushing it! Try the simulations and supplemental resources to push further." },
+          ON_TRACK: { categories: ["Practice Set", "Textbook", "Video Lesson"], action: "Continue current approach. Provide enrichment if interest is shown.", studentTip: "Solid work — keep the momentum going with practice sets and readings." },
+          COASTING: { categories: ["Practice Set", "Simulation", "Video Lesson"], action: "Increase engagement with interactive resources. Check in on motivation.", studentTip: "Try a simulation or practice set to boost your skills — small steps add up!" },
+          SPRINTING: { categories: ["Textbook", "Video Lesson", "Practice Set"], action: "Encourage consistent daily engagement instead of cramming. Set micro-goals.", studentTip: "Spreading your study across the week helps retention — try a bit each day." },
+          STRUGGLING: { categories: ["Video Lesson", "Lab Guide", "Practice Set"], action: "Offer direct support. Recommend foundational resources and check understanding.", studentTip: "Your effort shows! Try video lessons for a fresh perspective on tricky topics." },
+          DISENGAGING: { categories: ["Video Lesson", "Simulation", "Article"], action: "Reach out personally. Low-friction resources to re-establish habit.", studentTip: "We miss seeing you active — a quick video or sim is a great way to jump back in." },
+          INACTIVE: { categories: ["Video Lesson", "Article"], action: "Immediate outreach required. Check for external factors. Lowest-barrier resources.", studentTip: "Start small — even watching one video lesson counts. We're here to help!" },
+          COPYING: { categories: ["Practice Set", "Textbook", "Lab Guide"], action: "Discuss academic integrity. Redirect to original-work resources.", studentTip: "Working through problems yourself builds the strongest understanding — give it a try!" },
+        };
+
+        bucketProfiles.push({
+          studentId: student.studentId,
+          studentName: student.name,
+          classType,
+          bucket,
+          engagementScore: Math.round(student.es * 10) / 10,
+          metrics: {
+            totalTime: m.totalTime,
+            submissionCount: m.submissionCount,
+            totalClicks: m.totalClicks,
+            totalPastes: m.totalPastes,
+            totalKeystrokes: m.totalKeystrokes,
+            avgPasteRatio: Math.round(pasteRatio * 100) / 100,
+            activityDays: days,
+          },
+          recommendation: recMap[bucket] || recMap.ON_TRACK,
+        });
+      }
+    });
+
+    // 5. Deduplicate alerts: keep highest severity per student+class
+    //    Also enrich each alert with the student's bucket
+    const bucketLookup = new Map<string, string>();
+    for (const bp of bucketProfiles) {
+      bucketLookup.set(`${bp.studentId}_${bp.classType}`, bp.bucket);
+    }
+
+    const deduped = new Map<string, typeof alerts[0]>();
+    const severityOrder: Record<string, number> = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1 };
+    for (const alert of alerts) {
+      const key = `${alert.studentId}_${alert.classType}`;
+      alert.bucket = bucketLookup.get(key) || "ON_TRACK";
+      const existing = deduped.get(key);
+      if (!existing || (severityOrder[alert.riskLevel] || 0) > (severityOrder[existing.riskLevel] || 0)) {
+        deduped.set(key, alert);
+      }
+    }
+
+    // 6. Write bucket profiles to Firestore (for ALL students, not just at-risk)
+    const timestamp = new Date().toISOString();
+
+    // Clear old bucket profiles and write fresh ones
+    const oldBuckets = await db.collection("student_buckets").get();
+    let batch = db.batch();
+    let count = 0;
+    for (const d of oldBuckets.docs) {
+      batch.delete(d.ref);
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    batch = db.batch();
+    count = 0;
+    for (const profile of bucketProfiles) {
+      const ref = db.collection("student_buckets").doc();
+      batch.set(ref, { ...profile, createdAt: timestamp });
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    logger.info(`dailyAnalysis: Wrote ${bucketProfiles.length} bucket profiles.`);
+
+    // 7. Write alerts to Firestore (batch for efficiency)
+    const finalAlerts = Array.from(deduped.values());
+    if (finalAlerts.length === 0) {
+      logger.info("dailyAnalysis: No at-risk students detected. Bucket profiles written.");
+      return;
+    }
+
+    // Clear old undismissed alerts before writing new ones
+    const oldAlerts = await db.collection("student_alerts")
+      .where("isDismissed", "==", false).get();
+    batch = db.batch();
+    count = 0;
+    for (const d of oldAlerts.docs) {
+      batch.delete(d.ref);
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    // Write new alerts (now enriched with bucket field)
+    batch = db.batch();
+    count = 0;
+    for (const alert of finalAlerts) {
+      const ref = db.collection("student_alerts").doc();
+      batch.set(ref, {
+        ...alert,
+        createdAt: timestamp,
+        isDismissed: false,
+      });
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    logger.info(`dailyAnalysis: Generated ${finalAlerts.length} alerts (${Array.from(deduped.values()).filter((a) => a.riskLevel === "CRITICAL").length} critical, ${Array.from(deduped.values()).filter((a) => a.riskLevel === "HIGH").length} high). ${bucketProfiles.length} bucket profiles stored.`);
+  }
+);
+/**
+ * dismissAlert — Teacher dismisses an EWS alert.
+ */
+export const dismissAlert = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { alertId } = request.data;
+  if (!alertId) throw new HttpsError("invalid-argument", "Alert ID required.");
+
+  const db = admin.firestore();
+  const alertRef = db.doc(`student_alerts/${alertId}`);
+  const snap = await alertRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Alert not found.");
+
+  await alertRef.update({
+    isDismissed: true,
+    dismissedBy: request.auth?.uid || "unknown",
+    dismissedAt: new Date().toISOString(),
+  });
+
+  return { success: true };
+});
+/**
+ * dismissAlertsBatch — Teacher dismisses multiple EWS alerts in one call.
+ */
+export const dismissAlertsBatch = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+  const { alertIds } = request.data;
+
+  if (!Array.isArray(alertIds) || alertIds.length === 0) {
+    throw new HttpsError("invalid-argument", "alertIds must be a non-empty array.");
+  }
+  if (alertIds.length > 100) {
+    throw new HttpsError("invalid-argument", "alertIds may not exceed 100 items per call.");
+  }
+
+  const db = admin.firestore();
+  const batch = db.batch();
+  for (const alertId of alertIds) {
+    const alertRef = db.doc(`student_alerts/${alertId}`);
+    batch.set(alertRef, { isDismissed: true }, { merge: true });
+  }
+  await batch.commit();
+
+  return { dismissed: alertIds.length };
+});
+/**
+ * Notification: Streak at Risk
+ * Runs daily at 6 PM ET. Emails students whose engagement streak
+ * hasn't been updated this week and is at risk of breaking.
+ */
+export const checkStreaksAtRisk = onSchedule(
+  {
+    schedule: "0 18 * * 5", // Every Friday at 6 PM UTC (roughly end of school week)
+    timeZone: "America/New_York",
+  },
+  async () => {
+    const db = admin.firestore();
+    logger.info("Running streak-at-risk check...");
+
+    // Get current ISO week ID
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000);
+    const weekNum = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+    const currentWeekId = `${now.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+
+    // Get all students with active streaks (paginated)
+    let emailsSent = 0;
+    let lastDoc: any = null;
+
+    while (true) {
+      let query = db.collection("users")
+        .where("role", "==", "STUDENT")
+        .where("isWhitelisted", "==", true)
+        .limit(499);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const studentsSnap = await query.get();
+      if (studentsSnap.empty) break;
+      lastDoc = studentsSnap.docs[studentsSnap.docs.length - 1];
+
+      const emailPromises: Promise<void>[] = [];
+
+      studentsSnap.docs.forEach((doc) => {
+        const data = doc.data();
+        const gam = data.gamification || {};
+        const streak = gam.engagementStreak as number || 0;
+        const lastWeek = gam.lastStreakWeek as string || "";
+
+        // Only warn if they have a streak >= 2 weeks and haven't engaged this week
+        if (streak < 2 || lastWeek === currentWeekId) return;
+
+        const email = data.email as string;
+        if (!email) return;
+
+        const studentName = data.name as string || "Agent";
+
+        emailsSent++;
+        emailPromises.push(
+          queueEmail(
+            email,
+            `⚠️ Your ${streak}-week streak is at risk!`,
+            `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+                <h2 style="color: #f97316; margin: 0 0 8px;">🔥 Streak Alert</h2>
+                <p style="color: #e5e7eb; margin: 0 0 16px;">Hi ${studentName},</p>
+                <div style="background: #0f0720; border: 1px solid #f97316; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
+                  <span style="font-size: 48px; font-weight: bold; color: #f97316;">${streak}</span>
+                  <p style="color: #9ca3af; margin: 4px 0 0;">week streak at risk</p>
+                </div>
+                <p style="color: #9ca3af; margin: 0 0 8px;">You haven't logged any engagement this week. Complete an assignment before the week ends to keep your streak alive!</p>
+                <p style="color: #fbbf24; font-weight: bold; margin: 16px 0 0;">Don't lose your XP bonus — log in now!</p>
+                <hr style="border: 1px solid #374151; margin: 16px 0;" />
+                <p style="color: #6b7280; font-size: 12px;">Porter's Portal</p>
+              </div>
+            </div>
+            `,
+          ),
+        );
+      });
+
+      // Send emails in batches of 100
+      for (let i = 0; i < emailPromises.length; i += 100) {
+        await Promise.all(emailPromises.slice(i, i + 100));
+      }
+
+      if (studentsSnap.size < 499) break;
+    }
+
+    logger.info(`Streak-at-risk: queued ${emailsSent} warning emails (week: ${currentWeekId})`);
+  },
+);
