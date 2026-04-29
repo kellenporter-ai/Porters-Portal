@@ -138,6 +138,8 @@ export interface AggregatedStudentMetrics {
   totalKeystrokes: number;     // Total keystroke events
   totalXP: number;             // XP earned in window
   activityDays: number;        // Number of distinct days with submissions (0-7)
+  schoolActivityDays?: number; // Distinct school days with activity (optional — from Cloud Function)
+  schoolDaysInWindow7?: number; // School days in the 7-day analysis window (optional)
 }
 
 /**
@@ -159,14 +161,20 @@ export function classifyStudentBucket(
   classMean: number,
   classStdDev: number,
 ): TelemetryBucket {
-  const { totalTime, submissionCount, totalPastes, totalKeystrokes, totalXP, activityDays } = metrics;
+  const {
+    totalTime, submissionCount, totalPastes, totalKeystrokes, totalXP, activityDays,
+    schoolActivityDays, schoolDaysInWindow7,
+  } = metrics;
   const zScore = classStdDev > 0 ? (engagementScore - classMean) / classStdDev : 0;
   const pasteRatio = (totalKeystrokes + totalPastes) > 0
     ? totalPastes / (totalKeystrokes + totalPastes)
     : 0;
+  // Use school-day-aware counts when available; fall back to calendar counts
+  const effectiveSchoolDays = schoolDaysInWindow7 ?? 7;
+  const effectiveSchoolActivityDays = schoolActivityDays ?? activityDays;
 
-  // 1. INACTIVE: Zero or near-zero activity
-  if (submissionCount === 0 && totalTime < 60) {
+  // 1. INACTIVE: Zero or near-zero activity, only flagged when school was actually in session
+  if (submissionCount === 0 && totalTime < 60 && effectiveSchoolDays >= 3) {
     return 'INACTIVE';
   }
 
@@ -182,9 +190,9 @@ export function classifyStudentBucket(
     return 'STRUGGLING';
   }
 
-  // 4. DISENGAGING: Below-average ES AND activity concentrated in 1-2 days
+  // 4. DISENGAGING: Below-average ES AND activity concentrated in ≤1 school day
   //    (suggests they were active earlier but trailing off)
-  if (zScore < -0.5 && activityDays <= 2 && submissionCount >= 1 && submissionCount <= 3) {
+  if (zScore < -0.5 && effectiveSchoolActivityDays <= 1 && submissionCount >= 1 && submissionCount <= 3) {
     return 'DISENGAGING';
   }
 

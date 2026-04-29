@@ -337,14 +337,14 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
     for (const student of students) {
       const signals: WarningSignal[] = [];
 
-      // ── Signal 1: Low engagement time (from User.stats.totalTime, in seconds) ──
-      const totalTimeSecs = student.stats?.totalTime ?? 0;
-      if (totalTimeSecs > 0 && totalTimeSecs < minEngagementSeconds) {
-        const totalTimeMins = Math.round(totalTimeSecs / 60);
+      // ── Signal 1: Low rate — minutes per school day (from bucket metrics) ──
+      const bucketProfileForRate = bucketByStudentId.get(student.id);
+      const mpsd = bucketProfileForRate?.metrics?.minutesPerSchoolDay ?? null;
+      if (mpsd !== null && mpsd < 5) {
         signals.push({
           kind: 'LOW_ENGAGEMENT',
-          label: `Low engagement: ${totalTimeMins}min avg`,
-          severity: totalTimeSecs < 300 ? 'intervene' : 'watch',
+          label: `Low rate: ${mpsd.toFixed(1)} min/school day`,
+          severity: mpsd < 2 ? 'intervene' : 'watch',
         });
       }
 
@@ -609,6 +609,8 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
 
         {classSections.length > 1 && (
           <select
+            id="early-warning-class-filter"
+            name="earlyWarningClassFilter"
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
             className="ml-auto text-xs bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-secondary)] rounded-lg px-2 py-1 focus:outline-none focus:border-[var(--border)]"

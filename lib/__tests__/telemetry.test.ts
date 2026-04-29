@@ -349,3 +349,86 @@ describe('getBucketRecommendation', () => {
     expect(rec.action).toContain('integrity');
   });
 });
+
+// ─── School-day-aware classification ───
+describe('classifyStudentBucket — school-day-aware thresholds', () => {
+  const classMean = 50;
+  const classStdDev = 15;
+
+  it('does NOT classify INACTIVE during vacation (schoolDaysInWindow7 = 0)', () => {
+    // During a pure vacation week, zero activity should not trigger INACTIVE
+    const metrics = makeAggregated({
+      submissionCount: 0,
+      totalTime: 0,
+      schoolDaysInWindow7: 0,
+    });
+    const result = classifyStudentBucket(metrics, 0, classMean, classStdDev);
+    expect(result).not.toBe('INACTIVE');
+  });
+
+  it('does NOT classify INACTIVE during a short partial week (schoolDaysInWindow7 < 3)', () => {
+    const metrics = makeAggregated({
+      submissionCount: 0,
+      totalTime: 0,
+      schoolDaysInWindow7: 2,
+    });
+    const result = classifyStudentBucket(metrics, 0, classMean, classStdDev);
+    expect(result).not.toBe('INACTIVE');
+  });
+
+  it('classifies INACTIVE when school was in session (schoolDaysInWindow7 >= 3)', () => {
+    const metrics = makeAggregated({
+      submissionCount: 0,
+      totalTime: 30,
+      schoolDaysInWindow7: 5,
+    });
+    expect(classifyStudentBucket(metrics, 0, classMean, classStdDev)).toBe('INACTIVE');
+  });
+
+  it('classifies DISENGAGING using schoolActivityDays when provided', () => {
+    // Student active on 0 school days but 2 calendar days (e.g., weekend warrior)
+    const metrics = makeAggregated({
+      activityDays: 2,
+      schoolActivityDays: 0, // active only on weekends
+      submissionCount: 2,
+      totalTime: 600,
+      totalXP: 100,
+      totalPastes: 0,
+      totalKeystrokes: 200,
+      schoolDaysInWindow7: 5,
+    });
+    const lowES = classMean - classStdDev; // z = -1
+    expect(classifyStudentBucket(metrics, lowES, classMean, classStdDev)).toBe('DISENGAGING');
+  });
+
+  it('does NOT classify DISENGAGING when student was active on 2+ school days', () => {
+    // schoolActivityDays = 2 > threshold of 1, so should not be DISENGAGING on that criterion
+    const metrics = makeAggregated({
+      activityDays: 2,
+      schoolActivityDays: 2,
+      submissionCount: 2,
+      totalTime: 600,
+      totalXP: 100,
+      totalPastes: 0,
+      totalKeystrokes: 200,
+      schoolDaysInWindow7: 5,
+    });
+    const lowES = classMean - classStdDev; // z = -1
+    const result = classifyStudentBucket(metrics, lowES, classMean, classStdDev);
+    expect(result).not.toBe('DISENGAGING');
+  });
+
+  it('falls back to activityDays when schoolActivityDays is not provided', () => {
+    // No schoolActivityDays provided — fallback to activityDays (1), triggers DISENGAGING
+    const metrics = makeAggregated({
+      activityDays: 1,
+      submissionCount: 2,
+      totalTime: 600,
+      totalXP: 100,
+      totalPastes: 0,
+      totalKeystrokes: 200,
+    });
+    const lowES = classMean - classStdDev; // z = -1
+    expect(classifyStudentBucket(metrics, lowES, classMean, classStdDev)).toBe('DISENGAGING');
+  });
+});

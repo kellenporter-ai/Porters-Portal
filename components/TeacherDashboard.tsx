@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFocusTrap } from '../lib/useFocusTrap';
-import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, BugReport, SongRequest } from '../types';
+import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, BugReport, SongRequest, WellnessCheckin } from '../types';
 import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, ClipboardCheck, Megaphone, Trophy } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import { dataService } from '../services/dataService';
@@ -17,6 +17,7 @@ import ActivityMonitor from './teacher/ActivityMonitor';
 import BugReportsTab from './teacher/BugReportsTab';
 import SongQueueTab from './teacher/SongQueueTab';
 import EngagementSummary from './teacher/EngagementSummary';
+import WellnessMonitor from './teacher/WellnessMonitor';
 import { useClassConfig } from '../lib/AppDataContext';
 
 interface TeacherDashboardProps {
@@ -36,7 +37,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [activeSessions, setActiveSessions] = useState<Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>>(new Map());
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
   const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics'>('dashboard');
-  const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students' | 'bugs' | 'songs'>('alerts');
+  const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students' | 'wellness' | 'bugs' | 'songs'>('alerts');
+  const [wellnessCheckins, setWellnessCheckins] = useState<WellnessCheckin[]>([]);
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [songRequests, setSongRequests] = useState<SongRequest[]>([]);
   const [showNudgeModal, setShowNudgeModal] = useState(false);
@@ -51,6 +53,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       const unsubSessions = dataService.subscribeToActiveAssessmentSessions(setActiveSessions);
       const unsubBugs = dataService.subscribeToBugReports(setBugReports);
       const unsubSongs = dataService.subscribeToSongRequests(setSongRequests);
+      const unsubWellness = dataService.subscribeToWellnessCheckins(setWellnessCheckins);
       return () => {
           unsubAnnouncements();
           unsubAlerts();
@@ -58,6 +61,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           unsubSessions();
           unsubBugs();
           unsubSongs();
+          unsubWellness();
       };
   }, []);
 
@@ -211,9 +215,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             { key: 'alerts', label: 'Alerts', count: flaggedCount },
             { key: 'announcements', label: 'Announcements', count: activeAnnouncementCount },
             { key: 'students', label: 'Students', count: totalStudents },
+            { key: 'wellness', label: 'Wellness', count: wellnessCheckins.length },
             { key: 'bugs', label: 'Bug Reports', count: unresolvedBugCount },
             { key: 'songs', label: 'Song Queue', count: pendingSongCount },
-          ] as { key: 'alerts' | 'announcements' | 'students' | 'bugs' | 'songs'; label: string; count: number }[]
+          ] as { key: 'alerts' | 'announcements' | 'students' | 'wellness' | 'bugs' | 'songs'; label: string; count: number }[]
         ).map(({ key, label, count }) => (
           <button
             key={key}
@@ -295,6 +300,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           onAward={() => setShowBehaviorAward(true)}
         />
         </>
+      )}
+
+      {overviewTab === 'wellness' && (
+        <WellnessMonitor
+          students={students}
+          checkins={wellnessCheckins}
+          onMessage={(student) => {
+            setNudgeTarget({
+              studentId: student.id,
+              studentName: student.name,
+              defaultMessage: 'Your teacher wants to check in with you.',
+              classType: student.classType || '',
+            });
+            setNudgeMessage('Your teacher wants to check in with you.');
+            setShowNudgeModal(true);
+          }}
+          onViewProfile={(student) => setSelectedStudentId(student.id)}
+        />
       )}
 
       {overviewTab === 'bugs' && (

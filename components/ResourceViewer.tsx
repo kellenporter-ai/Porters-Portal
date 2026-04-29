@@ -95,7 +95,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const isPreview = user.role === UserRole.ADMIN;
   const isAssessment = activeAssignment?.isAssessment === true;
   const isLiveAssessment = isAssessment && !isPreview;
-  const config = activeAssignment?.assessmentConfig || { allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true };
+  const rawConfig = activeAssignment?.assessmentConfig || {};
+  const config = {
+    allowResubmission: rawConfig.allowResubmission !== false,
+    maxAttempts: typeof rawConfig.maxAttempts === 'number' ? rawConfig.maxAttempts : (parseInt(String(rawConfig.maxAttempts), 10) || 0),
+    showScoreOnSubmit: rawConfig.showScoreOnSubmit !== false,
+    lockNavigation: rawConfig.lockNavigation !== false,
+  };
 
   // Fetch student's existing submission for rubric grade display
   useEffect(() => {
@@ -324,9 +330,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   // Uses setDoc (not deleteDoc) because students only have create/update permission
   const handleRetake = useCallback(async () => {
     if (!activeAssignment) return;
-    const cfg = activeAssignment.assessmentConfig || {};
-    const isUnlim = cfg.maxAttempts === 0 || !cfg.maxAttempts;
-    const attLeft = isUnlim ? null : (cfg.maxAttempts! - (assessmentResult?.attemptNumber || 1));
+    const isUnlim = config.maxAttempts === 0 || !config.maxAttempts;
+    const attLeft = isUnlim ? null : (config.maxAttempts - (assessmentResult?.attemptNumber || 1));
     const afterThis = attLeft != null ? attLeft - 1 : null;
     const confirmed = await confirm({
       title: 'Retake Assessment',

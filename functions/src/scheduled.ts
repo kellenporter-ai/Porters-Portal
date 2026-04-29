@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 import { queueEmail } from "./classroom";
+import { isSchoolDay, schoolDaysInWindow } from "./schoolCalendar";
 
 // ==========================================
 // SCHEDULED FUNCTIONS
@@ -101,7 +102,16 @@ export const dailyAnalysis = onSchedule(
     windowStart.setDate(windowStart.getDate() - 7);
     const windowStartISO = windowStart.toISOString();
 
-    logWithCorrelation('info', 'dailyAnalysis: Analyzing submissions', correlationId, { windowStart: windowStartISO });
+    // School-calendar awareness: count school days in the 7-day window
+    const schoolDaysInWindow7 = schoolDaysInWindow(windowStartISO, now.toISOString());
+
+    // Skip-on-vacation guard: if no school days in window, nothing meaningful to analyze
+    if (schoolDaysInWindow7 === 0) {
+      logWithCorrelation('info', 'dailyAnalysis: No school days in analysis window (vacation week). Skipping.', correlationId, { windowStart: windowStartISO });
+      return;
+    }
+
+    logWithCorrelation('info', 'dailyAnalysis: Analyzing submissions', correlationId, { windowStart: windowStartISO, schoolDaysInWindow7 });
 
     // 1. Fetch all students (paginated)
     const allUserDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
@@ -146,6 +156,7 @@ export const dailyAnalysis = onSchedule(
       totalKeystrokes: number; // total keystroke count
       totalXP: number;         // XP earned in window
       activityDays: Set<string>; // distinct YYYY-MM-DD dates with submissions
+      schoolActivityDays: Set<string>; // distinct school-day dates with submissions
       classTypes: Set<string>;
     }> = new Map();
 
@@ -161,6 +172,7 @@ export const dailyAnalysis = onSchedule(
         totalKeystrokes: 0,
         totalXP: 0,
         activityDays: new Set(),
+        schoolActivityDays: new Set(),
         classTypes: new Set(classes),
       });
     });
@@ -176,9 +188,13 @@ export const dailyAnalysis = onSchedule(
       existing.totalPastes += Number(sub.metrics?.pasteCount || 0);
       existing.totalKeystrokes += Number(sub.metrics?.keystrokes || 0);
       existing.totalXP += Number(sub.score || 0);
-      // Track distinct activity days
+      // Track distinct activity days (all days + school days only)
       if (sub.submittedAt) {
-        existing.activityDays.add(String(sub.submittedAt).split("T")[0]);
+        const dateStr = String(sub.submittedAt).split("T")[0];
+        existing.activityDays.add(dateStr);
+        if (isSchoolDay(dateStr)) {
+          existing.schoolActivityDays.add(dateStr);
+        }
       }
     });
 
@@ -242,6 +258,8 @@ export const dailyAnalysis = onSchedule(
         totalKeystrokes: number;
         avgPasteRatio: number;
         activityDays: number;
+        schoolActivityDays?: number;
+        minutesPerSchoolDay?: number;
       };
       recommendation: {
         categories: string[];
@@ -355,15 +373,17 @@ export const dailyAnalysis = onSchedule(
         const pasteRatio = (m.totalKeystrokes + m.totalPastes) > 0
           ? m.totalPastes / (m.totalKeystrokes + m.totalPastes) : 0;
         const days = m.activityDays.size;
+        const schoolDays = m.schoolActivityDays.size;
+        const minutesPerSchoolDay = m.totalTime / 60 / Math.max(1, schoolDaysInWindow7);
 
         let bucket = "ON_TRACK";
-        if (m.submissionCount === 0 && m.totalTime < 60) {
+        if (m.submissionCount === 0 && m.totalTime < 60 && schoolDaysInWindow7 >= 3) {
           bucket = "INACTIVE";
         } else if (pasteRatio > 0.4 && m.submissionCount >= 2 && m.totalPastes > 8) {
           bucket = "COPYING";
         } else if (m.totalTime > 1800 && m.submissionCount >= 2 && m.totalXP < 50) {
           bucket = "STRUGGLING";
-        } else if (zScore < -0.5 && days <= 2 && m.submissionCount >= 1 && m.submissionCount <= 3) {
+        } else if (zScore < -0.5 && schoolDays <= 1 && m.submissionCount >= 1 && m.submissionCount <= 3) {
           bucket = "DISENGAGING";
         } else if (m.totalTime > 1800 && days <= 2 && m.submissionCount >= 3) {
           bucket = "SPRINTING";
@@ -399,6 +419,8 @@ export const dailyAnalysis = onSchedule(
             totalKeystrokes: m.totalKeystrokes,
             avgPasteRatio: Math.round(pasteRatio * 100) / 100,
             activityDays: days,
+            schoolActivityDays: schoolDays,
+            minutesPerSchoolDay: Math.round(minutesPerSchoolDay * 10) / 10,
           },
           recommendation: recMap[bucket] || recMap.ON_TRACK,
         });
@@ -517,8 +539,170 @@ export const dailyAnalysis = onSchedule(
       highCount: finalAlerts.filter((a) => a.riskLevel === "HIGH").length,
       bucketProfileCount: bucketProfiles.length,
     });
+
+    // ── v2: Weekly engagement snapshots (Sunday only) ──
+    // Write a per-student snapshot and check for trend deterioration.
+    if (now.getDay() === 0) {
+      await writeWeeklySnapshots(db, correlationId, bucketProfiles, windowStartISO, now.toISOString(), schoolDaysInWindow7);
+    }
   }
 );
+
+/**
+ * Compute the ISO week string (YYYY-WNN) for a given Date.
+ */
+function isoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const year = d.getUTCFullYear();
+  const startOfYear = new Date(Date.UTC(year, 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - startOfYear.getTime()) / 86400000) + 1) / 7);
+  return `${year}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+/**
+ * Write weekly engagement snapshots and apply v2 trend-delta classification.
+ * Called from dailyAnalysis on Sundays only.
+ */
+async function writeWeeklySnapshots(
+  db: FirebaseFirestore.Firestore,
+  correlationId: string,
+  bucketProfiles: Array<{
+    studentId: string;
+    studentName: string;
+    classType: string;
+    bucket: string;
+    engagementScore: number;
+    metrics: {
+      totalTime: number;
+      submissionCount: number;
+      schoolActivityDays?: number;
+      minutesPerSchoolDay?: number;
+      [key: string]: unknown;
+    };
+  }>,
+  weekStartISO: string,
+  weekEndISO: string,
+  schoolDaysInWindow7: number,
+): Promise<void> {
+  const week = isoWeek(new Date(weekEndISO));
+  const weekStart = weekStartISO.split("T")[0];
+  const weekEnd = weekEndISO.split("T")[0];
+
+  // Deduplicate: one snapshot per student (take the first classType profile encountered)
+  const seen = new Set<string>();
+  const snapshots: Array<{
+    studentId: string;
+    minutesPerSchoolDay: number;
+    submissionCount: number;
+    schoolActivityDays: number;
+    weekStart: string;
+    weekEnd: string;
+  }> = [];
+
+  for (const profile of bucketProfiles) {
+    if (seen.has(profile.studentId)) continue;
+    seen.add(profile.studentId);
+    snapshots.push({
+      studentId: profile.studentId,
+      minutesPerSchoolDay: profile.metrics.minutesPerSchoolDay ?? 0,
+      submissionCount: profile.metrics.submissionCount,
+      schoolActivityDays: profile.metrics.schoolActivityDays ?? 0,
+      weekStart,
+      weekEnd,
+    });
+  }
+
+  // Write snapshots in batch
+  let batch = db.batch();
+  let count = 0;
+  for (const snap of snapshots) {
+    const ref = db
+      .collection("weeklyEngagementSnapshots")
+      .doc(snap.studentId)
+      .collection("snapshots")
+      .doc(week);
+    batch.set(ref, snap);
+    count++;
+    if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+  }
+  if (count % 499 !== 0) await batch.commit();
+
+  logWithCorrelation('info', 'weeklySnapshots: Wrote snapshots', correlationId, { count, week });
+
+  // v2 trend-delta: for each student, read prior 4 snapshots and check for deterioration
+  // Only run if there were school days this week (already guaranteed by caller, but be safe)
+  if (schoolDaysInWindow7 === 0) return;
+
+  // Collect students whose bucket should be overridden to DISENGAGING
+  const overrides: Array<{ studentId: string; thisWeekMpsd: number; trailing4wAvg: number }> = [];
+
+  await Promise.all(
+    snapshots.map(async (snap) => {
+      const priorSnaps = await db
+        .collection("weeklyEngagementSnapshots")
+        .doc(snap.studentId)
+        .collection("snapshots")
+        .orderBy("weekStart", "desc")
+        .limit(5) // current week + 4 prior
+        .get();
+
+      // Filter out the current week to get only prior snapshots
+      const priorDocs = priorSnaps.docs.filter((d) => d.id !== week);
+      if (priorDocs.length < 4) return; // Not enough history yet
+
+      const trailing4 = priorDocs.slice(0, 4);
+      const trailing4wAvg =
+        trailing4.reduce((sum, d) => sum + (d.data().minutesPerSchoolDay ?? 0), 0) / 4;
+
+      if (trailing4wAvg > 5 && snap.minutesPerSchoolDay < trailing4wAvg * 0.5) {
+        overrides.push({
+          studentId: snap.studentId,
+          thisWeekMpsd: snap.minutesPerSchoolDay,
+          trailing4wAvg,
+        });
+      }
+    })
+  );
+
+  if (overrides.length === 0) {
+    logWithCorrelation('info', 'weeklySnapshots: No trend-delta overrides', correlationId);
+    return;
+  }
+
+  // Apply DISENGAGING override to student_buckets documents
+  batch = db.batch();
+  count = 0;
+  for (const override of overrides) {
+    // Find all bucket docs for this student
+    const bucketQuery = await db
+      .collection("student_buckets")
+      .where("studentId", "==", override.studentId)
+      .get();
+
+    for (const doc of bucketQuery.docs) {
+      // Only override if current bucket is not already more severe
+      const currentBucket = doc.data().bucket;
+      const moreSevere = ["INACTIVE", "DISENGAGING"];
+      if (!moreSevere.includes(currentBucket)) {
+        batch.update(doc.ref, {
+          bucket: "DISENGAGING",
+          trendDeltaOverride: true,
+          trendDeltaThisWeekMpsd: override.thisWeekMpsd,
+          trendDeltaTrailing4wAvg: override.trailing4wAvg,
+        });
+        count++;
+        if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+      }
+    }
+  }
+  if (count % 499 !== 0) await batch.commit();
+
+  logWithCorrelation('info', 'weeklySnapshots: Applied trend-delta overrides', correlationId, {
+    overrideCount: overrides.length,
+    bucketUpdates: count,
+  });
+}
 /**
  * dismissAlert — Teacher dismisses an EWS alert.
  */

@@ -620,6 +620,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                        userCodename={user.gamification?.codename}
                        userLevel={user.gamification?.level}
                        loginStreak={user.gamification?.loginStreak || 0}
+                       userId={user.id}
                    />
                    </React.Suspense>
                  </FeatureErrorBoundary>

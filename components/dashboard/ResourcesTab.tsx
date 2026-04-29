@@ -297,7 +297,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     const latestSub = assessmentSubs[0] || null;
     const hasUnreadFeedback = !!latestSub?.rubricGrade?.teacherFeedback && !latestSub?.feedbackReadAt;
     const assessmentConfig = resource.assessmentConfig || {};
-    const maxAttempts = assessmentConfig.maxAttempts || 0;
+    const maxAttempts = typeof assessmentConfig.maxAttempts === 'number' ? assessmentConfig.maxAttempts : (parseInt(String(assessmentConfig.maxAttempts), 10) || 0);
     const isUnlimitedAttempts = maxAttempts === 0;
     const canStillRetake = !!(latestSub && assessmentConfig.allowResubmission !== false &&
       (isUnlimitedAttempts || (latestSub.attemptNumber || 1) < maxAttempts));

@@ -145,6 +145,14 @@ const RequireAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   return <Outlet />;
 };
 
+// ─── Route guard — blocks admin users from student-only routes ───
+// Prevents cross-account state (e.g. URL stays at /home after switching from
+// a student account to the admin account) from landing admins on the student UI.
+const RequireStudent: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+  if (isAdmin) return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
+};
+
 // ─── Reverse lookup for XP sub-route slugs → tab names ───
 const XP_SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
   Object.entries(XP_SUB_ROUTES).map(([name, slug]) => [slug, name])
@@ -363,62 +371,64 @@ const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* ─── Student routes ─── */}
-          <Route path="/home" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Home">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="HOME" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/resources" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Resources">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="RESOURCES" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/loadout" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Loadout">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="LOADOUT" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/badges" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Achievements">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ACHIEVEMENTS" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/skills" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Skills">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="SKILLS" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/fortune" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Fortune">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FORTUNE" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/flux-shop" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Flux Shop">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FLUX_SHOP" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/intel" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Intel Dossier">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="INTEL" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/progress" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Progress">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="PROGRESS" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/calendar" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Calendar">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="CALENDAR" />
-            </FeatureErrorBoundary></Suspense>
-          } />
-          <Route path="/boss" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Boss Encounters">
-              <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="BOSS" />
-            </FeatureErrorBoundary></Suspense>
-          } />
+          {/* ─── Student-only routes (admin redirected to /dashboard) ─── */}
+          <Route element={<RequireStudent isAdmin={isAdmin} />}>
+            <Route path="/home" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Home">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="HOME" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/resources" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Resources">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="RESOURCES" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/loadout" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Loadout">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="LOADOUT" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/badges" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Achievements">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="ACHIEVEMENTS" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/skills" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Skills">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="SKILLS" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/fortune" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Fortune">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FORTUNE" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/flux-shop" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Flux Shop">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="FLUX_SHOP" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/intel" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Intel Dossier">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="INTEL" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/progress" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Progress">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="PROGRESS" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/calendar" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Calendar">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="CALENDAR" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/boss" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Boss Encounters">
+                <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="BOSS" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+          </Route>
           <Route path="/forensics" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>
           } />

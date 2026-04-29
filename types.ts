@@ -1366,6 +1366,8 @@ export interface StudentBucketProfile {
     totalKeystrokes: number;          // Total keystroke events
     avgPasteRatio: number;            // pastes / (keystrokes + pastes), 0-1
     activityDays: number;             // Number of distinct days with activity (0-7)
+    schoolActivityDays?: number;      // Distinct school days with activity in window
+    minutesPerSchoolDay?: number;     // totalTime (min) / schoolDaysInWindow7
   };
   recommendation: BucketRecommendation;
   createdAt: string;                  // ISO timestamp

@@ -512,6 +512,16 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // WEEKLY ENGAGEMENT SNAPSHOTS (v2 EWS)
+    // Written by Cloud Functions (admin SDK bypasses rules).
+    // Admin read-only via client SDK.
+    // ==========================================
+    match /weeklyEngagementSnapshots/{studentId}/snapshots/{week} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Functions use admin SDK — client writes blocked
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {
