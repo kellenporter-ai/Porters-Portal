@@ -498,9 +498,12 @@ export const classroomPushGrades = onCall({ memory: "1GiB", timeoutSeconds: 300 
         const cwRes = await classroom.courses.courseWork.get({ courseId, id: courseWorkId });
         maxPoints = cwRes.data.maxPoints ?? entry.maxPoints ?? 100;
       } catch (err: unknown) {
+        if (isGoogleAuthError(err)) {
+          throw new HttpsError("unauthenticated", "Google Classroom token expired. Please re-authenticate.");
+        }
         const msg = err instanceof Error ? err.message : "Unknown error";
         logWithCorrelation('error', 'Failed to fetch CourseWork from Classroom', correlationId, { courseId, courseWorkId, error: msg, stack: err instanceof Error ? err.stack : undefined });
-        throw new Error(`Cannot read Classroom assignment (${courseId}/${courseWorkId}): ${msg}`);
+        throw new HttpsError("internal", "Cannot read Classroom assignment");
       }
 
       // Filter bestScores to only students in this section (if portalSection is set)
@@ -548,7 +551,10 @@ export const classroomPushGrades = onCall({ memory: "1GiB", timeoutSeconds: 300 
             pageSize: 1,
           });
           submissionId = res.data.studentSubmissions?.[0]?.id ?? undefined;
-        } catch (err) {
+        } catch (err: unknown) {
+          if (isGoogleAuthError(err)) {
+            throw new HttpsError("unauthenticated", "Google Classroom token expired. Please re-authenticate.");
+          }
           logWithCorrelation('warn', 'Exception swallowed', correlationId, { error: err instanceof Error ? err.message : String(err) });
         }
 
@@ -581,6 +587,9 @@ export const classroomPushGrades = onCall({ memory: "1GiB", timeoutSeconds: 300 
             success = true;
             break;
           } catch (err: unknown) {
+            if (isGoogleAuthError(err)) {
+              throw new HttpsError("unauthenticated", "Google Classroom token expired. Please re-authenticate.");
+            }
             const status = (err as { code?: number }).code;
             if (status === 429 && attempt < 2) {
               const delay = Math.pow(2, attempt) * 1000;
@@ -626,7 +635,9 @@ export const classroomPushGrades = onCall({ memory: "1GiB", timeoutSeconds: 300 
       skipped += result.value.skipped;
       errors.push(...result.value.errors);
     } else {
-      errors.push((result.reason as Error)?.message ?? "Unknown error");
+      const reason = result.reason as Error;
+      if (reason instanceof HttpsError) throw reason;
+      errors.push(reason?.message ?? "Unknown error");
     }
   }
 

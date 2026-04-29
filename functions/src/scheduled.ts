@@ -50,7 +50,7 @@ export const sundayReset = onSchedule(
                 await bucket.file(match[1]).delete();
                 storageDeleted++;
               } catch (err) {
-                logger.warn("Exception swallowed", { error: err instanceof Error ? err.message : String(err), correlationId });
+                logger.error("Exception swallowed", { error: err instanceof Error ? err.message : String(err), correlationId });
               }
             }
           } catch (err) {
@@ -523,6 +523,7 @@ export const dailyAnalysis = onSchedule(
  * dismissAlert — Teacher dismisses an EWS alert.
  */
 export const dismissAlert = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { alertId } = request.data;
   if (!alertId) throw new HttpsError("invalid-argument", "Alert ID required.");
@@ -538,12 +539,14 @@ export const dismissAlert = onCall({ memory: "256MiB", timeoutSeconds: 60 }, asy
     dismissedAt: new Date().toISOString(),
   });
 
+  logWithCorrelation('info', 'dismissAlert complete', correlationId, { alertId });
   return { success: true };
 });
 /**
  * dismissAlertsBatch — Teacher dismisses multiple EWS alerts in one call.
  */
 export const dismissAlertsBatch = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { alertIds } = request.data;
 
@@ -562,6 +565,7 @@ export const dismissAlertsBatch = onCall({ memory: "256MiB", timeoutSeconds: 60 
   }
   await batch.commit();
 
+  logWithCorrelation('info', 'dismissAlertsBatch complete', correlationId, { dismissed: alertIds.length });
   return { dismissed: alertIds.length };
 });
 /**

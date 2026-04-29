@@ -1,13 +1,13 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
-import { verifyAdmin } from "./core";
+import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 
 // ==========================================
 // ONE-TIME MIGRATION — sync classXp for single-class students
 // REMOVE THIS FUNCTION AFTER RUNNING
 // ==========================================
 export const migrateClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -95,6 +95,16 @@ export const migrateClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, as
     if (snapshot.size < 500) break;
   }
 
+  logWithCorrelation('info', 'migrateClassXp complete', correlationId, {
+    dryRun,
+    totalScanned,
+    updated,
+    skippedMultiClass,
+    skippedAlreadyCorrect,
+    skippedNoClass,
+    skippedNoXp,
+    previewCount: preview.length,
+  });
   return {
     dryRun,
     totalScanned,
@@ -116,6 +126,7 @@ export const migrateClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, as
  * Admin-only. Safe to call multiple times (skips docs that already have createdAt).
  */
 export const backfillAssignmentDates = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -169,7 +180,7 @@ export const backfillAssignmentDates = onCall({ memory: "1GiB", timeoutSeconds: 
     if (snap.size < 499) break;
   }
 
-  logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}, dryRun ${dryRun}`);
+  logWithCorrelation('info', 'backfill complete', correlationId, { updated, skipped, totalScanned, dryRun });
   return { dryRun, updated, skipped, totalScanned };
 });
 /**
@@ -178,6 +189,7 @@ export const backfillAssignmentDates = onCall({ memory: "1GiB", timeoutSeconds: 
  * Admin-only. Safe to call multiple times (skips docs that already have wordCount).
  */
 export const backfillWordCount = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -256,7 +268,7 @@ export const backfillWordCount = onCall({ memory: "1GiB", timeoutSeconds: 300 },
     if (snap.size < 499) break;
   }
 
-  logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}, dryRun ${dryRun}`);
+  logWithCorrelation('info', 'backfill complete', correlationId, { updated, skipped, totalScanned, dryRun });
   return { dryRun, updated, skipped, totalScanned };
 });
 // ==========================================
@@ -268,6 +280,7 @@ export const backfillWordCount = onCall({ memory: "1GiB", timeoutSeconds: 300 },
  * Admin-only. Idempotent — safe to run multiple times (overwrites existing boss_events docs).
  */
 export const migrateBossesToEvents = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -340,7 +353,7 @@ export const migrateBossesToEvents = onCall({ memory: "1GiB", timeoutSeconds: 30
     }
   }
 
-  logger.info("migrateBossesToEvents complete", {
+  logWithCorrelation('info', 'migrateBossesToEvents complete', correlationId, {
     dryRun,
     migratedEncounters,
     migratedQuizzes,
@@ -356,6 +369,7 @@ export const migrateBossesToEvents = onCall({ memory: "1GiB", timeoutSeconds: 30
  * Admin-only. Idempotent.
  */
 export const migrateBossQuizProgress = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -429,7 +443,7 @@ export const migrateBossQuizProgress = onCall({ memory: "1GiB", timeoutSeconds: 
     }
   }
 
-  logger.info("migrateBossQuizProgress complete", { dryRun, migrated, skipped, errorCount: errors.length });
+  logWithCorrelation('info', 'migrateBossQuizProgress complete', correlationId, { dryRun, migrated, skipped, errorCount: errors.length });
   return { dryRun, migrated, skipped, errors: errors.slice(0, 20) };
 });
 // SPECIALIZATION V1 → V2 MIGRATION
@@ -453,6 +467,7 @@ const V1_SKILL_COSTS: Record<string, number> = {
  * Admin-only. Idempotent — safe to run multiple times (already-migrated users are skipped).
  */
 export const migrateSpecializationsV1ToV2 = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -565,7 +580,7 @@ export const migrateSpecializationsV1ToV2 = onCall({ memory: "1GiB", timeoutSeco
     }
   }
 
-  logger.info("migrateSpecializationsV1ToV2 complete", {
+  logWithCorrelation('info', 'migrateSpecializationsV1ToV2 complete', correlationId, {
     dryRun,
     migrated,
     skipped,

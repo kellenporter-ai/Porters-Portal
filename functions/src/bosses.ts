@@ -55,37 +55,36 @@ export const dealBossDamage = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   // Step 3: Write damage to a random shard (distributed counter)
   const shardId = Math.floor(Math.random() * BOSS_SHARD_COUNT).toString();
   const shardRef = db.doc(`boss_encounters/${bossId}/shards/${shardId}`);
-
-  // Step 4: Update shard + user in a batch (not transaction — avoids contention)
-  const batch = db.batch();
-
-  batch.set(shardRef, {
-    damageDealt: admin.firestore.FieldValue.increment(calculatedDamage),
-  }, { merge: true });
-
-  // Damage log: stored in subcollection to avoid document size limits
   const logRef = db.collection(`boss_encounters/${bossId}/damage_log`).doc();
-  batch.set(logRef, {
-    userId: uid,
-    userName: userName || "Student",
-    damage: calculatedDamage,
-    isCrit,
-    timestamp: new Date().toISOString(),
-  });
-
-  // User: award XP + track total boss damage
   const xpReward = boss.xpRewardPerHit || 10;
-  const xpResult = buildXPUpdates(userData, xpReward, activeClass);
 
-  const bossDamageDealt = gam.bossDamageDealt || {};
-  bossDamageDealt[bossId] = (bossDamageDealt[bossId] || 0) + calculatedDamage;
+  // Step 4: Atomic transaction for shard + user updates
+  const txResult = await db.runTransaction(async (t) => {
+    const latestUserDoc = await t.get(userRef);
+    if (!latestUserDoc.exists) throw new HttpsError("not-found", "User not found.");
+    const latestUserData = latestUserDoc.data()!;
+    const latestActiveClass = classType || latestUserData.classType || '';
+    const latestXpResult = buildXPUpdates(latestUserData, xpReward, latestActiveClass);
 
-  batch.update(userRef, {
-    ...xpResult.updates,
-    "gamification.bossDamageDealt": bossDamageDealt,
+    t.set(shardRef, {
+      damageDealt: admin.firestore.FieldValue.increment(calculatedDamage),
+    }, { merge: true });
+
+    t.set(logRef, {
+      userId: uid,
+      userName: userName || "Student",
+      damage: calculatedDamage,
+      isCrit,
+      timestamp: new Date().toISOString(),
+    });
+
+    t.update(userRef, {
+      ...latestXpResult.updates,
+      [`gamification.bossDamageDealt.${bossId}`]: admin.firestore.FieldValue.increment(calculatedDamage),
+    });
+
+    return { leveledUp: latestXpResult.leveledUp };
   });
-
-  await batch.commit();
 
   // Step 5: Read all shards to calculate current HP + sync boss document
   const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).orderBy("__name__").limit(BOSS_SHARD_COUNT).get();
@@ -201,7 +200,7 @@ export const dealBossDamage = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     isCrit,
     xpEarned: xpReward,
     bossDefeated,
-    leveledUp: xpResult.leveledUp,
+    leveledUp: txResult.leveledUp,
     stats: { tech: stats.tech, focus: stats.focus, analysis: stats.analysis, charisma: stats.charisma },
     gearScore,
   };
@@ -486,8 +485,11 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     currentAttempt.endedAt = new Date().toISOString();
   }
 
+  const baseDamage = damage;
+
   // === ATOMIC TRANSACTION ===
   const txResult = await db.runTransaction(async (t) => {
+    // All reads first
     const [latestEventDoc, latestProgressDoc, latestUserDoc] = await Promise.all([
       t.get(eventRef), t.get(progressRef), t.get(userRef),
     ]);
@@ -497,16 +499,6 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
 
     const latestEvent = latestEventDoc.data()!;
     if (!latestEvent.isActive) throw new HttpsError("failed-precondition", "Event is not active.");
-
-    // Apply participantCount scaling with latest event data
-    const participantCount = latestEvent.participantCount || 0;
-    const drMultiplier = Math.min(1.0, Math.sqrt(10 / Math.max(10, participantCount + 1)));
-    const bossArmor = Math.min(50, Math.max(0, (participantCount - 10) * 2));
-    damage = Math.max(1, Math.round(damage * drMultiplier));
-    damage = Math.max(1, Math.round(damage * (1 - bossArmor / 100)));
-
-    cs.totalDamageDealt += damage;
-    currentAttempt.combatStats = { ...cs, role: playerRole };
 
     const latestProgress = latestProgressDoc.exists ? latestProgressDoc.data()! : { attempts: [] };
     if (!latestProgress.attempts) latestProgress.attempts = [];
@@ -519,23 +511,15 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     let totalDamage = 0;
     shardsSnap.forEach(d => { totalDamage += d.data().damageDealt || 0; });
 
-    const shardRef = db.doc(`boss_events/${eventId}/shards/${shardId}`);
-    t.set(shardRef, { damageDealt: admin.firestore.FieldValue.increment(damage) }, { merge: true });
+    // Apply participantCount scaling with latest event data
+    const participantCount = latestEvent.participantCount || 0;
+    const drMultiplier = Math.min(1.0, Math.sqrt(10 / Math.max(10, participantCount + 1)));
+    const bossArmor = Math.min(50, Math.max(0, (participantCount - 10) * 2));
+    const scaledDamage = Math.max(1, Math.round(baseDamage * drMultiplier));
+    const finalDamage = Math.max(1, Math.round(scaledDamage * (1 - bossArmor / 100)));
 
-    const logRef = db.collection(`boss_events/${eventId}/damage_log`).doc();
-    t.set(logRef, {
-      userId: uid, userName: userData.name || "Student", damage, isCrit,
-      timestamp: new Date().toISOString(), attemptNumber: currentAttempt.attemptNumber,
-    });
-
-    const xpResult = buildXPUpdates(latestUserDoc.data()!, damage, activeClass);
-    t.update(userRef, xpResult.updates);
-
-    const isFirstAnswerInTx = !latestAttempt || latestAttempt.answeredQuestions.length === 0;
-    if (isFirstAnswerInTx) {
-      t.update(eventRef, { participantCount: admin.firestore.FieldValue.increment(1) });
-    }
-
+    // COMMANDER ally healing — read BEFORE any writes
+    let allies: string[] = [];
     if (playerRole === 'COMMANDER' && isCorrect) {
       const allProgressSnap = await t.get(
         db.collection("boss_event_progress")
@@ -544,37 +528,84 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
           .orderBy("currentHp")
           .limit(10)
       );
-      const allies = allProgressSnap.docs
+      allies = allProgressSnap.docs
         .map(d => d.id)
         .filter(id => id !== `${uid}_${eventId}`)
         .sort(() => Math.random() - 0.5)
         .slice(0, 2);
-      for (const allyProgressId of allies) {
-        const allyRef = db.doc(`boss_event_progress/${allyProgressId}`);
-        t.update(allyRef, { currentHp: admin.firestore.FieldValue.increment(5) });
-      }
-      cs.roleHealingGiven = (cs.roleHealingGiven || 0) + (allies.length * 5);
     }
 
+    // Build fresh combatStats inside callback
+    const latestCS = latestAttempt?.combatStats || {
+      totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0,
+      correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
+      incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
+      longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
+      healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
+    };
+    const freshCombatStats = {
+      ...latestCS,
+      ...cs,
+      totalDamageDealt: (latestCS.totalDamageDealt || 0) + finalDamage,
+      role: playerRole,
+      ...(allies.length > 0 ? { roleHealingGiven: (latestCS.roleHealingGiven || 0) + (allies.length * 5) } : {}),
+    };
+
+    // All writes after all reads
+    const shardRef = db.doc(`boss_events/${eventId}/shards/${shardId}`);
+    t.set(shardRef, { damageDealt: admin.firestore.FieldValue.increment(finalDamage) }, { merge: true });
+
+    const logRef = db.collection(`boss_events/${eventId}/damage_log`).doc();
+    t.set(logRef, {
+      userId: uid, userName: userData.name || "Student", damage: finalDamage, isCrit,
+      timestamp: new Date().toISOString(), attemptNumber: currentAttempt.attemptNumber,
+    });
+
+    const xpResult = buildXPUpdates(latestUserDoc.data()!, finalDamage, activeClass);
+    t.update(userRef, xpResult.updates);
+
+    const isFirstAnswerInTx = !latestAttempt || latestAttempt.answeredQuestions.length === 0;
+    if (isFirstAnswerInTx) {
+      t.update(eventRef, { participantCount: admin.firestore.FieldValue.increment(1) });
+    }
+
+    for (const allyProgressId of allies) {
+      const allyRef = db.doc(`boss_event_progress/${allyProgressId}`);
+      t.update(allyRef, { currentHp: admin.firestore.FieldValue.increment(5) });
+    }
+
+    // Merge attempt updates instead of replacing the whole attempt
     const updatedAttempts = [...latestProgress.attempts];
     const attemptIdx = updatedAttempts.findIndex((a: { status: string }) => a.status === 'active');
     if (attemptIdx >= 0) {
-      updatedAttempts[attemptIdx] = currentAttempt;
+      const existingAttempt = updatedAttempts[attemptIdx];
+      updatedAttempts[attemptIdx] = {
+        ...existingAttempt,
+        answeredQuestions: [...(existingAttempt.answeredQuestions || []), questionId],
+        currentHp: playerHp,
+        maxHp,
+        combatStats: freshCombatStats,
+        status: playerHp <= 0 ? 'abandoned' : existingAttempt.status,
+        ...(playerHp <= 0 ? { endedAt: new Date().toISOString() } : {}),
+      };
     } else {
-      updatedAttempts.push(currentAttempt);
+      updatedAttempts.push({
+        ...currentAttempt,
+        combatStats: freshCombatStats,
+      });
     }
 
     t.set(progressRef, {
       userId: uid, eventId,
       attempts: updatedAttempts,
-      totalDamageDealt: (latestProgress.totalDamageDealt || 0) + damage,
+      totalDamageDealt: (latestProgress.totalDamageDealt || 0) + finalDamage,
       participationMet: updatedAttempts.some((a: { answeredQuestions: string[]; combatStats: { questionsCorrect: number } }) =>
         a.answeredQuestions.length >= 5 && (a.combatStats?.questionsCorrect || 0) >= 1
       ),
     }, { merge: true });
 
     const effectiveMaxHp = latestEvent.scaledMaxHp || latestEvent.maxHp;
-    const newTotalDamage = totalDamage + damage;
+    const newTotalDamage = totalDamage + finalDamage;
     const newHp = Math.max(0, effectiveMaxHp - newTotalDamage);
 
     let phaseTransition: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null = null;
@@ -607,7 +638,7 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       t.update(eventRef, { currentHp: newHp });
     }
 
-    return { newHp, bossDefeated, phaseTransition, isFirstAnswerForPlayer: isFirstAnswerInTx };
+    return { newHp, bossDefeated, phaseTransition, isFirstAnswerForPlayer: isFirstAnswerInTx, damage: finalDamage };
   });
 
   if (txResult.alreadyAnswered) {
@@ -664,7 +695,7 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
   }
 
   return {
-    correct: isCorrect, damage, newHp: txResult.newHp, bossDefeated: txResult.bossDefeated,
+    correct: isCorrect, damage: txResult.damage, newHp: txResult.newHp, bossDefeated: txResult.bossDefeated,
     playerDamage, playerHp, playerMaxHp: maxHp,
     knockedOut: playerHp <= 0,
     isCrit, healAmount, shieldBlocked,
