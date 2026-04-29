@@ -72,6 +72,17 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // PUBLIC PROFILES (leaderboard / class roster view)
+    // ==========================================
+    // Mirror of safe, non-PII fields from /users/{uid}, maintained by the
+    // mirrorUserToPublicProfile Cloud Function. Any authenticated user may
+    // read; only Cloud Functions (Admin SDK) may write.
+    match /public_profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ==========================================
     // WHITELIST (allowed_emails)
     // ==========================================
     match /allowed_emails/{email} {

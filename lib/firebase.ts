@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
@@ -36,6 +36,21 @@ export const db = initializeFirestore(app, {
 });
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
+
+// Dev-only: expose Firebase singletons on window for browser-console probes.
+if (import.meta.env.DEV) {
+  (window as any).__fb__ = {
+    app, auth, db, storage, functions,
+    findUserByName: async (name: string) => {
+      const snap = await getDocs(query(collection(db, 'users'), where('name', '==', name)));
+      return snap.docs.map(d => ({ id: d.id, email: d.data().email, xp: d.data().gamification?.xp ?? 0, classXp: d.data().gamification?.classXp ?? {} }));
+    },
+    getUser: async (uid: string) => {
+      const snap = await getDoc(doc(db, 'users', uid));
+      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    },
+  };
+}
 // Cloud Function callables
 export const callAwardXP = httpsCallable(functions, 'awardXP');
 export const callEquipItem = httpsCallable(functions, 'equipItem');

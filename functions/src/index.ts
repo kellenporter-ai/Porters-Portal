@@ -9,3 +9,4 @@ export * from "./bosses";
 export * from "./classroom";
 export * from "./scheduled";
 export * from "./migrations";
+export * from "./public-profiles";

@@ -915,7 +915,7 @@ export const dataService = {
   },
 
   awardXP: async (userId: string, amount: number, classType?: string) => {
-      await callAwardXP({ targetUserId: userId, amount, classType });
+      await callAwardXP({ targetUserId: userId, xpAmount: amount, classType });
   },
 
   submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: TelemetryMetrics, classType: string) => {
@@ -1234,7 +1234,9 @@ export const dataService = {
   },
 
   subscribeToLeaderboard: (callback: (users: User[]) => void, maxResults = 200) => {
-      const q = query(collection(db, 'users'), where('role', '==', 'STUDENT'), limit(maxResults));
+      // Reads from /public_profiles — a mirror of safe leaderboard fields maintained
+      // server-side. Authenticated students can read this collection (rules.firestore).
+      const q = query(collection(db, 'public_profiles'), limit(maxResults));
       return onSnapshot(q, (snapshot) => {
           callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as User)));
       }, (error: unknown) => reportError(error, { subscription: 'leaderboard' }));

@@ -249,17 +249,31 @@ function getDisenchantValue(item: LootItem): number {
 
 export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
-  const userId = verifyAuth(request.auth);
-  const { xpAmount, classType } = request.data || {};
-  if (typeof xpAmount !== "number" || xpAmount <= 0) {
-    throw new HttpsError("invalid-argument", "xpAmount must be a positive number.");
+  const callerId = verifyAuth(request.auth);
+  const { xpAmount, classType, targetUserId } = request.data || {};
+  if (typeof xpAmount !== "number" || !Number.isFinite(xpAmount) || xpAmount === 0) {
+    throw new HttpsError("invalid-argument", "xpAmount must be a non-zero number.");
   }
-  if (xpAmount > MAX_XP_PER_SUBMISSION) {
-    throw new HttpsError("invalid-argument", `Maximum XP per submission is ${MAX_XP_PER_SUBMISSION}.`);
+  // Admins may target another user and bypass per-submission/rate caps; non-admins always target themselves.
+  const isAdmin = request.auth?.token?.admin === true;
+  let userId = callerId;
+  let isAdminAdjustment = false;
+  if (typeof targetUserId === "string" && targetUserId !== callerId) {
+    if (!isAdmin) {
+      throw new HttpsError("permission-denied", "Only admins may award XP to other users.");
+    }
+    userId = targetUserId;
+    isAdminAdjustment = true;
+  }
+  if (!isAdminAdjustment && Math.abs(xpAmount) > MAX_XP_PER_SUBMISSION) {
+    throw new HttpsError("invalid-argument", `Maximum XP per award is ${MAX_XP_PER_SUBMISSION}.`);
   }
   const db = admin.firestore();
   const userRef = db.collection("users").doc(userId);
   const rateLimitRef = db.collection("xp_rate_limits").doc(userId);
+  let diag: { previousXp: number; newXp: number; previousClassXp: number | null; newClassXp: number | null } = {
+    previousXp: 0, newXp: 0, previousClassXp: null, newClassXp: null,
+  };
   await db.runTransaction(async (t) => {
     const [userSnap, rateSnap] = await Promise.all([
       t.get(userRef),
@@ -267,11 +281,11 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     ]);
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
-    // Rate limiting: 5-second gap + 5000 XP/day cap
+    // Rate limiting: 5-second gap + 5000 XP/day cap (skipped for admin-targeted adjustments)
     const now = Date.now();
     const today = new Date().toISOString().slice(0, 10);
     const rateData = rateSnap.exists ? rateSnap.data()! : null;
-    if (rateData) {
+    if (rateData && !isAdminAdjustment) {
       const lastAwardAt = typeof rateData.lastAwardAt === "number" ? rateData.lastAwardAt : 0;
       if (now - lastAwardAt < 5000) {
         throw new HttpsError("resource-exhausted", "XP award rate limited. Please wait at least 5 seconds between awards.");
@@ -300,9 +314,16 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     if (achievementResult.newUnlocks.length > 0) {
       await writeAchievementNotifications(db, userId, achievementResult.newUnlocks);
     }
+
+    diag = {
+      previousXp: data.gamification?.xp ?? 0,
+      newXp: result.newXP,
+      previousClassXp: classType ? (data.gamification?.classXp?.[classType] ?? 0) : null,
+      newClassXp: classType ? (finalUpdates[`gamification.classXp.${classType}`] ?? null) : null,
+    };
   });
-  logWithCorrelation('info', 'XP awarded', correlationId, { userId, xpAmount, classType });
-  return { success: true };
+  logWithCorrelation('info', 'XP awarded', correlationId, { userId, xpAmount, classType, ...diag });
+  return { success: true, userId, ...diag };
 });
 
 export const equipItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {

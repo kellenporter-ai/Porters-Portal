@@ -164,7 +164,8 @@ export function buildXPUpdates(
   classType?: string,
   customDropPool?: LootItem[],
 ): { updates: Record<string, any>; newXP: number; newLevel: number; leveledUp: boolean } {
-  const safeXpAmount = guardNumber("xpAmount", xpAmount, 0);
+  // xpAmount may be negative (admin XP deduction); use a finite-number check that allows negatives.
+  const safeXpAmount = (typeof xpAmount === "number" && Number.isFinite(xpAmount)) ? xpAmount : 0;
   if (classType) {
     validateClassType(classType);
   }
