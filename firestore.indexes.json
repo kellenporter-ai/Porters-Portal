@@ -84,6 +84,15 @@
       ]
     },
     {
+      "collectionGroup": "assessment_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "used", "order": "ASCENDING" },
+        { "fieldPath": "startedAt", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "student_alerts",
       "queryScope": "COLLECTION",
       "fields": [
