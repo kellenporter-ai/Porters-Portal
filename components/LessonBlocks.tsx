@@ -35,7 +35,7 @@ interface LessonBlocksProps {
 // ──────────────────────────────────────────────
 // Interactive block types (require completion)
 // ──────────────────────────────────────────────
-const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE', 'IFRAME_ACTIVITY'];
+const INTERACTIVE_TYPES = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
 
 // Reject javascript: and data: URIs to prevent XSS via href injection
 function safeUrl(url: string | undefined): string {
@@ -477,85 +477,6 @@ const ActivityBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) =
     )}
   </div>
 ));
-
-const IframeActivityBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: unknown; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [handshakeDone, setHandshakeDone] = useState(false);
-  const savedResponseRef = useRef(savedResponse);
-  const onResponseChangeRef = useRef(onResponseChange);
-  const onCompleteRef = useRef(onComplete);
-
-  useEffect(() => { savedResponseRef.current = savedResponse; }, [savedResponse]);
-  useEffect(() => { onResponseChangeRef.current = onResponseChange; }, [onResponseChange]);
-  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
-
-  useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
-      const data = e.data;
-      if (!data || typeof data !== 'object') return;
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-
-      switch (data.type) {
-        case 'portal-ready': {
-          if (handshakeDone) return;
-          setHandshakeDone(true);
-          iframe.contentWindow?.postMessage({
-            type: 'portal-init',
-            payload: {
-              userId: null,
-              savedState: savedResponseRef.current ?? null,
-              completionInfo: null
-            }
-          }, window.location.origin);
-          break;
-        }
-        case 'portal-save': {
-          onResponseChangeRef.current?.(data.payload);
-          iframe.contentWindow?.postMessage({ type: 'portal-save-ok' }, window.location.origin);
-          break;
-        }
-        case 'portal-complete': {
-          onResponseChangeRef.current?.(data.payload);
-          onCompleteRef.current?.(true);
-          iframe.contentWindow?.postMessage({
-            type: 'portal-complete-ok',
-            payload: { totalCompletions: 1, bestScore: data.payload?.score ?? 0 }
-          }, window.location.origin);
-          break;
-        }
-        case 'portal-replay': {
-          onResponseChangeRef.current?.(null);
-          iframe.contentWindow?.postMessage({ type: 'portal-reset-ok' }, window.location.origin);
-          break;
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [handshakeDone]);
-
-  return (
-    <div className="space-y-2">
-      {block.title && <BlockText text={block.title} tag="p" className="text-base text-[var(--text-primary)] font-medium" />}
-      {block.instructions && <BlockText text={block.instructions} tag="p" className="text-xs text-[var(--text-tertiary)]" />}
-      <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--panel-bg)]" style={{ height: block.height || 800 }}>
-        <iframe
-          ref={iframeRef}
-          src={safeUrl(block.url)}
-          className="w-full h-full border-0"
-          title={block.title || 'Interactive activity'}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-        />
-      </div>
-      {!handshakeDone && (
-        <div className="text-xs text-[var(--text-muted)] italic">Connecting to activity...</div>
-      )}
-    </div>
-  );
-});
 
 const SortingBlock: React.FC<{ block: LessonBlock; onComplete: (correct: boolean) => void; savedResponse?: { placements: Record<number, 'left' | 'right'>; submitted: boolean }; onResponseChange?: (response: unknown) => void; readOnly?: boolean }> = React.memo(({ block, onComplete, savedResponse, onResponseChange, readOnly }) => {
   const items = block.sortItems || [];
@@ -1214,7 +1135,6 @@ const LessonBlocks: React.FC<LessonBlocksProps> = ({ blocks, onBlockComplete, on
       case 'EMBED': return <EmbedBlock block={block} />;
       case 'VOCAB_LIST': return <VocabListBlock block={block} />;
       case 'ACTIVITY': return <ActivityBlock block={block} />;
-      case 'IFRAME_ACTIVITY': return <IframeActivityBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'SORTING': return <SortingBlock block={block} onComplete={onComplete} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'DATA_TABLE': return <DataTableBlock block={block} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;
       case 'BAR_CHART': return <BarChartBlock block={block} savedResponse={saved} onResponseChange={readOnly ? undefined : onRespChange} readOnly={readOnly} />;

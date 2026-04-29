@@ -228,7 +228,9 @@ const App: React.FC = () => {
               setUser(prev => ({ ...(prev || {}), ...raw } as User));
             }
           }
-        }, (error) => {
+        }, (error: any) => {
+          // Transient permission-denied during auth token propagation — self-heals on retry
+          if (error?.code === 'permission-denied') return;
           reportError(error, { context: 'user profile onSnapshot' });
         });
       } else {

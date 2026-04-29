@@ -66,7 +66,7 @@ export type BlockType =
   | 'SECTION_HEADER' | 'IMAGE' | 'VIDEO' | 'OBJECTIVES' | 'DIVIDER'
   | 'EXTERNAL_LINK' | 'EMBED' | 'VOCAB_LIST' | 'ACTIVITY'
   | 'SORTING' | 'DATA_TABLE' | 'BAR_CHART' | 'RANKING' | 'LINKED'
-  | 'DRAWING' | 'MATH_RESPONSE' | 'IFRAME_ACTIVITY';
+  | 'DRAWING' | 'MATH_RESPONSE';
 
 export interface LessonBlock {
   id: string;

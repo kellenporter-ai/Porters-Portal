@@ -75,8 +75,9 @@ service cloud.firestore {
     // WHITELIST (allowed_emails)
     // ==========================================
     match /allowed_emails/{email} {
-      // Admin-only: prevents email enumeration
-      allow read: if isAdmin();
+      // Users can read their own entry (needed for session init);
+      // admin can read all.
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.token.email == email);
       
       // Only admin can manage the whitelist
       allow write: if isAdmin();
