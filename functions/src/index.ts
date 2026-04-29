@@ -1,3 +1,6 @@
+import * as admin from "firebase-admin";
+admin.initializeApp();
+
 export * from "./gamification-items";
 export * from "./engagement";
 export * from "./auth";
