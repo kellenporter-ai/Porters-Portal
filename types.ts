@@ -150,6 +150,7 @@ export interface TelemetryMetrics {
   keystrokes: number;
   clickCount: number;
   autoInsertCount?: number;  // Grammarly, mobile auto-suggest, dictation, IME composition
+  blurCount?: number;        // window blur events (focus left browser)
   startTime: number;
   lastActive: number;
   // Assessment-specific telemetry
@@ -161,6 +162,8 @@ export interface TelemetryMetrics {
   };
   wordCount?: number;
   wordsPerSecond?: number;
+  assistiveTech?: boolean;   // Self-reported assistive technology use
+  serverElapsedSec?: number; // Server-computed elapsed time (seconds)
 }
 
 // RPG TYPES

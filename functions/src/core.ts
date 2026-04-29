@@ -240,9 +240,10 @@ export function calculateFeedbackServerSide(
     tabSwitchCount?: number;
     wordCount?: number;
     wordsPerSecond?: number;
+    autoInsertCount?: number;
   },
   thresholds: Partial<TelemetryThresholds> = {},
-  context?: { responseCount?: number; hasWrittenResponses?: boolean }
+  context?: { responseCount?: number; hasWrittenResponses?: boolean; assistiveTech?: boolean }
 ): { status: string; feedback: string } {
   const safeMetrics = {
     pasteCount: guardNumber("pasteCount", metrics.pasteCount, 0),
@@ -251,7 +252,19 @@ export function calculateFeedbackServerSide(
     tabSwitchCount: guardNumber("tabSwitchCount", metrics.tabSwitchCount, 0),
     wordCount: guardNumber("wordCount", metrics.wordCount, 0),
     wordsPerSecond: guardNumber("wordsPerSecond", metrics.wordsPerSecond, 0),
+    autoInsertCount: guardNumber("autoInsertCount", metrics.autoInsertCount, 0),
   };
+
+  // Cap client-reported raw counts to prevent trivial DevTools bypasses
+  const maxKeystrokes = safeMetrics.wordCount > 0 ? safeMetrics.wordCount * 10 : safeMetrics.keystrokes;
+  const maxPasteCount = safeMetrics.wordCount > 0 ? Math.max(0, Math.ceil(safeMetrics.wordCount / 2)) : safeMetrics.pasteCount;
+  safeMetrics.keystrokes = Math.min(safeMetrics.keystrokes, maxKeystrokes);
+  safeMetrics.pasteCount = Math.min(safeMetrics.pasteCount, maxPasteCount);
+
+  // Assistive technology self-report suppresses false-positive flags
+  if (context?.assistiveTech) {
+    return { status: "NORMAL", feedback: "Assignment submitted successfully. (Assistive technology used — integrity flags suppressed.)" };
+  }
 
   const t = { ...DEFAULT_THRESHOLDS, ...thresholds };
   if (safeMetrics.engagementTime < 30 && context?.hasWrittenResponses) {
@@ -280,6 +293,9 @@ export function calculateFeedbackServerSide(
   }
   if (safeMetrics.keystrokes === 0 && safeMetrics.wordCount > 20) {
     return { status: "FLAGGED", feedback: "Text present with zero keystrokes — possible dictation, paste, or automated input." };
+  }
+  if (safeMetrics.autoInsertCount > 5 && safeMetrics.wordCount > 20 && safeMetrics.keystrokes < safeMetrics.wordCount * 3) {
+    return { status: "FLAGGED", feedback: "Heavy auto-insert/dictation detected — verify original work." };
   }
   if (safeMetrics.keystrokes > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.keystrokes > 0.5) {
     return { status: "FLAGGED", feedback: "Word-to-keystroke ratio is implausibly high — possible paste or auto-insert." };

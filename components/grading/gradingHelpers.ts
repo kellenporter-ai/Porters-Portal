@@ -45,12 +45,15 @@ export const isTrivialAttempt = (s: Submission): boolean => {
 export const getScoreColor = (pct: number): string =>
   pct >= 80 ? 'text-green-600 dark:text-green-400' : pct >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
 
-export const getTabSwitchColor = (count: number): string =>
+export const getAwayEventColor = (count: number): string =>
   count > 5 ? 'text-red-600 dark:text-red-400' : count >= 3 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400';
 
 export const computeTotalTime = (sub: Submission): number => {
   if (sub.submittedAt && sub.metrics?.startTime) {
-    return Math.round((new Date(sub.submittedAt).getTime() - sub.metrics.startTime) / 1000);
+    const raw = Math.round((new Date(sub.submittedAt).getTime() - sub.metrics.startTime) / 1000);
+    // Cap idle time at 1 hour to prevent absurd "755m idle" displays from left-open tabs
+    const engagement = sub.metrics?.engagementTime || 0;
+    return Math.min(raw, engagement + 3600);
   }
   return sub.metrics?.engagementTime || 0;
 };

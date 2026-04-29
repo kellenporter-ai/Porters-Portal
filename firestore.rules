@@ -239,8 +239,18 @@ service cloud.firestore {
       // resource == null handles getDoc() on non-existent docs (first visit)
       allow read: if isAuthenticated() &&
         (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
-      allow create, update: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid;
+      // Students can only write docs with whitelisted keys. This prevents metricsSnapshot
+      // poisoning that would affect submitOnBehalf integrity checks.
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.keys().hasOnly([
+          'userId', 'assignmentId', 'responses', 'lastUpdated',
+          'retakePreFilled', 'metricsSnapshot'
+        ]);
+      allow update: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot']);
       allow delete: if isAuthenticated() &&
         resource.data.userId == request.auth.uid;
     }

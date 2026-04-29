@@ -6,7 +6,7 @@ import {
 import katex from 'katex';
 import type { Submission, Assignment, LessonBlock } from '../../types';
 import type { StudentGroup } from './gradingHelpers';
-import { getTabSwitchColor, computeTotalTime, formatEngagementTime } from './gradingHelpers';
+import { getAwayEventColor, computeTotalTime, formatEngagementTime } from './gradingHelpers';
 import { dataService } from '../../services/dataService';
 import { reportError } from '../../lib/errorReporting';
 import { callSubmitOnBehalf } from '../../lib/firebase';
@@ -437,10 +437,10 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
     );
   }
 
-  const tabSwitches = sub.metrics?.tabSwitchCount || 0;
+  const awayEvents = (sub.metrics?.tabSwitchCount || 0) + (sub.metrics?.blurCount || 0);
   const activeTime = sub.metrics?.engagementTime || 0;
   const totalTime = computeTotalTime(sub);
-  const inactiveTime = Math.max(0, totalTime - activeTime);
+  const serverElapsed = sub.metrics?.serverElapsedSec || totalTime;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -472,9 +472,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
         <div className="ml-auto flex items-center gap-2">
           {/* Metrics badges */}
           <div className="hidden md:flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
-            <span className={getTabSwitchColor(tabSwitches)}>{tabSwitches} tabs</span>
-            <span className="text-green-600 dark:text-green-400">{formatEngagementTime(activeTime)}</span>
-            <span className={inactiveTime > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-[var(--text-muted)]'}>{formatEngagementTime(inactiveTime)} idle</span>
+            <span className={getAwayEventColor(awayEvents)}>{awayEvents} away</span>
+            <span className="text-green-600 dark:text-green-400">{formatEngagementTime(activeTime)} active</span>
+            <span className="text-[var(--text-muted)]">{formatEngagementTime(serverElapsed)} elapsed</span>
             <span>{sub.metrics?.pasteCount || 0} pastes</span>
             {(sub.metrics?.autoInsertCount != null && sub.metrics.autoInsertCount > 0) && (
               <span className="text-amber-600 dark:text-amber-400" title="Auto-inserts include dictation, Grammarly, mobile auto-suggest">
@@ -485,7 +485,12 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
               <span className="text-blue-600 dark:text-blue-400">{sub.metrics.wordCount} words</span>
             )}
             {(sub.metrics?.wordsPerSecond != null && sub.metrics.wordsPerSecond > 0) && (
-              <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-600 dark:text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}>{sub.metrics.wordsPerSecond} w/s</span>
+              <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-600 dark:text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}>{sub.metrics.wordsPerSecond.toFixed(2)} w/s</span>
+            )}
+            {sub.metrics?.assistiveTech && (
+              <span className="text-purple-600 dark:text-purple-400" title="Student self-reported assistive technology use">
+                ♿ Assistive Tech
+              </span>
             )}
           </div>
 

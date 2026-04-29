@@ -176,11 +176,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Assessment telemetry
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [blurCount, setBlurCount] = useState(0);
   const currentBlockRef = useRef<string | null>(null);
   const blockTimingStartRef = useRef<number>(Date.now());
   const blockTimingRef = useRef<Record<string, number>>({});
   const keystrokeTimesRef = useRef<number[]>([]);
   const [sessionTokenError, setSessionTokenError] = useState<string | null>(null);
+  const [assistiveTech, setAssistiveTech] = useState(false);
 
   // Start assessment session and obtain server-issued token
   useEffect(() => {
@@ -246,6 +248,29 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     if (previewMode) {
       setSavedBlockResponses({});
       return;
+    }
+    // Restore telemetry metrics from sessionStorage on refresh (assessments only)
+    if (isAssessment) {
+      const metricsKey = `assessment_metrics_${assignmentId}`;
+      const savedMetrics = sessionStorage.getItem(metricsKey);
+      if (savedMetrics) {
+        try {
+          const parsed = JSON.parse(savedMetrics);
+          if (parsed && typeof parsed === 'object') {
+            metricsRef.current = {
+              ...createInitialMetrics(),
+              ...parsed,
+              // Preserve original startTime so server elapsed is accurate
+              startTime: parsed.startTime || metricsRef.current.startTime,
+            };
+            setDisplayTime(metricsRef.current.engagementTime);
+            setTabSwitchCount(metricsRef.current.tabSwitchCount || 0);
+            setBlurCount(metricsRef.current.blurCount || 0);
+          }
+        } catch {
+          // Ignore corrupt sessionStorage
+        }
+      }
     }
     let cancelled = false;
     const docId = `${userId}_${assignmentId}_blocks`;
@@ -633,12 +658,24 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       return () => clearInterval(interval);
   }, []);
 
+  // Large text insertion detection (catches paste bypasses that skip paste/beforeinput)
+  const handleInput = useCallback((e: InputEvent) => {
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | null;
+    if (!target || !('value' in target)) return;
+    // If a single input event adds >20 chars, it's likely a paste or auto-fill
+    if (e.data && e.data.length > 20) {
+      metricsRef.current.pasteCount++;
+      handleInteraction();
+    }
+  }, [handleInteraction]);
+
   // Global Listeners — specific handlers for telemetry, generic for AFK
   useEffect(() => {
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('paste', handlePaste);
       window.addEventListener('drop', handlePaste); // Treat drag-and-drop as paste
       window.addEventListener('beforeinput', handleBeforeInput as EventListener);
+      window.addEventListener('input', handleInput as EventListener);
       window.addEventListener('click', handleClick);
       window.addEventListener('mousemove', throttledInteraction);
       window.addEventListener('scroll', handleInteraction);
@@ -649,15 +686,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           window.removeEventListener('paste', handlePaste);
           window.removeEventListener('drop', handlePaste);
           window.removeEventListener('beforeinput', handleBeforeInput as EventListener);
+          window.removeEventListener('input', handleInput as EventListener);
           window.removeEventListener('click', handleClick);
           window.removeEventListener('mousemove', throttledInteraction);
           window.removeEventListener('scroll', handleInteraction);
           window.removeEventListener('pointerdown', throttledInteraction);
           window.removeEventListener('pointermove', throttledInteraction);
       };
-  }, [handleKeyDown, handlePaste, handleBeforeInput, handleClick, handleInteraction, throttledInteraction]);
+  }, [handleKeyDown, handlePaste, handleBeforeInput, handleInput, handleClick, handleInteraction, throttledInteraction]);
 
-  // Assessment: Track tab switches (visibilitychange only — blur fires on iframe focus)
+  // Assessment: Track tab switches / away events (visibilitychange + blur)
   useEffect(() => {
     if (!isAssessment) return;
     const handleVisibilityChange = () => {
@@ -666,9 +704,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         setTabSwitchCount(metricsRef.current.tabSwitchCount);
       }
     };
+    const handleBlur = () => {
+      // blur on window means focus left the browser entirely (not just an iframe)
+      metricsRef.current.blurCount = (metricsRef.current.blurCount || 0) + 1;
+      setBlurCount(metricsRef.current.blurCount);
+    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
     };
   }, [isAssessment]);
 
@@ -687,6 +732,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           pasteCount: m.pasteCount,
           clickCount: m.clickCount,
           autoInsertCount: m.autoInsertCount || 0,
+          blurCount: m.blurCount || 0,
           tabSwitchCount: m.tabSwitchCount || 0,
           startTime: m.startTime,
           lastActive: Date.now(),
@@ -694,6 +740,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           typingCadence: m.typingCadence || {},
           wordCount: m.wordCount || 0,
           wordsPerSecond: m.wordsPerSecond || 0,
+          assistiveTech,
         },
       }).then(() => {
         metricsFailCountRef.current = 0;
@@ -707,15 +754,36 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
     // Save on visibility change (student leaves tab)
     const handleVis = () => {
-      if (document.visibilityState === 'hidden') saveMetricsSnapshot();
+      if (document.visibilityState === 'hidden') {
+        saveMetricsSnapshot();
+        // Also persist to sessionStorage for crash/refresh recovery
+        const metricsKey = `assessment_metrics_${assignmentId}`;
+        try {
+          sessionStorage.setItem(metricsKey, JSON.stringify(metricsRef.current));
+        } catch {
+          // sessionStorage may be full — non-critical
+        }
+      }
     };
     document.addEventListener('visibilitychange', handleVis);
 
     // Periodic snapshot every 30s
     const interval = setInterval(saveMetricsSnapshot, 30000);
 
+    // Before unload: emergency sessionStorage persistence
+    const handleBeforeUnload = () => {
+      const metricsKey = `assessment_metrics_${assignmentId}`;
+      try {
+        sessionStorage.setItem(metricsKey, JSON.stringify(metricsRef.current));
+      } catch {
+        // Ignore
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVis);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       clearInterval(interval);
       // Final snapshot on unmount
       saveMetricsSnapshot();
@@ -735,7 +803,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         // Flush pending save before reading responses
         flushNow();
         return {
-          metrics: { ...metricsRef.current },
+          metrics: { ...metricsRef.current, assistiveTech },
           responses: { ...getResponses() },
         };
       };
@@ -1228,10 +1296,22 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         <AlertTriangle className="w-3 h-3" /> Resume movement for XP
                     </div>
                 )}
-                {isAssessment && tabSwitchCount > 0 && (
+                {isAssessment && (tabSwitchCount > 0 || blurCount > 0) && (
                     <div className="flex items-center gap-2 text-[11.5px] text-red-600 dark:text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 uppercase font-bold tracking-widest">
-                        <AlertTriangle className="w-3 h-3" /> Tab Switch Detected ({tabSwitchCount})
+                        <AlertTriangle className="w-3 h-3" /> Away ({tabSwitchCount + blurCount})
                     </div>
+                )}
+                {isAssessment && (
+                    <label className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-2.5 py-1 rounded-full border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-glass-heavy)] transition">
+                        <input
+                            type="checkbox"
+                            checked={assistiveTech}
+                            onChange={(e) => setAssistiveTech(e.target.checked)}
+                            className="w-3 h-3 accent-purple-600"
+                            title="Check if you used dictation, voice typing, or assistive technology"
+                        />
+                        <span title="Check if you used dictation, voice typing, or assistive technology">Assistive Tech</span>
+                    </label>
                 )}
             </div>
         </div>

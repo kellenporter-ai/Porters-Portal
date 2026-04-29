@@ -265,7 +265,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       return true;
     });
 
-    // 5b. Calculate word count from short-answer responses
+    // 5b. Calculate word count from all written response types
     let totalWordCount = 0;
     for (const block of blocks) {
       if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
@@ -273,6 +273,42 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         const answerText = typeof resp?.answer === "string" ? resp.answer.trim() : "";
         if (answerText.length > 0) {
           totalWordCount += answerText.split(/\s+/).length;
+        }
+      }
+      if (block.type === "DATA_TABLE" && responses[block.id]) {
+        const resp = responses[block.id] as Record<string, unknown>;
+        const rows = (resp.data || []) as Array<Record<string, string>>;
+        for (const row of rows) {
+          for (const val of Object.values(row)) {
+            if (typeof val === "string" && val.trim().length > 0) {
+              totalWordCount += val.trim().split(/\s+/).length;
+            }
+          }
+        }
+      }
+      if (block.type === "MATH_RESPONSE" && responses[block.id]) {
+        const resp = responses[block.id] as Record<string, unknown>;
+        const steps = (resp.steps || []) as Array<{ input?: string }>;
+        for (const step of steps) {
+          const text = step.input || "";
+          if (text.trim().length > 0) {
+            totalWordCount += text.trim().split(/\s+/).length;
+          }
+        }
+      }
+      if (block.type === "BAR_CHART" && responses[block.id]) {
+        const resp = responses[block.id] as Record<string, unknown>;
+        const sections = ["initial", "delta", "final"] as const;
+        for (const section of sections) {
+          const bars = (resp[section] || []) as Array<{ labelHTML?: string }>;
+          for (const bar of bars) {
+            const text = bar.labelHTML || "";
+            // Strip HTML tags for word count
+            const plain = text.replace(/<[^>]+>/g, "").trim();
+            if (plain.length > 0) {
+              totalWordCount += plain.split(/\s+/).length;
+            }
+          }
         }
       }
     }
@@ -288,9 +324,11 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       tabSwitchCount: metrics.tabSwitchCount || 0,
       wordCount: totalWordCount,
       wordsPerSecond,
+      autoInsertCount: metrics.autoInsertCount || 0,
     }, assessmentThresholds, {
       responseCount: nonEmptyResponses.length,
       hasWrittenResponses: nonEmptyResponses.length > 0,
+      assistiveTech: !!metrics.assistiveTech,
     }));
 
     if (txStatus === "FLAGGED") {
@@ -325,6 +363,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         keystrokes: metrics.keystrokes || 0,
         pasteCount: metrics.pasteCount || 0,
         clickCount: metrics.clickCount || 0,
+        autoInsertCount: metrics.autoInsertCount || 0,
         startTime: metrics.startTime || 0,
         lastActive: metrics.lastActive || 0,
         tabSwitchCount: metrics.tabSwitchCount || 0,
@@ -595,7 +634,7 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   const elapsed = sessionStartedAt ? Math.max(0, (serverNow - sessionStartedAt) / 1000) : 0;
   const snap = draftData.metricsSnapshot as Record<string, unknown> | undefined;
 
-  // 9b. Calculate word count from short-answer responses
+  // 9b. Calculate word count from all written response types
   let totalWordCount = 0;
   for (const block of blocks) {
     if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
@@ -603,6 +642,41 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
       const answerText = typeof resp?.answer === "string" ? (resp.answer as string).trim() : "";
       if (answerText.length > 0) {
         totalWordCount += answerText.split(/\s+/).length;
+      }
+    }
+    if (block.type === "DATA_TABLE" && responses[block.id]) {
+      const resp = responses[block.id] as Record<string, unknown>;
+      const rows = (resp.data || []) as Array<Record<string, string>>;
+      for (const row of rows) {
+        for (const val of Object.values(row)) {
+          if (typeof val === "string" && val.trim().length > 0) {
+            totalWordCount += val.trim().split(/\s+/).length;
+          }
+        }
+      }
+    }
+    if (block.type === "MATH_RESPONSE" && responses[block.id]) {
+      const resp = responses[block.id] as Record<string, unknown>;
+      const steps = (resp.steps || []) as Array<{ input?: string }>;
+      for (const step of steps) {
+        const text = step.input || "";
+        if (text.trim().length > 0) {
+          totalWordCount += text.trim().split(/\s+/).length;
+        }
+      }
+    }
+    if (block.type === "BAR_CHART" && responses[block.id]) {
+      const resp = responses[block.id] as Record<string, unknown>;
+      const sections = ["initial", "delta", "final"] as const;
+      for (const section of sections) {
+        const bars = (resp[section] || []) as Array<{ labelHTML?: string }>;
+        for (const bar of bars) {
+          const text = bar.labelHTML || "";
+          const plain = text.replace(/<[^>]+>/g, "").trim();
+          if (plain.length > 0) {
+            totalWordCount += plain.split(/\s+/).length;
+          }
+        }
       }
     }
   }
@@ -626,7 +700,8 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     tabSwitchCount: Number(snap?.tabSwitchCount) || 0,
     wordCount: totalWordCount,
     wordsPerSecond,
-  }, {}, { responseCount, hasWrittenResponses: responseCount > 0 });
+    autoInsertCount: Number(snap?.autoInsertCount) || 0,
+  }, {}, { responseCount, hasWrittenResponses: responseCount > 0, assistiveTech: !!snap?.assistiveTech });
 
   // 10. Build submission doc + atomic write (session mark + submission in one transaction)
   const submissionDoc = {
@@ -640,6 +715,7 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
       keystrokes: snap.keystrokes || 0,
       pasteCount: snap.pasteCount || 0,
       clickCount: snap.clickCount || 0,
+      autoInsertCount: snap.autoInsertCount || 0,
       startTime: snap.startTime || sessionStartedAt || serverNow,
       lastActive: snap.lastActive || serverNow,
       tabSwitchCount: snap.tabSwitchCount || 0,
