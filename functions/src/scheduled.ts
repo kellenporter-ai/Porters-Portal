@@ -13,7 +13,7 @@ import { queueEmail } from "./classroom";
 // to keep storage costs down. NO other data is touched — submissions, assignments, etc.
 // all persist indefinitely.
 export const sundayReset = onSchedule(
-  { schedule: "59 23 * * 0", timeZone: "America/New_York" },
+  { schedule: "59 23 * * 0", timeZone: "America/New_York", memory: "1GiB", timeoutSeconds: 300 },
   async () => {
     const correlationId = generateCorrelationId();
     const db = admin.firestore();
@@ -29,7 +29,7 @@ export const sundayReset = onSchedule(
     while (true) {
       let evidenceSnap: FirebaseFirestore.QuerySnapshot;
       try {
-        let query = db.collection("evidence").limit(499);
+        let query = db.collection("evidence").orderBy("__name__").limit(499);
         if (lastDoc) query = query.startAfter(lastDoc);
         evidenceSnap = await query.get();
       } catch (err) {
@@ -90,7 +90,7 @@ export const sundayReset = onSchedule(
  * All components are normalized to 0-100 before weighting.
  */
 export const dailyAnalysis = onSchedule(
-  { schedule: "0 6 * * *", timeZone: "America/New_York" },
+  { schedule: "0 6 * * *", timeZone: "America/New_York", memory: "1GiB", timeoutSeconds: 300 },
   async () => {
     const correlationId = generateCorrelationId();
     const db = admin.firestore();
@@ -108,7 +108,7 @@ export const dailyAnalysis = onSchedule(
     let lastUserDoc: any = null;
     while (true) {
       let uQuery = db.collection("users")
-        .where("role", "==", "STUDENT").limit(1000);
+        .where("role", "==", "STUDENT").orderBy("__name__").limit(1000);
       if (lastUserDoc) uQuery = uQuery.startAfter(lastUserDoc);
       const uSnap = await uQuery.get();
       if (uSnap.empty) break;
@@ -127,7 +127,7 @@ export const dailyAnalysis = onSchedule(
     let lastSubDoc: any = null;
     while (true) {
       let sQuery = db.collection("submissions")
-        .where("submittedAt", ">=", windowStartISO).limit(1000);
+        .where("submittedAt", ">=", windowStartISO).orderBy("submittedAt").limit(1000);
       if (lastSubDoc) sQuery = sQuery.startAfter(lastSubDoc);
       const sSnap = await sQuery.get();
       if (sSnap.empty) break;
@@ -444,7 +444,7 @@ export const dailyAnalysis = onSchedule(
     batch = db.batch();
     let lastBucketDoc: any = null;
     while (true) {
-      let bQuery = db.collection("student_buckets").limit(1000);
+      let bQuery = db.collection("student_buckets").orderBy("__name__").limit(1000);
       if (lastBucketDoc) bQuery = bQuery.startAfter(lastBucketDoc);
       const oldBuckets = await bQuery.get();
       if (oldBuckets.empty) break;
@@ -494,7 +494,7 @@ export const dailyAnalysis = onSchedule(
     batch = db.batch();
     let lastAlertDoc: any = null;
     while (true) {
-      let aQuery = db.collection("student_alerts").limit(1000);
+      let aQuery = db.collection("student_alerts").orderBy("__name__").limit(1000);
       if (lastAlertDoc) aQuery = aQuery.startAfter(lastAlertDoc);
       const oldAlerts = await aQuery.get();
       if (oldAlerts.empty) break;
@@ -522,7 +522,7 @@ export const dailyAnalysis = onSchedule(
 /**
  * dismissAlert — Teacher dismisses an EWS alert.
  */
-export const dismissAlert = onCall(async (request) => {
+export const dismissAlert = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   await verifyAdmin(request.auth);
   const { alertId } = request.data;
   if (!alertId) throw new HttpsError("invalid-argument", "Alert ID required.");
@@ -543,7 +543,7 @@ export const dismissAlert = onCall(async (request) => {
 /**
  * dismissAlertsBatch — Teacher dismisses multiple EWS alerts in one call.
  */
-export const dismissAlertsBatch = onCall(async (request) => {
+export const dismissAlertsBatch = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   await verifyAdmin(request.auth);
   const { alertIds } = request.data;
 
@@ -573,6 +573,8 @@ export const checkStreaksAtRisk = onSchedule(
   {
     schedule: "0 18 * * 5", // Every Friday at 6 PM UTC (roughly end of school week)
     timeZone: "America/New_York",
+    memory: "256MiB",
+    timeoutSeconds: 60,
   },
   async () => {
     const correlationId = generateCorrelationId();
@@ -594,6 +596,7 @@ export const checkStreaksAtRisk = onSchedule(
       let query = db.collection("users")
         .where("role", "==", "STUDENT")
         .where("isWhitelisted", "==", true)
+        .orderBy("__name__")
         .limit(500);
       if (lastDoc) query = query.startAfter(lastDoc);
       const studentsSnap = await query.get();

@@ -247,7 +247,7 @@ function getDisenchantValue(item: LootItem): number {
 
 // ── Cloud Functions ─────────────────────────────────────────────────
 
-export const awardXP = onCall({ memory: "256MiB" }, async (request) => {
+export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { xpAmount, classType } = request.data || {};
@@ -305,7 +305,7 @@ export const awardXP = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
-export const equipItem = onCall({ memory: "256MiB" }, async (request) => {
+export const equipItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { itemId, slot, classType } = request.data || {};
@@ -336,7 +336,7 @@ export const equipItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
-export const unequipItem = onCall({ memory: "256MiB" }, async (request) => {
+export const unequipItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { slot, classType } = request.data || {};
@@ -366,7 +366,7 @@ export const unequipItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
-export const disenchantItem = onCall({ memory: "256MiB" }, async (request) => {
+export const disenchantItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { itemId, classType } = request.data || {};
@@ -397,7 +397,7 @@ export const disenchantItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
-export const craftItem = onCall({ memory: "256MiB" }, async (request) => {
+export const craftItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { targetRarity, classType } = request.data || {};
@@ -431,7 +431,7 @@ export const craftItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true, item: result.item };
 });
 
-export const adminUpdateInventory = onCall({ memory: "256MiB" }, async (request) => {
+export const adminUpdateInventory = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, inventory } = request.data || {};
@@ -443,7 +443,7 @@ export const adminUpdateInventory = onCall({ memory: "256MiB" }, async (request)
   return { success: true };
 });
 
-export const adminUpdateEquipped = onCall({ memory: "256MiB" }, async (request) => {
+export const adminUpdateEquipped = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, equipped } = request.data || {};
@@ -455,7 +455,7 @@ export const adminUpdateEquipped = onCall({ memory: "256MiB" }, async (request) 
   return { success: true };
 });
 
-export const adminGrantItem = onCall({ memory: "256MiB" }, async (request) => {
+export const adminGrantItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, item, classType } = request.data || {};
@@ -481,7 +481,7 @@ export const adminGrantItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
-export const adminEditItem = onCall({ memory: "256MiB" }, async (request) => {
+export const adminEditItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, itemId, changes, classType } = request.data || {};
@@ -510,7 +510,7 @@ export const adminEditItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
-export const useConsumable = onCall({ memory: "256MiB" }, async (request) => {
+export const useConsumable = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const uid = verifyAuth(request.auth);
   const { eventId, consumableId } = request.data;

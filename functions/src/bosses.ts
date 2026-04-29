@@ -19,7 +19,7 @@ import { generateLoot } from "./gamification-items";
 // ==========================================
 
 const BOSS_SHARD_COUNT = 10; // Supports ~10 concurrent writes/sec
-export const dealBossDamage = onCall(async (request) => {
+export const dealBossDamage = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const correlationId = generateCorrelationId();
   const { bossId, userName, classType } = request.data;
@@ -88,7 +88,7 @@ export const dealBossDamage = onCall(async (request) => {
   await batch.commit();
 
   // Step 5: Read all shards to calculate current HP + sync boss document
-  const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).limit(BOSS_SHARD_COUNT).get();
+  const shardsSnap = await db.collection(`boss_encounters/${bossId}/shards`).orderBy("__name__").limit(BOSS_SHARD_COUNT).get();
   let totalDamage = 0;
   shardsSnap.forEach(doc => { totalDamage += doc.data().damageDealt || 0; });
   const newHp = Math.max(0, boss.maxHp - totalDamage);
@@ -109,7 +109,7 @@ export const dealBossDamage = onCall(async (request) => {
       const contributorIds = new Set<string>();
       let lastLogDoc: any = null;
       while (true) {
-        let logQuery = db.collection(`boss_encounters/${bossId}/damage_log`).limit(499);
+        let logQuery = db.collection(`boss_encounters/${bossId}/damage_log`).orderBy("__name__").limit(499);
         if (lastLogDoc) logQuery = logQuery.startAfter(lastLogDoc);
         const logSnap = await logQuery.get();
         if (logSnap.empty) break;
@@ -244,7 +244,7 @@ const BOSS_EVENT_MAX_ATTEMPTS = 3;
  * Unified boss event answer handler.
  * Supports attempt-based progress, topic mastery tracking, and the new Pokemon-style damage formula.
  */
-export const answerBossEvent = onCall(async (request) => {
+export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const correlationId = generateCorrelationId();
   const { eventId, questionId, answer, timeTakenMs = 30000 } = request.data;
@@ -541,6 +541,7 @@ export const answerBossEvent = onCall(async (request) => {
         db.collection("boss_event_progress")
           .where("eventId", "==", eventId)
           .where("currentHp", ">", 0)
+          .orderBy("currentHp")
           .limit(10)
       );
       const allies = allProgressSnap.docs
@@ -680,7 +681,7 @@ export const answerBossEvent = onCall(async (request) => {
 // ADAPTIVE QUESTION SELECTION
 // ==========================================
 
-export const getNextBossQuestion = onCall(async (request) => {
+export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   generateCorrelationId();
   const { eventId } = request.data;
@@ -786,7 +787,7 @@ export const getNextBossQuestion = onCall(async (request) => {
 // SPECIALIZATION TRIALS
 // ==========================================
 
-export const startSpecializationTrial = onCall(async (request) => {
+export const startSpecializationTrial = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const correlationId = generateCorrelationId();
   const { specializationId } = request.data;
@@ -936,7 +937,7 @@ export const startSpecializationTrial = onCall(async (request) => {
   return { trialEventId, message: `Tutorial started! Answer the questions to learn the ${specializationId} specialization and unlock it.` };
 });
 
-export const completeSpecializationTrial = onCall(async (request) => {
+export const completeSpecializationTrial = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   generateCorrelationId();
   const { trialEventId } = request.data;
@@ -1027,7 +1028,7 @@ export const completeSpecializationTrial = onCall(async (request) => {
 // ==========================================
 
 
-export const scaleBossHp = onCall(async (request) => {
+export const scaleBossHp = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   verifyAuth(request.auth);
   const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);

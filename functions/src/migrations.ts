@@ -7,7 +7,7 @@ import { verifyAdmin } from "./core";
 // ONE-TIME MIGRATION — sync classXp for single-class students
 // REMOVE THIS FUNCTION AFTER RUNNING
 // ==========================================
-export const migrateClassXp = onCall(async (request) => {
+export const migrateClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -34,7 +34,7 @@ export const migrateClassXp = onCall(async (request) => {
 
   let lastDoc: any = null;
   while (true) {
-    let query = db.collection("users").where("role", "==", "STUDENT").limit(500);
+    let query = db.collection("users").where("role", "==", "STUDENT").orderBy("__name__").limit(500);
     if (lastDoc) query = query.startAfter(lastDoc);
     const snapshot = await query.get();
     if (snapshot.empty) break;
@@ -115,7 +115,7 @@ export const migrateClassXp = onCall(async (request) => {
  * using each Firestore document's native `createTime` metadata.
  * Admin-only. Safe to call multiple times (skips docs that already have createdAt).
  */
-export const backfillAssignmentDates = onCall(async (request) => {
+export const backfillAssignmentDates = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -135,7 +135,7 @@ export const backfillAssignmentDates = onCall(async (request) => {
   let lastDoc: any = null;
 
   while (true) {
-    let query = db.collection("assignments").limit(499);
+    let query = db.collection("assignments").orderBy("__name__").limit(499);
     if (lastDoc) query = query.startAfter(lastDoc);
     const snap = await query.get();
     if (snap.empty) break;
@@ -177,7 +177,7 @@ export const backfillAssignmentDates = onCall(async (request) => {
  * Counts words from blockResponses string answers and computes WPS from engagementTime.
  * Admin-only. Safe to call multiple times (skips docs that already have wordCount).
  */
-export const backfillWordCount = onCall(async (request) => {
+export const backfillWordCount = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -199,6 +199,7 @@ export const backfillWordCount = onCall(async (request) => {
   while (true) {
     let query = db.collection("submissions")
       .where("isAssessment", "==", true)
+      .orderBy("__name__")
       .limit(499);
     if (lastDoc) query = query.startAfter(lastDoc);
     const snap = await query.get();
@@ -266,7 +267,7 @@ export const backfillWordCount = onCall(async (request) => {
  * Migrate legacy boss_encounters and boss_quizzes collections into unified boss_events.
  * Admin-only. Idempotent — safe to run multiple times (overwrites existing boss_events docs).
  */
-export const migrateBossesToEvents = onCall(async (request) => {
+export const migrateBossesToEvents = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -354,7 +355,7 @@ export const migrateBossesToEvents = onCall(async (request) => {
  * Wraps flat progress into a single attempt (attemptNumber: 1).
  * Admin-only. Idempotent.
  */
-export const migrateBossQuizProgress = onCall(async (request) => {
+export const migrateBossQuizProgress = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -451,7 +452,7 @@ const V1_SKILL_COSTS: Record<string, number> = {
  *
  * Admin-only. Idempotent — safe to run multiple times (already-migrated users are skipped).
  */
-export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
+export const migrateSpecializationsV1ToV2 = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
 
   // Input validation
@@ -519,6 +520,7 @@ export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
   const allUsersWithSkills = await db
     .collection('users')
     .where('gamification.unlockedSkills', '!=', null)
+    .orderBy('gamification.unlockedSkills')
     .get();
 
   for (const doc of allUsersWithSkills.docs) {

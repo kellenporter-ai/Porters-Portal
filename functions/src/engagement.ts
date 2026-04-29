@@ -34,7 +34,7 @@ function assertEnrolled(userData: Record<string, unknown>, classType: string): v
 // ==========================================
 // Replaces client-side `minutes * 10` calculation.
 // Validates metrics, caps XP, prevents rapid re-submissions.
-export const submitEngagement = onCall(async (request) => {
+export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { assignmentId, assignmentTitle, metrics, classType } = request.data;
 
@@ -66,7 +66,7 @@ export const submitEngagement = onCall(async (request) => {
   let thresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
     const configSnap = await db.collection("class_configs")
-      .where("className", "==", classType).limit(1).get();
+      .where("className", "==", classType).orderBy("__name__").limit(1).get();
     if (!configSnap.empty) {
       const configData = configSnap.docs[0].data();
       if (configData.xpPerMinute && configData.xpPerMinute > 0) {
@@ -166,7 +166,7 @@ export const submitEngagement = onCall(async (request) => {
  * @param {object} request - The callable request.
  * @return {object} Result with XP awarded.
  */
-export const awardQuestionXP = onCall(async (request) => {
+export const awardQuestionXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const {
     assignmentId, questionId, xpAmount, classType,
@@ -280,7 +280,7 @@ export const awardQuestionXP = onCall(async (request) => {
  * Penalty = ceil(question.xp / 2). Applied every wrong attempt to discourage
  * random clicking. XP floor is 0 (buildXPUpdates handles this).
  */
-export const penalizeWrongAnswer = onCall(async (request) => {
+export const penalizeWrongAnswer = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { assignmentId, questionId, classType } = request.data;
   if (!assignmentId || !questionId) {
@@ -354,7 +354,7 @@ export const penalizeWrongAnswer = onCall(async (request) => {
 /**
  * updateStreak — Called after engagement submission to update weekly streak.
  */
-export const updateStreak = onCall(async (request) => {
+export const updateStreak = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
@@ -408,7 +408,7 @@ const DAILY_LOGIN_REWARDS = [
   { day: 6, xp: 100, flux: 20 },
   { day: 7, xp: 150, flux: 50 },
 ];
-export const claimDailyLogin = onCall(async (request) => {
+export const claimDailyLogin = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
@@ -497,7 +497,7 @@ function generateGem(level: number) {
     color: gemType.color,
   };
 }
-export const spinFortuneWheel = onCall(async (request) => {
+export const spinFortuneWheel = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { classType } = request.data;
   const db = admin.firestore();
@@ -634,7 +634,7 @@ const SKILL_COSTS: Record<string, number> = {
   // SCHOLAR
   sch_1: 1, sch_2: 1, sch_3: 2, sch_4: 2, sch_5: 3, sch_6: 5,
 };
-export const unlockSkill = onCall(async (request) => {
+export const unlockSkill = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { skillId, specialization } = request.data;
   if (!skillId) throw new HttpsError("invalid-argument", "Skill ID required.");
@@ -688,7 +688,7 @@ export const unlockSkill = onCall(async (request) => {
     return { success: true, remainingPoints: skillPoints - cost };
   });
 });
-export const addSocket = onCall(async (request) => {
+export const addSocket = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { itemId, classType } = request.data;
   if (!itemId) throw new HttpsError("invalid-argument", "Item ID required.");
@@ -761,7 +761,7 @@ function checkRunewordMatch(gemNames: string[]): RunewordDef | null {
   }
   return null;
 }
-export const socketGem = onCall(async (request) => {
+export const socketGem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { itemId, gemId, classType } = request.data;
   if (!itemId || !gemId) throw new HttpsError("invalid-argument", "Item ID and Gem ID required.");
@@ -836,7 +836,7 @@ export const socketGem = onCall(async (request) => {
 const UNSOCKET_RARITY_MULT: Record<string, number> = {
   COMMON: 1, UNCOMMON: 2, RARE: 4, UNIQUE: 8,
 };
-export const unsocketGem = onCall(async (request) => {
+export const unsocketGem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { itemId, gemIndex, classType } = request.data;
   if (!itemId || gemIndex === undefined || gemIndex === null) {
@@ -909,7 +909,7 @@ export const unsocketGem = onCall(async (request) => {
     return { item, newCurrency: currency - cost, cost, gem };
   });
 });
-export const commitSpecialization = onCall(async (request) => {
+export const commitSpecialization = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { specializationId } = request.data;
   if (!specializationId) {
@@ -985,7 +985,7 @@ export const commitSpecialization = onCall(async (request) => {
     message: `Congratulations! You have committed to the ${specializationId} specialization.`,
   };
 });
-export const declineSpecialization = onCall(async (request) => {
+export const declineSpecialization = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { specializationId } = request.data;
   if (!specializationId) {
@@ -1015,7 +1015,7 @@ export const declineSpecialization = onCall(async (request) => {
 
   return { success: true, message: `You declined the ${specializationId} specialization. You can retake the tutorial later.` };
 });
-export const claimKnowledgeLoot = onCall(async (request) => {
+export const claimKnowledgeLoot = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { gateId, classType } = request.data;
   if (!gateId) throw new HttpsError("invalid-argument", "Gate ID required.");
@@ -1085,7 +1085,7 @@ export const claimKnowledgeLoot = onCall(async (request) => {
     return { item, xpBonus: gate.rewards.xpBonus, fluxBonus: gate.rewards.fluxBonus || 0 };
   });
 });
-export const purchaseCosmetic = onCall(async (request) => {
+export const purchaseCosmetic = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { cosmeticId } = request.data;
   if (!cosmeticId) throw new HttpsError("invalid-argument", "Cosmetic ID required.");
@@ -1122,7 +1122,7 @@ export const purchaseCosmetic = onCall(async (request) => {
     return { success: true };
   });
 });
-export const claimDailyChallenge = onCall(async (request) => {
+export const claimDailyChallenge = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { challengeId, classType } = request.data;
   if (!challengeId) throw new HttpsError("invalid-argument", "Challenge ID required.");
@@ -1227,7 +1227,7 @@ const FLUX_SHOP_CATALOG: Record<string, {
   // Character Models — Premium (400 Flux)
   char_rogue_hooded: { type: 'CHARACTER_MODEL', cost: 400, dailyLimit: 0 },
 };
-export const purchaseFluxItem = onCall(async (request) => {
+export const purchaseFluxItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { itemId } = request.data;
   if (!itemId || typeof itemId !== 'string') throw new HttpsError("invalid-argument", "Item ID required.");
@@ -1338,7 +1338,7 @@ export const purchaseFluxItem = onCall(async (request) => {
     return result;
   });
 });
-export const equipFluxCosmetic = onCall(async (request) => {
+export const equipFluxCosmetic = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const { cosmeticId, slot } = request.data;
 

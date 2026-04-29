@@ -71,7 +71,7 @@ async function checkRateLimit(ipHash: string): Promise<boolean> {
 
 // Call this ONCE via browser URL after deploy to bootstrap your admin account.
 // Requires the X-Admin-Secret header to match the ADMIN_BOOTSTRAP_SECRET env var.
-export const setAdminClaim = onRequest(async (req, res) => {
+export const setAdminClaim = onRequest({ memory: "256MiB", timeoutSeconds: 60 }, async (req, res) => {
   const correlationId = generateCorrelationId();
   try {
     // Validate origin to prevent CSRF
@@ -116,7 +116,7 @@ export const setAdminClaim = onRequest(async (req, res) => {
 // ENROLLMENT
 // ==========================================
 
-export const redeemEnrollmentCode = onCall(async (_request) => {
+export const redeemEnrollmentCode = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (_request) => {
   const correlationId = generateCorrelationId();
   void correlationId;
   throw new HttpsError("unimplemented", "Enrollment code redemption is not yet implemented.");
@@ -126,7 +126,7 @@ export const redeemEnrollmentCode = onCall(async (_request) => {
 // UTILITY FUNCTIONS
 // ==========================================
 
-export const fixCors = onRequest(async (req, res) => {
+export const fixCors = onRequest({ memory: "256MiB", timeoutSeconds: 60 }, async (req, res) => {
   const correlationId = generateCorrelationId();
   try {
     // Validate HTTP method

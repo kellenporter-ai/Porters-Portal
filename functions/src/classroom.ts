@@ -22,7 +22,7 @@ export async function queueEmail(to: string, subject: string, html: string): Pro
  * Emails all enrolled students in the matching class.
  */
 export const onNewAssignment = onDocumentCreated(
-  "assignments/{assignmentId}",
+  { document: "assignments/{assignmentId}", memory: "256MiB", timeoutSeconds: 60 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -49,6 +49,7 @@ export const onNewAssignment = onDocumentCreated(
       let query = db.collection("users")
         .where("role", "==", "STUDENT")
         .where("isWhitelisted", "==", true)
+        .orderBy("__name__")
         .limit(499);
       if (lastDoc) query = query.startAfter(lastDoc);
       const studentsSnap = await query.get();
@@ -115,7 +116,7 @@ export const onNewAssignment = onDocumentCreated(
  * Emails the student that their work has been graded.
  */
 export const onGradePosted = onDocumentUpdated(
-  "submissions/{submissionId}",
+  { document: "submissions/{submissionId}", memory: "256MiB", timeoutSeconds: 60 },
   async (event) => {
     const before = event.data?.before.data();
     const after = event.data?.after.data();
@@ -201,7 +202,7 @@ function sleep(ms: number): Promise<void> {
 /**
  * classroomListCourses — List active courses for the authenticated teacher.
  */
-export const classroomListCourses = onCall({ memory: "512MiB" }, async (request) => {
+export const classroomListCourses = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   await verifyAdmin(request.auth);
   const correlationId = generateCorrelationId();
   const { accessToken } = request.data;
@@ -245,7 +246,7 @@ export const classroomListCourses = onCall({ memory: "512MiB" }, async (request)
 /**
  * classroomListCourseWork — List course work for a given course.
  */
-export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (request) => {
+export const classroomListCourseWork = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   await verifyAdmin(request.auth);
   const correlationId = generateCorrelationId();
   const { accessToken, courseId } = request.data;
@@ -293,7 +294,7 @@ export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (reque
 /**
  * classroomCreateCourseWork — Create a new assignment in Google Classroom.
  */
-export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (request) => {
+export const classroomCreateCourseWork = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   await verifyAdmin(request.auth);
   const correlationId = generateCorrelationId();
   const { accessToken, courseId, title, maxPoints } = request.data;
@@ -353,7 +354,7 @@ export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (req
  * matches students by email to Classroom roster, and patches grades.
  * Includes exponential backoff for rate limiting (429 errors).
  */
-export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
+export const classroomPushGrades = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   await verifyAdmin(request.auth);
   const correlationId = generateCorrelationId();
   const { accessToken, assignmentId } = request.data;

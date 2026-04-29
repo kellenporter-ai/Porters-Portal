@@ -74,7 +74,7 @@ function gradeAssessmentBlocks(
 // ==========================================
 // START ASSESSMENT SESSION — Issue cryptographic session token
 // ==========================================
-export const startAssessmentSession = onCall(async (request) => {
+export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
   const correlationId = generateCorrelationId();
@@ -94,6 +94,7 @@ export const startAssessmentSession = onCall(async (request) => {
     .where("userId", "==", uid)
     .where("assignmentId", "==", assignmentId)
     .where("used", "==", false)
+    .orderBy("__name__")
     .limit(1)
     .get();
   if (!existingTokens.empty) {
@@ -133,7 +134,7 @@ export const startAssessmentSession = onCall(async (request) => {
 // ==========================================
 // SUBMIT ASSESSMENT — Server-side grading + telemetry
 // ==========================================
-export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
+export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, minInstances: 1 }, async (request) => {
   // 1. Verify auth
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
@@ -201,7 +202,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   let assessmentThresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
     const configSnap = await db.collection("class_configs")
-      .where("className", "==", classType).limit(1).get();
+      .where("className", "==", classType).orderBy("__name__").limit(1).get();
     if (!configSnap.empty) {
       assessmentThresholds = configSnap.docs[0].data().telemetryThresholds || {};
     }
@@ -429,7 +430,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
 // ==========================================
 // RETURN ASSESSMENT — Allow student to revise and resubmit
 // ==========================================
-export const returnAssessment = onCall(async (request) => {
+export const returnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   // 1. Verify admin
   await verifyAdmin(request.auth);
   const correlationId = generateCorrelationId();
@@ -454,6 +455,7 @@ export const returnAssessment = onCall(async (request) => {
     .where("userId", "==", sub.userId)
     .where("assignmentId", "==", sub.assignmentId)
     .where("used", "==", false)
+    .orderBy("__name__")
     .limit(1)
     .get();
   if (!activeSessions.empty) {
@@ -500,7 +502,7 @@ export const returnAssessment = onCall(async (request) => {
 // ==========================================
 // SUBMIT ON BEHALF — Admin submits student's draft work
 // ==========================================
-export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) => {
+export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   // 1. Verify auth and admin status
   const callerUid = request.auth?.uid;
   if (!callerUid) throw new HttpsError("unauthenticated", "Must be logged in.");
@@ -565,6 +567,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
     .where("userId", "==", userId)
     .where("assignmentId", "==", assignmentId)
     .where("used", "==", false)
+    .orderBy("__name__")
     .limit(1)
     .get();
   const sessionDoc = sessionQuery.empty ? null : sessionQuery.docs[0];
@@ -744,7 +747,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
  * @param {object} request - The callable request.
  * @return {object} Result with question count.
  */
-export const uploadQuestionBank = onCall(async (request) => {
+export const uploadQuestionBank = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   await verifyAdmin(request.auth);
   const correlationId = generateCorrelationId();
   const {
