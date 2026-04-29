@@ -23,6 +23,7 @@ export const VALID_CLASS_TYPES = [
   'Forensic Science',
   'Uncategorized',
   'GLOBAL',
+  'Sandbox Class',
 ];
 
 function isValidNumber(value: unknown): value is number {
