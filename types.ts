@@ -1588,6 +1588,23 @@ export interface BossPreset {
 }
 
 // ========================================
+// WELLNESS CHECK-IN
+// ========================================
+
+export type WellnessLevel = 'very-low' | 'low' | 'normal' | 'elevated' | 'high';
+
+export interface WellnessCheckin {
+  id: string;
+  userId: string;
+  userName: string;
+  classType?: string;
+  section?: string;
+  level: WellnessLevel;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ========================================
 // TYPE GUARDS — validate Firestore data at deserialization boundaries
 // ========================================
 

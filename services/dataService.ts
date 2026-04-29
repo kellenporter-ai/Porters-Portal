@@ -263,7 +263,15 @@ export const dataService = {
               })
             : (data.lessonBlocks || []),
           isAssessment: data.isAssessment || false,
-          assessmentConfig: data.assessmentConfig || undefined,
+          assessmentConfig: data.assessmentConfig
+            ? {
+                ...data.assessmentConfig,
+                maxAttempts:
+                  typeof data.assessmentConfig.maxAttempts === 'number'
+                    ? data.assessmentConfig.maxAttempts
+                    : (parseInt(String(data.assessmentConfig.maxAttempts), 10) || 0),
+              }
+            : undefined,
           rubric: data.rubric || undefined,
           classroomLink: data.classroomLink || undefined,
           classroomLinks: data.classroomLinks || undefined,
@@ -575,7 +583,15 @@ export const dataService = {
         scheduledAt: assignment.scheduledAt || null,
         lessonBlocks: assignment.lessonBlocks && assignment.lessonBlocks.length > 0 ? assignment.lessonBlocks : [],
         isAssessment: assignment.isAssessment || false,
-        assessmentConfig: assignment.assessmentConfig || null,
+        assessmentConfig: assignment.assessmentConfig
+          ? {
+              ...assignment.assessmentConfig,
+              maxAttempts:
+                typeof assignment.assessmentConfig.maxAttempts === 'number'
+                  ? assignment.assessmentConfig.maxAttempts
+                  : (parseInt(String(assignment.assessmentConfig.maxAttempts), 10) || 0),
+            }
+          : null,
         rubric: assignment.rubric || null,
         updatedAt: new Date().toISOString(),
       };
@@ -1835,6 +1851,40 @@ export const dataService = {
       const profiles = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as StudentBucketProfile));
       callback(profiles);
     });
+  },
+
+  // --- WELLNESS CHECK-INS ---
+
+  submitWellnessCheckin: async (userId: string, userName: string, level: import('../types').WellnessLevel, classType?: string, section?: string) => {
+    const now = new Date().toISOString();
+    const docId = `${userId}_${new Date().toISOString().split('T')[0]}`;
+    const ref = doc(db, 'wellness_checkins', docId);
+    const existing = await getDoc(ref);
+    const payload: Record<string, unknown> = {
+      userId,
+      userName,
+      classType: classType || '',
+      section: section || '',
+      level,
+      updatedAt: now,
+    };
+    if (!existing.exists()) {
+      payload.createdAt = now;
+    }
+    await setDoc(ref, payload, { merge: true });
+  },
+
+  clearWellnessCheckin: async (userId: string) => {
+    const docId = `${userId}_${new Date().toISOString().split('T')[0]}`;
+    await deleteDoc(doc(db, 'wellness_checkins', docId));
+  },
+
+  subscribeToWellnessCheckins: (callback: (checkins: import('../types').WellnessCheckin[]) => void) => {
+    const today = new Date().toISOString().split('T')[0];
+    const q = query(collection(db, 'wellness_checkins'), where('updatedAt', '>=', `${today}T00:00:00.000Z`), orderBy('updatedAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as import('../types').WellnessCheckin)));
+    }, (error) => { reportError(error, { subscription: 'wellnessCheckins' }); });
   },
 
   // --- PRACTICE PROGRESS (completion tracking) ---

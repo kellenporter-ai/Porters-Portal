@@ -11,6 +11,8 @@ import {
   Zap,
 } from 'lucide-react';
 import AnimatedIcon from '../AnimatedIcon';
+import CortisolCheckIn from './CortisolCheckIn';
+import { dataService } from '../../services/dataService';
 
 /*
  * HomeTab — Variation D ("Anchored") rebuild.
@@ -58,6 +60,7 @@ interface HomeTabProps {
   userCodename?: string | null;
   userLevel?: number | null;
   loginStreak?: number;
+  userId?: string;
 }
 
 // ─── Helpers ─────────────────────────────────
@@ -121,6 +124,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
   userCodename,
   userLevel,
   loginStreak = 0,
+  userId,
 }) => {
   const navigate = useNavigate();
 
@@ -438,6 +442,22 @@ const HomeTab: React.FC<HomeTabProps> = ({
           )}
         </div>
       </section>
+
+      {/* ═══════════ ZONE 01.5 — Wellness check-in ═══════════ */}
+      <CortisolCheckIn
+        onSubmit={async (level) => {
+          await dataService.submitWellnessCheckin(
+            userId || '',
+            userName || '',
+            level,
+            activeClass,
+            userClassSections?.[activeClass] || userSection
+          );
+        }}
+        onClear={async () => {
+          await dataService.clearWellnessCheckin(userId || '');
+        }}
+      />
 
       {/* ═══════════ ZONE 02 — Metric trio (This week + This unit) ═══════════ */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
