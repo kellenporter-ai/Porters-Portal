@@ -1,8 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
-import { verifyAdmin } from "./core";
+import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 
 /**
  * Helper: queue an email by writing to the "mail" collection.
@@ -38,7 +37,8 @@ export const onNewAssignment = onDocumentCreated(
     const title = data.title as string;
     const dueDate = data.dueDate ? new Date(data.dueDate as string).toLocaleDateString() : null;
 
-    logger.info(`New assignment published: "${title}" for ${classType}`);
+    const correlationId = generateCorrelationId();
+    logWithCorrelation('info', 'New assignment published', correlationId, { title, classType });
 
     // Find all students enrolled in this class (paginated)
     const db = admin.firestore();
@@ -106,7 +106,7 @@ export const onNewAssignment = onDocumentCreated(
       if (studentsSnap.size < 499) break;
     }
 
-    logger.info(`Queued ${emailsSent} emails for new assignment "${title}"`);
+    logWithCorrelation('info', 'Queued emails for new assignment', correlationId, { emailsSent, title, classType });
   },
 );
 /**
@@ -133,7 +133,8 @@ export const onGradePosted = onDocumentUpdated(
     const userId = after.userId as string;
     const assignmentTitle = after.assignmentTitle as string;
 
-    logger.info(`Grade posted for ${userId}: ${assignmentTitle} = ${newScore}`);
+    const correlationId = generateCorrelationId();
+    logWithCorrelation('info', 'Grade posted', correlationId, { userId, assignmentTitle, newScore });
 
     // Look up student email
     const db = admin.firestore();
@@ -166,7 +167,7 @@ export const onGradePosted = onDocumentUpdated(
       `,
     );
 
-    logger.info(`Queued grade notification email for ${email}`);
+    logWithCorrelation('info', 'Queued grade notification email', correlationId, { email, userId, assignmentTitle, newScore });
   },
 );
 /**
@@ -179,7 +180,7 @@ function isGoogleAuthError(err: unknown): boolean {
 }
 
 /** Server-side item catalog — must mirror client FLUX_SHOP_ITEMS */
-async function createClassroomClient(accessToken: string) {
+async function createClassroomClient(accessToken: string, correlationId?: string) {
   try {
     const { google } = await import("googleapis");
     const oauth2Client = new google.auth.OAuth2();
@@ -187,7 +188,7 @@ async function createClassroomClient(accessToken: string) {
     return google.classroom({ version: "v1", auth: oauth2Client });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("Failed to load googleapis module", { error: msg });
+    logWithCorrelation('error', 'Failed to load googleapis module', correlationId || generateCorrelationId(), { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Google Classroom client initialization failed: ${msg}`);
   }
 }
@@ -202,6 +203,7 @@ function sleep(ms: number): Promise<void> {
  */
 export const classroomListCourses = onCall({ memory: "512MiB" }, async (request) => {
   await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
   const { accessToken } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
     throw new HttpsError("invalid-argument", "Missing accessToken.");
@@ -209,10 +211,10 @@ export const classroomListCourses = onCall({ memory: "512MiB" }, async (request)
 
   let classroom;
   try {
-    classroom = await createClassroomClient(accessToken);
+    classroom = await createClassroomClient(accessToken, correlationId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomListCourses client error", { error: msg });
+    logWithCorrelation('error', 'classroomListCourses client error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
   try {
@@ -232,11 +234,11 @@ export const classroomListCourses = onCall({ memory: "512MiB" }, async (request)
   } catch (err: unknown) {
     if (isGoogleAuthError(err)) {
       const msg = err instanceof Error ? err.message : "Google authentication failed.";
-      logger.error("classroomListCourses auth error", { error: msg });
+      logWithCorrelation('error', 'classroomListCourses auth error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
       throw new HttpsError("unauthenticated", `Google Classroom token expired or invalid. Please re-authenticate. (${msg})`);
     }
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomListCourses error", { error: msg });
+    logWithCorrelation('error', 'classroomListCourses error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
 });
@@ -245,6 +247,7 @@ export const classroomListCourses = onCall({ memory: "512MiB" }, async (request)
  */
 export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (request) => {
   await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
   const { accessToken, courseId } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
     throw new HttpsError("invalid-argument", "Missing accessToken.");
@@ -255,10 +258,10 @@ export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (reque
 
   let classroom;
   try {
-    classroom = await createClassroomClient(accessToken);
+    classroom = await createClassroomClient(accessToken, correlationId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomListCourseWork client error", { error: msg });
+    logWithCorrelation('error', 'classroomListCourseWork client error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
   try {
@@ -279,11 +282,11 @@ export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (reque
   } catch (err: unknown) {
     if (isGoogleAuthError(err)) {
       const msg = err instanceof Error ? err.message : "Google authentication failed.";
-      logger.error("classroomListCourseWork auth error", { error: msg });
+      logWithCorrelation('error', 'classroomListCourseWork auth error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
       throw new HttpsError("unauthenticated", `Google Classroom token expired or invalid. Please re-authenticate. (${msg})`);
     }
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomListCourseWork error", { error: msg });
+    logWithCorrelation('error', 'classroomListCourseWork error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
 });
@@ -292,6 +295,7 @@ export const classroomListCourseWork = onCall({ memory: "512MiB" }, async (reque
  */
 export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (request) => {
   await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
   const { accessToken, courseId, title, maxPoints } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
     throw new HttpsError("invalid-argument", "Missing accessToken.");
@@ -308,10 +312,10 @@ export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (req
 
   let classroom;
   try {
-    classroom = await createClassroomClient(accessToken);
+    classroom = await createClassroomClient(accessToken, correlationId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomCreateCourseWork client error", { error: msg });
+    logWithCorrelation('error', 'classroomCreateCourseWork client error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
   try {
@@ -334,11 +338,11 @@ export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (req
   } catch (err: unknown) {
     if (isGoogleAuthError(err)) {
       const msg = err instanceof Error ? err.message : "Google authentication failed.";
-      logger.error("classroomCreateCourseWork auth error", { error: msg });
+      logWithCorrelation('error', 'classroomCreateCourseWork auth error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
       throw new HttpsError("unauthenticated", `Google Classroom token expired or invalid. Please re-authenticate. (${msg})`);
     }
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomCreateCourseWork error", { error: msg });
+    logWithCorrelation('error', 'classroomCreateCourseWork error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
 });
@@ -351,6 +355,7 @@ export const classroomCreateCourseWork = onCall({ memory: "512MiB" }, async (req
  */
 export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
   const { accessToken, assignmentId } = request.data;
   if (!accessToken || typeof accessToken !== "string") {
     throw new HttpsError("invalid-argument", "Missing accessToken.");
@@ -361,10 +366,10 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
 
   let classroom;
   try {
-    classroom = await createClassroomClient(accessToken);
+    classroom = await createClassroomClient(accessToken, correlationId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomPushGrades client error", { error: msg });
+    logWithCorrelation('error', 'classroomPushGrades client error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Classroom API error: ${msg}`);
   }
 
@@ -493,7 +498,7 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
         maxPoints = cwRes.data.maxPoints ?? entry.maxPoints ?? 100;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Unknown error";
-        logger.error("Failed to fetch CourseWork from Classroom", { courseId, courseWorkId, error: msg });
+        logWithCorrelation('error', 'Failed to fetch CourseWork from Classroom', correlationId, { courseId, courseWorkId, error: msg, stack: err instanceof Error ? err.stack : undefined });
         throw new Error(`Cannot read Classroom assignment (${courseId}/${courseWorkId}): ${msg}`);
       }
 
@@ -521,7 +526,7 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
       const entryErrors: string[] = [];
 
       const allPortalEmails = Object.entries(emailMap).filter(([, uid]) => uid in filteredScores);
-      logger.info("classroomPushGrades matching", {
+      logWithCorrelation('info', 'classroomPushGrades matching', correlationId, {
         portalSection: entry.portalSection ?? "all",
         portalEmailCount: allPortalEmails.length,
       });
@@ -542,8 +547,8 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
             pageSize: 1,
           });
           submissionId = res.data.studentSubmissions?.[0]?.id ?? undefined;
-        } catch {
-          // Student not enrolled in this Classroom course
+        } catch (err) {
+          logWithCorrelation('warn', 'Exception swallowed', correlationId, { error: err instanceof Error ? err.message : String(err) });
         }
 
         if (!submissionId) {
@@ -578,7 +583,7 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
             const status = (err as { code?: number }).code;
             if (status === 429 && attempt < 2) {
               const delay = Math.pow(2, attempt) * 1000;
-              logger.warn(`Rate limited on grade push, retrying in ${delay}ms`, { email, attempt, courseId });
+              logWithCorrelation('warn', 'Rate limited on grade push, retrying', correlationId, { email, attempt, courseId, delayMs: delay });
               await sleep(delay);
             } else {
               const msg = err instanceof Error ? err.message : "Unknown error";
@@ -598,7 +603,7 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
       }
       }
 
-      logger.info("classroomPushGrades entry complete", {
+      logWithCorrelation('info', 'classroomPushGrades entry complete', correlationId, {
         courseId,
         courseWorkId,
         portalSection: entry.portalSection ?? "all",
@@ -649,12 +654,12 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
   }
   await Promise.all(auditPromises);
 
-  logger.info("classroomPushGrades complete", { pushed, skipped, errorCount: errors.length });
+  logWithCorrelation('info', 'classroomPushGrades complete', correlationId, { pushed, skipped, errorCount: errors.length });
   return { pushed, skipped, errors };
   } catch (err: unknown) {
     if (err instanceof HttpsError) throw err;
     const msg = err instanceof Error ? err.message : "Unknown error";
-    logger.error("classroomPushGrades unhandled error", { error: msg, stack: err instanceof Error ? err.stack : undefined });
+    logWithCorrelation('error', 'classroomPushGrades unhandled error', correlationId, { error: msg, stack: err instanceof Error ? err.stack : undefined });
     throw new HttpsError("internal", `Grade push failed: ${msg}`);
   }
 });

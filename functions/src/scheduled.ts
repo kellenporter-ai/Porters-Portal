@@ -2,7 +2,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { verifyAdmin } from "./core";
+import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 import { queueEmail } from "./classroom";
 
 // ==========================================
@@ -15,10 +15,11 @@ import { queueEmail } from "./classroom";
 export const sundayReset = onSchedule(
   { schedule: "59 23 * * 0", timeZone: "America/New_York" },
   async () => {
+    const correlationId = generateCorrelationId();
     const db = admin.firestore();
     const bucket = admin.storage().bucket();
 
-    logger.info("Starting weekly evidence cleanup...");
+    logWithCorrelation('info', 'Starting weekly evidence cleanup...', correlationId);
 
     // 1. Delete uploaded images from Storage + Firestore docs in paginated batches
     let storageDeleted = 0;
@@ -32,7 +33,7 @@ export const sundayReset = onSchedule(
         if (lastDoc) query = query.startAfter(lastDoc);
         evidenceSnap = await query.get();
       } catch (err) {
-        logger.error("sundayReset: Evidence query failed, aborting.", err);
+        logWithCorrelation('error', 'sundayReset: Evidence query failed, aborting.', correlationId, { error: err instanceof Error ? err.message : String(err) });
         break;
       }
       if (evidenceSnap.empty) break;
@@ -45,11 +46,15 @@ export const sundayReset = onSchedule(
             const urlPath = decodeURIComponent(new URL(data.imageUrl).pathname);
             const match = urlPath.match(/\/o\/(.+)/);
             if (match) {
-              await bucket.file(match[1]).delete().catch(() => {});
-              storageDeleted++;
+              try {
+                await bucket.file(match[1]).delete();
+                storageDeleted++;
+              } catch (err) {
+                logger.warn("Exception swallowed", { error: err instanceof Error ? err.message : String(err), correlationId });
+              }
             }
-          } catch {
-            // File may already be deleted — not critical
+          } catch (err) {
+            logger.warn("Exception swallowed", { error: err instanceof Error ? err.message : String(err), correlationId });
           }
         }
       }
@@ -61,15 +66,15 @@ export const sundayReset = onSchedule(
         await chunk.commit();
         count += evidenceSnap.size;
       } catch (err) {
-        logger.error("sundayReset: Batch delete failed, skipping to next batch.", err);
+        logWithCorrelation('error', 'sundayReset: Batch delete failed, skipping to next batch.', correlationId, { error: err instanceof Error ? err.message : String(err) });
       }
 
       lastDoc = evidenceSnap.docs[evidenceSnap.docs.length - 1];
       if (evidenceSnap.size < 499) break;
     }
 
-    logger.info(`Deleted ${storageDeleted} evidence images from Storage.`);
-    logger.info(`Deleted ${count} evidence documents from Firestore.`);
+    logWithCorrelation('info', 'Deleted evidence images from Storage', correlationId, { storageDeleted });
+    logWithCorrelation('info', 'Deleted evidence documents from Firestore', correlationId, { count });
   }
 );
 // ==========================================
@@ -87,6 +92,7 @@ export const sundayReset = onSchedule(
 export const dailyAnalysis = onSchedule(
   { schedule: "0 6 * * *", timeZone: "America/New_York" },
   async () => {
+    const correlationId = generateCorrelationId();
     const db = admin.firestore();
     const now = new Date();
 
@@ -95,7 +101,7 @@ export const dailyAnalysis = onSchedule(
     windowStart.setDate(windowStart.getDate() - 7);
     const windowStartISO = windowStart.toISOString();
 
-    logger.info(`dailyAnalysis: Analyzing submissions since ${windowStartISO}`);
+    logWithCorrelation('info', 'dailyAnalysis: Analyzing submissions', correlationId, { windowStart: windowStartISO });
 
     // 1. Fetch all students (paginated)
     const allUserDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
@@ -111,7 +117,7 @@ export const dailyAnalysis = onSchedule(
       if (uSnap.size < 1000) break;
     }
     if (allUserDocs.length === 0) {
-      logger.info("dailyAnalysis: No students found. Skipping.");
+      logWithCorrelation('info', 'dailyAnalysis: No students found. Skipping.', correlationId);
       return;
     }
     const usersSnap = { docs: allUserDocs, empty: false };
@@ -455,12 +461,12 @@ export const dailyAnalysis = onSchedule(
     }
     if (count % 499 !== 0) await batch.commit();
 
-    logger.info(`dailyAnalysis: Wrote ${bucketProfiles.length} bucket profiles.`);
+    logWithCorrelation('info', 'dailyAnalysis: Wrote bucket profiles', correlationId, { bucketProfileCount: bucketProfiles.length });
 
     // 7. Write alerts to Firestore (batch for efficiency)
     const finalAlerts = Array.from(deduped.values());
     if (finalAlerts.length === 0) {
-      logger.info("dailyAnalysis: No at-risk students detected. Bucket profiles written.");
+      logWithCorrelation('info', 'dailyAnalysis: No at-risk students detected. Bucket profiles written.', correlationId);
       return;
     }
 
@@ -505,7 +511,12 @@ export const dailyAnalysis = onSchedule(
     }
     if (count % 499 !== 0) await batch.commit();
 
-    logger.info(`dailyAnalysis: Generated ${finalAlerts.length} alerts (${Array.from(deduped.values()).filter((a) => a.riskLevel === "CRITICAL").length} critical, ${Array.from(deduped.values()).filter((a) => a.riskLevel === "HIGH").length} high). ${bucketProfiles.length} bucket profiles stored.`);
+    logWithCorrelation('info', 'dailyAnalysis: Generated alerts', correlationId, {
+      alertCount: finalAlerts.length,
+      criticalCount: finalAlerts.filter((a) => a.riskLevel === "CRITICAL").length,
+      highCount: finalAlerts.filter((a) => a.riskLevel === "HIGH").length,
+      bucketProfileCount: bucketProfiles.length,
+    });
   }
 );
 /**
@@ -564,8 +575,9 @@ export const checkStreaksAtRisk = onSchedule(
     timeZone: "America/New_York",
   },
   async () => {
+    const correlationId = generateCorrelationId();
     const db = admin.firestore();
-    logger.info("Running streak-at-risk check...");
+    logWithCorrelation('info', 'Running streak-at-risk check...', correlationId);
 
     // Get current ISO week ID
     const now = new Date();
@@ -677,6 +689,6 @@ export const checkStreaksAtRisk = onSchedule(
       if (studentsSnap.size < 500) break;
     }
 
-    logger.info(`Streak-at-risk: queued ${emailsSent} warning emails (week: ${currentWeekId})`);
+    logWithCorrelation('info', 'Streak-at-risk: queued warning emails', correlationId, { emailsSent, weekId: currentWeekId });
   },
 );

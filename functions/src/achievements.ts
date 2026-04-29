@@ -1,4 +1,4 @@
-import { buildXPUpdates } from "./core";
+import { buildXPUpdates, generateCorrelationId, logWithCorrelation } from "./core";
 
 // Inline achievement definitions (cannot import from ../../lib/ due to tsconfig rootDir)
 // Keep in sync with lib/achievements.ts — condition types and targets are authoritative here.
@@ -73,6 +73,7 @@ export function checkAndUnlockAchievements(
   newUnlocks: string[];
   rewardUpdates: Record<string, any>;
 } {
+  const correlationId = generateCorrelationId();
   const gam = data.gamification || {};
   const already = new Set<string>(gam.unlockedAchievements || []);
 
@@ -116,6 +117,13 @@ export function checkAndUnlockAchievements(
   if (newUnlocks.length === 0) {
     return { newUnlocks: [], rewardUpdates: {} };
   }
+
+  logWithCorrelation('info', 'Achievements unlocked', correlationId, {
+    newUnlocks,
+    totalXpReward,
+    totalFluxReward,
+    skipXPRewards,
+  });
 
   const rewardUpdates: Record<string, any> = {};
 
@@ -167,6 +175,8 @@ export async function writeAchievementNotifications(
 ): Promise<void> {
   if (newUnlocks.length === 0) return;
 
+  const correlationId = generateCorrelationId();
+
   // Deduplicate against existing notifications to prevent races/retries from creating duplicates
   const existingSnap = await db
     .collection("notifications")
@@ -199,5 +209,10 @@ export async function writeAchievementNotifications(
 
   if (writes.length > 0) {
     await Promise.allSettled(writes);
+    logWithCorrelation('info', 'Achievement notifications written', correlationId, {
+      userId,
+      count: writes.length,
+      achievementIds: newUnlocks.filter((id) => !alreadyNotified.has(id)),
+    });
   }
 }

@@ -9,6 +9,8 @@ import {
   MAX_XP_PER_SUBMISSION,
   LootItem,
   Affix,
+  generateCorrelationId,
+  logWithCorrelation,
 } from "./core";
 import { checkAndUnlockAchievements, writeAchievementNotifications } from "./achievements";
 
@@ -246,6 +248,7 @@ function getDisenchantValue(item: LootItem): number {
 // ── Cloud Functions ─────────────────────────────────────────────────
 
 export const awardXP = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { xpAmount, classType } = request.data || {};
   if (typeof xpAmount !== "number" || xpAmount <= 0) {
@@ -298,10 +301,12 @@ export const awardXP = onCall({ memory: "256MiB" }, async (request) => {
       await writeAchievementNotifications(db, userId, achievementResult.newUnlocks);
     }
   });
+  logWithCorrelation('info', 'XP awarded', correlationId, { userId, xpAmount, classType });
   return { success: true };
 });
 
 export const equipItem = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { itemId, slot, classType } = request.data || {};
   if (typeof itemId !== "string" || typeof slot !== "string") {
@@ -327,10 +332,12 @@ export const equipItem = onCall({ memory: "256MiB" }, async (request) => {
       t.update(userRef, { "gamification.inventory": newInventory, "gamification.equipped": newEquipped });
     }
   });
+  logWithCorrelation('info', 'Item equipped', correlationId, { userId, itemId, slot, classType });
   return { success: true };
 });
 
 export const unequipItem = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { slot, classType } = request.data || {};
   if (typeof slot !== "string") {
@@ -355,10 +362,12 @@ export const unequipItem = onCall({ memory: "256MiB" }, async (request) => {
       t.update(userRef, { "gamification.inventory": newInventory, "gamification.equipped": newEquipped });
     }
   });
+  logWithCorrelation('info', 'Item unequipped', correlationId, { userId, slot, classType });
   return { success: true };
 });
 
 export const disenchantItem = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { itemId, classType } = request.data || {};
   if (typeof itemId !== "string") {
@@ -384,10 +393,12 @@ export const disenchantItem = onCall({ memory: "256MiB" }, async (request) => {
       t.update(userRef, { "gamification.inventory": newInventory, "gamification.flux": currentFlux + fluxValue });
     }
   });
+  logWithCorrelation('info', 'Item disenchanted', correlationId, { userId, itemId, classType });
   return { success: true };
 });
 
 export const craftItem = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
   const { targetRarity, classType } = request.data || {};
   const VALID_RARITIES = ["COMMON", "UNCOMMON", "RARE", "UNIQUE"];
@@ -416,30 +427,36 @@ export const craftItem = onCall({ memory: "256MiB" }, async (request) => {
     }
     return { item: newItem };
   });
+  logWithCorrelation('info', 'Item crafted', correlationId, { userId, rarity, itemName: result.item.name });
   return { success: true, item: result.item };
 });
 
 export const adminUpdateInventory = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, inventory } = request.data || {};
   if (typeof userId !== "string" || !Array.isArray(inventory)) {
     throw new HttpsError("invalid-argument", "userId and inventory array required.");
   }
   await admin.firestore().collection("users").doc(userId).update({ "gamification.inventory": inventory });
+  logWithCorrelation('info', 'Admin updated inventory', correlationId, { userId });
   return { success: true };
 });
 
 export const adminUpdateEquipped = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, equipped } = request.data || {};
   if (typeof userId !== "string" || typeof equipped !== "object" || equipped === null) {
     throw new HttpsError("invalid-argument", "userId and equipped object required.");
   }
   await admin.firestore().collection("users").doc(userId).update({ "gamification.equipped": equipped });
+  logWithCorrelation('info', 'Admin updated equipped', correlationId, { userId });
   return { success: true };
 });
 
 export const adminGrantItem = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, item, classType } = request.data || {};
   if (typeof userId !== "string" || typeof item !== "object" || item === null) {
@@ -460,10 +477,12 @@ export const adminGrantItem = onCall({ memory: "256MiB" }, async (request) => {
       t.update(userRef, { "gamification.inventory": newInventory });
     }
   });
+  logWithCorrelation('info', 'Admin granted item', correlationId, { userId, itemName: item.name });
   return { success: true };
 });
 
 export const adminEditItem = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
   const { userId, itemId, changes, classType } = request.data || {};
   if (typeof userId !== "string" || typeof itemId !== "string" || typeof changes !== "object" || changes === null) {
@@ -487,10 +506,12 @@ export const adminEditItem = onCall({ memory: "256MiB" }, async (request) => {
       t.update(userRef, { "gamification.inventory": newInventory });
     }
   });
+  logWithCorrelation('info', 'Admin edited item', correlationId, { userId, itemId });
   return { success: true };
 });
 
 export const useConsumable = onCall({ memory: "256MiB" }, async (request) => {
+  const correlationId = generateCorrelationId();
   const uid = verifyAuth(request.auth);
   const { eventId, consumableId } = request.data;
   if (!eventId || !consumableId) {
@@ -550,6 +571,7 @@ export const useConsumable = onCall({ memory: "256MiB" }, async (request) => {
     return { consumableId, effect: effectResult, remainingCurrency: currency - cost };
   });
 
+  logWithCorrelation('info', 'Consumable used', correlationId, { uid, eventId, consumableId, effectType: result.effect.type });
   return { success: true, ...result };
 });
 

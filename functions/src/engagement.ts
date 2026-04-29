@@ -1,6 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import {
   verifyAuth,
   buildXPUpdates,
@@ -12,6 +11,8 @@ import {
   ENGAGEMENT_COOLDOWN_MS,
   TelemetryThresholds,
   calculateFeedbackServerSide,
+  generateCorrelationId,
+  logWithCorrelation,
 } from "./core";
 import {
   generateLoot,
@@ -40,6 +41,8 @@ export const submitEngagement = onCall(async (request) => {
   if (!assignmentId || !metrics) {
     throw new HttpsError("invalid-argument", "Missing assignmentId or metrics.");
   }
+
+  const correlationId = generateCorrelationId();
 
   // Validate metrics are reasonable
   const engagementTime = Number(metrics.engagementTime) || 0;
@@ -152,7 +155,9 @@ export const submitEngagement = onCall(async (request) => {
     transaction.update(userRef, result.updates);
   });
 
-  logger.info(`submitEngagement: ${uid} earned ${xpEarned} XP (${multiplier}x) on ${assignmentId}`);
+  logWithCorrelation("info", "submitEngagement: XP awarded", correlationId, {
+    uid, assignmentId, classType, xpEarned, baseXP, multiplier, status: submission.status,
+  });
   return { xpEarned, baseXP, multiplier, leveledUp, status: submission.status };
 });
 /**
@@ -173,6 +178,7 @@ export const awardQuestionXP = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid XP amount.");
   }
 
+  const correlationId = generateCorrelationId();
   const db = admin.firestore();
 
   // Sec 4: Server-validate XP against the actual question bank
@@ -263,7 +269,9 @@ export const awardQuestionXP = onCall(async (request) => {
   }).catch((err) => {
     // Rec 2: Log unexpected errors for debugging
     if (err instanceof HttpsError) throw err;
-    logger.error(`awardQuestionXP failed for ${uid}:`, err);
+    logWithCorrelation("error", "awardQuestionXP failed", correlationId, {
+      uid, assignmentId, questionId, classType, serverXP, error: err.message,
+    });
     throw new HttpsError("internal", "Failed to award XP.");
   });
 });
@@ -279,6 +287,7 @@ export const penalizeWrongAnswer = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing required fields.");
   }
 
+  const correlationId = generateCorrelationId();
   const db = admin.firestore();
 
   // Look up the question to get its XP value
@@ -332,7 +341,9 @@ export const penalizeWrongAnswer = onCall(async (request) => {
     return { penalized: true, penalty, newXP };
   }).catch((err) => {
     if (err instanceof HttpsError) throw err;
-    logger.error(`penalizeWrongAnswer failed for ${uid}:`, err);
+    logWithCorrelation("error", "penalizeWrongAnswer failed", correlationId, {
+      uid, assignmentId, questionId, classType, penalty, error: err.message,
+    });
     throw new HttpsError("internal", "Failed to apply penalty.");
   });
 });
@@ -347,6 +358,8 @@ export const updateStreak = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "updateStreak: invoked", correlationId, { uid });
 
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -399,6 +412,8 @@ export const claimDailyLogin = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "claimDailyLogin: invoked", correlationId, { uid });
 
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -469,7 +484,7 @@ const GEM_TYPES = [
 function generateGem(level: number) {
   const gemType = pick(GEM_TYPES);
   if (!gemType) {
-    throw new Error("Failed to generate gem: empty GEM_TYPES pool");
+    throw new HttpsError("internal", "Failed to generate gem: empty GEM_TYPES pool");
   }
   // Scale gem tiers across 500 levels: tier 1 at level 1, tier 5 at level ~400+
   const tier = Math.min(5, Math.max(1, Math.floor(level / 100) + 1));
@@ -488,6 +503,8 @@ export const spinFortuneWheel = onCall(async (request) => {
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
   const WHEEL_COST = 25; // Flux cost to spin
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "spinFortuneWheel: invoked", correlationId, { uid });
 
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -628,6 +645,8 @@ export const unlockSkill = onCall(async (request) => {
     throw new HttpsError("invalid-argument", `Unknown skill: ${skillId}`);
   }
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "unlockSkill: invoked", correlationId, { uid });
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
 
@@ -678,6 +697,8 @@ export const addSocket = onCall(async (request) => {
   const userRef = db.doc(`users/${uid}`);
   const paths = getProfilePaths(classType);
   const SOCKET_ADD_COST = FLUX_COSTS.SOCKET;
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "addSocket: invoked", correlationId, { uid });
 
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -749,6 +770,8 @@ export const socketGem = onCall(async (request) => {
   const userRef = db.doc(`users/${uid}`);
   const paths = getProfilePaths(classType);
   const ENCHANT_COST_VAL = FLUX_COSTS.ENCHANT;
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "socketGem: invoked", correlationId, { uid });
 
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -823,6 +846,8 @@ export const unsocketGem = onCall(async (request) => {
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
   const paths = getProfilePaths(classType);
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "unsocketGem: invoked", correlationId, { uid });
 
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -894,6 +919,8 @@ export const commitSpecialization = onCall(async (request) => {
     throw new HttpsError("invalid-argument", `Unknown specialization: ${specializationId}`);
   }
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "commitSpecialization: invoked", correlationId, { uid });
   const db = admin.firestore();
   const trialEventId = `trial_${uid}_${specializationId}`;
   const trialRef = db.doc(`boss_events/${trialEventId}`);
@@ -968,6 +995,8 @@ export const declineSpecialization = onCall(async (request) => {
     throw new HttpsError("invalid-argument", `Unknown specialization: ${specializationId}`);
   }
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "declineSpecialization: invoked", correlationId, { uid });
   const db = admin.firestore();
   const trialEventId = `trial_${uid}_${specializationId}`;
   const trialRef = db.doc(`boss_events/${trialEventId}`);
@@ -991,6 +1020,8 @@ export const claimKnowledgeLoot = onCall(async (request) => {
   const { gateId, classType } = request.data;
   if (!gateId) throw new HttpsError("invalid-argument", "Gate ID required.");
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "claimKnowledgeLoot: invoked", correlationId, { uid });
   const db = admin.firestore();
 
   return db.runTransaction(async (transaction) => {
@@ -1059,6 +1090,8 @@ export const purchaseCosmetic = onCall(async (request) => {
   const { cosmeticId } = request.data;
   if (!cosmeticId) throw new HttpsError("invalid-argument", "Cosmetic ID required.");
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "purchaseCosmetic: invoked", correlationId, { uid });
   const db = admin.firestore();
 
   return db.runTransaction(async (transaction) => {
@@ -1094,6 +1127,8 @@ export const claimDailyChallenge = onCall(async (request) => {
   const { challengeId, classType } = request.data;
   if (!challengeId) throw new HttpsError("invalid-argument", "Challenge ID required.");
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "claimDailyChallenge: invoked", correlationId, { uid });
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
 
@@ -1200,6 +1235,8 @@ export const purchaseFluxItem = onCall(async (request) => {
   const item = FLUX_SHOP_CATALOG[itemId];
   if (!item) throw new HttpsError("not-found", "Item not found in shop catalog.");
 
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "purchaseFluxItem: invoked", correlationId, { uid });
   const db = admin.firestore();
 
   return db.runTransaction(async (transaction) => {
@@ -1309,6 +1346,9 @@ export const equipFluxCosmetic = onCall(async (request) => {
   if (cosmeticId !== null && typeof cosmeticId !== 'string') {
     throw new HttpsError("invalid-argument", "Cosmetic ID must be a string or null.");
   }
+
+  const correlationId = generateCorrelationId();
+  logWithCorrelation("info", "equipFluxCosmetic: invoked", correlationId, { uid });
 
   // Determine the slot: from explicit param, from cosmetic ID prefix, or reject
   const validSlots = ['aura', 'particle', 'frame', 'trail'] as const;

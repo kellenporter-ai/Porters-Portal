@@ -1,7 +1,7 @@
 import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import { createHash } from "crypto";
+import { generateCorrelationId, logWithCorrelation } from "./core";
 
 // ==========================================
 // ==========================================
@@ -72,6 +72,7 @@ async function checkRateLimit(ipHash: string): Promise<boolean> {
 // Call this ONCE via browser URL after deploy to bootstrap your admin account.
 // Requires the X-Admin-Secret header to match the ADMIN_BOOTSTRAP_SECRET env var.
 export const setAdminClaim = onRequest(async (req, res) => {
+  const correlationId = generateCorrelationId();
   try {
     // Validate origin to prevent CSRF
     if (!validateOrigin(req, res)) return;
@@ -88,7 +89,7 @@ export const setAdminClaim = onRequest(async (req, res) => {
     const secret = req.headers["x-admin-secret"];
     const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
     if (!expectedSecret) {
-      res.status(500).send("FAILED: ADMIN_BOOTSTRAP_SECRET environment variable not set.");
+      res.status(500).send("FAILED: Server configuration error.");
       return;
     }
     if (secret !== expectedSecret) {
@@ -98,15 +99,15 @@ export const setAdminClaim = onRequest(async (req, res) => {
 
     const adminEmail = process.env.ADMIN_EMAIL;
     if (!adminEmail) {
-      res.status(500).send("FAILED: ADMIN_EMAIL environment variable not set.");
+      res.status(500).send("FAILED: Server configuration error.");
       return;
     }
     const userRecord = await admin.auth().getUserByEmail(adminEmail);
     await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
-    logger.info(`Admin claim set for ${adminEmail}`);
+    logWithCorrelation('info', 'Admin claim set', correlationId, { uid: userRecord.uid, email: adminEmail, ip: ipHash, origin: req.headers.origin as string | undefined });
     res.status(200).send(`SUCCESS: Admin claim set for ${adminEmail}. Sign out and back in for it to take effect.`);
   } catch (error) {
-    logger.error("Failed to set admin claim", error);
+    logWithCorrelation('error', 'Failed to set admin claim', correlationId, { error });
     res.status(500).send("FAILED: An internal error occurred.");
   }
 });
@@ -116,6 +117,8 @@ export const setAdminClaim = onRequest(async (req, res) => {
 // ==========================================
 
 export const redeemEnrollmentCode = onCall(async (_request) => {
+  const correlationId = generateCorrelationId();
+  void correlationId;
   throw new HttpsError("unimplemented", "Enrollment code redemption is not yet implemented.");
 });
 
@@ -124,6 +127,7 @@ export const redeemEnrollmentCode = onCall(async (_request) => {
 // ==========================================
 
 export const fixCors = onRequest(async (req, res) => {
+  const correlationId = generateCorrelationId();
   try {
     // Validate HTTP method
     if (req.method !== "POST" && req.method !== "OPTIONS") {
@@ -138,7 +142,7 @@ export const fixCors = onRequest(async (req, res) => {
     const secret = req.headers["x-admin-secret"];
     const expectedSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
     if (!expectedSecret) {
-      res.status(500).send("FAILED: ADMIN_BOOTSTRAP_SECRET environment variable not set.");
+      res.status(500).send("FAILED: Server configuration error.");
       return;
     }
     if (secret !== expectedSecret) {
@@ -152,10 +156,10 @@ export const fixCors = onRequest(async (req, res) => {
       method: ["GET", "HEAD", "OPTIONS"],
       maxAgeSeconds: 3600,
     }]);
-    logger.info("CORS configuration updated for bucket");
+    logWithCorrelation('info', 'CORS configuration updated for bucket', correlationId, { origin: req.headers.origin as string | undefined });
     res.status(200).send("SUCCESS: Storage permissions fixed.");
   } catch (error) {
-    logger.error("Failed to set CORS", error);
+    logWithCorrelation('error', 'Failed to set CORS', correlationId, { error });
     res.status(500).send("FAILED: An internal error occurred.");
   }
 });

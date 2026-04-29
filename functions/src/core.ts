@@ -1,6 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { randomUUID } from "crypto";
 import { generateLoot } from "./gamification-items";
 
 export const MAX_LEVEL = 500;
@@ -370,4 +371,17 @@ export function calculateServerGearScore(equipped: Record<string, unknown> | und
     totalScore += (avgTier * 10) + rarityBonus;
   }
   return Math.floor(totalScore);
+}
+
+export function generateCorrelationId(): string {
+  return randomUUID();
+}
+
+export function logWithCorrelation(
+  level: 'info' | 'warn' | 'error',
+  message: string,
+  correlationId: string,
+  meta?: Record<string, unknown>
+) {
+  logger[level](message, { correlationId, ...meta });
 }

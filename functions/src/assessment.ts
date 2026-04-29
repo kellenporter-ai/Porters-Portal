@@ -1,12 +1,13 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import {
   verifyAuth,
   verifyAdmin,
   calculateFeedbackServerSide,
   TelemetryThresholds,
   getActiveXPMultiplier,
+  generateCorrelationId,
+  logWithCorrelation,
 } from "./core";
 
 // ==========================================
@@ -76,6 +77,7 @@ function gradeAssessmentBlocks(
 export const startAssessmentSession = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
+  const correlationId = generateCorrelationId();
   const { assignmentId } = request.data;
   if (!assignmentId) throw new HttpsError("invalid-argument", "Missing assignmentId");
 
@@ -96,7 +98,7 @@ export const startAssessmentSession = onCall(async (request) => {
     .get();
   if (!existingTokens.empty) {
     const existingToken = existingTokens.docs[0];
-    logger.info(`startAssessmentSession: reusing existing token for uid=${uid}, assignment=${assignmentId}`);
+    logWithCorrelation('info', 'startAssessmentSession: reusing existing token', correlationId, { uid, assignmentId });
     return { sessionToken: existingToken.id, startedAt: Date.now() };
   }
 
@@ -125,7 +127,7 @@ export const startAssessmentSession = onCall(async (request) => {
     used: false,
   });
 
-  logger.info(`startAssessmentSession: token issued for uid=${uid}, assignment=${assignmentId}`);
+  logWithCorrelation('info', 'startAssessmentSession: token issued', correlationId, { uid, assignmentId });
   return { sessionToken: token, startedAt: Date.now() };
 });
 // ==========================================
@@ -135,6 +137,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   // 1. Verify auth
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
+  const correlationId = generateCorrelationId();
 
   const { assignmentId, userName, responses, metrics, classType, sessionToken } = request.data;
   if (!assignmentId || !responses || !metrics) {
@@ -290,10 +293,16 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     }));
 
     if (txStatus === "FLAGGED") {
-      logger.warn(`submitAssessment FLAGGED: uid=${uid}, assignment=${assignmentId}, ` +
-        `clientEngagement=${metrics.engagementTime}s, serverElapsed=${Math.round(serverElapsedSec)}s, ` +
-        `validatedEngagement=${Math.round(validatedEngagement)}s, keystrokes=${metrics.keystrokes}, ` +
-        `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}, feedback="${feedback}"`);
+      logWithCorrelation('warn', 'submitAssessment FLAGGED', correlationId, {
+        uid, assignmentId,
+        clientEngagement: metrics.engagementTime,
+        serverElapsed: Math.round(serverElapsedSec),
+        validatedEngagement: Math.round(validatedEngagement),
+        keystrokes: metrics.keystrokes,
+        pastes: metrics.pasteCount,
+        responses: nonEmptyResponses.length,
+        feedback,
+      });
     }
 
     // Atomic attempt counter to prevent race conditions
@@ -361,9 +370,9 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     if (tokenRef) {
       try {
         await tokenRef.update({ used: false, usedAt: admin.firestore.FieldValue.delete() });
-        logger.warn(`submitAssessment: token unclaimed after error for uid=${uid}`);
+        logWithCorrelation('warn', 'submitAssessment: token unclaimed after error', correlationId, { uid });
       } catch (rollbackErr) {
-        logger.error(`submitAssessment: failed to unclaim token for uid=${uid}`, rollbackErr);
+        logWithCorrelation('error', 'submitAssessment: failed to unclaim token', correlationId, { uid, error: String(rollbackErr) });
       }
     }
     throw err;
@@ -406,10 +415,10 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     }
   } catch (xpErr) {
     // Non-critical: log but don't fail the submission
-    logger.error(`submitAssessment: XP award failed for uid=${uid}, assignment=${assignmentId}`, xpErr);
+    logWithCorrelation('error', 'submitAssessment: XP award failed', correlationId, { uid, assignmentId, error: String(xpErr) });
   }
 
-  logger.info(`submitAssessment: ${uid} scored ${percentage}% (${correct}/${total}) on ${assignmentId}, attempt #${attemptNumber}`);
+  logWithCorrelation('info', 'submitAssessment: submission completed', correlationId, { uid, assignmentId, percentage, correct, total, attemptNumber });
   return {
     assessmentScore: { correct, total, percentage, perBlock },
     attemptNumber,
@@ -423,6 +432,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
 export const returnAssessment = onCall(async (request) => {
   // 1. Verify admin
   await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
 
   // 2. Validate input
   const { submissionId } = request.data;
@@ -484,7 +494,7 @@ export const returnAssessment = onCall(async (request) => {
     targetStudentIds: [sub.userId],
   });
 
-  logger.info(`returnAssessment: submission ${submissionId} returned by ${request.auth!.uid}`);
+  logWithCorrelation('info', 'returnAssessment: submission returned', correlationId, { submissionId, returnedBy: request.auth!.uid });
   return { success: true };
 });
 // ==========================================
@@ -494,6 +504,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
   // 1. Verify auth and admin status
   const callerUid = request.auth?.uid;
   if (!callerUid) throw new HttpsError("unauthenticated", "Must be logged in.");
+  const correlationId = generateCorrelationId();
 
   const callerUser = await admin.auth().getUser(callerUid);
   const isAdmin = !!callerUser.customClaims?.admin;
@@ -501,7 +512,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
   // 2. Validate input
   const { userId, assignmentId } = request.data;
   if (!userId || !assignmentId) {
-    logger.error("submitOnBehalf: missing userId or assignmentId", { data: request.data });
+    logWithCorrelation('warn', 'submitOnBehalf: missing userId or assignmentId', correlationId, { data: request.data });
     throw new HttpsError("invalid-argument", "userId and assignmentId required");
   }
 
@@ -513,25 +524,25 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
   const draftRef = db.doc(`lesson_block_responses/${userId}_${assignmentId}_blocks`);
   const draftSnap = await draftRef.get();
   if (!draftSnap.exists) {
-    logger.error("submitOnBehalf: No draft found", { userId, assignmentId });
+    logWithCorrelation('warn', 'submitOnBehalf: No draft found', correlationId, { userId, assignmentId });
     throw new HttpsError("not-found", "No draft responses found for this student");
   }
   const draftData = draftSnap.data()!;
   const responses = draftData.responses || {};
   if (Object.keys(responses).length === 0) {
-    logger.error("submitOnBehalf: Draft has no responses", { userId, assignmentId });
+    logWithCorrelation('warn', 'submitOnBehalf: Draft has no responses', correlationId, { userId, assignmentId });
     throw new HttpsError("not-found", "Draft has no responses");
   }
 
   // 4. Read assignment
   const assignmentSnap = await db.doc(`assignments/${assignmentId}`).get();
   if (!assignmentSnap.exists) {
-    logger.error("submitOnBehalf: Assignment not found", { userId, assignmentId });
+    logWithCorrelation('warn', 'submitOnBehalf: Assignment not found', correlationId, { userId, assignmentId });
     throw new HttpsError("not-found", "Assignment not found");
   }
   const assignment = assignmentSnap.data()!;
   if (!assignment.isAssessment) {
-    logger.error("submitOnBehalf: Not an assessment", { userId, assignmentId });
+    logWithCorrelation('warn', 'submitOnBehalf: Not an assessment', correlationId, { userId, assignmentId });
     throw new HttpsError("invalid-argument", "Not an assessment");
   }
 
@@ -718,12 +729,12 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
     targetStudentIds: [userId],
   });
 
-  logger.info(`submitOnBehalf: admin ${request.auth!.uid} submitted for ${userId} on ${assignmentId}, scored ${percentage}%`);
+  logWithCorrelation('info', 'submitOnBehalf: submission completed', correlationId, { adminUid: request.auth!.uid, userId, assignmentId, percentage });
   return { success: true, assessmentScore: { correct, total, percentage, perBlock }, attemptNumber: txResult.attemptNumber, xpEarned };
 
   } catch (err) {
     if (err instanceof HttpsError) throw err;
-    logger.error("submitOnBehalf: unexpected error", { userId, assignmentId, error: String(err) });
+    logWithCorrelation('error', 'submitOnBehalf: unexpected error', correlationId, { userId, assignmentId, error: String(err) });
     throw new HttpsError("internal", "Unexpected error during submit on behalf");
   }
 });
@@ -735,6 +746,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
  */
 export const uploadQuestionBank = onCall(async (request) => {
   await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
   const {
     assignmentId, questions, title, classType,
   } = request.data;
@@ -773,8 +785,6 @@ export const uploadQuestionBank = onCall(async (request) => {
     uploadedBy: verifyAuth(request.auth),
   });
 
-  logger.info(
-    `Question bank uploaded: ${questions.length} questions for ${assignmentId}`,
-  );
+  logWithCorrelation('info', 'Question bank uploaded', correlationId, { questionCount: questions.length, assignmentId });
   return { questionCount: questions.length };
 });

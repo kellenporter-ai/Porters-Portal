@@ -1,6 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import {
   verifyAuth,
   verifyAdmin,
@@ -9,6 +8,8 @@ import {
   calculateBossDamage,
   calculateServerGearScore,
   buildXPUpdates,
+  generateCorrelationId,
+  logWithCorrelation,
 } from "./core";
 import { checkAndUnlockAchievements, writeAchievementNotifications } from "./achievements";
 import { generateLoot } from "./gamification-items";
@@ -20,6 +21,7 @@ import { generateLoot } from "./gamification-items";
 const BOSS_SHARD_COUNT = 10; // Supports ~10 concurrent writes/sec
 export const dealBossDamage = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
+  const correlationId = generateCorrelationId();
   const { bossId, userName, classType } = request.data;
   if (!bossId) throw new HttpsError("invalid-argument", "Boss ID required.");
 
@@ -177,13 +179,13 @@ export const dealBossDamage = onCall(async (request) => {
         try {
           await batch.commit();
         } catch (err) {
-          logger.error(`Failed to commit contributor reward batch for boss ${bossId}:`, err);
+          logWithCorrelation('error', 'Failed to commit contributor reward batch', correlationId, { bossId, error: err instanceof Error ? err.message : String(err) });
         }
         if (notificationPromises.length > 0) {
           try {
             await Promise.all(notificationPromises);
           } catch (err) {
-            logger.error(`Failed to write achievement notifications for boss ${bossId}:`, err);
+            logWithCorrelation('error', 'Failed to write achievement notifications', correlationId, { bossId, error: err instanceof Error ? err.message : String(err) });
           }
         }
       }
@@ -244,6 +246,7 @@ const BOSS_EVENT_MAX_ATTEMPTS = 3;
  */
 export const answerBossEvent = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
+  const correlationId = generateCorrelationId();
   const { eventId, questionId, answer, timeTakenMs = 30000 } = request.data;
   if (!eventId || !questionId || answer === undefined) {
     throw new HttpsError("invalid-argument", "Event ID, question ID, and answer required.");
@@ -633,7 +636,7 @@ export const answerBossEvent = onCall(async (request) => {
         [`gamification.topicMastery.${question.topicId}`]: currentMastery,
       });
     } catch (err) {
-      logger.error("Failed to update topic mastery:", err);
+      logWithCorrelation('error', 'Failed to update topic mastery', correlationId, { uid, eventId, topicId: question.topicId, error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -679,6 +682,7 @@ export const answerBossEvent = onCall(async (request) => {
 
 export const getNextBossQuestion = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
+  generateCorrelationId();
   const { eventId } = request.data;
   if (!eventId) {
     throw new HttpsError("invalid-argument", "Event ID required.");
@@ -784,6 +788,7 @@ export const getNextBossQuestion = onCall(async (request) => {
 
 export const startSpecializationTrial = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
+  const correlationId = generateCorrelationId();
   const { specializationId } = request.data;
   if (!specializationId) {
     throw new HttpsError("invalid-argument", "Specialization ID required.");
@@ -821,7 +826,11 @@ export const startSpecializationTrial = onCall(async (request) => {
 
   // If forcing a restart, clean up old progress
   if (force) {
-    await progressRef.delete().catch(() => {});
+    try {
+      await progressRef.delete();
+    } catch (err) {
+      logWithCorrelation('warn', 'Exception swallowed', correlationId, { error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   const classType = userData.classType || 'GLOBAL';
@@ -929,6 +938,7 @@ export const startSpecializationTrial = onCall(async (request) => {
 
 export const completeSpecializationTrial = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
+  generateCorrelationId();
   const { trialEventId } = request.data;
   if (!trialEventId) {
     throw new HttpsError("invalid-argument", "Trial event ID required.");
@@ -1019,6 +1029,7 @@ export const completeSpecializationTrial = onCall(async (request) => {
 
 export const scaleBossHp = onCall(async (request) => {
   verifyAuth(request.auth);
+  const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
   const { quizId } = request.data;
@@ -1031,7 +1042,7 @@ export const scaleBossHp = onCall(async (request) => {
 
   const quiz = quizSnap.data()!;
   if (!quiz.maxHp || quiz.maxHp <= 0) {
-    logger.warn(`scaleBossHp: quiz ${quizId} has invalid maxHp (${quiz.maxHp})`);
+    logWithCorrelation('warn', 'scaleBossHp: quiz has invalid maxHp', correlationId, { quizId, maxHp: quiz.maxHp });
     throw new HttpsError("invalid-argument", `Quiz has invalid maxHp: ${quiz.maxHp}`);
   }
   const autoScale = quiz.autoScale;
