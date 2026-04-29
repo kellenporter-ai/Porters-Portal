@@ -1,6 +1,7 @@
-import { onRequest } from "firebase-functions/v2/https";
+import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { createHash } from "crypto";
 
 // ==========================================
 // ==========================================
@@ -14,6 +15,9 @@ const ALLOWED_ORIGINS = [
   "https://porters-portal.firebaseapp.com",
 ];
 
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
 function validateOrigin(req: any, res: any): boolean {
   const origin = req.headers.origin as string | undefined;
   if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
@@ -23,12 +27,62 @@ function validateOrigin(req: any, res: any): boolean {
   return true;
 }
 
+function getHashedIp(req: any): string {
+  const rawIp =
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown";
+  return createHash("sha256").update(rawIp).digest("hex");
+}
+
+async function checkRateLimit(ipHash: string): Promise<boolean> {
+  const db = admin.firestore();
+  const docRef = db.collection("admin_claim_attempts").doc(ipHash);
+  const now = Date.now();
+
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    await docRef.set({
+      count: 1,
+      windowStart: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return true;
+  }
+
+  const data = doc.data()!;
+  const windowStart = data.windowStart?.toMillis?.() ?? 0;
+
+  if (now - windowStart > RATE_LIMIT_WINDOW_MS) {
+    // Window expired — reset
+    await docRef.set({
+      count: 1,
+      windowStart: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return true;
+  }
+
+  if (data.count >= RATE_LIMIT_MAX_ATTEMPTS) {
+    return false;
+  }
+
+  await docRef.update({ count: admin.firestore.FieldValue.increment(1) });
+  return true;
+}
+
 // Call this ONCE via browser URL after deploy to bootstrap your admin account.
 // Requires the X-Admin-Secret header to match the ADMIN_BOOTSTRAP_SECRET env var.
 export const setAdminClaim = onRequest(async (req, res) => {
   try {
     // Validate origin to prevent CSRF
     if (!validateOrigin(req, res)) return;
+
+    // Brute-force rate limiting per hashed IP
+    const ipHash = getHashedIp(req);
+    const allowed = await checkRateLimit(ipHash);
+    if (!allowed) {
+      res.status(429).send("RESOURCE_EXHAUSTED: Too many attempts. Try again later.");
+      return;
+    }
 
     // Authenticate the request with a secret token
     const secret = req.headers["x-admin-secret"];
@@ -56,12 +110,27 @@ export const setAdminClaim = onRequest(async (req, res) => {
     res.status(500).send("FAILED: An internal error occurred.");
   }
 });
+
+// ==========================================
+// ENROLLMENT
+// ==========================================
+
+export const redeemEnrollmentCode = onCall(async (_request) => {
+  throw new HttpsError("unimplemented", "Enrollment code redemption is not yet implemented.");
+});
+
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
 
 export const fixCors = onRequest(async (req, res) => {
   try {
+    // Validate HTTP method
+    if (req.method !== "POST" && req.method !== "OPTIONS") {
+      res.status(400).send("INVALID_ARGUMENT: Only POST and OPTIONS methods are allowed.");
+      return;
+    }
+
     // Validate origin to prevent CSRF
     if (!validateOrigin(req, res)) return;
 

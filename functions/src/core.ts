@@ -1,5 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import * as logger from "firebase-functions/logger";
 import { generateLoot } from "./gamification-items";
 
 export const MAX_LEVEL = 500;
@@ -15,7 +16,31 @@ export const XP_BRACKETS: [number, number][] = [
   [500, 5000],
 ];
 
+export const VALID_CLASS_TYPES = [
+  'AP Physics',
+  'Honors Physics',
+  'Forensic Science',
+  'Uncategorized',
+  'GLOBAL',
+];
+
+function isValidNumber(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value) && value >= 0;
+}
+
+function guardNumber(name: string, value: unknown, defaultValue: number): number {
+  if (!isValidNumber(value)) {
+    logger.warn(`Invalid numeric input for ${name}: ${value}, using default ${defaultValue}`);
+    return defaultValue;
+  }
+  return value;
+}
+
 export function levelForXp(xp: number): number {
+  if (!isValidNumber(xp)) {
+    logger.warn(`Invalid XP value in levelForXp: ${xp}, defaulting to level 1`);
+    return 1;
+  }
   if (xp <= 0) return 1;
   let remaining = xp;
   let currentLevel = 1;
@@ -91,8 +116,15 @@ export function verifyAuth(auth: CallableAuth | undefined): string {
   return auth.uid;
 }
 
+function validateClassType(classType: string): void {
+  if (!VALID_CLASS_TYPES.includes(classType)) {
+    throw new HttpsError("invalid-argument", `Invalid classType: "${classType}". Must be one of: ${VALID_CLASS_TYPES.join(", ")}`);
+  }
+}
+
 export function getProfilePaths(classType?: string) {
   if (classType) {
+    validateClassType(classType);
     const base = `gamification.classProfiles.${classType}`;
     return {
       inventory: `${base}.inventory`,
@@ -108,12 +140,15 @@ export function getProfilePaths(classType?: string) {
 }
 
 export function getProfileData(data: FirebaseFirestore.DocumentData, classType?: string) {
-  if (classType && data.gamification?.classProfiles?.[classType]) {
-    const profile = data.gamification.classProfiles[classType];
-    return {
-      inventory: profile.inventory || [],
-      equipped: profile.equipped || {},
-    };
+  if (classType) {
+    validateClassType(classType);
+    if (data.gamification?.classProfiles?.[classType]) {
+      const profile = data.gamification.classProfiles[classType];
+      return {
+        inventory: profile.inventory || [],
+        equipped: profile.equipped || {},
+      };
+    }
   }
   return {
     inventory: data.gamification?.inventory || [],
@@ -127,9 +162,14 @@ export function buildXPUpdates(
   classType?: string,
   customDropPool?: LootItem[],
 ): { updates: Record<string, any>; newXP: number; newLevel: number; leveledUp: boolean } {
+  const safeXpAmount = guardNumber("xpAmount", xpAmount, 0);
+  if (classType) {
+    validateClassType(classType);
+  }
+
   const gam = data.gamification || {};
-  const currentXP = gam.xp || 0;
-  const currentLevel = gam.level || 1;
+  const currentXP = guardNumber("gamification.xp", gam.xp, 0);
+  const currentLevel = guardNumber("gamification.level", gam.level, 1);
   let boostMultiplier = 1;
   const now = new Date();
   const activeBoosts: Array<{ expiresAt: string; value: number }> = gam.activeBoosts || [];
@@ -138,7 +178,7 @@ export function buildXPUpdates(
       boostMultiplier = Math.max(boostMultiplier, boost.value);
     }
   }
-  const boostedXP = xpAmount > 0 ? Math.round(xpAmount * boostMultiplier) : xpAmount;
+  const boostedXP = safeXpAmount > 0 ? Math.round(safeXpAmount * boostMultiplier) : safeXpAmount;
   const newXP = Math.max(0, currentXP + boostedXP);
   const newLevel = Math.min(levelForXp(newXP), MAX_LEVEL);
   const leveledUp = newLevel > currentLevel;
@@ -148,7 +188,7 @@ export function buildXPUpdates(
   };
   if (classType) {
     const classXpMap = gam.classXp || {};
-    const currentClassXp = classXpMap[classType] || 0;
+    const currentClassXp = guardNumber(`classXp.${classType}`, classXpMap[classType], 0);
     updates[`gamification.classXp.${classType}`] = Math.max(0, currentClassXp + boostedXP);
   }
   if (leveledUp) {
@@ -201,44 +241,53 @@ export function calculateFeedbackServerSide(
   thresholds: Partial<TelemetryThresholds> = {},
   context?: { responseCount?: number; hasWrittenResponses?: boolean }
 ): { status: string; feedback: string } {
+  const safeMetrics = {
+    pasteCount: guardNumber("pasteCount", metrics.pasteCount, 0),
+    engagementTime: guardNumber("engagementTime", metrics.engagementTime, 0),
+    keystrokes: guardNumber("keystrokes", metrics.keystrokes, 0),
+    tabSwitchCount: guardNumber("tabSwitchCount", metrics.tabSwitchCount, 0),
+    wordCount: guardNumber("wordCount", metrics.wordCount, 0),
+    wordsPerSecond: guardNumber("wordsPerSecond", metrics.wordsPerSecond, 0),
+  };
+
   const t = { ...DEFAULT_THRESHOLDS, ...thresholds };
-  if (metrics.engagementTime < 30 && context?.hasWrittenResponses) {
+  if (safeMetrics.engagementTime < 30 && context?.hasWrittenResponses) {
     return { status: "FLAGGED", feedback: "Impossibly fast submission: responses submitted with near-zero engagement time." };
   }
-  if (context?.responseCount && context.responseCount > 0 && metrics.engagementTime > 0) {
-    const secondsPerResponse = metrics.engagementTime / context.responseCount;
+  if (context?.responseCount && context.responseCount > 0 && safeMetrics.engagementTime > 0) {
+    const secondsPerResponse = safeMetrics.engagementTime / context.responseCount;
     if (secondsPerResponse < 5 && context.responseCount >= 2) {
       return { status: "FLAGGED", feedback: "Implausible speed: average time per response too low for genuine work." };
     }
   }
-  if (metrics.keystrokes === 0 && metrics.pasteCount === 0 && context?.hasWrittenResponses) {
+  if (safeMetrics.keystrokes === 0 && safeMetrics.pasteCount === 0 && context?.hasWrittenResponses) {
     return { status: "FLAGGED", feedback: "No input activity detected despite non-empty responses — possible pre-fill or API exploit." };
   }
-  if ((metrics.tabSwitchCount || 0) > 5) {
+  if (safeMetrics.tabSwitchCount > 5) {
     return { status: "FLAGGED", feedback: "Excessive tab switching during assessment." };
   }
-  if (metrics.pasteCount > 15) {
+  if (safeMetrics.pasteCount > 15) {
     return { status: "FLAGGED", feedback: "Elevated paste count — student may be assembling an answer from multiple sources." };
   }
-  if (metrics.pasteCount > 0 && metrics.wordCount && metrics.wordCount > 0 && metrics.wordCount / metrics.pasteCount < 10) {
+  if (safeMetrics.pasteCount > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.pasteCount < 10) {
     return { status: "FLAGGED", feedback: "High paste density — frequent small pastes detected." };
   }
-  if (metrics.wordsPerSecond && metrics.wordsPerSecond > 3.0 && metrics.keystrokes > 0) {
+  if (safeMetrics.wordsPerSecond > 3.0 && safeMetrics.keystrokes > 0) {
     return { status: "FLAGGED", feedback: "Impossible typing speed detected — possible automated input or macro." };
   }
-  if (metrics.keystrokes === 0 && metrics.wordCount && metrics.wordCount > 20) {
+  if (safeMetrics.keystrokes === 0 && safeMetrics.wordCount > 20) {
     return { status: "FLAGGED", feedback: "Text present with zero keystrokes — possible dictation, paste, or automated input." };
   }
-  if (metrics.keystrokes > 0 && metrics.wordCount && metrics.wordCount > 0 && metrics.wordCount / metrics.keystrokes > 0.5) {
+  if (safeMetrics.keystrokes > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.keystrokes > 0.5) {
     return { status: "FLAGGED", feedback: "Word-to-keystroke ratio is implausibly high — possible paste or auto-insert." };
   }
-  if (metrics.pasteCount > t.flagPasteCount && metrics.engagementTime < t.flagMinEngagement) {
+  if (safeMetrics.pasteCount > t.flagPasteCount && safeMetrics.engagementTime < t.flagMinEngagement) {
     return { status: "FLAGGED", feedback: "AI Usage Suspected: Abnormal frequency of pasted content detected." };
   }
-  if (metrics.keystrokes > t.supportKeystrokes && metrics.engagementTime > t.supportMinEngagement) {
+  if (safeMetrics.keystrokes > t.supportKeystrokes && safeMetrics.engagementTime > t.supportMinEngagement) {
     return { status: "SUPPORT_NEEDED", feedback: "Student may be struggling — high effort with extended time." };
   }
-  if (metrics.pasteCount === 0 && metrics.keystrokes > t.successMinKeystrokes) {
+  if (safeMetrics.pasteCount === 0 && safeMetrics.keystrokes > t.successMinKeystrokes) {
     return { status: "SUCCESS", feedback: "Excellent independent work." };
   }
   return { status: "NORMAL", feedback: "Assignment submitted successfully." };
@@ -252,12 +301,18 @@ export function calculateServerStats(equipped: Record<string, unknown> | undefin
     const it = item as { stats?: Record<string, number>; gems?: { stat: string; value: number }[] };
     if (it.stats) {
       for (const [key, val] of Object.entries(it.stats)) {
-        if (key in base) base[key as keyof typeof base] += Number(val) || 0;
+        if (key in base) {
+          const num = Number(val);
+          base[key as keyof typeof base] += isValidNumber(num) ? num : 0;
+        }
       }
     }
     if (Array.isArray(it.gems)) {
       for (const gem of it.gems) {
-        if (gem.stat in base) base[gem.stat as keyof typeof base] += Number(gem.value) || 0;
+        if (gem.stat in base) {
+          const num = Number(gem.value);
+          base[gem.stat as keyof typeof base] += isValidNumber(num) ? num : 0;
+        }
       }
     }
   }
@@ -267,20 +322,33 @@ export function calculateServerStats(equipped: Record<string, unknown> | undefin
 export function deriveCombatStats(stats: { tech: number; focus: number; analysis: number; charisma: number }): {
   maxHp: number; armorPercent: number; critChance: number; critMultiplier: number;
 } {
-  const maxHp = 100 + Math.max(0, stats.charisma - 10) * 5;
-  const armorPercent = Math.min(stats.analysis * 0.5, 50);
-  const critChance = Math.min(stats.focus * 0.01, 0.40);
-  const critMultiplier = 2 + Math.max(0, stats.focus - 10) * 0.02;
+  const safeStats = {
+    tech: guardNumber("stats.tech", stats.tech, 10),
+    focus: guardNumber("stats.focus", stats.focus, 10),
+    analysis: guardNumber("stats.analysis", stats.analysis, 10),
+    charisma: guardNumber("stats.charisma", stats.charisma, 10),
+  };
+  const maxHp = 100 + Math.max(0, safeStats.charisma - 10) * 5;
+  const armorPercent = Math.min(safeStats.analysis * 0.5, 50);
+  const critChance = Math.min(safeStats.focus * 0.01, 0.40);
+  const critMultiplier = 2 + Math.max(0, safeStats.focus - 10) * 0.02;
   return { maxHp, armorPercent, critChance, critMultiplier };
 }
 
 export function calculateBossDamage(stats: { tech: number; focus: number; analysis: number; charisma: number }, gearScore: number): { damage: number; isCrit: boolean } {
+  const safeStats = {
+    tech: guardNumber("stats.tech", stats.tech, 10),
+    focus: guardNumber("stats.focus", stats.focus, 10),
+    analysis: guardNumber("stats.analysis", stats.analysis, 10),
+    charisma: guardNumber("stats.charisma", stats.charisma, 10),
+  };
+  const safeGearScore = guardNumber("gearScore", gearScore, 0);
   let damage = 8;
-  damage += Math.floor(stats.tech / 5);
-  damage += Math.floor(gearScore / 50);
+  damage += Math.floor(safeStats.tech / 5);
+  damage += Math.floor(safeGearScore / 50);
   const variance = 0.8 + Math.random() * 0.4;
   damage = Math.round(damage * variance);
-  const { critChance, critMultiplier } = deriveCombatStats(stats);
+  const { critChance, critMultiplier } = deriveCombatStats(safeStats);
   const isCrit = Math.random() < critChance;
   if (isCrit) damage = Math.round(damage * critMultiplier);
   return { damage: Math.max(1, Math.min(damage, 200)), isCrit };
@@ -292,7 +360,9 @@ export function calculateServerGearScore(equipped: Record<string, unknown> | und
   for (const item of Object.values(equipped)) {
     if (!item || typeof item !== 'object') continue;
     const it = item as { affixes?: { tier: number }[]; rarity?: string };
-    let tiers = (it.affixes || []).map((a: { tier: number }) => a.tier);
+    let tiers = (it.affixes || [])
+      .map((a: { tier: number }) => a.tier)
+      .filter((t: unknown) => isValidNumber(t));
     if (it.rarity === 'UNIQUE' && tiers.length === 0) tiers = [10];
     const avgTier = tiers.length > 0 ? tiers.reduce((a: number, b: number) => a + b, 0) / tiers.length : 1;
     let rarityBonus = 0;

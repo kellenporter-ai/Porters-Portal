@@ -77,7 +77,7 @@ export function checkAndUnlockAchievements(
   const already = new Set<string>(gam.unlockedAchievements || []);
 
   // Merge pending updates with current state to get projected values
-  const projectedXp = pendingUpdates["gamification.xp"] ?? (gam.xp || 0);
+  const projectedXp = Math.max(0, pendingUpdates["gamification.xp"] ?? (gam.xp || 0));
   const projectedLevel = pendingUpdates["gamification.level"] ?? (gam.level || 1);
   const projectedBosses = pendingUpdates["gamification.bossesDefeated"] ?? (gam.bossesDefeated || 0);
   const projectedSpins = pendingUpdates["gamification.wheelSpins"] ?? (gam.wheelSpins || 0);
@@ -139,6 +139,7 @@ export function checkAndUnlockAchievements(
         ...gam,
         xp: projectedXp,
         level: projectedLevel,
+        currency: pendingUpdates["gamification.currency"] ?? (gam.currency || 0),
       },
     };
     const xpResult = buildXPUpdates(projectedData, totalXpReward);

@@ -417,12 +417,25 @@ export const dailyAnalysis = onSchedule(
       }
     }
 
-    // 6. Write bucket profiles to Firestore (for ALL students, not just at-risk)
+    // 6. Write bucket profiles to Firestore using deterministic IDs (overwrite-in-place)
     const timestamp = new Date().toISOString();
+    const activeBucketIds = new Set<string>();
 
-    // Clear old bucket profiles and write fresh ones
     let batch = db.batch();
     let count = 0;
+    for (const profile of bucketProfiles) {
+      const docId = `${profile.studentId}_${profile.classType}`;
+      activeBucketIds.add(docId);
+      const ref = db.collection("student_buckets").doc(docId);
+      batch.set(ref, { ...profile, createdAt: timestamp });
+      count++;
+      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    // Cleanup: delete orphaned bucket docs for students/classes no longer present
+    count = 0;
+    batch = db.batch();
     let lastBucketDoc: any = null;
     while (true) {
       let bQuery = db.collection("student_buckets").limit(1000);
@@ -432,21 +445,13 @@ export const dailyAnalysis = onSchedule(
       lastBucketDoc = oldBuckets.docs[oldBuckets.docs.length - 1];
 
       for (const d of oldBuckets.docs) {
-        batch.delete(d.ref);
-        count++;
-        if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+        if (!activeBucketIds.has(d.id)) {
+          batch.delete(d.ref);
+          count++;
+          if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+        }
       }
       if (oldBuckets.size < 1000) break;
-    }
-    if (count % 499 !== 0) await batch.commit();
-
-    batch = db.batch();
-    count = 0;
-    for (const profile of bucketProfiles) {
-      const ref = db.collection("student_buckets").doc();
-      batch.set(ref, { ...profile, createdAt: timestamp });
-      count++;
-      if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
     }
     if (count % 499 !== 0) await batch.commit();
 
@@ -459,32 +464,15 @@ export const dailyAnalysis = onSchedule(
       return;
     }
 
-    // Clear old undismissed alerts before writing new ones
-    batch = db.batch();
-    count = 0;
-    let lastAlertDoc: any = null;
-    while (true) {
-      let aQuery = db.collection("student_alerts")
-        .where("isDismissed", "==", false).limit(1000);
-      if (lastAlertDoc) aQuery = aQuery.startAfter(lastAlertDoc);
-      const oldAlerts = await aQuery.get();
-      if (oldAlerts.empty) break;
-      lastAlertDoc = oldAlerts.docs[oldAlerts.docs.length - 1];
+    // 7. Write alerts to Firestore using deterministic IDs (overwrite-in-place)
+    const activeAlertIds = new Set<string>();
 
-      for (const d of oldAlerts.docs) {
-        batch.delete(d.ref);
-        count++;
-        if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
-      }
-      if (oldAlerts.size < 1000) break;
-    }
-    if (count % 499 !== 0) await batch.commit();
-
-    // Write new alerts (now enriched with bucket field)
     batch = db.batch();
     count = 0;
     for (const alert of finalAlerts) {
-      const ref = db.collection("student_alerts").doc();
+      const docId = `${alert.studentId}_${alert.classType}`;
+      activeAlertIds.add(docId);
+      const ref = db.collection("student_alerts").doc(docId);
       batch.set(ref, {
         ...alert,
         createdAt: timestamp,
@@ -492,6 +480,28 @@ export const dailyAnalysis = onSchedule(
       });
       count++;
       if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    if (count % 499 !== 0) await batch.commit();
+
+    // Cleanup: delete alert docs for students/classes no longer at-risk
+    count = 0;
+    batch = db.batch();
+    let lastAlertDoc: any = null;
+    while (true) {
+      let aQuery = db.collection("student_alerts").limit(1000);
+      if (lastAlertDoc) aQuery = aQuery.startAfter(lastAlertDoc);
+      const oldAlerts = await aQuery.get();
+      if (oldAlerts.empty) break;
+      lastAlertDoc = oldAlerts.docs[oldAlerts.docs.length - 1];
+
+      for (const d of oldAlerts.docs) {
+        if (!activeAlertIds.has(d.id)) {
+          batch.delete(d.ref);
+          count++;
+          if (count % 499 === 0) { await batch.commit(); batch = db.batch(); }
+        }
+      }
+      if (oldAlerts.size < 1000) break;
     }
     if (count % 499 !== 0) await batch.commit();
 
@@ -579,6 +589,22 @@ export const checkStreaksAtRisk = onSchedule(
       lastDoc = studentsSnap.docs[studentsSnap.docs.length - 1];
 
       const emailPromises: Promise<void>[] = [];
+      const sentLogs: { ref: FirebaseFirestore.DocumentReference; userId: string }[] = [];
+
+      // Batch-check email_log for idempotency (chunked to stay within getAll limits)
+      const logRefs = studentsSnap.docs.map((d) =>
+        db.collection("email_log").doc(`${d.id}_${currentWeekId}_streak_at_risk`)
+      );
+      const alreadySent = new Set<string>();
+      for (let i = 0; i < logRefs.length; i += 10) {
+        const chunk = logRefs.slice(i, i + 10);
+        const chunkSnaps = await db.getAll(...chunk);
+        for (let j = 0; j < chunkSnaps.length; j++) {
+          if (chunkSnaps[j].exists) {
+            alreadySent.add(studentsSnap.docs[i + j].id);
+          }
+        }
+      }
 
       studentsSnap.docs.forEach((doc) => {
         const data = doc.data();
@@ -591,6 +617,9 @@ export const checkStreaksAtRisk = onSchedule(
 
         const email = data.email as string;
         if (!email) return;
+
+        // Idempotency: skip if already sent this week
+        if (alreadySent.has(doc.id)) return;
 
         const studentName = data.name as string || "Agent";
 
@@ -617,11 +646,32 @@ export const checkStreaksAtRisk = onSchedule(
             `,
           ),
         );
+        sentLogs.push({
+          ref: db.collection("email_log").doc(`${doc.id}_${currentWeekId}_streak_at_risk`),
+          userId: doc.id,
+        });
       });
 
       // Send emails in batches of 100
       for (let i = 0; i < emailPromises.length; i += 100) {
         await Promise.all(emailPromises.slice(i, i + 100));
+      }
+
+      // Record sent emails in email_log for idempotency
+      if (sentLogs.length > 0) {
+        let logBatch = db.batch();
+        let logCount = 0;
+        for (const { ref, userId } of sentLogs) {
+          logBatch.set(ref, {
+            userId,
+            weekId: currentWeekId,
+            type: "streak_at_risk",
+            sentAt: new Date().toISOString(),
+          });
+          logCount++;
+          if (logCount % 499 === 0) { await logBatch.commit(); logBatch = db.batch(); }
+        }
+        if (logCount % 499 !== 0) await logBatch.commit();
       }
 
       if (studentsSnap.size < 500) break;

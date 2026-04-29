@@ -194,15 +194,6 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   let status: string = "CLEAN";
   let xpEarned = 0;
 
-  // Pre-read attempt number (outside transaction — where() not allowed in transactions)
-  const existingSubs = await db.collection("submissions")
-    .where("userId", "==", uid)
-    .where("assignmentId", "==", assignmentId)
-    .where("isAssessment", "==", true)
-    .get();
-  const activeSubmissions = existingSubs.docs.filter(d => d.data().status !== "RETURNED");
-  attemptNumber = activeSubmissions.length + 1;
-
   // Pre-read telemetry thresholds
   let assessmentThresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
@@ -305,6 +296,13 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
         `pastes=${metrics.pasteCount}, responses=${nonEmptyResponses.length}, feedback="${feedback}"`);
     }
 
+    // Atomic attempt counter to prevent race conditions
+    const counterRef = db.doc(`assessment_attempt_counters/${uid}_${assignmentId}`);
+    const counterSnap = await transaction.get(counterRef);
+    const currentCount = counterSnap.exists ? (counterSnap.data()!.count || 0) : 0;
+    const txAttemptNumber = currentCount + 1;
+    transaction.set(counterRef, { count: txAttemptNumber }, { merge: true });
+
     // 6. Create submission doc
     const assessmentSubmission = {
       userId: uid,
@@ -331,7 +329,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
       feedback,
       score: gradeResult.percentage,
       isAssessment: true,
-      attemptNumber,
+      attemptNumber: txAttemptNumber,
       assessmentScore: gradeResult,
       blockResponses: responses,
       privateComments: [],
@@ -348,7 +346,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
     const draftRef = db.doc(`lesson_block_responses/${uid}_${assignmentId}_blocks`);
     transaction.delete(draftRef);
 
-    return { gradeResult, status: txStatus, feedback };
+    return { gradeResult, status: txStatus, feedback, attemptNumber: txAttemptNumber };
   });
 
   correct = txResult.gradeResult.correct;
@@ -356,6 +354,7 @@ export const submitAssessment = onCall({ minInstances: 1 }, async (request) => {
   percentage = txResult.gradeResult.percentage;
   perBlock = txResult.gradeResult.perBlock;
   status = txResult.status;
+  attemptNumber = txResult.attemptNumber;
 
   } catch (err) {
     // Compensating action: un-claim token so student can retry
@@ -564,15 +563,6 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
     sessionStartedAt = startedAt?.toMillis?.() || Number(startedAt) || null;
   }
 
-  // 7. Calculate attempt number (exclude RETURNED)
-  const existingSubs = await db.collection("submissions")
-    .where("userId", "==", userId)
-    .where("assignmentId", "==", assignmentId)
-    .where("isAssessment", "==", true)
-    .get();
-  const activeCount = existingSubs.docs.filter(d => d.data().status !== "RETURNED").length;
-  const attemptNumber = activeCount + 1;
-
   // 8. Look up student info
   const studentSnap = await db.doc(`users/${userId}`).get();
   const studentData = studentSnap.exists ? studentSnap.data()! : {};
@@ -664,7 +654,6 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
     feedback: behalfFeedback,
     score: percentage,
     isAssessment: true,
-    attemptNumber,
     assessmentScore: { correct, total, percentage, perBlock },
     blockResponses: responses,
     privateComments: [],
@@ -675,7 +664,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
     ...(userSection ? { userSection } : {}),
   };
 
-  await db.runTransaction(async (t) => {
+  const txResult = await db.runTransaction(async (t) => {
     // Re-read session inside transaction to prevent double-submit race
     if (sessionDoc) {
       const freshSession = await t.get(sessionDoc.ref);
@@ -683,9 +672,17 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
         t.update(sessionDoc.ref, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
       }
     }
-    // NOTE: Can't do where() queries inside transactions — attemptNumber uses pre-queried count
+    // Atomic attempt counter to prevent race conditions
+    const counterRef = db.doc(`assessment_attempt_counters/${userId}_${assignmentId}`);
+    const counterSnap = await t.get(counterRef);
+    const currentCount = counterSnap.exists ? (counterSnap.data()!.count || 0) : 0;
+    const txAttemptNumber = currentCount + 1;
+    t.set(counterRef, { count: txAttemptNumber }, { merge: true });
+
     const subRef = db.collection("submissions").doc();
-    t.set(subRef, submissionDoc);
+    t.set(subRef, { ...submissionDoc, attemptNumber: txAttemptNumber });
+
+    return { attemptNumber: txAttemptNumber };
   });
 
   // 11. Award XP (same as submitAssessment)
@@ -722,7 +719,7 @@ export const submitOnBehalf = onCall({ timeoutSeconds: 120 }, async (request) =>
   });
 
   logger.info(`submitOnBehalf: admin ${request.auth!.uid} submitted for ${userId} on ${assignmentId}, scored ${percentage}%`);
-  return { success: true, assessmentScore: { correct, total, percentage, perBlock }, attemptNumber, xpEarned };
+  return { success: true, assessmentScore: { correct, total, percentage, perBlock }, attemptNumber: txResult.attemptNumber, xpEarned };
 
   } catch (err) {
     if (err instanceof HttpsError) throw err;

@@ -21,6 +21,13 @@ import {
 import { LootItem } from "./core";
 import { checkAndUnlockAchievements } from "./achievements";
 
+function assertEnrolled(userData: Record<string, unknown>, classType: string): void {
+  const enrolledClasses: string[] = (userData.enrolledClasses as string[]) || [];
+  if (!enrolledClasses.includes(classType) && userData.classType !== classType) {
+    throw new HttpsError("permission-denied", "Not enrolled in this class.");
+  }
+}
+
 // ==========================================
 // SUBMIT ENGAGEMENT — Server-side XP calculation
 // ==========================================
@@ -95,12 +102,13 @@ export const submitEngagement = onCall(async (request) => {
     transaction.set(rateLimitRef, { lastSubmitted: now }, { merge: true });
   });
 
-  // Look up student's section for this class
+  // Look up student's section for this class and validate enrollment
   let userSection: string | undefined;
   if (classType) {
     const userSnap = await db.doc(`users/${uid}`).get();
     if (userSnap.exists) {
       const userData = userSnap.data()!;
+      assertEnrolled(userData, classType);
       userSection = userData.classSections?.[classType]
         ?? ((userData.classType === classType || (userData.enrolledClasses || []).includes(classType)) ? userData.section : undefined);
     }
@@ -198,6 +206,16 @@ export const awardQuestionXP = onCall(async (request) => {
     const userRef = db.doc(`users/${uid}`);
     const userSnap = await transaction.get(userRef);
 
+    // Enrollment validation
+    if (classType && userSnap.exists) {
+      const userData = userSnap.data()!;
+      const enrolledClasses: string[] = userData.enrolledClasses || [];
+      const studentClassType = userData.classType;
+      if (!enrolledClasses.includes(classType) && studentClassType !== classType) {
+        throw new HttpsError("permission-denied", "Not enrolled in the class for this question.");
+      }
+    }
+
     // Process reads
     const answeredQuestions: string[] = progressSnap.exists ?
       progressSnap.data()!.answeredQuestions || [] :
@@ -223,6 +241,7 @@ export const awardQuestionXP = onCall(async (request) => {
     }
 
     const data = userSnap.data()!;
+    if (classType) assertEnrolled(data, classType);
     const { updates, newXP, leveledUp } = buildXPUpdates(data, serverXP, classType);
 
     // ALL WRITES AFTER READS
@@ -282,17 +301,34 @@ export const penalizeWrongAnswer = onCall(async (request) => {
   const penalty = Math.ceil(questionXP / 2);
 
   const userRef = db.doc(`users/${uid}`);
+  const progressRef = db.doc(`review_progress/${uid}_${assignmentId}`);
 
   return db.runTransaction(async (transaction) => {
-    const userSnap = await transaction.get(userRef);
+    const [userSnap, progressSnap] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(progressRef),
+    ]);
+
     if (!userSnap.exists) {
       throw new HttpsError("not-found", "User not found.");
+    }
+
+    // Deduplication: only penalize once per question
+    const penalizedQuestions: string[] = progressSnap.exists
+      ? (progressSnap.data()!.penalizedQuestions || [])
+      : [];
+    if (penalizedQuestions.includes(questionId)) {
+      return { penalized: false, penalty: 0, reason: "Already penalized for this question." };
     }
 
     const data = userSnap.data()!;
     const { updates, newXP } = buildXPUpdates(data, -penalty, classType);
 
     transaction.update(userRef, updates);
+    transaction.set(progressRef, {
+      penalizedQuestions: [...penalizedQuestions, questionId],
+    }, { merge: true });
+
     return { penalized: true, penalty, newXP };
   }).catch((err) => {
     if (err instanceof HttpsError) throw err;
@@ -458,6 +494,7 @@ export const spinFortuneWheel = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
+    if (classType) assertEnrolled(data, classType);
     const gam = data.gamification || {};
     const now = Date.now();
     const oneHourAgo = now - 3600000; // 1 hour in ms
@@ -546,6 +583,11 @@ export const spinFortuneWheel = onCall(async (request) => {
     return { prizeId: prize.id, prizeType: prize.type, rewardDescription, newUnlocks: wheelNewUnlocks };
   });
 });
+const VALID_SPECIALIZATIONS: string[] = [
+  "JUGGERNAUT", "BERSERKER", "SNIPER", "SPEEDSTER",
+  "GUARDIAN", "CLERIC", "TACTICIAN", "SCHOLAR",
+];
+
 const SKILL_COSTS: Record<string, number> = {
   // ═══ V1 (legacy — kept for migration reference) ═══
   // THEORIST
@@ -606,6 +648,9 @@ export const unlockSkill = onCall(async (request) => {
     // If first skill, set specialization
     const updates: Record<string, unknown> = {};
     if (!currentSpec) {
+      if (specialization && !VALID_SPECIALIZATIONS.includes(specialization)) {
+        throw new HttpsError("invalid-argument", `Unknown specialization: ${specialization}`);
+      }
       updates["gamification.specialization"] = specialization;
     } else if (currentSpec !== specialization) {
       throw new HttpsError("failed-precondition",
@@ -639,6 +684,7 @@ export const addSocket = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
+    if (classType) assertEnrolled(data, classType);
     const { inventory } = getProfileData(data, classType);
     const currency = data.gamification?.currency || 0;
 
@@ -709,6 +755,7 @@ export const socketGem = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
+    if (classType) assertEnrolled(data, classType);
     const { inventory } = getProfileData(data, classType);
     const gam = data.gamification || {};
     const currency = gam.currency || 0;
@@ -782,6 +829,7 @@ export const unsocketGem = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
+    if (classType) assertEnrolled(data, classType);
     const { inventory } = getProfileData(data, classType);
     const gam = data.gamification || {};
     const currency = gam.currency || 0;
@@ -842,62 +890,68 @@ export const commitSpecialization = onCall(async (request) => {
   if (!specializationId) {
     throw new HttpsError("invalid-argument", "Specialization ID required.");
   }
+  if (!VALID_SPECIALIZATIONS.includes(specializationId)) {
+    throw new HttpsError("invalid-argument", `Unknown specialization: ${specializationId}`);
+  }
 
   const db = admin.firestore();
   const trialEventId = `trial_${uid}_${specializationId}`;
   const trialRef = db.doc(`boss_events/${trialEventId}`);
   const userRef = db.doc(`users/${uid}`);
 
-  const [trialSnap, userSnap] = await Promise.all([
-    trialRef.get(), userRef.get(),
-  ]);
+  // Atomic commit: read user + trial, verify, write specialization
+  await db.runTransaction(async (transaction) => {
+    const [trialSnap, userSnap] = await Promise.all([
+      transaction.get(trialRef), transaction.get(userRef),
+    ]);
 
-  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+    const userData = userSnap.data()!;
 
-  const userData = userSnap.data()!;
+    // Check if already has specialization
+    if (userData.gamification?.specialization) {
+      throw new HttpsError("failed-precondition", "You already have a specialization.");
+    }
 
-  // Check if already has specialization
-  if (userData.gamification?.specialization) {
-    throw new HttpsError("failed-precondition", "You already have a specialization.");
-  }
+    // Verify the trial exists and was passed
+    if (!trialSnap.exists) {
+      throw new HttpsError("not-found", "Trial not found. Complete the tutorial first.");
+    }
 
-  // Verify the trial exists and was passed
-  if (!trialSnap.exists) {
-    throw new HttpsError("not-found", "Trial not found. Complete the tutorial first.");
-  }
+    const trial = trialSnap.data()!;
+    if (!trial.isTrial || trial.trialSpecializationId !== specializationId) {
+      throw new HttpsError("failed-precondition", "Invalid trial for this specialization.");
+    }
+    if (trial.trialPassed !== true) {
+      throw new HttpsError("failed-precondition", "You must pass the tutorial before committing to this specialization.");
+    }
 
-  const trial = trialSnap.data()!;
-  if (!trial.isTrial || trial.trialSpecializationId !== specializationId) {
-    throw new HttpsError("failed-precondition", "Invalid trial for this specialization.");
-  }
-  if (trial.trialPassed !== true) {
-    throw new HttpsError("failed-precondition", "You must pass the tutorial before committing to this specialization.");
-  }
-
-  // Commit specialization
-  await userRef.update({
-    'gamification.specialization': specializationId,
-    'gamification.skillPoints': admin.firestore.FieldValue.increment(1),
+    // Commit specialization atomically
+    transaction.update(userRef, {
+      'gamification.specialization': specializationId,
+      'gamification.skillPoints': admin.firestore.FieldValue.increment(1),
+    });
+    transaction.update(trialRef, { isActive: false });
   });
 
-  // Deactivate the committed trial and any other active trials for this user
-  const batch = db.batch();
-  batch.update(trialRef, { isActive: false });
-
-  // Find and deactivate any other active trials
+  // Deactivate any other active trials for this user (non-atomic cleanup)
   const allTrialsQuery = await db.collection('boss_events')
     .where('isTrial', '==', true)
     .where('isActive', '==', true)
     .get();
 
-  for (const docSnap of allTrialsQuery.docs) {
+  const otherTrials = allTrialsQuery.docs.filter((docSnap) => {
     const data = docSnap.data();
-    if (data.id && typeof data.id === 'string' && data.id.startsWith(`trial_${uid}_`) && docSnap.id !== trialEventId) {
+    return data.id && typeof data.id === 'string' && data.id.startsWith(`trial_${uid}_`) && docSnap.id !== trialEventId;
+  });
+
+  if (otherTrials.length > 0) {
+    const batch = db.batch();
+    for (const docSnap of otherTrials) {
       batch.update(docSnap.ref, { isActive: false });
     }
+    await batch.commit();
   }
-
-  await batch.commit();
 
   return {
     success: true,
@@ -909,6 +963,9 @@ export const declineSpecialization = onCall(async (request) => {
   const { specializationId } = request.data;
   if (!specializationId) {
     throw new HttpsError("invalid-argument", "Specialization ID required.");
+  }
+  if (!VALID_SPECIALIZATIONS.includes(specializationId)) {
+    throw new HttpsError("invalid-argument", `Unknown specialization: ${specializationId}`);
   }
 
   const db = admin.firestore();
@@ -928,75 +985,6 @@ export const declineSpecialization = onCall(async (request) => {
   await trialRef.update({ isActive: false });
 
   return { success: true, message: `You declined the ${specializationId} specialization. You can retake the tutorial later.` };
-});
-export const useConsumable = onCall(async (request) => {
-  const uid = verifyAuth(request.auth);
-  const { eventId, consumableId } = request.data;
-  if (!eventId || !consumableId) {
-    throw new HttpsError("invalid-argument", "Event ID and consumable ID required.");
-  }
-
-  const db = admin.firestore();
-  const userRef = db.doc(`users/${uid}`);
-  const progressRef = db.doc(`boss_event_progress/${uid}_${eventId}`);
-
-  const [userSnap, progressSnap] = await Promise.all([userRef.get(), progressRef.get()]);
-  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-  if (!progressSnap.exists) throw new HttpsError("not-found", "Progress not found.");
-
-  const userData = userSnap.data()!;
-  const gam = userData.gamification || {};
-  const currency = gam.currency || 0;
-
-  const CONSUMABLE_COSTS: Record<string, number> = {
-    SECOND_WIND: 25,
-    STUDY_GUIDE: 15,
-    ADRENALINE_SHOT: 40,
-    TEAM_MEDKIT: 35,
-  };
-
-  const cost = CONSUMABLE_COSTS[consumableId];
-  if (cost === undefined) throw new HttpsError("invalid-argument", "Unknown consumable.");
-  if (currency < cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
-
-  const progress = progressSnap.data()!;
-  const currentAttempt = progress.attempts?.find((a: { status: string }) => a.status === 'active');
-  if (!currentAttempt) throw new HttpsError("failed-precondition", "No active attempt.");
-
-  const updates: Record<string, any> = {
-    "gamification.currency": currency - cost,
-  };
-
-  let effectResult: Record<string, unknown> = {};
-
-  switch (consumableId) {
-    case 'SECOND_WIND':
-      currentAttempt.currentHp = Math.min(currentAttempt.maxHp, Math.round(currentAttempt.currentHp + currentAttempt.maxHp * 0.25));
-      effectResult = { type: 'HEAL', value: Math.round(currentAttempt.maxHp * 0.25), newHp: currentAttempt.currentHp };
-      break;
-    case 'STUDY_GUIDE':
-      effectResult = { type: 'HINT', value: 1, message: 'One wrong answer has been eliminated.' };
-      break;
-    case 'ADRENALINE_SHOT':
-      effectResult = { type: 'DAMAGE_BOOST', value: 2.0, selfDamage: 10, message: 'Next answer deals 2x damage but you take 10 damage.' };
-      break;
-    case 'TEAM_MEDKIT':
-      effectResult = { type: 'TEAM_HEAL', value: 10, message: 'All allies healed for 10 HP.' };
-      break;
-  }
-
-  // Update attempt
-  const attemptIndex = progress.attempts.findIndex((a: { status: string }) => a.status === 'active');
-  if (attemptIndex >= 0) {
-    updates[`attempts.${attemptIndex}.currentHp`] = currentAttempt.currentHp;
-  }
-
-  await Promise.all([
-    userRef.update(updates),
-    progressRef.update({ attempts: progress.attempts }),
-  ]);
-
-  return { success: true, consumableId, effect: effectResult, remainingCurrency: currency - cost };
 });
 export const claimKnowledgeLoot = onCall(async (request) => {
   const uid = verifyAuth(request.auth);
@@ -1018,6 +1006,9 @@ export const claimKnowledgeLoot = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
     if (claimSnap.exists) throw new HttpsError("already-exists", "Already claimed this reward.");
 
+    const userData = userSnap.data()!;
+    if (classType) assertEnrolled(userData, classType);
+
     const gate = gateSnap.data()!;
     if (!gate.isActive) throw new HttpsError("failed-precondition", "Gate is not active.");
 
@@ -1036,7 +1027,6 @@ export const claimKnowledgeLoot = onCall(async (request) => {
     }
 
     // Award rewards
-    const userData = userSnap.data()!;
     const gam = userData.gamification || {};
     const level = gam.level || 1;
 
@@ -1112,6 +1102,7 @@ export const claimDailyChallenge = onCall(async (request) => {
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
     const data = userSnap.data()!;
+    if (classType) assertEnrolled(data, classType);
     const gam = data.gamification || {};
     const challenges = gam.activeDailyChallenges || [];
 

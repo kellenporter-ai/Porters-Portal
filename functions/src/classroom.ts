@@ -397,6 +397,25 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
     throw new HttpsError("failed-precondition", "Assignment is not linked to Google Classroom.");
   }
 
+  // Validate course ownership
+  const teacherId = request.auth?.uid;
+  if (!teacherId) {
+    throw new HttpsError("unauthenticated", "Teacher authentication required.");
+  }
+  const teacherDoc = await db.doc(`users/${teacherId}`).get();
+  if (!teacherDoc.exists) {
+    throw new HttpsError("permission-denied", "Teacher record not found.");
+  }
+  const teacherData = teacherDoc.data()!;
+  const ownedCourses: string[] = teacherData.ownedCourses || [];
+  const teacherClasses: string[] = teacherData.teacherClasses || [];
+  for (const entry of linkEntries) {
+    const isOwner = ownedCourses.includes(entry.courseId) || teacherClasses.includes(entry.courseId);
+    if (!isOwner) {
+      throw new HttpsError("permission-denied", `You do not own course ${entry.courseId}.`);
+    }
+  }
+
   // 2. Read all submissions for this assignment (once, shared across all link entries)
   const subsSnap = await db.collection("submissions")
     .where("assignmentId", "==", assignmentId)
@@ -520,6 +539,7 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
             courseId,
             courseWorkId,
             userId: email,
+            pageSize: 1,
           });
           submissionId = res.data.studentSubmissions?.[0]?.id ?? undefined;
         } catch {
@@ -603,6 +623,31 @@ export const classroomPushGrades = onCall({ memory: "512MiB", timeoutSeconds: 12
       errors.push((result.reason as Error)?.message ?? "Unknown error");
     }
   }
+
+  // Write audit trail to Firestore
+  const auditPromises: Promise<admin.firestore.DocumentReference>[] = [];
+  for (let i = 0; i < linkResults.length; i++) {
+    const entry = linkEntries[i];
+    const result = linkResults[i];
+    const pushedCount = result.status === "fulfilled" ? result.value.pushed : 0;
+    const failedCount = result.status === "fulfilled" ? result.value.errors.length : 1;
+    const entryErrors = result.status === "fulfilled"
+      ? result.value.errors
+      : [(result.reason as Error)?.message ?? "Unknown error"];
+
+    auditPromises.push(
+      db.collection("grade_push_logs").add({
+        teacherId,
+        courseId: entry.courseId,
+        assignmentId,
+        pushedCount,
+        failedCount,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        errors: entryErrors,
+      })
+    );
+  }
+  await Promise.all(auditPromises);
 
   logger.info("classroomPushGrades complete", { pushed, skipped, errorCount: errors.length });
   return { pushed, skipped, errors };

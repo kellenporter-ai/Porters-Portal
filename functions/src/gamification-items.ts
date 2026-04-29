@@ -490,6 +490,69 @@ export const adminEditItem = onCall({ memory: "256MiB" }, async (request) => {
   return { success: true };
 });
 
+export const useConsumable = onCall({ memory: "256MiB" }, async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { eventId, consumableId } = request.data;
+  if (!eventId || !consumableId) {
+    throw new HttpsError("invalid-argument", "Event ID and consumable ID required.");
+  }
+
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+  const progressRef = db.doc(`boss_event_progress/${uid}_${eventId}`);
+
+  const CONSUMABLE_COSTS: Record<string, number> = {
+    SECOND_WIND: 25,
+    STUDY_GUIDE: 15,
+    ADRENALINE_SHOT: 40,
+    TEAM_MEDKIT: 35,
+  };
+
+  const cost = CONSUMABLE_COSTS[consumableId];
+  if (cost === undefined) throw new HttpsError("invalid-argument", "Unknown consumable.");
+
+  const result = await db.runTransaction(async (t) => {
+    const [userSnap, progressSnap] = await Promise.all([t.get(userRef), t.get(progressRef)]);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+    if (!progressSnap.exists) throw new HttpsError("not-found", "Progress not found.");
+
+    const userData = userSnap.data()!;
+    const gam = userData.gamification || {};
+    const currency = gam.currency || 0;
+
+    if (currency < cost) throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
+
+    const progress = progressSnap.data()!;
+    const currentAttempt = progress.attempts?.find((a: { status: string }) => a.status === 'active');
+    if (!currentAttempt) throw new HttpsError("failed-precondition", "No active attempt.");
+
+    let effectResult: Record<string, unknown> = {};
+
+    switch (consumableId) {
+      case 'SECOND_WIND':
+        currentAttempt.currentHp = Math.min(currentAttempt.maxHp, Math.round(currentAttempt.currentHp + currentAttempt.maxHp * 0.25));
+        effectResult = { type: 'HEAL', value: Math.round(currentAttempt.maxHp * 0.25), newHp: currentAttempt.currentHp };
+        break;
+      case 'STUDY_GUIDE':
+        effectResult = { type: 'HINT', value: 1, message: 'One wrong answer has been eliminated.' };
+        break;
+      case 'ADRENALINE_SHOT':
+        effectResult = { type: 'DAMAGE_BOOST', value: 2.0, selfDamage: 10, message: 'Next answer deals 2x damage but you take 10 damage.' };
+        break;
+      case 'TEAM_MEDKIT':
+        effectResult = { type: 'TEAM_HEAL', value: 10, message: 'All allies healed for 10 HP.' };
+        break;
+    }
+
+    t.update(userRef, { "gamification.currency": admin.firestore.FieldValue.increment(-cost) });
+    t.update(progressRef, { attempts: progress.attempts });
+
+    return { consumableId, effect: effectResult, remainingCurrency: currency - cost };
+  });
+
+  return { success: true, ...result };
+});
+
 export {
   SLOTS,
   BASE_ITEMS,

@@ -119,13 +119,24 @@ export const dealBossDamage = onCall(async (request) => {
         if (logSnap.size < 499) break;
       }
 
-      // Award each contributor
-      for (const contributorId of contributorIds) {
-        try {
-          const contribRef = db.doc(`users/${contributorId}`);
-          const contribSnap = await contribRef.get();
-          if (!contribSnap.exists) continue;
-          const contribData = contribSnap.data()!;
+      // Batch-read contributor docs in chunks of 30
+      const contributorIdArray = Array.from(contributorIds);
+      const contributorDataMap = new Map<string, any>();
+      for (const chunk of chunkArray(contributorIdArray, 30)) {
+        const chunkSnap = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', chunk).get();
+        chunkSnap.forEach(doc => {
+          contributorDataMap.set(doc.id, doc.data());
+        });
+      }
+
+      // Batch-write rewards in chunks of 500
+      const defaultBossClass = boss.classType && boss.classType !== 'GLOBAL' ? boss.classType : null;
+      for (const chunk of chunkArray(contributorIdArray, 500)) {
+        const batch = db.batch();
+        const notificationPromises: Promise<void>[] = [];
+        for (const contributorId of chunk) {
+          const contribData = contributorDataMap.get(contributorId);
+          if (!contribData) continue;
           const contribGam = contribData.gamification || {};
           const contribUpdates: Record<string, any> = {};
 
@@ -141,7 +152,7 @@ export const dealBossDamage = onCall(async (request) => {
 
           if (rewardItemRarity) {
             const loot = generateLoot(contribGam.level || 1, rewardItemRarity);
-            const contribClass = boss.classType && boss.classType !== 'GLOBAL' ? boss.classType : contribData.classType;
+            const contribClass = defaultBossClass || contribData.classType;
             if (contribClass && contribClass !== "Uncategorized" && contribGam.classProfiles?.[contribClass]) {
               const inv = contribGam.classProfiles[contribClass].inventory || [];
               contribUpdates[`gamification.classProfiles.${contribClass}.inventory`] = [...inv, loot];
@@ -151,20 +162,29 @@ export const dealBossDamage = onCall(async (request) => {
             }
           }
 
-          // Increment bossesDefeated and check achievements
           contribUpdates["gamification.bossesDefeated"] = (contribGam.bossesDefeated || 0) + 1;
           const { rewardUpdates: bossAchievementUpdates, newUnlocks: bossNewUnlocks } =
             checkAndUnlockAchievements(contribData, contribUpdates);
           Object.assign(contribUpdates, bossAchievementUpdates);
 
           if (Object.keys(contribUpdates).length > 0) {
-            await contribRef.update(contribUpdates);
+            batch.update(db.doc(`users/${contributorId}`), contribUpdates);
           }
           if (bossNewUnlocks.length > 0) {
-            await writeAchievementNotifications(db, contributorId, bossNewUnlocks);
+            notificationPromises.push(writeAchievementNotifications(db, contributorId, bossNewUnlocks));
           }
+        }
+        try {
+          await batch.commit();
         } catch (err) {
-          logger.error(`Failed to reward boss contributor ${contributorId}:`, err);
+          logger.error(`Failed to commit contributor reward batch for boss ${bossId}:`, err);
+        }
+        if (notificationPromises.length > 0) {
+          try {
+            await Promise.all(notificationPromises);
+          } catch (err) {
+            logger.error(`Failed to write achievement notifications for boss ${bossId}:`, err);
+          }
         }
       }
     }
@@ -202,6 +222,14 @@ function derivePlayerRole(stats: { tech: number; focus: number; analysis: number
   ];
   statMap.sort((a, b) => b.stat - a.stat);
   return statMap[0].role;
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
 }
 // ==========================================
 // UNIFIED BOSS EVENT v2 (attempt-based, topic mastery, new damage formula)
@@ -410,15 +438,6 @@ export const answerBossEvent = onCall(async (request) => {
     damage = Math.min(rawDamage, perHitCap);
     damage = Math.max(1, damage);
 
-    const participantCount = event.participantCount || 0;
-    const drMultiplier = Math.min(1.0, Math.sqrt(10 / Math.max(10, participantCount + 1)));
-    damage = Math.max(1, Math.round(damage * drMultiplier));
-
-    const bossArmor = Math.min(50, Math.max(0, (participantCount - 10) * 2));
-    damage = Math.max(1, Math.round(damage * (1 - bossArmor / 100)));
-
-    cs.totalDamageDealt += damage;
-
     if (hasMod(mods, "HEALING_WAVE")) {
       healAmount = modVal(mods, "HEALING_WAVE", 10);
       playerHp = Math.min(maxHp, playerHp + healAmount);
@@ -475,6 +494,16 @@ export const answerBossEvent = onCall(async (request) => {
 
     const latestEvent = latestEventDoc.data()!;
     if (!latestEvent.isActive) throw new HttpsError("failed-precondition", "Event is not active.");
+
+    // Apply participantCount scaling with latest event data
+    const participantCount = latestEvent.participantCount || 0;
+    const drMultiplier = Math.min(1.0, Math.sqrt(10 / Math.max(10, participantCount + 1)));
+    const bossArmor = Math.min(50, Math.max(0, (participantCount - 10) * 2));
+    damage = Math.max(1, Math.round(damage * drMultiplier));
+    damage = Math.max(1, Math.round(damage * (1 - bossArmor / 100)));
+
+    cs.totalDamageDealt += damage;
+    currentAttempt.combatStats = { ...cs, role: playerRole };
 
     const latestProgress = latestProgressDoc.exists ? latestProgressDoc.data()! : { attempts: [] };
     if (!latestProgress.attempts) latestProgress.attempts = [];
@@ -1001,6 +1030,10 @@ export const scaleBossHp = onCall(async (request) => {
   if (!quizSnap.exists) throw new HttpsError("not-found", "Quiz not found.");
 
   const quiz = quizSnap.data()!;
+  if (!quiz.maxHp || quiz.maxHp <= 0) {
+    logger.warn(`scaleBossHp: quiz ${quizId} has invalid maxHp (${quiz.maxHp})`);
+    throw new HttpsError("invalid-argument", `Quiz has invalid maxHp: ${quiz.maxHp}`);
+  }
   const autoScale = quiz.autoScale;
   const difficultyTier = quiz.difficultyTier || 'NORMAL';
 

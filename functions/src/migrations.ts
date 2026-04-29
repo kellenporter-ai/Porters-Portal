@@ -9,7 +9,16 @@ import { verifyAdmin } from "./core";
 // ==========================================
 export const migrateClassXp = onCall(async (request) => {
   await verifyAdmin(request.auth);
-  const dryRun = request.data?.dryRun !== false; // default true for safety
+
+  // Input validation
+  const { dryRun: dryRunRaw = true, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRunRaw !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
+  }
+  const dryRun = dryRunRaw !== false; // default true for safety
 
   const db = admin.firestore();
   const BATCH_SIZE = 400;
@@ -35,6 +44,7 @@ export const migrateClassXp = onCall(async (request) => {
     const toUpdate: { id: string; classType: string; totalXp: number }[] = [];
 
     snapshot.forEach(doc => {
+      if (!doc.exists) return;
       const data = doc.data();
       const gam = data.gamification || {};
       const totalXp: number = gam.xp || 0;
@@ -108,6 +118,15 @@ export const migrateClassXp = onCall(async (request) => {
 export const backfillAssignmentDates = onCall(async (request) => {
   await verifyAdmin(request.auth);
 
+  // Input validation
+  const { dryRun = false, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRun !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
+  }
+
   const db = admin.firestore();
 
   let updated = 0;
@@ -126,6 +145,7 @@ export const backfillAssignmentDates = onCall(async (request) => {
     const batch = db.batch();
     let batchCount = 0;
     snap.docs.forEach((doc) => {
+      if (!doc.exists) return;
       const data = doc.data();
       if (data.createdAt) {
         skipped++;
@@ -133,22 +153,24 @@ export const backfillAssignmentDates = onCall(async (request) => {
       }
       const createTime = doc.createTime?.toDate().toISOString() ||
         new Date().toISOString();
-      batch.update(doc.ref, {
-        createdAt: createTime,
-        updatedAt: data.updatedAt || createTime,
-      });
+      if (!dryRun) {
+        batch.update(doc.ref, {
+          createdAt: createTime,
+          updatedAt: data.updatedAt || createTime,
+        });
+      }
       updated++;
       batchCount++;
     });
 
-    if (batchCount > 0) {
+    if (!dryRun && batchCount > 0) {
       await batch.commit();
     }
     if (snap.size < 499) break;
   }
 
-  logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}`);
-  return { updated, skipped, totalScanned };
+  logger.info(`backfillAssignmentDates: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}, dryRun ${dryRun}`);
+  return { dryRun, updated, skipped, totalScanned };
 });
 /**
  * Backfills wordCount and wordsPerSecond for existing assessment submissions.
@@ -157,6 +179,15 @@ export const backfillAssignmentDates = onCall(async (request) => {
  */
 export const backfillWordCount = onCall(async (request) => {
   await verifyAdmin(request.auth);
+
+  // Input validation
+  const { dryRun = false, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRun !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
+  }
 
   const db = admin.firestore();
 
@@ -180,6 +211,7 @@ export const backfillWordCount = onCall(async (request) => {
     let batchCount = 0;
 
     for (const doc of snap.docs) {
+      if (!doc.exists) continue;
       const data = doc.data();
       if (data.metrics?.wordCount != null) {
         skipped++;
@@ -201,28 +233,30 @@ export const backfillWordCount = onCall(async (request) => {
       const engagementTime = data.metrics?.engagementTime || 0;
       const wordsPerSecond = engagementTime > 0 ? Math.round((totalWordCount / engagementTime) * 100) / 100 : 0;
 
-      batch.update(doc.ref, {
-        "metrics.wordCount": totalWordCount,
-        "metrics.wordsPerSecond": wordsPerSecond,
-      });
+      if (!dryRun) {
+        batch.update(doc.ref, {
+          "metrics.wordCount": totalWordCount,
+          "metrics.wordsPerSecond": wordsPerSecond,
+        });
+      }
       updated++;
       batchCount++;
 
-      if (batchCount >= 490) {
+      if (!dryRun && batchCount >= 490) {
         await batch.commit();
         batch = db.batch();
         batchCount = 0;
       }
     }
 
-    if (batchCount > 0) {
+    if (!dryRun && batchCount > 0) {
       await batch.commit();
     }
     if (snap.size < 499) break;
   }
 
-  logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}`);
-  return { updated, skipped, totalScanned };
+  logger.info(`backfillWordCount: updated ${updated}, skipped ${skipped}, scanned ${totalScanned}, dryRun ${dryRun}`);
+  return { dryRun, updated, skipped, totalScanned };
 });
 // ==========================================
 // ONE-TIME MIGRATION FUNCTIONS
@@ -247,15 +281,22 @@ export const migrateBossesToEvents = onCall(async (request) => {
   const db = admin.firestore();
   let migratedEncounters = 0;
   let migratedQuizzes = 0;
+  let skippedExisting = 0;
   let errors: string[] = [];
 
   // Migrate boss_encounters → BossEvent (mode: AUTO_ATTACK)
   const encounters = await db.collection('boss_encounters').get();
   for (const doc of encounters.docs) {
     const data = doc.data();
+    const targetRef = db.doc(`boss_events/${doc.id}`);
+    const targetSnap = await targetRef.get();
+    if (targetSnap.exists) {
+      skippedExisting++;
+      continue;
+    }
     try {
       if (!dryRun) {
-        await db.doc(`boss_events/${doc.id}`).set({
+        await targetRef.set({
           ...data,
           mode: 'AUTO_ATTACK',
           bossName: data.name || data.bossName || 'Unknown Boss',
@@ -276,9 +317,15 @@ export const migrateBossesToEvents = onCall(async (request) => {
   const quizzes = await db.collection('boss_quizzes').get();
   for (const doc of quizzes.docs) {
     const data = doc.data();
+    const targetRef = db.doc(`boss_events/${doc.id}`);
+    const targetSnap = await targetRef.get();
+    if (targetSnap.exists) {
+      skippedExisting++;
+      continue;
+    }
     try {
       if (!dryRun) {
-        await db.doc(`boss_events/${doc.id}`).set({
+        await targetRef.set({
           ...data,
           mode: 'QUIZ',
           createdAt: data.createdAt || new Date().toISOString(),
@@ -296,10 +343,11 @@ export const migrateBossesToEvents = onCall(async (request) => {
     dryRun,
     migratedEncounters,
     migratedQuizzes,
+    skippedExisting,
     errorCount: errors.length,
   });
 
-  return { dryRun, migratedEncounters, migratedQuizzes, errors: errors.slice(0, 20) };
+  return { dryRun, migratedEncounters, migratedQuizzes, skippedExisting, errors: errors.slice(0, 20) };
 });
 /**
  * Migrate legacy boss_quiz_progress documents into unified boss_event_progress.
@@ -320,11 +368,18 @@ export const migrateBossQuizProgress = onCall(async (request) => {
 
   const db = admin.firestore();
   let migrated = 0;
+  let skipped = 0;
   let errors: string[] = [];
 
   const progressDocs = await db.collection('boss_quiz_progress').get();
   for (const doc of progressDocs.docs) {
     const data = doc.data();
+    const targetRef = db.doc(`boss_event_progress/${doc.id}`);
+    const targetSnap = await targetRef.get();
+    if (targetSnap.exists) {
+      skipped++;
+      continue;
+    }
     try {
       const now = new Date().toISOString();
       const attempt = {
@@ -352,7 +407,7 @@ export const migrateBossQuizProgress = onCall(async (request) => {
       };
 
       if (!dryRun) {
-        await db.doc(`boss_event_progress/${doc.id}`).set({
+        await targetRef.set({
           userId: data.userId,
           eventId: data.quizId,
           attempts: [attempt],
@@ -373,8 +428,8 @@ export const migrateBossQuizProgress = onCall(async (request) => {
     }
   }
 
-  logger.info("migrateBossQuizProgress complete", { dryRun, migrated, errorCount: errors.length });
-  return { dryRun, migrated, errors: errors.slice(0, 20) };
+  logger.info("migrateBossQuizProgress complete", { dryRun, migrated, skipped, errorCount: errors.length });
+  return { dryRun, migrated, skipped, errors: errors.slice(0, 20) };
 });
 // SPECIALIZATION V1 → V2 MIGRATION
 // ==========================================
@@ -420,6 +475,7 @@ export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
     .get();
 
   for (const doc of usersQuery.docs) {
+    if (!doc.exists) continue;
     const data = doc.data();
     const gam = data.gamification || {};
     const spec = gam.specialization as string;
@@ -466,6 +522,7 @@ export const migrateSpecializationsV1ToV2 = onCall(async (request) => {
     .get();
 
   for (const doc of allUsersWithSkills.docs) {
+    if (!doc.exists) continue;
     const data = doc.data();
     const gam = data.gamification || {};
     const spec = gam.specialization;
