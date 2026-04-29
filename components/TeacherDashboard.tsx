@@ -3,8 +3,9 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFocusTrap } from '../lib/useFocusTrap';
 import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucketProfile, BugReport, SongRequest, WellnessCheckin } from '../types';
-import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, ClipboardCheck, Megaphone, Trophy } from 'lucide-react';
+import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, ClipboardCheck, Megaphone, Trophy, Calendar as CalendarIcon } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
+import DistrictCalendarTab from './dashboard/DistrictCalendarTab';
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
 import { FeatureErrorBoundary } from './ErrorBoundary';
@@ -36,7 +37,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketProfiles, setBucketProfiles] = useState<StudentBucketProfile[]>([]);
   const [activeSessions, setActiveSessions] = useState<Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>>(new Map());
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'calendar'>('dashboard');
   const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students' | 'wellness' | 'bugs' | 'songs'>('alerts');
   const [wellnessCheckins, setWellnessCheckins] = useState<WellnessCheckin[]>([]);
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
@@ -133,6 +134,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <button id="tab-analytics" role="tab" aria-selected={adminTab === 'analytics'} aria-controls="tabpanel-analytics" onClick={() => setAdminTab('analytics')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'analytics' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Analytics
           </button>
+          <button id="tab-calendar" role="tab" aria-selected={adminTab === 'calendar'} aria-controls="tabpanel-calendar" onClick={() => setAdminTab('calendar')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'calendar' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
+            <CalendarIcon className="w-3.5 h-3.5" aria-hidden="true" /> Calendar
+          </button>
         </div>
       </div>
 
@@ -173,6 +177,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         <div role="tabpanel" id="tabpanel-analytics" aria-labelledby="tab-analytics"><FeatureErrorBoundary feature="Analytics Tab">
           <AnalyticsTab users={users} assignments={assignments} submissions={submissions} bucketProfiles={bucketProfiles} />
         </FeatureErrorBoundary></div>
+      )}
+
+      {adminTab === 'calendar' && (
+        <div role="tabpanel" id="tabpanel-calendar" aria-labelledby="tab-calendar">
+          <FeatureErrorBoundary feature="District Calendar">
+            <DistrictCalendarTab />
+          </FeatureErrorBoundary>
+        </div>
       )}
 
 

@@ -1,6 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Assignment, Submission } from '../../types';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle, LayoutGrid, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle, LayoutGrid, List, Building2 } from 'lucide-react';
+import {
+  DISTRICT_EVENTS_2025_2026,
+  getDistrictEventsForDate,
+  toLocalDateStr,
+  CATEGORY_META,
+  type DistrictCalendarEvent,
+} from '../../lib/districtCalendar';
 
 interface CalendarViewProps {
   assignments: Assignment[];
@@ -15,6 +22,7 @@ interface DayData {
   isCurrentMonth: boolean;
   isToday: boolean;
   assignments: (Assignment & { isOverdue: boolean; isCompleted: boolean; classColor: string })[];
+  districtEvents: DistrictCalendarEvent[];
 }
 
 type ViewMode = 'month' | 'week';
@@ -61,13 +69,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
     // Previous month padding
     for (let i = firstDay - 1; i >= 0; i--) {
       const date = new Date(year, month - 1, daysInPrevMonth - i);
-      days.push({ date, isCurrentMonth: false, isToday: false, assignments: [] });
+      days.push({ date, isCurrentMonth: false, isToday: false, assignments: [], districtEvents: [] });
     }
 
     // Current month
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = toLocalDateStr(date);
       const isToday = date.toDateString() === today.toDateString();
 
       const dayAssignments = classAssignments
@@ -80,14 +88,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           return { ...a, isCompleted, isOverdue, classColor };
         });
 
-      days.push({ date, isCurrentMonth: true, isToday, assignments: dayAssignments });
+      days.push({ date, isCurrentMonth: true, isToday, assignments: dayAssignments, districtEvents: getDistrictEventsForDate(dateStr) });
     }
 
     // Next month padding to fill 6 rows
     const remaining = 42 - days.length;
     for (let i = 1; i <= remaining; i++) {
       const date = new Date(year, month + 1, i);
-      days.push({ date, isCurrentMonth: false, isToday: false, assignments: [] });
+      days.push({ date, isCurrentMonth: false, isToday: false, assignments: [], districtEvents: [] });
     }
 
     return days;
@@ -102,7 +110,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = toLocalDateStr(date);
       const isToday = date.toDateString() === today.toDateString();
       const dayAssignments = classAssignments
         .filter(a => a.dueDate && a.dueDate.split('T')[0] === dateStr)
@@ -113,7 +121,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           const classColor = getClassColor(a.classType || activeClass, allEnrolled);
           return { ...a, isCompleted, isOverdue, classColor };
         });
-      days.push({ date, isCurrentMonth: true, isToday, assignments: dayAssignments });
+      days.push({ date, isCurrentMonth: true, isToday, assignments: dayAssignments, districtEvents: getDistrictEventsForDate(dateStr) });
     }
     return days;
   }, [viewDate, classAssignments, submissions, today, activeClass, allEnrolled]);
@@ -126,6 +134,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
     setViewDate(viewMode === 'month' ? new Date(today.getFullYear(), today.getMonth(), 1) : new Date());
     setSelectedDay(null);
   };
+
+  // Upcoming district events (next 30 days)
+  const upcomingDistrict = useMemo(() => {
+    const todayStr = toLocalDateStr(today);
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() + 30);
+    const cutoffStr = toLocalDateStr(cutoff);
+    return DISTRICT_EVENTS_2025_2026
+      .filter(e => e.startDate >= todayStr && e.startDate <= cutoffStr)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+      .slice(0, 5);
+  }, [today]);
 
   // Upcoming due dates
   const upcoming = useMemo(() => {
@@ -218,23 +238,26 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
               <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map((day, i) => {
                   const hasAssignments = day.assignments.length > 0;
+                  const hasDistrict = day.districtEvents.length > 0;
+                  const isInteractive = hasAssignments || hasDistrict;
                   const isSelected = selectedDay?.date.toDateString() === day.date.toDateString();
 
                   return (
                     <button
                       key={i}
-                      onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
+                      onClick={() => isInteractive ? setSelectedDay(day) : setSelectedDay(null)}
                       className={`
                         relative min-h-[48px] p-1 rounded-lg text-center transition text-xs
                         ${day.isCurrentMonth ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}
                         ${day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''}
                         ${isSelected ? 'bg-[var(--surface-glass-heavy)] ring-1 ring-[var(--border-strong)]' : ''}
-                        ${hasAssignments ? 'hover:bg-[var(--surface-glass)] cursor-pointer' : 'cursor-default'}
+                        ${isInteractive ? 'hover:bg-[var(--surface-glass)] cursor-pointer' : 'cursor-default'}
                       `}
                     >
                       <span className={`text-[11px] font-bold ${day.isToday ? 'text-purple-600 dark:text-purple-400' : ''}`}>
                         {day.date.getDate()}
                       </span>
+                      {/* Assignment dots */}
                       {hasAssignments && (
                         <div className="flex justify-center gap-0.5 mt-0.5">
                           {day.assignments.slice(0, 3).map((a, j) => (
@@ -251,6 +274,20 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                           )}
                         </div>
                       )}
+                      {/* District event dots — square to distinguish from assignment dots */}
+                      {hasDistrict && (
+                        <div className="flex justify-center gap-0.5 mt-0.5">
+                          {day.districtEvents.slice(0, 3).map((e, j) => (
+                            <div
+                              key={j}
+                              className={`w-1.5 h-1.5 rounded-sm ${CATEGORY_META[e.category].dot}`}
+                            />
+                          ))}
+                          {day.districtEvents.length > 3 && (
+                            <span className="text-[8px] text-[var(--text-muted)]">+{day.districtEvents.length - 3}</span>
+                          )}
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -261,33 +298,38 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
             <div className="space-y-1">
               {weekDays.map((day, i) => {
                 const hasAssignments = day.assignments.length > 0;
+                const hasDistrict = day.districtEvents.length > 0;
+                const isInteractive = hasAssignments || hasDistrict;
                 const isSelected = selectedDay?.date.toDateString() === day.date.toDateString();
                 return (
                   <button
                     key={i}
-                    onClick={() => hasAssignments ? setSelectedDay(day) : setSelectedDay(null)}
+                    onClick={() => isInteractive ? setSelectedDay(day) : setSelectedDay(null)}
                     className={`w-full flex items-center gap-4 p-3 rounded-xl text-left transition ${
                       day.isToday ? 'ring-1 ring-purple-500/50 bg-purple-500/10' : ''
-                    } ${isSelected ? 'bg-[var(--surface-glass-heavy)] ring-1 ring-[var(--border-strong)]' : ''} ${hasAssignments ? 'hover:bg-[var(--surface-glass)]' : ''}`}
+                    } ${isSelected ? 'bg-[var(--surface-glass-heavy)] ring-1 ring-[var(--border-strong)]' : ''} ${isInteractive ? 'hover:bg-[var(--surface-glass)]' : ''}`}
                   >
                     <div className="w-14 text-center">
                       <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase">{WEEKDAYS[day.date.getDay()]}</div>
                       <div className={`text-lg font-bold ${day.isToday ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-secondary)]'}`}>{day.date.getDate()}</div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      {hasAssignments ? (
-                        <div className="space-y-1">
-                          {day.assignments.map(a => (
-                            <div key={a.id} className="flex items-center gap-2 text-xs">
-                              <div className={`w-2 h-2 rounded-full shrink-0 ${a.isCompleted ? 'bg-emerald-400' : a.isOverdue ? 'bg-red-400' : a.classColor}`} />
-                              <span className={`truncate ${a.isCompleted ? 'text-[var(--text-muted)] line-through' : a.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-secondary)]'}`}>
-                                {a.title}
-                              </span>
-                            </div>
-                          ))}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {hasAssignments && day.assignments.map(a => (
+                        <div key={a.id} className="flex items-center gap-2 text-xs">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${a.isCompleted ? 'bg-emerald-400' : a.isOverdue ? 'bg-red-400' : a.classColor}`} />
+                          <span className={`truncate ${a.isCompleted ? 'text-[var(--text-muted)] line-through' : a.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-secondary)]'}`}>
+                            {a.title}
+                          </span>
                         </div>
-                      ) : (
-                        <span className="text-xs text-[var(--text-muted)] italic">No assignments due</span>
+                      ))}
+                      {hasDistrict && day.districtEvents.map(e => (
+                        <div key={e.id} className="flex items-center gap-2 text-xs">
+                          <div className={`w-2 h-2 rounded-sm shrink-0 ${CATEGORY_META[e.category].dot}`} />
+                          <span className="truncate text-[var(--text-muted)]">{e.title}</span>
+                        </div>
+                      ))}
+                      {!hasAssignments && !hasDistrict && (
+                        <span className="text-xs text-[var(--text-muted)] italic">No events</span>
                       )}
                     </div>
                   </button>
@@ -297,7 +339,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
           )}
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--border)]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-[var(--border)]">
             <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-muted)]">
               <div className={`w-2 h-2 rounded-full ${getClassColor(activeClass, allEnrolled)}`} /> {activeClass}
             </div>
@@ -307,18 +349,22 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
             <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-muted)]">
               <div className="w-2 h-2 rounded-full bg-red-400" /> Overdue
             </div>
+            <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-muted)]">
+              <div className="w-2 h-2 rounded-sm bg-green-500" /> District
+            </div>
           </div>
         </div>
 
         {/* ─── Side Panel ─── */}
         <div className="space-y-4">
           {/* Selected day details */}
-          {selectedDay && selectedDay.assignments.length > 0 && (
+          {selectedDay && (selectedDay.assignments.length > 0 || selectedDay.districtEvents.length > 0) && (
             <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
               <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3">
                 {MONTHS[selectedDay.date.getMonth()]} {selectedDay.date.getDate()}
               </h4>
               <div className="space-y-2">
+                {/* Assignment items */}
                 {selectedDay.assignments.map(a => (
                   <button
                     key={a.id}
@@ -341,6 +387,26 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
                       </div>
                     </div>
                   </button>
+                ))}
+                {/* District event items */}
+                {selectedDay.districtEvents.map(e => (
+                  <div
+                    key={e.id}
+                    className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Building2 className="w-4 h-4 text-[var(--text-muted)] shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="text-sm text-[var(--text-secondary)] font-medium truncate">{e.title}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${CATEGORY_META[e.category].chip}`}>
+                            {CATEGORY_META[e.category].label}
+                          </span>
+                          {e.time && <span className="text-[11px] text-[var(--text-muted)]">{e.time}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -387,6 +453,33 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
               </div>
             )}
           </div>
+
+          {/* Upcoming district events */}
+          {upcomingDistrict.length > 0 && (
+            <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
+              <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[var(--text-muted)]" />
+                District Events
+              </h4>
+              <div className="space-y-2">
+                {upcomingDistrict.map(e => {
+                  const [, mo, d] = e.startDate.split('-').map(Number);
+                  const dateLabel = e.endDate && e.endDate !== e.startDate
+                    ? `${MONTHS[mo - 1]} ${d}–${Number(e.endDate.split('-')[2])}`
+                    : `${MONTHS[mo - 1]} ${d}`;
+                  return (
+                    <div key={e.id} className="flex items-start gap-2">
+                      <div className={`w-2 h-2 rounded-sm shrink-0 mt-1 ${CATEGORY_META[e.category].dot}`} />
+                      <div className="min-w-0">
+                        <div className="text-xs text-[var(--text-secondary)] truncate">{e.title}</div>
+                        <div className="text-[11px] text-[var(--text-muted)]">{dateLabel}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Summary stats */}
           <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-4">
