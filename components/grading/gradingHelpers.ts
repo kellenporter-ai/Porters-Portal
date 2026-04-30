@@ -53,7 +53,7 @@ export const computeTotalTime = (sub: Submission): number => {
     const raw = Math.round((new Date(sub.submittedAt).getTime() - sub.metrics.startTime) / 1000);
     // Cap idle time at 1 hour to prevent absurd "755m idle" displays from left-open tabs
     const engagement = sub.metrics?.engagementTime || 0;
-    return Math.min(raw, engagement + 3600);
+    return Math.min(Math.max(0, raw), engagement + 3600);
   }
   return sub.metrics?.engagementTime || 0;
 };

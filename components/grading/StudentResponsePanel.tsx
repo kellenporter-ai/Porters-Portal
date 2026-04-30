@@ -440,7 +440,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   const awayEvents = (sub.metrics?.tabSwitchCount || 0) + (sub.metrics?.blurCount || 0);
   const activeTime = sub.metrics?.engagementTime || 0;
   const totalTime = computeTotalTime(sub);
-  const serverElapsed = sub.metrics?.serverElapsedSec || totalTime;
+  const serverElapsed = sub.metrics?.serverElapsedSec ?? totalTime;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">

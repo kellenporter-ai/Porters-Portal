@@ -277,11 +277,15 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       }
       if (block.type === "DATA_TABLE" && responses[block.id]) {
         const resp = responses[block.id] as Record<string, unknown>;
-        const rows = (resp.data || []) as Array<Record<string, string>>;
-        for (const row of rows) {
-          for (const val of Object.values(row)) {
-            if (typeof val === "string" && val.trim().length > 0) {
-              totalWordCount += val.trim().split(/\s+/).length;
+        const rows = resp.data;
+        if (Array.isArray(rows)) {
+          for (const row of rows) {
+            if (row && typeof row === "object") {
+              for (const val of Object.values(row)) {
+                if (typeof val === "string" && val.trim().length > 0) {
+                  totalWordCount += val.trim().split(/\s+/).length;
+                }
+              }
             }
           }
         }
@@ -646,11 +650,15 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     }
     if (block.type === "DATA_TABLE" && responses[block.id]) {
       const resp = responses[block.id] as Record<string, unknown>;
-      const rows = (resp.data || []) as Array<Record<string, string>>;
-      for (const row of rows) {
-        for (const val of Object.values(row)) {
-          if (typeof val === "string" && val.trim().length > 0) {
-            totalWordCount += val.trim().split(/\s+/).length;
+      const rows = resp.data;
+      if (Array.isArray(rows)) {
+        for (const row of rows) {
+          if (row && typeof row === "object") {
+            for (const val of Object.values(row)) {
+              if (typeof val === "string" && val.trim().length > 0) {
+                totalWordCount += val.trim().split(/\s+/).length;
+              }
+            }
           }
         }
       }

@@ -239,8 +239,10 @@ service cloud.firestore {
       // resource == null handles getDoc() on non-existent docs (first visit)
       allow read: if isAuthenticated() &&
         (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
-      // Students can only write docs with whitelisted keys. This prevents metricsSnapshot
-      // poisoning that would affect submitOnBehalf integrity checks.
+      // Students can only write whitelisted top-level keys. Note: this does NOT
+      // enforce deep validation of nested objects (e.g. metricsSnapshot fields).
+      // Server-side caps in calculateFeedbackServerSide are the authoritative
+      // defense against metricsSnapshot poisoning for submitOnBehalf.
       allow create: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.keys().hasOnly([

@@ -183,6 +183,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const keystrokeTimesRef = useRef<number[]>([]);
   const [sessionTokenError, setSessionTokenError] = useState<string | null>(null);
   const [assistiveTech, setAssistiveTech] = useState(false);
+  const assistiveTechRef = useRef(false);
 
   // Start assessment session and obtain server-issued token
   useEffect(() => {
@@ -259,13 +260,17 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (parsed && typeof parsed === 'object') {
             metricsRef.current = {
               ...createInitialMetrics(),
-              ...parsed,
+              ...parsed.metrics,
               // Preserve original startTime so server elapsed is accurate
-              startTime: parsed.startTime || metricsRef.current.startTime,
+              startTime: parsed.metrics?.startTime || metricsRef.current.startTime,
             };
             setDisplayTime(metricsRef.current.engagementTime);
             setTabSwitchCount(metricsRef.current.tabSwitchCount || 0);
             setBlurCount(metricsRef.current.blurCount || 0);
+            if (parsed.assistiveTech) {
+              setAssistiveTech(true);
+              assistiveTechRef.current = true;
+            }
           }
         } catch {
           // Ignore corrupt sessionStorage
@@ -740,7 +745,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           typingCadence: m.typingCadence || {},
           wordCount: m.wordCount || 0,
           wordsPerSecond: m.wordsPerSecond || 0,
-          assistiveTech,
+          assistiveTech: assistiveTechRef.current,
         },
       }).then(() => {
         metricsFailCountRef.current = 0;
@@ -759,7 +764,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         // Also persist to sessionStorage for crash/refresh recovery
         const metricsKey = `assessment_metrics_${assignmentId}`;
         try {
-          sessionStorage.setItem(metricsKey, JSON.stringify(metricsRef.current));
+          sessionStorage.setItem(metricsKey, JSON.stringify({
+            metrics: metricsRef.current,
+            assistiveTech: assistiveTechRef.current,
+          }));
         } catch {
           // sessionStorage may be full — non-critical
         }
@@ -774,7 +782,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     const handleBeforeUnload = () => {
       const metricsKey = `assessment_metrics_${assignmentId}`;
       try {
-        sessionStorage.setItem(metricsKey, JSON.stringify(metricsRef.current));
+        sessionStorage.setItem(metricsKey, JSON.stringify({
+          metrics: metricsRef.current,
+          assistiveTech: assistiveTechRef.current,
+        }));
       } catch {
         // Ignore
       }
@@ -803,7 +814,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         // Flush pending save before reading responses
         flushNow();
         return {
-          metrics: { ...metricsRef.current, assistiveTech },
+          metrics: { ...metricsRef.current, assistiveTech: assistiveTechRef.current },
           responses: { ...getResponses() },
         };
       };
@@ -1302,16 +1313,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
                 {isAssessment && (
-                    <label className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-2.5 py-1 rounded-full border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-glass-heavy)] transition">
-                        <input
-                            type="checkbox"
-                            checked={assistiveTech}
-                            onChange={(e) => setAssistiveTech(e.target.checked)}
-                            className="w-3 h-3 accent-purple-600"
-                            title="Check if you used dictation, voice typing, or assistive technology"
-                        />
-                        <span title="Check if you used dictation, voice typing, or assistive technology">Assistive Tech</span>
-                    </label>
+                    <div className="flex items-center gap-1.5">
+                        <label className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-2.5 py-1 rounded-full border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-glass-heavy)] transition">
+                            <input
+                                type="checkbox"
+                                checked={assistiveTech}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setAssistiveTech(checked);
+                                  assistiveTechRef.current = checked;
+                                }}
+                                className="w-4 h-4 accent-purple-600"
+                                aria-describedby="assistive-tech-helper"
+                            />
+                            <span>Assistive Technology</span>
+                        </label>
+                        <span id="assistive-tech-helper" className="sr-only">
+                            Check this box if you used dictation, voice typing, screen reader, or other assistive technology.
+                            This prevents false integrity flags on your submission.
+                        </span>
+                    </div>
                 )}
             </div>
         </div>
