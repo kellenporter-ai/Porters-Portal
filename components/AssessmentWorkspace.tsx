@@ -571,6 +571,66 @@ const FeedbackPanel: React.FC<{ rubricGrade: Submission['rubricGrade'] | null }>
   );
 };
 
+// ---------- HTML Activity Work Card ----------
+
+interface HtmlActivityWorkCardProps {
+  state: unknown;
+  contentUrl: string;
+  renderStatusBadge: (blockId: string) => React.ReactNode;
+}
+
+const HtmlActivityWorkCard: React.FC<HtmlActivityWorkCardProps> = ({ state, contentUrl, renderStatusBadge }) => {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.source !== iframe.contentWindow) return;
+      const data = e.data;
+      if (data?.type === 'html-activity-ready') {
+        setReady(true);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  React.useEffect(() => {
+    if (!ready) return;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    // Send saved state and set read-only
+    iframe.contentWindow.postMessage(
+      { type: 'portal-init', payload: { savedState: state || null, readOnly: true } },
+      '*'
+    );
+    iframe.contentWindow.postMessage(
+      { type: 'portal-set-readonly', readOnly: true },
+      '*'
+    );
+  }, [ready, state]);
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] p-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">HTML Activity</h3>
+        {renderStatusBadge('__htmlActivity')}
+      </div>
+      <iframe
+        ref={iframeRef}
+        src={contentUrl}
+        className="w-full h-[400px] rounded-lg border border-[var(--border)] bg-white"
+        title="HTML Activity Preview"
+        sandbox="allow-scripts allow-same-origin"
+      />
+    </div>
+  );
+};
+
 // ---------- My Work Panel ----------
 
 interface MyWorkPanelProps {
@@ -808,18 +868,11 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
       })}
 
       {!!blockResponses['__htmlActivity'] && contentUrl && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">HTML Activity</h3>
-            {renderStatusBadge('__htmlActivity')}
-          </div>
-          <iframe
-            src={contentUrl}
-            className="w-full h-[400px] rounded-lg border border-[var(--border)] bg-white"
-            title="HTML Activity Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
-        </div>
+        <HtmlActivityWorkCard
+          state={blockResponses['__htmlActivity']}
+          contentUrl={contentUrl}
+          renderStatusBadge={renderStatusBadge}
+        />
       )}
 
       {orphanIds.map((id) => {
