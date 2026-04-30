@@ -126,12 +126,15 @@ export function usePersistentSave({
     // Immediate synchronous localStorage write — closes the debounce gap
     // where data only exists in JS memory
     if (lsKey && userId && assignmentId) {
-      writeDraft(lsKey, {
+      const draftData: Record<string, unknown> = {
         userId,
         assignmentId,
         responses: responsesRef.current,
         lastUpdated: new Date().toISOString(),
-      }, true);
+      };
+      const token = sessionTokenRef.current;
+      if (token) draftData.sessionToken = token;
+      writeDraft(lsKey, draftData, true);
     }
     scheduleSave();
   }, [disabled, scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
