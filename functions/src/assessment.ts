@@ -69,6 +69,12 @@ function gradeAssessmentBlocks(
     }
   }
 
+  // HTML activity responses (iframe-embedded simulations without lesson blocks)
+  if (responses['__htmlActivity']) {
+    perBlock['__htmlActivity'] = { correct: false, answer: responses['__htmlActivity'], needsReview: true };
+    total++;
+  }
+
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
   return { correct, total, percentage, perBlock };
 }
@@ -317,6 +323,15 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         }
       }
     }
+    // Word count from HTML activity explanation text
+    if (responses['__htmlActivity']) {
+      const htmlResp = responses['__htmlActivity'] as Record<string, unknown>;
+      const explanation = typeof htmlResp.explanation === 'string' ? htmlResp.explanation.trim() : '';
+      if (explanation.length > 0) {
+        totalWordCount += explanation.split(/\s+/).length;
+      }
+    }
+
     const wordsPerSecond = validatedEngagement > 0 ? Math.round((totalWordCount / validatedEngagement) * 100) / 100 : 0;
 
     // 5c. Calculate telemetry status
@@ -719,6 +734,15 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
       }
     }
   }
+  // Word count from HTML activity explanation text
+  if (responses['__htmlActivity']) {
+    const htmlResp = responses['__htmlActivity'] as Record<string, unknown>;
+    const explanation = typeof htmlResp.explanation === 'string' ? htmlResp.explanation.trim() : '';
+    if (explanation.length > 0) {
+      totalWordCount += explanation.split(/\s+/).length;
+    }
+  }
+
   const metricsEngagement = snap ? (Number(snap.engagementTime) || 0) : elapsed;
   const wordsPerSecond = metricsEngagement > 0 ? Math.round((totalWordCount / metricsEngagement) * 100) / 100 : 0;
 

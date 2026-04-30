@@ -431,6 +431,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
               assessmentResult={assessmentResult}
               isRetaking={isRetaking}
               onReviewWork={onReviewWork}
+              contentUrl={activeAssignment.contentUrl}
             />
           )}
         </div>
@@ -578,6 +579,7 @@ interface MyWorkPanelProps {
   assessmentResult: NonNullable<AssessmentWorkspaceProps['assessmentResult']>;
   isRetaking?: boolean;
   onReviewWork: () => void;
+  contentUrl?: string | null;
 }
 
 /** Which block types are interactive (have student responses). */
@@ -592,6 +594,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   assessmentResult,
   isRetaking,
   onReviewWork,
+  contentUrl,
 }) => {
   const blockResponses = existingSubmission?.blockResponses;
   const submissionId = existingSubmission?.id;
@@ -677,7 +680,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
 
   // Fallback: if lessonBlocks don't cover all response keys, include orphans at the end
   const coveredIds = new Set(interactiveBlocks.map((b) => b.id));
-  const orphanIds = Object.keys(blockResponses).filter((id) => !coveredIds.has(id));
+  const orphanIds = Object.keys(blockResponses).filter((id) => !coveredIds.has(id) && id !== '__htmlActivity');
 
   const formatResponse = (value: unknown): string => {
     if (value === null || value === undefined) return '—';
@@ -803,6 +806,21 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
         const questionText = block.content || null;
         return renderCard(block.id, label, questionText);
       })}
+
+      {!!blockResponses['__htmlActivity'] && contentUrl && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">HTML Activity</h3>
+            {renderStatusBadge('__htmlActivity')}
+          </div>
+          <iframe
+            src={contentUrl}
+            className="w-full h-[400px] rounded-lg border border-[var(--border)] bg-white"
+            title="HTML Activity Preview"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
+      )}
 
       {orphanIds.map((id) => {
         questionIndex++;

@@ -130,6 +130,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const iframeWrapperRef = useRef<HTMLDivElement>(null);
   const awardedQuestionsRef = useRef<Set<string>>(new Set());
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
+  const htmlActivityStateRef = useRef<unknown>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [focusMode, setFocusMode] = useState<'balanced' | 'simulation' | 'lessons'>('balanced');
   const [ttsText, setTtsText] = useState('');
@@ -887,7 +888,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
       const targetOrigin = event.origin;
       const data = event.data;
-      if (!data || typeof data !== 'object' || !data.type?.startsWith('portal-')) return;
+      if (!data || typeof data !== 'object') return;
+      const isPortalMsg = data.type?.startsWith('portal-');
+      const isHtmlActivityMsg = data.type?.startsWith('html-activity-');
+      if (!isPortalMsg && !isHtmlActivityMsg) return;
 
       handleInteraction();
 
@@ -1147,6 +1151,30 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               payload: { questionId, awarded: false, xp: 0 }
             }, targetOrigin);
           }
+          break;
+        }
+
+        case 'html-activity-ready': {
+          const savedState = getResponses()['__htmlActivity'] || null;
+          iframe.contentWindow?.postMessage({
+            type: 'portal-init',
+            state: savedState,
+            readOnly: previewMode || false,
+          }, targetOrigin);
+          break;
+        }
+
+        case 'html-activity-state': {
+          const state = data.state ?? data.payload?.state ?? null;
+          if (state) {
+            htmlActivityStateRef.current = state;
+            hookUpdateResponse('__htmlActivity', state);
+          }
+          break;
+        }
+
+        case 'portal-interaction': {
+          // Telemetry heartbeat from iframe — engagement timer already updated via handleInteraction() above
           break;
         }
       }

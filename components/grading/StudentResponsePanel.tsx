@@ -34,6 +34,49 @@ interface StudentResponsePanelProps {
 
 const INTERACTIVE_BLOCK_TYPES = ['MC', 'SHORT_ANSWER', 'RANKING', 'SORTING', 'LINKED', 'DRAWING', 'MATH_RESPONSE', 'BAR_CHART'];
 
+function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; contentUrl: string }) {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !loaded) return;
+
+    const handleReady = (e: MessageEvent) => {
+      if (e.source !== iframe.contentWindow) return;
+      const data = e.data;
+      if (data?.type === 'html-activity-ready') {
+        iframe.contentWindow?.postMessage(
+          { type: 'portal-init', state: state || null, readOnly: true },
+          '*'
+        );
+      }
+    };
+
+    window.addEventListener('message', handleReady);
+    return () => window.removeEventListener('message', handleReady);
+  }, [loaded, state]);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Clock className="w-4 h-4 text-amber-500" aria-hidden="true" />
+        <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">HTML Activity — Pending Review</span>
+      </div>
+      <div className="rounded-lg border border-amber-500/20 bg-amber-900/5 overflow-hidden">
+        <iframe
+          ref={iframeRef}
+          src={contentUrl}
+          className="w-full h-[500px] border-0"
+          title="Student HTML Activity"
+          onLoad={() => setLoaded(true)}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </div>
+    </div>
+  );
+}
+
 function renderBlockQuestion(content: string): React.ReactNode {
   if (content.length <= 200) return content;
   return (
@@ -568,6 +611,14 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
             </div>
           </div>
         )}
+        {/* HTML Activity Response (iframe-embedded simulation) */}
+        {!!sub.blockResponses?.__htmlActivity && selectedAssessment?.contentUrl && (
+          <HtmlActivityResponsePanel
+            state={sub.blockResponses.__htmlActivity}
+            contentUrl={selectedAssessment.contentUrl}
+          />
+        )}
+
         {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
           <div className="space-y-2">
             {selectedAssessment.lessonBlocks
