@@ -49,8 +49,9 @@ export const getAwayEventColor = (count: number): string =>
   count > 5 ? 'text-red-600 dark:text-red-400' : count >= 3 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400';
 
 export const computeTotalTime = (sub: Submission): number => {
-  if (sub.submittedAt && sub.metrics?.startTime) {
-    const raw = Math.round((new Date(sub.submittedAt).getTime() - sub.metrics.startTime) / 1000);
+  const start = sub.metrics?.firstInteractionTime || sub.metrics?.startTime;
+  if (sub.submittedAt && start) {
+    const raw = Math.round((new Date(sub.submittedAt).getTime() - start) / 1000);
     // Cap idle time at 1 hour to prevent absurd "755m idle" displays from left-open tabs
     const engagement = sub.metrics?.engagementTime || 0;
     return Math.min(Math.max(0, raw), engagement + 3600);

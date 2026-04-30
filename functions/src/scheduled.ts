@@ -259,6 +259,7 @@ export const dailyAnalysis = onSchedule(
         avgPasteRatio: number;
         activityDays: number;
         schoolActivityDays?: number;
+        schoolDaysInWindow7?: number;
         minutesPerSchoolDay?: number;
       };
       recommendation: {
@@ -420,6 +421,7 @@ export const dailyAnalysis = onSchedule(
             avgPasteRatio: Math.round(pasteRatio * 100) / 100,
             activityDays: days,
             schoolActivityDays: schoolDays,
+            schoolDaysInWindow7,
             minutesPerSchoolDay: Math.round(minutesPerSchoolDay * 10) / 10,
           },
           recommendation: recMap[bucket] || recMap.ON_TRACK,

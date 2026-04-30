@@ -152,6 +152,7 @@ export interface TelemetryMetrics {
   autoInsertCount?: number;  // Grammarly, mobile auto-suggest, dictation, IME composition
   blurCount?: number;        // window blur events (focus left browser)
   startTime: number;
+  firstInteractionTime?: number; // Timestamp of first user interaction (more accurate than page-load startTime)
   lastActive: number;
   // Assessment-specific telemetry
   tabSwitchCount?: number;
@@ -1372,6 +1373,7 @@ export interface StudentBucketProfile {
     avgPasteRatio: number;            // pastes / (keystrokes + pastes), 0-1
     activityDays: number;             // Number of distinct days with activity (0-7)
     schoolActivityDays?: number;      // Distinct school days with activity in window
+    schoolDaysInWindow7?: number;     // Actual school days in the analysis window
     minutesPerSchoolDay?: number;     // totalTime (min) / schoolDaysInWindow7
   };
   recommendation: BucketRecommendation;

@@ -248,7 +248,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[var(--text-tertiary)] mb-3">
                   <span>ES: {bp.engagementScore}</span>
                   <span>Subs: {bp.metrics.submissionCount}</span>
-                  <span>Days Active: {bp.metrics.activityDays}/7</span>
+                  <span>Days Active: {bp.metrics.activityDays}/{bp.metrics.schoolDaysInWindow7 ?? 7}</span>
                   <span>Paste Ratio: {Math.round(bp.metrics.avgPasteRatio * 100)}%</span>
                   <span>Time: {Math.round(bp.metrics.totalTime / 60)}m</span>
                 </div>

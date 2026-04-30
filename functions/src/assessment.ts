@@ -240,7 +240,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
 
     // 5a. Server-side elapsed time validation
     const serverNow = Date.now();
-    const effectiveStartTime = sessionStartedAt || metrics.startTime || serverNow;
+    const effectiveStartTime = sessionStartedAt || metrics.firstInteractionTime || metrics.startTime || serverNow;
     const serverElapsedSec = Math.max(0, (serverNow - effectiveStartTime) / 1000);
     // Use the lesser of client-reported engagement and server-computed elapsed time.
     const validatedEngagement = metrics.engagementTime > 0
@@ -369,6 +369,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         clickCount: metrics.clickCount || 0,
         autoInsertCount: metrics.autoInsertCount || 0,
         startTime: metrics.startTime || 0,
+        firstInteractionTime: metrics.firstInteractionTime || 0,
         lastActive: metrics.lastActive || 0,
         tabSwitchCount: metrics.tabSwitchCount || 0,
         perBlockTiming: metrics.perBlockTiming || {},
@@ -725,6 +726,7 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
       clickCount: snap.clickCount || 0,
       autoInsertCount: snap.autoInsertCount || 0,
       startTime: snap.startTime || sessionStartedAt || serverNow,
+      firstInteractionTime: snap.firstInteractionTime || snap.startTime || sessionStartedAt || serverNow,
       lastActive: snap.lastActive || serverNow,
       tabSwitchCount: snap.tabSwitchCount || 0,
       perBlockTiming: snap.perBlockTiming || {},
@@ -739,6 +741,7 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
       pasteCount: 0,
       clickCount: 0,
       startTime: sessionStartedAt || serverNow,
+      firstInteractionTime: sessionStartedAt || serverNow,
       lastActive: serverNow,
       tabSwitchCount: 0,
       perBlockTiming: {},

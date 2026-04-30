@@ -331,7 +331,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">Active days</span>
-                <span className="text-[var(--text-secondary)] font-mono">{bucketInfo.metrics.activityDays}/7</span>
+                <span className="text-[var(--text-secondary)] font-mono">{bucketInfo.metrics.activityDays}/{bucketInfo.metrics.schoolDaysInWindow7 ?? 7}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">Keystrokes</span>

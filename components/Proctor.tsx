@@ -184,6 +184,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const [sessionTokenError, setSessionTokenError] = useState<string | null>(null);
   const [assistiveTech, setAssistiveTech] = useState(false);
   const assistiveTechRef = useRef(false);
+  const firstInteractionRef = useRef<number | null>(null);
 
   // Start assessment session and obtain server-issued token
   useEffect(() => {
@@ -562,6 +563,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   const handleInteraction = useCallback(() => {
       lastInteractionRef.current = Date.now();
+      if (!firstInteractionRef.current) {
+        firstInteractionRef.current = Date.now();
+        metricsRef.current.firstInteractionTime = Date.now();
+      }
       if (!isActiveRef.current) {
         isActiveRef.current = true;
         setIsActive(true);
@@ -663,9 +668,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     }
   }, [userId, assignmentId, classType, handleInteraction, previewMode]);
 
-  // Session Timer — uses refs to avoid dependency churn
+  // Session Timer — pauses when tab is hidden to avoid inflating engagement during tab-away
   useEffect(() => {
       const interval = setInterval(() => {
+          if (document.hidden) return;
           const now = Date.now();
           if (now - lastInteractionRef.current < 60000) {
               metricsRef.current.engagementTime += 1;
@@ -681,7 +687,18 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               }
           }
       }, 1000);
-      return () => clearInterval(interval);
+
+      const handleVisibility = () => {
+        if (!document.hidden) {
+          // Reset interaction baseline on return so timer resumes immediately
+          lastInteractionRef.current = Date.now();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
   }, []);
 
   // Large text insertion detection (catches paste bypasses that skip paste/beforeinput)
@@ -704,7 +721,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       window.addEventListener('input', handleInput as EventListener);
       window.addEventListener('click', handleClick);
       window.addEventListener('mousemove', throttledInteraction);
-      window.addEventListener('scroll', handleInteraction);
+      window.addEventListener('scroll', throttledInteraction);
       window.addEventListener('pointerdown', throttledInteraction);
       window.addEventListener('pointermove', throttledInteraction);
       return () => {
@@ -715,7 +732,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           window.removeEventListener('input', handleInput as EventListener);
           window.removeEventListener('click', handleClick);
           window.removeEventListener('mousemove', throttledInteraction);
-          window.removeEventListener('scroll', handleInteraction);
+          window.removeEventListener('scroll', throttledInteraction);
           window.removeEventListener('pointerdown', throttledInteraction);
           window.removeEventListener('pointermove', throttledInteraction);
       };
