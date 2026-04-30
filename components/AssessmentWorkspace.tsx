@@ -619,7 +619,7 @@ const HtmlActivityWorkCard: React.FC<HtmlActivityWorkCardProps> = ({ state, cont
       <iframe
         ref={iframeRef}
         src={contentUrl}
-        className="w-full h-[400px] rounded-lg border border-[var(--border)] bg-white"
+        className="w-full h-[600px] rounded-lg border border-[var(--border)] bg-white"
         title="HTML Activity Preview"
         sandbox="allow-scripts allow-same-origin"
       />
@@ -844,7 +844,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   let questionIndex = 0;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="max-w-6xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[var(--text-primary)]">My Work</h2>
         <button
