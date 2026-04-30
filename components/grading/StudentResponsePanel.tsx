@@ -488,7 +488,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
               <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-600 dark:text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}>{sub.metrics.wordsPerSecond.toFixed(2)} w/s</span>
             )}
             {sub.metrics?.assistiveTech && (
-              <span className="text-purple-600 dark:text-purple-400" title="Student self-reported assistive technology use">
+              <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 font-bold" title="Student self-reported assistive technology use — integrity flags were suppressed">
                 ♿ Assistive Tech
               </span>
             )}
@@ -533,8 +533,14 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                     {sub.feedback}
                   </p>
                 )}
+                <p className="text-[11px] text-amber-600 dark:text-amber-400/90 mt-1 bg-amber-500/10 rounded px-2 py-1 border border-amber-500/20">
+                  This is an automated triage signal, not proof of cheating. Always review the student&apos;s actual work and have a conversation before making a decision.
+                </p>
                 <p className="text-[11px] text-[var(--text-muted)] mt-1">
                   {sub.metrics?.keystrokes || 0} keystrokes · {sub.metrics?.pasteCount || 0} pastes · {sub.metrics?.wordCount || 0} words in {formatEngagementTime(sub.metrics?.engagementTime || 0)}
+                  {sub.metrics?.clientReportedEngagement != null && sub.metrics.clientReportedEngagement !== sub.metrics?.engagementTime && (
+                    <> · client reported {formatEngagementTime(sub.metrics.clientReportedEngagement)}</>
+                  )}
                 </p>
               </div>
             </div>

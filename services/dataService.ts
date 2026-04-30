@@ -918,8 +918,8 @@ export const dataService = {
       await callAwardXP({ targetUserId: userId, xpAmount: amount, classType });
   },
 
-  submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: TelemetryMetrics, classType: string) => {
-      const result = await callSubmitEngagement({ assignmentId, assignmentTitle, userName, metrics, classType });
+  submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: TelemetryMetrics, classType: string, sessionToken?: string) => {
+      const result = await callSubmitEngagement({ assignmentId, assignmentTitle, userName, metrics, classType, ...(sessionToken ? { sessionToken } : {}) });
       return result.data as { xpEarned: number; leveledUp: boolean; status: string };
   },
 

@@ -205,7 +205,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     if (a.isAssessment) return;
     if (metrics.engagementTime < 10) return;
     try {
-      await dataService.submitEngagement(u.id, u.name, a.id, a.title, metrics, a.classType);
+      await dataService.submitEngagement(u.id, u.name, a.id, a.title, metrics, a.classType, metrics.sessionToken);
     } catch (err) {
       reportError(err, { method: 'submitEngagement', assignmentId: a.id });
     }

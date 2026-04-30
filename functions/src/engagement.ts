@@ -30,19 +30,58 @@ function assertEnrolled(userData: Record<string, unknown>, classType: string): v
 }
 
 // ==========================================
+// START RESOURCE SESSION — Server-observed open timestamp
+// ==========================================
+// Lightweight session tracking for non-assessment resources.
+// Provides a server-observed startedAt for elapsed-time validation
+// and gates lesson_block_responses writes at the Firestore rules layer.
+export const startResourceSession = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const uid = verifyAuth(request.auth);
+  const { assignmentId } = request.data;
+  if (!assignmentId) {
+    throw new HttpsError("invalid-argument", "Missing assignmentId");
+  }
+
+  const db = admin.firestore();
+  const sessionId = `${uid}_${assignmentId}`;
+  const sessionRef = db.collection("resource_sessions").doc(sessionId);
+  const correlationId = generateCorrelationId();
+
+  // Reuse existing session (crash recovery / page refresh)
+  const existing = await sessionRef.get();
+  if (existing.exists) {
+    const data = existing.data()!;
+    const startedAt = data.startedAt?.toMillis?.() || Number(data.startedAt) || Date.now();
+    logWithCorrelation("info", "startResourceSession: reused existing", correlationId, { uid, assignmentId });
+    return { sessionToken: sessionId, startedAt };
+  }
+
+  await sessionRef.set({
+    userId: uid,
+    assignmentId,
+    startedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  logWithCorrelation("info", "startResourceSession: created", correlationId, { uid, assignmentId });
+  return { sessionToken: sessionId, startedAt: Date.now() };
+});
+
+// ==========================================
 // SUBMIT ENGAGEMENT — Server-side XP calculation
 // ==========================================
 // Replaces client-side `minutes * 10` calculation.
 // Validates metrics, caps XP, prevents rapid re-submissions.
+// v2: adds server-elapsed clamping and assistiveTech context.
 export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
-  const { assignmentId, assignmentTitle, metrics, classType } = request.data;
+  const { assignmentId, assignmentTitle, metrics, classType, sessionToken } = request.data;
 
   if (!assignmentId || !metrics) {
     throw new HttpsError("invalid-argument", "Missing assignmentId or metrics.");
   }
 
   const correlationId = generateCorrelationId();
+  const db = admin.firestore();
 
   // Validate metrics are reasonable
   const engagementTime = Number(metrics.engagementTime) || 0;
@@ -51,17 +90,32 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   const clickCount = Number(metrics.clickCount) || 0;
   const tabSwitchCount = Number(metrics.tabSwitchCount) || 0;
 
+  // Server-side elapsed validation (v2)
+  let serverElapsedSec = 0;
+  if (sessionToken) {
+    const sessionSnap = await db.collection("resource_sessions").doc(sessionToken).get();
+    if (sessionSnap.exists) {
+      const startedAt = sessionSnap.data()!.startedAt;
+      const startedMs = startedAt?.toMillis?.() || Number(startedAt) || Date.now();
+      serverElapsedSec = Math.max(0, (Date.now() - startedMs) / 1000);
+    }
+  }
+
+  // Clamp engagementTime to server-elapsed + 5s when session available;
+  // fallback to hard bounds when client hasn't adopted session tokens yet.
+  const validatedEngagement = serverElapsedSec > 0
+    ? Math.min(engagementTime, serverElapsedSec + 5)
+    : Math.min(engagementTime, 14400);
+
   // Reject impossible values
-  if (engagementTime < 10) {
+  if (validatedEngagement < 10) {
     throw new HttpsError("invalid-argument", "Engagement too short.");
   }
-  if (engagementTime > 14400) {
-    // Cap at 4 hours — anything beyond is likely a tab left open
+  if (validatedEngagement > 14400) {
     throw new HttpsError("invalid-argument", "Engagement time exceeds maximum.");
   }
 
   // Calculate XP server-side — read per-class rate from config if available
-  const db = admin.firestore();
   let xpPerMinute = DEFAULT_XP_PER_MINUTE;
   let thresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
@@ -76,7 +130,7 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     }
   }
 
-  const minutes = engagementTime / 60;
+  const minutes = validatedEngagement / 60;
   const baseXP = Math.min(
     Math.round(minutes * xpPerMinute),
     MAX_XP_PER_SUBMISSION,
@@ -118,14 +172,18 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   }
 
   // Create submission
-  const validatedMetrics = { engagementTime, keystrokes, pasteCount, tabSwitchCount };
-  const { status: engagementStatus, feedback: engagementFeedback } = calculateFeedbackServerSide(validatedMetrics, thresholds);
+  const validatedMetrics = { engagementTime: validatedEngagement, keystrokes, pasteCount, tabSwitchCount };
+  const { status: engagementStatus, feedback: engagementFeedback } = calculateFeedbackServerSide(
+    validatedMetrics,
+    thresholds,
+    { assistiveTech: !!metrics.assistiveTech }
+  );
   const submission = {
     userId: uid,
     userName: request.data.userName || "Student",
     assignmentId,
     assignmentTitle: assignmentTitle || "",
-    metrics: { engagementTime, keystrokes, pasteCount, clickCount, tabSwitchCount, startTime: metrics.startTime || 0, lastActive: metrics.lastActive || 0 },
+    metrics: { engagementTime: validatedEngagement, clientReportedEngagement: metrics.engagementTime || 0, keystrokes, pasteCount, clickCount, tabSwitchCount, startTime: metrics.startTime || 0, lastActive: metrics.lastActive || 0 },
     submittedAt: new Date().toISOString(),
     status: engagementStatus,
     feedback: engagementFeedback,

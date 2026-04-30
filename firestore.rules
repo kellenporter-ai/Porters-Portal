@@ -231,10 +231,23 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // RESOURCE SESSIONS (Server-observed resource open timestamps)
+    // ==========================================
+    // Created by startResourceSession Cloud Function.
+    // Gates lesson_block_responses writes to prevent pre-fill vulnerabilities.
+    match /resource_sessions/{sessionId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create, update: if false; // Admin SDK / Cloud Functions only
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
     // LESSON BLOCK RESPONSES (Student input auto-save)
     // ==========================================
     // Saved by the parent app when students interact with lesson blocks.
     // Doc ID = userId_assignmentId_blocks.
+    // V2: Requires an active resource_sessions or assessment_sessions doc to prevent pre-fill.
     match /lesson_block_responses/{docId} {
       // resource == null handles getDoc() on non-existent docs (first visit)
       allow read: if isAuthenticated() &&
@@ -247,12 +260,20 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.keys().hasOnly([
           'userId', 'assignmentId', 'responses', 'lastUpdated',
-          'retakePreFilled', 'metricsSnapshot'
-        ]);
+          'retakePreFilled', 'metricsSnapshot', 'sessionToken'
+        ]) &&
+        (
+          exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + request.resource.data.assignmentId))
+          || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
+        );
       allow update: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid &&
+        resource.data.userId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot']);
+          .hasOnly(['responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot', 'sessionToken']) &&
+        (
+          exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + resource.data.assignmentId))
+          || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
+        );
       allow delete: if isAuthenticated() &&
         resource.data.userId == request.auth.uid;
     }

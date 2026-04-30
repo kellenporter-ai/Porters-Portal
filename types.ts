@@ -164,6 +164,8 @@ export interface TelemetryMetrics {
   wordsPerSecond?: number;
   assistiveTech?: boolean;   // Self-reported assistive technology use
   serverElapsedSec?: number; // Server-computed elapsed time (seconds)
+  sessionToken?: string;      // Resource or assessment session token for server elapsed validation
+  clientReportedEngagement?: number; // Original client-reported engagement time before server clamping
 }
 
 // RPG TYPES

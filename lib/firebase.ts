@@ -90,6 +90,7 @@ export const callDismissAlertsBatch = httpsCallable(functions, 'dismissAlertsBat
 export const callAdminGrantItem = httpsCallable(functions, 'adminGrantItem');
 export const callAdminEditItem = httpsCallable(functions, 'adminEditItem');
 export const callStartAssessmentSession = httpsCallable(functions, 'startAssessmentSession');
+export const callStartResourceSession = httpsCallable(functions, 'startResourceSession');
 export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment');
 
 // One-time admin utilities

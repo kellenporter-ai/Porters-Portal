@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
-import { db, callAwardQuestionXP, callStartAssessmentSession, callArchiveAndClearResponses } from '../lib/firebase';
+import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callArchiveAndClearResponses } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
@@ -238,6 +238,27 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAssessment, assignmentId]);
+
+  // Start resource session for non-assessments (server-observed elapsed time)
+  useEffect(() => {
+    if (previewMode || isAssessment || !assignmentId) return;
+
+    let cancelled = false;
+    const requestResourceSession = async () => {
+      try {
+        const result = await callStartResourceSession({ assignmentId });
+        const data = result.data as { sessionToken: string; startedAt: number };
+        if (cancelled) return;
+        metricsRef.current.sessionToken = data.sessionToken;
+      } catch (err: unknown) {
+        if (cancelled) return;
+        // Non-blocking: submission will fall back to hard bounds
+        reportError(err, { component: 'Proctor', context: 'Failed to start resource session' });
+      }
+    };
+    requestResourceSession();
+    return () => { cancelled = true; };
+  }, [isAssessment, assignmentId, previewMode]);
 
   // Load saved lesson block responses on mount
   // For ASSESSMENTS: always start fresh — clear any pre-existing saved responses to prevent
