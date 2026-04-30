@@ -244,7 +244,7 @@ export function calculateFeedbackServerSide(
   },
   thresholds: Partial<TelemetryThresholds> = {},
   context?: { responseCount?: number; hasWrittenResponses?: boolean; assistiveTech?: boolean }
-): { status: string; feedback: string } {
+): { status: string; feedback: string; assistiveTechOverrides?: string[] } {
   const safeMetrics = {
     pasteCount: guardNumber("pasteCount", metrics.pasteCount, 0),
     engagementTime: guardNumber("engagementTime", metrics.engagementTime, 0),
@@ -261,55 +261,149 @@ export function calculateFeedbackServerSide(
   safeMetrics.keystrokes = Math.min(safeMetrics.keystrokes, maxKeystrokes);
   safeMetrics.pasteCount = Math.min(safeMetrics.pasteCount, maxPasteCount);
 
-  // Assistive technology self-report suppresses false-positive flags
-  if (context?.assistiveTech) {
-    return { status: "NORMAL", feedback: "Assignment submitted successfully. (Assistive technology used — integrity flags suppressed.)" };
-  }
-
   const t = { ...DEFAULT_THRESHOLDS, ...thresholds };
-  if (safeMetrics.engagementTime < 30 && context?.hasWrittenResponses) {
-    return { status: "FLAGGED", feedback: "Impossibly fast submission: responses submitted with near-zero engagement time." };
-  }
-  if (context?.responseCount && context.responseCount > 0 && safeMetrics.engagementTime > 0) {
-    const secondsPerResponse = safeMetrics.engagementTime / context.responseCount;
-    if (secondsPerResponse < 5 && context.responseCount >= 2) {
-      return { status: "FLAGGED", feedback: "Implausible speed: average time per response too low for genuine work." };
+  const overrides: string[] = [];
+  const isAssistive = !!context?.assistiveTech;
+
+  // Helper: returns true if the check should be suppressed due to assistive tech
+  const maybeOverride = (checkName: string, wouldFlag: boolean): boolean => {
+    if (wouldFlag && isAssistive) {
+      overrides.push(checkName);
+      return true;
     }
-  }
-  if (safeMetrics.keystrokes === 0 && safeMetrics.pasteCount === 0 && context?.hasWrittenResponses) {
-    return { status: "FLAGGED", feedback: "No input activity detected despite non-empty responses — possible pre-fill or API exploit." };
-  }
-  if (safeMetrics.tabSwitchCount > 5) {
-    return { status: "FLAGGED", feedback: "Excessive tab switching during assessment." };
+    return false;
+  };
+
+  // ── CHECKS THAT ARE NEVER OVERRIDDEN ──
+  // These indicate behavior that assistive tech cannot explain
+
+  if (safeMetrics.wordsPerSecond > 3.0 && safeMetrics.keystrokes > 0) {
+    return { status: "FLAGGED", feedback: "Impossible typing speed detected — possible automated input or macro." };
   }
   if (safeMetrics.pasteCount > 15) {
     return { status: "FLAGGED", feedback: "Elevated paste count — student may be assembling an answer from multiple sources." };
   }
-  if (safeMetrics.pasteCount > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.pasteCount < 10) {
-    return { status: "FLAGGED", feedback: "High paste density — frequent small pastes detected." };
-  }
-  if (safeMetrics.wordsPerSecond > 3.0 && safeMetrics.keystrokes > 0) {
-    return { status: "FLAGGED", feedback: "Impossible typing speed detected — possible automated input or macro." };
-  }
-  if (safeMetrics.keystrokes === 0 && safeMetrics.wordCount > 20) {
-    return { status: "FLAGGED", feedback: "Text present with zero keystrokes — possible dictation, paste, or automated input." };
-  }
-  if (safeMetrics.autoInsertCount > 5 && safeMetrics.wordCount > 20 && safeMetrics.keystrokes < safeMetrics.wordCount * 3) {
-    return { status: "FLAGGED", feedback: "Heavy auto-insert/dictation detected — verify original work." };
-  }
-  if (safeMetrics.keystrokes > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.keystrokes > 0.5) {
-    return { status: "FLAGGED", feedback: "Word-to-keystroke ratio is implausibly high — possible paste or auto-insert." };
-  }
   if (safeMetrics.pasteCount > t.flagPasteCount && safeMetrics.engagementTime < t.flagMinEngagement) {
     return { status: "FLAGGED", feedback: "AI Usage Suspected: Abnormal frequency of pasted content detected." };
   }
+
+  // ── CHECKS THAT MAY BE OVERRIDDEN BY ASSISTIVE TECH ──
+
+  if (safeMetrics.engagementTime < 30 && context?.hasWrittenResponses) {
+    if (!maybeOverride("impossibly_fast", true)) {
+      return { status: "FLAGGED", feedback: "Impossibly fast submission: responses submitted with near-zero engagement time." };
+    }
+  }
+  if (context?.responseCount && context.responseCount > 0 && safeMetrics.engagementTime > 0) {
+    const secondsPerResponse = safeMetrics.engagementTime / context.responseCount;
+    if (secondsPerResponse < 5 && context.responseCount >= 2) {
+      if (!maybeOverride("implausible_speed", true)) {
+        return { status: "FLAGGED", feedback: "Implausible speed: average time per response too low for genuine work." };
+      }
+    }
+  }
+  if (safeMetrics.keystrokes === 0 && safeMetrics.pasteCount === 0 && context?.hasWrittenResponses) {
+    if (!maybeOverride("zero_input", true)) {
+      return { status: "FLAGGED", feedback: "No input activity detected despite non-empty responses — possible pre-fill or API exploit." };
+    }
+  }
+  if (safeMetrics.tabSwitchCount > 5) {
+    if (!maybeOverride("tab_switching", true)) {
+      return { status: "FLAGGED", feedback: "Excessive tab switching during assessment." };
+    }
+  }
+  if (safeMetrics.pasteCount > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.pasteCount < 10) {
+    if (!maybeOverride("paste_density", true)) {
+      return { status: "FLAGGED", feedback: "High paste density — frequent small pastes detected." };
+    }
+  }
+  if (safeMetrics.keystrokes === 0 && safeMetrics.wordCount > 20) {
+    if (!maybeOverride("zero_keystrokes", true)) {
+      return { status: "FLAGGED", feedback: "Text present with zero keystrokes — possible dictation, paste, or automated input." };
+    }
+  }
+  if (safeMetrics.autoInsertCount > 5 && safeMetrics.wordCount > 20 && safeMetrics.keystrokes < safeMetrics.wordCount * 3) {
+    if (!maybeOverride("auto_insert", true)) {
+      return { status: "FLAGGED", feedback: "Heavy auto-insert/dictation detected — verify original work." };
+    }
+  }
+  if (safeMetrics.keystrokes > 0 && safeMetrics.wordCount > 0 && safeMetrics.wordCount / safeMetrics.keystrokes > 0.5) {
+    if (!maybeOverride("word_keystroke_ratio", true)) {
+      return { status: "FLAGGED", feedback: "Word-to-keystroke ratio is implausibly high — possible paste or auto-insert." };
+    }
+  }
+
+  // ── SUPPORT / SUCCESS ──
   if (safeMetrics.keystrokes > t.supportKeystrokes && safeMetrics.engagementTime > t.supportMinEngagement) {
     return { status: "SUPPORT_NEEDED", feedback: "Student may be struggling — high effort with extended time." };
   }
   if (safeMetrics.pasteCount === 0 && safeMetrics.keystrokes > t.successMinKeystrokes) {
     return { status: "SUCCESS", feedback: "Excellent independent work." };
   }
+
+  if (overrides.length > 0) {
+    return {
+      status: "NORMAL",
+      feedback: `Assignment submitted successfully. (${overrides.length} integrity check${overrides.length > 1 ? 's' : ''} overridden due to reported assistive technology.)`,
+      assistiveTechOverrides: overrides,
+    };
+  }
   return { status: "NORMAL", feedback: "Assignment submitted successfully." };
+}
+
+/**
+ * Compute a server-side plausibility score (0-100) from authoritative facts only.
+ * Uses tamper-proof data: server elapsed time, word count, response count,
+ * and block save timestamps. A low score indicates physically impossible behavior.
+ */
+export function computePlausibilityScore(
+  serverElapsedSec: number,
+  wordCount: number,
+  responseCount: number,
+  blockSaveTimestamps?: number[]
+): { score: number; factors: string[] } {
+  let score = 100;
+  const factors: string[] = [];
+
+  // Factor 1: Words-per-second on elapsed time (not engagement)
+  // Even with dictation, 3 WPS is physically impossible
+  const wpsOnElapsed = serverElapsedSec > 0 ? wordCount / serverElapsedSec : 0;
+  if (wpsOnElapsed > 3.0) {
+    score -= 40;
+    factors.push(`Impossible WPS on elapsed time (${wpsOnElapsed.toFixed(2)})`);
+  } else if (wpsOnElapsed > 2.0) {
+    score -= 25;
+    factors.push(`Very high WPS on elapsed time (${wpsOnElapsed.toFixed(2)})`);
+  } else if (wpsOnElapsed > 1.5) {
+    score -= 10;
+    factors.push(`High WPS on elapsed time (${wpsOnElapsed.toFixed(2)})`);
+  }
+
+  // Factor 2: Time-per-response
+  const timePerResponse = responseCount > 0 ? serverElapsedSec / responseCount : Infinity;
+  if (timePerResponse < 5) {
+    score -= 30;
+    factors.push(`Very fast per-response time (${timePerResponse.toFixed(1)}s)`);
+  } else if (timePerResponse < 10) {
+    score -= 15;
+    factors.push(`Fast per-response time (${timePerResponse.toFixed(1)}s)`);
+  } else if (timePerResponse < 15) {
+    score -= 5;
+    factors.push(`Quick per-response time (${timePerResponse.toFixed(1)}s)`);
+  }
+
+  // Factor 3: Burst pattern (multiple blocks saved within same few seconds)
+  if (blockSaveTimestamps && blockSaveTimestamps.length >= 3) {
+    const sorted = [...blockSaveTimestamps].sort((a, b) => a - b);
+    const intervals = sorted.slice(1).map((t, i) => t - sorted[i]);
+    const minInterval = Math.min(...intervals);
+    if (minInterval < 1000) {
+      score -= 20;
+      factors.push(`Burst saves detected (${minInterval}ms between answers)`);
+    }
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), factors };
 }
 
 export function calculateServerStats(equipped: Record<string, unknown> | undefined): { tech: number; focus: number; analysis: number; charisma: number } {

@@ -167,6 +167,9 @@ export interface TelemetryMetrics {
   serverElapsedSec?: number; // Server-computed elapsed time (seconds)
   sessionToken?: string;      // Resource or assessment session token for server elapsed validation
   clientReportedEngagement?: number; // Original client-reported engagement time before server clamping
+  plausibilityScore?: number;        // Server-computed 0-100 score from authoritative facts
+  plausibilityFactors?: string[];    // Human-readable factors that affected the score
+  assistiveTechOverrides?: string[]; // Which integrity checks were overridden due to assistive tech
 }
 
 // RPG TYPES
@@ -1375,6 +1378,7 @@ export interface StudentBucketProfile {
     schoolActivityDays?: number;      // Distinct school days with activity in window
     schoolDaysInWindow7?: number;     // Actual school days in the analysis window
     minutesPerSchoolDay?: number;     // totalTime (min) / schoolDaysInWindow7
+    plausibilityScore?: number;       // Latest server-computed plausibility (0-100)
   };
   recommendation: BucketRecommendation;
   createdAt: string;                  // ISO timestamp

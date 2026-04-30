@@ -11,6 +11,7 @@ import {
   ENGAGEMENT_COOLDOWN_MS,
   TelemetryThresholds,
   calculateFeedbackServerSide,
+  computePlausibilityScore,
   generateCorrelationId,
   logWithCorrelation,
 } from "./core";
@@ -173,17 +174,43 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
 
   // Create submission
   const validatedMetrics = { engagementTime: validatedEngagement, keystrokes, pasteCount, tabSwitchCount };
-  const { status: engagementStatus, feedback: engagementFeedback } = calculateFeedbackServerSide(
+  const feedbackResult = calculateFeedbackServerSide(
     validatedMetrics,
     thresholds,
     { assistiveTech: !!metrics.assistiveTech }
   );
+  const engagementStatus = feedbackResult.status;
+  const engagementFeedback = feedbackResult.feedback;
+  const assistiveTechOverrides = feedbackResult.assistiveTechOverrides;
+
+  // Server-side plausibility score for non-assessment resources
+  // We don't have block responses, so we use elapsed time and a minimal response count of 1
+  const { score: plausibilityScore, factors: plausibilityFactors } = computePlausibilityScore(
+    serverElapsedSec,
+    0, // Non-assessments don't have server-computed word count
+    1, // Minimal response count
+    undefined // No block save timestamps for non-assessments
+  );
+
   const submission = {
     userId: uid,
     userName: request.data.userName || "Student",
     assignmentId,
     assignmentTitle: assignmentTitle || "",
-    metrics: { engagementTime: validatedEngagement, clientReportedEngagement: metrics.engagementTime || 0, keystrokes, pasteCount, clickCount, tabSwitchCount, startTime: metrics.startTime || 0, firstInteractionTime: metrics.firstInteractionTime || 0, lastActive: metrics.lastActive || 0 },
+    metrics: {
+      engagementTime: validatedEngagement,
+      clientReportedEngagement: metrics.engagementTime || 0,
+      keystrokes,
+      pasteCount,
+      clickCount,
+      tabSwitchCount,
+      startTime: metrics.startTime || 0,
+      firstInteractionTime: metrics.firstInteractionTime || 0,
+      lastActive: metrics.lastActive || 0,
+      plausibilityScore,
+      plausibilityFactors,
+      assistiveTechOverrides,
+    },
     submittedAt: new Date().toISOString(),
     status: engagementStatus,
     feedback: engagementFeedback,

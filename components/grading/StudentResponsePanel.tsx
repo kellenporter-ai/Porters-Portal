@@ -488,8 +488,14 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
               <span className={sub.metrics.wordsPerSecond > 1.5 ? 'text-red-600 dark:text-red-400' : sub.metrics.wordsPerSecond > 0.8 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}>{sub.metrics.wordsPerSecond.toFixed(2)} w/s</span>
             )}
             {sub.metrics?.assistiveTech && (
-              <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 font-bold" title="Student self-reported assistive technology use — integrity flags were suppressed">
+              <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 font-bold" title="Student self-reported assistive technology use — some checks were overridden">
                 ♿ Assistive Tech
+              </span>
+            )}
+            {/* Server plausibility score */}
+            {sub.metrics?.plausibilityScore != null && (
+              <span className={sub.metrics.plausibilityScore < 50 ? 'text-red-600 dark:text-red-400 font-bold' : sub.metrics.plausibilityScore < 80 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'} title={sub.metrics.plausibilityFactors?.join('\n') || ''}>
+                {sub.metrics.plausibilityScore}/100
               </span>
             )}
           </div>
@@ -519,18 +525,31 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
 
       {/* Center panel body */}
       <div className="overflow-y-auto custom-scrollbar p-4 flex-1 min-h-0">
-        {/* Integrity flag banner */}
-        {sub.status === 'FLAGGED' && (
+        {/* Integrity signals banner */}
+        {(sub.status === 'FLAGGED' || (sub.metrics?.plausibilityScore != null && sub.metrics.plausibilityScore < 50)) && (
           <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" aria-hidden="true" />
               <div className="flex-1">
                 <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                  ⚠️ Server Integrity Flag
+                  ⚠️ {sub.status === 'FLAGGED' ? 'Client Integrity Flag' : 'Server Plausibility Warning'}
                 </p>
-                {sub.feedback && (
+                {sub.feedback && sub.status === 'FLAGGED' && (
                   <p className="text-xs text-red-500/90 dark:text-red-400/90 mt-0.5">
                     {sub.feedback}
+                  </p>
+                )}
+                {sub.metrics?.plausibilityScore != null && sub.metrics.plausibilityScore < 50 && (
+                  <p className="text-xs text-red-500/90 dark:text-red-400/90 mt-0.5">
+                    Server plausibility score is {sub.metrics.plausibilityScore}/100 — physically impossible behavior detected.
+                    {sub.metrics.plausibilityFactors && sub.metrics.plausibilityFactors.length > 0 && (
+                      <> Factors: {sub.metrics.plausibilityFactors.join('; ')}.</>
+                    )}
+                  </p>
+                )}
+                {sub.metrics?.assistiveTechOverrides && sub.metrics.assistiveTechOverrides.length > 0 && (
+                  <p className="text-[11px] text-purple-600 dark:text-purple-400/90 mt-1">
+                    ♿ Assistive tech overridden {sub.metrics.assistiveTechOverrides.length} check{sub.metrics.assistiveTechOverrides.length > 1 ? 's' : ''}: {sub.metrics.assistiveTechOverrides.join(', ')}
                   </p>
                 )}
                 <p className="text-[11px] text-amber-600 dark:text-amber-400/90 mt-1 bg-amber-500/10 rounded px-2 py-1 border border-amber-500/20">
@@ -540,6 +559,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                   {sub.metrics?.keystrokes || 0} keystrokes · {sub.metrics?.pasteCount || 0} pastes · {sub.metrics?.wordCount || 0} words in {formatEngagementTime(sub.metrics?.engagementTime || 0)}
                   {sub.metrics?.clientReportedEngagement != null && sub.metrics.clientReportedEngagement !== sub.metrics?.engagementTime && (
                     <> · client reported {formatEngagementTime(sub.metrics.clientReportedEngagement)}</>
+                  )}
+                  {sub.metrics?.serverElapsedSec != null && (
+                    <> · server elapsed {formatEngagementTime(sub.metrics.serverElapsedSec)}</>
                   )}
                 </p>
               </div>

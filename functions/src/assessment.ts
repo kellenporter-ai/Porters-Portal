@@ -4,6 +4,7 @@ import {
   verifyAuth,
   verifyAdmin,
   calculateFeedbackServerSide,
+  computePlausibilityScore,
   TelemetryThresholds,
   getActiveXPMultiplier,
   generateCorrelationId,
@@ -321,7 +322,8 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     // 5c. Calculate telemetry status
     let feedback = "Assignment submitted successfully.";
     let txStatus = "CLEAN";
-    ({ status: txStatus, feedback } = calculateFeedbackServerSide({
+    let assistiveTechOverrides: string[] | undefined;
+    const feedbackResult = calculateFeedbackServerSide({
       pasteCount: metrics.pasteCount || 0,
       engagementTime: validatedEngagement,
       keystrokes: metrics.keystrokes || 0,
@@ -333,7 +335,10 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       responseCount: nonEmptyResponses.length,
       hasWrittenResponses: nonEmptyResponses.length > 0,
       assistiveTech: !!metrics.assistiveTech,
-    }));
+    });
+    txStatus = feedbackResult.status;
+    feedback = feedbackResult.feedback;
+    assistiveTechOverrides = feedbackResult.assistiveTechOverrides;
 
     if (txStatus === "FLAGGED") {
       logWithCorrelation('warn', 'submitAssessment FLAGGED', correlationId, {
@@ -347,6 +352,28 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         feedback,
       });
     }
+
+    // 5d. Server-side plausibility score (authoritative facts only)
+    const blockSaveTimestamps: number[] = [];
+    // Gather lastUpdated timestamps from lesson_block_responses for temporal analysis
+    try {
+      const blockDocs = await db.collection("lesson_block_responses")
+        .where("userId", "==", uid)
+        .where("assignmentId", "==", assignmentId)
+        .get();
+      blockDocs.docs.forEach((d) => {
+        const lu = d.data().lastUpdated;
+        if (lu) blockSaveTimestamps.push(lu.toMillis ? lu.toMillis() : new Date(lu).getTime());
+      });
+    } catch {
+      // Non-critical — plausibility falls back to elapsed + word count + response count
+    }
+    const { score: plausibilityScore, factors: plausibilityFactors } = computePlausibilityScore(
+      serverElapsedSec,
+      totalWordCount,
+      nonEmptyResponses.length,
+      blockSaveTimestamps.length > 0 ? blockSaveTimestamps : undefined
+    );
 
     // Atomic attempt counter to prevent race conditions
     const counterRef = db.doc(`assessment_attempt_counters/${uid}_${assignmentId}`);
@@ -377,6 +404,9 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         serverElapsedSec: Math.round(serverElapsedSec),
         wordCount: totalWordCount,
         wordsPerSecond,
+        plausibilityScore,
+        plausibilityFactors,
+        assistiveTechOverrides,
       },
       submittedAt: new Date().toISOString(),
       status: txStatus,
