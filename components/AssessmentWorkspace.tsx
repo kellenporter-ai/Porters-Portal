@@ -605,11 +605,7 @@ const HtmlActivityWorkCard: React.FC<HtmlActivityWorkCardProps> = ({ state, cont
     if (!iframe?.contentWindow) return;
     // Send saved state and set read-only
     iframe.contentWindow.postMessage(
-      { type: 'portal-init', payload: { savedState: state || null, readOnly: true } },
-      '*'
-    );
-    iframe.contentWindow.postMessage(
-      { type: 'portal-set-readonly', readOnly: true },
+      { type: 'portal-init', state: state || null, readOnly: true },
       '*'
     );
   }, [ready, state]);
