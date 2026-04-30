@@ -202,6 +202,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       // Keep both in sync
       localStorage.setItem(storageKey, cached);
       sessionStorage.setItem(storageKey, cached);
+      setSessionToken(cached);
       onSessionToken?.(cached);
       return;
     }
