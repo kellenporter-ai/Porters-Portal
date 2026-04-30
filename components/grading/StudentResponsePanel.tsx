@@ -36,26 +36,35 @@ const INTERACTIVE_BLOCK_TYPES = ['MC', 'SHORT_ANSWER', 'RANKING', 'SORTING', 'LI
 
 function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; contentUrl: string }) {
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
-  const [loaded, setLoaded] = React.useState(false);
+  const [ready, setReady] = React.useState(false);
 
+  // Listen for html-activity-ready immediately — the iframe may send it before onLoad fires
   React.useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || !loaded) return;
+    if (!iframe) return;
 
-    const handleReady = (e: MessageEvent) => {
+    const handleMessage = (e: MessageEvent) => {
       if (e.source !== iframe.contentWindow) return;
       const data = e.data;
       if (data?.type === 'html-activity-ready') {
-        iframe.contentWindow?.postMessage(
-          { type: 'portal-init', state: state || null, readOnly: true },
-          '*'
-        );
+        setReady(true);
       }
     };
 
-    window.addEventListener('message', handleReady);
-    return () => window.removeEventListener('message', handleReady);
-  }, [loaded, state]);
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Send state when iframe is ready (either via html-activity-ready or onLoad fallback)
+  React.useEffect(() => {
+    if (!ready) return;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      { type: 'portal-init', state: state || null, readOnly: true },
+      '*'
+    );
+  }, [ready, state]);
 
   return (
     <div className="space-y-2">
@@ -69,7 +78,16 @@ function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; cont
           src={contentUrl}
           className="w-full h-[500px] border-0"
           title="Student HTML Activity"
-          onLoad={() => setLoaded(true)}
+          onLoad={() => {
+            // Fallback: if html-activity-ready was missed, send init anyway
+            const iframe = iframeRef.current;
+            if (iframe?.contentWindow) {
+              iframe.contentWindow.postMessage(
+                { type: 'portal-init', state: state || null, readOnly: true },
+                '*'
+              );
+            }
+          }}
           sandbox="allow-scripts allow-same-origin"
         />
       </div>
