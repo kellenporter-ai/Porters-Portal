@@ -208,7 +208,9 @@ const HomeTab: React.FC<HomeTabProps> = ({
     const totalBlocks = upNextAssignment.lessonBlocks?.length ?? 0;
     if (!totalBlocks) return null;
     const sub = submissions.find(s => s.assignmentId === upNextAssignment.id);
-    const answered = sub?.blockResponses ? Object.keys(sub.blockResponses).length : 0;
+    const answered = sub?.blockResponses
+      ? Object.keys(sub.blockResponses).filter(k => k !== '__htmlActivity').length
+      : 0;
     const pct = Math.max(0, Math.min(100, Math.round((answered / totalBlocks) * 100)));
     return { pct, answered, total: totalBlocks, blocksLeft: Math.max(0, totalBlocks - answered) };
   }, [upNextAssignment, submissions]);

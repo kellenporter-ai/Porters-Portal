@@ -262,6 +262,17 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       if (typeof r === 'string') return r.trim().length > 0;
       if (typeof r === 'object') {
         const obj = r as Record<string, unknown>;
+        // HTML activity: non-empty if explanation text or any diagram symbols exist
+        if (key === '__htmlActivity') {
+          const hasExplanation = typeof obj.explanation === 'string' && obj.explanation.trim().length > 0;
+          const hasDiagrams = ['init1', 'init2', 'final1', 'final2'].some(panel => {
+            const panelData = obj[panel] as Record<string, unknown> | undefined;
+            if (!panelData) return false;
+            const symbols = panelData.symbols as Array<unknown> | undefined;
+            return symbols && symbols.length > 0;
+          });
+          return hasExplanation || hasDiagrams;
+        }
         return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0) ||
           (obj.placements && Object.keys(obj.placements as Record<string, unknown>).length > 0) ||
           (Array.isArray(obj.order) && obj.order.length > 0) ||
@@ -752,6 +763,17 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     if (!r) return false;
     if (typeof r === 'object') {
       const obj = r as Record<string, unknown>;
+      // HTML activity: count as response if it has explanation text or diagram symbols
+      if (k === '__htmlActivity') {
+        const hasExplanation = typeof obj.explanation === 'string' && obj.explanation.trim().length > 0;
+        const hasDiagrams = ['init1', 'init2', 'final1', 'final2'].some(panel => {
+          const panelData = obj[panel] as Record<string, unknown> | undefined;
+          if (!panelData) return false;
+          const symbols = panelData.symbols as Array<unknown> | undefined;
+          return symbols && symbols.length > 0;
+        });
+        return hasExplanation || hasDiagrams;
+      }
       return obj.selected != null || (typeof obj.answer === 'string' && obj.answer.trim().length > 0);
     }
     return typeof r === 'string' ? r.trim().length > 0 : true;

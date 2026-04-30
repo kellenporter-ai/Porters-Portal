@@ -693,7 +693,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           </div>
         ) : sub.blockResponses ? (
           <div className="space-y-2">
-            {Object.entries(sub.blockResponses).map(([blockId, answer]) => {
+            {Object.entries(sub.blockResponses)
+              .filter(([blockId]) => blockId !== '__htmlActivity')
+              .map(([blockId, answer]) => {
               const blockResult = sub.assessmentScore?.perBlock?.[blockId];
               const isPending = blockResult?.needsReview;
               const ansObj = answer as Record<string, unknown> | null;
