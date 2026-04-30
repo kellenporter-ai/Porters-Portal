@@ -16,6 +16,8 @@ interface UsePersistentSaveOptions {
   userId: string | undefined;
   assignmentId: string | undefined;
   collection?: string; // defaults to 'lesson_block_responses'
+  /** Assessment or resource session token — required by Firestore security rules. */
+  sessionToken?: string | null;
   /** Called whenever the internal response map changes (for parent state sync). */
   onResponsesChange?: (responses: Record<string, unknown>) => void;
   /** When true, skip all Firestore writes and localStorage drafts (admin preview mode). */
@@ -47,6 +49,7 @@ export function usePersistentSave({
   userId,
   assignmentId,
   collection = 'lesson_block_responses',
+  sessionToken,
   onResponsesChange,
   disabled,
 }: UsePersistentSaveOptions): UsePersistentSaveReturn {
@@ -85,12 +88,13 @@ export function usePersistentSave({
     if (disabled || !docId || !userId || !assignmentId) return undefined;
 
     const gen = ++saveGenRef.current;
-    const data = {
+    const data: Record<string, unknown> = {
       userId,
       assignmentId,
       responses: responsesRef.current,
       lastUpdated: new Date().toISOString(),
     };
+    if (sessionToken) data.sessionToken = sessionToken;
 
     return persistentWrite(collection, docId, data, lsKey, (status) => {
       // Only update UI status if this is still the latest save
@@ -100,7 +104,7 @@ export function usePersistentSave({
         setLastSavedAt(new Date().toISOString());
       }
     });
-  }, [disabled, docId, userId, assignmentId, collection, lsKey, setStatus]);
+  }, [disabled, docId, userId, assignmentId, collection, lsKey, setStatus, sessionToken]);
 
   // Debounced save trigger
   const scheduleSave = useCallback(() => {

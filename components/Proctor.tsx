@@ -141,6 +141,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
+  // Session token state — must be declared before usePersistentSave
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+
   // Lesson block response persistence
   const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
   const [blockResetKey, setBlockResetKey] = useState(0);
@@ -159,6 +162,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     userId,
     assignmentId,
     collection: 'lesson_block_responses',
+    sessionToken,
     disabled: previewMode,
   });
 
@@ -212,6 +216,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (cancelled) return;
           localStorage.setItem(storageKey, data.sessionToken);
           sessionStorage.setItem(storageKey, data.sessionToken);
+          setSessionToken(data.sessionToken);
           onSessionToken?.(data.sessionToken);
           setSessionTokenError(null);
           return;
@@ -351,6 +356,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 const tokenData = result.data as { sessionToken: string };
                 localStorage.setItem(storageKey, tokenData.sessionToken);
                 sessionStorage.setItem(storageKey, tokenData.sessionToken);
+                setSessionToken(tokenData.sessionToken);
                 onSessionToken?.(tokenData.sessionToken);
               } catch {
                 // If token request fails, still restore work — don't lose data
