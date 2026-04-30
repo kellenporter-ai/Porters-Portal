@@ -65,6 +65,8 @@ export function usePersistentSave({
   const draftRestoredTimestampRef = useRef<string | null>(null); // Set when dirty draft restored on mount
   const errorSinceRef = useRef<number | null>(null); // Ref to avoid stale closure in setStatus
   const isInErrorRef = useRef(false);
+  const sessionTokenRef = useRef(sessionToken);
+  sessionTokenRef.current = sessionToken; // Always up-to-date, even for stale timers
 
   const docId = userId && assignmentId ? `${userId}_${assignmentId}_blocks` : null;
   const lsKey = userId && assignmentId ? draftKey('draft', userId, assignmentId) : null;
@@ -94,7 +96,8 @@ export function usePersistentSave({
       responses: responsesRef.current,
       lastUpdated: new Date().toISOString(),
     };
-    if (sessionToken) data.sessionToken = sessionToken;
+    const token = sessionTokenRef.current;
+    if (token) data.sessionToken = token;
 
     return persistentWrite(collection, docId, data, lsKey, (status) => {
       // Only update UI status if this is still the latest save
@@ -104,7 +107,7 @@ export function usePersistentSave({
         setLastSavedAt(new Date().toISOString());
       }
     });
-  }, [disabled, docId, userId, assignmentId, collection, lsKey, setStatus, sessionToken]);
+  }, [disabled, docId, userId, assignmentId, collection, lsKey, setStatus]);
 
   // Debounced save trigger
   const scheduleSave = useCallback(() => {
