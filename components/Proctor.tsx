@@ -1176,7 +1176,37 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (state) {
             htmlActivityStateRef.current = state;
             hookUpdateResponse('__htmlActivity', state);
+            // Sync iframe-originated keystrokes into main telemetry
+            if (typeof state.keystrokes === 'number') {
+              metricsRef.current.keystrokes = state.keystrokes;
+            }
           }
+          break;
+        }
+
+        case 'html-activity-keystroke': {
+          // Replicate handleKeyDown logic for iframe-originated keystrokes
+          metricsRef.current.keystrokes++;
+          const now = Date.now();
+          keystrokeTimesRef.current.push(now);
+          if (keystrokeTimesRef.current.length > 50) {
+            keystrokeTimesRef.current.shift();
+          }
+          const times = keystrokeTimesRef.current;
+          if (times.length >= 5) {
+            const last5 = times.slice(-5);
+            const intervals = last5.slice(1).map((t, i) => t - last5[i]);
+            if (intervals.every(iv => iv < 30)) {
+              metricsRef.current.typingCadence = metricsRef.current.typingCadence || { avgIntervalMs: 0, burstCount: 0 };
+              metricsRef.current.typingCadence.burstCount = (metricsRef.current.typingCadence.burstCount || 0) + 1;
+            }
+          }
+          if (times.length >= 2) {
+            const intervals = times.slice(1).map((t, i) => t - times[i]);
+            metricsRef.current.typingCadence = metricsRef.current.typingCadence || { avgIntervalMs: 0, burstCount: 0 };
+            metricsRef.current.typingCadence.avgIntervalMs = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+          }
+          handleInteraction();
           break;
         }
 

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Porter's Portal</title>
+  <style>
+    :root {
+      --bg: #0f0720;
+      --surface: #1a0a2e;
+      --text: #e5e7eb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #a78bfa;
+      --border: #374151;
+      --max-width: 720px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.75rem;
+      color: var(--accent);
+    }
+    header p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    h2 {
+      color: var(--accent);
+      font-size: 1.25rem;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      color: var(--text);
+      font-size: 1.05rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    p, li {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.4rem;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .effective-date {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .contact-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    .contact-box p { margin: 0.25rem 0; }
+    footer {
+      text-align: center;
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Privacy Policy</h1>
+      <p>Porter's Portal — Perth Amboy High School</p>
+      <span class="effective-date">Effective Date: May 1, 2026</span>
+    </header>
+
+    <h2>1. Introduction</h2>
+    <p>
+      Porter's Portal is an educational platform built for Perth Amboy High School (PAHS) teachers and students.
+      This Privacy Policy explains what information we collect, how we use it, and your rights regarding that information.
+      We are committed to protecting student privacy and complying with the Family Educational Rights and Privacy Act (FERPA).
+    </p>
+
+    <h2>2. Information We Collect</h2>
+    <h3>Account Information</h3>
+    <ul>
+      <li>Name and email address (via Google Authentication)</li>
+      <li>Role (student or teacher/admin)</li>
+      <li>Class enrollments and section assignments</li>
+    </ul>
+
+    <h3>Educational Content & Submissions</h3>
+    <ul>
+      <li>Assignment responses, essays, and uploaded work</li>
+      <li>Rubric grades and teacher feedback</li>
+      <li>Assessment scores and progress metrics</li>
+      <li>Draft responses (stored locally in your browser until submitted)</li>
+    </ul>
+
+    <h3>Engagement & Telemetry</h3>
+    <ul>
+      <li>Time spent on assignments and activities</li>
+      <li>Interaction events (clicks, scrolls, block completions)</li>
+      <li>Session activity timestamps</li>
+    </ul>
+    <p>
+      <strong>Integrity Analysis:</strong> We analyze behavioral patterns (typing consistency, timing)
+      during assessments to flag potential academic integrity concerns. Raw behavioral data is processed
+      <em>in real-time only</em> and is never stored. We retain only a final integrity confidence score
+      and flag status.
+    </p>
+
+    <h3>Gamification Data</h3>
+    <ul>
+      <li>Experience points (XP), levels, and achievements</li>
+      <li>Loot inventory and specialization choices</li>
+      <li>Leaderboard standings (pseudonymized for public display)</li>
+    </ul>
+
+    <h2>3. How We Use Your Information</h2>
+    <ul>
+      <li><strong>Educational Delivery:</strong> Display assignments, track submissions, and provide feedback</li>
+      <li><strong>Grading:</strong> Enable teachers to review, score, and return student work</li>
+      <li><strong>Google Classroom Integration:</strong> Push grades to linked Google Classroom assignments (teacher-initiated only)</li>
+      <li><strong>Progress Monitoring:</strong> Help teachers identify students who may need additional support</li>
+      <li><strong>Notifications:</strong> Email students when new assignments are posted or grades are released</li>
+      <li><strong>Academic Integrity:</strong> Detect anomalous submission patterns to maintain fair assessment</li>
+      <li><strong>Platform Improvement:</strong> Aggregate, anonymized analytics to improve the learning experience</li>
+    </ul>
+
+    <h2>4. Data Storage & Security</h2>
+    <p>
+      All data is stored in <strong>Google Firebase</strong> (Firestore database, Cloud Functions, and Authentication)
+      with industry-standard encryption at rest and in transit. Access is controlled through:
+    </p>
+    <ul>
+      <li>Firebase Authentication with role-based access (student vs. admin)</li>
+      <li>Firestore security rules enforcing document-level permissions</li>
+      <li>Students can only read their own submissions and telemetry</li>
+      <li>Teachers can only access submissions from their enrolled classes</li>
+    </ul>
+
+    <h2>5. Third-Party Services</h2>
+    <p>We integrate with the following services solely for educational purposes:</p>
+    <ul>
+      <li><strong>Google Firebase</strong> — Hosting, database, authentication, and cloud functions</li>
+      <li><strong>Google Classroom API</strong> — Grade pushing (initiated by teachers with explicit OAuth consent)</li>
+      <li><strong>Google Authentication</strong> — Secure sign-in for teachers and students</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> sell, rent, or share personal data with advertisers, data brokers, or any third parties
+      for commercial purposes.
+    </p>
+
+    <h2>6. FERPA Compliance</h2>
+    <p>
+      Porter's Portal operates under FERPA's <strong>"School Official" exception</strong>. We act on behalf of
+      Perth Amboy High School to perform educational services that the school would otherwise perform itself.
+      All data collection is limited to what represents a <em>legitimate educational interest</em>.
+    </p>
+    <ul>
+      <li>Student educational records are used only for educational purposes</li>
+      <li>We do not send raw student responses to external AI/LLM providers</li>
+      <li>Predictive analytics (e.g., early warning indicators) are used for intervention triggers only —
+        they do not determine final grades</li>
+    </ul>
+
+    <h2>7. Data Retention</h2>
+    <ul>
+      <li><strong>Active accounts:</strong> Educational data is retained while the student is enrolled</li>
+      <li><strong>Graduated/withdrawn students:</strong> Data may be retained for one academic year, then deleted or anonymized</li>
+      <li><strong>Transactional data:</strong> XP events and engagement logs are subject to automatic time-based cleanup (TTL)</li>
+      <li><strong>Local drafts:</strong> Unsubmitted draft responses stored in your browser expire after 7 days</li>
+    </ul>
+
+    <h2>8. Your Rights</h2>
+    <p><strong>For Students & Parents:</strong></p>
+    <ul>
+      <li>Right to access your own educational records within the platform</li>
+      <li>Right to request correction of inaccurate information</li>
+      <li>Right to request deletion of data (subject to school record-keeping requirements)</li>
+      <li>Parents may request access to their child's records in accordance with FERPA and district policy</li>
+    </ul>
+    <p><strong>For Teachers:</strong></p>
+    <ul>
+      <li>Right to export grade data via CSV</li>
+      <li>Right to unlink Google Classroom integrations at any time</li>
+      <li>Right to request account deletion and associated data removal</li>
+    </ul>
+
+    <h2>9. Cookies & Local Storage</h2>
+    <p>
+      We use browser <code>localStorage</code> to preserve draft feedback and UI preferences.
+      We do not use third-party tracking cookies or advertising pixels.
+      Firebase Authentication uses session cookies to maintain login state securely.
+    </p>
+
+    <h2>10. Changes to This Policy</h2>
+    <p>
+      We may update this Privacy Policy as the platform evolves. Material changes will be communicated
+      to teachers and posted on this page with an updated effective date.
+    </p>
+
+    <h2>11. Contact Us</h2>
+    <div class="contact-box">
+      <p><strong>Kellen Porter</strong></p>
+      <p>Science Teacher, Perth Amboy High School</p>
+      <p>Email: <a href="mailto:kellen.porter@gmail.com">kellen.porter@gmail.com</a></p>
+      <p>School: <a href="mailto:kellporter2@paps.net">kellporter2@paps.net</a></p>
+      <p style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">
+        For FERPA-related inquiries, please also contact the Perth Amboy Public Schools
+        district office.
+      </p>
+    </div>
+
+    <footer>
+      <p>© 2026 Porter's Portal — Perth Amboy High School</p>
+    </footer>
+  </div>
+</body>
+</html>

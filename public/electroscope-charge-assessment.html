@@ -649,7 +649,8 @@
       init2: { symbols: [], leaves: { left: 0, right: 0 } },
       final1: { symbols: [], leaves: { left: 0, right: 0 } },
       final2: { symbols: [], leaves: { left: 0, right: 0 } },
-      explanation: ''
+      explanation: '',
+      keystrokes: 0,
     };
 
     // DOM refs
@@ -845,6 +846,7 @@
     // Explanation auto-save
     explanationArea.addEventListener('input', () => {
       state.explanation = explanationArea.value;
+      state.keystrokes++;
       autoSave();
     });
 
@@ -903,6 +905,7 @@
       explanationArea.value = '';
       for (const k of Object.keys(state)) {
         if (k === 'explanation') state[k] = '';
+        else if (k === 'keystrokes') state[k] = 0;
         else {
           state[k].symbols = [];
           state[k].leaves = { left: 0, right: 0 };
@@ -918,7 +921,10 @@
 
     // Attach interaction listeners for telemetry heartbeat
     document.addEventListener('click', reportInteraction);
-    document.addEventListener('keydown', reportInteraction);
+    document.addEventListener('keydown', () => {
+      reportInteraction();
+      sendToParent({ type: 'html-activity-keystroke' });
+    });
     document.addEventListener('input', reportInteraction);
 
     function importState(data, saveAfter) {
