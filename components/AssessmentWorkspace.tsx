@@ -322,6 +322,21 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
         </div>
       </div>
 
+      {/* RETURNED banner */}
+      {existingSubmission?.status === 'RETURNED' && (
+        <div className="shrink-0 mx-5 mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-amber-700 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Assessment Returned for Revision</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400/70">Your teacher returned this assessment. Review the feedback and click Retake to submit a revised version.</p>
+          </div>
+        </div>
+      )}
+
       {/* Body: Sidebar + Content */}
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}

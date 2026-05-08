@@ -95,6 +95,17 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const isPreview = user.role === UserRole.ADMIN;
   const isAssessment = activeAssignment?.isAssessment === true;
   const isLiveAssessment = isAssessment && !isPreview;
+
+  // Persist retake intent across page refreshes (crash recovery for retakes)
+  useEffect(() => {
+    if (id && isLiveAssessment) {
+      const retakeFlag = sessionStorage.getItem(`retaking_${id}`);
+      if (retakeFlag === '1') {
+        isRetakingRef.current = true;
+      }
+    }
+  }, [id, isLiveAssessment]);
+
   const rawConfig = activeAssignment?.assessmentConfig || {};
   const config = {
     allowResubmission: rawConfig.allowResubmission !== false,
@@ -254,6 +265,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
           sessionTokenRef.current = null;
+          // Clear retake flag since submission is complete
+          sessionStorage.removeItem(`retaking_${activeAssignment.id}`);
           // Clear localStorage draft — work is safely submitted (use user.id to match hook's key)
           clearDraft(draftKey('draft', user.id, activeAssignment.id));
           // Also clear Firestore draft (belt-and-suspenders — server also deletes on submit)
@@ -342,6 +355,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     });
     if (!confirmed) return;
     isRetakingRef.current = true; // Suppress recovery effect while retaking
+    if (id) sessionStorage.setItem(`retaking_${id}`, '1');
     const docId = `${user.id}_${activeAssignment.id}_blocks`;
     try {
       await setDoc(doc(db, 'lesson_block_responses', docId), {
@@ -726,7 +740,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
       <div className="flex-1 overflow-hidden relative">
         <Suspense fallback={<LazyFallback />}>
-          {assignViewMode === 'WORK' && isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && (
+          {assignViewMode === 'WORK' && isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current || existingSubmission?.status === 'RETURNED') && (
             <Suspense fallback={<LazyFallback />}>
               <AssessmentWorkspace
                 mode="taking"
@@ -909,7 +923,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       </div>
 
       {/* Sticky bottom banner for assessments — always-visible submit CTA (hidden in admin preview) */}
-      {isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current) && !reviewMode && assignViewMode === 'WORK' && (
+      {isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current || existingSubmission?.status === 'RETURNED') && !reviewMode && assignViewMode === 'WORK' && (
         <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[var(--surface-base)] via-[var(--surface-base)]/95 to-transparent pt-4 pb-3 px-4">
           <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm">
