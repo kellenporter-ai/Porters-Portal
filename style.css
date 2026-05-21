@@ -57,7 +57,7 @@ code, .font-mono, kbd, pre, samp {
   --z-dropdown:    10;  /* menus, popovers, tooltips */
   --z-sticky:      20;  /* sticky headers, banners */
   --z-drawer:      30;  /* side panels, mobile nav */
-  --z-modal:       40;  /* dialogs, confirmation overlays */
+  --z-modal:       50;  /* dialogs, confirmation overlays */
   --z-toast:       60;  /* notifications (above modals) */
   --z-skip-link:   70;  /* accessibility skip-to-content */
 }

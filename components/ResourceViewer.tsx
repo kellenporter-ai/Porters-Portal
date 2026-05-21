@@ -337,7 +337,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       }
     }
     setIsSubmitting(false);
-  }, [activeAssignment, user.name, toast]);
+  }, [activeAssignment, id, user.name, toast]);
 
   // Assessment retake handler — confirm, then clear saved working responses so Proctor starts fresh
   // Uses setDoc (not deleteDoc) because students only have create/update permission
@@ -372,7 +372,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     sessionStorage.removeItem(retakeKey);
     sessionTokenRef.current = null;
     setAssessmentResult(null);
-  }, [activeAssignment, user.id, assessmentResult, confirm]);
+  }, [activeAssignment, config, existingSubmission, id, user.id, assessmentResult, confirm]);
 
   const handleExit = () => {
     if (id) sessionStorage.removeItem(`submit_failed_${id}`);
