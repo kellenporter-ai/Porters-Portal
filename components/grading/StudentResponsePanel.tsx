@@ -6,6 +6,7 @@ import {
 import katex from 'katex';
 import type { Submission, Assignment, LessonBlock } from '../../types';
 import type { StudentGroup } from './gradingHelpers';
+import type { IntegrityReport, SimilarityPair } from '../../lib/integrityAnalysis';
 import { getAwayEventColor, computeTotalTime, formatEngagementTime } from './gradingHelpers';
 import { dataService } from '../../services/dataService';
 import { reportError } from '../../lib/errorReporting';
@@ -30,6 +31,8 @@ interface StudentResponsePanelProps {
   onUnflagAI: () => void;
   onAttemptChange: (attemptId: string) => void;
   users: { id: string; name: string }[];
+  integrityReport?: IntegrityReport | null;
+  onJumpToPair?: (pairIdx: number) => void;
 }
 
 const INTERACTIVE_BLOCK_TYPES = ['MC', 'SHORT_ANSWER', 'RANKING', 'SORTING', 'LINKED', 'DRAWING', 'MATH_RESPONSE', 'BAR_CHART'];
@@ -311,9 +314,19 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   onUnflagAI,
   onAttemptChange,
   users,
+  integrityReport,
+  onJumpToPair,
 }) => {
   const { confirm } = useConfirm();
   const toast = useToast();
+
+  // Peer similarity flags for current student
+  const peerFlags = React.useMemo(() => {
+    if (!integrityReport || !sub) return [] as SimilarityPair[];
+    return integrityReport.flaggedPairs.filter(
+      p => p.studentA.userId === sub.userId || p.studentB.userId === sub.userId
+    );
+  }, [integrityReport, sub]);
 
   const NavButtons = () => (
     <div className="flex items-center gap-1">
@@ -629,6 +642,38 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
             </div>
           </div>
         )}
+        {/* Peer similarity warning */}
+        {peerFlags.length > 0 && (
+          <div className="mb-4 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                  ⚠️ Peer Similarity Detected
+                </p>
+                <p className="text-xs text-amber-500/90 dark:text-amber-400/90 mt-0.5">
+                  This student has {peerFlags.length} suspicious similarity match{peerFlags.length !== 1 ? 'es' : ''} with other students.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {peerFlags.map((pair, idx) => {
+                    const other = pair.studentA.userId === sub!.userId ? pair.studentB : pair.studentA;
+                    const globalIdx = integrityReport!.flaggedPairs.indexOf(pair);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => onJumpToPair?.(globalIdx)}
+                        className="text-[11px] font-bold px-2 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/20 hover:bg-amber-500/30 transition"
+                      >
+                        View vs {other.userName} ({pair.overallSimilarity > 0 ? `${pair.overallSimilarity}%` : 'MC'})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* HTML Activity Response (iframe-embedded simulation) */}
         {!!sub.blockResponses?.__htmlActivity && selectedAssessment?.contentUrl && (
           <HtmlActivityResponsePanel

@@ -9,6 +9,7 @@ import {
   getActiveXPMultiplier,
   generateCorrelationId,
   logWithCorrelation,
+  validateMetricsIntegrity,
 } from "./core";
 
 // ==========================================
@@ -124,19 +125,25 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
     }
   }
 
-  // Generate cryptographic session token
+  // Generate cryptographic session token + per-session signature
   const crypto = await import("crypto");
   const token = crypto.randomUUID();
+  const tokenSignature = crypto.randomBytes(32).toString('hex');
+
+  // Compute expiration (default 4 hours, or from assignment config)
+  const maxDurationSec = (assignment.assessmentConfig?.maxDurationMinutes || 240) * 60;
 
   await db.collection("assessment_sessions").doc(token).set({
     userId: uid,
     assignmentId,
     startedAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + maxDurationSec * 1000),
     used: false,
+    tokenSignature,
   });
 
-  logWithCorrelation('info', 'startAssessmentSession: token issued', correlationId, { uid, assignmentId });
-  return { sessionToken: token, startedAt: Date.now() };
+  logWithCorrelation('info', 'startAssessmentSession: token issued', correlationId, { uid, assignmentId, maxDurationSec });
+  return { sessionToken: token, tokenSignature, startedAt: Date.now() };
 });
 // ==========================================
 // SUBMIT ASSESSMENT — Server-side grading + telemetry
@@ -147,19 +154,17 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
   const uid = request.auth.uid;
   const correlationId = generateCorrelationId();
 
-  const { assignmentId, userName, responses, metrics, classType, sessionToken } = request.data;
+  const { assignmentId, userName, responses, metrics, classType, sessionToken, tokenSignature } = request.data;
   if (!assignmentId || !responses || !metrics) {
     throw new HttpsError("invalid-argument", "Missing required fields");
   }
 
-  // 2. Validate session token (or enforce grace period)
+  // 2. Validate session token + signature (prevents token forgery and replay)
   const db = admin.firestore();
   let sessionStartedAt: number | null = null;
-  // Hoist tokenRef so it's accessible for the atomic commit transaction later
   const tokenRef = sessionToken ? db.collection("assessment_sessions").doc(sessionToken) : null;
 
   if (sessionToken && tokenRef) {
-    // Phase 1: Validate token AND claim it atomically (prevents double-submit race)
     const tokenData = await db.runTransaction(async (transaction) => {
       const tokenSnap = await transaction.get(tokenRef);
       if (!tokenSnap.exists) {
@@ -175,11 +180,21 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       if (data.used) {
         throw new HttpsError("already-exists", "This assessment session has already been submitted. Please start a new attempt.");
       }
+      // Verify token signature (prevents clients from forging tokens)
+      // Backward-compat: only require signature if the session was created with one
+      if (data.tokenSignature && data.tokenSignature !== tokenSignature) {
+        throw new HttpsError("permission-denied", "Invalid session signature.");
+      }
+      // Check expiration
+      const now = Date.now();
+      const expiresAt = data.expiresAt?.toMillis ? data.expiresAt.toMillis() : Number(data.expiresAt);
+      if (expiresAt && now > expiresAt + 300000) { // 5-minute grace period
+        throw new HttpsError("deadline-exceeded", "Your assessment session has expired, but your answers are still saved. Refresh the page to start a new attempt and your work will be restored.");
+      }
       // Claim token immediately — second request will see used:true and fail fast
       transaction.update(tokenRef, { used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
       return data;
     });
-    // Extract startedAt from the session doc (Firestore Timestamp -> millis)
     if (tokenData.startedAt && typeof tokenData.startedAt.toMillis === "function") {
       sessionStartedAt = tokenData.startedAt.toMillis();
     } else if (tokenData.startedAt) {
@@ -192,7 +207,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     const hasUnsavedWork = draftSnap.exists && Object.keys(draftSnap.data()?.responses || {}).length > 0;
     throw new HttpsError("failed-precondition",
       JSON.stringify({
-        message: "Your session has expired. Please start a new assessment attempt.",
+        message: "Your session has expired, but your answers are still saved. Refresh the page to start a new attempt and your work will be restored.",
         hasUnsavedWork,
         hint: hasUnsavedWork ? "Your draft responses are saved. Starting a new attempt will preserve them for recovery." : undefined,
       }));
@@ -345,18 +360,30 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
 
     const wordsPerSecond = validatedEngagement > 0 ? Math.round((totalWordCount / validatedEngagement) * 100) / 100 : 0;
 
-    // 5c. Calculate telemetry status
+    // 5b. Validate metrics integrity (reject forged or impossible values)
+    const metricsValidation = validateMetricsIntegrity(metrics, serverElapsedSec, totalWordCount, nonEmptyResponses.length);
+    if (!metricsValidation.valid) {
+      logWithCorrelation('warn', 'submitAssessment: metrics validation rejected', correlationId, {
+        uid, assignmentId,
+        reason: metricsValidation.rejectionReason,
+      });
+      throw new HttpsError("invalid-argument", `Telemetry validation failed: ${metricsValidation.rejectionReason}`);
+    }
+    const clampedMetrics = metricsValidation.clampedMetrics;
+    const metricsViolations = metricsValidation.violations;
+
+    // 5c. Calculate telemetry status (using clamped metrics)
     let feedback = "Assignment submitted successfully.";
     let txStatus = "CLEAN";
     let assistiveTechOverrides: string[] | undefined;
     const feedbackResult = calculateFeedbackServerSide({
-      pasteCount: metrics.pasteCount || 0,
+      pasteCount: (clampedMetrics.pasteCount as number) || 0,
       engagementTime: validatedEngagement,
-      keystrokes: metrics.keystrokes || 0,
-      tabSwitchCount: metrics.tabSwitchCount || 0,
+      keystrokes: (clampedMetrics.keystrokes as number) || 0,
+      tabSwitchCount: (clampedMetrics.tabSwitchCount as number) || 0,
       wordCount: totalWordCount,
       wordsPerSecond,
-      autoInsertCount: metrics.autoInsertCount || 0,
+      autoInsertCount: (clampedMetrics.autoInsertCount as number) || 0,
     }, assessmentThresholds, {
       responseCount: nonEmptyResponses.length,
       hasWrittenResponses: nonEmptyResponses.length > 0,
@@ -365,6 +392,12 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     txStatus = feedbackResult.status;
     feedback = feedbackResult.feedback;
     assistiveTechOverrides = feedbackResult.assistiveTechOverrides;
+
+    // If metrics had violations that required clamping, auto-flag regardless of other checks
+    if (metricsViolations.length > 0 && txStatus !== "FLAGGED") {
+      txStatus = "FLAGGED";
+      feedback = `Assignment submitted, but telemetry anomalies detected: ${metricsViolations.join('; ')}.`;
+    }
 
     if (txStatus === "FLAGGED") {
       logWithCorrelation('warn', 'submitAssessment FLAGGED', correlationId, {
@@ -376,6 +409,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         pastes: metrics.pasteCount,
         responses: nonEmptyResponses.length,
         feedback,
+        metricsViolations,
       });
     }
 
@@ -408,7 +442,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     const txAttemptNumber = currentCount + 1;
     transaction.set(counterRef, { count: txAttemptNumber }, { merge: true });
 
-    // 6. Create submission doc
+    // 6. Create submission doc (using clamped metrics for integrity, raw metrics for forensics)
     const assessmentSubmission = {
       userId: uid,
       userName: userName || "Student",
@@ -417,21 +451,23 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       metrics: {
         engagementTime: validatedEngagement,
         clientReportedEngagement: metrics.engagementTime || 0,
-        keystrokes: metrics.keystrokes || 0,
-        pasteCount: metrics.pasteCount || 0,
-        clickCount: metrics.clickCount || 0,
-        autoInsertCount: metrics.autoInsertCount || 0,
+        keystrokes: (clampedMetrics.keystrokes as number) || 0,
+        pasteCount: (clampedMetrics.pasteCount as number) || 0,
+        clickCount: (clampedMetrics.clickCount as number) || 0,
+        autoInsertCount: (clampedMetrics.autoInsertCount as number) || 0,
         startTime: metrics.startTime || 0,
         firstInteractionTime: metrics.firstInteractionTime || 0,
         lastActive: metrics.lastActive || 0,
-        tabSwitchCount: metrics.tabSwitchCount || 0,
-        perBlockTiming: metrics.perBlockTiming || {},
-        typingCadence: metrics.typingCadence || {},
+        tabSwitchCount: (clampedMetrics.tabSwitchCount as number) || 0,
+        blurCount: (clampedMetrics.blurCount as number) || 0,
+        perBlockTiming: clampedMetrics.perBlockTiming || {},
+        typingCadence: clampedMetrics.typingCadence || {},
         serverElapsedSec: Math.round(serverElapsedSec),
         wordCount: totalWordCount,
         wordsPerSecond,
         plausibilityScore,
         plausibilityFactors,
+        ...(metricsViolations.length > 0 ? { metricsViolations } : {}),
         ...(assistiveTechOverrides ? { assistiveTechOverrides } : {}),
       },
       submittedAt: new Date().toISOString(),
@@ -662,7 +698,8 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   const blocks = assignment.lessonBlocks || [];
   const { correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses);
 
-  // 6. Find session token (query outside transaction — inequality filters not allowed in transactions)
+  // 6. Find and validate session token
+  const { tokenSignature: behalfTokenSignature } = request.data;
   const sessionQuery = await db.collection("assessment_sessions")
     .where("userId", "==", userId)
     .where("assignmentId", "==", assignmentId)
@@ -673,8 +710,19 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   const sessionDoc = sessionQuery.empty ? null : sessionQuery.docs[0];
   let sessionStartedAt: number | null = null;
   if (sessionDoc) {
-    const startedAt = sessionDoc.data().startedAt;
+    const sData = sessionDoc.data();
+    const startedAt = sData.startedAt;
     sessionStartedAt = startedAt?.toMillis?.() || Number(startedAt) || null;
+    // Verify token signature if provided (teachers may not have the student's signature)
+    if (behalfTokenSignature && sData.tokenSignature !== behalfTokenSignature) {
+      throw new HttpsError("permission-denied", "Invalid session signature for submit on behalf.");
+    }
+    // Check expiration
+    const now = Date.now();
+    const expiresAt = sData.expiresAt?.toMillis ? sData.expiresAt.toMillis() : Number(sData.expiresAt);
+    if (expiresAt && now > expiresAt + 300000) {
+      throw new HttpsError("deadline-exceeded", "Assessment session has expired. The student's draft answers are still saved — they can refresh to start a new attempt and their work will be restored.");
+    }
   }
 
   // 8. Look up student info
@@ -853,6 +901,10 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     const counterRef = db.doc(`assessment_attempt_counters/${userId}_${assignmentId}`);
     const counterSnap = await t.get(counterRef);
     const currentCount = counterSnap.exists ? (counterSnap.data()!.count || 0) : 0;
+    const cfg = assignment.assessmentConfig || {};
+    if (cfg.maxAttempts && cfg.maxAttempts > 0 && currentCount >= cfg.maxAttempts) {
+      throw new HttpsError("resource-exhausted", `Student has used all ${cfg.maxAttempts} attempts for this assessment.`);
+    }
     const txAttemptNumber = currentCount + 1;
     t.set(counterRef, { count: txAttemptNumber }, { merge: true });
 
@@ -953,4 +1005,44 @@ export const uploadQuestionBank = onCall({ memory: "256MiB", timeoutSeconds: 60 
 
   logWithCorrelation('info', 'Question bank uploaded', correlationId, { questionCount: questions.length, assignmentId });
   return { questionCount: questions.length };
+});
+
+
+/**
+ * Heartbeat — periodic ping from client during an active assessment session.
+ * Verifies the session token is still valid and not expired, updates lastHeartbeatAt.
+ * Returns { ok: boolean, expiresAt?: string }.
+ */
+export const heartbeat = onCall({ memory: "128MiB", timeoutSeconds: 10 }, async (request) => {
+  verifyAuth(request.auth);
+  const { sessionToken } = request.data;
+  if (!sessionToken || typeof sessionToken !== "string") {
+    throw new HttpsError("invalid-argument", "sessionToken required.");
+  }
+
+  const db = admin.firestore();
+  const sessionRef = db.collection("assessment_sessions").doc(sessionToken);
+  const sessionDoc = await sessionRef.get();
+
+  if (!sessionDoc.exists) {
+    throw new HttpsError("not-found", "Session not found.");
+  }
+
+  const sessionData = sessionDoc.data()!;
+  const now = admin.firestore.Timestamp.now();
+  const expiresAt = sessionData.expiresAt as admin.firestore.Timestamp | undefined;
+
+  if (expiresAt && expiresAt.toMillis() < now.toMillis()) {
+    throw new HttpsError("deadline-exceeded", "Session has expired. Your draft answers are still saved — refresh the page to start a new attempt and your work will be restored.");
+  }
+
+  if (sessionData.used === true) {
+    throw new HttpsError("failed-precondition", "Session already used for submission.");
+  }
+
+  await sessionRef.update({
+    lastHeartbeatAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return { ok: true, expiresAt: expiresAt ? expiresAt.toDate().toISOString() : undefined };
 });

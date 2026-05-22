@@ -2,7 +2,7 @@
  * useGradingState — custom hook that owns all assessment grading state.
  * URL-driven: assessmentId and studentId come from useParams().
  */
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { User, Assignment, Submission, RubricSkillGrade, RubricGrade, DraftFeedbackMessage } from '../../types';
 import { dataService } from '../../services/dataService';
@@ -77,6 +77,9 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   const [gradingStudentId, setGradingStudentId] = useState<string | null>(urlStudentId);
   const [gradingAttemptId, setGradingAttemptId] = useState<string | null>(null);
   const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
+  const [integrityFlagCount, setIntegrityFlagCount] = useState(0);
+  const [historicalReport, setHistoricalReport] = useState<IntegrityReport | null>(null);
+  const lastAutoRunRef = useRef<number>(0);
   const [showIntegrityPanel, setShowIntegrityPanel] = useState(false);
   const [mobileTab, setMobileTab] = useState<'list' | 'response' | 'rubric'>('list');
   const [expandedPairIdx, setExpandedPairIdx] = useState<number | null>(null);
@@ -571,16 +574,92 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     toast.success(`Batch grading complete: ${accepted} accepted${failed > 0 ? `, ${failed} failed` : ''}`);
   }, [selectedAssessment, allStudentGroups, confirm, toast]);
 
+  // Load historical integrity report when assignment changes
+  useEffect(() => {
+    if (!selectedAssessmentId) {
+      setHistoricalReport(null);
+      return;
+    }
+    dataService.getLatestIntegrityReport(selectedAssessmentId).then(report => {
+      if (report) setHistoricalReport(report);
+    }).catch(() => setHistoricalReport(null));
+  }, [selectedAssessmentId]);
+
+  // Auto-compute integrity report when submissions change (debounced, offloaded to Web Worker for large classes)
+  useEffect(() => {
+    if (!selectedAssessment || groupsData.sectionFilteredSubs.length === 0) {
+      setIntegrityReport(null);
+      setIntegrityFlagCount(0);
+      return;
+    }
+    // Throttle: don't auto-run more than once per 60 seconds to avoid CPU spikes during live submission windows
+    const now = Date.now();
+    if (now - lastAutoRunRef.current < 60000) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const subs = groupsData.sectionFilteredSubs;
+      const blocks = selectedAssessment.lessonBlocks || [];
+
+      // Use Web Worker for classes > 30 students to prevent UI freezing
+      if (subs.length > 30 && typeof Worker !== 'undefined') {
+        try {
+          const worker = new Worker(new URL('../../lib/integrityWorker.ts', import.meta.url), { type: 'module' });
+          worker.postMessage({ submissions: subs, lessonBlocks: blocks, threshold: 0.7 });
+          worker.onmessage = (e) => {
+            worker.terminate();
+            if (cancelled) return;
+            if (e.data.type === 'success') {
+              setIntegrityReport(e.data.report);
+              setIntegrityFlagCount(e.data.report.flaggedPairs.length);
+              lastAutoRunRef.current = Date.now();
+              if (selectedAssessmentId) {
+                dataService.saveIntegrityReport(selectedAssessmentId, e.data.report);
+              }
+            } else {
+              reportError(new Error(e.data.message), { context: 'integrityWorker' });
+            }
+          };
+          worker.onerror = (err) => {
+            worker.terminate();
+            if (cancelled) return;
+            reportError(err.error || err, { context: 'integrityWorker' });
+            // Fallback to sync
+            const report = analyzeIntegrity(subs, blocks);
+            setIntegrityReport(report);
+            setIntegrityFlagCount(report.flaggedPairs.length);
+          };
+          return;
+        } catch {
+          // Worker spawn failed — fall through to sync
+        }
+      }
+
+      // Synchronous path (small classes or worker unavailable)
+      const report = analyzeIntegrity(subs, blocks);
+      if (!cancelled) {
+        setIntegrityReport(report);
+        setIntegrityFlagCount(report.flaggedPairs.length);
+        lastAutoRunRef.current = Date.now();
+        // Persist report to Firestore for cross-attempt comparison
+        if (selectedAssessmentId) {
+          dataService.saveIntegrityReport(selectedAssessmentId, report);
+        }
+      }
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [groupsData.sectionFilteredSubs, selectedAssessment, selectedAssessmentId]);
+
   const handleCheckIntegrity = useCallback(() => {
     if (showIntegrityPanel) {
       setShowIntegrityPanel(false);
     } else {
-      const report = analyzeIntegrity(groupsData.sectionFilteredSubs, selectedAssessment?.lessonBlocks || []);
-      setIntegrityReport(report);
       setShowIntegrityPanel(true);
       setExpandedPairIdx(null);
     }
-  }, [showIntegrityPanel, groupsData.sectionFilteredSubs, selectedAssessment]);
+  }, [showIntegrityPanel]);
 
   const handleDownloadCSV = useCallback(() => {
     if (!selectedAssessment) return;
@@ -715,7 +794,10 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setAssessmentSortDesc,
     // Integrity state
     integrityReport,
+    integrityFlagCount,
+    historicalReport,
     showIntegrityPanel,
+    setShowIntegrityPanel,
     expandedPairIdx,
     setExpandedPairIdx,
     // Draft state

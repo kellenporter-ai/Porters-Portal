@@ -59,7 +59,10 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     assessmentSortDesc,
     setAssessmentSortDesc,
     integrityReport,
+    integrityFlagCount,
+    historicalReport,
     showIntegrityPanel,
+    setShowIntegrityPanel,
     expandedPairIdx,
     setExpandedPairIdx,
     viewingDraftUserId,
@@ -99,6 +102,18 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
 
   const hasSubs = unifiedList.length > 0;
   const hasNoResults = selectedAssessmentId && allStudentGroups.length === 0 && studentGroups.length === 0 && notStartedStudents.length === 0;
+
+  const handleJumpToPair = (pairIdx: number) => {
+    if (!showIntegrityPanel) {
+      setShowIntegrityPanel(true);
+    }
+    setExpandedPairIdx(pairIdx);
+    // Scroll to integrity panel
+    setTimeout(() => {
+      const panel = document.querySelector('[data-integrity-panel]');
+      panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   const handleSort = (key: string) => {
     if (assessmentSortKey === key) setAssessmentSortDesc(d => !d);
@@ -199,16 +214,20 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
           onClassroomPush={handleClassroomPush}
           pushingToClassroom={pushingToClassroom}
           showIntegrityPanel={showIntegrityPanel}
+          integrityFlagCount={integrityFlagCount}
         />
       )}
 
       {/* Integrity Panel */}
       {showIntegrityPanel && integrityReport && (
-        <IntegrityPanel
-          report={integrityReport}
-          expandedPairIdx={expandedPairIdx}
-          onTogglePair={i => setExpandedPairIdx(expandedPairIdx === i ? null : i)}
-        />
+        <div data-integrity-panel>
+          <IntegrityPanel
+            report={integrityReport}
+            historicalReport={historicalReport}
+            expandedPairIdx={expandedPairIdx}
+            onTogglePair={i => setExpandedPairIdx(expandedPairIdx === i ? null : i)}
+          />
+        </div>
       )}
 
       {/* Mobile tab switcher */}
@@ -294,6 +313,8 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
               onUnflagAI={handleUnflagAI}
               onAttemptChange={handleAttemptChange}
               users={users}
+              integrityReport={integrityReport}
+              onJumpToPair={handleJumpToPair}
             />
           </div>
 

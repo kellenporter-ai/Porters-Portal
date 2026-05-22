@@ -497,3 +497,146 @@ export function logWithCorrelation(
 ) {
   logger[level](message, { correlationId, ...meta });
 }
+
+// ==========================================
+// METRICS INTEGRITY VALIDATION
+// ==========================================
+
+export interface MetricsValidationResult {
+  valid: boolean;
+  rejectionReason?: string;
+  clampedMetrics: Record<string, unknown>;
+  violations: string[];
+}
+
+/**
+ * Validate and clamp client-reported telemetry metrics against server-computed bounds.
+ * Rejects physically impossible values; clamps suspicious-but-possible values.
+ */
+export function validateMetricsIntegrity(
+  rawMetrics: Record<string, unknown>,
+  serverElapsedSec: number,
+  wordCount: number,
+  responseCount: number
+): MetricsValidationResult {
+  const violations: string[] = [];
+  const clamped: Record<string, unknown> = { ...rawMetrics };
+
+  // Helper to safely read numbers
+  const getNum = (key: string, def = 0): number => {
+    const v = rawMetrics[key];
+    return typeof v === 'number' && !isNaN(v) ? v : def;
+  };
+
+  const engagementTime = getNum('engagementTime', 0);
+  const pasteCount = getNum('pasteCount', 0);
+  const keystrokes = getNum('keystrokes', 0);
+  const clickCount = getNum('clickCount', 0);
+  const tabSwitchCount = getNum('tabSwitchCount', 0);
+  const blurCount = getNum('blurCount', 0);
+  const autoInsertCount = getNum('autoInsertCount', 0);
+
+  // ── REJECTION: physically impossible ──
+
+  if (engagementTime < 0 || engagementTime > 86400) {
+    return { valid: false, rejectionReason: `Impossible engagementTime: ${engagementTime}`, clampedMetrics: clamped, violations };
+  }
+  if (pasteCount < 0 || pasteCount > 10000) {
+    return { valid: false, rejectionReason: `Impossible pasteCount: ${pasteCount}`, clampedMetrics: clamped, violations };
+  }
+  if (keystrokes < 0 || keystrokes > 100000) {
+    return { valid: false, rejectionReason: `Impossible keystrokes: ${keystrokes}`, clampedMetrics: clamped, violations };
+  }
+  if (clickCount < 0 || clickCount > 500000) {
+    return { valid: false, rejectionReason: `Impossible clickCount: ${clickCount}`, clampedMetrics: clamped, violations };
+  }
+  if (tabSwitchCount < 0 || tabSwitchCount > 10000) {
+    return { valid: false, rejectionReason: `Impossible tabSwitchCount: ${tabSwitchCount}`, clampedMetrics: clamped, violations };
+  }
+
+  // ── CLAMPING: suspicious but within physical bounds ──
+
+  // engagementTime: already clamped to serverElapsedSec + 5 in submitAssessment
+  // Keep the raw value for forensic logging, but note if it exceeds bounds
+  if (serverElapsedSec > 0 && engagementTime > serverElapsedSec + 5) {
+    violations.push(`engagementTime (${engagementTime}) exceeds server elapsed (${serverElapsedSec})`);
+    clamped.engagementTime = Math.min(engagementTime, serverElapsedSec + 5);
+  }
+
+  // pasteCount: cannot paste more than wordCount/2 (each paste must contribute at least 2 words on average)
+  const maxPaste = wordCount > 0 ? Math.max(0, Math.ceil(wordCount / 2)) : pasteCount;
+  if (pasteCount > maxPaste) {
+    violations.push(`pasteCount (${pasteCount}) exceeds max allowed (${maxPaste}) for ${wordCount} words`);
+    clamped.pasteCount = maxPaste;
+  }
+
+  // keystrokes: cannot type more than 10 chars per word on average (generous upper bound)
+  const maxKeystrokes = wordCount > 0 ? wordCount * 10 : keystrokes;
+  if (keystrokes > maxKeystrokes) {
+    violations.push(`keystrokes (${keystrokes}) exceeds max allowed (${maxKeystrokes}) for ${wordCount} words`);
+    clamped.keystrokes = maxKeystrokes;
+  }
+
+  // clickCount: cannot click more than 5 times per second on average
+  const maxClicks = serverElapsedSec > 0 ? Math.floor(serverElapsedSec * 5) : clickCount;
+  if (clickCount > maxClicks) {
+    violations.push(`clickCount (${clickCount}) exceeds max allowed (${maxClicks}) for ${serverElapsedSec}s elapsed`);
+    clamped.clickCount = maxClicks;
+  }
+
+  // tabSwitchCount: cannot switch tabs more than once per 2 seconds on average
+  const maxTabSwitches = serverElapsedSec > 0 ? Math.floor(serverElapsedSec / 2) : tabSwitchCount;
+  if (tabSwitchCount > maxTabSwitches) {
+    violations.push(`tabSwitchCount (${tabSwitchCount}) exceeds max allowed (${maxTabSwitches}) for ${serverElapsedSec}s elapsed`);
+    clamped.tabSwitchCount = maxTabSwitches;
+  }
+
+  // blurCount: same bound as tabSwitchCount
+  const maxBlurs = serverElapsedSec > 0 ? Math.floor(serverElapsedSec / 2) : blurCount;
+  if (blurCount > maxBlurs) {
+    violations.push(`blurCount (${blurCount}) exceeds max allowed (${maxBlurs}) for ${serverElapsedSec}s elapsed`);
+    clamped.blurCount = maxBlurs;
+  }
+
+  // autoInsertCount: cannot auto-insert more than wordCount
+  const maxAutoInsert = wordCount > 0 ? wordCount : autoInsertCount;
+  if (autoInsertCount > maxAutoInsert) {
+    violations.push(`autoInsertCount (${autoInsertCount}) exceeds max allowed (${maxAutoInsert}) for ${wordCount} words`);
+    clamped.autoInsertCount = maxAutoInsert;
+  }
+
+  // perBlockTiming: sum should not exceed engagementTime * 1.5
+  const perBlockTiming = rawMetrics.perBlockTiming as Record<string, number> | undefined;
+  if (perBlockTiming && typeof perBlockTiming === 'object') {
+    const timingSum = Object.values(perBlockTiming).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+    const clampedEngagement = (clamped.engagementTime as number) || engagementTime;
+    if (timingSum > clampedEngagement * 1.5) {
+      violations.push(`perBlockTiming sum (${timingSum.toFixed(1)}s) exceeds 1.5x engagement (${(clampedEngagement * 1.5).toFixed(1)}s)`);
+      // Scale down proportionally rather than dropping
+      const scale = (clampedEngagement * 1.5) / timingSum;
+      const scaledTiming: Record<string, number> = {};
+      for (const [k, v] of Object.entries(perBlockTiming)) {
+        scaledTiming[k] = typeof v === 'number' ? Math.round(v * scale * 10) / 10 : 0;
+      }
+      clamped.perBlockTiming = scaledTiming;
+    }
+  }
+
+  // typingCadence bounds
+  const typingCadence = rawMetrics.typingCadence as Record<string, unknown> | undefined;
+  if (typingCadence && typeof typingCadence === 'object') {
+    const avgInterval = typeof typingCadence.avgIntervalMs === 'number' ? typingCadence.avgIntervalMs : 0;
+    const burstCount = typeof typingCadence.burstCount === 'number' ? typingCadence.burstCount : 0;
+    if (avgInterval < 0 || avgInterval > 10000) {
+      violations.push(`typingCadence.avgIntervalMs (${avgInterval}) out of bounds`);
+      clamped.typingCadence = { ...typingCadence, avgIntervalMs: Math.max(0, Math.min(avgInterval, 10000)) };
+    }
+    const maxBursts = keystrokes > 0 ? Math.floor(keystrokes / 5) : burstCount;
+    if (burstCount > maxBursts) {
+      violations.push(`typingCadence.burstCount (${burstCount}) exceeds max allowed (${maxBursts})`);
+      clamped.typingCadence = { ...typingCadence, burstCount: maxBursts };
+    }
+  }
+
+  return { valid: true, clampedMetrics: clamped, violations };
+}

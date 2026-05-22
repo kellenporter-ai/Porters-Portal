@@ -117,6 +117,7 @@ export const callAdminAddToWhitelist = httpsCallable(functions, 'adminAddToWhite
 // Assessment admin actions
 export const callReturnAssessment = httpsCallable(functions, 'returnAssessment');
 export const callSubmitOnBehalf = httpsCallable(functions, 'submitOnBehalf');
+export const callHeartbeat = httpsCallable(functions, 'heartbeat');
 
 // Google Classroom grade sync
 export const callClassroomListCourses = httpsCallable(functions, 'classroomListCourses');

@@ -48,19 +48,24 @@ export const startResourceSession = onCall({ memory: "256MiB", timeoutSeconds: 6
   const sessionRef = db.collection("resource_sessions").doc(sessionId);
   const correlationId = generateCorrelationId();
 
-  // Reuse existing session (crash recovery / page refresh)
+  // Reuse existing session (crash recovery / page refresh) if not expired
   const existing = await sessionRef.get();
   if (existing.exists) {
     const data = existing.data()!;
     const startedAt = data.startedAt?.toMillis?.() || Number(data.startedAt) || Date.now();
-    logWithCorrelation("info", "startResourceSession: reused existing", correlationId, { uid, assignmentId });
-    return { sessionToken: sessionId, startedAt };
+    const expiresAt = data.expiresAt?.toMillis?.() || Number(data.expiresAt) || 0;
+    if (expiresAt && Date.now() < expiresAt + 300000) { // 5-minute grace
+      logWithCorrelation("info", "startResourceSession: reused existing", correlationId, { uid, assignmentId });
+      return { sessionToken: sessionId, startedAt };
+    }
+    // Expired — create new
   }
 
   await sessionRef.set({
     userId: uid,
     assignmentId,
     startedAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
   });
 
   logWithCorrelation("info", "startResourceSession: created", correlationId, { uid, assignmentId });
@@ -96,9 +101,15 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   if (sessionToken) {
     const sessionSnap = await db.collection("resource_sessions").doc(sessionToken).get();
     if (sessionSnap.exists) {
-      const startedAt = sessionSnap.data()!.startedAt;
+      const sData = sessionSnap.data()!;
+      const startedAt = sData.startedAt;
       const startedMs = startedAt?.toMillis?.() || Number(startedAt) || Date.now();
       serverElapsedSec = Math.max(0, (Date.now() - startedMs) / 1000);
+      // Reject if session expired
+      const expiresAt = sData.expiresAt?.toMillis?.() || Number(sData.expiresAt) || 0;
+      if (expiresAt && Date.now() > expiresAt + 300000) {
+        throw new HttpsError("deadline-exceeded", "Resource session has expired. Please refresh the page.");
+      }
     }
   }
 

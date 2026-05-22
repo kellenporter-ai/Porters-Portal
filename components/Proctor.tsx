@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
-import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callArchiveAndClearResponses } from '../lib/firebase';
+import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callArchiveAndClearResponses, callHeartbeat } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
@@ -39,12 +39,15 @@ interface ProctorProps {
   isAssessment?: boolean;
   onGetMetricsAndResponses?: React.MutableRefObject<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>;
   onSessionToken?: (token: string | null) => void;
+  onTokenSignature?: (signature: string | null) => void;
   /** Admin preview mode — disables all Firestore writes, XP awards, and telemetry persistence. */
   previewMode?: boolean;
   /** Whether LessonProgressSidebar is visible — hides redundant HUD badges */
   hasSidebar?: boolean;
   /** Ref exposed upward so ResourceViewer can call flushNow() for Save & Exit flow. */
   flushRef?: React.MutableRefObject<(() => Promise<WriteStatus> | undefined) | null>;
+  /** Lockdown mode for assessments — auto-fullscreen, blocks copy/paste/contextmenu/devtools. */
+  lockdownMode?: boolean;
 }
 
 // ============================================================
@@ -109,7 +112,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, previewMode, hasSidebar, flushRef }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, previewMode, hasSidebar, flushRef, lockdownMode }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const metricsFailCountRef = useRef(0);
   const lastInteractionRef = useRef<number>(Date.now());
@@ -191,19 +194,33 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const assistiveTechRef = useRef(false);
   const firstInteractionRef = useRef<number | null>(null);
 
+  // Lockdown mode state
+  const isLockdown = lockdownMode !== false && isAssessment === true;
+  const [lockdownViolations, setLockdownViolations] = useState(0);
+  const lockdownViolationsRef = useRef(0);
+  const [lockdownWarning, setLockdownWarning] = useState<string | null>(null);
+  const lockdownWarningTimeoutRef = useRef<number | null>(null);
+
   // Start assessment session and obtain server-issued token
   useEffect(() => {
     if (previewMode || !isAssessment || !assignmentId) return;
 
-    // Check for existing session token (localStorage survives tab close; sessionStorage is backup)
+    // Check for existing session token + signature
     const storageKey = `assessment_session_${assignmentId}`;
+    const sigKey = `${storageKey}_sig`;
     const cached = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
     if (cached) {
+      const cachedSig = localStorage.getItem(sigKey) || sessionStorage.getItem(sigKey);
       // Keep both in sync
       localStorage.setItem(storageKey, cached);
       sessionStorage.setItem(storageKey, cached);
+      if (cachedSig) {
+        localStorage.setItem(sigKey, cachedSig);
+        sessionStorage.setItem(sigKey, cachedSig);
+      }
       setSessionToken(cached);
       onSessionToken?.(cached);
+      if (cachedSig) onTokenSignature?.(cachedSig);
       return;
     }
 
@@ -213,12 +230,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
           const result = await callStartAssessmentSession({ assignmentId });
-          const data = result.data as { sessionToken: string; startedAt: number };
+          const data = result.data as { sessionToken: string; tokenSignature: string; startedAt: number };
           if (cancelled) return;
           localStorage.setItem(storageKey, data.sessionToken);
+          localStorage.setItem(sigKey, data.tokenSignature);
           sessionStorage.setItem(storageKey, data.sessionToken);
+          sessionStorage.setItem(sigKey, data.tokenSignature);
           setSessionToken(data.sessionToken);
           onSessionToken?.(data.sessionToken);
+          onTokenSignature?.(data.tokenSignature);
           setSessionTokenError(null);
           return;
         } catch (err: unknown) {
@@ -352,13 +372,17 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             if (Object.keys(responses).length > 0) {
               // Session recovery — always restore existing draft responses
               const storageKey = `assessment_session_${assignmentId}`;
+              const sigKey = `${storageKey}_sig`;
               try {
                 const result = await callStartAssessmentSession({ assignmentId });
-                const tokenData = result.data as { sessionToken: string };
+                const tokenData = result.data as { sessionToken: string; tokenSignature: string };
                 localStorage.setItem(storageKey, tokenData.sessionToken);
                 sessionStorage.setItem(storageKey, tokenData.sessionToken);
+                localStorage.setItem(sigKey, tokenData.tokenSignature);
+                sessionStorage.setItem(sigKey, tokenData.tokenSignature);
                 setSessionToken(tokenData.sessionToken);
                 onSessionToken?.(tokenData.sessionToken);
+                onTokenSignature?.(tokenData.tokenSignature);
               } catch {
                 // If token request fails, still restore work — don't lose data
               }
@@ -1278,6 +1302,110 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
+  // Lockdown mode: enforce restrictions during live assessments
+  useEffect(() => {
+    if (!isLockdown || previewMode) return;
+    const wrapper = iframeWrapperRef.current;
+    // Auto-request fullscreen on mount
+    if (wrapper && !document.fullscreenElement) {
+      wrapper.requestFullscreen().catch(() => {
+        setIsFullscreen(true); // CSS fallback
+      });
+    }
+
+    // Track violations
+    const recordViolation = (label: string) => {
+      const next = lockdownViolationsRef.current + 1;
+      lockdownViolationsRef.current = next;
+      setLockdownViolations(next);
+      setLockdownWarning(label);
+      if (lockdownWarningTimeoutRef.current) window.clearTimeout(lockdownWarningTimeoutRef.current);
+      lockdownWarningTimeoutRef.current = window.setTimeout(() => setLockdownWarning(null), 3000);
+    };
+
+    const onContextMenu = (e: Event) => {
+      e.preventDefault();
+      recordViolation('Please use the provided tools during the assessment');
+    };
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+      recordViolation('Please stay on this page to keep your work counted');
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        recordViolation('Please stay in this tab so your work is counted');
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Block common shortcuts: copy, paste, cut, save, print, devtools
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (['c', 'v', 'x', 's', 'p'].includes(key)) {
+          e.preventDefault();
+          recordViolation('Keyboard shortcuts are disabled during the assessment');
+        }
+        if (key === 'u') { // View source
+          e.preventDefault();
+          recordViolation('Keyboard shortcuts are disabled during the assessment');
+        }
+      }
+      // F12 (devtools)
+      if (e.key === 'F12') {
+        e.preventDefault();
+        recordViolation('Please focus on your assessment');
+      }
+      // Ctrl+Shift+I/J/C
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+        const key = e.key.toLowerCase();
+        if (['i', 'j', 'c'].includes(key)) {
+          e.preventDefault();
+          recordViolation('Please focus on your assessment');
+        }
+      }
+    };
+
+    document.addEventListener('contextmenu', onContextMenu);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', onContextMenu);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('keydown', onKeyDown);
+      if (lockdownWarningTimeoutRef.current) window.clearTimeout(lockdownWarningTimeoutRef.current);
+    };
+  }, [isLockdown, previewMode]);
+
+  // Network heartbeat: ping server every 30s during active assessment to keep session alive
+  useEffect(() => {
+    if (!isAssessment || previewMode || !sessionToken) return;
+    let intervalId: number;
+    let failCount = 0;
+    const ping = async () => {
+      try {
+        await callHeartbeat({ sessionToken });
+        failCount = 0; // Reset on success
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Only count definitive session errors; ignore transient network blips
+        const isDefinitive = msg.includes('expired') || msg.includes('not-found') || msg.includes('used');
+        if (isDefinitive) {
+          failCount++;
+        }
+        // Abort after 3 consecutive definitive failures (prevents false positives from transient errors)
+        if (failCount >= 3) {
+          setSessionTokenError('Your assessment session has expired. Your answers are still saved — refresh the page to start a new attempt and your work will be restored.');
+          window.clearInterval(intervalId);
+        }
+      }
+    };
+    intervalId = window.setInterval(ping, 30000);
+    return () => window.clearInterval(intervalId);
+  }, [isAssessment, previewMode, sessionToken]);
+
   // LaTeX Rendering + TTS text extraction
   useEffect(() => {
     if (contentRef.current && htmlContent) {
@@ -1415,6 +1543,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         <AlertTriangle className="w-3 h-3" /> Away ({tabSwitchCount + blurCount})
                     </div>
                 )}
+                {isLockdown && lockdownViolations > 0 && (
+                    <div className={`flex items-center gap-2 text-[11.5px] px-3 py-1 rounded-full border uppercase font-bold tracking-widest transition-colors ${
+                        lockdownViolations >= 3
+                            ? 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20'
+                            : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
+                    }`}>
+                        <AlertTriangle className="w-3 h-3" /> Lockdown Violations: {lockdownViolations}
+                    </div>
+                )}
                 {isAssessment && (
                     <div className="flex items-center gap-1.5">
                         <label className="flex items-center gap-1.5 text-[11.5px] text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-2.5 py-1 rounded-full border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-glass-heavy)] transition">
@@ -1429,11 +1566,15 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                                 className="w-4 h-4 accent-purple-600"
                                 aria-describedby="assistive-tech-helper"
                             />
-                            <span>Assistive Technology</span>
+                            <span>I used dictation, auto-correct, or voice typing</span>
                         </label>
                         <span id="assistive-tech-helper" className="sr-only">
                             Check this box if you used dictation, voice typing, screen reader, or other assistive technology.
                             This prevents false integrity flags on your submission.
+                        </span>
+                        {/* Visible tooltip for sighted users */}
+                        <span className="hidden lg:inline text-[10px] text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded ml-1">
+                          Using dictation or voice typing? Check this.
                         </span>
                     </div>
                 )}
@@ -1450,6 +1591,47 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 }`}>
                     {xpToast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {xpToast.text}
+                </div>
+            </div>
+        )}
+
+        {/* Lockdown Warning Toast */}
+        {lockdownWarning && (
+            <div className="absolute top-14 right-4 z-30 animate-in slide-in-from-right fade-in duration-300">
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg font-bold text-sm border ${
+                    lockdownViolations >= 5
+                        ? 'bg-red-600/90 text-white border-red-400/30'
+                        : 'bg-amber-600/90 text-white border-amber-400/30'
+                }`}>
+                    <AlertTriangle className="w-4 h-4" />
+                    {lockdownWarning}
+                </div>
+            </div>
+        )}
+
+        {/* Lockdown Violation Threshold Warning Modal */}
+        {isLockdown && lockdownViolations >= 3 && !previewMode && (
+            <div className="absolute inset-0 z-40 bg-amber-900/40 backdrop-blur-sm flex items-center justify-center">
+                <div className="bg-[var(--panel-bg)] border border-amber-500/30 rounded-2xl p-6 max-w-sm text-center shadow-2xl mx-4">
+                    <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-2">Please Stay Focused</h3>
+                    <p className="text-[var(--text-secondary)] text-sm mb-2">
+                        We noticed this tab was left a few times. That is okay — you can still finish your assessment.
+                    </p>
+                    <p className="text-[11px] text-purple-600 dark:text-purple-400 mb-4">
+                        If you need accommodations, contact your teacher after submitting.
+                    </p>
+                    <button
+                        onClick={() => {
+                            const wrapper = iframeWrapperRef.current;
+                            if (wrapper && !document.fullscreenElement) {
+                                wrapper.requestFullscreen().catch(() => setIsFullscreen(true));
+                            }
+                        }}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-bold transition-colors"
+                    >
+                        Return to Assessment
+                    </button>
                 </div>
             </div>
         )}

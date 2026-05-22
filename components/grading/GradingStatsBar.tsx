@@ -24,6 +24,7 @@ interface GradingStatsBarProps {
   onClassroomPush?: () => void;
   pushingToClassroom?: boolean;
   showIntegrityPanel?: boolean;
+  integrityFlagCount?: number;
 }
 
 const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
@@ -47,6 +48,7 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
   onClassroomPush,
   pushingToClassroom,
   showIntegrityPanel,
+  integrityFlagCount = 0,
 }) => {
   const Dot = () => <span className="text-[var(--text-muted)] mx-1">&middot;</span>;
 
@@ -133,13 +135,18 @@ const GradingStatsBar: React.FC<GradingStatsBarProps> = ({
         {/* Check Integrity */}
         <button
           onClick={onCheckIntegrity}
-          className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap ${
+          className={`relative flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap ${
             showIntegrityPanel ? 'bg-amber-500 text-black' : 'bg-amber-600/80 hover:bg-amber-500 text-white'
           }`}
           aria-label="Check assessment integrity"
         >
           <Fingerprint className="w-3 h-3" aria-hidden="true" />
           {showIntegrityPanel ? 'Hide Report' : 'Integrity'}
+          {integrityFlagCount > 0 && !showIntegrityPanel && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 shadow-sm">
+              {integrityFlagCount > 9 ? '9+' : integrityFlagCount}
+            </span>
+          )}
         </button>
 
         {/* Download CSV */}

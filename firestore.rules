@@ -35,6 +35,27 @@ service cloud.firestore {
         && d.keys().hasAll(['studentId', 'createdAt']);
     }
 
+    // Validate metricsSnapshot structure to prevent poisoning
+    function validMetricsSnapshot() {
+      let ms = request.resource.data.metricsSnapshot;
+      if ms == null { return true; }
+      if !(ms is map) { return false; }
+      let engagementTime = ms.engagementTime;
+      let keystrokes = ms.keystrokes;
+      let pasteCount = ms.pasteCount;
+      let tabSwitchCount = ms.tabSwitchCount;
+      let clickCount = ms.clickCount;
+      let autoInsertCount = ms.autoInsertCount;
+      let blurCount = ms.blurCount;
+      return (engagementTime == null || (engagementTime is number && engagementTime >= 0 && engagementTime <= 86400))
+        && (keystrokes == null || (keystrokes is number && keystrokes >= 0 && keystrokes <= 100000))
+        && (pasteCount == null || (pasteCount is number && pasteCount >= 0 && pasteCount <= 10000))
+        && (tabSwitchCount == null || (tabSwitchCount is number && tabSwitchCount >= 0 && tabSwitchCount <= 10000))
+        && (clickCount == null || (clickCount is number && clickCount >= 0 && clickCount <= 500000))
+        && (autoInsertCount == null || (autoInsertCount is number && autoInsertCount >= 0 && autoInsertCount <= 10000))
+        && (blurCount == null || (blurCount is number && blurCount >= 0 && blurCount <= 10000));
+    }
+
     // ==========================================
     // USER PROFILES
     // ==========================================
@@ -122,7 +143,9 @@ service cloud.firestore {
           'userId', 'userName', 'assignmentId', 'assignmentTitle',
           'metrics', 'submittedAt', 'classType', 'section',
           'blockResponses', 'lessonId', 'lessonTitle'
-        ]);
+        ]) &&
+        // Metrics must be a map (not a score injection vector)
+        request.resource.data.metrics is map;
 
       // Students can update their own non-assessment submissions; admin can update all
       // Students can also write feedbackReadAt/feedbackReviewedAt on ANY of their own submissions (including assessments)
@@ -132,9 +155,11 @@ service cloud.firestore {
           (resource.data.isAssessment != true &&
             request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['userId', 'userName', 'assignmentId', 'assignmentTitle',
-                'metrics', 'status', 'score', 'submittedAt', 'blockResponses',
+                'metrics', 'submittedAt', 'blockResponses',
                 'classType', 'section', 'lessonId', 'lessonTitle',
-                'feedbackReadAt', 'feedbackReviewedAt']))
+                'feedbackReadAt', 'feedbackReviewedAt']) &&
+            // Prevent score/status forgery on non-assessment updates
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['score', 'status']))
           ||
           // Assessment: only feedback tracking fields
           (request.resource.data.diff(resource.data).affectedKeys()
@@ -262,6 +287,7 @@ service cloud.firestore {
           'userId', 'assignmentId', 'responses', 'lastUpdated',
           'retakePreFilled', 'metricsSnapshot', 'sessionToken'
         ]) &&
+        validMetricsSnapshot() &&
         (
           exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + request.resource.data.assignmentId))
           || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
@@ -270,6 +296,7 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot', 'sessionToken']) &&
+        validMetricsSnapshot() &&
         (
           exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + resource.data.assignmentId))
           || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))

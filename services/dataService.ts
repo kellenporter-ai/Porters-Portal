@@ -5,6 +5,7 @@ import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
+import type { IntegrityReport } from '../lib/integrityAnalysis';
 import { resilientSnapshot, clearDeniedCollections } from './resilientSnapshot';
 import {
   classifyAssessmentParticipants,
@@ -835,8 +836,6 @@ export const dataService = {
             startTime: Date.now() - engagementTime * 1000,
             lastActive: Date.now(),
           },
-          status: 'STARTED',
-          score: 0,
           submittedAt: new Date().toISOString(),
         });
       }
@@ -923,8 +922,8 @@ export const dataService = {
       return result.data as { xpEarned: number; leveledUp: boolean; status: string };
   },
 
-  submitAssessment: async (userName: string, assignmentId: string, responses: Record<string, unknown>, metrics: TelemetryMetrics, classType: string, sessionToken?: string) => {
-      const result = await callSubmitAssessment({ assignmentId, userName, responses, metrics, classType, ...(sessionToken ? { sessionToken } : {}) });
+  submitAssessment: async (userName: string, assignmentId: string, responses: Record<string, unknown>, metrics: TelemetryMetrics, classType: string, sessionToken?: string, tokenSignature?: string) => {
+      const result = await callSubmitAssessment({ assignmentId, userName, responses, metrics, classType, ...(sessionToken ? { sessionToken } : {}), ...(tokenSignature ? { tokenSignature } : {}) });
       return result.data as {
         assessmentScore: { correct: number; total: number; percentage: number; perBlock: Record<string, { correct: boolean; answer: unknown }> };
         attemptNumber: number;
@@ -2255,6 +2254,36 @@ export const dataService = {
   migrateBossQuizProgress: async () => {
     const result = await callMigrateBossQuizProgress({});
     return result.data as { migrated: number; errors: string[] };
+  },
+
+  // --- Integrity Reports ---
+
+  saveIntegrityReport: async (assignmentId: string, report: IntegrityReport) => {
+    try {
+      await addDoc(collection(db, 'integrity_reports', assignmentId, 'reports'), {
+        ...report,
+        savedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      reportError(error, { method: 'saveIntegrityReport', assignmentId });
+    }
+  },
+
+  getLatestIntegrityReport: async (assignmentId: string): Promise<IntegrityReport | null> => {
+    try {
+      const q = query(
+        collection(db, 'integrity_reports', assignmentId, 'reports'),
+        orderBy('savedAt', 'desc'),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      const doc = snap.docs[0];
+      return { ...doc.data(), analyzedAt: doc.data().analyzedAt || doc.data().savedAt } as IntegrityReport;
+    } catch (error) {
+      reportError(error, { method: 'getLatestIntegrityReport', assignmentId });
+      return null;
+    }
   },
 
 };

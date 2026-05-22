@@ -8,7 +8,7 @@ import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, CheckCircle2, AlertTriangle, X, BookOpen, Bot, Home, Eye, LogOut, MessageSquare, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, CheckCircle2, AlertTriangle, X, BookOpen, Bot, Home, Eye, LogOut, MessageSquare, ChevronDown, Play } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -81,11 +81,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [existingSubmission, setExistingSubmission] = useState<Submission | null>(null);
   const [reviewMode, setReviewMode] = useState(false);
   const [studyNotesExpanded, setStudyNotesExpanded] = useState(true);
+  const [assessmentStarted, setAssessmentStarted] = useState(false);
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
   // Session token for assessment security (issued by startAssessmentSession Cloud Function)
   const sessionTokenRef = useRef<string | null>(null);
+  const tokenSignatureRef = useRef<string | null>(null);
   // Track whether we've already fired the feedbackReadAt write for this session
   const feedbackReadTrackedRef = useRef(false);
   // Suppress auto-recovery during retake flow (so clearing assessmentResult doesn't instantly re-populate)
@@ -238,6 +240,16 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       return;
     }
 
+    // Submit confirmation
+    const ok = await confirm({
+      title: 'Submit Assessment?',
+      message: 'Once submitted, you cannot change your answers. Make sure you have reviewed all questions before continuing.',
+      confirmLabel: 'Submit',
+      cancelLabel: 'Keep Working',
+      variant: 'warning',
+    });
+    if (!ok) return;
+
     setIsSubmitting(true);
     const MAX_SUBMIT_RETRIES = 2;
     for (let attempt = 0; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
@@ -248,7 +260,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           responses,
           metrics,
           activeAssignment.classType,
-          sessionTokenRef.current || undefined
+          sessionTokenRef.current || undefined,
+          tokenSignatureRef.current || undefined
         );
         setAssessmentResult({
           correct: result.assessmentScore.correct,
@@ -265,6 +278,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
           sessionTokenRef.current = null;
+    tokenSignatureRef.current = null;
+          tokenSignatureRef.current = null;
           // Clear retake flag since submission is complete
           sessionStorage.removeItem(`retaking_${activeAssignment.id}`);
           // Clear localStorage draft — work is safely submitted (use user.id to match hook's key)
@@ -295,10 +310,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           sessionStorage.removeItem(key);
           try {
             const freshToken = await callStartAssessmentSession({ assignmentId: activeAssignment.id });
-            const tokenData = freshToken.data as { sessionToken: string };
+            const tokenData = freshToken.data as { sessionToken: string; tokenSignature: string };
             sessionTokenRef.current = tokenData.sessionToken;
+            tokenSignatureRef.current = tokenData.tokenSignature;
             localStorage.setItem(key, tokenData.sessionToken);
+            localStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
             sessionStorage.setItem(key, tokenData.sessionToken);
+            sessionStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
             toast.info('Reconnecting session... retrying submission.');
             continue;
           } catch {
@@ -740,6 +758,45 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
       <div className="flex-1 overflow-hidden relative">
         <Suspense fallback={<LazyFallback />}>
+          {assignViewMode === 'WORK' && isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current || existingSubmission?.status === 'RETURNED') && !assessmentStarted && (
+            <div className="absolute inset-0 z-40 bg-[var(--surface-base)] flex items-center justify-center p-6">
+              <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-3xl p-8 max-w-md w-full text-center shadow-2xl space-y-5">
+                <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto">
+                  <Shield className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{activeAssignment.title}</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    This is an assessment. Your work will be saved automatically as you go.
+                  </p>
+                </div>
+                <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4 text-left space-y-2">
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Before you start</p>
+                  <ul className="text-xs text-[var(--text-secondary)] space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
+                      <span>This assessment will enter full-screen mode to help you stay focused.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
+                      <span>Using dictation, voice typing, or Grammarly? Look for the checkbox in the top bar after starting.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
+                      <span>Your answers are saved automatically — you can refresh the page if needed.</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => setAssessmentStarted(true)}
+                  className="w-full flex items-center justify-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl transition"
+                >
+                  <Play className="w-4 h-4" />
+                  Start Assessment
+                </button>
+              </div>
+            </div>
+          )}
           {assignViewMode === 'WORK' && isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current || existingSubmission?.status === 'RETURNED') && (
             <Suspense fallback={<LazyFallback />}>
               <AssessmentWorkspace
@@ -795,6 +852,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 })()}
                 <Proctor
                   flushRef={flushRef}
+                  lockdownMode={isLiveAssessment}
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {
                     const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
@@ -817,6 +875,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   isAssessment={isAssessment}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
+                  onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}
                   previewMode={isPreview}
                   hasSidebar={true}
                 />
@@ -867,6 +926,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 })()}
                 <Proctor
                   flushRef={flushRef}
+                  lockdownMode={isLiveAssessment}
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {
                     const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
@@ -884,6 +944,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   isAssessment={isAssessment}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
+                  onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}
                   previewMode={isPreview}
                   hasSidebar={!!(activeAssignment.lessonBlocks && activeAssignment.lessonBlocks.length >= 3)}
                 />
