@@ -38,22 +38,16 @@ service cloud.firestore {
     // Validate metricsSnapshot structure to prevent poisoning
     function validMetricsSnapshot() {
       let ms = request.resource.data.metricsSnapshot;
-      if ms == null { return true; }
-      if !(ms is map) { return false; }
-      let engagementTime = ms.engagementTime;
-      let keystrokes = ms.keystrokes;
-      let pasteCount = ms.pasteCount;
-      let tabSwitchCount = ms.tabSwitchCount;
-      let clickCount = ms.clickCount;
-      let autoInsertCount = ms.autoInsertCount;
-      let blurCount = ms.blurCount;
-      return (engagementTime == null || (engagementTime is number && engagementTime >= 0 && engagementTime <= 86400))
-        && (keystrokes == null || (keystrokes is number && keystrokes >= 0 && keystrokes <= 100000))
-        && (pasteCount == null || (pasteCount is number && pasteCount >= 0 && pasteCount <= 10000))
-        && (tabSwitchCount == null || (tabSwitchCount is number && tabSwitchCount >= 0 && tabSwitchCount <= 10000))
-        && (clickCount == null || (clickCount is number && clickCount >= 0 && clickCount <= 500000))
-        && (autoInsertCount == null || (autoInsertCount is number && autoInsertCount >= 0 && autoInsertCount <= 10000))
-        && (blurCount == null || (blurCount is number && blurCount >= 0 && blurCount <= 10000));
+      return ms == null || (
+        ms is map
+        && (ms.engagementTime == null || (ms.engagementTime is number && ms.engagementTime >= 0 && ms.engagementTime <= 86400))
+        && (ms.keystrokes == null || (ms.keystrokes is number && ms.keystrokes >= 0 && ms.keystrokes <= 100000))
+        && (ms.pasteCount == null || (ms.pasteCount is number && ms.pasteCount >= 0 && ms.pasteCount <= 10000))
+        && (ms.tabSwitchCount == null || (ms.tabSwitchCount is number && ms.tabSwitchCount >= 0 && ms.tabSwitchCount <= 10000))
+        && (ms.clickCount == null || (ms.clickCount is number && ms.clickCount >= 0 && ms.clickCount <= 500000))
+        && (ms.autoInsertCount == null || (ms.autoInsertCount is number && ms.autoInsertCount >= 0 && ms.autoInsertCount <= 10000))
+        && (ms.blurCount == null || (ms.blurCount is number && ms.blurCount >= 0 && ms.blurCount <= 10000))
+      );
     }
 
     // ==========================================
