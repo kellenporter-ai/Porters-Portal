@@ -511,6 +511,7 @@ export interface Assignment {
     showScoreOnSubmit?: boolean;    // default true
     showReviewAfterSubmit?: boolean; // default true — let students review submitted answers
     lockNavigation?: boolean;       // default true for assessments
+    allowStudyMaterial?: boolean;   // default true — let students access reading_materials during assessment
   };
   rubric?: Rubric;
   // Google Classroom grade sync

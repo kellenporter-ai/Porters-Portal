@@ -28,6 +28,9 @@ const RubricViewer = lazyWithRetry(() => import('./RubricViewer'));
 const QuestionBankManager = lazyWithRetry(() => import('./QuestionBankManager'));
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
+import { db, storage } from '../lib/firebase';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { normalizeBlocks } from '../lib/normalizeBlocks';
 import { useToast } from './ToastProvider';
 import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
@@ -177,6 +180,47 @@ const getBlockTypeInfo = (type: BlockType) => BLOCK_TYPES.find(bt => bt.type ===
 
 const CATEGORIES: ResourceCategory[] = ['Lesson', 'Lab', 'Simulation', 'Practice', 'Supplemental'];
 
+interface ReadingSection { title: string; content: string; }
+interface ReadingMaterial {
+    title: string;
+    description?: string;
+    sections?: ReadingSection[];
+    estimatedMinutes?: number;
+    htmlContent?: string;
+    storageUrl?: string;
+    storagePath?: string;
+}
+
+const READING_PROMPT_TEMPLATE = (title: string, classType: string, description: string) => `You are an expert educational content creator. I need you to create comprehensive study material for students who are working through this resource. This reading material should teach the underlying concepts so students understand the material before or while working.
+
+RESOURCE: ${title}
+CLASS: ${classType}
+${description ? `DESCRIPTION: ${description}` : ""}
+
+Create detailed reading material that covers all the concepts, formulas, principles, and background knowledge a student needs to succeed.
+
+OUTPUT FORMAT — Respond with ONLY a valid JSON object:
+{
+  "title": "Study Guide: ${title}",
+  "description": "A brief 1-2 sentence overview of what this reading covers",
+  "estimatedMinutes": 15,
+  "sections": [
+    {
+      "title": "Section title",
+      "content": "Detailed explanation text. Use clear language appropriate for the class level. Include definitions, examples, step-by-step explanations, key formulas, common misconceptions, and practical applications."
+    }
+  ]
+}
+
+GUIDELINES:
+- Create 8-15 sections that logically progress through the material
+- Each section should be 150-400 words — substantial enough to actually teach the concept
+- Include worked examples where applicable
+- Define key vocabulary and terminology
+- Address common student misconceptions
+- Use clear, direct language appropriate for the class level`;
+
+
 // ──────────────────────────────────────────────
 // Smart Unit Selector (combobox)
 // ──────────────────────────────────────────────
@@ -302,6 +346,15 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [showBlockSearch, setShowBlockSearch] = useState(false);
   const [blockSearchQuery, setBlockSearchQuery] = useState('');
 
+  // Study material state
+  const [studyMaterial, setStudyMaterial] = useState<ReadingMaterial | null>(null);
+  const [studyMaterialLoading, setStudyMaterialLoading] = useState(false);
+  const [pendingStudyMaterial, setPendingStudyMaterial] = useState<ReadingMaterial | null>(null);
+  const [pendingStudyHtml, setPendingStudyHtml] = useState<string | null>(null);
+  const [studyMaterialParseError, setStudyMaterialParseError] = useState<string | null>(null);
+  const [copiedStudyPrompt, setCopiedStudyPrompt] = useState(false);
+  const studyMaterialFileRef = useRef<HTMLInputElement>(null);
+
   // Auto-save to Firestore
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
@@ -324,7 +377,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [resDueDate, setResDueDate] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isAssessment, setIsAssessment] = useState(false);
-  const [assessmentConfig, setAssessmentConfig] = useState({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true });
+  const [assessmentConfig, setAssessmentConfig] = useState<{ allowResubmission: boolean; maxAttempts: number; showScoreOnSubmit: boolean; lockNavigation: boolean; allowStudyMaterial: boolean }>({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true, allowStudyMaterial: true });
   const [rubricMarkdown, setRubricMarkdown] = useState('');
   const [parsedRubric, setParsedRubric] = useState<Rubric | null>(null);
   const [rubricErrors, setRubricErrors] = useState<string[]>([]);
@@ -429,7 +482,14 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setResScheduleDate(assignment.scheduledAt ? assignment.scheduledAt.slice(0, 16) : '');
       setResDueDate(assignment.dueDate ? assignment.dueDate.slice(0, 16) : '');
       setIsAssessment(assignment.isAssessment || false);
-      setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true, ...assignment.assessmentConfig });
+      const cfg = assignment.assessmentConfig || {};
+      setAssessmentConfig({
+        allowResubmission: cfg.allowResubmission !== false,
+        maxAttempts: typeof cfg.maxAttempts === 'number' ? cfg.maxAttempts : (parseInt(String(cfg.maxAttempts), 10) || 0),
+        showScoreOnSubmit: cfg.showScoreOnSubmit !== false,
+        lockNavigation: cfg.lockNavigation !== false,
+        allowStudyMaterial: cfg.allowStudyMaterial !== false,
+      });
       setRubricMarkdown(assignment.rubric?.rawMarkdown || '');
       setParsedRubric(assignment.rubric || null);
       setRubricErrors([]);
@@ -440,6 +500,15 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
       setAutoSavedAt(null);
       setShowSettings(false);
       setShowQuestionBank(false);
+      // Load study material
+      setStudyMaterialLoading(true);
+      getDoc(doc(db, 'reading_materials', id)).then(snap => {
+        if (snap.exists()) setStudyMaterial(snap.data() as ReadingMaterial);
+        else setStudyMaterial(null);
+      }).catch(err => {
+        reportError(err, { context: 'load study material in editor', assignmentId: id });
+        setStudyMaterial(null);
+      }).finally(() => setStudyMaterialLoading(false));
     }
   }, [assignments]);
 
@@ -457,11 +526,14 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     setResScheduleDate('');
     setResDueDate('');
     setIsAssessment(false);
-    setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true });
+    setAssessmentConfig({ allowResubmission: true, maxAttempts: 0, showScoreOnSubmit: true, lockNavigation: true, allowStudyMaterial: true });
     setRubricMarkdown('');
     setParsedRubric(null);
     setRubricErrors([]);
     setExpandedBlock(null);
+    setStudyMaterial(null);
+    setPendingStudyMaterial(null);
+    setStudyMaterialParseError(null);
     setPreviewMode(false);
     setHasUnsavedChanges(false);
     setShowSettings(true);
@@ -472,6 +544,131 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   React.useEffect(() => {
     if (initialAssignmentId) selectResource(initialAssignmentId);
   }, [initialAssignmentId, selectResource]);
+
+  // Study material handlers
+  const handleCopyStudyPrompt = () => {
+    navigator.clipboard.writeText(READING_PROMPT_TEMPLATE(resTitle, Array.from(resClasses)[0] || '', resDescription));
+    setCopiedStudyPrompt(true);
+    setTimeout(() => setCopiedStudyPrompt(false), 2000);
+    toast.success('Study material prompt copied!');
+  };
+
+  const handleStudyMaterialFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setStudyMaterialParseError(null);
+    setPendingStudyMaterial(null);
+    setPendingStudyHtml(null);
+    try {
+      const text = await file.text();
+      // Detect HTML vs JSON
+      const trimmed = text.trim();
+      const isHtml = trimmed.toLowerCase().startsWith('<!doctype') || trimmed.toLowerCase().startsWith('<html') || trimmed.startsWith('<');
+      if (isHtml) {
+        setPendingStudyHtml(text);
+        return;
+      }
+      // JSON path
+      let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
+      cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (ch) => {
+        if (ch === '\n' || ch === '\r' || ch === '\t') return ' ';
+        return '';
+      });
+      let parsed;
+      try { parsed = JSON.parse(cleaned); } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) parsed = JSON.parse(match[0]);
+        else throw new Error('No JSON object found.');
+      }
+      if (!parsed.title || !parsed.sections || !Array.isArray(parsed.sections)) {
+        throw new Error('Missing required fields: title and sections array.');
+      }
+      const invalidSections = parsed.sections.filter((s: { title?: string; content?: string }) => !s.title || !s.content);
+      if (invalidSections.length > 0) {
+        throw new Error(`${invalidSections.length} section(s) missing title or content.`);
+      }
+      setPendingStudyMaterial(parsed as ReadingMaterial);
+    } catch (err) {
+      setStudyMaterialParseError(err instanceof Error ? err.message : 'Parse failed.');
+    }
+    if (studyMaterialFileRef.current) studyMaterialFileRef.current.value = '';
+  };
+
+  const handleUploadStudyMaterial = async () => {
+    if (!selectedId) return;
+    if (pendingStudyHtml) {
+      setIsSaving(true);
+      try {
+        // Upload large HTML to Firebase Storage (Firestore has 1MB limit)
+        const storagePath = `resources/study-materials/${selectedId}.html`;
+        const storageRef = ref(storage, storagePath);
+        const blob = new Blob([pendingStudyHtml], { type: 'text/html' });
+        await uploadBytes(storageRef, blob);
+        const downloadUrl = await getDownloadURL(storageRef);
+
+        const material: ReadingMaterial = {
+          title: resTitle || 'Study Material',
+          storageUrl: downloadUrl,
+          storagePath,
+        };
+        await setDoc(doc(db, 'reading_materials', selectedId), {
+          ...material,
+          assignmentId: selectedId,
+          updatedAt: new Date().toISOString(),
+        });
+        setStudyMaterial(material);
+        setPendingStudyHtml(null);
+        toast.success('HTML study material uploaded!');
+      } catch (err) {
+        reportError(err, { context: 'upload study material HTML to storage', assignmentId: selectedId });
+        toast.error('Failed to save study material.');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+    if (!pendingStudyMaterial) return;
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, 'reading_materials', selectedId), {
+        ...pendingStudyMaterial,
+        assignmentId: selectedId,
+        updatedAt: new Date().toISOString(),
+      });
+      setStudyMaterial(pendingStudyMaterial);
+      setPendingStudyMaterial(null);
+      toast.success(`Study material uploaded: ${(pendingStudyMaterial.sections || []).length} sections!`);
+    } catch (err) {
+      reportError(err, { context: 'upload study material JSON', assignmentId: selectedId });
+      toast.error('Failed to save study material.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteStudyMaterial = async () => {
+    if (!selectedId) return;
+    const ok = window.confirm('Are you sure you want to remove this study material? This cannot be undone.');
+    if (!ok) return;
+    setIsSaving(true);
+    try {
+      await deleteDoc(doc(db, 'reading_materials', selectedId));
+      // Also delete from Storage if it was stored there
+      if (studyMaterial?.storagePath) {
+        try {
+          await import('firebase/storage').then(({ deleteObject, ref }) => deleteObject(ref(storage, studyMaterial.storagePath!)));
+        } catch {
+          // Storage object may not exist — ignore
+        }
+      }
+      setStudyMaterial(null);
+      toast.success('Study material removed.');
+    } catch (err) {
+      toast.error('Failed to delete study material.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const updateBlocks = useCallback((newBlocks: LessonBlock[]) => {
     setBlocks(newBlocks);
@@ -948,6 +1145,10 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                           <input type="checkbox" checked={assessmentConfig.showScoreOnSubmit} onChange={e => { setAssessmentConfig(prev => ({ ...prev, showScoreOnSubmit: e.target.checked })); setHasUnsavedChanges(true); }} className="rounded bg-black/40 border-white/20 text-purple-500" />
                           Show score on submit
                         </label>
+                        <label className="flex items-center gap-2 text-[11px] text-gray-300 cursor-pointer">
+                          <input type="checkbox" checked={assessmentConfig.allowStudyMaterial !== false} onChange={e => { setAssessmentConfig(prev => ({ ...prev, allowStudyMaterial: e.target.checked })); setHasUnsavedChanges(true); }} className="rounded bg-black/40 border-white/20 text-purple-500" />
+                          Allow reference material during assessment
+                        </label>
 
                         {/* Rubric Import */}
                         <div className="mt-2 pt-2 border-t border-white/5">
@@ -1002,6 +1203,95 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                       </div>
                     )}
                   </div>
+
+                  {/* Study Material */}
+                  {selectedAssignment && !isNewResource && (
+                    <div className="bg-emerald-900/10 p-4 rounded-xl border border-emerald-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <div className="text-xs font-bold text-emerald-300">Study Material</div>
+                        {studyMaterial && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                            {(studyMaterial.sections || []).length} sections
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Current status */}
+                      {studyMaterialLoading ? (
+                        <div className="flex items-center gap-2 text-[11.5px] text-[var(--text-muted)] py-2">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+                        </div>
+                      ) : studyMaterial ? (
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{studyMaterial.title}</span>
+                            <button
+                              onClick={handleDeleteStudyMaterial}
+                              disabled={isSaving}
+                              className="text-[11.5px] font-bold text-red-600 dark:text-red-400/60 hover:text-red-400 transition flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Remove
+                            </button>
+                          </div>
+                          {studyMaterial.description && (
+                            <p className="text-xs text-[var(--text-tertiary)] mb-1">{studyMaterial.description}</p>
+                          )}
+                          <div className="flex gap-2 text-[11px] text-[var(--text-muted)]">
+                            <span>~{studyMaterial.estimatedMinutes || '?'} min read</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11.5px] text-[var(--text-muted)] mb-3">No study material yet. Upload reading material students can reference during this resource.</p>
+                      )}
+
+                      {/* Upload area */}
+                      {!studyMaterial && (
+                        <div className="space-y-2">
+                          <button
+                            onClick={handleCopyStudyPrompt}
+                            className={`w-full py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition ${copiedStudyPrompt ? 'bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
+                          >
+                            {copiedStudyPrompt ? <><CheckCircle className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy AI Prompt</>}
+                          </button>
+                          <label className="flex items-center justify-center gap-2 py-2 border-2 border-dashed border-[var(--border-strong)] rounded-lg hover:border-emerald-500/50 hover:bg-emerald-500/5 transition cursor-pointer">
+                            <Upload className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+                            <span className="text-xs text-[var(--text-tertiary)] font-medium">Upload JSON or HTML</span>
+                            <input ref={studyMaterialFileRef} type="file" accept=".json,.txt,.html,.htm" onChange={handleStudyMaterialFileSelect} className="hidden" />
+                          </label>
+                          <p className="text-[10px] text-[var(--text-muted)] text-center">JSON for structured sections · HTML for rich formatted content</p>
+                        </div>
+                      )}
+
+                      {/* Pending upload preview */}
+                      {(pendingStudyMaterial || pendingStudyHtml) && !studyMaterial && (
+                        <div className="mt-2 bg-emerald-500/5 border border-emerald-500/30 rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold text-xs">
+                              {pendingStudyHtml ? 'HTML file ready' : `${(pendingStudyMaterial?.sections || []).length} sections parsed`}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={handleUploadStudyMaterial} disabled={isSaving} className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 text-white font-bold rounded-lg transition text-xs">
+                              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : (pendingStudyHtml ? 'Upload HTML' : `Upload ${(pendingStudyMaterial?.sections || []).length} Sections`)}
+                            </button>
+                            <button onClick={() => { setPendingStudyMaterial(null); setPendingStudyHtml(null); }} className="px-3 py-2 bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)] rounded-lg transition">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Parse error */}
+                      {studyMaterialParseError && !studyMaterial && (
+                        <div className="mt-2 bg-red-500/10 border border-red-500/30 rounded-lg p-2 flex items-start gap-2">
+                          <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                          <p className="text-red-300/70 text-[11px]">{studyMaterialParseError}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Review Questions */}
                   {selectedAssignment && !isNewResource && (

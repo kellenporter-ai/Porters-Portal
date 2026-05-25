@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Assignment, migrateResourceCategory } from '../types';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { storage } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Upload, Copy, CheckCircle2, Loader2, FileJson, AlertTriangle, Trash2, Database, ChevronRight, Search, Plus, XCircle, Zap, BookOpen } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
@@ -9,7 +11,15 @@ import Modal from './Modal';
 import { useConfirm } from './ConfirmDialog';
 
 interface ReadingSection { title: string; content: string; }
-interface ReadingMaterial { title: string; description?: string; sections: ReadingSection[]; estimatedMinutes?: number; }
+interface ReadingMaterial {
+    title: string;
+    description?: string;
+    sections?: ReadingSection[];
+    estimatedMinutes?: number;
+    htmlContent?: string;
+    storageUrl?: string;
+    storagePath?: string;
+}
 
 interface QuestionBankManagerProps {
     assignment: Assignment;
@@ -150,6 +160,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
     // Reading material state
     const [readingMaterial, setReadingMaterial] = useState<ReadingMaterial | null>(null);
     const [pendingReading, setPendingReading] = useState<ReadingMaterial | null>(null);
+    const [pendingReadingHtml, setPendingReadingHtml] = useState<string | null>(null);
     const [readingParseError, setReadingParseError] = useState<string | null>(null);
     const [copiedReading, setCopiedReading] = useState(false);
     const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -261,8 +272,15 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
         if (!file) return;
         setReadingParseError(null);
         setPendingReading(null);
+        setPendingReadingHtml(null);
         try {
             const text = await file.text();
+            const trimmed = text.trim();
+            const isHtml = trimmed.toLowerCase().startsWith('<!doctype') || trimmed.toLowerCase().startsWith('<html') || trimmed.startsWith('<');
+            if (isHtml) {
+                setPendingReadingHtml(text);
+                return;
+            }
             // Strip markdown fences and sanitize control chars inside JSON strings
             let cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
             // Fix literal newlines/tabs inside JSON string values (common AI output issue)
@@ -292,17 +310,39 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
 
     // Upload reading material
     const handleUploadReading = async () => {
-        if (!pendingReading) return;
         setIsSaving(true);
         try {
-            await setDoc(doc(db, 'reading_materials', assignment.id), {
-                ...pendingReading,
-                assignmentId: assignment.id,
-                updatedAt: new Date().toISOString(),
-            });
-            setReadingMaterial(pendingReading);
-            setPendingReading(null);
-            toast.success(`Study material uploaded: ${pendingReading.sections.length} sections!`);
+            if (pendingReadingHtml) {
+                // Upload large HTML to Firebase Storage (Firestore has 1MB limit)
+                const storagePath = `resources/study-materials/${assignment.id}.html`;
+                const storageRef = ref(storage, storagePath);
+                const blob = new Blob([pendingReadingHtml], { type: 'text/html' });
+                await uploadBytes(storageRef, blob);
+                const downloadUrl = await getDownloadURL(storageRef);
+
+                const material: ReadingMaterial = {
+                    title: assignment.title || 'Study Material',
+                    storageUrl: downloadUrl,
+                    storagePath,
+                };
+                await setDoc(doc(db, 'reading_materials', assignment.id), {
+                    ...material,
+                    assignmentId: assignment.id,
+                    updatedAt: new Date().toISOString(),
+                });
+                setReadingMaterial(material);
+                setPendingReadingHtml(null);
+                toast.success('HTML study material uploaded!');
+            } else if (pendingReading) {
+                await setDoc(doc(db, 'reading_materials', assignment.id), {
+                    ...pendingReading,
+                    assignmentId: assignment.id,
+                    updatedAt: new Date().toISOString(),
+                });
+                setReadingMaterial(pendingReading);
+                setPendingReading(null);
+                toast.success(`Study material uploaded: ${(pendingReading.sections || []).length} sections!`);
+            }
         } catch (err) {
             toast.error('Failed to save: ' + (err instanceof Error ? err.message : 'Unknown error'));
         } finally {
@@ -322,6 +362,14 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
         setIsSaving(true);
         try {
             await deleteDoc(doc(db, 'reading_materials', assignment.id));
+            // Also delete from Storage if it was stored there
+            if (readingMaterial?.storagePath) {
+                try {
+                    await import('firebase/storage').then(({ deleteObject, ref }) => deleteObject(ref(storage, readingMaterial.storagePath!)));
+                } catch {
+                    // Storage object may not exist — ignore
+                }
+            }
             setReadingMaterial(null);
             toast.success('Study material removed.');
         } catch (err) {
@@ -500,7 +548,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                     )}
                     <button onClick={() => setTab('reading')}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition ${tab === 'reading' ? 'bg-emerald-600 text-white' : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'}`}>
-                        <BookOpen className="w-3.5 h-3.5 inline mr-1.5" />Study Material {readingMaterial ? `(${readingMaterial.sections.length}§)` : ''}
+                        <BookOpen className="w-3.5 h-3.5 inline mr-1.5" />Study Material {readingMaterial ? `(${(readingMaterial.sections || []).length}§)` : ''}
                     </button>
                 </div>
 
@@ -729,13 +777,13 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                                     <p className="text-xs text-[var(--text-tertiary)]">{readingMaterial.description}</p>
                                 )}
                                 <div className="flex gap-2 text-[11.5px] text-[var(--text-muted)]">
-                                    <span>{readingMaterial.sections.length} sections</span>
+                                    <span>{(readingMaterial.sections || []).length} sections</span>
                                     {readingMaterial.estimatedMinutes && (
                                         <><span>·</span><span>~{readingMaterial.estimatedMinutes} min read</span></>
                                     )}
                                 </div>
                                 <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
-                                    {readingMaterial.sections.map((s, i) => (
+                                    {(readingMaterial.sections || []).map((s, i) => (
                                         <div key={i} className="text-[11px] text-gray-600 dark:text-gray-400 bg-black/20 px-3 py-2 rounded-lg flex items-center gap-2">
                                             <span className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11.5px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                                             <span className="truncate">{s.title}</span>
@@ -766,16 +814,19 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                             </button>
                         </div>
 
-                        {/* Upload reading JSON */}
+                        {/* Upload reading JSON / HTML */}
                         <div className="space-y-2">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--text-tertiary)] flex items-center gap-2">
                                 <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11.5px] font-bold flex items-center justify-center">2</span>
-                                Upload Study Material JSON
+                                Upload Study Material
                             </h4>
+                            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                                Upload a JSON file for structured sections, or an HTML file for rich formatted content.
+                            </p>
                             <label className="flex items-center justify-center gap-3 py-3 border-2 border-dashed border-white/15 rounded-xl hover:border-emerald-500/50 hover:bg-emerald-500/5 transition cursor-pointer">
                                 <FileJson className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Choose .json file</span>
-                                <input ref={readingFileRef} type="file" accept=".json,.txt" onChange={handleReadingFileSelect} className="hidden" />
+                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Choose .json or .html file</span>
+                                <input ref={readingFileRef} type="file" accept=".json,.txt,.html,.htm" onChange={handleReadingFileSelect} className="hidden" />
                             </label>
                         </div>
 
@@ -788,20 +839,24 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({ assignment, i
                         )}
 
                         {/* Reading preview */}
-                        {pendingReading && (
+                        {(pendingReading || pendingReadingHtml) && (
                             <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 space-y-3">
                                 <div className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">{pendingReading.title}</span>
+                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">
+                                        {pendingReadingHtml ? 'HTML file ready' : pendingReading?.title}
+                                    </span>
                                 </div>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">{pendingReading.sections.length} sections · ~{pendingReading.estimatedMinutes || '?'} min read</p>
+                                {pendingReading && (
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">{(pendingReading.sections || []).length} sections · ~{pendingReading.estimatedMinutes || '?'} min read</p>
+                                )}
                                 <div className="flex gap-2">
                                     <button onClick={handleUploadReading} disabled={isSaving}
                                         className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
                                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                                         {isSaving ? 'Saving...' : 'Upload Study Material'}
                                     </button>
-                                    <button onClick={() => setPendingReading(null)} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-600 dark:text-gray-400 rounded-xl transition">
+                                    <button onClick={() => { setPendingReading(null); setPendingReadingHtml(null); }} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-600 dark:text-gray-400 rounded-xl transition">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>

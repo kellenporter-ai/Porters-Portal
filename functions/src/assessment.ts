@@ -1013,10 +1013,13 @@ export const uploadQuestionBank = onCall({ memory: "256MiB", timeoutSeconds: 60 
  * Verifies the session token is still valid and not expired, updates lastHeartbeatAt.
  * Returns { ok: boolean, expiresAt?: string }.
  */
-export const heartbeat = onCall({ memory: "128MiB", timeoutSeconds: 10 }, async (request) => {
+export const heartbeat = onCall({ memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
+  const start = Date.now();
+  console.log('[heartbeat] start', { uid: request.auth?.uid, tokenPrefix: request.data?.sessionToken?.slice(0, 8) });
   verifyAuth(request.auth);
   const { sessionToken } = request.data;
   if (!sessionToken || typeof sessionToken !== "string") {
+    console.log('[heartbeat] invalid-arg', { durationMs: Date.now() - start });
     throw new HttpsError("invalid-argument", "sessionToken required.");
   }
 
@@ -1025,6 +1028,7 @@ export const heartbeat = onCall({ memory: "128MiB", timeoutSeconds: 10 }, async 
   const sessionDoc = await sessionRef.get();
 
   if (!sessionDoc.exists) {
+    console.log('[heartbeat] not-found', { durationMs: Date.now() - start });
     throw new HttpsError("not-found", "Session not found.");
   }
 
@@ -1033,10 +1037,12 @@ export const heartbeat = onCall({ memory: "128MiB", timeoutSeconds: 10 }, async 
   const expiresAt = sessionData.expiresAt as admin.firestore.Timestamp | undefined;
 
   if (expiresAt && expiresAt.toMillis() < now.toMillis()) {
+    console.log('[heartbeat] expired', { durationMs: Date.now() - start });
     throw new HttpsError("deadline-exceeded", "Session has expired. Your draft answers are still saved — refresh the page to start a new attempt and your work will be restored.");
   }
 
   if (sessionData.used === true) {
+    console.log('[heartbeat] used', { durationMs: Date.now() - start });
     throw new HttpsError("failed-precondition", "Session already used for submission.");
   }
 
@@ -1044,5 +1050,6 @@ export const heartbeat = onCall({ memory: "128MiB", timeoutSeconds: 10 }, async 
     lastHeartbeatAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
+  console.log('[heartbeat] ok', { durationMs: Date.now() - start });
   return { ok: true, expiresAt: expiresAt ? expiresAt.toDate().toISOString() : undefined };
 });

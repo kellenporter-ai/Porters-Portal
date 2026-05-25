@@ -114,6 +114,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     maxAttempts: typeof rawConfig.maxAttempts === 'number' ? rawConfig.maxAttempts : (parseInt(String(rawConfig.maxAttempts), 10) || 0),
     showScoreOnSubmit: rawConfig.showScoreOnSubmit !== false,
     lockNavigation: rawConfig.lockNavigation !== false,
+    allowStudyMaterial: rawConfig.allowStudyMaterial !== false,
   };
 
   // Fetch student's existing submission for rubric grade display
@@ -874,6 +875,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   classType={activeAssignment.classType}
                   lessonBlocks={activeAssignment.lessonBlocks}
                   isAssessment={isAssessment}
+                  allowStudyMaterial={config.allowStudyMaterial}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
                   onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}
@@ -943,6 +945,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   classType={activeAssignment.classType}
                   lessonBlocks={activeAssignment.lessonBlocks}
                   isAssessment={isAssessment}
+                  allowStudyMaterial={config.allowStudyMaterial}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
                   onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}

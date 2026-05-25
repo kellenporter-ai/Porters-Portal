@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callHeartbeat } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { PlayCircle, Play, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, BookOpen, Loader2 } from 'lucide-react';
+import { PlayCircle, Play, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, BookOpen, Loader2, BookOpenText } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import SaveStatusIndicator from './SaveStatusIndicator';
 import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
@@ -14,6 +14,7 @@ import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
 import { persistentWrite, draftKey, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
+import { renderReadingContent } from '../lib/renderReadingContent';
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -48,6 +49,8 @@ interface ProctorProps {
   flushRef?: React.MutableRefObject<(() => Promise<WriteStatus> | undefined) | null>;
   /** Lockdown mode for assessments — auto-fullscreen, blocks copy/paste/contextmenu/devtools. */
   lockdownMode?: boolean;
+  /** Whether students can access reading_materials during this assessment. */
+  allowStudyMaterial?: boolean;
 }
 
 // ============================================================
@@ -112,7 +115,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, previewMode, hasSidebar, flushRef, lockdownMode }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, previewMode, hasSidebar, flushRef, lockdownMode, allowStudyMaterial }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const metricsFailCountRef = useRef(0);
   const lastInteractionRef = useRef<number>(Date.now());
@@ -135,13 +138,59 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const htmlActivityStateRef = useRef<unknown>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'simulation' | 'lessons'>(() => {
+  const [activeTab, setActiveTab] = useState<'simulation' | 'lessons' | 'study'>(() => {
     if (lessonBlocks && lessonBlocks.length >= 3) return 'lessons';
     return 'simulation';
   });
   const [ttsText, setTtsText] = useState('');
   const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
   const awardedBlocksRef = useRef<Set<string>>(new Set());
+
+  // Study material (reading_materials) for assessment reference
+  interface ReadingSection { title: string; content: string; }
+  interface ReadingMaterial {
+    title: string;
+    description?: string;
+    sections?: ReadingSection[];
+    estimatedMinutes?: number;
+    htmlContent?: string;
+    storageUrl?: string;
+    storagePath?: string;
+  }
+  const [studyMaterial, setStudyMaterial] = useState<ReadingMaterial | null>(null);
+
+  // Memoized blob URL for HTML study material — prevents recreation on every render
+  const studyMaterialBlobUrl = useMemo(() => {
+    if (studyMaterial?.htmlContent && !studyMaterial?.storageUrl) {
+      return URL.createObjectURL(new Blob([studyMaterial.htmlContent], { type: 'text/html' }));
+    }
+    return null;
+  }, [studyMaterial?.htmlContent, studyMaterial?.storageUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (studyMaterialBlobUrl) {
+        URL.revokeObjectURL(studyMaterialBlobUrl);
+      }
+    };
+  }, [studyMaterialBlobUrl]);
+
+  // Fetch study material when assessment allows reference material
+  useEffect(() => {
+    if (!isAssessment || allowStudyMaterial === false || !assignmentId) {
+      setStudyMaterial(null);
+      return;
+    }
+    let cancelled = false;
+    getDoc(doc(db, 'reading_materials', assignmentId)).then(snap => {
+      if (!cancelled && snap.exists()) {
+        setStudyMaterial(snap.data() as ReadingMaterial);
+      }
+    }).catch(err => {
+      reportError(err, { context: 'fetch study material for assessment', assignmentId });
+    });
+    return () => { cancelled = true; };
+  }, [isAssessment, allowStudyMaterial, assignmentId]);
 
   // Track component mount state for async handlers (e.g. message event getDoc calls)
   const mountedRef = useRef(true);
@@ -1394,12 +1443,19 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   useEffect(() => {
     if (!isAssessment || previewMode || !sessionToken) return;
     let failCount = 0;
-    const intervalId = window.setInterval(async () => {
+    let timeoutId: number | null = null;
+    let cancelled = false;
+
+    const runHeartbeat = async () => {
+      if (cancelled) return;
+      const start = Date.now();
       try {
         await callHeartbeat({ sessionToken });
+        console.log('[heartbeat] ok', { durationMs: Date.now() - start });
         failCount = 0; // Reset on success
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        console.warn('[heartbeat] failed', { durationMs: Date.now() - start, msg, sessionToken: sessionToken.slice(0, 8) + '...' });
         // Only count definitive session errors; ignore transient network blips
         const isDefinitive = msg.includes('expired') || msg.includes('not-found') || msg.includes('used');
         if (isDefinitive) {
@@ -1408,11 +1464,21 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         // Abort after 3 consecutive definitive failures (prevents false positives from transient errors)
         if (failCount >= 3) {
           setSessionTokenError('Your assessment session has expired. Your answers are still saved — refresh the page to start a new attempt and your work will be restored.');
-          window.clearInterval(intervalId);
+          return; // Don't schedule next heartbeat
         }
       }
-    }, 30000);
-    return () => window.clearInterval(intervalId);
+      if (!cancelled) {
+        timeoutId = window.setTimeout(runHeartbeat, 30000);
+      }
+    };
+
+    // Start first heartbeat after 30s, then every 30s
+    timeoutId = window.setTimeout(runHeartbeat, 30000);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
   }, [isAssessment, previewMode, sessionToken]);
 
   // LaTeX Rendering + TTS text extraction
@@ -1643,94 +1709,146 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
-            {contentUrl && lessonBlocks && lessonBlocks.length > 0 ? (
-                /* Both iframe and lesson blocks — tabbed interface */
-                <div className="flex flex-col h-full">
-                    {/* Tab bar */}
-                    <div className="flex items-center gap-1 bg-[var(--surface-base)] px-3 py-1.5 border-b border-[var(--border)] shrink-0">
-                        <button
-                            onClick={() => setActiveTab('simulation')}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
-                                activeTab === 'simulation'
-                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-                            }`}
-                        >
-                            <Play className="w-3 h-3" /> Simulation
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('lessons')}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
-                                activeTab === 'lessons'
-                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-                            }`}
-                        >
-                            <BookOpen className="w-3 h-3" /> Lesson Blocks
-                        </button>
+            {(() => {
+                const hasIframe = !!contentUrl;
+                const hasLessons = !!(lessonBlocks && lessonBlocks.length > 0);
+                const showStudyTab = isAssessment && studyMaterial != null;
+                const needsTabs = (hasIframe && hasLessons) || showStudyTab;
+
+                const SimulationPanel = (
+                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full overflow-hidden ${
+                        isFullscreen && !document.fullscreenElement ? 'fixed inset-0 z-50' : ''
+                    }`}>
+                        <iframe
+                            ref={iframeRef}
+                            src={resolvedContentUrl || ''}
+                            className="w-full h-full min-h-0 border-none bg-white"
+                            title="Resource Viewer"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
+                            allow="fullscreen"
+                            allowFullScreen
+                            onLoad={handleInteraction}
+                        />
                     </div>
-                    {/* Tab content */}
-                    <div className="flex-1 min-h-0 relative">
-                        {activeTab === 'simulation' && (
-                            <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full overflow-hidden ${
-                                isFullscreen && !document.fullscreenElement ? 'fixed inset-0 z-50' : ''
-                            }`}>
-                                <iframe
-                                    ref={iframeRef}
-                                    src={resolvedContentUrl || ''}
-                                    className="w-full h-full min-h-0 border-none bg-white"
-                                    title="Resource Viewer"
-                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
-                                    allow="fullscreen"
-                                    allowFullScreen
-                                    onLoad={handleInteraction}
-                                />
+                );
+
+                const LessonsPanel = (
+                    <div className="h-full overflow-y-auto bg-[var(--surface-base)]/95 p-6 text-[var(--text-secondary)] custom-scrollbar">
+                        {savedBlockResponses === undefined ? (
+                            <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                        ) : (
+                            <LessonBlocks key={blockResetKey} blocks={lessonBlocks!} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
+                        )}
+                    </div>
+                );
+
+                const StudyPanel = showStudyTab && studyMaterial ? (
+                    <div className="h-full overflow-hidden bg-white">
+                        {studyMaterial.htmlContent || studyMaterial.storageUrl ? (
+                            <iframe
+                                src={studyMaterial.storageUrl || studyMaterialBlobUrl || ''}
+                                className="w-full h-full border-none"
+                                title="Reference Material"
+                                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                            />
+                        ) : (
+                            <div className="h-full overflow-y-auto custom-scrollbar">
+                                <div className="max-w-3xl mx-auto px-6 py-8">
+                                    <div className="mb-6">
+                                        <h1 className="text-xl font-bold text-[var(--text-primary)] mb-1">{studyMaterial.title}</h1>
+                                        {studyMaterial.description && (
+                                            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">{studyMaterial.description}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-8">
+                                        {(studyMaterial.sections || []).map((section, idx) => (
+                                            <div key={idx} className="group">
+                                                <h2 className="text-base font-bold text-purple-300 mb-3 flex items-center gap-2">
+                                                    <span className="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[11px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
+                                                    {section.title}
+                                                </h2>
+                                                <div
+                                                    className="study-content text-sm text-[var(--text-secondary)] leading-relaxed pl-8"
+                                                    dangerouslySetInnerHTML={{ __html: renderReadingContent(section.content) }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         )}
-                        {activeTab === 'lessons' && (
-                            <div className="h-full overflow-y-auto bg-[var(--surface-base)]/95 p-6 text-[var(--text-secondary)] custom-scrollbar">
-                                {savedBlockResponses === undefined ? (
-                                    <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
-                                ) : (
-                                    <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading reference material...
+                    </div>
+                );
+
+                if (needsTabs) {
+                    return (
+                        <div className="flex flex-col h-full">
+                            {/* Tab bar */}
+                            <div className="flex items-center gap-1 bg-[var(--surface-base)] px-3 py-1.5 border-b border-[var(--border)] shrink-0">
+                                {hasIframe && (
+                                    <button
+                                        onClick={() => setActiveTab('simulation')}
+                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                                            activeTab === 'simulation'
+                                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                                        }`}
+                                    >
+                                        <Play className="w-3 h-3" /> Simulation
+                                    </button>
+                                )}
+                                {hasLessons && (
+                                    <button
+                                        onClick={() => setActiveTab('lessons')}
+                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                                            activeTab === 'lessons'
+                                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                                        }`}
+                                    >
+                                        <BookOpen className="w-3 h-3" /> Lesson Blocks
+                                    </button>
+                                )}
+                                {showStudyTab && (
+                                    <button
+                                        onClick={() => setActiveTab('study')}
+                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                                            activeTab === 'study'
+                                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                                        }`}
+                                    >
+                                        <BookOpenText className="w-3 h-3" /> Reference
+                                    </button>
                                 )}
                             </div>
-                        )}
+                            {/* Tab content */}
+                            <div className="flex-1 min-h-0 relative">
+                                {activeTab === 'simulation' && hasIframe && SimulationPanel}
+                                {activeTab === 'lessons' && hasLessons && LessonsPanel}
+                                {activeTab === 'study' && showStudyTab && StudyPanel}
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (hasIframe) return SimulationPanel;
+                if (hasLessons) return LessonsPanel;
+                if (showStudyTab) return StudyPanel;
+
+                return (
+                    <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] italic">
+                        <div className="text-center">
+                            <Eye className="w-12 h-12 mx-auto mb-2 opacity-10" />
+                            <p className="font-mono text-sm uppercase">No interactive link found.</p>
+                        </div>
                     </div>
-                </div>
-            ) : contentUrl ? (
-                /* Iframe only */
-                <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full overflow-hidden ${
-                    isFullscreen && !document.fullscreenElement ? 'fixed inset-0 z-50' : ''
-                }`}>
-                    <iframe
-                        ref={iframeRef}
-                        src={resolvedContentUrl || ''}
-                        className="w-full h-full min-h-0 border-none bg-white"
-                        title="Resource Viewer"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
-                        allow="fullscreen"
-                        allowFullScreen
-                        onLoad={handleInteraction}
-                    />
-                </div>
-            ) : lessonBlocks && lessonBlocks.length > 0 ? (
-                /* Lesson-only mode: blocks fill the entire content area */
-                <div className="h-full overflow-y-auto bg-[var(--surface-base)]/95 p-6 text-[var(--text-secondary)] custom-scrollbar">
-                    {savedBlockResponses === undefined ? (
-                        <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
-                    ) : (
-                        <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
-                    )}
-                </div>
-            ) : (
-                <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] italic">
-                    <div className="text-center">
-                        <Eye className="w-12 h-12 mx-auto mb-2 opacity-10" />
-                        <p className="font-mono text-sm uppercase">No interactive link found.</p>
-                    </div>
-                </div>
-            )}
+                );
+            })()}
 
             {htmlContent && (
                 <div className="h-1/3 bg-[var(--surface-base)]/95 border-t border-[var(--border)] overflow-y-auto p-6 text-[var(--text-secondary)] shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">

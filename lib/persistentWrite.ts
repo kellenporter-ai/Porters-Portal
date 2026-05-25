@@ -142,6 +142,16 @@ export async function persistentWrite(
       onStatusChange?.('saved');
       return 'saved';
     } catch (err) {
+      const errCode = (err as { code?: string })?.code || '';
+      const errMsg = err instanceof Error ? err.message : String(err);
+      // Debug: log ALL write failures with payload details to diagnose rules rejections
+      console.warn('[persistentWrite] write failed', {
+        collectionPath, docId, attempt, errCode, errMsg,
+        dataKeys: Object.keys(data),
+        hasSessionToken: !!data.sessionToken,
+        sessionTokenPrefix: data.sessionToken ? (data.sessionToken as string).slice(0, 8) : null,
+        responsesCount: Object.keys((data.responses as Record<string, unknown>) || {}).length,
+      });
       if (attempt < MAX_RETRIES) {
         onStatusChange?.('retrying');
         const delay = BASE_DELAY_MS * Math.pow(2, attempt);

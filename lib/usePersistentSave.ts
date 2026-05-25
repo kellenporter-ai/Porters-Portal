@@ -99,6 +99,8 @@ export function usePersistentSave({
     const token = sessionTokenRef.current;
     if (token) data.sessionToken = token;
 
+    console.log('[usePersistentSave] doSave', { docId, hasToken: !!token, tokenPrefix: token ? token.slice(0, 8) : null, dataKeys: Object.keys(data), responsesCount: Object.keys(data.responses as Record<string, unknown> || {}).length });
+
     return persistentWrite(collection, docId, data, lsKey, (status) => {
       // Only update UI status if this is still the latest save
       if (gen !== saveGenRef.current) return;
