@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
-import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callArchiveAndClearResponses, callHeartbeat } from '../lib/firebase';
+import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callHeartbeat } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PlayCircle, Play, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, BookOpen, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
@@ -364,7 +364,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             // Retake: load pre-filled responses, clear the flag
             const data = snap.data();
             const responses = data.responses || {};
-            await updateDoc(doc(db, 'lesson_block_responses', docId), { retakePreFilled: false });
+            await updateDoc(doc(db, 'lesson_block_responses', docId), {
+              retakePreFilled: false,
+              ...(sessionToken ? { sessionToken } : {}),
+            });
             return { responses, lastUpdated: data.lastUpdated || new Date().toISOString() };
           }
           // Session recovery: if server has responses, the student has work in progress.
@@ -392,17 +395,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               return { responses, lastUpdated: data.lastUpdated || new Date().toISOString() };
             }
           }
-          // Fresh assessment start — archive & clear via atomic Cloud Function
+          // Fresh assessment start — archive existing responses client-side, then clear
           try {
-            await callArchiveAndClearResponses({ assignmentId });
+            const existingRef = doc(db, 'lesson_block_responses', docId);
+            const existingSnap = await getDoc(existingRef);
+            if (existingSnap.exists()) {
+              const existingData = existingSnap.data();
+              // Archive to recovery collection
+              await setDoc(doc(db, 'lesson_block_responses_archive', docId), {
+                ...existingData,
+                archivedAt: new Date().toISOString(),
+              });
+              // Clear original (server-side session token will be injected by usePersistentSave on first write)
+              await updateDoc(existingRef, {
+                responses: {},
+                lastUpdated: new Date().toISOString(),
+              });
+            }
           } catch (err) {
             reportError(err, { component: 'Proctor', context: 'Failed to archive and clear assessment responses' });
-            await setDoc(doc(db, 'lesson_block_responses', docId), {
-              userId,
-              assignmentId,
-              responses: {},
-              lastUpdated: new Date().toISOString(),
-            });
+            // Non-blocking: usePersistentSave will create the doc when the student first types
           }
           return { responses: {}, lastUpdated: new Date().toISOString() };
         };
@@ -802,8 +814,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
     const saveMetricsSnapshot = () => {
       const m = metricsRef.current;
-      // Fire-and-forget — don't block the UI
-      updateDoc(doc(db, 'lesson_block_responses', metricsDocId), {
+      // Include sessionToken so the update passes Firestore rules
+      const updateData: Record<string, unknown> = {
         metricsSnapshot: {
           engagementTime: m.engagementTime,
           keystrokes: m.keystrokes,
@@ -820,7 +832,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           wordsPerSecond: m.wordsPerSecond || 0,
           assistiveTech: assistiveTechRef.current,
         },
-      }).then(() => {
+      };
+      if (sessionToken) updateData.sessionToken = sessionToken;
+      // Fire-and-forget — don't block the UI
+      updateDoc(doc(db, 'lesson_block_responses', metricsDocId), updateData).then(() => {
         metricsFailCountRef.current = 0;
       }).catch(() => {
         metricsFailCountRef.current += 1;
