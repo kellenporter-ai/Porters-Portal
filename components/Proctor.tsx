@@ -4,7 +4,7 @@ import { TelemetryMetrics } from '../types';
 import { createInitialMetrics } from '../lib/telemetry';
 import { db, callAwardQuestionXP, callStartAssessmentSession, callStartResourceSession, callArchiveAndClearResponses, callHeartbeat } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { PlayCircle, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import { PlayCircle, Play, Eye, Clock, AlertTriangle, Maximize2, Minimize2, Zap, CheckCircle2, XCircle, RotateCcw, Trophy, BookOpen, Loader2 } from 'lucide-react';
 import ProctorTTS from './ProctorTTS';
 import SaveStatusIndicator from './SaveStatusIndicator';
 import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
@@ -135,7 +135,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const progressDocRef = useRef<PracticeProgressDoc | null>(null);
   const htmlActivityStateRef = useRef<unknown>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [focusMode, setFocusMode] = useState<'balanced' | 'simulation' | 'lessons'>('balanced');
+  const [activeTab, setActiveTab] = useState<'simulation' | 'lessons'>(() => {
+    if (lessonBlocks && lessonBlocks.length >= 3) return 'lessons';
+    return 'simulation';
+  });
   const [ttsText, setTtsText] = useState('');
   const [lessonBlocksAnswered, setLessonBlocksAnswered] = useState(0);
   const awardedBlocksRef = useRef<Set<string>>(new Set());
@@ -1302,16 +1305,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
-  // Lockdown mode: enforce restrictions during live assessments
+  // Lockdown mode: enforce restrictions during live assessments (no fullscreen — immersive mode is handled by AssessmentWorkspace)
   useEffect(() => {
     if (!isLockdown || previewMode) return;
-    const wrapper = iframeWrapperRef.current;
-    // Auto-request fullscreen on mount
-    if (wrapper && !document.fullscreenElement) {
-      wrapper.requestFullscreen().catch(() => {
-        setIsFullscreen(true); // CSS fallback
-      });
-    }
 
     // Track violations
     const recordViolation = (label: string) => {
@@ -1382,9 +1378,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // Network heartbeat: ping server every 30s during active assessment to keep session alive
   useEffect(() => {
     if (!isAssessment || previewMode || !sessionToken) return;
-    let intervalId: number;
     let failCount = 0;
-    const ping = async () => {
+    const intervalId = window.setInterval(async () => {
       try {
         await callHeartbeat({ sessionToken });
         failCount = 0; // Reset on success
@@ -1401,8 +1396,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           window.clearInterval(intervalId);
         }
       }
-    };
-    intervalId = window.setInterval(ping, 30000);
+    }, 30000);
     return () => window.clearInterval(intervalId);
   }, [isAssessment, previewMode, sessionToken]);
 
@@ -1422,9 +1416,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     }
   }, [htmlContent]);
 
-  // Compute flex proportions based on focus mode
-  const iframeFlex = focusMode === 'simulation' ? 'flex-1' : 'flex-[3]';
-  const lessonFlex = focusMode === 'lessons' ? 'flex-1' : 'flex-[2]';
+  // activeTab drives the main content view when both iframe and lesson blocks exist
 
   // Transform Google Drive URLs for the main iframe
   const resolvedContentUrl = contentUrl ? toGoogleDrivePreview(contentUrl) : contentUrl;
@@ -1518,7 +1510,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         </button>
                     )
                 )}
-                {contentUrl && focusMode !== 'lessons' && (
+                {contentUrl && !isAssessment && (
                     <button
                         onClick={toggleFullscreen}
                         className="flex items-center gap-1.5 text-[11.5px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
@@ -1623,10 +1615,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </p>
                     <button
                         onClick={() => {
-                            const wrapper = iframeWrapperRef.current;
-                            if (wrapper && !document.fullscreenElement) {
-                                wrapper.requestFullscreen().catch(() => setIsFullscreen(true));
-                            }
+                            lockdownViolationsRef.current = 0;
+                            setLockdownViolations(0);
                         }}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-bold transition-colors"
                     >
@@ -1638,58 +1628,80 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
-            {contentUrl ? (
-                <>
-                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative min-h-0 overflow-hidden transition-all duration-300 ${
-                        isFullscreen && !document.fullscreenElement
-                            ? 'fixed inset-0 z-50'
-                            : lessonBlocks && lessonBlocks.length > 0 ? iframeFlex : 'flex-1'
-                    }`} style={focusMode === 'lessons' ? { display: 'none' } : undefined}>
-                        <iframe
-                            ref={iframeRef}
-                            src={resolvedContentUrl || ''}
-                            className="w-full h-full min-h-0 border-none bg-white"
-                            title="Resource Viewer"
-                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
-                            allow="fullscreen"
-                            allowFullScreen
-                            onLoad={handleInteraction}
-                        />
+            {contentUrl && lessonBlocks && lessonBlocks.length > 0 ? (
+                /* Both iframe and lesson blocks — tabbed interface */
+                <div className="flex flex-col h-full">
+                    {/* Tab bar */}
+                    <div className="flex items-center gap-1 bg-[var(--surface-base)] px-3 py-1.5 border-b border-[var(--border)] shrink-0">
+                        <button
+                            onClick={() => setActiveTab('simulation')}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                                activeTab === 'simulation'
+                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                            }`}
+                        >
+                            <Play className="w-3 h-3" /> Simulation
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('lessons')}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                                activeTab === 'lessons'
+                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                            }`}
+                        >
+                            <BookOpen className="w-3 h-3" /> Lesson Blocks
+                        </button>
                     </div>
-                    {/* Focus mode toggle bar */}
-                    {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className="flex items-center justify-center gap-1.5 bg-[var(--surface-base)] py-0.5 px-2 z-10 shrink-0 border-y border-[var(--border)]">
-                            <button
-                                onClick={() => setFocusMode(prev => prev === 'simulation' ? 'balanced' : 'simulation')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'simulation' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
-                                title="Expand simulation"
-                            >
-                                <ChevronUp className="w-3.5 h-3.5" /> Simulation
-                            </button>
-                            <div className="w-6 h-0.5 bg-[var(--surface-glass-heavy)] rounded-full" />
-                            <button
-                                onClick={() => setFocusMode(prev => prev === 'lessons' ? 'balanced' : 'lessons')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${focusMode === 'lessons' ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30' : 'text-[var(--text-tertiary)] bg-[var(--surface-glass)] border border-[var(--border)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass-heavy)]'}`}
-                                title="Expand lessons"
-                            >
-                                <ChevronDown className="w-3.5 h-3.5" /> Lessons
-                            </button>
-                        </div>
-                    )}
-                    {/* Lesson Blocks as bottom panel alongside iframe */}
-                    {lessonBlocks && lessonBlocks.length > 0 && (
-                        <div className={`${lessonFlex} min-h-0 bg-[var(--surface-base)]/95 border-t border-[var(--border)] overflow-y-auto p-6 text-[var(--text-secondary)] shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar transition-all duration-300`} style={focusMode === 'simulation' ? { display: 'none' } : undefined}>
-                            {savedBlockResponses === undefined ? (
-                                <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
-                            ) : (
-                                <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
-                            )}
-                        </div>
-                    )}
-                </>
+                    {/* Tab content */}
+                    <div className="flex-1 min-h-0 relative">
+                        {activeTab === 'simulation' && (
+                            <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full overflow-hidden ${
+                                isFullscreen && !document.fullscreenElement ? 'fixed inset-0 z-50' : ''
+                            }`}>
+                                <iframe
+                                    ref={iframeRef}
+                                    src={resolvedContentUrl || ''}
+                                    className="w-full h-full min-h-0 border-none bg-white"
+                                    title="Resource Viewer"
+                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
+                                    allow="fullscreen"
+                                    allowFullScreen
+                                    onLoad={handleInteraction}
+                                />
+                            </div>
+                        )}
+                        {activeTab === 'lessons' && (
+                            <div className="h-full overflow-y-auto bg-[var(--surface-base)]/95 p-6 text-[var(--text-secondary)] custom-scrollbar">
+                                {savedBlockResponses === undefined ? (
+                                    <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                                ) : (
+                                    <LessonBlocks key={blockResetKey} blocks={lessonBlocks} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : contentUrl ? (
+                /* Iframe only */
+                <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full overflow-hidden ${
+                    isFullscreen && !document.fullscreenElement ? 'fixed inset-0 z-50' : ''
+                }`}>
+                    <iframe
+                        ref={iframeRef}
+                        src={resolvedContentUrl || ''}
+                        className="w-full h-full min-h-0 border-none bg-white"
+                        title="Resource Viewer"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
+                        allow="fullscreen"
+                        allowFullScreen
+                        onLoad={handleInteraction}
+                    />
+                </div>
             ) : lessonBlocks && lessonBlocks.length > 0 ? (
                 /* Lesson-only mode: blocks fill the entire content area */
-                <div className="flex-1 bg-[var(--surface-base)]/95 overflow-y-auto p-6 text-[var(--text-secondary)] custom-scrollbar">
+                <div className="h-full overflow-y-auto bg-[var(--surface-base)]/95 p-6 text-[var(--text-secondary)] custom-scrollbar">
                     {savedBlockResponses === undefined ? (
                         <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
                     ) : (

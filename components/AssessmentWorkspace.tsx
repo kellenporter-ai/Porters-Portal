@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Assignment, Submission, LessonBlock, RUBRIC_TIER_COLORS, RubricTierLabel } from '../types';
-import { X, RotateCcw, MessageSquare, FileText, Trophy, Check, XCircle, Clock, Shield, Send, LogOut, BookOpen } from 'lucide-react';
+import { X, RotateCcw, MessageSquare, FileText, Trophy, Check, XCircle, Clock, Shield, Send, LogOut, BookOpen, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { dataService } from '../services/dataService';
 
 interface AssessmentWorkspaceProps {
@@ -42,6 +42,9 @@ interface AssessmentWorkspaceProps {
   blockResponses?: Record<string, unknown>;
   lessonBlocks?: LessonBlock[];
 
+  // Lockdown / immersive mode
+  lockdownMode?: boolean;
+
   // Callbacks
   onRetake?: () => void;
   onExit: () => void;
@@ -68,12 +71,15 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   onSubmit,
   blockResponses: _blockResponses,
   lessonBlocks: _lessonBlocksProp,
+  lockdownMode,
   onRetake,
   onExit,
   onReviewWork,
 }) => {
   // Hooks must be called before any conditional return
   const [takingSelectedSkill, setTakingSelectedSkill] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [immersiveMode, setImmersiveMode] = useState(false);
   const [selected, setSelected] = useState<SidebarSelection>(() => {
     const rubric = activeAssignment.rubric;
     const questions = rubric?.questions ?? [];
@@ -84,6 +90,25 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
       : hasFeedback ? { type: 'feedback' } : { type: 'mywork' };
   });
 
+  // Auto-enter immersive mode when lockdown is active
+  useEffect(() => {
+    if (lockdownMode) {
+      setImmersiveMode(true);
+      setSidebarCollapsed(true);
+    }
+  }, [lockdownMode]);
+
+  // Escape key exits immersive mode
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && immersiveMode) {
+        setImmersiveMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [immersiveMode]);
+
   // ---- Taking mode ----
   if (mode === 'taking') {
     const takingQuestions = activeAssignment.rubric?.questions ?? [];
@@ -91,78 +116,159 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
     const selectedTakingQuestion = takingQuestions.find((q) => q.id === takingSelectedSkill);
 
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-[var(--surface-base)]">
+      <div className={`fixed inset-0 z-50 flex flex-col bg-[var(--surface-base)] ${immersiveMode ? '' : ''}`}>
         {/* Top Bar */}
-        <div className="flex items-center gap-4 px-5 py-3 border-b border-[var(--border)] bg-red-900/20 shrink-0">
+        <div className={`flex items-center gap-4 px-5 shrink-0 transition-all ${
+          immersiveMode
+            ? 'py-1.5 bg-red-900/40 border-b border-red-500/20'
+            : 'py-3 border-b border-[var(--border)] bg-red-900/20'
+        }`}>
           <div className="flex items-center gap-2 min-w-0">
             <Shield className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-            <h1 className="text-base font-bold text-[var(--text-primary)] truncate">
+            <h1 className={`font-bold text-[var(--text-primary)] truncate ${immersiveMode ? 'text-sm' : 'text-base'}`}>
               {activeAssignment.title}
             </h1>
           </div>
 
           <div className="flex items-center gap-3 ml-auto shrink-0">
-            {/* Timer area — Proctor HUD provides its own timer in the content area */}
-            <span className="text-[11px] bg-red-600/60 text-red-200 px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">
-              Assessment in Progress
-            </span>
+            {!immersiveMode && (
+              <span className="text-[11px] bg-red-600/60 text-red-200 px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">
+                Assessment in Progress
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setImmersiveMode(v => !v)}
+              className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition-all"
+              title={immersiveMode ? 'Exit focus mode (Esc)' : 'Enter focus mode'}
+            >
+              {immersiveMode ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+              {immersiveMode ? 'Exit Focus' : 'Focus'}
+            </button>
           </div>
         </div>
 
         {/* Body: Sidebar + Content */}
         <div className="flex flex-1 min-h-0">
           {/* Sidebar — rubric skills */}
-          <div className="w-[200px] shrink-0 bg-[var(--surface-glass)] border-r border-[var(--border)] flex flex-col p-3 gap-1 overflow-y-auto">
-            <p className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-1 px-1">
-              Rubric
-            </p>
-            {takingQuestions.map((question) => (
-              <button
-                key={question.id}
-                type="button"
-                onClick={() => setTakingSelectedSkill(
-                  takingSelectedSkill === question.id ? null : question.id
-                )}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-[14px] transition-all border ${
-                  takingSelectedSkill === question.id
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] border-transparent'
-                }`}
-              >
-                <div className="font-medium truncate">{question.questionLabel}</div>
-              </button>
-            ))}
-
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* Divider */}
-            <div className="my-2 border-t border-[var(--border)]" />
-
-            {/* Save & Exit */}
+          <div className={`${sidebarCollapsed ? 'w-12' : 'w-[200px]'} shrink-0 bg-[var(--surface-glass)] border-r border-[var(--border)] flex flex-col p-3 gap-1 overflow-y-auto transition-all duration-200`}>
+            {/* Collapse toggle */}
             <button
               type="button"
-              onClick={onExit}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center gap-2 border border-transparent"
+              onClick={() => setSidebarCollapsed(v => !v)}
+              className="self-end p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition mb-1"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              <LogOut className="w-3.5 h-3.5 shrink-0" />
-              Save & Exit
+              {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
             </button>
 
-            {/* Submit */}
-            <button
-              type="button"
-              onClick={() => onSubmit?.()}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2"
-            >
-              <Send className="w-3.5 h-3.5 shrink-0" />
-              Submit
-            </button>
+            {!sidebarCollapsed && (
+              <>
+                <p className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-1 px-1">
+                  Rubric
+                </p>
+                {takingQuestions.map((question) => (
+                  <button
+                    key={question.id}
+                    type="button"
+                    onClick={() => setTakingSelectedSkill(
+                      takingSelectedSkill === question.id ? null : question.id
+                    )}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-[14px] transition-all border ${
+                      takingSelectedSkill === question.id
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] border-transparent'
+                    }`}
+                  >
+                    <div className="font-medium truncate">{question.questionLabel}</div>
+                  </button>
+                ))}
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Divider */}
+                <div className="my-2 border-t border-[var(--border)]" />
+
+                {/* Save & Exit */}
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center gap-2 border border-transparent"
+                >
+                  <LogOut className="w-3.5 h-3.5 shrink-0" />
+                  Save & Exit
+                </button>
+
+                {/* Submit */}
+                <button
+                  type="button"
+                  onClick={() => onSubmit?.()}
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2"
+                >
+                  <Send className="w-3.5 h-3.5 shrink-0" />
+                  Submit
+                </button>
+              </>
+            )}
+            {sidebarCollapsed && (
+              <>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center justify-center"
+                  title="Save & Exit"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSubmit?.()}
+                  className="p-2 rounded-lg font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center justify-center"
+                  title="Submit"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Main Content — children (Proctor) */}
           <div className="flex-1 overflow-y-auto relative">
             {children}
+
+            {/* Floating bottom action bar (immersive mode) */}
+            {immersiveMode && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl px-4 py-2 shadow-2xl">
+                <button
+                  type="button"
+                  onClick={() => setSidebarCollapsed(v => !v)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
+                  title="Toggle sidebar"
+                >
+                  {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">Sidebar</span>
+                </button>
+                <div className="w-px h-4 bg-[var(--border)]" />
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Save & Exit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSubmit?.()}
+                  className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Submit</span>
+                </button>
+              </div>
+            )}
 
             {/* Rubric overlay panel */}
             {selectedTakingQuestion && (

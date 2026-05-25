@@ -805,6 +805,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 existingSubmission={existingSubmission}
                 lessonBlocks={activeAssignment.lessonBlocks}
                 blockResponses={liveBlockResponses}
+                lockdownMode={isLiveAssessment}
                 onScrollToBlock={(blockId) => {
                   document.getElementById(`block-${blockId}`)?.scrollIntoView({ behavior: 'smooth' });
                 }}
