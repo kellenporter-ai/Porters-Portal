@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache, collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
@@ -90,9 +90,11 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (evt) => { recoverFromFirestoreQuota(evt.reason); });
 }
 
-// Use modern persistence API (replaces deprecated enableIndexedDbPersistence)
+// Use memory-only cache to eliminate IndexedDB corruption/ bloat as a source
+// of startup slowness and write timeouts. localStorage drafts in
+// usePersistentSave protect student work across refreshes.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  localCache: memoryLocalCache()
 });
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
