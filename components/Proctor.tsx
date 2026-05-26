@@ -13,7 +13,7 @@ import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
-import { persistentWrite, draftKey, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
+import { persistentWrite, draftKey, readDraft, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
 import { renderReadingContent } from '../lib/renderReadingContent';
 
 const escapeHtml = (str: string): string =>
@@ -212,6 +212,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     clearAll: clearSavedResponses,
     isOnline,
     errorSince,
+    sessionInvalid,
     setInitialResponses,
   } = usePersistentSave({
     userId,
@@ -219,6 +220,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     collection: 'lesson_block_responses',
     sessionToken,
     disabled: previewMode,
+    isAssessment,
+    onResponsesChange: (responses) => {
+      // CRITICAL FIX: Keep savedBlockResponses in sync with live typing so that
+      // when LessonBlocks remounts (e.g., after tab switch), it has current data.
+      setSavedBlockResponses(responses as BlockResponseMap);
+    },
   });
 
   // Expose flushNow upward so ResourceViewer can call it for Save & Exit flow
@@ -422,7 +429,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             const data = snap.data();
             const responses = data.responses || {};
             setInitialResponses(responses, data.lastUpdated);
-            setSavedBlockResponses(responses);
+            // Use hook's actual responses (may be local draft if newer)
+            setSavedBlockResponses(getResponses());
           } else {
             setSavedBlockResponses({});
           }
@@ -435,6 +443,32 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         // Check if this is a retake with pre-filled responses from the prior submission
         const docId = `${userId}_${assignmentId}_blocks`;
         const handleFreshStart = async (): Promise<{ responses: Record<string, unknown>; lastUpdated: string }> => {
+          // CRITICAL FIX: Before touching Firestore, check if the student has unsaved work
+          // in localStorage from a prior session. If so, restore it instead of clearing.
+          const localDraftLsKey = draftKey('draft', userId, assignmentId);
+          const localDraft = readDraft(localDraftLsKey);
+          const draftData = localDraft?.data as Record<string, unknown> | undefined;
+          const draftResponses = draftData?.responses as Record<string, unknown> | undefined;
+          if (localDraft?.dirty && draftResponses && Object.keys(draftResponses).length > 0) {
+            // Student has live unsaved work — get a fresh token and restore their draft
+            const storageKey = `assessment_session_${assignmentId}`;
+            const sigKey = `${storageKey}_sig`;
+            try {
+              const result = await callStartAssessmentSession({ assignmentId });
+              const tokenData = result.data as { sessionToken: string; tokenSignature: string };
+              localStorage.setItem(storageKey, tokenData.sessionToken);
+              sessionStorage.setItem(storageKey, tokenData.sessionToken);
+              localStorage.setItem(sigKey, tokenData.tokenSignature);
+              sessionStorage.setItem(sigKey, tokenData.tokenSignature);
+              setSessionToken(tokenData.sessionToken);
+              onSessionToken?.(tokenData.sessionToken);
+              onTokenSignature?.(tokenData.tokenSignature);
+            } catch {
+              // If token request fails, still restore work — don't lose data
+            }
+            return { responses: draftResponses, lastUpdated: localDraft.timestamp };
+          }
+
           const snap = await getDoc(doc(db, 'lesson_block_responses', docId));
           if (snap.exists() && snap.data().retakePreFilled) {
             // Retake: load pre-filled responses, clear the flag
@@ -497,7 +531,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         handleFreshStart().then(({ responses, lastUpdated }) => {
           if (cancelled) return;
           setInitialResponses(responses, lastUpdated);
-          setSavedBlockResponses(responses);
+          // CRITICAL FIX: setInitialResponses may keep a local draft instead of server data.
+          // Always read the hook's actual responses rather than blindly using server responses.
+          setSavedBlockResponses(getResponses());
         }).catch(err => {
           if (cancelled) return;
           reportError(err, { component: 'Proctor', context: 'Failed to handle assessment fresh start' });
@@ -1604,7 +1640,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
                 {/* Save status indicator */}
-                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} errorSince={errorSince} />
+                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} errorSince={errorSince} sessionInvalid={sessionInvalid} />
             </div>
             <div className="flex items-center gap-3 flex-wrap">
                 {/* TTS — Screen Reader */}
@@ -1869,9 +1905,17 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             </div>
                             {/* Tab content */}
                             <div className="flex-1 min-h-0 relative">
-                                {activeTab === 'simulation' && hasIframe && SimulationPanel}
-                                {activeTab === 'lessons' && hasLessons && LessonsPanel}
-                                {activeTab === 'study' && showStudyTab && StudyPanel}
+                              {/* CRITICAL FIX: Use CSS visibility instead of conditional rendering so
+                                  LessonBlocks stays mounted and preserves student input state across tab switches. */}
+                              <div className={activeTab === 'simulation' && hasIframe ? 'h-full' : 'hidden'}>
+                                {SimulationPanel}
+                              </div>
+                              <div className={activeTab === 'lessons' && hasLessons ? 'h-full' : 'hidden'}>
+                                {LessonsPanel}
+                              </div>
+                              <div className={activeTab === 'study' && showStudyTab ? 'h-full' : 'hidden'}>
+                                {StudyPanel}
+                              </div>
                             </div>
                         </div>
                     );

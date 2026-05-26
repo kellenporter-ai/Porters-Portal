@@ -22,6 +22,8 @@ interface UsePersistentSaveOptions {
   onResponsesChange?: (responses: Record<string, unknown>) => void;
   /** When true, skip all Firestore writes and localStorage drafts (admin preview mode). */
   disabled?: boolean;
+  /** When true and sessionToken is missing, fail fast with a clear error instead of silent retries. */
+  isAssessment?: boolean;
 }
 
 interface UsePersistentSaveReturn {
@@ -41,6 +43,8 @@ interface UsePersistentSaveReturn {
   isOnline: boolean;
   /** Timestamp (ms) when error state began, or null if not in error. */
   errorSince: number | null;
+  /** True when the assessment session token is missing or invalid. */
+  sessionInvalid: boolean;
   /** Load initial responses (call once after fetching from Firestore on mount). */
   setInitialResponses: (responses: Record<string, unknown>, serverTimestamp?: string) => void;
 }
@@ -52,11 +56,13 @@ export function usePersistentSave({
   sessionToken,
   onResponsesChange,
   disabled,
+  isAssessment,
 }: UsePersistentSaveOptions): UsePersistentSaveReturn {
   const isOnline = useOnlineStatus();
   const [saveStatus, setSaveStatus] = useState<WriteStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [errorSince, setErrorSince] = useState<number | null>(null);
+  const [sessionInvalid, setSessionInvalid] = useState(false);
 
   const responsesRef = useRef<Record<string, unknown>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,6 +95,20 @@ export function usePersistentSave({
   const doSave = useCallback((): Promise<WriteStatus> | undefined => {
     if (disabled || !docId || !userId || !assignmentId) return undefined;
 
+    const token = sessionTokenRef.current;
+
+    // CRITICAL FIX: For assessments, a missing session token means Firestore rules
+    // will reject every write with permission-denied. Fail fast with a clear error
+    // instead of burning through 3 retries and confusing the student.
+    if (isAssessment && !token) {
+      console.warn('[usePersistentSave] Assessment save blocked — no session token');
+      setStatus('error');
+      setSessionInvalid(true);
+      window.dispatchEvent(new CustomEvent('portal-assessment-session-invalid'));
+      return Promise.resolve('error');
+    }
+
+    setSessionInvalid(false);
     const gen = ++saveGenRef.current;
     const data: Record<string, unknown> = {
       userId,
@@ -96,7 +116,6 @@ export function usePersistentSave({
       responses: responsesRef.current,
       lastUpdated: new Date().toISOString(),
     };
-    const token = sessionTokenRef.current;
     if (token) data.sessionToken = token;
 
     console.log('[usePersistentSave] doSave', { docId, hasToken: !!token, tokenPrefix: token ? token.slice(0, 8) : null, dataKeys: Object.keys(data), responsesCount: Object.keys(data.responses as Record<string, unknown> || {}).length });
@@ -308,6 +327,7 @@ export function usePersistentSave({
     clearAll,
     isOnline,
     errorSince,
+    sessionInvalid,
     setInitialResponses,
   };
 }

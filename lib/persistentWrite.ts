@@ -190,9 +190,23 @@ export async function syncDirtyDraft(
     if (snap.exists()) {
       const serverTs = snap.data().lastUpdated as string | undefined;
       if (serverTs && serverTs >= draft.timestamp) {
-        // Server is newer or equal — discard dirty draft
-        writeDraft(lsKey, draft.data, false);
-        return false;
+        const serverData = snap.data();
+        const serverResponses = serverData.responses || {};
+        const draftData = draft.data as Record<string, unknown>;
+        const draftResponses = draftData.responses || {};
+        const serverHasData = Object.keys(serverResponses).length > 0;
+        const draftHasData = Object.keys(draftResponses).length > 0;
+
+        // CRITICAL FIX: Never discard a draft with student work just because
+        // the server doc was cleared (e.g., by handleFreshStart). Only discard
+        // if the server actually has data, or if the draft is also empty.
+        if (serverHasData || !draftHasData) {
+          // Server is newer or equal AND has data — discard dirty draft
+          writeDraft(lsKey, draft.data, false);
+          return false;
+        }
+        // Server timestamp is newer but responses are empty — draft has work.
+        // Keep the draft and attempt to sync it (overwrite the empty server doc).
       }
     }
   } catch {
