@@ -987,8 +987,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         </Suspense>
       </div>
 
-      {/* Sticky bottom banner for assessments — always-visible submit CTA (hidden in admin preview) */}
-      {isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current || existingSubmission?.status === 'RETURNED') && !reviewMode && assignViewMode === 'WORK' && (
+      {/* Sticky bottom banner for assessments — visible only after student clicks Start Assessment */}
+      {isLiveAssessment && assessmentStarted && !assessmentResult && (!existingSubmission || isRetakingRef.current || existingSubmission?.status === 'RETURNED') && !reviewMode && assignViewMode === 'WORK' && (
         <div className="sticky bottom-0 z-30 bg-gradient-to-t from-[var(--surface-base)] via-[var(--surface-base)]/95 to-transparent pt-4 pb-3 px-4">
           <div className="flex items-center justify-between bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm">
