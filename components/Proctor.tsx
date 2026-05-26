@@ -257,26 +257,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   useEffect(() => {
     if (previewMode || !isAssessment || !assignmentId) return;
 
-    // Check for existing session token + signature
     const storageKey = `assessment_session_${assignmentId}`;
     const sigKey = `${storageKey}_sig`;
-    const cached = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
-    if (cached) {
-      const cachedSig = localStorage.getItem(sigKey) || sessionStorage.getItem(sigKey);
-      // Keep both in sync
-      localStorage.setItem(storageKey, cached);
-      sessionStorage.setItem(storageKey, cached);
-      if (cachedSig) {
-        localStorage.setItem(sigKey, cachedSig);
-        sessionStorage.setItem(sigKey, cachedSig);
-      }
-      setSessionToken(cached);
-      onSessionToken?.(cached);
-      if (cachedSig) onTokenSignature?.(cachedSig);
-      return;
-    }
-
     let cancelled = false;
+
     const requestToken = async () => {
       const MAX_RETRIES = 3;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -314,6 +298,49 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         onSessionToken?.(null);
       }
     };
+
+    // Check for existing session token — validate it before trusting (may be expired)
+    const cached = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
+    if (cached) {
+      const validateCached = async () => {
+        try {
+          await callHeartbeat({ sessionToken: cached });
+          if (cancelled) return;
+          // Cached token is still valid — use it
+          const cachedSig = localStorage.getItem(sigKey) || sessionStorage.getItem(sigKey);
+          localStorage.setItem(storageKey, cached);
+          sessionStorage.setItem(storageKey, cached);
+          if (cachedSig) {
+            localStorage.setItem(sigKey, cachedSig);
+            sessionStorage.setItem(sigKey, cachedSig);
+          }
+          setSessionToken(cached);
+          onSessionToken?.(cached);
+          if (cachedSig) onTokenSignature?.(cachedSig);
+          setSessionTokenError(null);
+        } catch (err: unknown) {
+          if (cancelled) return;
+          const msg = err instanceof Error ? err.message : String(err);
+          // Cached token expired or invalid — clear it and get a fresh one
+          if (msg.includes('expired') || msg.includes('not-found') || msg.includes('used')) {
+            localStorage.removeItem(storageKey);
+            sessionStorage.removeItem(storageKey);
+            localStorage.removeItem(sigKey);
+            sessionStorage.removeItem(sigKey);
+            requestToken();
+            return;
+          }
+          // Transient error — still use cached token, heartbeat loop will retry
+          const cachedSig = localStorage.getItem(sigKey) || sessionStorage.getItem(sigKey);
+          setSessionToken(cached);
+          onSessionToken?.(cached);
+          if (cachedSig) onTokenSignature?.(cachedSig);
+        }
+      };
+      validateCached();
+      return () => { cancelled = true; };
+    }
+
     requestToken();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1442,7 +1469,6 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // Network heartbeat: ping server every 30s during active assessment to keep session alive
   useEffect(() => {
     if (!isAssessment || previewMode || !sessionToken) return;
-    let failCount = 0;
     let timeoutId: number | null = null;
     let cancelled = false;
 
@@ -1452,19 +1478,33 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       try {
         await callHeartbeat({ sessionToken });
         console.log('[heartbeat] ok', { durationMs: Date.now() - start });
-        failCount = 0; // Reset on success
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.warn('[heartbeat] failed', { durationMs: Date.now() - start, msg, sessionToken: sessionToken.slice(0, 8) + '...' });
-        // Only count definitive session errors; ignore transient network blips
-        const isDefinitive = msg.includes('expired') || msg.includes('not-found') || msg.includes('used');
-        if (isDefinitive) {
-          failCount++;
-        }
-        // Abort after 3 consecutive definitive failures (prevents false positives from transient errors)
-        if (failCount >= 3) {
-          setSessionTokenError('Your assessment session has expired. Your answers are still saved — refresh the page to start a new attempt and your work will be restored.');
-          return; // Don't schedule next heartbeat
+        const isExpired = msg.includes('expired') || msg.includes('not-found') || msg.includes('used');
+        if (isExpired) {
+          // Session expired — try to get a fresh one immediately
+          try {
+            const result = await callStartAssessmentSession({ assignmentId });
+            const data = result.data as { sessionToken: string; tokenSignature: string; startedAt: number };
+            if (cancelled) return;
+            const storageKey = `assessment_session_${assignmentId}`;
+            const sigKey = `${storageKey}_sig`;
+            localStorage.setItem(storageKey, data.sessionToken);
+            localStorage.setItem(sigKey, data.tokenSignature);
+            sessionStorage.setItem(storageKey, data.sessionToken);
+            sessionStorage.setItem(sigKey, data.tokenSignature);
+            setSessionToken(data.sessionToken);
+            onSessionToken?.(data.sessionToken);
+            onTokenSignature?.(data.tokenSignature);
+            setSessionTokenError(null);
+            console.log('[heartbeat] session refreshed');
+          } catch (refreshErr: unknown) {
+            if (cancelled) return;
+            const refreshMsg = refreshErr instanceof Error ? refreshErr.message : String(refreshErr);
+            setSessionTokenError(refreshMsg);
+          }
+          return; // Don't schedule next heartbeat — sessionToken change triggers new effect
         }
       }
       if (!cancelled) {
@@ -1479,7 +1519,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       cancelled = true;
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [isAssessment, previewMode, sessionToken]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAssessment, previewMode, sessionToken, assignmentId]);
 
   // LaTeX Rendering + TTS text extraction
   useEffect(() => {

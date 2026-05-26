@@ -106,9 +106,17 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
     .limit(1)
     .get();
   if (!existingTokens.empty) {
-    const existingToken = existingTokens.docs[0];
-    logWithCorrelation('info', 'startAssessmentSession: reusing existing token', correlationId, { uid, assignmentId });
-    return { sessionToken: existingToken.id, startedAt: Date.now() };
+    const now = admin.firestore.Timestamp.now();
+    // Find first non-expired token; expired ones are left for cleanup
+    const validToken = existingTokens.docs.find(doc => {
+      const expiresAt = doc.data().expiresAt;
+      return !expiresAt || expiresAt.toMillis() > now.toMillis();
+    });
+    if (validToken) {
+      logWithCorrelation('info', 'startAssessmentSession: reusing existing token', correlationId, { uid, assignmentId });
+      return { sessionToken: validToken.id, startedAt: Date.now() };
+    }
+    // All existing tokens are expired — fall through to create a new one
   }
 
   // Check max attempts

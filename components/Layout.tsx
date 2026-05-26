@@ -39,6 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const { enabledFeatures } = useClassConfig();
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -107,6 +108,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   }, [navigate]);
 
   const [expandedParent, setExpandedParent] = useState<string | null>(null);
+
+  // Track fullscreen state to hide sidebar/nav when in focus mode
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Auto-expand parent when a child tab is active
   useEffect(() => {
@@ -460,7 +470,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       )}
 
       {/* Mobile/Tablet Header — visible below lg breakpoint */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-[var(--surface-overlay)] backdrop-blur-md border-b border-[var(--border)] z-30">
+      <header className={`lg:hidden flex items-center justify-between p-4 bg-[var(--surface-overlay)] backdrop-blur-md border-b border-[var(--border)] z-30 ${isFullscreen ? 'hidden' : ''}`}>
           <div className="flex items-center gap-2">
               <PortalLogo size={36} />
               <h1 className="font-bold text-[var(--text-primary)] text-lg">Porter's Portal</h1>
@@ -525,7 +535,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       )}
 
       {/* Desktop Sidebar — visible at lg breakpoint and above */}
-      <aside className={`p-4 hidden lg:flex flex-col z-[var(--z-drawer)] transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-64' : 'w-72'}`}>
+      <aside className={`p-4 hidden lg:flex flex-col z-[var(--z-drawer)] transition-all duration-200 ${sidebarCollapsed ? 'w-[76px]' : settings.compactView ? 'w-64' : 'w-72'} ${isFullscreen ? '!hidden' : ''}`}>
         <div className={`h-full bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-3xl flex flex-col shadow-2xl animate-glass-turn`}>
           {/* Header */}
           {sidebarCollapsed ? (
@@ -662,7 +672,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Mobile bottom nav — quick access to key pages (below lg breakpoint) */}
       {user.role === UserRole.STUDENT && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-[var(--surface-overlay)] backdrop-blur-md border-t border-[var(--border)] flex items-center justify-around px-2" role="tablist" aria-label="Quick navigation">
+        <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-[var(--surface-overlay)] backdrop-blur-md border-t border-[var(--border)] flex items-center justify-around px-2 ${isFullscreen ? 'hidden' : ''}`} role="tablist" aria-label="Quick navigation">
           {([
             { name: 'Home', iconSrc: '/assets/icons/icon-home.png', tab: 'Home' },
             { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', tab: 'Resources' },

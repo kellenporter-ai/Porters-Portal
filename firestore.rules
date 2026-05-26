@@ -286,11 +286,15 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + request.resource.data.assignmentId))
           || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
         );
-      // TEMPORARY DIAGNOSTIC: relaxed to isolate which rule check is failing
       allow update: if isAuthenticated() &&
         resource.data.userId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['userId', 'assignmentId', 'responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot', 'sessionToken']);
+          .hasOnly(['userId', 'assignmentId', 'responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot', 'sessionToken']) &&
+        (
+          exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + resource.data.assignmentId))
+          || exists(/databases/$(database)/documents/assessment_sessions/$(resource.data.sessionToken))
+          || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
+        );
       allow delete: if isAuthenticated() &&
         resource.data.userId == request.auth.uid;
     }

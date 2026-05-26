@@ -95,13 +95,29 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
     if (lockdownMode) {
       setImmersiveMode(true);
       setSidebarCollapsed(true);
+      document.documentElement.requestFullscreen().catch(() => {});
     }
   }, [lockdownMode]);
 
-  // Escape key exits immersive mode
+  // Sync immersiveMode with fullscreen state (user may press Escape or F11)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFs = !!document.fullscreenElement;
+      setImmersiveMode(isFs);
+      if (isFs) setSidebarCollapsed(true);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Escape key exits immersive mode (fallback when fullscreen API unavailable)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && immersiveMode) {
+      if (e.key === 'Escape' && immersiveMode && document.fullscreenElement) {
+        // Browser handles fullscreen exit; fullscreenchange listener updates state
+        return;
+      }
+      if (e.key === 'Escape' && immersiveMode && !document.fullscreenElement) {
         setImmersiveMode(false);
       }
     };
@@ -138,7 +154,26 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             )}
             <button
               type="button"
-              onClick={() => setImmersiveMode(v => !v)}
+              onClick={async () => {
+                if (!immersiveMode) {
+                  setImmersiveMode(true);
+                  setSidebarCollapsed(true);
+                  try {
+                    await document.documentElement.requestFullscreen();
+                  } catch {
+                    // Fullscreen not supported — still enter immersive UI mode
+                  }
+                } else {
+                  setImmersiveMode(false);
+                  if (document.fullscreenElement) {
+                    try {
+                      await document.exitFullscreen();
+                    } catch {
+                      // Ignore
+                    }
+                  }
+                }
+              }}
               className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition-all"
               title={immersiveMode ? 'Exit focus mode (Esc)' : 'Enter focus mode'}
             >
