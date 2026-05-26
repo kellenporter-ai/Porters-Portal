@@ -333,14 +333,18 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         } catch (err: unknown) {
           if (cancelled) return;
           const msg = err instanceof Error ? err.message : String(err);
+          const errCode = (err as { code?: string }).code || '';
+          console.warn('[Proctor] cached token validation failed', { msg, errCode, tokenPrefix: cached.slice(0, 8) });
           // Cached token expired or invalid — clear it and get a fresh one
-          if (msg.includes('expired') || msg.includes('not-found') || msg.includes('used')) {
+          if (msg.includes('expired') || msg.includes('not-found') || msg.includes('used') || errCode.includes('not-found')) {
             localStorage.removeItem(storageKey);
             sessionStorage.removeItem(storageKey);
             localStorage.removeItem(sigKey);
             sessionStorage.removeItem(sigKey);
             // If we got not-found, force a brand-new token to break ghost-token loops
-            requestToken(msg.includes('not-found'));
+            const forceNew = msg.includes('not-found') || errCode.includes('not-found');
+            console.warn('[Proctor] clearing cached token, requesting fresh', { forceNew });
+            requestToken(forceNew);
             return;
           }
           // Transient error — still use cached token, heartbeat loop will retry
@@ -1522,8 +1526,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         console.log('[heartbeat] ok', { durationMs: Date.now() - start });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn('[heartbeat] failed', { durationMs: Date.now() - start, msg, sessionToken: sessionToken.slice(0, 8) + '...' });
-        const isExpired = msg.includes('expired') || msg.includes('not-found') || msg.includes('used');
+        const errCode = (err as { code?: string }).code || '';
+        console.warn('[heartbeat] failed', { durationMs: Date.now() - start, msg, errCode, sessionToken: sessionToken.slice(0, 8) + '...' });
+        const isExpired = msg.includes('expired') || msg.includes('not-found') || msg.includes('used') || errCode.includes('not-found');
         if (isExpired) {
           // Session expired — try to get a fresh one immediately
           // If we got not-found twice for the same token, force a brand-new token
