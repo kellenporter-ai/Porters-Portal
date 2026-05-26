@@ -255,6 +255,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const [assistiveTech, setAssistiveTech] = useState(false);
   const assistiveTechRef = useRef(false);
   const firstInteractionRef = useRef<number | null>(null);
+  const ghostTokenRetriesRef = useRef(0); // Count consecutive not-found heartbeats to break ghost-token loops
 
   // Lockdown mode state
   const isLockdown = lockdownMode !== false && isAssessment === true;
@@ -271,21 +272,22 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     const sigKey = `${storageKey}_sig`;
     let cancelled = false;
 
-    const requestToken = async () => {
+    const requestToken = async (forceNew = false) => {
       const MAX_RETRIES = 3;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const result = await callStartAssessmentSession({ assignmentId });
+          const result = await callStartAssessmentSession({ assignmentId, forceNew });
           const data = result.data as { sessionToken: string; tokenSignature: string; startedAt: number };
           if (cancelled) return;
           localStorage.setItem(storageKey, data.sessionToken);
-          localStorage.setItem(sigKey, data.tokenSignature);
+          if (data.tokenSignature) localStorage.setItem(sigKey, data.tokenSignature);
           sessionStorage.setItem(storageKey, data.sessionToken);
-          sessionStorage.setItem(sigKey, data.tokenSignature);
+          if (data.tokenSignature) sessionStorage.setItem(sigKey, data.tokenSignature);
           setSessionToken(data.sessionToken);
           onSessionToken?.(data.sessionToken);
           onTokenSignature?.(data.tokenSignature);
           setSessionTokenError(null);
+          ghostTokenRetriesRef.current = 0;
           return;
         } catch (err: unknown) {
           if (cancelled) return;
@@ -337,7 +339,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             sessionStorage.removeItem(storageKey);
             localStorage.removeItem(sigKey);
             sessionStorage.removeItem(sigKey);
-            requestToken();
+            // If we got not-found, force a brand-new token to break ghost-token loops
+            requestToken(msg.includes('not-found'));
             return;
           }
           // Transient error — still use cached token, heartbeat loop will retry
@@ -461,8 +464,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
               const tokenData = result.data as { sessionToken: string; tokenSignature: string };
               localStorage.setItem(storageKey, tokenData.sessionToken);
               sessionStorage.setItem(storageKey, tokenData.sessionToken);
-              localStorage.setItem(sigKey, tokenData.tokenSignature);
-              sessionStorage.setItem(sigKey, tokenData.tokenSignature);
+              if (tokenData.tokenSignature) localStorage.setItem(sigKey, tokenData.tokenSignature);
+              if (tokenData.tokenSignature) sessionStorage.setItem(sigKey, tokenData.tokenSignature);
               setSessionToken(tokenData.sessionToken);
               onSessionToken?.(tokenData.sessionToken);
               onTokenSignature?.(tokenData.tokenSignature);
@@ -497,8 +500,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 const tokenData = result.data as { sessionToken: string; tokenSignature: string };
                 localStorage.setItem(storageKey, tokenData.sessionToken);
                 sessionStorage.setItem(storageKey, tokenData.sessionToken);
-                localStorage.setItem(sigKey, tokenData.tokenSignature);
-                sessionStorage.setItem(sigKey, tokenData.tokenSignature);
+                if (tokenData.tokenSignature) localStorage.setItem(sigKey, tokenData.tokenSignature);
+                if (tokenData.tokenSignature) sessionStorage.setItem(sigKey, tokenData.tokenSignature);
                 setSessionToken(tokenData.sessionToken);
                 onSessionToken?.(tokenData.sessionToken);
                 onTokenSignature?.(tokenData.tokenSignature);
@@ -1523,21 +1526,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         const isExpired = msg.includes('expired') || msg.includes('not-found') || msg.includes('used');
         if (isExpired) {
           // Session expired — try to get a fresh one immediately
+          // If we got not-found twice for the same token, force a brand-new token
+          const isNotFound = msg.includes('not-found');
+          const forceNew = isNotFound && ghostTokenRetriesRef.current > 0;
+          if (isNotFound) ghostTokenRetriesRef.current++;
           try {
-            const result = await callStartAssessmentSession({ assignmentId });
+            const result = await callStartAssessmentSession({ assignmentId, forceNew });
             const data = result.data as { sessionToken: string; tokenSignature: string; startedAt: number };
             if (cancelled) return;
             const storageKey = `assessment_session_${assignmentId}`;
             const sigKey = `${storageKey}_sig`;
             localStorage.setItem(storageKey, data.sessionToken);
-            localStorage.setItem(sigKey, data.tokenSignature);
+            if (data.tokenSignature) localStorage.setItem(sigKey, data.tokenSignature);
             sessionStorage.setItem(storageKey, data.sessionToken);
-            sessionStorage.setItem(sigKey, data.tokenSignature);
+            if (data.tokenSignature) sessionStorage.setItem(sigKey, data.tokenSignature);
             setSessionToken(data.sessionToken);
             onSessionToken?.(data.sessionToken);
             onTokenSignature?.(data.tokenSignature);
             setSessionTokenError(null);
-            console.log('[heartbeat] session refreshed');
+            ghostTokenRetriesRef.current = 0;
+            console.log('[heartbeat] session refreshed', { forceNew, tokenPrefix: data.sessionToken.slice(0, 8) });
           } catch (refreshErr: unknown) {
             if (cancelled) return;
             const refreshMsg = refreshErr instanceof Error ? refreshErr.message : String(refreshErr);

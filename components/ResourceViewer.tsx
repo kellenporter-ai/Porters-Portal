@@ -310,14 +310,14 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
           try {
-            const freshToken = await callStartAssessmentSession({ assignmentId: activeAssignment.id });
+            const freshToken = await callStartAssessmentSession({ assignmentId: activeAssignment.id, forceNew: true });
             const tokenData = freshToken.data as { sessionToken: string; tokenSignature: string };
             sessionTokenRef.current = tokenData.sessionToken;
-            tokenSignatureRef.current = tokenData.tokenSignature;
+            tokenSignatureRef.current = tokenData.tokenSignature || null;
             localStorage.setItem(key, tokenData.sessionToken);
-            localStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
+            if (tokenData.tokenSignature) localStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
             sessionStorage.setItem(key, tokenData.sessionToken);
-            sessionStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
+            if (tokenData.tokenSignature) sessionStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
             toast.info('Reconnecting session... retrying submission.');
             continue;
           } catch {

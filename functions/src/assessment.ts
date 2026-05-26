@@ -86,7 +86,7 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
   const correlationId = generateCorrelationId();
-  const { assignmentId } = request.data;
+  const { assignmentId, forceNew } = request.data;
   if (!assignmentId) throw new HttpsError("invalid-argument", "Missing assignmentId");
 
   const db = admin.firestore();
@@ -98,25 +98,42 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
   if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
 
   // Check for existing unused session token (crash recovery — reuse instead of creating new)
-  const existingTokens = await db.collection("assessment_sessions")
-    .where("userId", "==", uid)
-    .where("assignmentId", "==", assignmentId)
-    .where("used", "==", false)
-    .orderBy("__name__")
-    .limit(1)
-    .get();
-  if (!existingTokens.empty) {
-    const now = admin.firestore.Timestamp.now();
-    // Find first non-expired token; expired ones are left for cleanup
-    const validToken = existingTokens.docs.find(doc => {
-      const expiresAt = doc.data().expiresAt;
-      return !expiresAt || expiresAt.toMillis() > now.toMillis();
-    });
-    if (validToken) {
-      logWithCorrelation('info', 'startAssessmentSession: reusing existing token', correlationId, { uid, assignmentId });
-      return { sessionToken: validToken.id, startedAt: Date.now() };
+  // forceNew bypasses reuse when the client detects a ghost/missing token loop
+  if (!forceNew) {
+    const existingTokens = await db.collection("assessment_sessions")
+      .where("userId", "==", uid)
+      .where("assignmentId", "==", assignmentId)
+      .where("used", "==", false)
+      .orderBy("__name__")
+      .limit(1)
+      .get();
+    if (!existingTokens.empty) {
+      const now = admin.firestore.Timestamp.now();
+      // Find first non-expired token; expired ones are left for cleanup
+      const candidate = existingTokens.docs.find(doc => {
+        const expiresAt = doc.data().expiresAt;
+        return !expiresAt || expiresAt.toMillis() > now.toMillis();
+      });
+      if (candidate) {
+        // DEFENSIVE: query results can lag behind reality; verify with a direct get
+        const verified = await candidate.ref.get();
+        if (verified.exists) {
+          const vData = verified.data()!;
+          if (vData.used !== true) {
+            logWithCorrelation('info', 'startAssessmentSession: reusing existing token', correlationId, { uid, assignmentId, tokenPrefix: candidate.id.slice(0, 8) });
+            return { sessionToken: candidate.id, tokenSignature: vData.tokenSignature || undefined, startedAt: Date.now() };
+          }
+          // Token was marked used between query and get — fall through
+          logWithCorrelation('warn', 'startAssessmentSession: token became used between query and get', correlationId, { uid, assignmentId, tokenPrefix: candidate.id.slice(0, 8) });
+        } else {
+          // Ghost document in index — log and fall through to create new
+          logWithCorrelation('warn', 'startAssessmentSession: ghost token in query results (doc missing)', correlationId, { uid, assignmentId, tokenPrefix: candidate.id.slice(0, 8) });
+        }
+      }
+      // All existing tokens expired or invalid — fall through to create a new one
     }
-    // All existing tokens are expired — fall through to create a new one
+  } else {
+    logWithCorrelation('info', 'startAssessmentSession: forceNew requested — skipping reuse', correlationId, { uid, assignmentId });
   }
 
   // Check max attempts
