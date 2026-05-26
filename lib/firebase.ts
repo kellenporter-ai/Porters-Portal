@@ -30,6 +30,52 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// ─── Firestore localStorage quota recovery ───
+// Firestore's persistentMultipleTabManager stores tab sync state in localStorage
+// (keys like firestore_targets_*). On long idle sessions these can exceed quota,
+// causing an unrecoverable "INTERNAL ASSERTION FAILED" cascade. We detect the
+// QuotaExceededError, clear Firestore's internal keys, and reload.
+function clearFirestoreLocalStorage(): void {
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('firestore_') || key.includes('firestore/'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch {
+    // If localStorage itself is broken, nothing we can do
+  }
+}
+
+function isFirestoreQuotaError(error: Error | unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message || '';
+  return (
+    (error.name === 'QuotaExceededError' || (error as DOMException).code === 22) &&
+    (msg.includes('firestore_targets') || msg.includes('firestore_mutations') || msg.includes('firestore/'))
+  );
+}
+
+let quotaRecoveryPending = false;
+function recoverFromFirestoreQuota(error: Error | unknown): void {
+  if (quotaRecoveryPending) return;
+  if (!isFirestoreQuotaError(error)) return;
+  quotaRecoveryPending = true;
+  console.warn('[Firestore Quota] Clearing Firestore localStorage cache and reloading...');
+  clearFirestoreLocalStorage();
+  // Give the browser a tick to process removals before reload
+  setTimeout(() => window.location.reload(), 100);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (evt) => recoverFromFirestoreQuota(evt.error));
+  window.addEventListener('unhandledrejection', (evt) => recoverFromFirestoreQuota(evt.reason));
+}
+
 // Use modern persistence API (replaces deprecated enableIndexedDbPersistence)
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })

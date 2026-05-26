@@ -218,9 +218,18 @@ const XPRoute: React.FC = () => {
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingStuck, setLoadingStuck] = useState(false);
 
   // Student-scoped submission subscription (cheap — single user)
   const [studentSubmissions, setStudentSubmissions] = useState<Submission[]>([]);
+
+  // Loading timeout — if auth/Firestore is deadlocked (e.g. Firestore quota exceeded),
+  // show a retry UI instead of hanging forever on "ESTABLISHING CONNECTION..."
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => setLoadingStuck(true), 15_000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   // Auth init
   useEffect(() => {
@@ -334,7 +343,39 @@ const App: React.FC = () => {
     await dataService.updateUserSettings(user.id, { ...current, ...newSettings });
   }, [user?.id, user?.settings]);
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[var(--surface-base)] text-[var(--text-primary)] font-mono">ESTABLISHING CONNECTION...</div>;
+  if (isLoading) {
+    if (loadingStuck) {
+      return (
+        <div className="h-screen flex flex-col items-center justify-center bg-[var(--surface-base)] text-[var(--text-primary)] p-6">
+          <div className="max-w-md w-full bg-[var(--surface-glass)] backdrop-blur-xl border border-[var(--border)] p-8 rounded-3xl text-center shadow-2xl">
+            <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Connection Trouble</h2>
+            <p className="text-[var(--text-secondary)] text-sm mb-6">
+              The app is taking longer than expected to connect. This can happen when
+              your browser's storage is full.
+            </p>
+            <button
+              onClick={() => {
+                try {
+                  for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('firestore_') || key.includes('firestore/'))) {
+                      localStorage.removeItem(key);
+                    }
+                  }
+                } catch { /* noop */ }
+                window.location.reload();
+              }}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+            >
+              Clear Cache & Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return <div className="h-screen flex items-center justify-center bg-[var(--surface-base)] text-[var(--text-primary)] font-mono">ESTABLISHING CONNECTION...</div>;
+  }
   if (!user) return <GoogleLogin />;
 
   if (!user.isWhitelisted && user.role !== UserRole.ADMIN) {
