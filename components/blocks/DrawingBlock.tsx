@@ -544,10 +544,13 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     }
   }, [block.backgroundImage]);
 
-  // Sync response upstream
+  // Sync response upstream — use a ref so callback identity changes
+  // (from parent re-renders) don't re-trigger this effect and cause loops.
+  const onResponseChangeRef = useRef(onResponseChange);
+  onResponseChangeRef.current = onResponseChange;
   useEffect(() => {
-    onResponseChange?.({ elements, submitted });
-  }, [elements, submitted, onResponseChange]);
+    onResponseChangeRef.current?.({ elements, submitted });
+  }, [elements, submitted]);
 
   // Track shift key
   useEffect(() => {

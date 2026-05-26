@@ -203,6 +203,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
   const [blockResetKey, setBlockResetKey] = useState(0);
 
+  // Stable callback — inline arrow functions recreated on every render cause
+  // cascading callback identity changes through LessonBlocks → block components,
+  // triggering effects that call back upward (e.g. DrawingBlock sync effect).
+  const handleResponsesChange = useCallback((responses: Record<string, unknown>) => {
+    setSavedBlockResponses(responses as BlockResponseMap);
+  }, []);
+
   // Persistent save hook — replaces inline debounce + flush logic
   const {
     saveStatus,
@@ -221,11 +228,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     sessionToken,
     disabled: previewMode,
     isAssessment,
-    onResponsesChange: (responses) => {
-      // CRITICAL FIX: Keep savedBlockResponses in sync with live typing so that
-      // when LessonBlocks remounts (e.g., after tab switch), it has current data.
-      setSavedBlockResponses(responses as BlockResponseMap);
-    },
+    onResponsesChange: handleResponsesChange,
   });
 
   // Expose flushNow upward so ResourceViewer can call it for Save & Exit flow
