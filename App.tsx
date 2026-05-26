@@ -355,7 +355,7 @@ const App: React.FC = () => {
               your browser's storage is full.
             </p>
             <button
-              onClick={() => {
+              onClick={async () => {
                 try {
                   for (let i = localStorage.length - 1; i >= 0; i--) {
                     const key = localStorage.key(i);
@@ -363,6 +363,15 @@ const App: React.FC = () => {
                       localStorage.removeItem(key);
                     }
                   }
+                } catch { /* noop */ }
+                try {
+                  const dbName = 'firestore/[DEFAULT]/porters-portal';
+                  await new Promise<void>((resolve) => {
+                    const req = indexedDB.deleteDatabase(dbName);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => resolve();
+                    req.onblocked = () => resolve();
+                  });
                 } catch { /* noop */ }
                 window.location.reload();
               }}

@@ -1539,6 +1539,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             if (cancelled) return;
             const refreshMsg = refreshErr instanceof Error ? refreshErr.message : String(refreshErr);
             setSessionTokenError(refreshMsg);
+            window.dispatchEvent(new CustomEvent('portal-assessment-session-invalid', {
+              detail: { message: refreshMsg },
+            }));
           }
           return; // Don't schedule next heartbeat — sessionToken change triggers new effect
         }

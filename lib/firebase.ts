@@ -51,6 +51,20 @@ function clearFirestoreLocalStorage(): void {
   }
 }
 
+async function clearFirestoreIndexedDB(): Promise<void> {
+  try {
+    const dbName = 'firestore/[DEFAULT]/porters-portal';
+    const req = indexedDB.deleteDatabase(dbName);
+    await new Promise<void>((resolve, reject) => {
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => resolve(); // blocked → proceed anyway, reload will clear
+    });
+  } catch {
+    // Best-effort; if IndexedDB is unavailable, localStorage clear + reload is enough
+  }
+}
+
 function isFirestoreQuotaError(error: Error | unknown): boolean {
   if (!(error instanceof Error)) return false;
   const msg = error.message || '';
@@ -61,19 +75,19 @@ function isFirestoreQuotaError(error: Error | unknown): boolean {
 }
 
 let quotaRecoveryPending = false;
-function recoverFromFirestoreQuota(error: Error | unknown): void {
+async function recoverFromFirestoreQuota(error: Error | unknown): Promise<void> {
   if (quotaRecoveryPending) return;
   if (!isFirestoreQuotaError(error)) return;
   quotaRecoveryPending = true;
-  console.warn('[Firestore Quota] Clearing Firestore localStorage cache and reloading...');
+  console.warn('[Firestore Quota] Clearing Firestore caches and reloading...');
   clearFirestoreLocalStorage();
-  // Give the browser a tick to process removals before reload
-  setTimeout(() => window.location.reload(), 100);
+  await clearFirestoreIndexedDB();
+  window.location.reload();
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('error', (evt) => recoverFromFirestoreQuota(evt.error));
-  window.addEventListener('unhandledrejection', (evt) => recoverFromFirestoreQuota(evt.reason));
+  window.addEventListener('error', (evt) => { recoverFromFirestoreQuota(evt.error); });
+  window.addEventListener('unhandledrejection', (evt) => { recoverFromFirestoreQuota(evt.reason); });
 }
 
 // Use modern persistence API (replaces deprecated enableIndexedDbPersistence)

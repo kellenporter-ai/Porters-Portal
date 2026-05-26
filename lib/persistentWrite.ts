@@ -6,6 +6,7 @@ export type WriteStatus = 'idle' | 'saving' | 'saved' | 'retrying' | 'error';
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 2000;
+const WRITE_TIMEOUT_MS = 10_000; // Prevent indefinite SAVING... hang when Firestore SDK stalls
 
 /** localStorage key for draft data. Scoped by prefix, userId, and assignmentId. */
 export function draftKey(prefix: string, userId: string, assignmentId: string): string {
@@ -115,6 +116,23 @@ export async function persistentWrite(
 ): Promise<WriteStatus> {
   onStatusChange?.('saving');
 
+  const writeWithTimeout = async (
+    writeFn: () => Promise<void>,
+  ): Promise<'ok' | 'timeout'> => {
+    let timer: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<'timeout'>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Firestore write timed out')), WRITE_TIMEOUT_MS);
+    });
+    try {
+      await Promise.race([writeFn(), timeoutPromise]);
+      clearTimeout(timer!);
+      return 'ok';
+    } catch (err) {
+      clearTimeout(timer!);
+      throw err;
+    }
+  };
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       // Use dot-notation updateDoc for atomic per-field updates when responses present
@@ -129,13 +147,13 @@ export async function persistentWrite(
         }
 
         try {
-          await updateDoc(doc(db, collectionPath, docId), dotNotation);
+          await writeWithTimeout(() => updateDoc(doc(db, collectionPath, docId), dotNotation));
         } catch {
           // Doc may not exist yet — fall back to setDoc (creates the doc)
-          await setDoc(doc(db, collectionPath, docId), data, { merge: true });
+          await writeWithTimeout(() => setDoc(doc(db, collectionPath, docId), data, { merge: true }));
         }
       } else {
-        await setDoc(doc(db, collectionPath, docId), data, { merge: true });
+        await writeWithTimeout(() => setDoc(doc(db, collectionPath, docId), data, { merge: true }));
       }
       // Success — mark localStorage clean
       if (lsKey) writeDraft(lsKey, data, false);
