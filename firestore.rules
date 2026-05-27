@@ -277,10 +277,6 @@ service cloud.firestore {
       // defense against metricsSnapshot poisoning for submitOnBehalf.
       allow create: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid &&
-        request.resource.data.keys().hasOnly([
-          'userId', 'assignmentId', 'responses', 'lastUpdated',
-          'retakePreFilled', 'metricsSnapshot', 'sessionToken'
-        ]) &&
         validMetricsSnapshot() &&
         (
           exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + request.resource.data.assignmentId))
@@ -288,12 +284,14 @@ service cloud.firestore {
         );
       allow update: if isAuthenticated() &&
         resource.data.userId == request.auth.uid &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['userId', 'assignmentId', 'responses', 'lastUpdated', 'retakePreFilled', 'metricsSnapshot', 'sessionToken']) &&
         (
-          exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + resource.data.assignmentId))
-          || exists(/databases/$(database)/documents/assessment_sessions/$(resource.data.sessionToken))
+          // Retake flag clearing doesn't need a session token — the doc may have
+          // been created by returnAssessment without one, and we shouldn't block
+          // pre-fill restoration. Only retakePreFilled may change in this path.
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['retakePreFilled'])
           || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
+          || (resource.data.sessionToken != null && exists(/databases/$(database)/documents/assessment_sessions/$(resource.data.sessionToken)))
+          || exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + resource.data.assignmentId))
         );
       allow delete: if isAuthenticated() &&
         resource.data.userId == request.auth.uid;

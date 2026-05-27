@@ -339,6 +339,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             sessionStorage.removeItem(storageKey);
             localStorage.removeItem(sigKey);
             sessionStorage.removeItem(sigKey);
+            setSessionToken(null);
+            onSessionToken?.(null);
+            onTokenSignature?.(null);
             // If we got not-found, force a brand-new token to break ghost-token loops
             requestToken(msg.includes('not-found'));
             return;
@@ -480,10 +483,19 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             // Retake: load pre-filled responses, clear the flag
             const data = snap.data();
             const responses = data.responses || {};
-            await updateDoc(doc(db, 'lesson_block_responses', docId), {
-              retakePreFilled: false,
-              ...(sessionToken ? { sessionToken } : {}),
-            });
+            // Only clear the retake flag; don't touch sessionToken here.
+            // The stale token may already be used/expired. Let the first
+            // persistentWrite update it once a fresh token is obtained.
+            try {
+              await updateDoc(doc(db, 'lesson_block_responses', docId), {
+                retakePreFilled: false,
+              });
+            } catch (e) {
+              // Non-blocking: if flag clear fails (e.g., rules reject), the student
+              // still needs their pre-filled responses. The flag will be re-checked
+              // on next mount; no harm in leaving it true.
+              console.warn('[Proctor] retakePreFilled clear failed, continuing with pre-fill', e);
+            }
             return { responses, lastUpdated: data.lastUpdated || new Date().toISOString() };
           }
           // Session recovery: if server has responses, the student has work in progress.

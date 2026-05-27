@@ -22,6 +22,8 @@ import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import NotFound from './components/NotFound';
 import SongRequester from './components/SongRequester';
+import { UpdateBanner } from './components/UpdateBanner';
+import { useVersionCheck } from './lib/useVersionCheck';
 import StreakDisplay from './components/StreakDisplay';
 import RouteSkeleton from './components/RouteSkeleton';
 import { AppDataProvider, useAppData, useAssignments, useClassConfig } from './lib/AppDataContext';
@@ -337,6 +339,9 @@ const App: React.FC = () => {
 
   const handleLogout = async () => { await signOut(auth); setUser(null); };
 
+  // Stale-deployment detection
+  const { updateAvailable, dismiss, reload } = useVersionCheck();
+
   const handleThemeSettingsUpdate = useCallback(async (newSettings: Partial<import('./types').UserSettings>) => {
     if (!user) return;
     const current = user.settings || { liveBackground: true, performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' as const };
@@ -401,6 +406,7 @@ const App: React.FC = () => {
     <ThemeProvider userSettings={user.settings} onUpdateSettings={handleThemeSettingsUpdate}>
     <AppDataProvider user={user}>
 <>
+      {updateAvailable && <UpdateBanner onReload={reload} onDismiss={dismiss} />}
       <ConnectionStatus />
 
       <Routes>
