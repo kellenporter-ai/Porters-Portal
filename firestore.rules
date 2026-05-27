@@ -35,21 +35,6 @@ service cloud.firestore {
         && d.keys().hasAll(['studentId', 'createdAt']);
     }
 
-    // Validate metricsSnapshot structure to prevent poisoning
-    function validMetricsSnapshot() {
-      let ms = request.resource.data.metricsSnapshot;
-      return ms == null || (
-        ms is map
-        && (ms.engagementTime == null || (ms.engagementTime is number && ms.engagementTime >= 0 && ms.engagementTime <= 86400))
-        && (ms.keystrokes == null || (ms.keystrokes is number && ms.keystrokes >= 0 && ms.keystrokes <= 100000))
-        && (ms.pasteCount == null || (ms.pasteCount is number && ms.pasteCount >= 0 && ms.pasteCount <= 10000))
-        && (ms.tabSwitchCount == null || (ms.tabSwitchCount is number && ms.tabSwitchCount >= 0 && ms.tabSwitchCount <= 10000))
-        && (ms.clickCount == null || (ms.clickCount is number && ms.clickCount >= 0 && ms.clickCount <= 500000))
-        && (ms.autoInsertCount == null || (ms.autoInsertCount is number && ms.autoInsertCount >= 0 && ms.autoInsertCount <= 10000))
-        && (ms.blurCount == null || (ms.blurCount is number && ms.blurCount >= 0 && ms.blurCount <= 10000))
-      );
-    }
-
     // ==========================================
     // USER PROFILES
     // ==========================================
@@ -271,13 +256,13 @@ service cloud.firestore {
       // resource == null handles getDoc() on non-existent docs (first visit)
       allow read: if isAuthenticated() &&
         (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
-      // Students can only write whitelisted top-level keys. Note: this does NOT
-      // enforce deep validation of nested objects (e.g. metricsSnapshot fields).
-      // Server-side caps in calculateFeedbackServerSide are the authoritative
-      // defense against metricsSnapshot poisoning for submitOnBehalf.
+      // Students can create a doc if they own it and have an active session.
+      // validMetricsSnapshot removed — it was blocking legitimate saves when
+      // Proctor's saveMetricsSnapshot wrote values that exceeded arbitrary caps.
+      // Server-side validation in calculateFeedbackServerSide is the authoritative
+      // defense against metrics poisoning.
       allow create: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid &&
-        validMetricsSnapshot() &&
         (
           exists(/databases/$(database)/documents/resource_sessions/$(request.auth.uid + '_' + request.resource.data.assignmentId))
           || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
@@ -285,9 +270,7 @@ service cloud.firestore {
       allow update: if isAuthenticated() &&
         resource.data.userId == request.auth.uid &&
         (
-          // Retake flag clearing doesn't need a session token — the doc may have
-          // been created by returnAssessment without one, and we shouldn't block
-          // pre-fill restoration. Only retakePreFilled may change in this path.
+          // Retake flag clearing doesn't need a session token
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['retakePreFilled'])
           || exists(/databases/$(database)/documents/assessment_sessions/$(request.resource.data.sessionToken))
           || (resource.data.sessionToken != null && exists(/databases/$(database)/documents/assessment_sessions/$(resource.data.sessionToken)))
