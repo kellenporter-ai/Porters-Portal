@@ -59,8 +59,21 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
   // Save & Exit state
   const [isSavingExit, setIsSavingExit] = useState(false);
+  const [saveExitElapsed, setSaveExitElapsed] = useState(0);
   const [showSaveFailedModal, setShowSaveFailedModal] = useState(false);
   const flushRef = useRef<(() => Promise<WriteStatus> | undefined) | null>(null);
+
+  // Track elapsed seconds during Save & Exit so the button doesn't feel frozen
+  useEffect(() => {
+    if (!isSavingExit) {
+      setSaveExitElapsed(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setSaveExitElapsed(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isSavingExit]);
 
   // Assessment state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -415,7 +428,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     blockerProceedRef.current = true;
     try {
       const flushPromise = flushRef.current?.();
-      const timeoutPromise = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), 3000));
+      const timeoutPromise = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), 10000));
       const result = await Promise.race([flushPromise ?? Promise.resolve('timeout'), timeoutPromise]);
       if (result === 'saved') {
         setIsSavingExit(false);
@@ -709,7 +722,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 className="flex items-center gap-1.5 text-xs font-bold bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSavingExit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
-                {isSavingExit ? 'Saving...' : 'Save & Exit'}
+                {isSavingExit ? `Saving${saveExitElapsed > 2 ? ` (${saveExitElapsed}s)` : '...'}` : 'Save & Exit'}
               </button>
               <button
                 onClick={handleAssessmentSubmit}
