@@ -413,13 +413,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const handleSaveAndExit = async () => {
     setIsSavingExit(true);
     blockerProceedRef.current = true;
-    console.log('[SaveAndExit] starting', { hasFlushRef: !!flushRef.current });
     try {
       const flushPromise = flushRef.current?.();
-      console.log('[SaveAndExit] flushPromise type', { isPromise: flushPromise instanceof Promise, isUndefined: flushPromise === undefined });
       const timeoutPromise = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), 3000));
       const result = await Promise.race([flushPromise ?? Promise.resolve('timeout'), timeoutPromise]);
-      console.log('[SaveAndExit] result', { result });
       if (result === 'saved') {
         setIsSavingExit(false);
         handleExit();
@@ -428,8 +425,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         blockerProceedRef.current = false;
         setShowSaveFailedModal(true);
       }
-    } catch (err: unknown) {
-      console.error('[SaveAndExit] catch', err);
+    } catch {
       setIsSavingExit(false);
       blockerProceedRef.current = false;
       setShowSaveFailedModal(true);
