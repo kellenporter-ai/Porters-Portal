@@ -389,20 +389,34 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     isRetakingRef.current = true; // Suppress recovery effect while retaking
     if (id) sessionStorage.setItem(`retaking_${id}`, '1');
     const docId = `${user.id}_${activeAssignment.id}_blocks`;
+    const retakeKey = `assessment_session_${activeAssignment.id}`;
+    const sigKey = `${retakeKey}_sig`;
     try {
+      // Request a fresh token BEFORE creating the pre-fill doc —
+      // lesson_block_responses CREATE rules require an active session.
+      const tokenResult = await callStartAssessmentSession({ assignmentId: activeAssignment.id });
+      const tokenData = tokenResult.data as { sessionToken: string; tokenSignature: string };
+      localStorage.setItem(retakeKey, tokenData.sessionToken);
+      sessionStorage.setItem(retakeKey, tokenData.sessionToken);
+      if (tokenData.tokenSignature) localStorage.setItem(sigKey, tokenData.tokenSignature);
+      if (tokenData.tokenSignature) sessionStorage.setItem(sigKey, tokenData.tokenSignature);
+
       await setDoc(doc(db, 'lesson_block_responses', docId), {
         userId: user.id,
         assignmentId: activeAssignment.id,
         responses: existingSubmission?.blockResponses ?? {},
         lastUpdated: new Date().toISOString(),
         retakePreFilled: true,
+        sessionToken: tokenData.sessionToken,
       });
-    } catch { /* ignore if doc doesn't exist yet */ }
-    // Clear cached session token so retake gets a fresh one
-    const retakeKey = `assessment_session_${activeAssignment.id}`;
-    localStorage.removeItem(retakeKey);
-    sessionStorage.removeItem(retakeKey);
-    sessionTokenRef.current = null;
+    } catch (err) {
+      // Pre-fill setup failed — still allow the retake, student starts fresh
+      console.warn('[ResourceViewer] handleRetake: pre-fill setup failed', err);
+      // Clear any stale token so Proctor requests a fresh one on mount
+      localStorage.removeItem(retakeKey);
+      sessionStorage.removeItem(retakeKey);
+      if (sessionTokenRef) sessionTokenRef.current = null;
+    }
     setAssessmentResult(null);
   }, [activeAssignment, config, existingSubmission, id, user.id, assessmentResult, confirm]);
 
