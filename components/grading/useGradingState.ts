@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { User, Assignment, Submission, RubricSkillGrade, RubricGrade, DraftFeedbackMessage } from '../../types';
 import { dataService } from '../../services/dataService';
 import { calculateRubricPercentage } from '../../lib/rubricParser';
-import { callReturnAssessment, callClassroomPushGrades } from '../../lib/firebase';
+import { callReturnAssessment, callClassroomPushGrades, auth } from '../../lib/firebase';
 import { getClassroomAccessToken } from '../../lib/classroomAuth';
 import { analyzeIntegrity, type IntegrityReport } from '../../lib/integrityAnalysis';
 import { reportError } from '../../lib/errorReporting';
@@ -688,17 +688,43 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
       setClassroomLinkModalOpen(true);
       return;
     }
-    setPushingToClassroom(true);
-    try {
-      const accessToken = await getClassroomAccessToken();
-      const result = await callClassroomPushGrades({ accessToken, assignmentId: selectedAssessment.id });
-      const data = result.data as { pushed: number; skipped: number };
-      toast.success(`Pushed ${data.pushed} grades to Classroom${data.skipped > 0 ? ` (${data.skipped} skipped)` : ''}`);
-    } catch (err: unknown) {
-      toast.error((err as Error).message || 'Failed to push grades to Classroom');
-    } finally {
-      setPushingToClassroom(false);
-    }
+
+    const attemptPush = async (forceConsent: boolean = false): Promise<void> => {
+      setPushingToClassroom(true);
+      try {
+        // Ensure Firebase Auth ID token is fresh before calling the Cloud Function.
+        // Prevents 401s when the session expired while the user was grading.
+        if (auth.currentUser) {
+          await auth.currentUser.getIdToken(true);
+        }
+
+        const accessToken = await getClassroomAccessToken(forceConsent);
+        const result = await callClassroomPushGrades({ accessToken, assignmentId: selectedAssessment.id });
+        const data = result.data as { pushed: number; skipped: number };
+        toast.success(`Pushed ${data.pushed} grades to Classroom${data.skipped > 0 ? ` (${data.skipped} skipped)` : ''}`);
+      } catch (err: unknown) {
+        const message = (err as Error).message || '';
+        const isAuthError =
+          message.toLowerCase().includes('expired') ||
+          message.toLowerCase().includes('invalid') ||
+          message.toLowerCase().includes('unauthenticated') ||
+          message.toLowerCase().includes('401') ||
+          message.toLowerCase().includes('token');
+
+        // One automatic retry with forced consent if we suspect a stale Google token
+        if (!forceConsent && isAuthError) {
+          toast.info('Google session expired. Re-authenticating…');
+          await attemptPush(true);
+          return;
+        }
+
+        toast.error(message || 'Failed to push grades to Classroom');
+      } finally {
+        setPushingToClassroom(false);
+      }
+    };
+
+    await attemptPush(false);
   }, [selectedAssessment, toast]);
 
   const handleRubricGradeChange = useCallback((questionId: string, skillId: string, tierIndex: number) => {
