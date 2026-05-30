@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Circuit Diagram Builder — Honors Physics</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+        --bg: #0f0720;
+        --panel-bg: rgba(18, 10, 38, 0.92);
+        --border: rgba(160, 100, 255, 0.18);
+        --text: #e8e4f4;
+        --muted: #8a85a8;
+        --blue: #5b9cf6;
+        --green: #22d47a;
+        --orange: #f5a623;
+        --red: #e8504a;
+        --purple: #9b6bff;
+        --yellow: #ffd93d;
+    }
+    html, body {
+        width: 100%; height: 100%; overflow: hidden;
+        background: var(--bg);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: var(--text);
+        user-select: none;
+    }
+    #app {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        grid-template-rows: auto 1fr auto;
+        width: 100%; height: 100%;
+        gap: 8px; padding: 8px;
+    }
+    .header {
+        grid-column: 1 / -1;
+        display: flex; justify-content: space-between; align-items: center;
+        backdrop-filter: blur(14px);
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 12px; padding: 10px 16px;
+    }
+    .header h1 { font-size: 1rem; font-weight: 600; }
+    .header .subtitle { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .header .instruction {
+        font-size: 0.72rem; color: var(--muted);
+        background: rgba(91, 156, 246, 0.08);
+        border: 1px solid rgba(91, 156, 246, 0.2);
+        border-radius: 8px; padding: 6px 12px;
+        max-width: 420px; text-align: center; line-height: 1.4;
+    }
+    .info-btn {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: rgba(91, 156, 246, 0.12); color: var(--blue);
+        border: 1px solid rgba(91, 156, 246, 0.3); cursor: pointer;
+        font-size: 0.85rem; font-weight: 700; transition: all 0.15s;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+    .info-btn:hover { background: rgba(91, 156, 246, 0.25); }
+    .info-modal-overlay {
+        position: fixed; inset: 0; z-index: 300;
+        background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center;
+    }
+    .info-modal-overlay.visible { display: flex; }
+    .info-modal {
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 16px; padding: 24px; width: 380px; max-width: 90vw;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .info-modal h3 { font-size: 0.95rem; color: var(--purple); margin-bottom: 14px; }
+    .info-modal .help-text { font-size: 0.75rem; color: var(--muted); line-height: 1.7; }
+    .info-modal .help-text kbd { background: rgba(160,100,255,0.1); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 0.7rem; }
+    .info-modal-close {
+        margin-top: 16px; padding: 8px 18px; border-radius: 8px;
+        background: rgba(155,107,255,0.14); color: var(--purple);
+        border: 1px solid rgba(155,107,255,0.35); font-weight: 600;
+        cursor: pointer; font-size: 0.8rem; transition: all 0.15s;
+    }
+    .info-modal-close:hover { background: rgba(155,107,255,0.28); }
+    .header-actions { display: flex; gap: 8px; }
+    .palette {
+        display: flex; flex-direction: column; gap: 6px;
+        backdrop-filter: blur(14px);
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 14px; padding: 10px 6px; align-items: center;
+    }
+    .palette-label {
+        font-size: 0.6rem; color: var(--muted);
+        text-transform: uppercase; letter-spacing: 0.1em;
+        margin-bottom: 4px; text-align: center;
+    }
+    .palette-item {
+        width: 56px; height: 56px; border-radius: 10px;
+        border: 2px solid transparent;
+        background: rgba(160, 100, 255, 0.06);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.15s; position: relative;
+    }
+    .palette-item:hover { background: rgba(160, 100, 255, 0.14); }
+    .palette-item.active { border-color: var(--purple); background: rgba(155, 107, 255, 0.18); }
+    .palette-item svg { width: 28px; height: 28px; pointer-events: none; }
+    .palette-item span { font-size: 0.58rem; color: var(--muted); margin-top: 2px; pointer-events: none; }
+    .canvas-panel {
+        position: relative; backdrop-filter: blur(14px);
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
+    }
+    .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+    .circuit-bar {
+        display: flex; gap: 10px; justify-content: center; align-items: center;
+        padding: 10px 14px; border-top: 1px solid var(--border);
+        background: rgba(18, 10, 38, 0.6);
+    }
+    .circuit-bar .btn-circuit {
+        padding: 10px 22px; border-radius: 10px; border: 1px solid var(--border);
+        background: rgba(155,107,255,0.1); color: var(--text);
+        font-size: 0.82rem; font-weight: 600; cursor: pointer;
+        transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .circuit-bar .btn-circuit:hover { background: rgba(155,107,255,0.22); border-color: rgba(155,107,255,0.4); }
+    .circuit-bar .btn-circuit .num {
+        width: 22px; height: 22px; border-radius: 50%;
+        background: rgba(155,107,255,0.25); color: var(--purple);
+        font-size: 0.7rem; font-weight: 700; display: inline-flex;
+        align-items: center; justify-content: center;
+    }
+    .schematic-modal {
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 16px; padding: 24px; width: 480px; max-width: 92vw; max-height: 80vh; overflow-y: auto;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .schematic-modal h3 { font-size: 1rem; color: var(--purple); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .schematic-modal .schematic-body { font-size: 0.78rem; color: var(--text); line-height: 1.7; }
+    .schematic-modal .schematic-body ul { margin: 8px 0 8px 18px; }
+    .schematic-modal .schematic-body li { margin-bottom: 4px; }
+    .schematic-modal .schematic-body strong { color: var(--yellow); }
+    .schematic-modal .hint { margin-top: 14px; padding: 10px 14px; border-radius: 8px; background: rgba(91,156,246,0.08); border: 1px solid rgba(91,156,246,0.18); font-size: 0.72rem; color: var(--muted); }
+    .schematic-modal-close {
+        margin-top: 16px; padding: 8px 18px; border-radius: 8px;
+        background: rgba(155,107,255,0.14); color: var(--purple);
+        border: 1px solid rgba(155,107,255,0.35); font-weight: 600;
+        cursor: pointer; font-size: 0.8rem; transition: all 0.15s;
+    }
+    .schematic-modal-close:hover { background: rgba(155,107,255,0.28); }
+    #circuitCanvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+    .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid transparent; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-danger { background: rgba(232,80,74,0.12); color: var(--red); border-color: rgba(232,80,74,0.25); }
+    .btn-danger:hover { background: rgba(232,80,74,0.22); }
+    .btn-success { background: rgba(34,212,122,0.12); color: var(--green); border-color: rgba(34,212,122,0.25); }
+    .btn-success:hover { background: rgba(34,212,122,0.22); }
+    .editor-overlay {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 14px; padding: 20px; min-width: 260px;
+        z-index: 100; box-shadow: 0 20px 60px rgba(0,0,0,0.5); display: none;
+    }
+    .editor-overlay.visible { display: block; }
+    .editor-overlay h3 { font-size: 0.9rem; margin-bottom: 14px; color: var(--purple); }
+    .editor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .editor-row label { font-size: 0.78rem; color: var(--muted); width: 70px; flex-shrink: 0; }
+    .editor-row input { flex: 1; background: rgba(160,100,255,0.06); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--text); font-size: 0.85rem; outline: none; }
+    .editor-row input:focus { border-color: var(--purple); }
+    .editor-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .toast {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: var(--panel-bg); border: 1px solid var(--border);
+        border-radius: 10px; padding: 10px 20px; font-size: 0.8rem; color: var(--text);
+        opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 200;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .help-text { font-size: 0.68rem; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+    .help-text kbd { background: rgba(160,100,255,0.1); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 0.65rem; }
+    @media (max-width: 900px) {
+        #app { grid-template-columns: 64px 1fr 180px; }
+        .palette-item { width: 48px; height: 48px; }
+        .palette-item svg { width: 22px; height: 22px; }
+    }
+</style>
+</head>
+<body>
+
+<div id="app">
+    <div class="header">
+        <div>
+            <h1>Circuit Diagram Builder</h1>
+            <div class="subtitle">Honors Physics — Circuit diagram assessment</div>
+        </div>
+        <div class="instruction">
+            Build a circuit diagram to match your assigned schematic. Place components, draw wires, and add labels.
+        </div>
+        <div class="header-actions">
+            <button class="info-btn" id="btnInfo" title="How to use">?</button>
+            <button class="btn btn-success" id="btnExport" title="Export as image">Export</button>
+            <button class="btn btn-danger" id="btnClear">Clear</button>
+        </div>
+    </div>
+
+    <div class="palette">
+        <div class="palette-label">Parts</div>
+        <div class="palette-item" data-type="battery" title="Battery">
+            <svg viewBox="0 0 32 32"><line x1="4" y1="16" x2="12" y2="16" stroke="var(--text)" stroke-width="2"/><line x1="20" y1="16" x2="28" y2="16" stroke="var(--text)" stroke-width="2"/><line x1="16" y1="6" x2="16" y2="14" stroke="var(--yellow)" stroke-width="2.5"/><line x1="12" y1="10" x2="20" y2="10" stroke="var(--yellow)" stroke-width="2.5"/><line x1="16" y1="18" x2="16" y2="26" stroke="var(--text)" stroke-width="2"/></svg>
+            <span>Battery</span>
+        </div>
+        <div class="palette-item" data-type="resistor" title="Resistor">
+            <svg viewBox="0 0 32 32"><line x1="2" y1="16" x2="8" y2="16" stroke="var(--text)" stroke-width="2"/><polyline points="8,16 10,10 13,22 16,10 19,22 22,10 24,16" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linejoin="round"/><line x1="24" y1="16" x2="30" y2="16" stroke="var(--text)" stroke-width="2"/></svg>
+            <span>Resistor</span>
+        </div>
+        <div class="palette-item" data-type="varResistor" title="Variable Resistor">
+            <svg viewBox="0 0 32 32"><line x1="2" y1="16" x2="8" y2="16" stroke="var(--text)" stroke-width="2"/><polyline points="8,16 10,10 13,22 16,10 19,22 22,10 24,16" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linejoin="round"/><line x1="24" y1="16" x2="30" y2="16" stroke="var(--text)" stroke-width="2"/><line x1="20" y1="8" x2="12" y2="20" stroke="var(--blue)" stroke-width="2"/><polygon points="12,20 14,18 16,21 12,20" fill="var(--blue)"/></svg>
+            <span>Var Res</span>
+        </div>
+        <div class="palette-item" data-type="bulb" title="Light Bulb">
+            <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="none" stroke="var(--yellow)" stroke-width="2"/><path d="M11 20 Q16 10 21 20" fill="none" stroke="var(--yellow)" stroke-width="1.5"/><line x1="16" y1="26" x2="16" y2="30" stroke="var(--text)" stroke-width="2"/></svg>
+            <span>Bulb</span>
+        </div>
+        <div class="palette-item" data-type="switch" title="Switch">
+            <svg viewBox="0 0 32 32"><line x1="2" y1="24" x2="14" y2="24" stroke="var(--text)" stroke-width="2"/><line x1="18" y1="24" x2="30" y2="24" stroke="var(--text)" stroke-width="2"/><circle cx="14" cy="24" r="2" fill="var(--text)"/><circle cx="18" cy="24" r="2" fill="var(--text)"/><line x1="14" y1="24" x2="22" y2="10" stroke="var(--green)" stroke-width="2"/></svg>
+            <span>Switch</span>
+        </div>
+        <div class="palette-item" data-type="wire" title="Wire">
+            <svg viewBox="0 0 32 32"><polyline points="4,20 10,20 14,12 18,28 22,12 26,20 32,20" fill="none" stroke="var(--text)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Wire</span>
+        </div>
+        <div class="palette-item" data-type="select" title="Select/Move">
+            <svg viewBox="0 0 32 32"><path d="M6 4 L6 22 L12 16 L18 26 L22 24 L16 14 L24 14 Z" fill="var(--text)"/></svg>
+            <span>Select</span>
+        </div>
+        <div class="palette-item" data-type="label" title="Text Label">
+            <svg viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="16" rx="3" fill="none" stroke="var(--text)" stroke-width="2"/><line x1="8" y1="14" x2="24" y2="14" stroke="var(--text)" stroke-width="1.5"/><line x1="8" y1="18" x2="20" y2="18" stroke="var(--text)" stroke-width="1.5"/></svg>
+            <span>Label</span>
+        </div>
+        <div style="flex:1"></div>
+    </div>
+
+    <div class="canvas-panel">
+        <div class="canvas-wrap">
+            <canvas id="circuitCanvas"></canvas>
+        </div>
+        <div class="editor-overlay" id="editorOverlay">
+            <h3 id="editorTitle">Edit</h3>
+            <div class="editor-row">
+                <label id="editLabel">Value</label>
+                <input type="text" id="editValue">
+            </div>
+            <div class="editor-actions">
+                <button class="btn btn-secondary" id="btnEditCancel">Cancel</button>
+                <button class="btn btn-primary" id="btnEditOk">OK</button>
+            </div>
+        </div>
+        <div class="circuit-bar">
+            <button class="btn-circuit" id="btnCircuit1"><span class="num">1</span> Circuit Schematic 1</button>
+            <button class="btn-circuit" id="btnCircuit2"><span class="num">2</span> Circuit Schematic 2</button>
+        </div>
+    </div>
+
+    </div>
+</div>
+
+<div class="info-modal-overlay" id="circuit1Modal">
+    <div class="schematic-modal">
+        <h3><span style="color:var(--yellow)">&#9670;</span> Circuit Schematic 1</h3>
+        <div class="schematic-body">
+            <p>Build a circuit with the following requirements:</p>
+            <ul>
+                <li><strong>Three light bulbs</strong></li>
+                <li><strong>Two batteries</strong></li>
+                <li>One <strong>master switch</strong> that turns all three light bulbs on and off together</li>
+                <li>The bulbs must be wired so that <strong>unscrewing any one bulb</strong> causes <strong>all other bulbs to turn off</strong></li>
+                <li>Each light bulb must have a way to be made <strong>dimmer and brighter</strong> independently</li>
+            </ul>
+            <p style="margin-top:10px; color:var(--muted);">Use a label to mark this as <strong>Circuit 1</strong>.</p>
+        </div>
+        <button class="schematic-modal-close" id="btnCircuit1Close">Got it</button>
+    </div>
+</div>
+
+<div class="info-modal-overlay" id="circuit2Modal">
+    <div class="schematic-modal">
+        <h3><span style="color:var(--yellow)">&#9670;</span> Circuit Schematic 2</h3>
+        <div class="schematic-body">
+            <p>Build a circuit with the following requirements:</p>
+            <ul>
+                <li><strong>Three light bulbs</strong></li>
+                <li><strong>One battery</strong></li>
+                <li>Each light bulb has its <strong>own independent switch</strong> that turns it on/off without affecting the others</li>
+                <li>One <strong>master switch</strong> that turns off all light bulbs at once</li>
+                <li>One bulb should be <strong>bright</strong> (full brightness)</li>
+                <li>One bulb should be <strong>dim</strong> (reduced brightness)</li>
+                <li>One bulb should be <strong>adjustable</strong> (can be made dimmer or brighter)</li>
+            </ul>
+            <p style="margin-top:10px; color:var(--muted);">Use a label to mark this as <strong>Circuit 2</strong>.</p>
+        </div>
+        <button class="schematic-modal-close" id="btnCircuit2Close">Got it</button>
+    </div>
+</div>
+
+<div class="info-modal-overlay" id="infoModal">
+    <div class="info-modal">
+        <h3>How to Use</h3>
+        <div class="help-text">
+            <strong>Place:</strong> Click a part, then click the grid.<br>
+            <strong>Move:</strong> Select tool, drag parts or labels.<br>
+            <strong>Rotate:</strong> Select a part, press <kbd>R</kbd>.<br>
+            <strong>Wire:</strong> Wire tool, click two points.<br>
+            <strong>Label:</strong> Label tool, click to place, double-click to edit.<br>
+            <strong>Delete:</strong> Select anything, press <kbd>Del</kbd>.<br>
+            <strong>Switch:</strong> Click to toggle open/closed.<br>
+            <strong>Auto-save:</strong> Your work saves automatically.
+        </div>
+        <button class="info-modal-close" id="btnInfoClose">Got it</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Portal / iframe integration (Practice Set Bridge protocol)
+const PortalBridge = (() => {
+    let _connected = false;
+    let _readyInterval = null;
+    let _saveTimeout = null;
+    let _parentOrigin = null;
+
+    function send(type, payload) {
+        const msg = payload ? { type, ...payload } : { type };
+        window.parent.postMessage(msg, _parentOrigin || '*');
+    }
+
+    // Listen for parent handshake to discover origin
+    window.addEventListener('message', e => {
+        const data = e.data;
+        if (!data || typeof data !== 'object') return;
+        if (data.type === 'portal-init') {
+            _parentOrigin = e.origin;
+            _connected = true;
+            clearInterval(_readyInterval);
+            // Load saved state: Proctor sends payload.savedState.state
+            const saved = data.payload?.savedState?.state;
+            if (saved) loadState(saved);
+        }
+        if (data.type === 'portal-save-ok') {
+            showToast('Progress saved');
+        }
+    });
+
+    function startReadyRetry() {
+        let attempts = 0;
+        const maxAttempts = 12;
+        const tryReady = () => {
+            if (_connected) { clearInterval(_readyInterval); return; }
+            if (attempts >= maxAttempts) { clearInterval(_readyInterval); return; }
+            attempts++;
+            send('portal-ready');
+        };
+        tryReady();
+        _readyInterval = setInterval(tryReady, 500);
+    }
+
+    return {
+        init: () => { if (window.parent !== window) startReadyRetry(); },
+        save: (state, q) => {
+            if (window.parent === window) return;
+            clearTimeout(_saveTimeout);
+            _saveTimeout = setTimeout(() => {
+                send('portal-save', { payload: { state, currentQuestion: q } });
+            }, 500);
+        },
+        activity: () => { if (!_connected) return; send('portal-activity'); },
+    };
+})();
+
+// Heartbeat: report activity every 30s
+let _hb = null;
+const startHB = () => {
+    if (_hb) return;
+    const ev = ['pointerdown','pointermove','keydown','scroll','click'];
+    let last = 0;
+    const onAct = () => { const n = Date.now(); if (n - last > 30000) { last = n; PortalBridge.activity(); } };
+    ev.forEach(e => window.addEventListener(e, onAct, { passive: true }));
+    _hb = true;
+};
+window.addEventListener('load', () => { PortalBridge.init(); startHB(); });
+
+const GRID = 24;
+const TERM_R = 5;
+const $ = id => document.getElementById(id);
+
+function snap(v) { return Math.round(v / GRID) * GRID; }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function uid() { return Math.random().toString(36).slice(2, 9); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function rotatePoint(dx, dy, rot) {
+    switch ((rot % 4 + 4) % 4) {
+        case 0: return { x: dx, y: dy };
+        case 1: return { x: -dy, y: dx };
+        case 2: return { x: -dx, y: -dy };
+        case 3: return { x: dy, y: -dx };
+    }
+}
+
+function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function getCssVar(name, fallback) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+const COLORS = {
+    text:   getCssVar('--text',   '#e8e4f4'),
+    muted:  getCssVar('--muted',  '#8a85a8'),
+    purple: getCssVar('--purple', '#9b6bff'),
+    blue:   getCssVar('--blue',   '#5b9cf6'),
+    green:  getCssVar('--green',  '#22d47a'),
+    orange: getCssVar('--orange', '#f5a623'),
+    red:    getCssVar('--red',    '#e8504a'),
+    yellow: getCssVar('--yellow', '#ffd93d'),
+};
+
+const canvas = $('circuitCanvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, dpr = 1;
+
+function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio, 2);
+    W = rect.width; H = rect.height;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    requestDraw();
+}
+window.addEventListener('resize', resize);
+
+let components = [];
+let wires = [];
+let labels = [];
+let nextId = 1;
+let tool = 'select';
+let dragging = null;
+let draggingLabel = null;
+let wireStart = null;
+let selectedComp = null;
+let selectedWire = -1;
+let selectedLabel = -1;
+let needsSave = false;
+
+const COMP_DEFS = {
+    battery:     { w: 80, h: 50, terms: [{dx:-40,dy:0},{dx:40,dy:0}], label: 'Battery',  default: 9,   unit: 'V', min: 1, max: 24 },
+    resistor:    { w: 80, h: 40, terms: [{dx:-40,dy:0},{dx:40,dy:0}], label: 'Resistor', default: 100, unit: 'Ω', min: 1, max: 10000 },
+    varResistor: { w: 80, h: 40, terms: [{dx:-40,dy:0},{dx:40,dy:0}], label: 'Variable R', default: 100, unit: 'Ω', min: 1, max: 10000 },
+    bulb:        { w: 60, h: 60, terms: [{dx:0,dy:-30},{dx:0,dy:30}], label: 'Bulb',     default: 10,  unit: 'Ω', min: 1, max: 500 },
+    switch:      { w: 70, h: 40, terms: [{dx:-35,dy:0},{dx:35,dy:0}], label: 'Switch',   default: 0,   unit: '',  min: 0, max: 1 },
+};
+
+function createComponent(type, x, y) {
+    const def = COMP_DEFS[type];
+    const c = { id: nextId++, type, x: snap(x), y: snap(y), rotation: 0, value: def.default, closed: true };
+    c.terms = def.terms.map((t, i) => ({ id: uid(), compId: c.id, idx: i, x: 0, y: 0 }));
+    updateTermPositions(c);
+    return c;
+}
+
+function updateTermPositions(c) {
+    const def = COMP_DEFS[c.type];
+    c.terms.forEach((t, i) => {
+        const r = rotatePoint(def.terms[i].dx, def.terms[i].dy, c.rotation);
+        t.x = c.x + r.x; t.y = c.y + r.y;
+    });
+}
+
+function getCompBounds(c) {
+    const def = COMP_DEFS[c.type];
+    const rot = c.rotation % 2 !== 0;
+    return { w: rot ? def.h : def.w, h: rot ? def.w : def.h };
+}
+
+function getCompAt(mx, my) {
+    for (let i = components.length - 1; i >= 0; i--) {
+        const c = components[i], b = getCompBounds(c);
+        if (mx >= c.x - b.w/2 && mx <= c.x + b.w/2 && my >= c.y - b.h/2 && my <= c.y + b.h/2) return c;
+    }
+    return null;
+}
+
+function getNearestTerminal(mx, my, maxDist = 14) {
+    let best = null, bestD = maxDist;
+    for (const c of components) {
+        for (const t of c.terms) {
+            const d = dist(t, {x: mx, y: my});
+            if (d < bestD) { bestD = d; best = t; }
+        }
+    }
+    return best;
+}
+
+function deleteComponent(c) {
+    components = components.filter(x => x !== c);
+    if (selectedComp === c) selectedComp = null;
+    needsSave = true;
+}
+
+function pointToSegmentDist(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len2 = dx*dx + dy*dy;
+    if (len2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+    t = clamp(t, 0, 1);
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+function getWireAt(mx, my) {
+    for (let i = wires.length - 1; i >= 0; i--) {
+        const w = wires[i];
+        const d1 = pointToSegmentDist(mx, my, w.x1, w.y1, (w.x1+w.x2)/2, w.y1);
+        const d2 = pointToSegmentDist(mx, my, (w.x1+w.x2)/2, w.y1, (w.x1+w.x2)/2, w.y2);
+        const d3 = pointToSegmentDist(mx, my, (w.x1+w.x2)/2, w.y2, w.x2, w.y2);
+        if (Math.min(d1, d2, d3) < 8) return i;
+    }
+    return -1;
+}
+
+function getLabelAt(mx, my) {
+    ctx.font = 'bold 13px sans-serif';
+    for (let i = labels.length - 1; i >= 0; i--) {
+        const l = labels[i];
+        const tw = ctx.measureText(l.text).width;
+        if (mx >= l.x - tw/2 - 8 && mx <= l.x + tw/2 + 8 && my >= l.y - 14 && my <= l.y + 14) return i;
+    }
+    return -1;
+}
+
+let drawPending = false;
+function requestDraw() { if (!drawPending) { drawPending = true; requestAnimationFrame(() => { drawPending = false; draw(); }); } }
+
+function drawGrid() {
+    ctx.strokeStyle = 'rgba(160,100,255,0.12)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x < W; x += GRID) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = 0; y < H; y += GRID) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+}
+
+function drawWire(w, idx) {
+    const sel = idx === selectedWire;
+    ctx.strokeStyle = sel ? COLORS.yellow : COLORS.text;
+    ctx.lineWidth = sel ? 3.5 : 2.5;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = sel ? 'rgba(255,217,61,0.4)' : 'rgba(232,228,244,0.15)';
+    ctx.shadowBlur = sel ? 10 : 4;
+    ctx.beginPath();
+    ctx.moveTo(w.x1, w.y1);
+    const mx = (w.x1 + w.x2) / 2;
+    ctx.lineTo(mx, w.y1); ctx.lineTo(mx, w.y2); ctx.lineTo(w.x2, w.y2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    if (sel) {
+        ctx.fillStyle = COLORS.yellow;
+        ctx.beginPath(); ctx.arc(w.x1, w.y1, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(w.x2, w.y2, 4, 0, Math.PI*2); ctx.fill();
+    }
+}
+
+function drawWirePreview() {
+    if (!wireStart) return;
+    const mx = snap(mouse.x), my = snap(mouse.y);
+    ctx.strokeStyle = COLORS.yellow; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(255,217,61,0.35)'; ctx.shadowBlur = 6;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(wireStart.x, wireStart.y);
+    const midX = (wireStart.x + mx) / 2;
+    ctx.lineTo(midX, wireStart.y); ctx.lineTo(midX, my); ctx.lineTo(mx, my);
+    ctx.stroke();
+    ctx.setLineDash([]); ctx.shadowBlur = 0;
+}
+
+function drawTerm(x, y, active) {
+    ctx.fillStyle = active ? COLORS.yellow : '#c8c4e0';
+    ctx.beginPath(); ctx.arc(x, y, TERM_R, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = active ? COLORS.yellow : COLORS.purple;
+    ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+function drawSelectionHighlight(c) {
+    const b = getCompBounds(c);
+    ctx.strokeStyle = COLORS.purple; ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.shadowColor = 'rgba(155,107,255,0.5)'; ctx.shadowBlur = 8;
+    ctx.strokeRect(c.x - b.w/2 - 6, c.y - b.h/2 - 6, b.w + 12, b.h + 12);
+    ctx.shadowBlur = 0; ctx.setLineDash([]);
+}
+
+function drawLabel(l, idx) {
+    const sel = idx === selectedLabel;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(l.text).width;
+    const th = 16;
+    if (sel) {
+        ctx.strokeStyle = COLORS.purple; ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(l.x - tw/2 - 6, l.y - th/2 - 4, tw + 12, th + 8);
+        ctx.setLineDash([]);
+    }
+    ctx.fillStyle = COLORS.text;
+    ctx.fillText(l.text, l.x, l.y);
+}
+
+function drawBattery(c) {
+    const { x, y, rotation } = c;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation * Math.PI / 2);
+    ctx.strokeStyle = COLORS.text; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(232,228,244,0.15)'; ctx.shadowBlur = 4;
+    ctx.beginPath(); ctx.moveTo(-40, 0); ctx.lineTo(-12, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(40, 0); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = COLORS.yellow; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(-12, -14); ctx.lineTo(-12, 14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -8); ctx.lineTo(12, 8); ctx.stroke();
+    ctx.fillStyle = COLORS.muted; ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', -20, -18);
+    ctx.fillText('–', 20, -18);
+    ctx.restore();
+    if (c === selectedComp) drawSelectionHighlight(c);
+}
+
+function drawResistorSymbol(c, color) {
+    const { x, y, rotation } = c;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rotation * Math.PI / 2);
+    ctx.strokeStyle = COLORS.text; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(232,228,244,0.12)'; ctx.shadowBlur = 4;
+    ctx.beginPath(); ctx.moveTo(-40, 0); ctx.lineTo(-24, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(40, 0); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.shadowColor = color === COLORS.orange ? 'rgba(245,166,35,0.25)' : 'rgba(91,156,246,0.25)';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(-24, 0); ctx.lineTo(-18, -10); ctx.lineTo(-12, 10); ctx.lineTo(-6, -10);
+    ctx.lineTo(0, 10); ctx.lineTo(6, -10); ctx.lineTo(12, 10); ctx.lineTo(18, -10); ctx.lineTo(24, 0);
+    ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.restore();
+    if (c === selectedComp) drawSelectionHighlight(c);
+}
+
+function drawResistor(c) { drawResistorSymbol(c, COLORS.orange); }
+
+function drawVarResistor(c) {
+    drawResistorSymbol(c, COLORS.blue);
+    const { x, y, rotation } = c;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rotation * Math.PI / 2);
+    ctx.strokeStyle = COLORS.blue; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(8, -14); ctx.lineTo(-4, 14); ctx.stroke();
+    ctx.fillStyle = COLORS.blue;
+    ctx.beginPath(); ctx.moveTo(-4, 14); ctx.lineTo(-7, 9); ctx.lineTo(-1, 10); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawBulb(c) {
+    const { x, y, rotation } = c;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rotation * Math.PI / 2);
+    ctx.strokeStyle = COLORS.text; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(232,228,244,0.12)'; ctx.shadowBlur = 4;
+    ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, -14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 14); ctx.lineTo(0, 30); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = COLORS.yellow; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(255,217,61,0.25)'; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.strokeStyle = COLORS.yellow; ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(255,200,60,0.3)'; ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.moveTo(-8, 6); ctx.quadraticCurveTo(-4, -6, 0, 4); ctx.quadraticCurveTo(4, -6, 8, 6);
+    ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.restore();
+    if (c === selectedComp) drawSelectionHighlight(c);
+}
+
+function drawSwitch(c) {
+    const { x, y, rotation } = c;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rotation * Math.PI / 2);
+    ctx.strokeStyle = COLORS.text; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(232,228,244,0.12)'; ctx.shadowBlur = 4;
+    ctx.beginPath(); ctx.moveTo(-35, 0); ctx.lineTo(-18, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(35, 0); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = COLORS.text;
+    ctx.beginPath(); ctx.arc(-18, 0, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(18, 0, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = c.closed ? COLORS.green : COLORS.red;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = c.closed ? 'rgba(34,212,122,0.3)' : 'rgba(232,80,74,0.3)';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    if (c.closed) { ctx.moveTo(-18, 0); ctx.lineTo(18, 0); }
+    else { ctx.moveTo(-18, 0); ctx.lineTo(14, -18); }
+    ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.restore();
+    if (c === selectedComp) drawSelectionHighlight(c);
+}
+
+function draw() {
+    ctx.fillStyle = '#130820'; ctx.fillRect(0, 0, W, H);
+    drawGrid();
+    for (let i = 0; i < wires.length; i++) drawWire(wires[i], i);
+    drawWirePreview();
+    for (const c of components) {
+        if (c.type === 'battery') drawBattery(c);
+        else if (c.type === 'resistor') drawResistor(c);
+        else if (c.type === 'varResistor') drawVarResistor(c);
+        else if (c.type === 'bulb') drawBulb(c);
+        else if (c.type === 'switch') drawSwitch(c);
+    }
+    for (let i = 0; i < labels.length; i++) drawLabel(labels[i], i);
+    for (const c of components) {
+        for (const t of c.terms) {
+            const active = wireStart && dist(wireStart, t) < 2;
+            drawTerm(t.x, t.y, active);
+        }
+    }
+}
+
+const mouse = { x: 0, y: 0 };
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
+
+    if (tool === 'wire') {
+        if (wireStart) {
+            const t = getNearestTerminal(p.x, p.y, 14);
+            const end = t ? { x: t.x, y: t.y } : { x: snap(p.x), y: snap(p.y) };
+            if (dist(wireStart, end) > 2) {
+                wires.push({ id: uid(), x1: wireStart.x, y1: wireStart.y, x2: end.x, y2: end.y });
+                needsSave = true;
+            }
+            wireStart = null;
+        } else {
+            const t = getNearestTerminal(p.x, p.y, 14);
+            wireStart = t ? { x: t.x, y: t.y } : { x: snap(p.x), y: snap(p.y) };
+        }
+        requestDraw(); return;
+    }
+
+    if (tool === 'label') {
+        labels.push({ id: uid(), x: snap(p.x), y: snap(p.y), text: 'Label' });
+        selectedLabel = labels.length - 1;
+        selectedComp = null; selectedWire = -1;
+        needsSave = true;
+        requestDraw();
+        openLabelEditor(selectedLabel);
+        return;
+    }
+
+    const c = getCompAt(p.x, p.y);
+    if (c) {
+        selectedComp = c; selectedWire = -1; selectedLabel = -1;
+        dragging = { comp: c, ox: p.x - c.x, oy: p.y - c.y };
+        canvas.setPointerCapture(e.pointerId);
+        requestDraw(); return;
+    }
+
+    const li = getLabelAt(p.x, p.y);
+    if (li >= 0) {
+        selectedLabel = li; selectedComp = null; selectedWire = -1;
+        draggingLabel = { idx: li, ox: p.x - labels[li].x, oy: p.y - labels[li].y };
+        canvas.setPointerCapture(e.pointerId);
+        requestDraw(); return;
+    }
+
+    const wi = getWireAt(p.x, p.y);
+    if (wi >= 0) {
+        selectedWire = wi; selectedComp = null; selectedLabel = -1;
+        requestDraw(); return;
+    }
+
+    selectedComp = null; selectedWire = -1; selectedLabel = -1;
+    requestDraw();
+});
+
+canvas.addEventListener('pointermove', e => {
+    const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
+
+    if (dragging) {
+        dragging.comp.x = snap(p.x - dragging.ox);
+        dragging.comp.y = snap(p.y - dragging.oy);
+        updateTermPositions(dragging.comp);
+        needsSave = true; requestDraw(); return;
+    }
+    if (draggingLabel) {
+        labels[draggingLabel.idx].x = snap(p.x - draggingLabel.ox);
+        labels[draggingLabel.idx].y = snap(p.y - draggingLabel.oy);
+        needsSave = true; requestDraw(); return;
+    }
+    if (wireStart) { requestDraw(); return; }
+
+    const t = getNearestTerminal(p.x, p.y, 14);
+    if (t) canvas.style.cursor = 'crosshair';
+    else if (getCompAt(p.x, p.y) || getLabelAt(p.x, p.y) >= 0) canvas.style.cursor = 'move';
+    else if (getWireAt(p.x, p.y) >= 0) canvas.style.cursor = 'pointer';
+    else canvas.style.cursor = tool === 'wire' || tool === 'label' ? 'crosshair' : 'default';
+});
+
+canvas.addEventListener('pointerup', e => {
+    const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
+    if (dragging) { dragging = null; needsSave = true; requestDraw(); return; }
+    if (draggingLabel) { draggingLabel = null; needsSave = true; requestDraw(); return; }
+    if (tool !== 'select' && tool !== 'wire' && tool !== 'label') {
+        const c = createComponent(tool, p.x, p.y);
+        components.push(c); selectedComp = c;
+        selectedWire = -1; selectedLabel = -1;
+        needsSave = true; requestDraw();
+    }
+});
+
+canvas.addEventListener('dblclick', e => {
+    const p = getPos(e);
+    const c = getCompAt(p.x, p.y);
+    if (c) { openEditor(c); return; }
+    const li = getLabelAt(p.x, p.y);
+    if (li >= 0) { openLabelEditor(li); }
+});
+
+canvas.addEventListener('click', e => {
+    const p = getPos(e);
+    const c = getCompAt(p.x, p.y);
+    if (c && c.type === 'switch') { c.closed = !c.closed; needsSave = true; requestDraw(); }
+});
+
+canvas.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const p = getPos(e);
+    const wi = getWireAt(p.x, p.y);
+    if (wi >= 0) {
+        wires.splice(wi, 1); selectedWire = -1;
+        needsSave = true; requestDraw();
+        showToast('Wire deleted'); return;
+    }
+    const c = getCompAt(p.x, p.y);
+    if (c) { deleteComponent(c); requestDraw(); showToast('Component deleted'); return; }
+    const li = getLabelAt(p.x, p.y);
+    if (li >= 0) {
+        labels.splice(li, 1); selectedLabel = -1;
+        needsSave = true; requestDraw();
+        showToast('Label deleted');
+    }
+});
+
+window.addEventListener('keydown', e => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedWire >= 0) {
+            wires.splice(selectedWire, 1); selectedWire = -1;
+            needsSave = true; requestDraw();
+        } else if (selectedLabel >= 0) {
+            labels.splice(selectedLabel, 1); selectedLabel = -1;
+            needsSave = true; requestDraw();
+        } else if (selectedComp) {
+            deleteComponent(selectedComp); requestDraw();
+        }
+    }
+    if (e.key === 'r' || e.key === 'R') {
+        if (selectedComp) {
+            selectedComp.rotation = (selectedComp.rotation + 1) % 4;
+            updateTermPositions(selectedComp);
+            needsSave = true; requestDraw();
+        }
+    }
+    if (e.key === 'Escape') {
+        wireStart = null; tool = 'select';
+        selectedComp = null; selectedWire = -1; selectedLabel = -1;
+        updatePalette(); requestDraw();
+    }
+});
+
+function updatePalette() {
+    document.querySelectorAll('.palette-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.type === tool);
+    });
+}
+
+document.querySelectorAll('.palette-item').forEach(el => {
+    el.addEventListener('click', () => {
+        tool = el.dataset.type; wireStart = null;
+        updatePalette();
+        canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
+    });
+});
+
+let editingComp = null;
+let editingLabelIdx = -1;
+function openEditor(c) {
+    editingComp = c; editingLabelIdx = -1;
+    const def = COMP_DEFS[c.type];
+    $('editorTitle').textContent = 'Edit Component';
+    $('editLabel').textContent = def.label + ' (' + def.unit + ')';
+    $('editValue').value = c.value;
+    $('editorOverlay').classList.add('visible');
+}
+function openLabelEditor(idx) {
+    editingComp = null; editingLabelIdx = idx;
+    $('editorTitle').textContent = 'Edit Label';
+    $('editLabel').textContent = 'Text';
+    $('editValue').value = labels[idx].text;
+    $('editorOverlay').classList.add('visible');
+}
+$('btnEditCancel').addEventListener('click', () => $('editorOverlay').classList.remove('visible'));
+$('btnEditOk').addEventListener('click', () => {
+    if (editingComp) {
+        const def = COMP_DEFS[editingComp.type];
+        let v = parseFloat($('editValue').value);
+        if (!isNaN(v)) {
+            v = clamp(v, def.min, def.max);
+            editingComp.value = v; needsSave = true; requestDraw();
+        }
+    } else if (editingLabelIdx >= 0) {
+        labels[editingLabelIdx].text = $('editValue').value;
+        needsSave = true; requestDraw();
+    }
+    $('editorOverlay').classList.remove('visible');
+});
+
+$('btnClear').addEventListener('click', () => {
+    if (confirm('Clear all components, wires, and labels?')) {
+        components = []; wires = []; labels = [];
+        selectedComp = null; selectedWire = -1; selectedLabel = -1;
+        needsSave = true; requestDraw();
+    }
+});
+
+
+
+function saveState() {
+    return {
+        components: components.map(c => ({
+            id: c.id, type: c.type, x: c.x, y: c.y, rotation: c.rotation,
+            value: c.value, closed: c.closed,
+            terms: c.terms.map(t => ({ id: t.id, idx: t.idx }))
+        })),
+        wires: wires.map(w => ({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 })),
+        labels: labels.map(l => ({ x: l.x, y: l.y, text: l.text })),
+    };
+}
+
+function loadState(state) {
+    if (!state) return;
+    components = (state.components || []).map(c => {
+        const comp = { ...c, terms: c.terms.map(t => ({ ...t, compId: c.id, x: 0, y: 0 })) };
+        updateTermPositions(comp); return comp;
+    });
+    wires = (state.wires || []).map(w => ({ id: uid(), ...w }));
+    labels = (state.labels || []).map(l => ({ id: uid(), ...l }));
+    nextId = components.reduce((m, c) => Math.max(m, c.id), 0) + 1;
+    selectedComp = null; selectedWire = -1; selectedLabel = -1;
+    requestDraw();
+}
+
+let saveTimeout = null;
+function queueSave() {
+    needsSave = true;
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        if (needsSave) {
+            PortalBridge.save(saveState(), 0);
+            needsSave = false;
+        }
+    }, 800);
+}
+function immediateSave() {
+    clearTimeout(saveTimeout);
+    PortalBridge.save(saveState(), 0);
+    needsSave = false;
+}
+
+// Emergency save before student leaves the page
+window.addEventListener('beforeunload', () => {
+    if (needsSave) immediateSave();
+});
+
+// Save when tab becomes hidden
+window.addEventListener('visibilitychange', () => {
+    if (document.hidden && needsSave) immediateSave();
+});
+
+$('btnInfo').addEventListener('click', () => $('infoModal').classList.add('visible'));
+$('btnInfoClose').addEventListener('click', () => $('infoModal').classList.remove('visible'));
+$('infoModal').addEventListener('click', e => { if (e.target === $('infoModal')) $('infoModal').classList.remove('visible'); });
+
+$('btnExport').addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'circuit-diagram.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Image exported — check your Downloads');
+});
+
+$('btnCircuit1').addEventListener('click', () => $('circuit1Modal').classList.add('visible'));
+$('btnCircuit1Close').addEventListener('click', () => $('circuit1Modal').classList.remove('visible'));
+$('circuit1Modal').addEventListener('click', e => { if (e.target === $('circuit1Modal')) $('circuit1Modal').classList.remove('visible'); });
+
+$('btnCircuit2').addEventListener('click', () => $('circuit2Modal').classList.add('visible'));
+$('btnCircuit2Close').addEventListener('click', () => $('circuit2Modal').classList.remove('visible'));
+$('circuit2Modal').addEventListener('click', e => { if (e.target === $('circuit2Modal')) $('circuit2Modal').classList.remove('visible'); });
+
+resize(); requestDraw();
+
+
+</script>
+</body>
+</html>

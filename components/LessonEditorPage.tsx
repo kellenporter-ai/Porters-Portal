@@ -1101,11 +1101,33 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
 
                   <SectionPicker availableSections={classSections} selectedSections={resSections} onChange={(s) => { setResSections(s); setHasUnsavedChanges(true); }} />
 
-                  <div className="bg-purple-900/20 border border-purple-500/30 p-4 rounded-xl">
+                  <div className="bg-purple-900/20 border border-purple-500/30 p-4 rounded-xl space-y-3">
                     <label className="block text-[11px] font-bold text-purple-300 mb-2">HTML Interactive Upload</label>
                     <input type="file" accept=".html,.htm" className="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-purple-600 file:text-white file:text-xs" onChange={async (e) => { if(e.target.files?.[0]) { setIsUploading(true); try { const url = await dataService.uploadHtmlResource(e.target.files[0]); setResContentUrl(url); setHasUnsavedChanges(true); toast.success('File uploaded!'); } catch (err) { toast.error('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error')); } finally { setIsUploading(false); } } }} />
-                    {isUploading && <div className="flex items-center gap-2 mt-2 text-purple-300 text-xs"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</div>}
-                    {!isUploading && resContentUrl && <div className="flex items-center gap-2 mt-2 text-emerald-700 dark:text-emerald-400 text-xs"><CheckCircle className="w-3.5 h-3.5" /> Resource uploaded</div>}
+                    {isUploading && <div className="flex items-center gap-2 text-purple-300 text-xs"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</div>}
+                    {!isUploading && resContentUrl && <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs"><CheckCircle className="w-3.5 h-3.5" /> Resource uploaded</div>}
+                    <div className="border-t border-purple-500/20 pt-3">
+                      <label className="block text-[11px] font-bold text-purple-300 mb-1.5">Or use hosted path</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={resContentUrl || ''}
+                          onChange={e => { setResContentUrl(e.target.value || null); setHasUnsavedChanges(true); }}
+                          placeholder="/circuit-diagram-builder.html"
+                          className={`${inputClass} flex-1 text-xs`}
+                        />
+                        {resContentUrl && (
+                          <button
+                            type="button"
+                            onClick={() => { setResContentUrl(null); setHasUnsavedChanges(true); }}
+                            className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-bold border border-red-500/20 transition"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-purple-300/60 mt-1.5">Paste a relative path (e.g., /circuit-diagram-builder.html) if the file is deployed with the app, or a full URL.</p>
+                    </div>
                   </div>
 
                   <div><label className={labelClass}>Description <span className="text-gray-600">(optional)</span></label><textarea value={resDescription} onChange={e => { setResDescription(e.target.value); setHasUnsavedChanges(true); }} placeholder="Brief description..." className={`${textareaClass} h-16`} /></div>
