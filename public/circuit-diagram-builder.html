@@ -949,19 +949,11 @@ function loadState(state) {
     requestDraw();
 }
 
-let saveTimeout = null;
 function queueSave() {
-    needsSave = true;
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => {
-        if (needsSave) {
-            sendToParent({ type: 'html-activity-state', state: saveState() });
-            needsSave = false;
-        }
-    }, 800);
+    sendToParent({ type: 'html-activity-state', state: saveState() });
+    needsSave = false;
 }
 function immediateSave() {
-    clearTimeout(saveTimeout);
     sendToParent({ type: 'html-activity-state', state: saveState() });
     needsSave = false;
 }
