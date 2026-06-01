@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   FileText, ChevronLeft, ChevronRight, Clock, CheckCircle, AlertTriangle,
-  Bot, Undo2, Eye, Users, Send,
+  Bot, Undo2, Eye, Users, Send, Maximize2, Minimize2,
 } from 'lucide-react';
 import katex from 'katex';
 import type { Submission, Assignment, LessonBlock } from '../../types';
@@ -39,9 +39,21 @@ const INTERACTIVE_BLOCK_TYPES = ['MC', 'SHORT_ANSWER', 'RANKING', 'SORTING', 'LI
 
 function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; contentUrl: string }) {
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const modalIframeRef = React.useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = React.useState(false);
+  const [modalReady, setModalReady] = React.useState(false);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
 
-  // Listen for html-activity-ready immediately — the iframe may send it before onLoad fires
+  // Send state to an iframe ref
+  const sendState = React.useCallback((iframe: HTMLIFrameElement | null) => {
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      { type: 'portal-init', state: state || null, readOnly: true },
+      '*'
+    );
+  }, [state]);
+
+  // Listen for html-activity-ready from main iframe
   React.useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -58,42 +70,87 @@ function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; cont
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // Send state when iframe is ready (either via html-activity-ready or onLoad fallback)
+  // Send state to main iframe when ready
   React.useEffect(() => {
     if (!ready) return;
-    const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      { type: 'portal-init', state: state || null, readOnly: true },
-      '*'
-    );
-  }, [ready, state]);
+    sendState(iframeRef.current);
+  }, [ready, sendState]);
+
+  // Listen for html-activity-ready from modal iframe
+  React.useEffect(() => {
+    if (!isFullscreen) return;
+    const iframe = modalIframeRef.current;
+    if (!iframe) return;
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.source !== iframe.contentWindow) return;
+      const data = e.data;
+      if (data?.type === 'html-activity-ready') {
+        setModalReady(true);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [isFullscreen]);
+
+  // Send state to modal iframe when ready
+  React.useEffect(() => {
+    if (!isFullscreen || !modalReady) return;
+    sendState(modalIframeRef.current);
+  }, [isFullscreen, modalReady, sendState]);
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-amber-500" aria-hidden="true" />
-        <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">HTML Activity — Pending Review</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-amber-500" aria-hidden="true" />
+          <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">HTML Activity — Pending Review</span>
+        </div>
+        <button
+          onClick={() => setIsFullscreen(true)}
+          className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+          Expand
+        </button>
       </div>
       <div className="rounded-lg border border-amber-500/20 bg-amber-900/5 overflow-hidden">
         <iframe
           ref={iframeRef}
           src={contentUrl}
-          className="w-full h-[500px] border-0"
+          className="w-full h-[700px] border-0"
           title="Student HTML Activity"
-          onLoad={() => {
-            // Fallback: if html-activity-ready was missed, send init anyway
-            const iframe = iframeRef.current;
-            if (iframe?.contentWindow) {
-              iframe.contentWindow.postMessage(
-                { type: 'portal-init', state: state || null, readOnly: true },
-                '*'
-              );
-            }
-          }}
+          onLoad={() => sendState(iframeRef.current)}
           sandbox="allow-scripts allow-same-origin"
         />
       </div>
+
+      {/* Fullscreen modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+          <div className="w-full h-full max-w-[1600px] max-h-[900px] flex flex-col rounded-xl overflow-hidden border border-amber-500/30 shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-2 bg-[var(--panel-bg)] border-b border-[var(--border)]">
+              <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">HTML Activity — Fullscreen Review</span>
+              <button
+                onClick={() => { setIsFullscreen(false); setModalReady(false); }}
+                className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                Close
+              </button>
+            </div>
+            <iframe
+              ref={modalIframeRef}
+              src={contentUrl}
+              className="w-full flex-1 border-0"
+              title="Student HTML Activity Fullscreen"
+              onLoad={() => sendState(modalIframeRef.current)}
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

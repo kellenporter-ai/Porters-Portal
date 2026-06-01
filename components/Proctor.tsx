@@ -388,7 +388,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // the exploit where students pre-fill answers via DevTools/Firestore before the timer starts.
   // For non-assessments: load saved responses as before (resume where they left off).
   useEffect(() => {
-    if (!userId || !assignmentId || !lessonBlocks || lessonBlocks.length === 0) return;
+    if (!userId || !assignmentId) return;
     // Preview mode — start with empty responses, no Firestore reads
     if (previewMode) {
       setSavedBlockResponses({});
