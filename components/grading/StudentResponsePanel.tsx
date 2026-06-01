@@ -128,8 +128,8 @@ function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; cont
 
       {/* Fullscreen modal */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-          <div className="w-full h-full max-w-[1600px] max-h-[900px] flex flex-col rounded-xl overflow-hidden border border-amber-500/30 shadow-2xl">
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+          <div className="w-full h-full flex flex-col overflow-hidden border-0">
             <div className="flex items-center justify-between px-4 py-2 bg-[var(--panel-bg)] border-b border-[var(--border)]">
               <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">HTML Activity — Fullscreen Review</span>
               <button

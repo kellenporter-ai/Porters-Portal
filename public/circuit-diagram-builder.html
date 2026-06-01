@@ -318,13 +318,35 @@
 <script>
 // Portal / iframe integration (Practice Set Bridge protocol)
 // ── HTML Activity Protocol (matches electroscope assessment pattern) ──
-// ── HTML Activity Protocol (matches electroscope assessment pattern) ──
 let _htmlActivityReady = false;
+let _readOnly = false;
 
 function sendToParent(msg) {
     if (window.parent !== window) {
         window.parent.postMessage(msg, '*');
     }
+}
+
+function setReadOnly(readonly) {
+    _readOnly = readonly;
+    if (!readonly) return;
+    // Hide destructive / interactive controls
+    const btnClear = document.getElementById('btnClear');
+    const btnExport = document.getElementById('btnExport');
+    const palette = document.querySelector('.palette');
+    const circuitBar = document.querySelector('.circuit-bar');
+    if (btnClear) btnClear.style.display = 'none';
+    if (btnExport) btnExport.style.display = 'none';
+    if (palette) { palette.style.pointerEvents = 'none'; palette.style.opacity = '0.35'; }
+    if (circuitBar) { circuitBar.style.pointerEvents = 'none'; circuitBar.style.opacity = '0.35'; }
+    // Disable editor overlay
+    const editorOverlay = document.getElementById('editorOverlay');
+    if (editorOverlay) editorOverlay.style.display = 'none';
+    // Reset interaction state
+    tool = 'select'; wireStart = null; dragging = null; draggingLabel = null;
+    selectedComp = null; selectedWire = -1; selectedLabel = -1;
+    updatePalette();
+    requestDraw();
 }
 
 window.addEventListener('message', e => {
@@ -335,7 +357,10 @@ window.addEventListener('message', e => {
         // Support both electroscope format (data.state) and legacy PortalBridge format
         const saved = data.state || data.payload?.savedState?.state;
         if (saved) loadState(saved);
-        if (data.readOnly) showToast('Viewing submitted work');
+        if (data.readOnly) {
+            setReadOnly(true);
+            showToast('Viewing submitted work (read-only)');
+        }
     }
     if (data.type === 'portal-save-ok') {
         showToast('Progress saved');
@@ -718,6 +743,7 @@ function getPos(e) {
 }
 
 canvas.addEventListener('pointerdown', e => {
+    if (_readOnly) return;
     e.preventDefault();
     const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
 
@@ -774,6 +800,7 @@ canvas.addEventListener('pointerdown', e => {
 });
 
 canvas.addEventListener('pointermove', e => {
+    if (_readOnly) return;
     const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
 
     if (dragging) {
@@ -797,6 +824,7 @@ canvas.addEventListener('pointermove', e => {
 });
 
 canvas.addEventListener('pointerup', e => {
+    if (_readOnly) return;
     const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
     if (dragging) { dragging = null; needsSave = true; queueSave(); requestDraw(); return; }
     if (draggingLabel) { draggingLabel = null; needsSave = true; queueSave(); requestDraw(); return; }
@@ -809,6 +837,7 @@ canvas.addEventListener('pointerup', e => {
 });
 
 canvas.addEventListener('dblclick', e => {
+    if (_readOnly) return;
     const p = getPos(e);
     const c = getCompAt(p.x, p.y);
     if (c) { openEditor(c); return; }
@@ -817,12 +846,14 @@ canvas.addEventListener('dblclick', e => {
 });
 
 canvas.addEventListener('click', e => {
+    if (_readOnly) return;
     const p = getPos(e);
     const c = getCompAt(p.x, p.y);
     if (c && c.type === 'switch') { c.closed = !c.closed; needsSave = true; queueSave(); requestDraw(); }
 });
 
 canvas.addEventListener('contextmenu', e => {
+    if (_readOnly) return;
     e.preventDefault();
     const p = getPos(e);
     const wi = getWireAt(p.x, p.y);
@@ -842,6 +873,7 @@ canvas.addEventListener('contextmenu', e => {
 });
 
 window.addEventListener('keydown', e => {
+    if (_readOnly) return;
     if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedWire >= 0) {
             wires.splice(selectedWire, 1); selectedWire = -1;
