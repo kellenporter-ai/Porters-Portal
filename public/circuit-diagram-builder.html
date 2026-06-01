@@ -317,71 +317,49 @@
 
 <script>
 // Portal / iframe integration (Practice Set Bridge protocol)
-const PortalBridge = (() => {
-    let _connected = false;
-    let _readyInterval = null;
-    let _saveTimeout = null;
-    let _parentOrigin = null;
+// ── HTML Activity Protocol (matches electroscope assessment pattern) ──
+// ── HTML Activity Protocol (matches electroscope assessment pattern) ──
+let _htmlActivityReady = false;
 
-    function send(type, payload) {
-        const msg = payload ? { type, ...payload } : { type };
-        window.parent.postMessage(msg, _parentOrigin || '*');
+function sendToParent(msg) {
+    if (window.parent !== window) {
+        window.parent.postMessage(msg, '*');
     }
+}
 
-    // Listen for parent handshake to discover origin
-    window.addEventListener('message', e => {
-        const data = e.data;
-        if (!data || typeof data !== 'object') return;
-        if (data.type === 'portal-init') {
-            _parentOrigin = e.origin;
-            _connected = true;
-            clearInterval(_readyInterval);
-            // Load saved state: Proctor sends payload.savedState.state
-            const saved = data.payload?.savedState?.state;
-            if (saved) loadState(saved);
-        }
-        if (data.type === 'portal-save-ok') {
-            showToast('Progress saved');
-        }
-    });
-
-    function startReadyRetry() {
-        let attempts = 0;
-        const maxAttempts = 12;
-        const tryReady = () => {
-            if (_connected) { clearInterval(_readyInterval); return; }
-            if (attempts >= maxAttempts) { clearInterval(_readyInterval); return; }
-            attempts++;
-            send('portal-ready');
-        };
-        tryReady();
-        _readyInterval = setInterval(tryReady, 500);
+window.addEventListener('message', e => {
+    const data = e.data;
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'portal-init') {
+        _htmlActivityReady = true;
+        // Support both electroscope format (data.state) and legacy PortalBridge format
+        const saved = data.state || data.payload?.savedState?.state;
+        if (saved) loadState(saved);
+        if (data.readOnly) showToast('Viewing submitted work');
     }
+    if (data.type === 'portal-save-ok') {
+        showToast('Progress saved');
+    }
+});
 
-    return {
-        init: () => { if (window.parent !== window) startReadyRetry(); },
-        save: (state, q) => {
-            if (window.parent === window) return;
-            clearTimeout(_saveTimeout);
-            _saveTimeout = setTimeout(() => {
-                send('portal-save', { payload: { state, currentQuestion: q } });
-            }, 500);
-        },
-        activity: () => { if (!_connected) return; send('portal-activity'); },
-    };
-})();
-
-// Heartbeat: report activity every 30s
+// Heartbeat: report interaction every 30s so Proctor engagement timer stays alive
 let _hb = null;
 const startHB = () => {
     if (_hb) return;
     const ev = ['pointerdown','pointermove','keydown','scroll','click'];
     let last = 0;
-    const onAct = () => { const n = Date.now(); if (n - last > 30000) { last = n; PortalBridge.activity(); } };
+    const onAct = () => {
+        const n = Date.now();
+        if (n - last > 30000) { last = n; sendToParent({ type: 'portal-interaction' }); }
+    };
     ev.forEach(e => window.addEventListener(e, onAct, { passive: true }));
     _hb = true;
 };
-window.addEventListener('load', () => { PortalBridge.init(); startHB(); });
+
+window.addEventListener('load', () => {
+    sendToParent({ type: 'html-activity-ready' });
+    startHB();
+});
 
 const GRID = 24;
 const TERM_R = 5;
@@ -977,14 +955,14 @@ function queueSave() {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
         if (needsSave) {
-            PortalBridge.save(saveState(), 0);
+            sendToParent({ type: 'html-activity-state', state: saveState() });
             needsSave = false;
         }
     }, 800);
 }
 function immediateSave() {
     clearTimeout(saveTimeout);
-    PortalBridge.save(saveState(), 0);
+    sendToParent({ type: 'html-activity-state', state: saveState() });
     needsSave = false;
 }
 
