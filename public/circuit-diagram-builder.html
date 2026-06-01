@@ -502,7 +502,7 @@ function getNearestTerminal(mx, my, maxDist = 14) {
 function deleteComponent(c) {
     components = components.filter(x => x !== c);
     if (selectedComp === c) selectedComp = null;
-    needsSave = true;
+    needsSave = true; queueSave();
 }
 
 function pointToSegmentDist(px, py, x1, y1, x2, y2) {
@@ -749,7 +749,7 @@ canvas.addEventListener('pointerdown', e => {
             const end = t ? { x: t.x, y: t.y } : { x: snap(p.x), y: snap(p.y) };
             if (dist(wireStart, end) > 2) {
                 wires.push({ id: uid(), x1: wireStart.x, y1: wireStart.y, x2: end.x, y2: end.y });
-                needsSave = true;
+                needsSave = true; queueSave();
             }
             wireStart = null;
         } else {
@@ -763,7 +763,7 @@ canvas.addEventListener('pointerdown', e => {
         labels.push({ id: uid(), x: snap(p.x), y: snap(p.y), text: 'Label' });
         selectedLabel = labels.length - 1;
         selectedComp = null; selectedWire = -1;
-        needsSave = true;
+        needsSave = true; queueSave();
         requestDraw();
         openLabelEditor(selectedLabel);
         return;
@@ -802,12 +802,12 @@ canvas.addEventListener('pointermove', e => {
         dragging.comp.x = snap(p.x - dragging.ox);
         dragging.comp.y = snap(p.y - dragging.oy);
         updateTermPositions(dragging.comp);
-        needsSave = true; requestDraw(); return;
+        needsSave = true; queueSave(); requestDraw(); return;
     }
     if (draggingLabel) {
         labels[draggingLabel.idx].x = snap(p.x - draggingLabel.ox);
         labels[draggingLabel.idx].y = snap(p.y - draggingLabel.oy);
-        needsSave = true; requestDraw(); return;
+        needsSave = true; queueSave(); requestDraw(); return;
     }
     if (wireStart) { requestDraw(); return; }
 
@@ -820,13 +820,13 @@ canvas.addEventListener('pointermove', e => {
 
 canvas.addEventListener('pointerup', e => {
     const p = getPos(e); mouse.x = p.x; mouse.y = p.y;
-    if (dragging) { dragging = null; needsSave = true; requestDraw(); return; }
-    if (draggingLabel) { draggingLabel = null; needsSave = true; requestDraw(); return; }
+    if (dragging) { dragging = null; needsSave = true; queueSave(); requestDraw(); return; }
+    if (draggingLabel) { draggingLabel = null; needsSave = true; queueSave(); requestDraw(); return; }
     if (tool !== 'select' && tool !== 'wire' && tool !== 'label') {
         const c = createComponent(tool, p.x, p.y);
         components.push(c); selectedComp = c;
         selectedWire = -1; selectedLabel = -1;
-        needsSave = true; requestDraw();
+        needsSave = true; queueSave(); requestDraw();
     }
 });
 
@@ -841,7 +841,7 @@ canvas.addEventListener('dblclick', e => {
 canvas.addEventListener('click', e => {
     const p = getPos(e);
     const c = getCompAt(p.x, p.y);
-    if (c && c.type === 'switch') { c.closed = !c.closed; needsSave = true; requestDraw(); }
+    if (c && c.type === 'switch') { c.closed = !c.closed; needsSave = true; queueSave(); requestDraw(); }
 });
 
 canvas.addEventListener('contextmenu', e => {
@@ -850,7 +850,7 @@ canvas.addEventListener('contextmenu', e => {
     const wi = getWireAt(p.x, p.y);
     if (wi >= 0) {
         wires.splice(wi, 1); selectedWire = -1;
-        needsSave = true; requestDraw();
+        needsSave = true; queueSave(); requestDraw();
         showToast('Wire deleted'); return;
     }
     const c = getCompAt(p.x, p.y);
@@ -858,7 +858,7 @@ canvas.addEventListener('contextmenu', e => {
     const li = getLabelAt(p.x, p.y);
     if (li >= 0) {
         labels.splice(li, 1); selectedLabel = -1;
-        needsSave = true; requestDraw();
+        needsSave = true; queueSave(); requestDraw();
         showToast('Label deleted');
     }
 });
@@ -867,10 +867,10 @@ window.addEventListener('keydown', e => {
     if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedWire >= 0) {
             wires.splice(selectedWire, 1); selectedWire = -1;
-            needsSave = true; requestDraw();
+            needsSave = true; queueSave(); requestDraw();
         } else if (selectedLabel >= 0) {
             labels.splice(selectedLabel, 1); selectedLabel = -1;
-            needsSave = true; requestDraw();
+            needsSave = true; queueSave(); requestDraw();
         } else if (selectedComp) {
             deleteComponent(selectedComp); requestDraw();
         }
@@ -879,7 +879,7 @@ window.addEventListener('keydown', e => {
         if (selectedComp) {
             selectedComp.rotation = (selectedComp.rotation + 1) % 4;
             updateTermPositions(selectedComp);
-            needsSave = true; requestDraw();
+            needsSave = true; queueSave(); requestDraw();
         }
     }
     if (e.key === 'Escape') {
@@ -927,11 +927,11 @@ $('btnEditOk').addEventListener('click', () => {
         let v = parseFloat($('editValue').value);
         if (!isNaN(v)) {
             v = clamp(v, def.min, def.max);
-            editingComp.value = v; needsSave = true; requestDraw();
+            editingComp.value = v; needsSave = true; queueSave(); requestDraw();
         }
     } else if (editingLabelIdx >= 0) {
         labels[editingLabelIdx].text = $('editValue').value;
-        needsSave = true; requestDraw();
+        needsSave = true; queueSave(); requestDraw();
     }
     $('editorOverlay').classList.remove('visible');
 });
@@ -940,7 +940,7 @@ $('btnClear').addEventListener('click', () => {
     if (confirm('Clear all components, wires, and labels?')) {
         components = []; wires = []; labels = [];
         selectedComp = null; selectedWire = -1; selectedLabel = -1;
-        needsSave = true; requestDraw();
+        needsSave = true; queueSave(); requestDraw();
     }
 });
 
