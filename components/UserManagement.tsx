@@ -282,6 +282,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
     return [...curriculumClasses, DefaultClassTypes.UNCATEGORIZED];
   }, [classConfigs]);
 
+  // Only render class sections for classes that actually have a Firestore config,
+  // plus Uncategorized. This prevents showing placeholder sections for deleted classes.
+  const displayClasses = useMemo(() => {
+    const configured = classConfigs.map(c => c.className).sort();
+    return [...configured, DefaultClassTypes.UNCATEGORIZED];
+  }, [classConfigs]);
+
   const toggleSelectAll = (classType: ClassType) => {
     // Select all students who are in this class view
     const classStudents = students.filter(s => s.enrolledClasses?.includes(classType) || (classType === DefaultClassTypes.UNCATEGORIZED && (s.enrolledClasses?.length === 0 || !s.enrolledClasses)));
@@ -739,7 +746,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       </div>
 
       <div className="pb-12">
-        {availableClasses.map(c => renderClassSection(c))}
+        {displayClasses.map(c => renderClassSection(c))}
       </div>
 
       <Modal isOpen={isWhitelistOpen} onClose={() => { setIsWhitelistOpen(false); setCsvResults([]); setWhitelistMode('single'); }} title="New Operative Invitation" maxWidth="max-w-lg">
