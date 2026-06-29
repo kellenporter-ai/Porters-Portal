@@ -154,6 +154,7 @@ export const callAdminEditItem = httpsCallable(functions, 'adminEditItem');
 export const callStartAssessmentSession = httpsCallable(functions, 'startAssessmentSession');
 export const callStartResourceSession = httpsCallable(functions, 'startResourceSession');
 export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment');
+export const callGetAssessmentStats = httpsCallable(functions, 'getAssessmentStats');
 
 // One-time admin utilities
 export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');

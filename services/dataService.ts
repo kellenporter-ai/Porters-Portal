@@ -1,17 +1,13 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
 import type { IntegrityReport } from '../lib/integrityAnalysis';
 import { resilientSnapshot, clearDeniedCollections } from './resilientSnapshot';
-import {
-  classifyAssessmentParticipants,
-  filterEnrolledInClass,
-  computeNotStartedCount,
-} from '../lib/assessmentClassifier';
+
 
 export { clearDeniedCollections };
 
@@ -378,40 +374,13 @@ export const dataService = {
    */
   getAssessmentStats: async (
     assignmentId: string,
-    assignment?: Assignment,
+    _assignment?: Assignment,
     enrolledStudents?: User[],
   ): Promise<AssessmentStats> => {
     try {
-      const [submissionsSnap, sessionsSnap, draftResponsesSnap] = await Promise.all([
-        getDocs(query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), limit(500))),
-        getDocs(query(collection(db, 'assessment_sessions'), where('assignmentId', '==', assignmentId), where('used', '==', false), limit(500))),
-        getDocs(query(collection(db, 'lesson_block_responses'), where('assignmentId', '==', assignmentId), limit(500))),
-      ]);
-
-      const submissions = submissionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
-      const sessionDraftUserIds = new Set(sessionsSnap.docs.map(d => d.data().userId as string));
-      const responseDraftUserIds = new Set(
-        draftResponsesSnap.docs
-          .filter(d => { const r = d.data().responses as Record<string, unknown> | undefined; return r && Object.keys(r).length > 0; })
-          .map(d => d.data().userId as string)
-      );
-
-      const classified = classifyAssessmentParticipants({ submissions, sessionDraftUserIds, responseDraftUserIds });
-      const nonStarted = submissions.filter(s => s.status !== 'STARTED');
-
-      const submitted = classified.submittedUserIds.size;
-      const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId)).size;
-      const flagged = nonStarted.filter(s => s.status === 'FLAGGED' && !s.flaggedAsAI).length;
-      const aiFlagged = nonStarted.filter(s => s.flaggedAsAI).length;
-      const draft = classified.draftUserIds.size;
-
-      let notStarted = 0;
-      if (assignment?.classType && enrolledStudents) {
-        const enrolledInClass = filterEnrolledInClass(enrolledStudents, assignment, classified.draftUserIds);
-        notStarted = computeNotStartedCount(enrolledInClass, classified);
-      }
-
-      return { submitted, graded, flagged, aiFlagged, draft, notStarted };
+      const enrolledStudentIds = enrolledStudents?.map(u => u.id) || [];
+      const result = await callGetAssessmentStats({ assignmentId, enrolledStudentIds });
+      return result.data as AssessmentStats;
     } catch (error) {
       reportError(error, { method: 'getAssessmentStats', assignmentId });
       return { submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0, notStarted: 0 };

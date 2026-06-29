@@ -248,7 +248,8 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
       )}
 
       {/* Table */}
-      <div role="table" aria-label="Student activity monitor">
+      <div className="overflow-x-auto -mx-6 px-6">
+      <div role="table" aria-label="Student activity monitor" className="min-w-[720px]">
         {/* Header */}
         <div role="rowgroup">
           <div
@@ -433,6 +434,7 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {sortedStudents.length === 0 && (

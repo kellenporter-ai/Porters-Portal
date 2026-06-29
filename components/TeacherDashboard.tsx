@@ -121,13 +121,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
 
   return (
-    <div className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 transition-[padding] duration-300 ${selectedStudentId ? 'xl:pr-[520px]' : ''}`}>
-      <div className="flex justify-between items-end">
+    <div className={`space-y-4 md:space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 transition-[padding] duration-300 ${selectedStudentId ? 'xl:pr-[520px]' : ''}`}>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Teacher Dashboard</h1>
-            <p className="text-[var(--text-tertiary)]">Engagement analytics and operational overview.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Teacher Dashboard</h1>
+            <p className="text-sm md:text-base text-[var(--text-tertiary)]">Engagement analytics and operational overview.</p>
         </div>
-        <div className="flex bg-[var(--panel-bg)] rounded-xl p-1 border border-[var(--border)]" role="tablist" aria-label="Dashboard sections">
+        <div className="flex flex-wrap bg-[var(--panel-bg)] rounded-xl p-1 border border-[var(--border)]" role="tablist" aria-label="Dashboard sections">
           <button id="tab-dashboard" role="tab" aria-selected={adminTab === 'dashboard'} aria-controls="tabpanel-dashboard" onClick={() => setAdminTab('dashboard')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <Activity className="w-3.5 h-3.5" aria-hidden="true" /> Overview
           </button>
@@ -142,6 +142,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {/* Quick Actions */}
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick actions">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
         <button
           onClick={() => navigate('/grading')}
           className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-purple-900/20 transition"
@@ -171,6 +172,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         >
           <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" /> Reports
         </button>
+        </div>
       </div>
 
       {adminTab === 'analytics' && (
@@ -194,34 +196,36 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       <FeatureErrorBoundary feature="Dashboard Overview">
 
       {/* STAT STRIP */}
-      <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl px-6 flex items-center gap-6 h-12" role="group" aria-label="Class overview statistics">
-        <button onClick={() => navigate('/users')} className="flex items-center gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer">
-          <Users className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
-          <span className="text-lg font-bold text-[var(--text)]">{totalStudents}</span>
-          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Students</span>
-        </button>
-        <div className="w-px h-5 bg-[var(--border)] shrink-0" />
-        <button onClick={() => navigate('/xp/Operatives')} className="flex items-center gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer">
-          <Zap className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
-          <span className="text-lg font-bold text-[var(--text)]">{totalXP.toLocaleString()}</span>
-          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">XP Awarded</span>
-        </button>
-        <div className="w-px h-5 bg-[var(--border)] shrink-0" />
-        <button onClick={() => navigate('/reports')} className="flex items-center gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer">
-          <FileText className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
-          <span className="text-lg font-bold text-[var(--text)]">{totalResourcesAccessed}</span>
-          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Resources Viewed</span>
-        </button>
-        <div className="w-px h-5 bg-[var(--border)] shrink-0" />
-        <div className="flex items-center gap-2 shrink-0">
-          <Clock className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
-          <span className="text-lg font-bold text-[var(--text)]">{avgTime}m</span>
-          <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Avg Active Time</span>
+      <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-3 lg:px-6 lg:py-0 lg:flex lg:items-center lg:gap-6 lg:h-12" role="group" aria-label="Class overview statistics">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:flex lg:items-center lg:gap-6">
+          <button onClick={() => navigate('/users')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+            <Users className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+            <span className="text-lg font-bold text-[var(--text)]">{totalStudents}</span>
+            <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Students</span>
+          </button>
+          <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
+          <button onClick={() => navigate('/xp/Operatives')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+            <Zap className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+            <span className="text-lg font-bold text-[var(--text)]">{totalXP.toLocaleString()}</span>
+            <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">XP Awarded</span>
+          </button>
+          <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
+          <button onClick={() => navigate('/reports')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+            <FileText className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+            <span className="text-lg font-bold text-[var(--text)]">{totalResourcesAccessed}</span>
+            <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Resources Viewed</span>
+          </button>
+          <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
+          <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+            <Clock className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+            <span className="text-lg font-bold text-[var(--text)]">{avgTime}m</span>
+            <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Avg Active Time</span>
+          </div>
         </div>
       </div>
 
       {/* OVERVIEW SUB-TABS */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)] pb-0" role="tablist" aria-label="Overview sections">
+      <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] pb-0" role="tablist" aria-label="Overview sections">
         {(
           [
             { key: 'alerts', label: 'Alerts', count: flaggedCount },

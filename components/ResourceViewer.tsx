@@ -685,9 +685,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
 
       {/* Header bar */}
-      <div className={`relative flex items-center justify-between text-[var(--text-primary)] ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-[var(--surface-base)] border-[var(--border)]'} px-4 py-1.5 ${isAssessment ? '' : 'rounded-xl'} border overflow-hidden`}>
-        <div className="flex items-center gap-4 min-w-0">
-          <h2 className="text-sm font-bold truncate flex items-center gap-2">
+      <div className={`relative flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-[var(--text-primary)] ${isAssessment ? 'bg-red-900/20 border-red-500/20' : 'bg-[var(--surface-base)] border-[var(--border)]'} px-4 py-2 md:py-1.5 ${isAssessment ? '' : 'rounded-xl'} border overflow-hidden`}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
+          <h2 className="text-sm font-bold sm:truncate flex items-center gap-2">
             {isAssessment && <Shield className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />}
             {activeAssignment.title}
             {isAssessment && (
@@ -711,7 +711,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {user.role === 'ADMIN' && (
             <div className="flex bg-[var(--panel-bg)] rounded-lg p-0.5 border border-[var(--border)] text-[11.5px] font-bold">
               <button onClick={() => setAdminViewMode('STUDENT')} className={`px-2 py-1 rounded transition ${adminViewMode === 'STUDENT' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Student</button>
@@ -981,7 +981,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 />
               </div>
               {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (
-                <div className="w-full md:w-72 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md animate-in slide-in-from-right duration-300 overflow-y-auto">
+                <div className="w-full md:w-72 lg:w-80 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 md:p-6 backdrop-blur-md animate-in slide-in-from-right duration-300 overflow-y-auto">
                   <h3 className="font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2"><SettingsIcon className="w-4 h-4 text-[var(--accent-text)]" /> Admin Controls</h3>
                   <div className="space-y-6">
                     <div className="bg-[var(--panel-bg)] p-4 rounded-xl border border-[var(--border)]">

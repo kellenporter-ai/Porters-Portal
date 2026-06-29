@@ -1819,7 +1819,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 const needsTabs = (hasIframe && hasLessons) || showStudyTab;
 
                 const SimulationPanel = (
-                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full overflow-hidden ${
+                    <div ref={iframeWrapperRef} className={`flex flex-col bg-white relative h-full min-h-[40vh] md:min-h-0 overflow-hidden ${
                         isFullscreen && !document.fullscreenElement ? 'fixed inset-0 z-50' : ''
                     }`}>
                         <iframe
@@ -1891,7 +1891,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     return (
                         <div className="flex flex-col h-full">
                             {/* Tab bar */}
-                            <div className="flex items-center gap-1 bg-[var(--surface-base)] px-3 py-1.5 border-b border-[var(--border)] shrink-0">
+                            <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-base)] px-3 py-1.5 border-b border-[var(--border)] shrink-0">
                                 {hasIframe && (
                                     <button
                                         onClick={() => setActiveTab('simulation')}
