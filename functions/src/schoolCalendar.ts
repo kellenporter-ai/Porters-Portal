@@ -1,59 +1,58 @@
 /**
- * Perth Amboy Public Schools 2025–2026 school calendar utilities.
+ * Perth Amboy Public Schools 2026–2027 school calendar utilities.
  *
- * School year: 2025-09-04 through 2026-06-25.
+ * School year: 2026-09-03 through 2027-06-24.
  * Non-student days: weekends, holidays, recesses, and staff in-service days.
- * Early dismissal days (Nov 26, Dec 23, Apr 2, Jun 11, Jun 25) ARE school days.
+ * Early dismissal days (Nov 25, Dec 23, Mar 25, Jun 24) ARE school days.
  */
 
 // All non-student dates (closed or in-service — students don't attend).
 // Represented as a Set<string> of YYYY-MM-DD strings for O(1) lookup.
 const NON_STUDENT_DATES = new Set<string>([
   // Staff In-Service (pre-year)
-  "2025-09-02",
-  "2025-09-03",
+  "2026-09-01",
+  "2026-09-02",
   // Labor Day
-  "2025-09-01",
+  "2026-09-07",
   // Staff In-Service
-  "2025-10-13",
+  "2026-10-12",
   // Fall Recess
-  "2025-11-03",
-  "2025-11-04",
-  "2025-11-05",
-  "2025-11-06",
-  "2025-11-07",
+  "2026-11-02",
+  "2026-11-03",
+  "2026-11-04",
+  "2026-11-05",
+  "2026-11-06",
   // Thanksgiving
-  "2025-11-27",
-  "2025-11-28",
+  "2026-11-26",
+  "2026-11-27",
   // Holiday Recess (December)
-  "2025-12-24",
-  "2025-12-25",
-  "2025-12-26",
-  "2025-12-29",
-  "2025-12-30",
-  "2025-12-31",
+  "2026-12-24",
+  "2026-12-25",
+  "2026-12-28",
+  "2026-12-29",
+  "2026-12-30",
+  "2026-12-31",
   // Holiday Recess (January)
-  "2026-01-01",
-  "2026-01-02",
+  "2027-01-01",
   // MLK Day
-  "2026-01-19",
+  "2027-01-18",
   // President's Day
-  "2026-02-16",
-  // Spring Recess (Apr 3 Fri through Apr 10 Fri)
-  "2026-04-03",
-  "2026-04-06",
-  "2026-04-07",
-  "2026-04-08",
-  "2026-04-09",
-  "2026-04-10",
+  "2027-02-15",
+  // Spring Recess (Mar 26 Fri through Apr 2 Fri)
+  "2027-03-26",
+  "2027-03-29",
+  "2027-03-30",
+  "2027-03-31",
+  "2027-04-01",
+  "2027-04-02",
   // Memorial Day
-  "2026-05-25",
+  "2027-05-31",
   // Juneteenth
-  "2026-06-19",
+  "2027-06-18",
 ]);
 
-const SCHOOL_YEAR_START = "2025-09-04"; // first day (inclusive)
-const SCHOOL_YEAR_END   = "2026-06-25"; // last day (inclusive)
+const SCHOOL_YEAR_START = "2026-09-03"; // first day (inclusive)
+const SCHOOL_YEAR_END   = "2027-06-24"; // last day (inclusive)
 
 /**
  * Returns true if the given ISO date string (YYYY-MM-DD) is a school day:
