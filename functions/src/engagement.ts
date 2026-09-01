@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {
   verifyAuth,
+  verifyAdmin,
   buildXPUpdates,
   getProfilePaths,
   getProfileData,
@@ -1476,4 +1477,55 @@ export const equipFluxCosmetic = onCall({ memory: "256MiB", timeoutSeconds: 60 }
   const updateField = `gamification.activeCosmetics.${resolvedSlot}`;
   await userRef.update({ [updateField]: cosmeticId || admin.firestore.FieldValue.delete() });
   return { success: true, slot: resolvedSlot, cosmeticId };
+});
+
+// ==========================================
+// BEHAVIOR QUICK-AWARD — Admin grants XP + Flux
+// ==========================================
+export const awardBehaviorXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const correlationId = generateCorrelationId();
+  const uid = verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
+
+  const db = admin.firestore();
+
+  const { studentId, classType, xpAmount, fluxAmount, reason, timestamp } = request.data as {
+    studentId?: string;
+    classType?: string;
+    xpAmount?: number;
+    fluxAmount?: number;
+    reason?: string;
+    timestamp?: string;
+  };
+
+  if (!studentId || !classType || xpAmount === undefined || fluxAmount === undefined || !reason) {
+    throw new HttpsError("invalid-argument", "Missing required fields: studentId, classType, xpAmount, fluxAmount, reason.");
+  }
+
+  const batch = db.batch();
+
+  // 1. Create the behavior award doc
+  const awardRef = db.collection("behavior_awards").doc();
+  batch.set(awardRef, {
+    studentId,
+    classType,
+    xpAmount,
+    fluxAmount,
+    reason,
+    timestamp: timestamp || new Date().toISOString(),
+    awardedBy: uid,
+  });
+
+  // 2. Increment student XP + currency atomically
+  const userRef = db.doc(`users/${studentId}`);
+  batch.update(userRef, {
+    "gamification.xp": admin.firestore.FieldValue.increment(xpAmount),
+    [`gamification.classXp.${classType}`]: admin.firestore.FieldValue.increment(xpAmount),
+    "gamification.currency": admin.firestore.FieldValue.increment(fluxAmount),
+  });
+
+  await batch.commit();
+
+  logWithCorrelation('info', 'Behavior XP awarded', correlationId, { studentId, classType, xpAmount, fluxAmount, awardedBy: uid });
+  return { success: true, awardId: awardRef.id };
 });

@@ -1,7 +1,7 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage } from '../types';
 import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
-import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
@@ -656,9 +656,33 @@ export const dataService = {
   },
 
   addToWhitelist: async (email: string, classType: ClassType) => {
+    const normalizedEmail = email.toLowerCase().trim();
     try {
-      await callAdminAddToWhitelist({ email, classType });
+      await callAdminAddToWhitelist({ email: normalizedEmail, classType });
     } catch (error) {
+      const code = (error as { code?: string })?.code;
+      // CF lost in the monolith split — fall back to direct writes (rules allow admin writes).
+      if (code === 'functions/not-found' || code === 'functions/unimplemented') {
+        const whitelistRef = doc(db, 'allowed_emails', normalizedEmail);
+        const existing = await getDoc(whitelistRef);
+        const existingData = existing.exists() ? existing.data() : null;
+        const currentTypes: string[] = existingData?.classTypes || [existingData?.classType].filter(Boolean);
+        const mergedTypes = Array.from(new Set([...currentTypes, classType]));
+        // Mirror the CF: whitelist doc + enroll any already-registered users with this email.
+        // writeBatch keeps the multi-doc write atomic.
+        const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
+        const snap = await getDocs(q);
+        const batch = writeBatch(db);
+        batch.set(whitelistRef, { email: normalizedEmail, classType, classTypes: mergedTypes }, { merge: true });
+        snap.docs.forEach((d) => {
+          const userData = d.data();
+          const currentClasses: string[] = userData.enrolledClasses || (userData.classType ? [userData.classType] : []);
+          const newClasses = Array.from(new Set([...currentClasses, classType]));
+          batch.update(doc(db, 'users', d.id), { isWhitelisted: true, classType, enrolledClasses: newClasses });
+        });
+        await batch.commit();
+        return;
+      }
       reportError(error, { method: 'addToWhitelist' });
     }
   },

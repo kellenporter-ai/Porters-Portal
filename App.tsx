@@ -295,6 +295,9 @@ const App: React.FC = () => {
       const whitelistData = whitelistDoc.exists() ? whitelistDoc.data() : null;
       const assignedClass = whitelistData?.classType || DefaultClassTypes.UNCATEGORIZED;
       const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== DefaultClassTypes.UNCATEGORIZED ? [assignedClass] : []);
+      const assignedSection: string | null = whitelistData?.section || null;
+      // Only apply the section when it maps to a real class — never key classSections on Uncategorized.
+      const sectionForClass = assignedSection && assignedClass !== DefaultClassTypes.UNCATEGORIZED ? assignedSection : null;
 
       await runTransaction(db, async (transaction) => {
         const userSnap = await transaction.get(userRef);
@@ -311,7 +314,8 @@ const App: React.FC = () => {
             createdAt: new Date().toISOString(),
             lastLoginAt: new Date().toISOString(),
             gamification: { xp: 0, level: 1, currency: 0, badges: [], privacyMode: false, classXp: {} },
-            settings: { performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' }
+            settings: { performanceMode: false, privacyMode: false, compactView: false, themeMode: 'dark' },
+            ...(sectionForClass ? { section: sectionForClass, classSections: { [assignedClass]: sectionForClass } } : {})
           });
         } else {
           const existingData = userSnap.data();

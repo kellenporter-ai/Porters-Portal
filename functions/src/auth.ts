@@ -1,7 +1,7 @@
 import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { createHash } from "crypto";
-import { generateCorrelationId, logWithCorrelation } from "./core";
+import { generateCorrelationId, logWithCorrelation, verifyAuth, verifyAdmin } from "./core";
 
 // ==========================================
 // ==========================================
@@ -113,13 +113,118 @@ export const setAdminClaim = onRequest({ memory: "256MiB", timeoutSeconds: 60 },
 });
 
 // ==========================================
+// ADMIN ADD TO WHITELIST (ATOMIC)
+// ==========================================
+export const adminAddToWhitelist = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const correlationId = generateCorrelationId();
+  verifyAuth(request.auth);
+  await verifyAdmin(request.auth);
+
+  const db = admin.firestore();
+
+  const { email, classType } = request.data as { email?: string; classType?: string };
+  if (!email || !classType) {
+    throw new HttpsError("invalid-argument", "email and classType are required.");
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const whitelistRef = db.doc(`allowed_emails/${normalizedEmail}`);
+
+  // Read current whitelist state
+  const existing = await whitelistRef.get();
+  const currentTypes: string[] = existing.exists ? (existing.data()?.classTypes || [existing.data()?.classType].filter(Boolean)) : [];
+  const mergedTypes = Array.from(new Set([...currentTypes, classType]));
+
+  // Find matching users
+  const usersSnap = await db.collection("users").where("email", "==", normalizedEmail).get();
+
+  // Atomic batch: whitelist doc + all matching user docs
+  const batch = db.batch();
+
+  batch.set(whitelistRef, { classType, classTypes: mergedTypes }, { merge: true });
+
+  usersSnap.docs.forEach((userDoc) => {
+    const userData = userDoc.data();
+    const currentClasses: string[] = userData.enrolledClasses || (userData.classType ? [userData.classType] : []);
+    const newClasses = Array.from(new Set([...currentClasses, classType]));
+    batch.update(userDoc.ref, {
+      isWhitelisted: true,
+      classType,
+      enrolledClasses: newClasses,
+    });
+  });
+
+  await batch.commit();
+
+  logWithCorrelation('info', 'Admin added email to whitelist', correlationId, { email: normalizedEmail, classType, usersUpdated: usersSnap.size });
+  return { success: true, email: normalizedEmail, classType, usersUpdated: usersSnap.size };
+});
+
+// ==========================================
 // ENROLLMENT
 // ==========================================
 
-export const redeemEnrollmentCode = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (_request) => {
+export const redeemEnrollmentCode = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
-  void correlationId;
-  throw new HttpsError("unimplemented", "Enrollment code redemption is not yet implemented.");
+  const uid = verifyAuth(request.auth);
+
+  const { code } = request.data as { code?: string };
+  if (!code || typeof code !== "string" || code.trim().length < 4) {
+    throw new HttpsError("invalid-argument", "A valid enrollment code is required.");
+  }
+
+  const db = admin.firestore();
+  const normalizedCode = code.toUpperCase().replace(/-/g, "");
+
+  // Find the active code
+  const codesSnap = await db.collection("enrollment_codes")
+    .where("code", "==", normalizedCode)
+    .where("isActive", "==", true)
+    .limit(1)
+    .get();
+
+  if (codesSnap.empty) {
+    return { success: false, error: "Invalid or expired code." };
+  }
+
+  const codeDocRef = codesSnap.docs[0].ref;
+
+  // Atomic transaction — prevents usedCount race condition
+  const result = await db.runTransaction(async (tx) => {
+    const freshCode = await tx.get(codeDocRef);
+    if (!freshCode.exists) return { success: false, error: "Code no longer exists." };
+    const codeData = freshCode.data()!;
+
+    if (codeData.maxUses && codeData.usedCount >= codeData.maxUses) {
+      return { success: false, error: "This code has reached its usage limit." };
+    }
+
+    const userRef = db.doc(`users/${uid}`);
+    const userSnap = await tx.get(userRef);
+    if (!userSnap.exists) return { success: false, error: "User not found." };
+
+    const userData = userSnap.data()!;
+    const enrolled: string[] = userData.enrolledClasses || [];
+    if (enrolled.includes(codeData.classType)) {
+      return { success: false, error: "Already enrolled in this class." };
+    }
+
+    // Atomic updates — enroll student + increment usedCount
+    const userUpdate: Record<string, unknown> = {
+      enrolledClasses: admin.firestore.FieldValue.arrayUnion(codeData.classType),
+      isWhitelisted: true,
+    };
+    if (codeData.section) {
+      userUpdate[`classSections.${codeData.classType}`] = codeData.section;
+    }
+    tx.update(userRef, userUpdate);
+    tx.update(codeDocRef, { usedCount: admin.firestore.FieldValue.increment(1) });
+
+    return { success: true, classType: codeData.classType };
+  });
+
+  logWithCorrelation('info', 'Enrollment code redemption attempted', correlationId, { uid, success: result.success, classType: result.classType });
+  return result;
 });
 
 // ==========================================
