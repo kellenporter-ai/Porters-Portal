@@ -9,7 +9,7 @@ import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { ToastProvider } from './components/ToastProvider';
 import ConnectionStatus from './components/ConnectionStatus';
 import Layout from './components/Layout';
-import GoogleLogin from './components/GoogleLogin';
+import PublicApp from './components/public/PublicApp';
 import { ShieldAlert, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import { TEACHER_DISPLAY_NAME } from './constants';
 import ErrorBoundary, { FeatureErrorBoundary } from './components/ErrorBoundary';
@@ -394,7 +394,7 @@ const App: React.FC = () => {
     }
     return <div className="h-screen flex items-center justify-center bg-[var(--surface-base)] text-[var(--text-primary)] font-mono">ESTABLISHING CONNECTION...</div>;
   }
-  if (!user) return <GoogleLogin />;
+  if (!user) return <PublicApp />;
 
   if (!user.isWhitelisted && user.role !== UserRole.ADMIN) {
     return <AccessPendingScreen userName={user.name} userId={user.id} onLogout={handleLogout} />;
@@ -506,6 +506,7 @@ const App: React.FC = () => {
 
           {/* ─── Default + catch-all ─── */}
           <Route path="/" element={<Navigate to={defaultPath} replace />} />
+          <Route path="/login" element={<Navigate to={defaultPath} replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
