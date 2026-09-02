@@ -135,6 +135,24 @@ const LandingPage: React.FC = () => {
               <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">
                 The science behind solving crimes: fingerprints, toxicology, entomology, ballistics, and evidence analysis. Students work cases hands-on, from crime scene to conclusion.
               </p>
+              <div className="mt-6">
+                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Download resources:</p>
+                <ul className="space-y-2">
+                  <li>
+                    <a
+                      href="/assets/public-docs/forensic-science-syllabus.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Forensic Science Syllabus (opens in new tab)"
+                      className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-700 shadow-sm hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
+                    >
+                      <FileText className="h-4 w-4" aria-hidden="true" />
+                      Forensic Science Syllabus
+                      <span className="sr-only">(opens in new tab)</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </article>
           </div>
         </div>
