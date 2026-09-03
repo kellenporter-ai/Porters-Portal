@@ -180,13 +180,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
               <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.portal.body}</p>
             </article>
 
-            <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.resubmit.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p1}</p>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p2}</p>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p3}</p>
-            </article>
-
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
               <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.grading.title}</h3>
               <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.grading.intro}</p>
@@ -197,6 +190,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
                   </li>
                 ))}
               </ul>
+            </article>
+
+            <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.resubmit.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p1}</p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p2}</p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p3}</p>
             </article>
           </div>
         </div>
