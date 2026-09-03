@@ -618,16 +618,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // Clear saved lesson block responses (Firestore + localStorage + local state)
   const handleClearBlockResponses = useCallback(async () => {
     if (!userId || !assignmentId) return;
-    clearSavedResponses(); // Cancels pending saves + clears localStorage draft
+    // R10: clearAll tombstones every known key so any Firestore write that
+    // lands after the deleteDoc (in-flight saves, retry queues) deletes those
+    // keys instead of resurrecting them — dot-notation merge alone would
+    // leave cleared responses lingering in the doc forever.
+    clearSavedResponses();
     if (!previewMode) {
       const docId = `${userId}_${assignmentId}_blocks`;
       try {
         await deleteDoc(doc(db, 'lesson_block_responses', docId));
       } catch { /* doc may not exist */ }
+      // Persist the tombstones to Firestore too — covers the case where the
+      // doc didn't exist at deleteDoc time but a queued setDoc recreates it.
+      const flushed = flushNow();
+      if (flushed) {
+        try { await flushed; } catch { /* best-effort tombstone persist */ }
+      }
     }
     setSavedBlockResponses({});
     setBlockResetKey(prev => prev + 1); // Force remount of LessonBlocks
-  }, [userId, assignmentId, clearSavedResponses, previewMode]);
+  }, [userId, assignmentId, clearSavedResponses, flushNow, previewMode]);
 
   // Export lesson block progress to PDF
   const handleExportBlocksPdf = useCallback(() => {

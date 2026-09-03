@@ -10,6 +10,7 @@ import {
   clearDraft,
   persistentWrite,
   syncDirtyDraft,
+  isResponseTombstone,
 } from './persistentWrite';
 import { decideRestoredResponses } from './restoreReconciliation';
 
@@ -36,6 +37,12 @@ interface UsePersistentSaveReturn {
   lastSavedAt: string | null;
   /** Update a single block/field response. Triggers debounced save. */
   updateResponse: (blockId: string, response: unknown) => void;
+  /**
+   * R10: Remove a single block/field response. The key is tombstoned so the
+   * next Firestore write deletes it server-side (dot-notation merge alone
+   * would leave it lingering forever). Triggers a debounced save.
+   */
+  removeResponse: (blockId: string) => void;
   /** Force an immediate save (e.g. before submit). Awaitable. */
   flushNow: () => Promise<WriteStatus> | undefined;
   /** Get current responses snapshot. */
@@ -165,6 +172,28 @@ export function usePersistentSave({
     scheduleSave();
   }, [disabled, scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
 
+  // Public: remove a response — tombstones the key so the next Firestore
+  // write deletes it via FieldValue.delete() instead of leaving it behind.
+  const removeResponse = useCallback((blockId: string) => {
+    responsesRef.current = { ...responsesRef.current, [blockId]: { __delete__: true, blockId } };
+    onResponsesChange?.(responsesRef.current);
+    if (disabled) return;
+    // Synchronous dirty draft mirrors the tombstone (stripped on the next
+    // successful save — persistentWrite strips tombstones from the clean draft).
+    if (lsKey && userId && assignmentId) {
+      const draftData: Record<string, unknown> = {
+        userId,
+        assignmentId,
+        responses: responsesRef.current,
+        lastUpdated: new Date().toISOString(),
+      };
+      const token = sessionTokenRef.current;
+      if (token) draftData.sessionToken = token;
+      writeDraft(lsKey, draftData, true);
+    }
+    scheduleSave();
+  }, [disabled, scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
+
   // Public: immediate flush (awaitable)
   const flushNow = useCallback((): Promise<WriteStatus> | undefined => {
     if (saveTimerRef.current) {
@@ -177,13 +206,27 @@ export function usePersistentSave({
   // Public: get snapshot
   const getResponses = useCallback(() => responsesRef.current, []);
 
-  // Public: clear everything
+  // Public: clear everything. R10: keys are tombstoned (not just dropped) so
+  // the next Firestore write deletes them server-side — dot-notation merge
+  // alone would leave cleared responses lingering in the doc forever. The
+  // caller typically deletes the whole doc too; tombstones are the
+  // defense-in-depth path for retries/queues that re-persist afterwards.
   const clearAll = useCallback(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    responsesRef.current = {};
-    onResponsesChange?.({});
+    if (saveTimerRef.current) {
+      // Flush any in-flight save BEFORE clearing so its payload can't
+      // resurrect the keys after the tombstone write lands.
+      void flushNow();
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const tombstoned: Record<string, unknown> = {};
+    for (const key of Object.keys(responsesRef.current)) {
+      tombstoned[key] = { __delete__: true, blockId: key };
+    }
+    responsesRef.current = tombstoned;
+    onResponsesChange?.(tombstoned);
     if (lsKey) clearDraft(lsKey);
-  }, [lsKey, onResponsesChange]);
+  }, [lsKey, onResponsesChange, flushNow]);
 
   // Public: set initial responses (after Firestore load)
   // If a dirty draft was restored on mount, only accept server data if it's newer
@@ -215,13 +258,18 @@ export function usePersistentSave({
     if (disabled || !docId) return;
     void getDoc(doc(db, collection, docId)).then(snap => {
       if (!mountedRef.current) return;
+      // Strip any pending tombstones — the server has no such keys.
       const serverResponses = snap.exists() ? (snap.data().responses || {}) : {};
+      const hookResponses: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(responsesRef.current)) {
+        if (!isResponseTombstone(v)) hookResponses[k] = v;
+      }
       const serverTimestamp = snap.exists() ? snap.data().lastUpdated as string | undefined : undefined;
       const draft = readDraft(lsKey || '');
       const restored = decideRestoredResponses({
         serverResponses,
         serverTimestamp,
-        hookResponses: responsesRef.current,
+        hookResponses,
         draftRestoredTimestamp: draft?.dirty ? draft.timestamp : null,
       });
       if (restored !== responsesRef.current) {
@@ -363,6 +411,7 @@ export function usePersistentSave({
     saveStatus,
     lastSavedAt,
     updateResponse,
+    removeResponse,
     flushNow,
     getResponses,
     clearAll,

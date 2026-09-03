@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from './firebase';
 import { reportError } from './errorReporting';
 
@@ -17,6 +17,24 @@ interface DraftEnvelope<T = unknown> {
   data: T;
   timestamp: string;
   dirty: boolean; // true = not yet confirmed in Firestore
+}
+
+/**
+ * Tombstone envelope for responses removed client-side. Never written to
+ * localStorage (deletes apply to Firestore only — a dirty draft restore
+ * re-materializes the key from the full response map, which is correct).
+ */
+export interface ResponseTombstone {
+  __delete__: true;
+  blockId: string;
+}
+
+export function isResponseTombstone(value: unknown): value is ResponseTombstone {
+  return (
+    typeof value === 'object' && value !== null &&
+    (value as ResponseTombstone).__delete__ === true &&
+    typeof (value as ResponseTombstone).blockId === 'string'
+  );
 }
 
 /** Read a draft from localStorage (returns null if missing or unparseable). */
@@ -65,25 +83,43 @@ export function writeDraft<T = unknown>(key: string, data: T, dirty: boolean): v
   }
 }
 
-/** Evict the oldest draft entries to free localStorage space. Returns true if any were evicted. */
+/**
+ * Evict the oldest CLEAN draft entries to free localStorage space.
+ * R9: `dirty: true` entries (unsynced work that never reached Firestore) are
+ * NEVER evicted — losing one would silently destroy student work.
+ *
+ * Eviction order: clean entries oldest-first. When only dirty entries remain,
+ * nothing further is evicted and a `portal-storage-full` warning is dispatched
+ * (SaveStatusIndicator consumes it) so the student knows to free space.
+ *
+ * Returns true if any entry was evicted.
+ */
 function evictOldestDrafts(protectedKey: string): boolean {
-  const draftEntries: { key: string; timestamp: string }[] = [];
+  const cleanEntries: { key: string; timestamp: string }[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (!k || k === protectedKey) continue;
     if (k.startsWith('draft_') || k.startsWith('practice_')) {
       try {
         const parsed = JSON.parse(localStorage.getItem(k) || '');
-        if (parsed?.timestamp) {
-          draftEntries.push({ key: k, timestamp: parsed.timestamp });
+        // R9: dirty entries are unsynced student work — never evict them.
+        if (parsed?.timestamp && parsed?.dirty !== true) {
+          cleanEntries.push({ key: k, timestamp: parsed.timestamp });
         }
       } catch { /* not a draft */ }
     }
   }
-  if (draftEntries.length === 0) return false;
+  if (cleanEntries.length === 0) {
+    // Only dirty entries (or nothing evictable) remain — surface a warning
+    // instead of destroying unsynced work.
+    window.dispatchEvent(new CustomEvent('portal-storage-full', {
+      detail: { key: protectedKey, message: 'Storage full — unsynced work is protected. Free space or contact your teacher.' },
+    }));
+    return false;
+  }
   // Sort oldest first and evict up to 3
-  draftEntries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-  const toEvict = draftEntries.slice(0, Math.min(3, draftEntries.length));
+  cleanEntries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const toEvict = cleanEntries.slice(0, Math.min(3, cleanEntries.length));
   toEvict.forEach(e => localStorage.removeItem(e.key));
   return true;
 }
@@ -138,25 +174,66 @@ export async function persistentWrite(
       // Use dot-notation updateDoc for atomic per-field updates when responses present
       if (data.responses && typeof data.responses === 'object') {
         const dotNotation: Record<string, unknown> = {};
+        let skippedInvalidBlockId = false;
         for (const [key, value] of Object.entries(data.responses as Record<string, unknown>)) {
-          dotNotation[`responses.${key}`] = value;
+          // R10: A blockId containing '.' would corrupt the Firestore field
+          // path (responses.a.b ≠ map key "a.b"). Validate + report, never write.
+          if (key.includes('.')) {
+            skippedInvalidBlockId = true;
+            reportError(new Error(`Invalid blockId containing '.' skipped in persistentWrite`), {
+              method: 'persistentWrite', collectionPath, docId, blockId: key,
+            });
+            continue;
+          }
+          // R10: Tombstoned responses must be DELETED server-side, not merged —
+          // otherwise a response removed client-side lingers in Firestore forever.
+          if (isResponseTombstone(value)) {
+            dotNotation[`responses.${key}`] = deleteField();
+          } else {
+            dotNotation[`responses.${key}`] = value;
+          }
+        }
+        if (skippedInvalidBlockId) {
+          console.warn('[persistentWrite] skipped blockId(s) containing "." — would corrupt Firestore field path', { collectionPath, docId });
         }
         // Forward all non-response fields at top level
         for (const [key, value] of Object.entries(data)) {
           if (key !== 'responses') dotNotation[key] = value;
         }
 
+        // setDoc fallback receives the merged map with tombstones stripped —
+        // a doc that doesn't exist yet has no stale keys to delete (R10).
+        const mergedResponses: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(data.responses as Record<string, unknown>)) {
+          if (!isResponseTombstone(value)) mergedResponses[key] = value;
+        }
+        const fallbackData: Record<string, unknown> = { ...data, responses: mergedResponses };
         try {
           await writeWithTimeout(() => updateDoc(doc(db, collectionPath, docId), dotNotation));
         } catch {
           // Doc may not exist yet — fall back to setDoc (creates the doc)
-          await writeWithTimeout(() => setDoc(doc(db, collectionPath, docId), data, { merge: true }));
+          await writeWithTimeout(() => setDoc(doc(db, collectionPath, docId), fallbackData, { merge: true }));
         }
       } else {
         await writeWithTimeout(() => setDoc(doc(db, collectionPath, docId), data, { merge: true }));
       }
-      // Success — mark localStorage clean
-      if (lsKey) writeDraft(lsKey, data, false);
+      // Success — mark localStorage clean. Tombstones are transient (FireStore
+      // delete markers) — persist the stripped response map so a later dirty-draft
+      // restore doesn't resurrect a response the student deleted.
+      if (lsKey) {
+        const hasTombstones =
+          data.responses && typeof data.responses === 'object' &&
+          Object.values(data.responses as Record<string, unknown>).some(isResponseTombstone);
+        if (hasTombstones) {
+          const cleanResponses: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(data.responses as Record<string, unknown>)) {
+            if (!isResponseTombstone(value)) cleanResponses[key] = value;
+          }
+          writeDraft(lsKey, { ...data, responses: cleanResponses }, false);
+        } else {
+          writeDraft(lsKey, data, false);
+        }
+      }
       onStatusChange?.('saved');
       return 'saved';
     } catch (err) {

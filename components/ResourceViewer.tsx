@@ -437,17 +437,27 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     }
   };
 
+  // R7: persistentWrite's worst case is MAX_RETRIES(3) × (WRITE_TIMEOUT_MS
+  // attempt timeout + backoff 2s+4s+8s) ≈ 44s. The old flat 10s race fired
+  // the "save failed" modal even when the flush would succeed milliseconds
+  // later — training panic. Cover the true worst case with margin instead.
+  const FLUSH_TIMEOUT_MS = 60_000;
+
   const handleSaveAndExit = async () => {
     setIsSavingExit(true);
     blockerProceedRef.current = true;
     try {
       const flushPromise = flushRef.current?.();
-      const timeoutPromise = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), 10000));
-      const result = await Promise.race([flushPromise ?? Promise.resolve('timeout'), timeoutPromise]);
+      // flushNow's returned status is authoritative — a timeout here means the
+      // flush is genuinely still retrying (or hung), not that the save failed.
+      const timeoutPromise = new Promise<'timeout'>((res) => setTimeout(() => res('timeout'), FLUSH_TIMEOUT_MS));
+      const result = await Promise.race([flushPromise ?? Promise.resolve('saved'), timeoutPromise]);
       if (result === 'saved') {
         setIsSavingExit(false);
         handleExit();
       } else {
+        // Genuine failure or extreme-hang. The dirty draft is safe in
+        // localStorage and will sync on next open — say so, don't imply loss.
         setIsSavingExit(false);
         blockerProceedRef.current = false;
         setShowSaveFailedModal(true);
@@ -602,7 +612,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <h3 className="font-bold text-sm">Couldn't Sync to Server</h3>
             </div>
             <p className="text-[var(--text-secondary)] text-xs mb-4">
-              Your answers are backed up on this device. You can keep working, or exit now and resume later on this same device.
+              Your answers are saved on this device and will sync to the server the next time you open this assignment — nothing is lost. You can keep working, or exit now and resume later.
             </p>
             <div className="flex gap-2">
               <button
