@@ -49,11 +49,11 @@ export const CONTENT = {
         downloadAria: (label: string) => `${label} for AP Physics 1 (opens in new tab)`,
       },
       honors: {
-        title: 'Honors Physics',
-        body: 'A deeper, faster-paced study of the core physics toolkit: motion, forces, energy, momentum, and waves. Strong emphasis on mathematical modeling and lab investigation.',
+        title: 'Honors & CP Physics',
+        body: 'The core physics toolkit: motion, forces, energy, momentum, and waves. Honors moves deeper and faster; both levels emphasize mathematical modeling and lab investigation.',
         downloadHeading: 'Download resources:',
         pdfLabel: 'Physics Syllabus',
-        downloadAria: 'Physics Syllabus for Honors Physics (opens in new tab)',
+        downloadAria: 'Physics Syllabus for Honors & CP Physics (opens in new tab)',
       },
       forensic: {
         title: 'Forensic Science',
@@ -167,11 +167,11 @@ export const CONTENT = {
         downloadAria: (label: string) => `${label} para AP Physics 1 (se abre en una pestaña nueva)`,
       },
       honors: {
-        title: 'Honors Physics',
-        body: 'Un estudio más profundo y de ritmo más rápido de las herramientas básicas de la física: movimiento, fuerzas, energía, momento y ondas. Gran énfasis en los modelos matemáticos y la investigación de laboratorio.',
+        title: 'Honors & CP Physics',
+        body: 'Las herramientas básicas de la física: movimiento, fuerzas, energía, momento y ondas. Honors avanza más profundo y más rápido; ambos niveles enfatizan los modelos matemáticos y la investigación de laboratorio.',
         downloadHeading: 'Descargar documentos:',
         pdfLabel: 'Programa de Física (en inglés)',
-        downloadAria: 'Programa de Física para Honors Physics (se abre en una pestaña nueva)',
+        downloadAria: 'Programa de Física para Honors & CP Physics (se abre en una pestaña nueva)',
       },
       forensic: {
         title: 'Forensic Science',
