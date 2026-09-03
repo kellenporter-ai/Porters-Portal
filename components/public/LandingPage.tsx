@@ -195,6 +195,19 @@ const LandingPage: React.FC = () => {
               </p>
             </article>
 
+            <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">Resubmit and revise</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
+                My expectation: students resubmit assignments until they reach the highest rubric mark they can. The goal is Developing on every skill. Almost all assignments can be resubmitted, and there is no penalty for late work.
+              </p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
+                Each marking period has one final due date, typically 2 days before the marking period ends. Anything turned in before that date is graded without penalty.
+              </p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
+                One caution: work piles up. Falling too far behind makes the amount feel impossible, so I encourage students to stay current.
+              </p>
+            </article>
+
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
               <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">How my grading works</h3>
               <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
