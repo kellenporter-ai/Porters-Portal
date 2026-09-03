@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore 'vitest run rules/__tests__/firestore.rules.test.ts --config vitest.rules.config.ts'",
     "compress-models": "node scripts/compress-models.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@firebase/rules-unit-testing": "^3.0.1",
     "@gltf-transform/core": "^4.3.0",
     "@gltf-transform/extensions": "^4.3.0",
     "@gltf-transform/functions": "^4.3.0",
