@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Assignment, Submission, LessonBlock, RUBRIC_TIER_COLORS, RubricTierLabel } from '../types';
 import { X, RotateCcw, MessageSquare, FileText, Trophy, Check, XCircle, Clock, Shield, Send, LogOut, BookOpen, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import { useToast } from './ToastProvider';
+import { reportError } from '../lib/errorReporting';
 
 interface AssessmentWorkspaceProps {
   // Mode
@@ -814,6 +816,8 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   // Notes state
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [savedIndicators, setSavedIndicators] = useState<Record<string, boolean>>({});
+  const [saveErrors, setSaveErrors] = useState<Record<string, boolean>>({});
+  const toast = useToast();
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const notesInitialized = useRef(false);
 
@@ -843,11 +847,18 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
         .saveStudentNote(submissionId, blockId, value)
         .then(() => {
           setSavedIndicators((prev) => ({ ...prev, [blockId]: true }));
+          setSaveErrors((prev) => ({ ...prev, [blockId]: false }));
           setTimeout(() => setSavedIndicators((prev) => ({ ...prev, [blockId]: false })), 1500);
         })
-        .catch(() => {});
+        .catch((error) => {
+          // R8: surface failures — never flash "Saved" on a failed write.
+          // Note text stays in local state so the student can retry (blur/edit).
+          reportError(error, { method: 'MyWorkPanel.saveNote', submissionId, blockId });
+          setSaveErrors((prev) => ({ ...prev, [blockId]: true }));
+          toast.error("Couldn't save study note — check your connection.");
+        });
     },
-    [submissionId],
+    [submissionId, toast],
   );
 
   const handleNoteChange = useCallback(
@@ -964,6 +975,11 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           rows={2}
           className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-purple-500/40 resize-y"
         />
+        {saveErrors[blockId] && !savedIndicators[blockId] && (
+          <span className="absolute top-2 right-2 text-xs text-red-600 dark:text-red-400 font-medium">
+            Couldn't save — check connection
+          </span>
+        )}
         {savedIndicators[blockId] && (
           <span className="absolute top-2 right-2 text-xs text-green-600 dark:text-green-400 font-medium animate-pulse">
             Saved

@@ -3,8 +3,8 @@
  * `npm run test:rules`, which uses `firebase emulators:exec`).
  *
  * Coverage:
- *  - R8 BUG REPRODUCTION: student cannot write studentNotes.{blockId} on their
- *    own submission (asserts CURRENT denied behavior — Phase 1 flips it).
+ *  - R8 FIXED: student CAN write studentNotes.{blockId} on their own submission
+ *    (assessment and non-assessment); cannot write on others' docs or forge fields.
  *  - Baseline allow/deny for lesson_block_responses session gating.
  *  - Student delete of own draft doc.
  *  - submissions student-update whitelist (feedbackReadAt/feedbackReviewedAt).
@@ -49,8 +49,8 @@ beforeEach(async () => {
 // ---------------------------------------------------------------------------
 // R8 — Study notes silently lost (BUG REPRODUCTION)
 // ---------------------------------------------------------------------------
-describe('R8: studentNotes write on submissions (BUG REPRODUCTION)', () => {
-  it('student is DENIED writing studentNotes on their own non-assessment submission', async () => {
+describe('R8: studentNotes write on submissions (FIXED — Phase 1)', () => {
+  it('student is ALLOWED writing studentNotes on their own non-assessment submission', async () => {
     // Seed a student-owned submission doc as admin
     const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
     await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -65,12 +65,75 @@ describe('R8: studentNotes write on submissions (BUG REPRODUCTION)', () => {
 
     const student = testEnv.authenticatedContext(STUDENT_A).firestore();
 
-    // saveStudentNote writes studentNotes.{blockId} — rules whitelist does not
-    // include studentNotes → permission-denied. UI swallows the error (R8).
-    // BUG: Phase 1 flips this to assertSucceeds.
-    await assertFails(
+    // R8 fix: studentNotes is now in the student-update allowlist.
+    await assertSucceeds(
       updateDoc(doc(student, 'submissions', submissionId), {
         'studentNotes.block1': 'my study note',
+      }),
+    );
+  });
+
+  it('student is ALLOWED writing studentNotes on their own ASSESSMENT submission', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+        isAssessment: true,
+        score: 0,
+        status: 'pending',
+      });
+    });
+
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(student, 'submissions', submissionId), {
+        'studentNotes.block1': 'assessment study note',
+      }),
+    );
+  });
+
+  it('student CANNOT write studentNotes on another student\'s submission', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+      });
+    });
+
+    const studentB = testEnv.authenticatedContext(STUDENT_B).firestore();
+    await assertFails(
+      updateDoc(doc(studentB, 'submissions', submissionId), {
+        'studentNotes.block1': 'forgery attempt',
+      }),
+    );
+  });
+
+  it('student CANNOT update other fields while writing studentNotes', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+      });
+    });
+
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    // Mixing studentNotes with a non-allowlisted field must still fail.
+    await assertFails(
+      updateDoc(doc(student, 'submissions', submissionId), {
+        'studentNotes.block1': 'note',
+        score: 100,
       }),
     );
   });

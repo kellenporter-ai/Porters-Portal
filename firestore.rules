@@ -136,13 +136,13 @@ service cloud.firestore {
               .hasOnly(['userId', 'userName', 'assignmentId', 'assignmentTitle',
                 'metrics', 'submittedAt', 'blockResponses',
                 'classType', 'section', 'lessonId', 'lessonTitle',
-                'feedbackReadAt', 'feedbackReviewedAt']) &&
+                'feedbackReadAt', 'feedbackReviewedAt', 'studentNotes']) &&
             // Prevent score/status forgery on non-assessment updates
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['score', 'status']))
           ||
-          // Assessment: only feedback tracking fields
+          // Assessment: feedback tracking fields + personal study notes
           (request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['feedbackReadAt', 'feedbackReviewedAt']))
+              .hasOnly(['feedbackReadAt', 'feedbackReviewedAt', 'studentNotes']))
         ));
 
       // Only admin can delete submissions
