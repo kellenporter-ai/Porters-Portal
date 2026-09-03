@@ -194,6 +194,20 @@ const LandingPage: React.FC = () => {
                 I post assignments, class resources, grades, and feedback here on the Portal. Students should check in daily.
               </p>
             </article>
+
+            <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">How my grading works</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
+                Every skill is graded on a 5-level rubric. The levels describe how well a student can show the science and thinking skills we practice in class: careful observation, building models, supporting claims with evidence, and revising ideas when the evidence demands it.
+              </p>
+              <ul className="mt-4 space-y-2 text-[var(--text-secondary)] leading-relaxed">
+                <li><strong className="text-[var(--text-primary)]">Missing (0%):</strong> No evidence of the skill yet. The work is missing or shows no real attempt.</li>
+                <li><strong className="text-[var(--text-primary)]">Emerging (55%):</strong> A first attempt. The student tries the skill, but the science is mostly incorrect or unsupported. This is the first draft of understanding.</li>
+                <li><strong className="text-[var(--text-primary)]">Approaching (65%):</strong> Partway there. Pieces of correct science or reasoning are present, but important parts are missing or only partially supported by evidence.</li>
+                <li><strong className="text-[var(--text-primary)]">Developing (85%):</strong> Solid work. The skill is shown correctly with only minor gaps, and the reasoning is mostly backed by evidence.</li>
+                <li><strong className="text-[var(--text-primary)]">Refining (100%):</strong> Mastery. The skill is shown completely, and the student can extend it: clear explanations, connections between ideas, application to new situations.</li>
+              </ul>
+            </article>
           </div>
         </div>
       </section>
