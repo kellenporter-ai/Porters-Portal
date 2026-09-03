@@ -11,7 +11,12 @@
  */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Node env: restoreReconciliation → persistentWrite → ../firebase touches
+// `window` at module level (dev-only console probe). Stub ../firebase so the
+// transitive import chain evaluates in node.
+vi.mock('../firebase', () => ({ db: {} }));
 import {
   bridgeRecoveryKey,
   legacyBridgeRecoveryKey,
@@ -24,6 +29,11 @@ import {
   legacyAssessmentSessionKey,
   legacyAssessmentSessionSigKey,
 } from '../assessmentSessionKeys';
+import {
+  decideRestoredResponses,
+  hasLoadedAnyResponses,
+  shouldRefetchOnReconnect,
+} from '../restoreReconciliation';
 
 // ---------------------------------------------------------------------------
 // Minimal localStorage shim (node env)
@@ -195,51 +205,69 @@ describe('R6: Shared-device token bleed (FIXED)', () => {
 // ---------------------------------------------------------------------------
 // R2 — Non-assessment restore clobbers dirty drafts
 // ---------------------------------------------------------------------------
-describe('R2: Non-assessment restore clobbers dirty drafts', () => {
-  // Simulates the Proctor.tsx non-assessment restore branch:
-  //   getDoc(...).then(snap => { ... setSavedBlockResponses(responses); })
-  //     .catch(() => setSavedBlockResponses({}));
-  // vs. the hook's onResponsesChange having already published the dirty draft.
-  // The assessment branch uses getResponses() (reconciled); the non-assessment
-  // branch uses raw server responses or {} on error.
+describe('R2: Non-assessment restore goes through reconciliation (FIXED)', () => {
+  // Phase 1c: the restore decision is extracted into lib/restoreReconciliation.ts
+  // (decideRestoredResponses) and both Proctor restore paths consume it via
+  // setInitialResponses + getResponses(). These tests exercise the REAL seam.
 
-  function nonAssessmentRestore(
-    serverResponses: Record<string, unknown> | null,
-    loadError: boolean,
-  ): Record<string, unknown> {
-    // Mirrors the non-assessment branch: server data wins, {} on error.
-    // BUG: ignores the hook's reconciled draft responses.
-    if (loadError) return {};
-    return serverResponses ?? {};
-  }
-
-  function assessmentRestore(
-    hookResponses: Record<string, unknown>,
-  ): Record<string, unknown> {
-    // Assessment branch: setSavedBlockResponses(getResponses()) — reconciled.
-    return hookResponses;
-  }
-
-  it('non-assessment restore uses raw server responses, discarding the dirty draft the hook restored', () => {
-    const hookDraftResponses = { block1: 'student draft work' }; // published via onResponsesChange
-    const serverResponses = { block1: '' }; // stale/empty server data
-    const restored = nonAssessmentRestore(serverResponses, false);
-    // BUG: Phase 1 flips this — restored should be the hook's reconciled draft.
-    expect(restored).not.toEqual(hookDraftResponses);
-    expect(restored).toEqual({ block1: '' });
+  it('dirty draft restored at mount wins over stale/empty server data', () => {
+    const hookDraftResponses = { block1: 'student draft work' }; // hook already reconciled
+    const restored = decideRestoredResponses({
+      serverResponses: { block1: '' },
+      serverTimestamp: '2024-01-01T00:00:00Z',
+      hookResponses: hookDraftResponses,
+      draftRestoredTimestamp: '2024-01-02T00:00:00Z',
+    });
+    // FIXED: restored state is the hook's reconciled draft, not raw server data.
+    expect(restored).toEqual(hookDraftResponses);
   });
 
-  it('non-assessment restore with a load error wipes to {} instead of keeping the hook draft', () => {
+  it('load error (getDoc catch) does NOT wipe to {} when a dirty draft exists', () => {
     const hookDraftResponses = { block1: 'student draft work' };
-    const restored = nonAssessmentRestore(null, true); // getDoc catch → setSavedBlockResponses({})
-    // BUG: draft exists in hook/localStorage but blocks mount empty.
-    expect(restored).toEqual({});
-    expect(restored).not.toEqual(hookDraftResponses);
+    // Proctor catch path now does setSavedBlockResponses(getResponses()) —
+    // equivalent to decideRestoredResponses with draftRestoredTimestamp set.
+    const restored = decideRestoredResponses({
+      serverResponses: {},
+      hookResponses: hookDraftResponses,
+      draftRestoredTimestamp: '2024-01-02T00:00:00Z',
+    });
+    expect(restored).toEqual(hookDraftResponses);
+    expect(hasLoadedAnyResponses(hookDraftResponses, false)).toBe(true);
   });
 
-  it('assessment branch uses reconciled hook responses (contrast case, current correct behavior)', () => {
-    const hookDraftResponses = { block1: 'student draft work' };
-    expect(assessmentRestore(hookDraftResponses)).toEqual(hookDraftResponses);
+  it('clean local state accepts the server snapshot (happy path unchanged)', () => {
+    const serverResponses = { block1: 'saved server work' };
+    const restored = decideRestoredResponses({
+      serverResponses,
+      serverTimestamp: '2024-01-02T00:00:00Z',
+      hookResponses: {},
+      draftRestoredTimestamp: null,
+    });
+    expect(restored).toEqual(serverResponses);
+  });
+
+  it('assessment and non-assessment paths now share the same decision seam', () => {
+    // Both branches call setInitialResponses(...); setSavedBlockResponses(getResponses()).
+    const draft = { block1: 'draft' };
+    const viaAssessment = decideRestoredResponses({
+      serverResponses: { block1: '' }, hookResponses: draft, draftRestoredTimestamp: 't',
+    });
+    const viaNonAssessment = decideRestoredResponses({
+      serverResponses: { block1: '' }, hookResponses: draft, draftRestoredTimestamp: 't',
+    });
+    expect(viaAssessment).toEqual(viaNonAssessment);
+  });
+
+  it('shouldRefetchOnReconnect: dirty draft blocks re-fetch; empty clean state allows it', () => {
+    const lsKey = 'portal_draft_test_r3';
+    localStorage.removeItem(lsKey);
+    // Clean + empty → re-fetch allowed (R3 reconnect recovery).
+    expect(shouldRefetchOnReconnect(true, {}, lsKey)).toBe(true);
+    // Dirty draft → never re-fetch over unsaved edits.
+    localStorage.setItem(lsKey, JSON.stringify({ dirty: true, timestamp: 't', data: { responses: { a: 1 } } }));
+    expect(shouldRefetchOnReconnect(true, { a: 1 }, lsKey)).toBe(false);
+    // Offline → no re-fetch.
+    expect(shouldRefetchOnReconnect(false, {}, lsKey)).toBe(false);
   });
 });
 

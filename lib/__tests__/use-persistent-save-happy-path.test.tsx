@@ -14,14 +14,17 @@ import Storage from 'happy-dom/lib/storage/Storage.js';
 
 const updateDocMock = vi.fn();
 const setDocMock = vi.fn();
-const getDocMock = vi.fn();
+// Default: resolve to a non-existent doc so the R3 reconnect refetch
+// (refetchServerDraft → getDoc) never returns undefined mid-test.
+// vi.clearAllMocks() in beforeEach wipes implementations, so re-arm it there.
+const getDocMock = vi.fn(() => Promise.resolve({ exists: () => false }));
 const docMock = vi.fn((...args: unknown[]) => ({ collection: args[1] as string, id: args[2] as string }));
 
 vi.mock('firebase/firestore', () => ({
   doc: (...args: unknown[]) => docMock(...args),
   setDoc: (...args: unknown[]) => setDocMock(...args),
   updateDoc: (...args: unknown[]) => updateDocMock(...args),
-  getDoc: (...args: unknown[]) => getDocMock(...args),
+  getDoc: (...args: unknown[]) => getDocMock(...(args as [])),
 }));
 
 vi.mock('../firebase', () => ({ db: {} }));
@@ -45,6 +48,9 @@ function setup(onResponsesChange = vi.fn()) {
 describe('usePersistentSave happy path', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Re-arm the getDoc default after clearAllMocks wipes implementations
+    // (R3's reconnect refetch calls getDoc on mount in the happy-path tests).
+    getDocMock.mockResolvedValue({ exists: () => false });
     localStorage.clear();
     vi.useFakeTimers();
   });

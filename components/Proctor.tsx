@@ -573,20 +573,24 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         });
       }
     } else {
+      // R2: non-assessment restore must go through the same reconciliation as
+      // the assessment path — setInitialResponses timestamp-reconciles the
+      // server data against dirty local drafts, and getResponses() reflects
+      // that decision. Blindly setting raw server responses clobbered dirty
+      // drafts and rendered existing work empty.
       getDoc(doc(db, 'lesson_block_responses', docId)).then(snap => {
         if (cancelled) return;
         if (snap.exists()) {
           const data = snap.data();
-          const responses = data.responses || {};
-          setInitialResponses(responses, data.lastUpdated);
-          setSavedBlockResponses(responses);
-        } else {
-          setSavedBlockResponses({});
+          setInitialResponses(data.responses || {}, data.lastUpdated);
         }
+        setSavedBlockResponses(getResponses());
       }).catch(err => {
         if (cancelled) return;
         reportError(err, { component: 'Proctor', context: 'Failed to load lesson block responses' });
-        setSavedBlockResponses({});
+        // Do NOT reset to {} — a dirty local draft restored by the hook would
+        // be clobbered. Keep the hook's current (reconciled) responses.
+        setSavedBlockResponses(getResponses());
       });
     }
     return () => { cancelled = true; };

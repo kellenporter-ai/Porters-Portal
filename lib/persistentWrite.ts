@@ -160,6 +160,7 @@ export async function persistentWrite(
       onStatusChange?.('saved');
       return 'saved';
     } catch (err) {
+      lastPersistentWriteError = err;
       const errCode = (err as { code?: string })?.code || '';
       const errMsg = err instanceof Error ? err.message : String(err);
       // Debug: log ALL write failures with payload details to diagnose rules rejections
@@ -188,11 +189,40 @@ export async function persistentWrite(
   return 'error';
 }
 
+/** True when an error looks like a Firestore rules permission-denied (not transient). */
+function isPermissionDenied(err: unknown): boolean {
+  const code = (err as { code?: string })?.code || '';
+  const msg = err instanceof Error ? err.message : String(err);
+  return code === 'permission-denied' || code === 'PERMISSION_DENIED' || msg.includes('permission-denied');
+}
+
+/** Last error seen by persistentWrite — lets syncDirtyDraft distinguish permission-denied. */
+let lastPersistentWriteError: unknown = null;
+
 /**
  * Sync any dirty localStorage drafts back to Firestore.
  * Call on mount and on `online` events.
  * Returns true if a sync was performed.
+ *
+ * R4: Draft snapshots embed the sessionToken captured at write time. If the
+ * referenced assessment_sessions doc is gone, every background retry fails
+ * permission-denied indefinitely until the student types something new. After
+ * MAX_CONSECUTIVE_PERM_DENIES consecutive permission-denied syncs, the hook
+ * dispatches `portal-assessment-session-invalid` so Proctor requests a fresh
+ * session token — the next sync then retries with the new token without
+ * requiring new keystrokes. (R2-safe: normal retry behavior is unchanged.)
  */
+export const MAX_CONSECUTIVE_PERM_DENIES = 2;
+
+/** Consecutive permission-denied dirty-draft syncs (reset on any saved sync). */
+let consecutivePermDeniedSyncs = 0;
+
+/** Test-only: reset the R4 permission-denied streak counter. */
+export function __resetSyncErrorTracking(): void {
+  consecutivePermDeniedSyncs = 0;
+  lastPersistentWriteError = null;
+}
+
 export async function syncDirtyDraft(
   lsKey: string,
   collectionPath: string,
@@ -231,11 +261,28 @@ export async function syncDirtyDraft(
     // Can't read server — try writing anyway
   }
 
-  return (await persistentWrite(
+  const status = await persistentWrite(
     collectionPath,
     docId,
     draft.data as Record<string, unknown>,
     lsKey,
     onStatusChange,
-  )) === 'saved';
+  );
+
+  // R4: Detect a stale embedded sessionToken (assessment_sessions doc gone →
+  // rules reject with permission-denied). Transient errors (offline, timeout)
+  // are NOT counted. After the threshold, surface a distinct session-invalid
+  // state so the caller refreshes the token and retries — no new keystrokes.
+  if (status !== 'saved' && isPermissionDenied(lastPersistentWriteError)) {
+    consecutivePermDeniedSyncs++;
+    if (consecutivePermDeniedSyncs >= MAX_CONSECUTIVE_PERM_DENIES) {
+      window.dispatchEvent(new CustomEvent('portal-assessment-session-invalid', {
+        detail: { message: 'stale-session-token', lsKey },
+      }));
+    }
+  } else if (status === 'saved') {
+    consecutivePermDeniedSyncs = 0;
+  }
+
+  return status === 'saved';
 }

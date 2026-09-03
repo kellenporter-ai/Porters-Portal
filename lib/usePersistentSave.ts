@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from './firebase';
 import { useOnlineStatus } from './useOnlineStatus';
 import {
   WriteStatus,
@@ -9,6 +11,7 @@ import {
   persistentWrite,
   syncDirtyDraft,
 } from './persistentWrite';
+import { decideRestoredResponses } from './restoreReconciliation';
 
 const DEBOUNCE_MS = 1500;
 
@@ -47,6 +50,8 @@ interface UsePersistentSaveReturn {
   sessionInvalid: boolean;
   /** Load initial responses (call once after fetching from Firestore on mount). */
   setInitialResponses: (responses: Record<string, unknown>, serverTimestamp?: string) => void;
+  /** R3: Re-fetch the server draft and reconcile, for reconnect recovery. */
+  refetchServerDraft: () => void;
 }
 
 export function usePersistentSave({
@@ -201,6 +206,37 @@ export function usePersistentSave({
     onResponsesChange?.(responses);
   }, [onResponsesChange, scheduleSave]);
 
+  // R3: Re-fetch the server draft and reconcile it into local state. Used for
+  // reconnect recovery: with the memory local cache an offline getDoc fails
+  // instantly, leaving blocks empty; coming back online must re-read the
+  // server doc. Never clobbers in-progress edits — the caller gates via
+  // shouldRefetchOnReconnect (empty/clean local state only).
+  const refetchServerDraft = useCallback(() => {
+    if (disabled || !docId) return;
+    void getDoc(doc(db, collection, docId)).then(snap => {
+      if (!mountedRef.current) return;
+      const serverResponses = snap.exists() ? (snap.data().responses || {}) : {};
+      const serverTimestamp = snap.exists() ? snap.data().lastUpdated as string | undefined : undefined;
+      const draft = readDraft(lsKey || '');
+      const restored = decideRestoredResponses({
+        serverResponses,
+        serverTimestamp,
+        hookResponses: responsesRef.current,
+        draftRestoredTimestamp: draft?.dirty ? draft.timestamp : null,
+      });
+      if (restored !== responsesRef.current) {
+        responsesRef.current = restored;
+        onResponsesChange?.(restored);
+      }
+      if (snap.exists() && !draft?.dirty) {
+        // Clean state re-hydrated from the server — mirror it locally.
+        if (lsKey) writeDraft(lsKey, { ...snap.data(), responses: restored }, false);
+      }
+    }).catch(() => {
+      // Offline / read failure — keep local state untouched.
+    });
+  }, [disabled, docId, collection, lsKey, onResponsesChange]);
+
   // Listen for localStorage quota exhaustion events from persistentWrite
   useEffect(() => {
     const handleStorageFull = () => {
@@ -231,7 +267,12 @@ export function usePersistentSave({
   useEffect(() => {
     if (disabled || !isOnline || !lsKey || !docId) return;
     syncDirtyDraft(lsKey, collection, docId, setStatus);
-  }, [disabled, isOnline, lsKey, docId, collection, setStatus]);
+    // R3: reconnect recovery — if local state is empty/clean, re-fetch the
+    // server draft (offline getDoc failed instantly with the memory cache).
+    if (Object.keys(responsesRef.current).length === 0 && !draftRestoredTimestampRef.current) {
+      refetchServerDraft();
+    }
+  }, [disabled, isOnline, lsKey, docId, collection, setStatus, onResponsesChange, refetchServerDraft]);
 
   // Background retry: periodically attempt re-sync when in error state
   // Uses a ref to avoid the interval being killed by intermediate status transitions (e.g., 'retrying')
@@ -329,5 +370,6 @@ export function usePersistentSave({
     errorSince,
     sessionInvalid,
     setInitialResponses,
+    refetchServerDraft,
   };
 }
