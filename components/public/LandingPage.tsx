@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, FileText, Mail, Phone, MapPin, Atom, Microscope, FlaskConical } from 'lucide-react';
+import { CONTENT, type PublicLang } from './landingContent';
 
-const AP_PDFS = [
-  { href: '/assets/public-docs/ap-physics-1-course-overview.pdf', label: 'Course Overview' },
-  { href: '/assets/public-docs/ap-physics-1-course-at-a-glance.pdf', label: 'Course at a Glance' },
-  { href: '/assets/public-docs/ap-physics-1-course-and-exam-description.pdf', label: 'Course & Exam Description' },
-];
+interface LandingPageProps {
+  lang: PublicLang;
+}
 
-const LandingPage: React.FC = () => {
+const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
+  const c = CONTENT[lang];
+
   return (
     <>
       {/* Hero */}
@@ -25,32 +26,30 @@ const LandingPage: React.FC = () => {
           <div className="max-w-3xl">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-glass)] px-4 py-1.5 text-sm font-medium text-[var(--text-secondary)]">
               <Atom className="h-4 w-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-              Physics & Forensic Science
+              {c.hero.badge}
             </p>
             <h1 className="text-4xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-6xl">
               Porter&apos;s Portal
             </h1>
             <p className="mt-4 text-2xl font-semibold text-purple-600 dark:text-purple-400 sm:text-3xl">
-              Knowledge, empowers.
+              {c.hero.motto}
             </p>
-            <p className="mt-6 text-lg text-[var(--text-secondary)]">
-              Mr. Porter&apos;s Physics & Forensics · Room B139, Perth Amboy High School
-            </p>
-            <p className="mt-4 max-w-2xl text-[var(--text-secondary)] leading-relaxed">
-              Welcome! I built this Portal as the one-stop home for my classes. Students: log in with your school Google account to access class resources, assignments, and assessments. Parents and guardians: everything below is for you: course information, class procedures, and how to reach me.
-            </p>
+            <p className="mt-6 text-lg text-[var(--text-secondary)]">{c.hero.subtitle}</p>
+            <p className="mt-4 max-w-2xl text-[var(--text-secondary)] leading-relaxed">{c.hero.body}</p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 to="/login"
+                aria-label={c.hero.loginBtnAria}
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-[var(--accent)] px-8 text-base font-bold text-[var(--text-inverted)] shadow-sm hover:bg-[var(--accent-hover)] transition-colors focus-visible:outline-offset-2 min-w-[44px]"
               >
-                Student Login
+                {c.hero.loginBtn}
               </Link>
               <a
                 href="#courses"
+                aria-label={c.hero.coursesBtnAria}
                 className="inline-flex h-12 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--surface-glass)] px-6 text-base font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors focus-visible:outline-offset-2 min-w-[44px]"
               >
-                Explore Courses
+                {c.hero.coursesBtn}
               </a>
             </div>
           </div>
@@ -61,8 +60,8 @@ const LandingPage: React.FC = () => {
       <section id="courses" className="py-16 sm:py-20 lg:py-24 bg-[var(--surface-raised)]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">Courses</h2>
-            <p className="mt-4 text-[var(--text-secondary)]">What my students are learning this year, at a glance.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{c.courses.h2}</h2>
+            <p className="mt-4 text-[var(--text-secondary)]">{c.courses.sub}</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -71,25 +70,23 @@ const LandingPage: React.FC = () => {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
                 <Atom className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">AP Physics 1</h3>
-              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">
-                College-level, algebra-based physics following the College Board framework: motion, forces, energy, momentum, rotation, and circuits. Students learn by doing real science: observing, building models, and testing predictions.
-              </p>
+              <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">{c.courses.ap.title}</h3>
+              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{c.courses.ap.body}</p>
               <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Download resources:</p>
+                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{c.courses.ap.downloadHeading}</p>
                 <ul className="space-y-2">
-                  {AP_PDFS.map((pdf) => (
+                  {c.courses.ap.pdfs.map((pdf) => (
                     <li key={pdf.href}>
                       <a
                         href={pdf.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={`${pdf.label} for AP Physics 1 (opens in new tab)`}
+                        aria-label={c.courses.ap.downloadAria(pdf.label)}
                         className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
                       >
                         <FileText className="h-4 w-4" aria-hidden="true" />
                         {pdf.label}
-                        <span className="sr-only">(opens in new tab)</span>
+                        <span className="sr-only">{c.courses.newTab}</span>
                       </a>
                     </li>
                   ))}
@@ -102,24 +99,22 @@ const LandingPage: React.FC = () => {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400">
                 <FlaskConical className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-bold text-cyan-700 dark:text-cyan-400">Honors Physics</h3>
-              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">
-                A deeper, faster-paced study of the core physics toolkit: motion, forces, energy, momentum, and waves. Strong emphasis on mathematical modeling and lab investigation.
-              </p>
+              <h3 className="text-xl font-bold text-cyan-700 dark:text-cyan-400">{c.courses.honors.title}</h3>
+              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{c.courses.honors.body}</p>
               <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Download resources:</p>
+                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{c.courses.honors.downloadHeading}</p>
                 <ul className="space-y-2">
                   <li>
                     <a
                       href="/assets/public-docs/physics-syllabus.pdf"
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Physics Syllabus for Honors Physics (opens in new tab)"
+                      aria-label={c.courses.honors.downloadAria}
                       className="inline-flex items-center gap-2 rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-cyan-700 shadow-sm hover:bg-cyan-100 dark:border-cyan-500/30 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
                     >
                       <FileText className="h-4 w-4" aria-hidden="true" />
-                      Physics Syllabus
-                      <span className="sr-only">(opens in new tab)</span>
+                      {c.courses.honors.pdfLabel}
+                      <span className="sr-only">{c.courses.newTab}</span>
                     </a>
                   </li>
                 </ul>
@@ -131,24 +126,22 @@ const LandingPage: React.FC = () => {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
                 <Microscope className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-bold text-amber-700 dark:text-amber-400">Forensic Science</h3>
-              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">
-                The science behind solving crimes: fingerprints, toxicology, entomology, ballistics, and evidence analysis. Students work cases hands-on, from crime scene to conclusion.
-              </p>
+              <h3 className="text-xl font-bold text-amber-700 dark:text-amber-400">{c.courses.forensic.title}</h3>
+              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{c.courses.forensic.body}</p>
               <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Download resources:</p>
+                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{c.courses.forensic.downloadHeading}</p>
                 <ul className="space-y-2">
                   <li>
                     <a
                       href="/assets/public-docs/forensic-science-syllabus.pdf"
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Forensic Science Syllabus (opens in new tab)"
+                      aria-label={c.courses.forensic.downloadAria}
                       className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-700 shadow-sm hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
                     >
                       <FileText className="h-4 w-4" aria-hidden="true" />
-                      Forensic Science Syllabus
-                      <span className="sr-only">(opens in new tab)</span>
+                      {c.courses.forensic.pdfLabel}
+                      <span className="sr-only">{c.courses.newTab}</span>
                     </a>
                   </li>
                 </ul>
@@ -162,63 +155,47 @@ const LandingPage: React.FC = () => {
       <section id="procedures" className="py-16 sm:py-20 lg:py-24 bg-[var(--surface-base)]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">Class Procedures</h2>
-            <p className="mt-4 text-[var(--text-secondary)]">What to expect, every day.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{c.procedures.h2}</h2>
+            <p className="mt-4 text-[var(--text-secondary)]">{c.procedures.sub}</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">Cell phones (NJ law)</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                Cell phones must be off and away for the entire school day. This is now New Jersey state law. In my classroom, your phone goes OFF and into your assigned numbered pouch at the door, or stays OFF in your bag or backpack. A phone found in your possession during class is a violation of state law and may result in disciplinary action.
-              </p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.cells.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.cells.body}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">Seating & table groups</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                Students sit in assigned table groups named after famous scientists: Curie, Einstein, Newton, Lovelace, Faraday, and Hopper. Group assignments are posted on day one and stay in effect all marking period.
-              </p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.seating.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.seating.body}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">How my class learns</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                My class is collaborative. Students investigate, discuss, whiteboard, and present with their table group. Multiple attempts are always allowed. Mistakes are data, not disasters.
-              </p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.learning.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.learning.body}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">The Portal</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                I post assignments, class resources, grades, and feedback here on the Portal. Students should check in daily.
-              </p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.portal.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.portal.body}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">Resubmit and revise</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                My expectation: students resubmit assignments until they reach the highest rubric mark they can. The goal is Developing on every skill. Almost all assignments can be resubmitted, and there is no penalty for late work.
-              </p>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                Each marking period has one final due date, typically 2 days before the marking period ends. Anything turned in before that date is graded without penalty.
-              </p>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                One caution: work piles up. Falling too far behind makes the amount feel impossible, so I encourage students to stay current.
-              </p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.resubmit.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p1}</p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p2}</p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p3}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">How my grading works</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">
-                Every skill is graded on a 5-level rubric. The levels describe how well a student can show the science and thinking skills we practice in class: careful observation, building models, supporting claims with evidence, and revising ideas when the evidence demands it.
-              </p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.grading.title}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.grading.intro}</p>
               <ul className="mt-4 space-y-2 text-[var(--text-secondary)] leading-relaxed">
-                <li><strong className="text-[var(--text-primary)]">Missing (0%):</strong> No evidence of the skill yet. The work is missing or shows no real attempt.</li>
-                <li><strong className="text-[var(--text-primary)]">Emerging (55%):</strong> A first attempt. The student tries the skill, but the science is mostly incorrect or unsupported. This is the first draft of understanding.</li>
-                <li><strong className="text-[var(--text-primary)]">Approaching (65%):</strong> Partway there. Pieces of correct science or reasoning are present, but important parts are missing or only partially supported by evidence.</li>
-                <li><strong className="text-[var(--text-primary)]">Developing (85%):</strong> Solid work. The skill is shown correctly with only minor gaps, and the reasoning is mostly backed by evidence.</li>
-                <li><strong className="text-[var(--text-primary)]">Refining (100%):</strong> Mastery. The skill is shown completely, and the student can extend it: clear explanations, connections between ideas, application to new situations.</li>
+                {c.procedures.grading.tiers.map((tier) => (
+                  <li key={tier.name}>
+                    <strong className="text-[var(--text-primary)]">{tier.name}</strong> {tier.desc}
+                  </li>
+                ))}
               </ul>
             </article>
           </div>
@@ -230,10 +207,8 @@ const LandingPage: React.FC = () => {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">Contact</h2>
-              <p className="mt-4 text-lg text-[var(--text-secondary)]">
-                Questions about class? Reach out any time.
-              </p>
+              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{c.contact.h2}</h2>
+              <p className="mt-4 text-lg text-[var(--text-secondary)]">{c.contact.sub}</p>
             </div>
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] p-6 sm:p-8">
@@ -243,8 +218,8 @@ const LandingPage: React.FC = () => {
                     <BookOpen className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">Teacher</dt>
-                    <dd className="text-lg font-semibold text-[var(--text-primary)]">Mr. Kellen Porter, Physics & Forensic Science Teacher</dd>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.teacherLabel}</dt>
+                    <dd className="text-lg font-semibold text-[var(--text-primary)]">{c.contact.teacherValue}</dd>
                   </div>
                 </div>
 
@@ -253,14 +228,14 @@ const LandingPage: React.FC = () => {
                     <Mail className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">Email</dt>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.emailLabel}</dt>
                     <dd>
                       <a
                         href="mailto:kellporter2@paps.net"
-                        aria-label="Email Mr. Kellen Porter at kellporter2 at paps dot net"
+                        aria-label={c.contact.emailAria}
                         className="text-lg font-semibold text-[var(--accent-text)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4"
                       >
-                        kellporter2@paps.net
+                        {c.contact.emailValue}
                       </a>
                     </dd>
                   </div>
@@ -271,8 +246,8 @@ const LandingPage: React.FC = () => {
                     <MapPin className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">School</dt>
-                    <dd className="text-lg font-semibold text-[var(--text-primary)]">Perth Amboy High School, 931 Convery Blvd, Perth Amboy, NJ 08861</dd>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.schoolLabel}</dt>
+                    <dd className="text-lg font-semibold text-[var(--text-primary)]">{c.contact.schoolValue}</dd>
                   </div>
                 </div>
 
@@ -281,14 +256,14 @@ const LandingPage: React.FC = () => {
                     <Phone className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">Main office</dt>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.mainOfficeLabel}</dt>
                     <dd>
                       <a
                         href="tel:+17323766230"
-                        aria-label="Call the main office at 7 3 2 3 7 6 6 2 3 0"
+                        aria-label={c.contact.mainOfficeAria}
                         className="text-lg font-semibold text-[var(--accent-text)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4"
                       >
-                        (732) 376-6230
+                        {c.contact.mainOfficeValue}
                       </a>
                     </dd>
                   </div>

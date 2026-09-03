@@ -2,15 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import PortalLogo from '../PortalLogo';
+import { CONTENT, type PublicLang } from './landingContent';
 
-const navItems = [
-  { label: 'Welcome', href: '#welcome' },
-  { label: 'Courses', href: '#courses' },
-  { label: 'Procedures', href: '#procedures' },
-  { label: 'Contact', href: '#contact' },
-];
+interface PublicLayoutProps {
+  children: React.ReactNode;
+  lang: PublicLang;
+}
 
-const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PublicLayout: React.FC<PublicLayoutProps> = ({ children, lang }) => {
+  const c = CONTENT[lang];
+  const isEs = lang === 'es';
+  const toggleHref = isEs ? '/' : '/es';
+  const toggleLabel = isEs ? 'English' : 'Español';
+
+  const navItems = [
+    { label: c.nav.welcome, href: '#welcome' },
+    { label: c.nav.courses, href: '#courses' },
+    { label: c.nav.procedures, href: '#procedures' },
+    { label: c.nav.contact, href: '#contact' },
+  ];
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +47,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <header className="sticky top-0 z-[var(--z-sticky)] border-b border-[var(--border)] bg-[var(--surface-glass)]/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
-            <Link to="/" className="flex items-center gap-3 focus-visible:outline-offset-4">
+            <Link to={isEs ? '/es' : '/'} className="flex items-center gap-3 focus-visible:outline-offset-4">
               <PortalLogo size={36} />
               <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Porter&apos;s Portal</span>
             </Link>
@@ -57,9 +68,19 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
+                aria-label={c.nav.login}
                 className="hidden md:inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-[var(--text-inverted)] hover:bg-[var(--accent-hover)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
               >
-                Student Login
+                {c.nav.login}
+              </Link>
+
+              <Link
+                to={toggleHref}
+                aria-label={c.nav.toggleAria}
+                lang={isEs ? 'en' : 'es'}
+                className="hidden md:inline-flex items-center justify-center rounded-xl border border-[var(--border)] bg-transparent px-3 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
+              >
+                {toggleLabel}
               </Link>
 
               <button
@@ -94,7 +115,16 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 onClick={() => setMobileOpen(false)}
                 className="mt-2 flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-base font-bold text-[var(--text-inverted)] hover:bg-[var(--accent-hover)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
               >
-                Student Login
+                {c.nav.login}
+              </Link>
+              <Link
+                to={toggleHref}
+                onClick={() => setMobileOpen(false)}
+                aria-label={c.nav.toggleAria}
+                lang={isEs ? 'en' : 'es'}
+                className="flex items-center justify-center rounded-xl border border-[var(--border)] bg-transparent px-4 py-3 text-base font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
+              >
+                {toggleLabel}
               </Link>
             </nav>
           </div>
@@ -107,9 +137,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
       <footer className="border-t border-[var(--border)] bg-[var(--surface-sunken)] py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-secondary)]">
-          <p>Perth Amboy High School &middot; Room B139</p>
-          <a href="/privacy" className="hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4">
-            Privacy Policy
+          <p>{c.footer.schoolAndRoom}</p>
+          <a href={c.footer.privacyHref} className="hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4">
+            {c.footer.privacy}
           </a>
         </div>
       </footer>

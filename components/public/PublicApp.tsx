@@ -7,8 +7,30 @@ import GoogleLogin from '../GoogleLogin';
 const PublicApp: React.FC = () => {
   return (
     <Routes>
-      <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
-      <Route path="/login" element={<PublicLayout><GoogleLogin /></PublicLayout>} />
+      <Route
+        path="/"
+        element={
+          <PublicLayout lang="en">
+            <LandingPage lang="en" />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/es"
+        element={
+          <PublicLayout lang="es">
+            <LandingPage lang="es" />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <PublicLayout lang="en">
+            <GoogleLogin />
+          </PublicLayout>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

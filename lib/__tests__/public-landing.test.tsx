@@ -27,6 +27,20 @@ describe('PublicApp routing', () => {
     expect(screen.queryByText('Welcome Back')).not.toBeInTheDocument();
   });
 
+  it('renders the Spanish landing page at /es', () => {
+    render(
+      <MemoryRouter initialEntries={['/es']}>
+        <PublicApp />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Reglas de la Clase')).toBeInTheDocument();
+    expect(screen.getAllByText('Acceso de Estudiantes').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('Student Login')).not.toBeInTheDocument();
+    const esToggle = screen.getByText('English').closest('a');
+    expect(esToggle).toHaveAttribute('href', '/');
+  });
+
   it('renders GoogleLogin at /login', () => {
     render(
       <MemoryRouter initialEntries={['/login']}>
