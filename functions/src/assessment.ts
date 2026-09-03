@@ -1058,6 +1058,12 @@ export const heartbeat = onCall({ memory: "256MiB", timeoutSeconds: 30 }, async 
   }
 
   const sessionData = sessionDoc.data()!;
+  // R6 FIX: reject tokens belonging to a different user (shared-device bleed).
+  // submitAssessment already enforces this; heartbeat did not.
+  if (sessionData.userId !== request.auth!.uid) {
+    console.log('[heartbeat] permission-denied (userId mismatch)', { durationMs: Date.now() - start });
+    throw new HttpsError("permission-denied", "Session token does not match your account.");
+  }
   const now = admin.firestore.Timestamp.now();
   const expiresAt = sessionData.expiresAt as admin.firestore.Timestamp | undefined;
 

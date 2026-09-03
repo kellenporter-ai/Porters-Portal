@@ -4,12 +4,19 @@
  * and components/Proctor.tsx (portal-ready recovery consumer) so the key
  * computation and recovery-state extraction are unit-testable.
  *
- * PHASE 0 — behavior-preserving extraction. The recovery key is NOT
- * assignment-scoped; that is bug R1 and Phase 1 fixes it.
+ * PHASE 1 — recovery key is assignment-scoped (fixes R1: bridge recovery
+ * cross-contamination). A legacy unscoped key, if present, is consumed once
+ * and removed; recovered state is only applied to its own assignment's
+ * practice_progress doc.
  */
 
-/** R1 BUG: key is scoped by userId only — NOT by assignmentId. */
-export function bridgeRecoveryKey(userId: string): string {
+/** PHASE 1 (R1 FIX): key is scoped by userId + assignmentId. */
+export function bridgeRecoveryKey(userId: string, assignmentId: string): string {
+  return `portalBridge_${userId}_${assignmentId}_lastState`;
+}
+
+/** Legacy (pre-Phase-1) unscoped key format — consumed once, then removed. */
+export function legacyBridgeRecoveryKey(userId: string): string {
   return `portalBridge_${userId}_lastState`;
 }
 

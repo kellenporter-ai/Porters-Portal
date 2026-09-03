@@ -98,6 +98,7 @@
     var PortalBridge = {
         connected: false,
         userId: null,
+        assignmentId: null,
         completionInfo: null,
 
         /**
@@ -125,6 +126,7 @@
                     clearInterval(_readyInterval);
                     PortalBridge.connected = true;
                     PortalBridge.userId = data.payload.userId;
+                    PortalBridge.assignmentId = data.payload.assignmentId || null;
                     PortalBridge.completionInfo = data.payload.completionInfo || null;
                     updateStatus('Connected', '#4ade80');
                     if (_onLoad && !_onLoadFired) {
@@ -184,8 +186,10 @@
             window.addEventListener('beforeunload', function() {
                 if (PortalBridge._lastState) {
                     // Synchronous localStorage write — survives iframe teardown
+                    // R1 FIX: key is assignment-scoped (portalBridge_{userId}_{assignmentId}_lastState)
+                    // so recovery state can never bleed into another assignment.
                     try {
-                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_lastState';
+                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + '_lastState';
                         localStorage.setItem(key, JSON.stringify({
                             state: PortalBridge._lastState,
                             timestamp: new Date().toISOString()
@@ -200,7 +204,7 @@
             window.addEventListener('pagehide', function() {
                 if (PortalBridge._lastState) {
                     try {
-                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_lastState';
+                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + '_lastState';
                         localStorage.setItem(key, JSON.stringify({
                             state: PortalBridge._lastState,
                             timestamp: new Date().toISOString()

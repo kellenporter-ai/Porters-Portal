@@ -15,6 +15,8 @@ import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
 import { persistentWrite, draftKey, readDraft, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
 import { renderReadingContent } from '../lib/renderReadingContent';
+import { assessmentSessionKey, assessmentSessionSigKey, legacyAssessmentSessionKey, legacyAssessmentSessionSigKey } from '../lib/assessmentSessionKeys';
+import { bridgeRecoveryKey, legacyBridgeRecoveryKey, extractRecoveryData } from '../lib/bridgeRecovery';
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -266,10 +268,19 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Start assessment session and obtain server-issued token
   useEffect(() => {
-    if (previewMode || !isAssessment || !assignmentId) return;
+    if (previewMode || !isAssessment || !assignmentId || !userId) return;
 
-    const storageKey = `assessment_session_${assignmentId}`;
-    const sigKey = `${storageKey}_sig`;
+    // R6 FIX: token cache keys are user-scoped. Delete legacy unscoped keys —
+    // they may belong to another user on this shared device; never migrate them.
+    const legacyKey = legacyAssessmentSessionKey(assignmentId);
+    const legacySig = legacyAssessmentSessionSigKey(assignmentId);
+    localStorage.removeItem(legacyKey);
+    sessionStorage.removeItem(legacyKey);
+    localStorage.removeItem(legacySig);
+    sessionStorage.removeItem(legacySig);
+
+    const storageKey = assessmentSessionKey(userId, assignmentId);
+    const sigKey = assessmentSessionSigKey(userId, assignmentId);
     let cancelled = false;
 
     const requestToken = async (forceNew = false) => {
@@ -334,7 +345,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           if (cancelled) return;
           const msg = err instanceof Error ? err.message : String(err);
           // Cached token expired or invalid — clear it and get a fresh one
-          if (msg.includes('expired') || msg.includes('not-found') || msg.includes('used')) {
+          // R6 FIX: permission-denied is FATAL for a cached token (it belongs to
+          // another user) — clear it and request a fresh session, never retry as transient.
+          if (msg.includes('expired') || msg.includes('not-found') || msg.includes('used') || msg.includes('permission-denied')) {
             localStorage.removeItem(storageKey);
             sessionStorage.removeItem(storageKey);
             localStorage.removeItem(sigKey);
@@ -360,7 +373,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     requestToken();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAssessment, assignmentId]);
+  }, [isAssessment, assignmentId, userId]);
 
   // Start resource session for non-assessments (server-observed elapsed time)
   useEffect(() => {
@@ -1112,13 +1125,21 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
-              payload: { userId, savedState, completionInfo }
+              payload: { userId, assignmentId, savedState, completionInfo }
             }, targetOrigin);
 
-            // Check for bridge localStorage recovery data (from beforeunload/pagehide)
-            const bridgeKey = `portalBridge_${userId}_lastState`;
+            // Check for bridge localStorage recovery data (from beforeunload/pagehide).
+            // R1 FIX: key is assignment-scoped, so recovery state can only ever be
+            // written into the assignment it originated from. A legacy unscoped key
+            // is consumed once (it predates scoping, so its origin is ambiguous) and
+            // then removed.
+            const bridgeKey = bridgeRecoveryKey(userId, assignmentId);
+            const legacyBridgeKey = legacyBridgeRecoveryKey(userId);
             try {
-              const recoveredRaw = localStorage.getItem(bridgeKey);
+              const scopedRaw = localStorage.getItem(bridgeKey);
+              const legacyRaw = scopedRaw ? null : localStorage.getItem(legacyBridgeKey);
+              const recoveredRaw = scopedRaw ?? legacyRaw;
+              const consumedKey = scopedRaw ? bridgeKey : legacyBridgeKey;
               if (recoveredRaw) {
                 const recovered = JSON.parse(recoveredRaw);
                 if (recovered?.state) {
@@ -1126,17 +1147,11 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                   if (!previewMode) {
                     const practiceDocId = `${userId}_${assignmentId}`;
                     const practiceLsKey = draftKey('practice', userId!, assignmentId!);
-                    const recoveryData: Record<string, unknown> = {
-                      userId,
-                      assignmentId,
-                      state: recovered.state.state || recovered.state,
-                      currentQuestion: recovered.state.currentQuestion ?? 0,
-                      lastUpdated: recovered.timestamp || new Date().toISOString(),
-                    };
+                    const recoveryData: Record<string, unknown> = { ...extractRecoveryData(userId, assignmentId, recovered) };
                     persistentWrite('practice_progress', practiceDocId, recoveryData, practiceLsKey).catch(() => {});
                   }
                 }
-                localStorage.removeItem(bridgeKey);
+                localStorage.removeItem(consumedKey);
               }
             } catch { /* ignore recovery errors */ }
           } catch (err) {
