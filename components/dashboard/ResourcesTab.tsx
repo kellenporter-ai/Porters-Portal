@@ -293,7 +293,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     const isSubstantial = engMin >= 5;
     const completion = practiceCompletion[resource.id];
     const isModuleCompleted = !!completion?.completed;
-    const hasLessonBlocks = !!resource.lessonBlocks && resource.lessonBlocks.length > 0;
+    const hasLessonBlocks = (resource.lessonBlocks?.length ?? resource.blockCount ?? 0) > 0;
     const isLessonOnly = hasLessonBlocks && !resource.contentUrl;
 
     // Assessment submission lookup — preserved from previous implementation
@@ -399,7 +399,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             )}
             {hasLessonBlocks && emphasis !== 'primary' && !isModuleCompleted && (
               <span className="text-[10px] font-mono text-[var(--text-muted)]">
-                {interpolate('resources.blocks', { count: resource.lessonBlocks!.length })}
+                {interpolate('resources.blocks', { count: resource.lessonBlocks?.length ?? resource.blockCount ?? 0 })}
               </span>
             )}
           </div>
@@ -465,7 +465,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             )}
             {emphasis === 'primary' && hasLessonBlocks && (
               <span className="text-[11px] text-[var(--text-tertiary)] font-mono">
-                {interpolate('resources.blocks', { count: resource.lessonBlocks!.length })}
+                {interpolate('resources.blocks', { count: resource.lessonBlocks?.length ?? resource.blockCount ?? 0 })}
               </span>
             )}
           </div>
@@ -583,7 +583,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
       const out: React.ReactNode[] = [];
       let lastCategory: string | null = null;
       sortedItems.forEach((r, idx) => {
-        const isLessonOnly = !!(r.lessonBlocks && r.lessonBlocks.length > 0 && !r.contentUrl);
+        const isLessonOnly = !!((r.lessonBlocks?.length ?? r.blockCount ?? 0) > 0 && !r.contentUrl);
         const categoryKey = isLessonOnly ? 'Lesson' : (migrateResourceCategory(r.category) || 'Supplemental');
         const category = categoryLabel(categoryKey, t);
         if (category !== lastCategory) {
@@ -648,7 +648,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
           <div className="flex-1" />
           <div className="text-right shrink-0">
             <div className="text-[11px] font-mono text-[var(--text-tertiary)]">
-              {interpolate('resources.progress', { completed: progress.completed, total: progress.total })}
+              {interpolate('resources.progress', { completed: progress.completed, total: progress.total, plural: progress.completed === 1 ? '' : 's' })}
               {progress.total > 0 && <span className="ml-1">· {progress.pct}%</span>}
             </div>
             {(status === 'active' || (status === 'past' && progress.pct === 100)) && progress.total > 0 && (

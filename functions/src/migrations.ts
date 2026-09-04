@@ -801,6 +801,7 @@ export const migrateAssignmentContent = onCall({ memory: "1GiB", timeoutSeconds:
       ref: admin.firestore.DocumentReference;
       contentRef: admin.firestore.DocumentReference;
       content: Record<string, unknown>;
+      blockCount: number;
     }> = [];
 
     for (const docSnap of snapshot.docs) {
@@ -819,6 +820,7 @@ export const migrateAssignmentContent = onCall({ memory: "1GiB", timeoutSeconds:
           ref: docSnap.ref,
           contentRef: db.doc(`assignment_content/${docSnap.id}`),
           content: { htmlContent, lessonBlocks, updatedAt: new Date().toISOString() },
+          blockCount: lessonBlocks.length,
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -835,6 +837,9 @@ export const migrateAssignmentContent = onCall({ memory: "1GiB", timeoutSeconds:
           batch.update(p.ref, {
             htmlContent: admin.firestore.FieldValue.delete(),
             lessonBlocks: admin.firestore.FieldValue.delete(),
+            // Preserve the count on the metadata doc so list UIs (badges,
+            // lesson-only categorization, up-next progress) work post-split.
+            blockCount: p.blockCount,
           });
         }
         await batch.commit();

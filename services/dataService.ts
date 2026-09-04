@@ -670,6 +670,9 @@ export const dataService = {
         // assignments doc. Strip any stale inline copy on update.
         htmlContent: deleteField(),
         lessonBlocks: deleteField(),
+        // Lightweight count survives on the metadata doc for list UIs
+        // (badges, lesson-only categorization, up-next progress).
+        blockCount: (assignment.lessonBlocks || []).length,
         isAssessment: assignment.isAssessment || false,
         assessmentConfig: assignment.assessmentConfig
           ? {

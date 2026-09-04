@@ -504,6 +504,10 @@ export interface Assignment {
   updatedAt?: string; // ISO date — updated on every save
   targetSections?: string[]; // e.g. ["Period 1", "Period 3"] — empty/undefined = all sections
   lessonBlocks?: LessonBlock[];
+  // Lightweight count kept on the metadata doc after the Phase 2a content split
+  // (lessonBlocks themselves live in assignment_content/{id}). Used by list UIs
+  // for badges/categorization without fetching the content doc.
+  blockCount?: number;
   // Assessment mode
   isAssessment?: boolean;
   assessmentConfig?: {

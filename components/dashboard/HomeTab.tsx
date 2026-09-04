@@ -208,7 +208,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
   // the student has completed in the in-flight submission, if any).
   const upNextProgress = useMemo(() => {
     if (!upNextAssignment) return null;
-    const totalBlocks = upNextAssignment.lessonBlocks?.length ?? 0;
+    const totalBlocks = upNextAssignment.lessonBlocks?.length ?? upNextAssignment.blockCount ?? 0;
     if (!totalBlocks) return null;
     const sub = submissions.find(s => s.assignmentId === upNextAssignment.id);
     const answered = sub?.blockResponses
@@ -353,7 +353,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
             {loginStreak > 0 && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-[var(--accent-text)] bg-[var(--accent-muted)] border border-[var(--border)]"
-                aria-label={interpolate('home.streak.aria', { count: loginStreak })}
+                aria-label={interpolate('home.streak.aria', { count: loginStreak, plural: loginStreak === 1 ? '' : 's' })}
               >
                 <span aria-hidden="true">🔥</span>
                 {interpolate('home.streak.label', { count: loginStreak })}

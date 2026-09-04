@@ -381,8 +381,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   // doc. Admins fetch them from assignment_keys and merge onto a local copy
   // for grading display (correct-answer annotations in the review UI).
   const [keyBlocks, setKeyBlocks] = React.useState<Record<string, Partial<LessonBlock>>>({});
+  const [contentBlocks, setContentBlocks] = React.useState<LessonBlock[] | null>(null);
   React.useEffect(() => {
-    if (!selectedAssessmentId) { setKeyBlocks({}); return; }
+    if (!selectedAssessmentId) { setKeyBlocks({}); setContentBlocks(null); return; }
     let cancelled = false;
     dataService.getAssignmentKeys(selectedAssessmentId).then((keys) => {
       if (cancelled || !keys?.lessonBlocks) return;
@@ -392,18 +393,25 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
       }
       setKeyBlocks(map);
     });
+    // Phase 2a — the assignments listener is metadata-only; fetch the content
+    // doc so block-by-block review has a merge base.
+    dataService.getAssignmentContent(selectedAssessmentId).then((content) => {
+      if (cancelled) return;
+      setContentBlocks(content?.lessonBlocks ?? null);
+    });
     return () => { cancelled = true; };
   }, [selectedAssessmentId]);
 
   const assessmentWithKeys: Assignment | null = React.useMemo(() => {
     if (!selectedAssessment) return null;
-    if (Object.keys(keyBlocks).length === 0) return selectedAssessment;
+    const baseBlocks = contentBlocks ?? selectedAssessment.lessonBlocks ?? [];
+    if (Object.keys(keyBlocks).length === 0 && !contentBlocks) return selectedAssessment;
     return {
       ...selectedAssessment,
-      lessonBlocks: (selectedAssessment.lessonBlocks || []).map((b) =>
+      lessonBlocks: baseBlocks.map((b) =>
         keyBlocks[b.id] ? ({ ...b, ...keyBlocks[b.id] } as LessonBlock) : b),
     };
-  }, [selectedAssessment, keyBlocks]);
+  }, [selectedAssessment, keyBlocks, contentBlocks]);
 
   // Peer similarity flags for current student
   const peerFlags = React.useMemo(() => {
