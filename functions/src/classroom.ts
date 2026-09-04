@@ -131,6 +131,25 @@ export const onGradePosted = onDocumentUpdated(
     const newScore = after.score as number || 0;
     if (oldScore > 0 || newScore <= 0) return;
 
+    // Phase 1f — suppress false positives from AI-flag restores:
+    // unflagSubmissionAsAI / saveRubricGrade auto-clear restore the pre-flag
+    // score (0 -> preFlagScore), which would otherwise email "Grade Posted".
+    // Signal 1 (explicit): the unflag flow sets gradeRestoredFromFlag; skip and
+    // unset it. Signal 2 (heuristic): before-doc is AI-flagged with score 0 and
+    // the new score matches the recorded pre-flag score. CANONICAL copy:
+    // lib/gradingIntegrity.ts shouldSuppressGradePostedEmail — drift guard in
+    // lib/__tests__/grading-integrity.test.ts.
+    if (after.gradeRestoredFromFlag === true) {
+      await event.data!.after.ref.update({ gradeRestoredFromFlag: admin.firestore.FieldValue.delete() });
+      logWithCorrelation('info', 'onGradePosted: suppressed (AI-flag restore marker)', generateCorrelationId(), { submissionId: event.params.submissionId });
+      return;
+    }
+    if (before.flaggedAsAI === true && typeof before.preFlagScore === "number" &&
+        before.preFlagScore > 0 && newScore === before.preFlagScore) {
+      logWithCorrelation('info', 'onGradePosted: suppressed (AI-flag restore heuristic)', generateCorrelationId(), { submissionId: event.params.submissionId });
+      return;
+    }
+
     const userId = after.userId as string;
     const assignmentTitle = after.assignmentTitle as string;
 

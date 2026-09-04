@@ -885,3 +885,76 @@ export const checkStreaksAtRisk = onSchedule(
     logWithCorrelation('info', 'Streak-at-risk: queued warning emails', correlationId, { emailsSent, weekId: currentWeekId });
   },
 );
+
+// ==========================================
+// SESSION SWEEP — Expired assessment_sessions + resource_sessions cleanup
+// ==========================================
+// Phase 1f: session tokens were never deleted and accumulated forever (and,
+// pre-Phase-1a, authorized writes indefinitely). Deletes docs whose expiresAt
+// is older than now minus a 24h grace period — generous enough that in-flight
+// restore/heartbeat paths are never surprised (they already hard-reject expired
+// tokens server-side). Paginated batch deletes, max 499 per batch.
+//
+// Rules note: lesson_block_responses still gates on exists() of a session doc
+// rather than expiresAt > request.time. Tightening to expiry checks would break
+// legitimate late flows — draft autosaves can land after token expiry (heartbeat
+// returns deadline-exceeded but the student's work is preserved), and the
+// restore path intentionally lets expired-token holders request fresh tokens
+// while keeping their draft doc. The sweep + userId ownership checks provide
+// the practical defense; expiry enforcement lives in the Cloud Functions.
+const SESSION_SWEEP_GRACE_MS = 24 * 60 * 60 * 1000; // 24h
+
+async function sweepExpiredSessions(
+  collectionName: "assessment_sessions" | "resource_sessions",
+  cutoffMs: number,
+  correlationId: string,
+): Promise<number> {
+  const db = admin.firestore();
+  let deleted = 0;
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+  while (true) {
+    // orderBy on expiresAt avoids a collection scan; docs missing expiresAt
+    // are legacy/unexpected and left untouched.
+    let snap: FirebaseFirestore.QuerySnapshot;
+    try {
+      let q: FirebaseFirestore.Query = db.collection(collectionName)
+        .where("expiresAt", "<", admin.firestore.Timestamp.fromMillis(cutoffMs))
+        .orderBy("expiresAt")
+        .limit(499);
+      if (lastDoc) q = q.startAfter(lastDoc);
+      snap = await q.get();
+    } catch (err) {
+      logWithCorrelation('error', `sessionSweep: ${collectionName} query failed, aborting.`, correlationId, { error: err instanceof Error ? err.message : String(err) });
+      break;
+    }
+    if (snap.empty) break;
+
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    try {
+      await batch.commit();
+      deleted += snap.size;
+    } catch (err) {
+      logWithCorrelation('error', `sessionSweep: ${collectionName} batch delete failed, skipping to next batch.`, correlationId, { error: err instanceof Error ? err.message : String(err) });
+    }
+
+    lastDoc = snap.docs[snap.docs.length - 1];
+    if (snap.size < 499) break;
+  }
+  return deleted;
+}
+
+export const sessionSweep = onSchedule(
+  { schedule: "37 3 * * *", timeZone: "America/New_York", memory: "256MiB", timeoutSeconds: 300 },
+  async () => {
+    const correlationId = generateCorrelationId();
+    const cutoffMs = Date.now() - SESSION_SWEEP_GRACE_MS;
+
+    const assessmentDeleted = await sweepExpiredSessions("assessment_sessions", cutoffMs, correlationId);
+    logWithCorrelation('info', 'sessionSweep: assessment_sessions cleaned', correlationId, { deleted: assessmentDeleted });
+
+    const resourceDeleted = await sweepExpiredSessions("resource_sessions", cutoffMs, correlationId);
+    logWithCorrelation('info', 'sessionSweep: resource_sessions cleaned', correlationId, { deleted: resourceDeleted });
+  },
+);

@@ -9,7 +9,42 @@ import { verifyAdmin } from "./core";
  * drift risk and reduce Chromebook compute. The function reads submissions,
  * open assessment sessions, and saved lesson block responses, then classifies
  * participants into submitted / draft / not-started buckets.
+ *
+ * The classification rules are INLINED from lib/assessmentClassifierShared.ts
+ * (functions rootDir excludes ../../lib imports). Keep in sync — drift guard:
+ * lib/__tests__/assessment-classifier.test.ts.
  */
+
+interface RawSubmissionLike {
+  userId?: unknown;
+  status?: unknown;
+  rubricGrade?: unknown;
+  flaggedAsAI?: unknown;
+}
+
+/**
+ * INLINED from lib/assessmentClassifierShared.ts (classifyParticipantsRaw).
+ * Keep in sync — drift guard: lib/__tests__/assessment-classifier.test.ts.
+ */
+function classifyParticipants(
+  submissions: RawSubmissionLike[],
+  sessionDraftUserIds: Set<string>,
+  responseDraftUserIds: Set<string>,
+): { submittedUserIds: Set<string>; draftUserIds: Set<string> } {
+  // CANONICAL-BEGIN
+  const nonStarted = submissions.filter(s => s.status !== 'STARTED');
+  const submittedUserIds = new Set(nonStarted.map(s => s.userId as string).filter(Boolean));
+  const startedSubmissionUserIds = new Set(
+    submissions.filter(s => s.status === 'STARTED').map(s => s.userId as string).filter(Boolean)
+  );
+  const draftUserIds = new Set(
+    [...startedSubmissionUserIds, ...sessionDraftUserIds, ...responseDraftUserIds]
+      .filter(id => !submittedUserIds.has(id))
+  );
+  return { submittedUserIds, draftUserIds };
+  // CANONICAL-END
+}
+
 export const getAssessmentStats = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   await verifyAdmin(request.auth);
 
@@ -35,7 +70,8 @@ export const getAssessmentStats = onCall({ memory: "256MiB", timeoutSeconds: 60 
     db.collection("lesson_block_responses").where("assignmentId", "==", assignmentId).limit(500).get(),
   ]);
 
-  const submissions = submissionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Record<string, unknown>));
+  const submissions = submissionsSnap.docs.map(d => d.data() as RawSubmissionLike);
+  const nonStarted = submissions.filter(s => s.status !== "STARTED");
 
   const sessionDraftUserIds = new Set<string>(
     sessionsSnap.docs.map(d => d.data().userId as string).filter(Boolean)
@@ -51,27 +87,20 @@ export const getAssessmentStats = onCall({ memory: "256MiB", timeoutSeconds: 60 
       .filter(Boolean)
   );
 
-  const nonStarted = submissions.filter(s => s.status !== "STARTED");
-  const submittedUserIds = new Set(nonStarted.map(s => s.userId as string));
-  const startedSubmissionUserIds = new Set(
-    submissions.filter(s => s.status === "STARTED").map(s => s.userId as string)
-  );
+  const { submittedUserIds, draftUserIds } = classifyParticipants(submissions, sessionDraftUserIds, responseDraftUserIds);
 
-  const draftUserIds = new Set(
-    [...startedSubmissionUserIds, ...sessionDraftUserIds, ...responseDraftUserIds]
-      .filter(id => !submittedUserIds.has(id))
-  );
-
-  const submitted = submittedUserIds.size;
-  const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId as string)).size;
+  // INLINED from lib/assessmentClassifierShared.ts (countAssessmentBuckets).
+  const submitted = new Set(nonStarted.map(s => s.userId as string).filter(Boolean)).size;
+  const graded = new Set(nonStarted.filter(s => s.rubricGrade).map(s => s.userId as string).filter(Boolean)).size;
   const flagged = nonStarted.filter(s => s.status === "FLAGGED" && !s.flaggedAsAI).length;
   const aiFlagged = nonStarted.filter(s => s.flaggedAsAI).length;
   const draft = draftUserIds.size;
 
+  // INLINED from lib/assessmentClassifierShared.ts (computeNotStartedCountRaw):
+  // treat any draft user as enrolled so enrollment-data drift doesn't hide active students.
   let notStarted = 0;
   if (Array.isArray(enrolledStudentIds) && enrolledStudentIds.length > 0) {
-    // Treat any draft user as enrolled so enrollment-data drift doesn't hide active students.
-    const enrolledSet = new Set(enrolledStudentIds);
+    const enrolledSet = new Set<string>(enrolledStudentIds);
     draftUserIds.forEach(id => enrolledSet.add(id));
     notStarted = [...enrolledSet].filter(id => !submittedUserIds.has(id) && !draftUserIds.has(id)).length;
   }

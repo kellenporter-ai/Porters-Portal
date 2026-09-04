@@ -1,4 +1,5 @@
 import type { Submission, User, Assignment, ClassType } from '../types';
+import { classifyParticipantsRaw } from './assessmentClassifierShared';
 
 /**
  * Inputs to the assessment participant classifier. The classifier is pure —
@@ -21,18 +22,19 @@ export interface ClassifiedUserIds {
   draftUserIds: Set<string>;
 }
 
-/** Classify users into submitted vs draft sets based on the three draft sources. */
+/**
+ * Classify users into submitted vs draft sets based on the three draft sources.
+ * Delegates to the canonical shared module — lib/assessmentClassifierShared.ts —
+ * which functions/src/assessment-stats.ts inlines (functions rootDir excludes
+ * ../../lib). Drift guard: lib/__tests__/assessment-classifier.test.ts.
+ */
 export function classifyAssessmentParticipants(data: DraftSourceData): ClassifiedUserIds {
-  const nonStarted = data.submissions.filter(s => s.status !== 'STARTED');
-  const submittedUserIds = new Set(nonStarted.map(s => s.userId));
-  const startedSubmissionUserIds = new Set(
-    data.submissions.filter(s => s.status === 'STARTED').map(s => s.userId)
-  );
-  const allDraftIds = new Set(
-    [...startedSubmissionUserIds, ...data.sessionDraftUserIds, ...data.responseDraftUserIds]
-      .filter(id => !submittedUserIds.has(id))
-  );
-  return { submittedUserIds, draftUserIds: allDraftIds };
+  const raw = classifyParticipantsRaw({
+    submissions: data.submissions,
+    sessionDraftUserIds: data.sessionDraftUserIds,
+    responseDraftUserIds: data.responseDraftUserIds,
+  });
+  return { submittedUserIds: raw.submittedUserIds, draftUserIds: raw.draftUserIds };
 }
 
 /**
@@ -57,6 +59,9 @@ export function filterEnrolledInClass(
 /**
  * Compute the count of enrolled students who have neither submitted nor started.
  * Returns 0 if assignment.classType is missing (signals "cannot compute").
+ *
+ * Canonical rule lives in lib/assessmentClassifierShared.ts
+ * (computeNotStartedCountRaw) — inlined in functions/src/assessment-stats.ts.
  */
 export function computeNotStartedCount(
   enrolledInClass: User[],

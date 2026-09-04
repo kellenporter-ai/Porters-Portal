@@ -1,6 +1,6 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage, LessonBlock } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -321,8 +321,9 @@ export const dataService = {
 
   /** Assignment-scoped submissions — fetches submissions for a specific assignment, capped at 500. */
   subscribeToAssignmentSubmissions: (assignmentId: string, callback: (submissions: Submission[]) => void) => {
-    // Single-field where() avoids composite index requirement — sort client-side
-    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), limit(500));
+    // orderBy uses the existing (assignmentId, submittedAt) composite index
+    // (firestore.indexes.json) so limit(500) keeps the most recent 500.
+    const q = query(collection(db, 'submissions'), where('assignmentId', '==', assignmentId), orderBy('submittedAt', 'desc'), limit(500));
     return onSnapshot(q, (snapshot) => {
       const submissions = snapshot.docs.map(d => {
         const data = d.data();
@@ -369,8 +370,9 @@ export const dataService = {
    * the globally-capped live submissions cache — use this for the grading index
    * page so older assessments never silently show 0 submitted when newer
    * assessments fill the cache. Scoped by assignmentId with the same 500-doc
-   * cap as subscribeToAssignmentSubmissions, counted client-side to avoid new
-   * composite indexes. Never throws: logs and returns zeroed stats on error.
+   * cap as subscribeToAssignmentSubmissions, classified server-side by the
+   * getAssessmentStats Cloud Function. Never throws: logs and returns zeroed
+   * stats on error.
    */
   getAssessmentStats: async (
     assignmentId: string,
@@ -979,62 +981,20 @@ export const dataService = {
       };
   },
 
+  /**
+   * Save a teacher rubric grade. Thin wrapper around the saveRubricGrade Cloud
+   * Function — the server enforces the invariants (feedback-history cap of 20,
+   * AI-flag auto-clear with status/score restore, [0,100] score clamp) and
+   * writes the student notification atomically with the grade.
+   */
   saveRubricGrade: async (submissionId: string, rubricGrade: RubricGrade, studentUserId?: string, assessmentTitle?: string): Promise<{ clearedAIFlag: boolean }> => {
-    let clearedAIFlag = false;
     try {
-      // Check if submission is AI-flagged — grading implies teacher cleared it
-      const snap = await getDoc(doc(db, 'submissions', submissionId));
-      const prev = snap.data();
-      
-      // Preserve existing feedback history if present
-      const existingFeedbackHistory = rubricGrade.feedbackHistory || [];
-      
-      // If the old rubricGrade has teacherFeedback, prepend it to history
-      if (prev?.rubricGrade?.teacherFeedback) {
-        const oldEntry: FeedbackHistoryEntry = {
-          feedback: prev.rubricGrade.teacherFeedback,
-          timestamp: prev.rubricGrade.gradedAt || new Date().toISOString(),
-          gradedBy: prev.rubricGrade.gradedBy || '',
-        };
-        rubricGrade.feedbackHistory = [oldEntry, ...existingFeedbackHistory].slice(0, 20);
-      }
-      
-      const updatePayload: Record<string, unknown> = {
-        rubricGrade,
-        score: rubricGrade.overallPercentage,
-      };
-      if (prev?.flaggedAsAI) {
-        // Auto-clear AI flag: teacher grading is an implicit decision the work is legitimate
-        updatePayload.flaggedAsAI = false;
-        updatePayload.flaggedAsAIBy = '';
-        updatePayload.flaggedAsAIAt = '';
-        updatePayload.status = prev.preFlagStatus ?? 'NORMAL';
-        updatePayload['assessmentScore.percentage'] = rubricGrade.overallPercentage;
-        clearedAIFlag = true;
-      }
-      await updateDoc(doc(db, 'submissions', submissionId), updatePayload);
+      const result = await callSaveRubricGrade({ submissionId, rubricGrade, ...(studentUserId ? { studentUserId } : {}), ...(assessmentTitle ? { assessmentTitle } : {}) });
+      return result.data as { clearedAIFlag: boolean };
     } catch (error) {
       reportError(error, { method: 'saveRubricGrade' });
       throw error;
     }
-    // Notify the student that their assessment has been graded
-    if (studentUserId) {
-      const notificationType = clearedAIFlag ? 'AI_FLAGGED' : 'ASSESSMENT_GRADED';
-      const notificationTitle = clearedAIFlag ? 'AI Flag Cleared & Assessment Graded' : 'Assessment Graded';
-      const notificationMessage = clearedAIFlag
-        ? `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been reviewed. The AI flag has been removed and you received ${rubricGrade.overallPercentage}%.`
-        : `Your submission${assessmentTitle ? ` for "${assessmentTitle}"` : ''} has been graded. You received ${rubricGrade.overallPercentage}%.`;
-      addDoc(collection(db, 'notifications'), {
-        userId: studentUserId,
-        type: notificationType,
-        title: notificationTitle,
-        message: notificationMessage,
-        timestamp: new Date().toISOString(),
-        isRead: false,
-        meta: { submissionId, assessmentTitle, percentage: rubricGrade.overallPercentage },
-      }).catch(err => reportError(err, { method: 'saveRubricGrade:notification' }));
-    }
-    return { clearedAIFlag };
   },
 
   /**
@@ -1200,6 +1160,10 @@ export const dataService = {
         status: prev?.preFlagStatus ?? 'NORMAL',
         score: prev?.preFlagScore ?? 0,
         'assessmentScore.percentage': prev?.preFlagPercentage ?? 0,
+        // Phase 1f: tells onGradePosted this 0->positive transition is a flag
+        // restore, not a genuine grade — suppresses the spurious email. The
+        // trigger deletes the marker after reading it.
+        gradeRestoredFromFlag: true,
       });
     } catch (error) {
       reportError(error, { method: 'unflagSubmissionAsAI' });
