@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { ActiveCosmetics } from '../../types';
 import { AGENT_COSMETICS } from '../../lib/gamification';
 import { DEFAULT_CHARACTER_MODEL, getCharacterModel, ENABLE_3D_AVATAR } from '../../lib/characterModels';
+import { acquireEngineSlot, canAcquireEngine } from '../../lib/engineBudget';
 import { SKIN_TONES } from './OperativeAvatar';
 import OperativeAvatar from './OperativeAvatar';
 
@@ -177,6 +178,21 @@ const Avatar3D: React.FC<Avatar3DProps> = (props) => {
     if (!ENABLE_3D_AVATAR) {
         return <OperativeAvatar equipped={props.equipped || {}} appearance={props.appearance} activeCosmetics={props.activeCosmetics} evolutionLevel={props.evolutionLevel} />;
     }
+    return <Avatar3DBudgeted {...props} />;
+};
+
+/**
+ * Engine-budget gate. Browsers cap WebGL contexts at 8-16; every Avatar3D
+ * instance spins up its own Babylon Engine. When the module-level budget is
+ * exhausted, mount as the 2D SVG fallback (no WebGL) instead of potentially
+ * breaking every canvas on the page. Counts compact thumbnails too — compact
+ * mode still creates a full engine today.
+ */
+const Avatar3DBudgeted: React.FC<Avatar3DProps> = (props) => {
+    const [slotAvailable] = useState(() => canAcquireEngine());
+    if (!slotAvailable) {
+        return <OperativeAvatar equipped={props.equipped || {}} appearance={props.appearance} activeCosmetics={props.activeCosmetics} evolutionLevel={props.evolutionLevel} />;
+    }
     return <Avatar3DInner {...props} />;
 };
 
@@ -223,6 +239,40 @@ const Avatar3DInner: React.FC<Avatar3DProps> = ({
     useEffect(() => {
         mountedRef.current = true;
         let disposed = false;
+        // Claim a slot in the shared engine budget (compact mode included).
+        // Must be disposed on every teardown path so the budget recovers.
+        const slot = acquireEngineSlot();
+        if (!slot) {
+            if (mountedRef.current && !disposed) {
+                setError(true);
+                setLoading(false);
+            }
+            return;
+        }
+
+        // Pause rendering when the canvas is off-screen or the tab is hidden.
+        // Pausing skips scene.render() (rAF continues at idle cost) rather
+        // than stopping/starting the render loop, avoiding Engine restart
+        // races on low-end hardware.
+        let visible = true;
+        let pageVisible = !document.hidden;
+        const tryRender = () => {
+            if (visible && pageVisible && sceneRef.current && !sceneRef.current.isDisposed) {
+                sceneRef.current.render();
+            }
+        };
+        const onVisibility = () => {
+            pageVisible = !document.hidden;
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        let observer: IntersectionObserver | null = null;
+        const canvasEl = canvasRef.current;
+        if (canvasEl && typeof IntersectionObserver !== 'undefined') {
+            observer = new IntersectionObserver(entries => {
+                visible = entries[entries.length - 1]?.isIntersecting ?? true;
+            });
+            observer.observe(canvasEl);
+        }
 
         const setup = async () => {
             const canvas = canvasRef.current;
@@ -431,11 +481,38 @@ const Avatar3DInner: React.FC<Avatar3DProps> = ({
                     if (!engine.isDisposed) engine.resize();
                 });
 
-                // Render loop
+                // Render loop — FPS-adaptive hardware scaling (project pattern
+                // from .claude/references/3d-graphics-reference.md). When FPS
+                // drops below target, lower internal render resolution; when it
+                // recovers, step back up. Chromebook budget: max 2.0x scaling.
+                const TARGET_FPS = 30;
+                const MIN_SCALING = 1.0;
+                const MAX_SCALING = 2.0;
+                const SCALING_STEP = 0.1;
+                let scalingLevel = 1.0;
+                let framesBelow = 0;
+                let framesHealthy = 0;
                 engine.runRenderLoop(() => {
-                    if (scene && !scene.isDisposed) {
-                        scene.render();
+                    if (!scene || scene.isDisposed) return;
+                    const fps = engine.getFps();
+                    if (fps < TARGET_FPS) {
+                        framesBelow += 1;
+                        framesHealthy = 0;
+                        if (framesBelow >= 10 && scalingLevel < MAX_SCALING) {
+                            scalingLevel = Math.min(MAX_SCALING, scalingLevel + SCALING_STEP);
+                            engine.setHardwareScalingLevel(scalingLevel);
+                            framesBelow = 0;
+                        }
+                    } else {
+                        framesHealthy += 1;
+                        framesBelow = 0;
+                        if (framesHealthy >= 120 && scalingLevel > MIN_SCALING) {
+                            scalingLevel = Math.max(MIN_SCALING, scalingLevel - SCALING_STEP);
+                            engine.setHardwareScalingLevel(scalingLevel);
+                            framesHealthy = 0;
+                        }
                     }
+                    tryRender();
                 });
 
                 // Handle resize
@@ -464,6 +541,10 @@ const Avatar3DInner: React.FC<Avatar3DProps> = ({
             mountedRef.current = false;
             cleanupRef.current?.();
             cleanupRef.current = null;
+            document.removeEventListener('visibilitychange', onVisibility);
+            observer?.disconnect();
+            observer = null;
+            slot.dispose();
             if (sceneRef.current && !sceneRef.current.isDisposed) {
                 sceneRef.current.dispose();
                 sceneRef.current = null;
