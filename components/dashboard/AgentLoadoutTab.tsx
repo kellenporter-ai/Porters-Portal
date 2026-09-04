@@ -8,6 +8,7 @@ import { getAssetColors, getDisenchantValue, FLUX_COSTS, getUnsocketCost, derive
 import { SPECIALIZATIONS, SKILL_TREES_V2, SPEC_COLORS_V2 } from '../../lib/specializations';
 import { getClassProfile } from '../../lib/classProfile';
 import { sfx } from '../../lib/sfx';
+import { useT, useInterpolate } from '../../lib/i18n';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
 import OperativeAvatar from './OperativeAvatar';
@@ -47,6 +48,8 @@ const ALL_EQUIP_SLOTS: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEE
 const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, level }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
+  const t = useT();
+  const interpolate = useInterpolate();
   const [inspectItem, setInspectItem] = useState<RPGItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -95,12 +98,12 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       }
       if (count > 0) {
         sfx.equip();
-        toast.success(`Auto-equipped ${count} item${count > 1 ? 's' : ''}.`);
+        toast.success(interpolate('loadout.toastAutoEquipped', { count, s: count > 1 ? 's' : '' }));
       } else {
-        toast.info('No upgrades available.');
+        toast.info(t('loadout.toastNoUpgrades'));
       }
     } catch {
-      toast.error('Auto-equip failed.');
+      toast.error(t('loadout.toastAutoEquipFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -126,9 +129,9 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       await dataService.equipItem(user.id, item, activeClass);
       setInspectItem(null);
       sfx.equip();
-      toast.success(`${item.name} equipped.`);
+      toast.success(interpolate('loadout.toastEquipped', { name: item.name }));
     } catch {
-      toast.error('Could not equip this item. You may not meet the requirements.');
+      toast.error(t('loadout.toastEquipFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -139,9 +142,9 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     try {
       await dataService.unequipItem(user.id, slot, activeClass);
       setInspectItem(null);
-      toast.success('Item unequipped.');
+      toast.success(t('loadout.toastUnequipped'));
     } catch {
-      toast.error('Could not unequip this item. Try again.');
+      toast.error(t('loadout.toastUnequipFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -151,19 +154,19 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     if (!inspectItem) return;
     const isEquipped = Object.values(equipped).some(e => e && (e as RPGItem).id === inspectItem.id);
     if (isEquipped) {
-      toast.error('Unequip this item before salvaging.');
+      toast.error(t('loadout.toastUnequipFirst'));
       return;
     }
     const val = getDisenchantValue(inspectItem);
-    if (await confirm({ message: `Salvage ${inspectItem.name} for ${val} Cyber-Flux? This item will be destroyed.`, confirmLabel: "Salvage" })) {
+    if (await confirm({ message: interpolate('loadout.confirmSalvage', { name: inspectItem.name, val }), confirmLabel: t('loadout.confirmSalvageLabel') })) {
       setIsProcessing(true);
       try {
         await dataService.disenchantItem(user.id, inspectItem, activeClass);
         setInspectItem(null);
         sfx.salvage();
-        toast.success(`Salvaged for ${val} Cyber-Flux.`);
+        toast.success(interpolate('loadout.toastSalvaged', { val }));
       } catch {
-        toast.error('Could not salvage this item. It may be currently equipped.');
+        toast.error(t('loadout.toastSalvageFailed'));
       } finally {
         setIsProcessing(false);
       }
@@ -173,16 +176,17 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
   const handleCraft = async (action: 'RECALIBRATE' | 'REFORGE' | 'OPTIMIZE') => {
     if (!inspectItem) return;
     const cost = FLUX_COSTS[action];
-    if (currency < cost) return toast.error('Insufficient Cyber-Flux.');
+    if (currency < cost) return toast.error(t('loadout.toastInsufficientFlux'));
     setIsProcessing(true);
     try {
       await dataService.craftItem(user.id, inspectItem, action, activeClass);
       setInspectItem(null);
       sfx.craft();
-      toast.success(`${action.charAt(0) + action.slice(1).toLowerCase()} complete.`);
+      const actionKey = action === 'RECALIBRATE' ? 'loadout.craftRecalibrate' : action === 'REFORGE' ? 'loadout.craftReforge' : 'loadout.craftOptimize';
+      toast.success(interpolate('loadout.toastCraftComplete', { action: t(actionKey) }));
     } catch (e: any) {
       const msg = e?.message || e?.code || 'Unknown error';
-      toast.error(`Fabrication failed: ${msg}`);
+      toast.error(interpolate('loadout.toastCraftFailed', { msg }));
     } finally {
       setIsProcessing(false);
     }
@@ -190,16 +194,16 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
 
   const handleAddSocket = async () => {
     if (!inspectItem || isProcessing) return;
-    if (currency < FLUX_COSTS.SOCKET) return toast.error('Insufficient Cyber-Flux.');
-    if ((inspectItem.sockets || 0) >= 3) return toast.error('Maximum sockets reached.');
+    if (currency < FLUX_COSTS.SOCKET) return toast.error(t('loadout.toastInsufficientFlux'));
+    if ((inspectItem.sockets || 0) >= 3) return toast.error(t('loadout.toastMaxSockets'));
     setIsProcessing(true);
     try {
       const result = await dataService.addSocket(inspectItem.id, activeClass);
       setInspectItem(result.item);
       sfx.craft();
-      toast.success('Socket added!');
+      toast.success(t('loadout.toastSocketAdded'));
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to add socket.');
+      toast.error(e?.message || t('loadout.toastSocketAddFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -207,7 +211,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
 
   const handleSocketGem = async (gemId: string) => {
     if (!inspectItem || isProcessing) return;
-    if (currency < FLUX_COSTS.ENCHANT) return toast.error('Insufficient Cyber-Flux.');
+    if (currency < FLUX_COSTS.ENCHANT) return toast.error(t('loadout.toastInsufficientFlux'));
     setIsProcessing(true);
     try {
       const result = await dataService.socketGem(inspectItem.id, gemId, activeClass);
@@ -215,12 +219,12 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       sfx.craft();
       if (result.runewordActivated) {
         sfx.levelUp();
-        toast.success(`RUNEWORD ACTIVATED: ${result.runewordActivated.name}!`);
+        toast.success(interpolate('loadout.toastRuneword', { name: result.runewordActivated.name }));
       } else {
-        toast.success('Gem socketed!');
+        toast.success(t('loadout.toastGemSocketed'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to socket gem.');
+      toast.error(e?.message || t('loadout.toastGemSocketFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -231,15 +235,15 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
     const gem = inspectItem.gems?.[gemIndex];
     if (!gem) return;
     const cost = getUnsocketCost(inspectItem.rarity, gem.tier, inspectItem.unsocketCount || 0);
-    if (currency < cost) return toast.error(`Insufficient Cyber-Flux. Need ${cost}.`);
+    if (currency < cost) return toast.error(interpolate('loadout.toastNeedFlux', { cost }));
     setIsProcessing(true);
     try {
       const result = await dataService.unsocketGem(inspectItem.id, gemIndex, activeClass);
       setInspectItem(result.item);
       sfx.craft();
-      toast.success(`Gem removed! -${result.cost} Flux`);
+      toast.success(interpolate('loadout.toastGemRemoved', { cost: result.cost }));
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to unsocket gem.');
+      toast.error(e?.message || t('loadout.toastGemRemoveFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -248,10 +252,10 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
   const handleCustomizeSave = async (appearance: { hue: number; suitHue: number; bodyType: 'A' | 'B' | 'C'; skinTone: number; hairStyle: number; hairColor: number }) => {
     try {
       await dataService.updateUserAppearance(user.id, appearance, activeClass);
-      toast.success('Profile updated!');
+      toast.success(t('loadout.toastProfileUpdated'));
       setShowCustomize(false);
     } catch {
-      toast.error('Could not save appearance. Check your connection.');
+      toast.error(t('loadout.toastAppearanceFailed'));
     }
   };
 
@@ -341,9 +345,9 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
           ) : (
             <>
               <span className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">{
-                { HEAD: 'Head', HANDS: 'Hands', RING1: 'Ring', RING2: 'Ring', AMULET: 'Amulet', CHEST: 'Chest', BELT: 'Belt', FEET: 'Feet', WEAPON1: 'Weapon', WEAPON2: 'Off-Hand' }[slot] || slot.slice(0, 4)
+                { HEAD: t('loadout.slotHead'), HANDS: t('loadout.slotHands'), RING1: t('loadout.slotRing'), RING2: t('loadout.slotRing'), AMULET: t('loadout.slotAmulet'), CHEST: t('loadout.slotChest'), BELT: t('loadout.slotBelt'), FEET: t('loadout.slotFeet'), WEAPON1: t('loadout.slotWeapon'), WEAPON2: t('loadout.slotOffhand') }[slot] || slot.slice(0, 4)
               }</span>
-              <span className="text-[9px] text-[var(--text-muted)] mt-0.5 flex items-center gap-0.5"><Plus className="w-2.5 h-2.5" /> Empty</span>
+              <span className="text-[9px] text-[var(--text-muted)] mt-0.5 flex items-center gap-0.5"><Plus className="w-2.5 h-2.5" /> {t('loadout.empty')}</span>
             </>
           )}
         </div>
@@ -389,7 +393,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                       : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
                 >
-                  Avatar
+                  {t('loadout.tabAvatar')}
                 </button>
                 <button
                   type="button"
@@ -400,7 +404,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                       : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
                 >
-                  Loadout
+                  {t('loadout.tabLoadout')}
                 </button>
                 <button
                   type="button"
@@ -412,7 +416,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   }`}
                 >
                   <Diamond className="w-3 h-3 inline-block mr-1 -mt-px" />
-                  Gem Codex
+                  {t('loadout.tabGems')}
                 </button>
                 <button
                   type="button"
@@ -423,7 +427,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                       : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
                 >
-                  Mastery
+                  {t('loadout.tabMastery')}
                 </button>
               </div>
 
@@ -488,7 +492,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   className="absolute bottom-6 bg-purple-600/20 hover:bg-purple-600 text-purple-600 dark:text-purple-400 hover:text-white px-4 py-2 rounded-xl text-[11.5px] font-black uppercase tracking-[0.2em] border border-purple-500/30 transition shadow-lg z-[40] flex items-center gap-2"
                 >
                   <UserIcon className="w-3.5 h-3.5" />
-                  Edit DNA Profile
+                  {t('loadout.editDna')}
                 </button>
               )}
             </div>
@@ -533,7 +537,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   </div>
                   {/* Gear Score */}
                   <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30">
-                    <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{gearScore} GS</span>
+                    <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{interpolate('loadout.gearScore', { score: gearScore })}</span>
                   </div>
                   {/* Specialization Badge */}
                   {(() => {
@@ -555,51 +559,51 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Tech</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.statTech')}</span>
                     <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{playerStats.tech}</span>
                     <StatBar value={playerStats.tech} color="blue" />
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
-                      <span className="font-bold text-blue-600 dark:text-blue-400">Attack Power</span><br/>Increases damage dealt to bosses.
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{t('loadout.techTooltipTitle')}</span><br/>{t('loadout.techTooltipDesc')}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Focus</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.statFocus')}</span>
                     <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">{playerStats.focus}</span>
                     <StatBar value={playerStats.focus} color="green" />
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-48 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
-                      <span className="font-bold text-green-600 dark:text-green-400">Critical Strikes</span><br/>Crit chance: {(combat.critChance * 100).toFixed(0)}% · Crit damage: {combat.critMultiplier.toFixed(2)}x
+                      <span className="font-bold text-green-600 dark:text-green-400">{t('loadout.focusTooltipTitle')}</span><br/>{interpolate('loadout.focusTooltipDesc', { pct: (combat.critChance * 100).toFixed(0), mult: combat.critMultiplier.toFixed(2) })}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Analysis</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.statAnalysis')}</span>
                     <span className="text-[11px] text-yellow-700 dark:text-yellow-400 font-bold">{playerStats.analysis}</span>
                     <StatBar value={playerStats.analysis} color="yellow" />
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
-                      <span className="font-bold text-yellow-700 dark:text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
+                      <span className="font-bold text-yellow-700 dark:text-yellow-400">{t('loadout.armor')}</span><br/>{interpolate('loadout.armorTooltipDesc', { pct: combat.armorPercent.toFixed(0) })}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Charisma</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.statCharisma')}</span>
                     <span className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">{playerStats.charisma}</span>
                     <StatBar value={playerStats.charisma} color="purple" />
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
-                      <span className="font-bold text-purple-600 dark:text-purple-400">Health</span><br/>Max HP: {combat.maxHp}
+                      <span className="font-bold text-purple-600 dark:text-purple-400">{t('loadout.hpTooltipTitle')}</span><br/>{interpolate('loadout.hpTooltipDesc', { hp: combat.maxHp })}
                     </div>
                   </div>
                   <div className="w-px h-4 bg-[var(--border)] hidden sm:block" />
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">HP</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.hp')}</span>
                     <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">{combat.maxHp}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Armor</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.armor')}</span>
                     <span className="text-[11px] text-yellow-700 dark:text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11.5px] text-[var(--text-tertiary)]">Crit</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('loadout.crit')}</span>
                     <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">{(combat.critChance * 100).toFixed(0)}%</span>
                   </div>
                 </div>
@@ -667,11 +671,11 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
 // GEMS PANEL
 // ============================================================
 
-const GEM_LEGEND: { name: string; stat: string; desc: string; color: string }[] = [
-  { name: 'Ruby', stat: 'Tech', desc: 'Attack power', color: '#ef4444' },
-  { name: 'Emerald', stat: 'Focus', desc: 'Crit chance & damage', color: '#22c55e' },
-  { name: 'Sapphire', stat: 'Analysis', desc: 'Armor rating', color: '#3b82f6' },
-  { name: 'Amethyst', stat: 'Charisma', desc: 'Max HP', color: '#a855f7' },
+const GEM_LEGEND: { name: string; stat: string; descKey: string; color: string }[] = [
+  { name: 'Ruby', stat: 'Tech', descKey: 'loadout.gemDescTech', color: '#ef4444' },
+  { name: 'Emerald', stat: 'Focus', descKey: 'loadout.gemDescFocus', color: '#22c55e' },
+  { name: 'Sapphire', stat: 'Analysis', descKey: 'loadout.gemDescAnalysis', color: '#3b82f6' },
+  { name: 'Amethyst', stat: 'Charisma', descKey: 'loadout.gemDescCharisma', color: '#a855f7' },
 ];
 
 interface GemsPanelProps {
@@ -681,6 +685,8 @@ interface GemsPanelProps {
 
 const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
   const [codexOpen, setCodexOpen] = useState(false);
+  const t = useT();
+  const interpolate = useInterpolate();
 
   // Active runeword IDs from equipped items
   const activeRunewordIds = useMemo(() => {
@@ -739,7 +745,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
       <div className="flex-1 w-full relative z-10 flex flex-col items-center justify-center gap-3 text-center px-6">
         <Diamond className="w-10 h-10 text-[var(--text-muted)]" />
         <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
-          No gems yet. Earn gems from fortune wheel spins, boss victories, and daily login rewards.
+          {t('loadout.gemsEmpty')}
         </p>
       </div>
     );
@@ -756,7 +762,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
             <span className="text-[11.5px] text-[var(--text-tertiary)] mx-0.5">&rarr;</span>
             <span className="text-[11.5px] text-[var(--text-tertiary)]">{g.stat}</span>
             <span className="text-[11.5px] text-[var(--text-tertiary)] mx-0.5">&mdash;</span>
-            <span className="text-[11.5px] text-[var(--text-tertiary)]">{g.desc}</span>
+            <span className="text-[11.5px] text-[var(--text-tertiary)]">{t(g.descKey)}</span>
           </div>
         ))}
       </div>
@@ -774,22 +780,22 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}60` }} />
                 <span className="text-[11px] font-bold" style={{ color }}>{baseName}</span>
-                <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{gems.length} owned</span>
+                <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{interpolate('loadout.gemsOwned', { count: gems.length })}</span>
               </div>
               {Object.keys(tierCounts).length > 1 && (
                 <div className="flex gap-2 mb-1.5">
                   {Object.entries(tierCounts).sort(([a],[b]) => Number(a) - Number(b)).map(([tier, count]) => (
-                    <span key={tier} className="text-[11.5px] text-[var(--text-tertiary)]">T{tier}: {count}</span>
+                    <span key={tier} className="text-[11.5px] text-[var(--text-tertiary)]">{interpolate('loadout.gemTierCount', { tier, count })}</span>
                   ))}
                 </div>
               )}
               {/* Gem upgrade hints */}
               {Object.entries(tierCounts).filter(([, count]) => count >= 3).map(([tier]) => (
                 <div key={`upgrade-${tier}`} className="text-[10px] text-[var(--text-muted)] mb-1.5 flex items-center gap-1">
-                  <span className="px-1 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]">{tierCounts[Number(tier)]}x T{tier}</span>
+                  <span className="px-1 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-tertiary)]">{interpolate('loadout.gemUpgradeFrom', { count: tierCounts[Number(tier)], tier })}</span>
                   <span>&rarr;</span>
-                  <span className="px-1 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] font-bold">1x T{Number(tier) + 1}</span>
-                  <span className="italic">(future feature)</span>
+                  <span className="px-1 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] font-bold">{interpolate('loadout.gemUpgradeTo', { tier: Number(tier) + 1 })}</span>
+                  <span className="italic">{t('loadout.futureFeature')}</span>
                 </div>
               ))}
               <div className="flex flex-wrap gap-1.5">
@@ -797,7 +803,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                   <div key={gem.id} className="flex items-center gap-1 bg-black/30 rounded-md px-2 py-1 border border-[var(--border)]">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: gem.color }} />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">{gem.name}</span>
-                    <span className="text-[11.5px] font-bold" style={{ color: gem.color }}>+{gem.value} {gem.stat.slice(0, 3).toUpperCase()}</span>
+                    <span className="text-[11.5px] font-bold" style={{ color: gem.color }}>{interpolate('loadout.gemStatBonus', { value: gem.value, stat: gem.stat.slice(0, 3).toUpperCase() })}</span>
                   </div>
                 ))}
               </div>
@@ -809,14 +815,14 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
       {/* Runeword Progress */}
       {runewordProgress.length > 0 && (
         <div className="mb-3 bg-[var(--surface-glass)] rounded-lg px-3 py-2 border border-[var(--border)]">
-          <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">In Progress</div>
+          <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">{t('loadout.runewordInProgress')}</div>
           {runewordProgress.map((rp, i) => (
             <div key={i} className="flex items-center gap-2 mb-1.5 last:mb-0">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: rp.color, boxShadow: `0 0 6px ${rp.color}60` }} />
               <span className="text-[11.5px] text-[var(--text-secondary)] truncate">{rp.itemName}</span>
               <span className="text-[11.5px] text-[var(--text-tertiary)] mx-0.5">&rarr;</span>
               <span className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400">{rp.runewordName}</span>
-              <span className="text-[11px] text-[var(--text-muted)] ml-auto">{rp.current}/{rp.required}</span>
+              <span className="text-[11px] text-[var(--text-muted)] ml-auto">{interpolate('loadout.runewordProgress', { current: rp.current, required: rp.required })}</span>
               <div className="w-16 h-1.5 rounded-full bg-[var(--surface-glass-heavy)] overflow-hidden">
                 <div className="h-full rounded-full bg-amber-500/60" style={{ width: `${(rp.current / rp.required) * 100}%` }} />
               </div>
@@ -832,7 +838,7 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
           onClick={() => setCodexOpen(!codexOpen)}
           className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider hover:text-[var(--text-secondary)] transition-colors"
         >
-          Runeword Codex
+          {t('loadout.runewordCodex')}
           {codexOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
         {codexOpen && (
@@ -852,9 +858,9 @@ const GemsPanel: React.FC<GemsPanelProps> = ({ gemsInventory, equipped }) => {
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-[11px] font-bold ${isActive ? 'text-amber-300' : 'text-[var(--text-secondary)]'}`}>{rw.name}</span>
                     {isActive && (
-                      <span className="text-[8px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">ACTIVE</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">{t('loadout.runewordActive')}</span>
                     )}
-                    <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{rw.requiredSockets}s</span>
+                    <span className="text-[11.5px] text-[var(--text-tertiary)] ml-auto">{interpolate('loadout.runewordSockets', { count: rw.requiredSockets })}</span>
                   </div>
                   {/* Pattern as colored dots */}
                   <div className="flex items-center gap-1 mb-1">
@@ -918,6 +924,8 @@ interface InventoryGridProps {
 }
 
 const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, draggedItem, onInspect, selectedItem, onSelectItem, onAutoEquip, isProcessing }) => {
+  const t = useT();
+  const interpolate = useInterpolate();
   const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
   const isDroppingEquipped = draggedItem && Object.values(equipped).some(e => (e as RPGItem | null)?.id === draggedItem.id);
   const [activeTab, setActiveTab] = useState<GearTab>('ALL');
@@ -936,7 +944,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
       {/* Header row: title + actions */}
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">
-          Gear Storage ({filteredInventory.length})
+          {interpolate('loadout.gearStorage', { count: filteredInventory.length })}
         </h4>
         <div className="flex items-center gap-2">
           <button
@@ -945,10 +953,10 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
             disabled={isProcessing || inventory.length === 0}
             className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition disabled:opacity-40"
           >
-            Auto-Equip Best
+            {t('loadout.autoEquipBest')}
           </button>
           <span className="text-[11.5px] text-[var(--text-secondary)] flex items-center gap-1">
-            <GripVertical className="w-3 h-3" /> Drag to equip
+            <GripVertical className="w-3 h-3" /> {t('loadout.dragToEquip')}
           </span>
         </div>
       </div>
@@ -965,7 +973,7 @@ const InventoryGrid: React.FC<InventoryGridProps> = ({ inventory, equipped, drag
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] border border-transparent'
             }`}
           >
-            {tab === 'ALL' ? 'All' : tab === 'ARMOR' ? 'Armor' : tab === 'HANDS' ? 'Hands' : tab === 'JEWELRY' ? 'Jewelry' : 'Weapons'}
+            {tab === 'ALL' ? t('loadout.filterAll') : tab === 'ARMOR' ? t('loadout.filterArmor') : tab === 'HANDS' ? t('loadout.filterHands') : tab === 'JEWELRY' ? t('loadout.filterJewelry') : t('loadout.filterWeapons')}
           </button>
         ))}
       </div>
@@ -1013,6 +1021,7 @@ interface DraggableInventoryItemProps {
 }
 
 const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, equipped, onInspect, selectedItem, onSelectItem }) => {
+  const t = useT();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
   const isEquipped = Object.values(equipped).some((e) => (e as RPGItem | null)?.id === item.id);
   const isSelected = selectedItem?.id === item.id;
@@ -1042,7 +1051,7 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
       {!isDragging && (
         <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
           <div className={`text-xs font-bold ${colors.text}`}>{item.name}</div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ` · ${t('loadout.equippedTag')}` : ''}</div>
           <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--surface-raised)] border-b border-r border-[var(--border)] rotate-45"></div>
         </div>
@@ -1061,6 +1070,8 @@ interface MasteryPanelProps {
 }
 
 const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
+  const t = useT();
+  const interpolate = useInterpolate();
   const specialization = user.gamification?.specialization as SpecializationId | undefined;
   const topicMastery = normalizeTopicMastery(user.gamification?.topicMastery);
   const unlockedSkills = Array.isArray(user.gamification?.unlockedSkills) ? user.gamification.unlockedSkills : [];
@@ -1102,14 +1113,14 @@ const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
               ))}
             </div>
             <div className="mt-2 text-[11px] text-[var(--text-muted)]">
-              {unlockedSkills.length} skill{unlockedSkills.length !== 1 ? 's' : ''} unlocked
+              {interpolate('loadout.skillsUnlocked', { count: unlockedSkills.length, s: unlockedSkills.length !== 1 ? 's' : '', s2: unlockedSkills.length !== 1 ? 's' : '' })}
             </div>
           </>
         ) : (
           <div className="text-center py-4">
-            <p className="text-sm font-bold text-[var(--text-primary)]">No Specialization</p>
+            <p className="text-sm font-bold text-[var(--text-primary)]">{t('loadout.noSpecialization')}</p>
             <p className="text-[11px] text-[var(--text-tertiary)] mt-1">
-              Visit the Skill Tree tab to choose a combat specialization.
+              {t('loadout.noSpecializationDesc')}
             </p>
           </div>
         )}
@@ -1118,22 +1129,22 @@ const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
       {/* Topic Mastery Summary */}
       <div className="p-3 rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] mb-3">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-bold text-[var(--text-primary)]">Topic Mastery</h4>
-          <span className="text-[11px] text-[var(--text-muted)]">{totalTopics} topics</span>
+          <h4 className="text-sm font-bold text-[var(--text-primary)]">{t('loadout.topicMastery')}</h4>
+          <span className="text-[11px] text-[var(--text-muted)]">{interpolate('loadout.topicsCount', { count: totalTopics })}</span>
         </div>
         {totalTopics > 0 ? (
           <>
             <div className="flex items-center gap-4 mb-3">
               <div className="flex-1">
-                <p className="text-[11px] text-[var(--text-muted)]">Avg Accuracy</p>
+                <p className="text-[11px] text-[var(--text-muted)]">{t('loadout.avgAccuracy')}</p>
                 <p className="text-lg font-bold text-[var(--text-primary)]">{(avgAccuracy * 100).toFixed(0)}%</p>
               </div>
               <div className="flex-1">
-                <p className="text-[11px] text-[var(--text-muted)]">Max Mastery</p>
+                <p className="text-[11px] text-[var(--text-muted)]">{t('loadout.maxMastery')}</p>
                 <p className="text-lg font-bold text-[var(--text-primary)]">{maxMasteryTopics}</p>
               </div>
               <div className="flex-1">
-                <p className="text-[11px] text-[var(--text-muted)]">Questions</p>
+                <p className="text-[11px] text-[var(--text-muted)]">{t('loadout.questions')}</p>
                 <p className="text-lg font-bold text-[var(--text-primary)]">
                   {topicMastery.reduce((s, t) => s + t.questionsAnswered, 0)}
                 </p>
@@ -1149,7 +1160,7 @@ const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-[11.5px] font-semibold text-[var(--text-secondary)] truncate">{topic.topicId}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-[var(--text-muted)]">Lv.{topic.level}</span>
+                        <span className="text-[11px] text-[var(--text-muted)]">{interpolate('loadout.levelAbbrev', { level: topic.level })}</span>
                         <span className="text-[11px] font-bold text-[var(--text-primary)]">{(topic.currentAccuracy * 100).toFixed(0)}%</span>
                       </div>
                     </div>
@@ -1168,13 +1179,13 @@ const MasteryPanel: React.FC<MasteryPanelProps> = ({ user, level }) => {
             </div>
             {topicMastery.length > 8 && (
               <p className="text-[11px] text-[var(--text-muted)] mt-2 text-center">
-                +{topicMastery.length - 8} more topics
+                {interpolate('loadout.moreTopics', { count: topicMastery.length - 8 })}
               </p>
             )}
           </>
         ) : (
           <p className="text-[11.5px] text-[var(--text-tertiary)] text-center py-4">
-            Complete boss fights and quizzes to build topic mastery. Mastery improves your damage and unlocks skill tree bonuses.
+            {t('loadout.masteryEmpty')}
           </p>
         )}
       </div>

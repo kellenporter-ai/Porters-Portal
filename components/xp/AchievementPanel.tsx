@@ -4,6 +4,7 @@ import { ACHIEVEMENTS, getVisibleAchievements } from '../../lib/achievements';
 import { AchievementCategory } from '../../types';
 import { Lock, Trophy } from 'lucide-react';
 import { MEDALS } from '../../lib/kenneyAssets';
+import { useT, useInterpolate } from '../../lib/i18n';
 
 /** Map achievement category to a medal number (1-9) for visual variety */
 const CATEGORY_MEDAL: Record<AchievementCategory, number> = {
@@ -20,16 +21,18 @@ interface AchievementPanelProps {
   achievementProgress: { [id: string]: number };
 }
 
-const CATEGORY_LABELS: Record<AchievementCategory, { label: string; icon: string }> = {
-  PROGRESSION: { label: 'Progression', icon: '📈' },
-  COMBAT: { label: 'Missions', icon: '⚔️' },
-  SOCIAL: { label: 'Social', icon: '👥' },
-  COLLECTION: { label: 'Collection', icon: '📦' },
-  DEDICATION: { label: 'Dedication', icon: '🔥' },
-  MASTERY: { label: 'Mastery', icon: '🏆' },
+const CATEGORY_LABELS: Record<AchievementCategory, { labelKey: string; icon: string }> = {
+  PROGRESSION: { labelKey: 'badges.catProgression', icon: '📈' },
+  COMBAT: { labelKey: 'badges.catCombat', icon: '⚔️' },
+  SOCIAL: { labelKey: 'badges.catSocial', icon: '👥' },
+  COLLECTION: { labelKey: 'badges.catCollection', icon: '📦' },
+  DEDICATION: { labelKey: 'badges.catDedication', icon: '🔥' },
+  MASTERY: { labelKey: 'badges.catMastery', icon: '🏆' },
 };
 
 const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievements, achievementProgress }) => {
+  const t = useT();
+  const interpolate = useInterpolate();
   const visible = useMemo(() => getVisibleAchievements(unlockedAchievements), [unlockedAchievements]);
   const categories = ['PROGRESSION', 'COMBAT', 'DEDICATION', 'COLLECTION', 'MASTERY', 'SOCIAL'] as AchievementCategory[];
   const totalUnlocked = unlockedAchievements.length;
@@ -39,10 +42,10 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" /> Achievements
+          <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" /> {t('badges.title')}
         </h3>
         <span className="text-sm text-[var(--text-tertiary)]">
-          {totalUnlocked}/{totalAchievements} unlocked
+          {interpolate('badges.unlockedCount', { unlocked: totalUnlocked, total: totalAchievements })}
         </span>
       </div>
 
@@ -62,7 +65,7 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
         return (
           <div key={category}>
             <h4 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
-              <span>{catInfo.icon}</span> {catInfo.label}
+              <span>{catInfo.icon}</span> {t(catInfo.labelKey)}
             </h4>
             <div className="grid grid-cols-1 gap-2">
               {catAchievements.map(achievement => {
@@ -107,16 +110,16 @@ const AchievementPanel: React.FC<AchievementPanelProps> = ({ unlockedAchievement
                             />
                           </div>
                           <span className="text-[11.5px] text-[var(--text-muted)] font-mono">
-                            {progress}/{achievement.condition.target}
+                            {interpolate('badges.progress', { current: progress, target: achievement.condition.target })}
                           </span>
                         </div>
                       )}
                     </div>
                     {isUnlocked && (
                       <div className="text-right shrink-0">
-                        <div className="text-[11.5px] text-yellow-500 font-bold">+{achievement.xpReward} XP</div>
+                        <div className="text-[11.5px] text-yellow-500 font-bold">{interpolate('badges.xpReward', { xp: achievement.xpReward })}</div>
                         {achievement.fluxReward && (
-                          <div className="text-[11.5px] text-cyan-700 dark:text-cyan-400 font-bold">+{achievement.fluxReward} Flux</div>
+                          <div className="text-[11.5px] text-cyan-700 dark:text-cyan-400 font-bold">{interpolate('badges.fluxReward', { flux: achievement.fluxReward })}</div>
                         )}
                       </div>
                     )}
