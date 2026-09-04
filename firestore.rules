@@ -138,11 +138,17 @@ service cloud.firestore {
                 'classType', 'section', 'lessonId', 'lessonTitle',
                 'feedbackReadAt', 'feedbackReviewedAt', 'studentNotes']) &&
             // Prevent score/status forgery on non-assessment updates
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['score', 'status']))
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['score', 'status']) &&
+            // F2: cap studentNotes map at 4 KiB total to bound doc growth
+            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['studentNotes']) ||
+              request.resource.data.studentNotes.size() <= 4096 && request.resource.data.studentNotes.values().join("").size() + request.resource.data.studentNotes.keys().join("").size() <= 4096))
           ||
           // Assessment: feedback tracking fields + personal study notes
           (request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['feedbackReadAt', 'feedbackReviewedAt', 'studentNotes']))
+              .hasOnly(['feedbackReadAt', 'feedbackReviewedAt', 'studentNotes']) &&
+            // F2: cap studentNotes map at 4 KiB total to bound doc growth
+            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['studentNotes']) ||
+              request.resource.data.studentNotes.size() <= 4096 && request.resource.data.studentNotes.values().join("").size() + request.resource.data.studentNotes.keys().join("").size() <= 4096))
         ));
 
       // Only admin can delete submissions

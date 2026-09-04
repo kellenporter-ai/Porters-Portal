@@ -1191,6 +1191,25 @@ export const dataService = {
 
   /** Save a student note for a specific block on a submission. */
   saveStudentNote: async (submissionId: string, blockId: string, note: string): Promise<void> => {
+    // F2: enforce the same 4 KiB total cap the security rules apply so the
+    // client fails fast with a clear message instead of a rules rejection.
+    const MAX_NOTES_BYTES = 4096;
+    const notesSnap = await getDoc(doc(db, 'submissions', submissionId));
+    const existing = notesSnap.exists()
+      ? ((notesSnap.data()?.studentNotes as Record<string, string>) ?? {})
+      : {};
+    const merged = { ...existing, [blockId]: note };
+    const totalBytes = Object.entries(merged).reduce(
+      (sum, [k, v]) => sum + k.length + (typeof v === 'string' ? v.length : 0),
+      0,
+    );
+    if (totalBytes > MAX_NOTES_BYTES) {
+      const err = new Error(
+        `Study notes exceed the ${MAX_NOTES_BYTES / 1024} KiB limit. Shorten or delete an existing note.`,
+      );
+      reportError(err, { method: 'saveStudentNote', submissionId, blockId, totalBytes });
+      throw err;
+    }
     try {
       await updateDoc(doc(db, 'submissions', submissionId), {
         [`studentNotes.${blockId}`]: note,

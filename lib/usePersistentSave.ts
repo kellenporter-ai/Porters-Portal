@@ -55,6 +55,9 @@ interface UsePersistentSaveReturn {
   errorSince: number | null;
   /** True when the assessment session token is missing or invalid. */
   sessionInvalid: boolean;
+  /** F5: externally force the save status (e.g. surface a failure that happened
+   * outside the hook, like a tombstone flush error in Proctor's clear handler). */
+  setSaveStatus: (status: WriteStatus) => void;
   /** Load initial responses (call once after fetching from Firestore on mount). */
   setInitialResponses: (responses: Record<string, unknown>, serverTimestamp?: string) => void;
   /** R3: Re-fetch the server draft and reconcile, for reconnect recovery. */
@@ -420,5 +423,6 @@ export function usePersistentSave({
     sessionInvalid,
     setInitialResponses,
     refetchServerDraft,
+    setSaveStatus: setStatus,
   };
 }

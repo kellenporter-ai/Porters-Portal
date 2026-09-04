@@ -76,7 +76,7 @@ export function writeDraft<T = unknown>(key: string, data: T, dirty: boolean): v
     } else if (err instanceof DOMException) {
       // localStorage fully unavailable (strict private browsing, security policy, etc.)
       window.dispatchEvent(new CustomEvent('portal-storage-unavailable', {
-        detail: { message: 'Local storage is unavailable — saving to server only' },
+        detail: { message: 'Local storage is unavailable — saving to server only', lsKey: key },
       }));
     }
     // Other non-DOMException errors — silent fail (e.g., SecurityError in some contexts)
@@ -291,12 +291,12 @@ let lastPersistentWriteError: unknown = null;
  */
 export const MAX_CONSECUTIVE_PERM_DENIES = 2;
 
-/** Consecutive permission-denied dirty-draft syncs (reset on any saved sync). */
-let consecutivePermDeniedSyncs = 0;
+/** Consecutive permission-denied dirty-draft syncs per draft key (reset on any saved sync). */
+const consecutivePermDeniedSyncsByKey = new Map<string, number>();
 
-/** Test-only: reset the R4 permission-denied streak counter. */
+/** Test-only: reset the R4 permission-denied streak counters. */
 export function __resetSyncErrorTracking(): void {
-  consecutivePermDeniedSyncs = 0;
+  consecutivePermDeniedSyncsByKey.clear();
   lastPersistentWriteError = null;
 }
 
@@ -348,17 +348,20 @@ export async function syncDirtyDraft(
 
   // R4: Detect a stale embedded sessionToken (assessment_sessions doc gone →
   // rules reject with permission-denied). Transient errors (offline, timeout)
-  // are NOT counted. After the threshold, surface a distinct session-invalid
+  // are NOT counted. Streaks are tracked PER DRAFT KEY so denials on one
+  // draft (e.g. a stale assessment session) never trip the threshold for an
+  // unrelated draft. After the threshold, surface a distinct session-invalid
   // state so the caller refreshes the token and retries — no new keystrokes.
   if (status !== 'saved' && isPermissionDenied(lastPersistentWriteError)) {
-    consecutivePermDeniedSyncs++;
-    if (consecutivePermDeniedSyncs >= MAX_CONSECUTIVE_PERM_DENIES) {
+    const streak = (consecutivePermDeniedSyncsByKey.get(lsKey) || 0) + 1;
+    consecutivePermDeniedSyncsByKey.set(lsKey, streak);
+    if (streak >= MAX_CONSECUTIVE_PERM_DENIES) {
       window.dispatchEvent(new CustomEvent('portal-assessment-session-invalid', {
         detail: { message: 'stale-session-token', lsKey },
       }));
     }
   } else if (status === 'saved') {
-    consecutivePermDeniedSyncs = 0;
+    consecutivePermDeniedSyncsByKey.delete(lsKey);
   }
 
   return status === 'saved';

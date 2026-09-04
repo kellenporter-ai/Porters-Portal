@@ -5,7 +5,7 @@ import type { WriteStatus } from '../lib/persistentWrite';
 // Augment Window for custom portal events
 declare global {
   interface WindowEventMap {
-    'portal-storage-unavailable': CustomEvent<{ message: string }>;
+    'portal-storage-unavailable': CustomEvent<{ message: string; lsKey?: string }>;
     'portal-connectivity-degraded': CustomEvent;
   }
 }
@@ -16,6 +16,10 @@ interface SaveStatusIndicatorProps {
   isAssessment?: boolean;
   errorSince?: number | null;
   sessionInvalid?: boolean;
+  /** F4: draft key this indicator mirrors. When provided, the
+   * storageUnavailable chip clears as soon as that draft is confirmed clean
+   * in localStorage (it previously latched forever once set). */
+  lsKey?: string | null;
 }
 
 const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
@@ -24,18 +28,37 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
   isAssessment = false,
   errorSince = null,
   sessionInvalid = false,
+  lsKey = null,
 }) => {
   const [visible, setVisible] = useState(false);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [errorDurationMs, setErrorDurationMs] = useState(0);
   const [assessmentSessionInvalid, setAssessmentSessionInvalid] = useState(false);
+  // F4: remember which draft was un-mirror-able so we can clear the chip once
+  // that draft is confirmed clean (otherwise the chip latches forever).
+  const storageUnavailableLsKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const handler = () => setStorageUnavailable(true);
+    const handler = (e: CustomEvent<{ message: string; lsKey?: string }>) => {
+      setStorageUnavailable(true);
+      storageUnavailableLsKeyRef.current = e.detail?.lsKey ?? null;
+    };
     window.addEventListener('portal-storage-unavailable', handler);
     return () => window.removeEventListener('portal-storage-unavailable', handler);
   }, []);
+
+  // F4: clear the storageUnavailable chip when the flagged draft becomes clean
+  // again (i.e. a Firestore write later confirmed and mirrored to localStorage).
+  useEffect(() => {
+    if (!storageUnavailable || !lsKey) return;
+    const flagged = storageUnavailableLsKeyRef.current;
+    if (flagged && flagged !== lsKey) return; // different draft — not ours to clear
+    if (status === 'saved' || status === 'idle') {
+      setStorageUnavailable(false);
+      storageUnavailableLsKeyRef.current = null;
+    }
+  }, [status, storageUnavailable, lsKey]);
 
   // Force visibility on connectivity degradation (from metrics snapshot failures)
   useEffect(() => {

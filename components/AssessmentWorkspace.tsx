@@ -810,7 +810,21 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   onReviewWork,
   contentUrl,
 }) => {
-  const blockResponses = existingSubmission?.blockResponses;
+  // F5: defensive read-time filter — strip response tombstones ({__delete__: true,
+  // blockId}) that may persist in older submissions, so they never render as answers.
+  const rawBlockResponses = existingSubmission?.blockResponses;
+  const blockResponses = rawBlockResponses
+    ? Object.fromEntries(
+        Object.entries(rawBlockResponses).filter(
+          ([, v]) =>
+            !(
+              typeof v === 'object' && v !== null &&
+              (v as { __delete__?: unknown }).__delete__ === true &&
+              typeof (v as { blockId?: unknown }).blockId === 'string'
+            ),
+        ),
+      )
+    : rawBlockResponses;
   const submissionId = existingSubmission?.id;
 
   // Notes state
@@ -855,7 +869,8 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           // Note text stays in local state so the student can retry (blur/edit).
           reportError(error, { method: 'MyWorkPanel.saveNote', submissionId, blockId });
           setSaveErrors((prev) => ({ ...prev, [blockId]: true }));
-          toast.error("Couldn't save study note — check your connection.");
+          const detail = error instanceof Error && error.message ? ` ${error.message}` : '';
+          toast.error(`Couldn't save study note —${detail || ' check your connection.'}`);
         });
     },
     [submissionId, toast],

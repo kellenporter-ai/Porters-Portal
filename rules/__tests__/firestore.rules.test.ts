@@ -137,6 +137,87 @@ describe('R8: studentNotes write on submissions (FIXED — Phase 1)', () => {
       }),
     );
   });
+
+  // F2 — 4 KiB cap on studentNotes
+  it('student is DENIED writing studentNotes over 4 KiB on non-assessment submission', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+      });
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    // A single 4097-character note exceeds the cap
+    await assertFails(
+      updateDoc(doc(student, 'submissions', submissionId), {
+        'studentNotes.big': 'x'.repeat(4097),
+      }),
+    );
+  });
+
+  it('student is ALLOWED writing studentNotes exactly 4 KiB on non-assessment submission', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+      });
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertSucceeds(
+      updateDoc(doc(student, 'submissions', submissionId), {
+        'studentNotes.big': 'x'.repeat(4090), // key 'big' (3) + 4090 = 4093 ≤ 4096
+      }),
+    );
+  });
+
+  it('student is DENIED writing studentNotes over 4 KiB on assessment submission', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+        isAssessment: true,
+        score: 0,
+        status: 'pending',
+      });
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      updateDoc(doc(student, 'submissions', submissionId), {
+        'studentNotes.big': 'x'.repeat(4097),
+      }),
+    );
+  });
+
+  it('student CANNOT write studentNotes over 4 KiB on another student\'s submission', async () => {
+    const submissionId = `${STUDENT_A}_${ASSIGNMENT}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissions', submissionId), {
+        userId: STUDENT_A,
+        assignmentId: ASSIGNMENT,
+        metrics: { timeSpent: 100 },
+        submittedAt: new Date().toISOString(),
+        blockResponses: {},
+      });
+    });
+    const studentB = testEnv.authenticatedContext(STUDENT_B).firestore();
+    await assertFails(
+      updateDoc(doc(studentB, 'submissions', submissionId), {
+        'studentNotes.block1': 'x'.repeat(4097),
+      }),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

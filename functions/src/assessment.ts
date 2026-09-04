@@ -15,6 +15,20 @@ import {
 // ==========================================
 // ASSESSMENT GRADING HELPER — Reusable block grading logic
 // ==========================================
+
+/**
+ * Tombstone envelope written by the client when a response is deleted
+ * client-side ({__delete__: true, blockId}). Mirrors lib/persistentWrite.ts —
+ * inlined because functions/ tsconfig rootDir excludes ../../lib imports.
+ */
+function isResponseTombstone(value: unknown): boolean {
+  return (
+    typeof value === "object" && value !== null &&
+    (value as { __delete__?: unknown }).__delete__ === true &&
+    typeof (value as { blockId?: unknown }).blockId === "string"
+  );
+}
+
 function gradeAssessmentBlocks(
   blocks: Array<Record<string, unknown>>,
   responses: Record<string, unknown>
@@ -282,8 +296,15 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     }
 
     // 3. Grade auto-gradable blocks
+    // F5: strip response tombstones ({__delete__: true, blockId}) before grading —
+    // tombstones are Firestore-delete envelopes, not answers.
+    const cleanedResponses = Object.fromEntries(
+      Object.entries(responses as Record<string, unknown>).filter(
+        ([, v]) => !isResponseTombstone(v),
+      ),
+    ) as Record<string, unknown>;
     const blocks = assignment.lessonBlocks || [];
-    const gradeResult = gradeAssessmentBlocks(blocks, responses);
+    const gradeResult = gradeAssessmentBlocks(blocks, cleanedResponses);
 
     // 5a. Server-side elapsed time validation
     const serverNow = Date.now();
@@ -295,9 +316,9 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       : 0;
 
     // Count non-empty responses to assess plausibility
-    const responseKeys = Object.keys(responses || {});
+    const responseKeys = Object.keys(cleanedResponses || {});
     const nonEmptyResponses = responseKeys.filter(key => {
-      const r = responses[key];
+      const r = cleanedResponses[key];
       if (!r) return false;
       if (typeof r === 'string') return r.trim().length > 0;
       if (typeof r === 'object') {
@@ -327,14 +348,14 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     let totalWordCount = 0;
     for (const block of blocks) {
       if (block.type === "SHORT_ANSWER" || block.type === "LINKED") {
-        const resp = responses[block.id];
-        const answerText = typeof resp?.answer === "string" ? resp.answer.trim() : "";
+        const resp = cleanedResponses[block.id] as Record<string, unknown> | undefined;
+        const answerText = typeof resp?.answer === "string" ? (resp.answer as string).trim() : "";
         if (answerText.length > 0) {
           totalWordCount += answerText.split(/\s+/).length;
         }
       }
-      if (block.type === "DATA_TABLE" && responses[block.id]) {
-        const resp = responses[block.id] as Record<string, unknown>;
+      if (block.type === "DATA_TABLE" && cleanedResponses[block.id]) {
+        const resp = cleanedResponses[block.id] as Record<string, unknown>;
         const rows = resp.data;
         if (Array.isArray(rows)) {
           for (const row of rows) {
@@ -348,8 +369,8 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
           }
         }
       }
-      if (block.type === "MATH_RESPONSE" && responses[block.id]) {
-        const resp = responses[block.id] as Record<string, unknown>;
+      if (block.type === "MATH_RESPONSE" && cleanedResponses[block.id]) {
+        const resp = cleanedResponses[block.id] as Record<string, unknown>;
         const steps = (resp.steps || []) as Array<{ input?: string }>;
         for (const step of steps) {
           const text = step.input || "";
@@ -358,8 +379,8 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
           }
         }
       }
-      if (block.type === "BAR_CHART" && responses[block.id]) {
-        const resp = responses[block.id] as Record<string, unknown>;
+      if (block.type === "BAR_CHART" && cleanedResponses[block.id]) {
+        const resp = cleanedResponses[block.id] as Record<string, unknown>;
         const sections = ["initial", "delta", "final"] as const;
         for (const section of sections) {
           const bars = (resp[section] || []) as Array<{ labelHTML?: string }>;
@@ -375,8 +396,8 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       }
     }
     // Word count from HTML activity explanation text
-    if (responses['__htmlActivity']) {
-      const htmlResp = responses['__htmlActivity'] as Record<string, unknown>;
+    if (cleanedResponses['__htmlActivity']) {
+      const htmlResp = cleanedResponses['__htmlActivity'] as Record<string, unknown>;
       const explanation = typeof htmlResp.explanation === 'string' ? htmlResp.explanation.trim() : '';
       if (explanation.length > 0) {
         totalWordCount += explanation.split(/\s+/).length;
@@ -502,7 +523,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       isAssessment: true,
       attemptNumber: txAttemptNumber,
       assessmentScore: gradeResult,
-      blockResponses: responses,
+      blockResponses: cleanedResponses,
       privateComments: [],
       hasUnreadAdmin: true,
       hasUnreadStudent: false,
@@ -691,7 +712,14 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     throw new HttpsError("not-found", "No draft responses found for this student");
   }
   const draftData = draftSnap.data()!;
-  const responses = draftData.responses || {};
+  const rawResponses = draftData.responses || {};
+  // F5: strip response tombstones ({__delete__: true, blockId}) — Firestore-delete
+  // envelopes, not answers — before grading and persisting.
+  const responses = Object.fromEntries(
+    Object.entries(rawResponses as Record<string, unknown>).filter(
+      ([, v]) => !isResponseTombstone(v),
+    ),
+  ) as Record<string, unknown>;
   if (Object.keys(responses).length === 0) {
     logWithCorrelation('warn', 'submitOnBehalf: Draft has no responses', correlationId, { userId, assignmentId });
     throw new HttpsError("not-found", "Draft has no responses");

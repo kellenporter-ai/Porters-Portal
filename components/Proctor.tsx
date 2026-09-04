@@ -13,6 +13,7 @@ import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
+import { useToast } from './ToastProvider';
 import { persistentWrite, draftKey, readDraft, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
 import { renderReadingContent } from '../lib/renderReadingContent';
 import { assessmentSessionKey, assessmentSessionSigKey, legacyAssessmentSessionKey, legacyAssessmentSessionSigKey } from '../lib/assessmentSessionKeys';
@@ -223,6 +224,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     errorSince,
     sessionInvalid,
     setInitialResponses,
+    setSaveStatus,
   } = usePersistentSave({
     userId,
     assignmentId,
@@ -232,6 +234,21 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     isAssessment,
     onResponsesChange: handleResponsesChange,
   });
+
+  const toast = useToast();
+  // F3: Proctor's own draft key — the session-invalid listener must only react
+  // to events for THIS draft, not another consumer's (per-lsKey streak isolation).
+  const ownDraftLsKey = userId && assignmentId ? draftKey('draft', userId, assignmentId) : null;
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const lsKey = (e as CustomEvent<{ lsKey?: string }>).detail?.lsKey;
+      if (lsKey && lsKey !== ownDraftLsKey) return; // another draft's stale-session — ignore
+    };
+    // Listener registered for symmetry; the guard above is the contract other
+    // consumers rely on. (Refresh logic lives in usePersistentSave's streak path.)
+    window.addEventListener('portal-assessment-session-invalid', handler);
+    return () => window.removeEventListener('portal-assessment-session-invalid', handler);
+  }, [ownDraftLsKey]);
 
   // Expose flushNow upward so ResourceViewer can call it for Save & Exit flow
   useEffect(() => {
@@ -440,7 +457,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       // Check if student already has an active session (e.g. page refresh or tab re-open).
       // If so, restore their in-progress work instead of wiping it.
       // localStorage survives tab closure; sessionStorage is same-tab only.
-      const storageKey = `assessment_session_${assignmentId}`;
+      // R6: user-scoped key — a legacy unscoped token here may belong to a
+      // different user on this shared device; never trust it for restore.
+      const storageKey = assessmentSessionKey(userId, assignmentId);
       const hasActiveSession = !!(localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey));
 
       if (hasActiveSession) {
@@ -473,8 +492,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           const draftResponses = draftData?.responses as Record<string, unknown> | undefined;
           if (localDraft?.dirty && draftResponses && Object.keys(draftResponses).length > 0) {
             // Student has live unsaved work — get a fresh token and restore their draft
-            const storageKey = `assessment_session_${assignmentId}`;
-            const sigKey = `${storageKey}_sig`;
+            const storageKey = assessmentSessionKey(userId, assignmentId);
+            const sigKey = assessmentSessionSigKey(userId, assignmentId);
             try {
               const result = await callStartAssessmentSession({ assignmentId });
               const tokenData = result.data as { sessionToken: string; tokenSignature: string };
@@ -518,8 +537,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             const responses = data.responses || {};
             if (Object.keys(responses).length > 0) {
               // Session recovery — always restore existing draft responses
-              const storageKey = `assessment_session_${assignmentId}`;
-              const sigKey = `${storageKey}_sig`;
+              const storageKey = assessmentSessionKey(userId, assignmentId);
+              const sigKey = assessmentSessionSigKey(userId, assignmentId);
               try {
                 const result = await callStartAssessmentSession({ assignmentId });
                 const tokenData = result.data as { sessionToken: string; tokenSignature: string };
@@ -632,12 +651,20 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       // doc didn't exist at deleteDoc time but a queued setDoc recreates it.
       const flushed = flushNow();
       if (flushed) {
-        try { await flushed; } catch { /* best-effort tombstone persist */ }
+        try {
+          const status = await flushed;
+          if (status === 'error') throw new Error('tombstone flush failed');
+        } catch {
+          // F6: a failed tombstone persist means cleared responses may linger
+          // server-side — surface it, don't fail silently.
+          setSaveStatus('error');
+          toast.error("Couldn't clear your saved responses on the server — they may reappear. Please try again.");
+        }
       }
     }
     setSavedBlockResponses({});
     setBlockResetKey(prev => prev + 1); // Force remount of LessonBlocks
-  }, [userId, assignmentId, clearSavedResponses, flushNow, previewMode]);
+  }, [userId, assignmentId, clearSavedResponses, flushNow, previewMode, setSaveStatus, toast]);
 
   // Export lesson block progress to PDF
   const handleExportBlocksPdf = useCallback(() => {
@@ -1551,7 +1578,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Network heartbeat: ping server every 30s during active assessment to keep session alive
   useEffect(() => {
-    if (!isAssessment || previewMode || !sessionToken) return;
+    if (!isAssessment || previewMode || !sessionToken || !userId || !assignmentId) return;
     let timeoutId: number | null = null;
     let cancelled = false;
 
@@ -1575,8 +1602,8 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             const result = await callStartAssessmentSession({ assignmentId, forceNew });
             const data = result.data as { sessionToken: string; tokenSignature: string; startedAt: number };
             if (cancelled) return;
-            const storageKey = `assessment_session_${assignmentId}`;
-            const sigKey = `${storageKey}_sig`;
+            const storageKey = assessmentSessionKey(userId, assignmentId);
+            const sigKey = assessmentSessionSigKey(userId, assignmentId);
             localStorage.setItem(storageKey, data.sessionToken);
             if (data.tokenSignature) localStorage.setItem(sigKey, data.tokenSignature);
             sessionStorage.setItem(storageKey, data.sessionToken);
@@ -1611,7 +1638,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAssessment, previewMode, sessionToken, assignmentId]);
+  }, [isAssessment, previewMode, sessionToken, assignmentId, userId]);
 
   // LaTeX Rendering + TTS text extraction
   useEffect(() => {
@@ -1695,7 +1722,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 )}
                 {/* Save status indicator */}
-                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} errorSince={errorSince} sessionInvalid={sessionInvalid} />
+                <SaveStatusIndicator status={saveStatus} isOnline={isOnline} isAssessment={isAssessment} errorSince={errorSince} sessionInvalid={sessionInvalid} lsKey={ownDraftLsKey} />
             </div>
             <div className="flex items-center gap-3 flex-wrap">
                 {/* TTS — Screen Reader */}

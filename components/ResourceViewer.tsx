@@ -4,6 +4,7 @@ import { User, UserRole, TelemetryMetrics, Submission } from '../types';
 import { useAssignments } from '../lib/AppDataContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
+import { assessmentSessionKey, assessmentSessionSigKey } from '../lib/assessmentSessionKeys';
 import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
@@ -288,9 +289,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         });
         // Clear cached session token so retakes get a fresh one
         if (activeAssignment.id) {
-          const key = `assessment_session_${activeAssignment.id}`;
+          const key = assessmentSessionKey(user.id, activeAssignment.id);
+          const sigK = assessmentSessionSigKey(user.id, activeAssignment.id);
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
+          localStorage.removeItem(sigK);
+          sessionStorage.removeItem(sigK);
           sessionTokenRef.current = null;
     tokenSignatureRef.current = null;
           tokenSignatureRef.current = null;
@@ -319,7 +323,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         }
         // Stale session token — clear cached token, request a fresh one, and retry
         if (errorCode === 'not-found' && sessionTokenRef.current && attempt < MAX_SUBMIT_RETRIES) {
-          const key = `assessment_session_${activeAssignment.id}`;
+          const key = assessmentSessionKey(user.id, activeAssignment.id);
+          const sigK = assessmentSessionSigKey(user.id, activeAssignment.id);
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
           try {
@@ -328,9 +333,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             sessionTokenRef.current = tokenData.sessionToken;
             tokenSignatureRef.current = tokenData.tokenSignature || null;
             localStorage.setItem(key, tokenData.sessionToken);
-            if (tokenData.tokenSignature) localStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
+            if (tokenData.tokenSignature) localStorage.setItem(sigK, tokenData.tokenSignature);
             sessionStorage.setItem(key, tokenData.sessionToken);
-            if (tokenData.tokenSignature) sessionStorage.setItem(`${key}_sig`, tokenData.tokenSignature);
+            if (tokenData.tokenSignature) sessionStorage.setItem(sigK, tokenData.tokenSignature);
             toast.info('Reconnecting session... retrying submission.');
             continue;
           } catch {
@@ -389,8 +394,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     isRetakingRef.current = true; // Suppress recovery effect while retaking
     if (id) sessionStorage.setItem(`retaking_${id}`, '1');
     const docId = `${user.id}_${activeAssignment.id}_blocks`;
-    const retakeKey = `assessment_session_${activeAssignment.id}`;
-    const sigKey = `${retakeKey}_sig`;
+    const retakeKey = assessmentSessionKey(user.id, activeAssignment.id);
+    const sigKey = assessmentSessionSigKey(user.id, activeAssignment.id);
     try {
       // Request a fresh token BEFORE creating the pre-fill doc —
       // lesson_block_responses CREATE rules require an active session.
