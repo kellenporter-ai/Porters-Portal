@@ -294,7 +294,11 @@ describe('R7: Save & Exit timeout covers the true flush worst case (FIXED)', () 
       resolve(__dirname, '../../components/ResourceViewer.tsx'),
       'utf-8',
     );
-    expect(src).toContain('will sync to the server the next time you open this assignment');
-    expect(src).toContain('nothing is lost');
+    expect(src).toContain('rv.saveFailed.body');
+    // The modal copy now lives in the i18n dictionary (Phase 4b3) — assert the
+    // EN dictionary keeps the Phase 1d promises verbatim.
+    const en = readFileSync(resolve(__dirname, '../i18n/en.ts'), 'utf-8');
+    expect(en).toContain('will sync to the server the next time you open this assignment');
+    expect(en).toContain('nothing is lost');
   });
 });

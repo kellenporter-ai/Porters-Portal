@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnap
 import { assessmentSessionKey, assessmentSessionSigKey } from '../lib/assessmentSessionKeys';
 import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
+import { useT, useInterpolate } from '../lib/i18n';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
 import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, CheckCircle2, AlertTriangle, X, BookOpen, Bot, Home, Eye, LogOut, MessageSquare, ChevronDown, Play } from 'lucide-react';
@@ -23,11 +24,14 @@ const StudyMaterial = lazyWithRetry(() => import('./StudyMaterial'));
 const AssessmentWorkspace = lazyWithRetry(() => import('./AssessmentWorkspace'));
 const LessonBlocks = lazyWithRetry(() => import('./LessonBlocks').then(m => ({ default: m.default })));
 
-const LazyFallback = () => (
-  <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
-    <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading module...
-  </div>
-);
+const LazyFallback: React.FC = () => {
+  const t = useT();
+  return (
+    <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
+      <Loader2 className="w-6 h-6 animate-spin mr-2" /> {t('rv.loading')}
+    </div>
+  );
+};
 
 
 
@@ -43,6 +47,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const isLight = theme === 'light';
   const toast = useToast();
   const { confirm } = useConfirm();
+  const t = useT();
+  const interpolate = useInterpolate();
 
   const [assignViewMode, setAssignViewMode] = useState<'WORK' | 'REVIEW' | 'STUDY'>('WORK');
   const [adminViewMode, setAdminViewMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
@@ -271,16 +277,16 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
 
     // Client-side guard: require minimum engagement time
     if (metrics.engagementTime < MIN_ASSESSMENT_ENGAGEMENT_SEC) {
-      toast.error(`Please spend at least ${MIN_ASSESSMENT_ENGAGEMENT_SEC} seconds reviewing the assessment before submitting.`);
+      toast.error(interpolate(t('rv.submit.minTime'), { seconds: MIN_ASSESSMENT_ENGAGEMENT_SEC }));
       return;
     }
 
     // Submit confirmation
     const ok = await confirm({
-      title: 'Submit Assessment?',
-      message: 'Once submitted, you cannot change your answers. Make sure you have reviewed all questions before continuing.',
-      confirmLabel: 'Submit',
-      cancelLabel: 'Keep Working',
+      title: t('rv.submit.confirmTitle'),
+      message: t('rv.submit.confirmBody'),
+      confirmLabel: t('rv.submit.confirmLabel'),
+      cancelLabel: t('rv.submit.keepWorking'),
       variant: 'warning',
     });
     if (!ok) return;
@@ -328,7 +334,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             deleteDoc(doc(db, 'lesson_block_responses', draftDocId)).catch(() => {});
           } catch { /* ignore */ }
         }
-        toast.success(`Assessment submitted! Score: ${result.assessmentScore.percentage}%`);
+        toast.success(interpolate(t('rv.submit.successToast'), { pct: result.assessmentScore.percentage }));
         setIsSubmitting(false);
         return;
       } catch (err) {
@@ -336,7 +342,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         const errMsg = err instanceof Error ? err.message : String(err);
 
         if (errorCode === 'already-exists') {
-          toast.success('Your assessment was already submitted successfully!');
+          toast.success(t('rv.submit.alreadySubmitted'));
           setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
           setIsSubmitting(false);
           return;
@@ -356,38 +362,38 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             if (tokenData.tokenSignature) localStorage.setItem(sigK, tokenData.tokenSignature);
             sessionStorage.setItem(key, tokenData.sessionToken);
             if (tokenData.tokenSignature) sessionStorage.setItem(sigK, tokenData.tokenSignature);
-            toast.info('Reconnecting session... retrying submission.');
+            toast.info(t('rv.submit.reconnecting'));
             continue;
           } catch {
             // Token refresh failed — fall through to normal error handling
           }
         }
         if (attempt < MAX_SUBMIT_RETRIES) {
-          toast.info('Submission taking longer than expected. Retrying...');
+          toast.info(t('rv.submit.retrying'));
           await new Promise(r => setTimeout(r, 3000));
           continue;
         }
         reportError(err, { method: 'submitAssessment', assignmentId: activeAssignment.id, errorCode });
 
         // Map error codes to actionable messages
-        let toastMsg = 'Something went wrong submitting. Your work is saved — check with your teacher if your submission went through.';
+        let toastMsg = t('rv.submit.errGeneric');
         if (errorCode === 'failed-precondition') {
           try {
             const parsed = JSON.parse(errMsg.replace(/^.*?(\{)/, '$1'));
             if (parsed.hasUnsavedWork) {
-              toastMsg = 'Session expired, but your draft is saved. Start a new attempt to continue where you left off.';
+              toastMsg = t('rv.submit.errDraftSaved');
             } else {
-              toastMsg = 'Session expired. Please start a new assessment attempt.';
+              toastMsg = t('rv.submit.errSessionExpired');
             }
           } catch {
-            toastMsg = 'Your session has expired. Please start a new assessment attempt.';
+            toastMsg = t('rv.submit.errSessionExpired');
           }
         } else if (errorCode === 'permission-denied') {
-          toastMsg = 'You are not enrolled in the class for this assessment.';
+          toastMsg = t('rv.submit.errNotEnrolled');
         } else if (errorCode === 'not-found') {
-          toastMsg = 'This assessment was not found. It may have been updated — please refresh the page.';
+          toastMsg = t('rv.submit.errNotFound');
         } else if (errorCode === 'unauthenticated') {
-          toastMsg = 'You were signed out. Please sign in and try again.';
+          toastMsg = t('rv.submit.errSignedOut');
         }
         toast.error(toastMsg);
         setSubmitFailed(true); if (id) sessionStorage.setItem(`submit_failed_${id}`, '1');
@@ -403,11 +409,18 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     const isUnlim = config.maxAttempts === 0 || !config.maxAttempts;
     const attLeft = isUnlim ? null : (config.maxAttempts - (assessmentResult?.attemptNumber || 1));
     const afterThis = attLeft != null ? attLeft - 1 : null;
+    const retakeMessage = t('rv.retake.messageBase') +
+      (afterThis != null
+        ? (afterThis === 0
+            ? ' ' + t('rv.retake.lastAttempt')
+            : ' ' + interpolate(t('rv.retake.attemptsRemaining'), { count: afterThis, plural: afterThis !== 1 ? 's' : '' }))
+        : '') +
+      ' ' + t('rv.retake.areYouSure');
     const confirmed = await confirm({
-      title: 'Retake Assessment',
-      message: `Your previous answers will be loaded so you can review and edit them before resubmitting.${afterThis != null ? (afterThis === 0 ? ' This will be your last attempt.' : ` You will have ${afterThis} attempt${afterThis !== 1 ? 's' : ''} remaining after this.`) : ''} Are you sure you want to retake?`,
-      confirmLabel: 'Start Retake',
-      cancelLabel: 'Go Back',
+      title: t('rv.retake.title'),
+      message: retakeMessage,
+      confirmLabel: t('rv.retake.confirmLabel'),
+      cancelLabel: t('rv.retake.goBack'),
       variant: 'info',
     });
     if (!confirmed) return;
@@ -526,12 +539,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   if (!activeAssignment) {
     // Still loading app data — show skeleton instead of "not found"
     if (appDataLoading) {
-      return <div className="flex items-center justify-center h-64 text-[var(--text-muted)]"><p>Loading...</p></div>;
+      return <div className="flex items-center justify-center h-64 text-[var(--text-muted)]"><p>{t('rv.loading')}</p></div>;
     }
     return (
       <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
-        <p>Resource not found.</p>
-        <button onClick={() => navigate(-1)} className="ml-4 text-[var(--accent-text)] hover:text-purple-300">Go back</button>
+        <p>{t('rv.notFound')}</p>
+        <button onClick={() => navigate(-1)} className="ml-4 text-[var(--accent-text)] hover:text-purple-300">{t('rv.goBack')}</button>
       </div>
     );
   }
@@ -545,9 +558,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             onClick={() => setReviewMode(false)}
             className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Results
+            <ArrowLeft className="w-4 h-4" /> {t('rv.review.back')}
           </button>
-          <h2 className="text-sm font-bold text-[var(--text-primary)]">Your Submission</h2>
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">{t('rv.review.title')}</h2>
           <span className="text-[11.5px] text-[var(--text-muted)]">
             {existingSubmission.submittedAt
               ? new Date(existingSubmission.submittedAt).toLocaleDateString()
@@ -602,26 +615,26 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           <div className="bg-[var(--surface-raised)] border border-red-500/30 rounded-2xl p-6 max-w-sm mx-4">
             <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-3">
               <Shield className="w-5 h-5" />
-              <h3 className="font-bold text-sm">Pause Assessment?</h3>
+              <h3 className="font-bold text-sm">{t('rv.blocker.title')}</h3>
             </div>
             <p className="text-[var(--text-secondary)] text-xs mb-1">
-              Your progress is automatically saved. You can return to finish this assessment anytime before the due date.
+              {t('rv.blocker.body')}
             </p>
             <p className="text-[var(--text-tertiary)] text-[11.5px] mb-4">
-              Ready to pause?
+              {t('rv.blocker.ready')}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowBlockerModal(false); }}
                 className="flex-1 bg-purple-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-purple-500 transition"
               >
-                Keep Working
+                {t('rv.blocker.keepWorking')}
               </button>
               <button
                 onClick={() => { setShowBlockerModal(false); handleSaveAndExit(); }}
                 className="flex-1 bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] text-xs font-bold py-2 rounded-lg border border-[var(--border)] hover:text-[var(--text-primary)] transition"
               >
-                Save & Exit
+                {t('rv.saveExit')}
               </button>
             </div>
           </div>
@@ -634,23 +647,23 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           <div className="bg-[var(--surface-raised)] border border-amber-500/30 rounded-2xl p-6 max-w-sm mx-4">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-3">
               <AlertTriangle className="w-5 h-5" />
-              <h3 className="font-bold text-sm">Couldn't Sync to Server</h3>
+              <h3 className="font-bold text-sm">{t('rv.saveFailed.title')}</h3>
             </div>
             <p className="text-[var(--text-secondary)] text-xs mb-4">
-              Your answers are saved on this device and will sync to the server the next time you open this assignment — nothing is lost. You can keep working, or exit now and resume later.
+              {t('rv.saveFailed.body')}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowSaveFailedModal(false); blockerProceedRef.current = false; }}
                 className="flex-1 bg-purple-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-purple-500 transition"
               >
-                Keep Working
+                {t('rv.blocker.keepWorking')}
               </button>
               <button
                 onClick={() => { setShowSaveFailedModal(false); handleExit(); }}
                 className="flex-1 bg-amber-600/20 text-amber-700 dark:text-amber-300 text-xs font-bold py-2 rounded-lg border border-amber-500/30 hover:bg-amber-600/30 transition"
               >
-                Exit Anyway
+                {t('rv.saveFailed.exitAnyway')}
               </button>
             </div>
           </div>
@@ -661,13 +674,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       {submitFailed && !assessmentResult && isLiveAssessment && (
         <div className="fixed top-0 left-0 right-0 z-[55] bg-amber-600/90 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-white text-xs font-medium">
-            Your work has been saved. Check with your teacher if your submission went through.
+            {t('rv.escapeHatch.body')}
           </p>
           <button
             onClick={handleExit}
             className="shrink-0 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
           >
-            <Home className="w-3.5 h-3.5" /> Return to Dashboard
+            <Home className="w-3.5 h-3.5" /> {t('rv.escapeHatch.button')}
           </button>
         </div>
       )}
@@ -678,7 +691,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           <div className="bg-[var(--surface-raised)] dark:bg-[#1a0d35]/95 dark:backdrop-blur-xl border border-[var(--border)] rounded-2xl max-w-5xl w-full max-h-[85vh] flex flex-col shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-[var(--border)] shrink-0">
               <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-400" /> {activeAssignment.rubric.title || 'Assessment Rubric'}
+                <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-400" /> {activeAssignment.rubric.title || t('rv.rubric.defaultTitle')}
               </h3>
               <button onClick={() => setShowRubric(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition">
                 <X className="w-5 h-5" />
@@ -691,15 +704,15 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                     <div className="mb-4 border-l-4 border-amber-500 bg-amber-500/10 rounded-r-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Teacher Feedback</span>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">{t('rv.rubric.teacherFeedback')}</span>
                       </div>
                       <p className="text-base text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{existingSubmission.rubricGrade.teacherFeedback}</p>
                     </div>
                   )}
                   <div className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl p-3 text-center mb-4">
                     <div className="text-lg font-bold text-[var(--text-primary)]">{existingSubmission.rubricGrade.overallPercentage}%</div>
-                    <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">Rubric Score</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1">Graded by {existingSubmission.rubricGrade.gradedBy}</div>
+                    <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-widest mt-1">{t('rv.rubric.scoreLabel')}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">{interpolate(t('rv.rubric.gradedBy'), { name: existingSubmission.rubricGrade.gradedBy })}</div>
                   </div>
                 </>
               )}
@@ -711,7 +724,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 />
               </Suspense>
               {!existingSubmission?.rubricGrade && existingSubmission && (
-                <p className="text-[11.5px] text-[var(--text-muted)] mt-3 text-center italic">Your teacher will grade rubric-assessed questions and your results will appear here.</p>
+                <p className="text-[11.5px] text-[var(--text-muted)] mt-3 text-center italic">{t('rv.rubric.pending')}</p>
               )}
             </div>
           </div>
@@ -726,7 +739,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             {isAssessment && <Shield className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />}
             {activeAssignment.title}
             {isAssessment && (
-              <span className="text-[11.5px] bg-red-600/80 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Assessment</span>
+              <span className="text-[11.5px] bg-red-600/80 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">{t('rv.assessment.badge')}</span>
             )}
             {user.role === UserRole.ADMIN && (
               <span className="text-[11.5px] bg-purple-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Admin</span>
@@ -735,12 +748,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           {/* Hide tab switchers during assessment */}
           {!isAssessment && (
             <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => setAssignViewMode('WORK')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${assignViewMode === 'WORK' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>Resource</button>
+              <button onClick={() => setAssignViewMode('WORK')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${assignViewMode === 'WORK' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>{t('rv.tab.resource')}</button>
               {hasQuestionBank && (
-                <button onClick={() => setAssignViewMode('REVIEW')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'REVIEW' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}><Brain className="w-3 h-3" /> Review</button>
+                <button onClick={() => setAssignViewMode('REVIEW')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'REVIEW' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}><Brain className="w-3 h-3" /> {t('rv.tab.review')}</button>
               )}
               {hasStudyMaterial && (
-                <button onClick={() => setAssignViewMode('STUDY')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'STUDY' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}><BookOpenIcon className="w-3 h-3" /> Study</button>
+                <button onClick={() => setAssignViewMode('STUDY')} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${assignViewMode === 'STUDY' ? 'bg-purple-500/20 text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}><BookOpenIcon className="w-3 h-3" /> {t('rv.tab.study')}</button>
               )}
             </div>
           )}
@@ -759,7 +772,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               onClick={() => setShowRubric(prev => !prev)}
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition ${isLight ? 'text-amber-700 hover:text-amber-800 bg-amber-100 border border-amber-300' : 'text-amber-600 dark:text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20'}`}
             >
-              <BookOpen className="w-3.5 h-3.5" /> Rubric
+              <BookOpen className="w-3.5 h-3.5" /> {t('rv.rubric.button')}
             </button>
           )}
           {/* Assessment: Save & Exit + Submit buttons */}
@@ -771,7 +784,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 className="flex items-center gap-1.5 text-xs font-bold bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSavingExit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
-                {isSavingExit ? `Saving${saveExitElapsed > 2 ? ` (${saveExitElapsed}s)` : '...'}` : 'Save & Exit'}
+                {isSavingExit ? (saveExitElapsed > 2 ? interpolate(t('rv.saveExit.savingSec'), { seconds: saveExitElapsed }) : t('rv.saveExit.saving')) : t('rv.saveExit')}
               </button>
               <button
                 onClick={handleAssessmentSubmit}
@@ -779,16 +792,16 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
+                {isSubmitting ? t('rv.submitting') : t('rv.submit')}
               </button>
             </div>
           ) : isAssessment && isPreview ? (
             <span className={`flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-lg border ${isLight ? 'text-amber-700 bg-amber-100 border-amber-300' : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
-              <Eye className="w-3.5 h-3.5" /> Submit (Preview)
+              <Eye className="w-3.5 h-3.5" /> {t('rv.submit.previewBadge')}
             </span>
           ) : (
-            <button onClick={() => navigate(activeAssignment.unit ? '/resources' : '/home')} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition flex items-center gap-1 text-xs bg-[var(--surface-glass)] px-3 py-1.5 rounded-lg border border-[var(--border)]" title={activeAssignment.unit || 'Resources'}>
-              <ArrowLeft className="w-3.5 h-3.5" /> {activeAssignment.unit || 'Back'}
+            <button onClick={() => navigate(activeAssignment.unit ? '/resources' : '/home')} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition flex items-center gap-1 text-xs bg-[var(--surface-glass)] px-3 py-1.5 rounded-lg border border-[var(--border)]" title={activeAssignment.unit || t('rv.backTitleFallback')}>
+              <ArrowLeft className="w-3.5 h-3.5" /> {activeAssignment.unit || t('rv.backFallback')}
             </button>
           )}
         </div>
@@ -799,8 +812,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg mx-1 mt-2 p-3 flex items-start gap-3 text-xs text-purple-200 animate-in fade-in duration-300">
           <Bot className="w-5 h-5 text-[var(--accent-text)] shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-purple-300 mb-1">Your submission has been flagged for suspected AI usage.</p>
-            <p className="text-purple-300/80">Your score is currently recorded as <span className="font-bold text-[var(--text-primary)]">0%</span> until you either resubmit the assessment using your own work or provide a written defense to your teacher.</p>
+            <p className="font-bold text-purple-300 mb-1">{t('rv.aiFlag.title')}</p>
+            <p className="text-purple-300/80">{(() => { const [pre, post] = t('rv.aiFlag.body').split('0%'); return <>{pre}<span className="font-bold text-[var(--text-primary)]">0%</span>{post}</>; })()}</p>
           </div>
         </div>
       )}
@@ -813,8 +826,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Assessment Returned</p>
-            <p className="text-xs text-amber-700 dark:text-amber-400/70">Your teacher returned this assessment for revision. Review your answers and submit when ready.</p>
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">{t('rv.returned.title')}</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400/70">{t('rv.returned.body')}</p>
           </div>
         </div>
       )}
@@ -830,23 +843,23 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 <div>
                   <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{activeAssignment.title}</h3>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    This is an assessment. Your work will be saved automatically as you go.
+                    {t('rv.start.title')}
                   </p>
                 </div>
                 <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4 text-left space-y-2">
-                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Before you start</p>
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">{t('rv.start.beforeYouStart')}</p>
                   <ul className="text-xs text-[var(--text-secondary)] space-y-1.5">
                     <li className="flex items-start gap-2">
                       <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
-                      <span>This assessment will enter full-screen mode to help you stay focused.</span>
+                      <span>{t('rv.start.bulletFullscreen')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
-                      <span>Using dictation, voice typing, or Grammarly? Look for the checkbox in the top bar after starting.</span>
+                      <span>{t('rv.start.bulletTools')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
-                      <span>Your answers are saved automatically — you can refresh the page if needed.</span>
+                      <span>{t('rv.start.bulletAutoSave')}</span>
                     </li>
                   </ul>
                 </div>
@@ -855,7 +868,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   className="w-full flex items-center justify-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-5 py-3 rounded-xl transition"
                 >
                   <Play className="w-4 h-4" />
-                  Start Assessment
+                  {t('rv.start.button')}
                 </button>
               </div>
             </div>
@@ -887,7 +900,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-amber-500/5 transition-colors"
                       >
                         <span className="text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                          Your Study Notes
+                          {t('rv.studyNotes.title')}
                         </span>
                         <ChevronDown className={`w-4 h-4 text-amber-700 dark:text-amber-400 transition-transform ${studyNotesExpanded ? '' : '-rotate-90'}`} />
                       </button>
@@ -898,7 +911,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                             if (!note) return null;
                             return (
                               <div key={block.id} className="text-sm">
-                                <span className="font-semibold text-[var(--text-primary)]">Question {idx + 1}: </span>
+                                <span className="font-semibold text-[var(--text-primary)]">{interpolate(t('rv.studyNotes.question'), { number: idx + 1 })} </span>
                                 <span
                                   className="text-[var(--text-secondary)]"
                                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
@@ -962,7 +975,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-amber-500/5 transition-colors"
                       >
                         <span className="text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                          Your Study Notes
+                          {t('rv.studyNotes.title')}
                         </span>
                         <ChevronDown className={`w-4 h-4 text-amber-700 dark:text-amber-400 transition-transform ${studyNotesExpanded ? '' : '-rotate-90'}`} />
                       </button>
@@ -973,7 +986,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                             if (!note) return null;
                             return (
                               <div key={block.id} className="text-sm">
-                                <span className="font-semibold text-[var(--text-primary)]">Question {idx + 1}: </span>
+                                <span className="font-semibold text-[var(--text-primary)]">{interpolate(t('rv.studyNotes.question'), { number: idx + 1 })} </span>
                                 <span
                                   className="text-[var(--text-secondary)]"
                                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
@@ -1060,13 +1073,13 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   : <AlertTriangle className="w-4 h-4" />
                 }
                 {totalBlocks > 0
-                  ? `${answeredBlocks} of ${totalBlocks} questions answered`
-                  : 'Answer questions above'
+                  ? interpolate(t('rv.banner.answered'), { answered: answeredBlocks, total: totalBlocks })
+                  : t('rv.banner.answerAbove')
                 }
               </div>
               {answeredBlocks < totalBlocks && totalBlocks > 0 && (
                 <span className="text-xs text-[var(--text-tertiary)]">
-                  — you must click the green button to submit your assessment
+                  {t('rv.banner.mustSubmit')}
                 </span>
               )}
             </div>
@@ -1076,7 +1089,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               className="flex items-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
+              {isSubmitting ? t('rv.submitting') : t('rv.submit')}
             </button>
           </div>
         </div>

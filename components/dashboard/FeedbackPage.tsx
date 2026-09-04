@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Submission } from '../../types';
 import { useAssignments } from '../../lib/AppDataContext';
 import { dataService } from '../../services/dataService';
+import { useT, useInterpolate } from '../../lib/i18n';
 import { MessageSquare, ChevronRight, ArrowLeft, ArrowUpDown, Inbox, Eye, CheckCheck } from 'lucide-react';
 
 interface FeedbackPageProps {
@@ -82,22 +83,24 @@ function sortSubmissions(items: Submission[], sortKey: SortKey): Submission[] {
   }
 }
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'date-desc', label: 'Date (newest)' },
-  { key: 'date-asc', label: 'Date (oldest)' },
-  { key: 'score-desc', label: 'Score (high\u2192low)' },
-  { key: 'score-asc', label: 'Score (low\u2192high)' },
+const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
+  { key: 'date-desc', labelKey: 'feedback.sort.dateDesc' },
+  { key: 'date-asc', labelKey: 'feedback.sort.dateAsc' },
+  { key: 'score-desc', labelKey: 'feedback.sort.scoreDesc' },
+  { key: 'score-asc', labelKey: 'feedback.sort.scoreAsc' },
 ];
 
-const TAB_CONFIG: { key: FeedbackTab; label: string; icon: React.ReactNode }[] = [
-  { key: 'new', label: 'New', icon: <Inbox className="w-3.5 h-3.5" /> },
-  { key: 'read', label: 'Read', icon: <Eye className="w-3.5 h-3.5" /> },
-  { key: 'reviewed', label: 'Reviewed', icon: <CheckCheck className="w-3.5 h-3.5" /> },
+const TAB_CONFIG: { key: FeedbackTab; icon: React.ReactNode }[] = [
+  { key: 'new', icon: <Inbox className="w-3.5 h-3.5" /> },
+  { key: 'read', icon: <Eye className="w-3.5 h-3.5" /> },
+  { key: 'reviewed', icon: <CheckCheck className="w-3.5 h-3.5" /> },
 ];
 
 const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
   const navigate = useNavigate();
   const { assignments } = useAssignments();
+  const t = useT();
+  const interpolate = useInterpolate();
   const [sortKey, setSortKey] = useState<SortKey>('date-desc');
   const [classFilter, setClassFilter] = useState<string>('All');
 
@@ -204,8 +207,8 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
         {/* Row 3 — Footer */}
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-[var(--text-muted)]">
-            {grade.gradedBy || 'Your teacher'} · {gradedDate}
-            {s.attemptNumber && s.attemptNumber > 1 && ` · Attempt ${s.attemptNumber}`}
+            {grade.gradedBy || t('feedback.yourTeacher')} · {gradedDate}
+            {s.attemptNumber && s.attemptNumber > 1 && ` · ${interpolate(t('feedback.attempt'), { count: s.attemptNumber })}`}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             {!s.feedbackReviewedAt && (
@@ -213,7 +216,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleMarkReviewed(s.id); }}
                 className="px-3 py-1.5 text-xs font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition shadow-sm"
               >
-                Mark Reviewed
+                {t('feedback.markReviewed')}
               </button>
             )}
             <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)]" />
@@ -247,10 +250,10 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
 
   const totalWithFeedback = unread.length + read.length + reviewed.length;
 
-  const emptyMessages: Record<FeedbackTab, { icon: React.ReactNode; text: string }> = {
-    new: { icon: <Inbox className="w-8 h-8 text-[var(--text-muted)] opacity-40" />, text: "No new feedback \u2014 you're all caught up!" },
-    read: { icon: <Eye className="w-8 h-8 text-[var(--text-muted)] opacity-40" />, text: 'No read feedback yet' },
-    reviewed: { icon: <CheckCheck className="w-8 h-8 text-[var(--text-muted)] opacity-40" />, text: 'No reviewed feedback yet' },
+  const emptyMessages: Record<FeedbackTab, { icon: React.ReactNode; textKey: string }> = {
+    new: { icon: <Inbox className="w-8 h-8 text-[var(--text-muted)] opacity-40" />, textKey: 'feedback.empty.new' },
+    read: { icon: <Eye className="w-8 h-8 text-[var(--text-muted)] opacity-40" />, textKey: 'feedback.empty.read' },
+    reviewed: { icon: <CheckCheck className="w-8 h-8 text-[var(--text-muted)] opacity-40" />, textKey: 'feedback.empty.reviewed' },
   };
 
   return (
@@ -262,17 +265,17 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
           <button
             onClick={() => navigate('/')}
             className="p-2 rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] hover:bg-[var(--surface-glass)] hover:border-[var(--border-strong)] transition"
-            aria-label="Back to home"
+            aria-label={t('feedback.backAria')}
           >
             <ArrowLeft className="w-4 h-4 text-[var(--text-secondary)]" />
           </button>
           <h1 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-amber-500" />
-            Teacher Feedback
+            {t('feedback.title')}
           </h1>
           {totalUnread > 0 && (
             <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full">
-              {totalUnread} unread
+              {interpolate(t('feedback.unreadBadge'), { count: totalUnread })}
             </span>
           )}
         </div>
@@ -283,13 +286,13 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--panel-bg)] border border-[var(--border)] flex items-center justify-center">
               <MessageSquare className="w-8 h-8 text-[var(--text-muted)] opacity-40" />
             </div>
-            <p className="text-sm text-[var(--text-muted)]">No feedback yet — keep submitting work!</p>
+            <p className="text-sm text-[var(--text-muted)]">{t('feedback.globalEmpty')}</p>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Tab navigation */}
             <div className="flex items-center gap-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl p-1">
-              {TAB_CONFIG.map(({ key, label, icon }) => {
+              {TAB_CONFIG.map(({ key, icon }) => {
                 const isActive = activeTab === key;
                 const count = tabCounts[key];
                 return (
@@ -306,7 +309,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                       <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
                     )}
                     {icon}
-                    <span>{label}</span>
+                    <span>{t(`feedback.tab.${key}`)}</span>
                     <span className={`px-1.5 py-0.5 text-[11.5px] font-bold rounded-full ${
                       isActive
                         ? 'bg-purple-500/30 text-[var(--text-primary)]'
@@ -330,7 +333,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                   className="text-xs font-bold bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                 >
                   {SORT_OPTIONS.map(opt => (
-                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                    <option key={opt.key} value={opt.key}>{t(opt.labelKey)}</option>
                   ))}
                 </select>
               </div>
@@ -349,7 +352,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                         : 'bg-[var(--panel-bg)] text-[var(--text-tertiary)] border-[var(--border)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    All
+                    {t('feedback.filterAll')}
                   </button>
                   {availableClasses.map(cls => (
                     <button
@@ -370,7 +373,7 @@ const FeedbackPage: React.FC<FeedbackPageProps> = ({ submissions }) => {
                 <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-[var(--panel-bg)] border border-[var(--border)] flex items-center justify-center">
                   {emptyMessages[activeTab].icon}
                 </div>
-                <p className="text-sm text-[var(--text-muted)]">{emptyMessages[activeTab].text}</p>
+                <p className="text-sm text-[var(--text-muted)]">{t(emptyMessages[activeTab].textKey)}</p>
               </div>
             ) : (
               renderSection(activeItems, activeTab === 'reviewed')
