@@ -22,7 +22,9 @@ code, .font-mono, kbd, pre, samp {
   --text-primary: #1e1233;
   --text-secondary: #4a4560;
   --text-tertiary: #6a6580;
-  --text-muted: #8a86a0;
+  /* Light-mode muted: #615a75 — ≥4.5:1 on every light surface (min 5.17:1 on
+     --surface-raised, 5.21:1 on --surface-glass tooltips). Old #8a86a0 was 2.8–3.3:1 (WCAG fail). */
+  --text-muted: #615a75;
   --text-inverted: #ffffff;
   --accent: #7c3aed;
   --accent-hover: #6d28d9;
@@ -33,7 +35,8 @@ code, .font-mono, kbd, pre, samp {
   --border-accent: rgba(124, 58, 237, 0.40) !important;
   --sidebar-bg: #efe8f8;
   --sidebar-text: #1e1233;
-  --sidebar-text-muted: #6a6580;
+  /* Sidebar muted: #5f5872 — 5.3–6.2:1 on --sidebar-bg (old #6a6580 was 4.43:1, borderline). */
+  --sidebar-text-muted: #5f5872;
   --sidebar-text-active: #7c3aed;
   --sidebar-border: rgba(124, 58, 237, 0.15);
   --scrollbar-track: rgba(124, 58, 237, 0.08);

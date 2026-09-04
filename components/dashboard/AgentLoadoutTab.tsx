@@ -331,9 +331,9 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               <span className={`text-[8px] font-bold mt-1 truncate w-full text-center px-1 ${colors.text}`}>{item.baseName || item.name.split(' ').slice(-1)[0]}</span>
               {!isDragging && (
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-                  <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
-                  <div className="text-[11.5px] text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {slot}</div>
-                  <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+                  <div className={`text-xs font-bold ${colors.text}`}>{item.name}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {slot}</div>
+                  <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--surface-raised)] border-b border-r border-[var(--border)] rotate-45"></div>
                 </div>
               )}
@@ -503,7 +503,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
               const roleColorMap: Record<string, { bg: string; border: string; text: string }> = {
                 blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-600 dark:text-blue-400' },
                 green: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-600 dark:text-green-400' },
-                yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-600 dark:text-yellow-400' },
+                yellow: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-700 dark:text-yellow-400' },
                 purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-600 dark:text-purple-400' },
               };
               const rc = roleColorMap[roleDef.color] || roleColorMap.blue;
@@ -574,10 +574,10 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   <div className="flex items-center gap-1.5 group relative cursor-help">
                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Analysis</span>
-                    <span className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold">{playerStats.analysis}</span>
+                    <span className="text-[11px] text-yellow-700 dark:text-yellow-400 font-bold">{playerStats.analysis}</span>
                     <StatBar value={playerStats.analysis} color="yellow" />
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 w-44 p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11.5px] text-[var(--text-secondary)] shadow-xl">
-                      <span className="font-bold text-yellow-600 dark:text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
+                      <span className="font-bold text-yellow-700 dark:text-yellow-400">Armor</span><br/>Reduces boss damage by {combat.armorPercent.toFixed(0)}%.
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 group relative cursor-help">
@@ -596,7 +596,7 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Armor</span>
-                    <span className="text-[11px] text-yellow-600 dark:text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
+                    <span className="text-[11px] text-yellow-700 dark:text-yellow-400 font-bold">{combat.armorPercent.toFixed(0)}%</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11.5px] text-[var(--text-tertiary)]">Crit</span>
@@ -1041,9 +1041,9 @@ const DraggableInventoryItem: React.FC<DraggableInventoryItemProps> = ({ item, e
       )}
       {!isDragging && (
         <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-2 rounded-lg whitespace-nowrap shadow-xl backdrop-blur-sm">
-          <div className={`text-[11.5px] font-bold ${colors.text}`}>{item.name}</div>
-          <div className="text-[11.5px] text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
-          <div className="text-[11.5px] text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
+          <div className={`text-xs font-bold ${colors.text}`}>{item.name}</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">{item.rarity} {item.slot}{isEquipped ? ' · EQUIPPED' : ''}</div>
+          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{Object.entries(item.stats || {}).map(([k,v]) => `+${v} ${k.slice(0,3).toUpperCase()}`).join('  ')}</div>
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--surface-raised)] border-b border-r border-[var(--border)] rotate-45"></div>
         </div>
       )}

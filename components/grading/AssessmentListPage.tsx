@@ -144,14 +144,14 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
                         style={{ width: `${gradePct}%` }}
                       />
                     </div>
-                    <span className={`text-[11.5px] font-bold tabular-nums ${gradePct === 100 ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-tertiary)]'}`}>
+                    <span className={`text-xs font-bold tabular-nums ${gradePct === 100 ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-tertiary)]'}`}>
                       {statsLoading ? '—' : `${stats.graded}/${stats.submitted}`}
                     </span>
                   </div>
                 )}
 
                 {/* Stats row */}
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-[var(--text-muted)]">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
                   <span>{statsLoading ? '—' : `${stats.submitted} submitted`}</span>
                   {assessment.rubric && <span className="text-green-600 dark:text-green-400/80">{statsLoading ? '—' : `${stats.graded} graded`}</span>}
                   {!statsLoading && stats.flagged > 0 && <span className="text-amber-600 dark:text-amber-400">{stats.flagged} flagged</span>}

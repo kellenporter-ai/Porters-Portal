@@ -505,7 +505,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                         >
                           {dayNum}
                         </div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest mt-1 text-[var(--text-muted)]">
+                        <div className="text-xs font-bold uppercase tracking-widest mt-1 text-[var(--text-muted)]">
                           {monthAbbrev} · {weekdayAbbrev}
                         </div>
                       </div>
@@ -561,7 +561,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               </span>
               <span className="text-2xl font-black text-[var(--accent-text)]">%</span>
             </div>
-            <div className="text-[11px] font-bold uppercase tracking-widest mt-2 text-[var(--text-tertiary)]">
+            <div className="text-xs font-bold uppercase tracking-widest mt-2 text-[var(--text-tertiary)]">
               {currentUnit ? `${currentUnit} · ` : ''}
               {stats.completed} of {stats.total} complete
             </div>
@@ -591,7 +591,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 {studyTime.value}
                 <span className="text-xs font-medium text-[var(--text-muted)]">{studyTime.suffix}</span>
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-widest mt-1.5 text-[var(--text-tertiary)]">
+              <div className="text-xs font-bold uppercase tracking-widest mt-1.5 text-[var(--text-tertiary)]">
                 Study
               </div>
             </div>
@@ -599,7 +599,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               <div className="text-lg font-black leading-none text-[var(--text-primary)]">
                 {stats.practicesMastered}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-widest mt-1.5 text-[var(--text-tertiary)]">
+              <div className="text-xs font-bold uppercase tracking-widest mt-1.5 text-[var(--text-tertiary)]">
                 Mastered
               </div>
             </div>
@@ -638,7 +638,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 ● Most visited
               </div>
               <div className="text-xl font-black text-[var(--text-primary)]">Resources</div>
-              <div className="text-[11px] mt-1 text-[var(--text-tertiary)]">
+              <div className="text-xs mt-1 text-[var(--text-tertiary)]">
                 {stats.total} assignment{stats.total === 1 ? '' : 's'}
                 {unreadFeedbackItems.length > 0 && ` · ${unreadFeedbackItems.length} feedback`}
               </div>
@@ -661,7 +661,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] min-h-[88px]"
             >
               <AnimatedIcon src={tile.icon} alt="" size={40} disableAnimation={performanceMode} />
-              <span className="text-[11px] font-bold text-[var(--text-secondary)]">{tile.label}</span>
+              <span className="text-xs font-bold text-[var(--text-secondary)]">{tile.label}</span>
             </button>
           ))}
         </div>

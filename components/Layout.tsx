@@ -48,7 +48,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     try {
       const stored = localStorage.getItem('sidebar-collapsed');
       if (stored !== null) return JSON.parse(stored) as boolean;
-      return typeof window !== 'undefined' && window.innerWidth < 1440;
+      // Default expanded at all widths (Chromebook discoverability) — only an
+      // explicit user toggle collapses the sidebar.
+      return false;
     } catch { return false; }
   });
   const toggleSidebar = useCallback(() => {
@@ -258,7 +260,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
               </span>
               {item.flavor && (
-                <span className="block text-[11px] font-mono text-[var(--text-tertiary,var(--sidebar-text-muted))] leading-tight mt-0.5 truncate">
+                <span className="block text-xs font-mono text-[var(--text-tertiary,var(--sidebar-text-muted))] leading-tight mt-0.5 truncate">
                   {item.flavor}
                 </span>
               )}
@@ -341,7 +343,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 <button
                   onClick={() => toggleGroup(group)}
                   aria-expanded={!isCollapsed}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] transition-colors ${isLight ? groupLightStyles[group].label : 'text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]'}`}
                 >
                   <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                   {NAV_GROUP_LABELS[group]}
@@ -624,11 +626,17 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 >
                   {user.name.charAt(0)}
                 </div>
+                <div className="flex flex-col items-start gap-0.5 min-w-0 mr-auto" aria-hidden="true">
+                  <span className="text-xs font-bold text-[var(--sidebar-text)] leading-none truncate max-w-[7.5rem]">
+                    {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] leading-none">Level {user.gamification?.level || 1}</span>
+                </div>
                 <button
                   onClick={onLogout}
                   className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
                   aria-label="Sign out"
-                  title="Sign Out"
+                  title="Sign out"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -692,7 +700,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 }`}
               >
                 <AnimatedIcon src={item.iconSrc} alt={item.name} size={32} disableAnimation={settings.performanceMode} groupHover={false} />
-                <span className="text-[11.5px] font-bold">{item.name}</span>
+                <span className="text-xs font-bold">{item.name}</span>
               </button>
             );
           })}

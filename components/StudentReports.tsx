@@ -189,9 +189,9 @@ const StudentReports: React.FC<StudentReportsProps> = ({ users, assignments }) =
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm text-white font-medium truncate">{u.name}</div>
-                        <div className="text-[11.5px] text-[var(--text-tertiary)] truncate">{u.email} · {u.section || 'No section'} · {u.enrolledClasses?.join(', ') || u.classType || 'No class'}</div>
+                        <div className="text-xs text-[var(--text-tertiary)] truncate">{u.email} · {u.section || 'No section'} · {u.enrolledClasses?.join(', ') || u.classType || 'No class'}</div>
                       </div>
-                      <div className="text-[11.5px] text-[var(--text-tertiary)] shrink-0">Lv.{u.gamification?.level || 1}</div>
+                      <div className="text-xs text-[var(--text-tertiary)] shrink-0">Lv.{u.gamification?.level || 1}</div>
                     </button>
                   ))
                 )}

@@ -53,6 +53,8 @@ const ProctorTTS: React.FC<ProctorTTSProps> = ({ textContent, compact }) => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(sentences[index]);
     utterance.rate = speed;
+    // Locale source for TTS: html lang attribute (Phase 4 i18n updates it; 'en-US' fallback).
+    utterance.lang = (typeof document !== 'undefined' && document.documentElement.lang) || 'en-US';
     utterance.onend = () => {
       const next = index + 1;
       if (next < sentences.length) {
