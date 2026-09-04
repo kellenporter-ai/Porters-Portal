@@ -1,5 +1,5 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage } from '../types';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, FeedbackHistoryEntry, DraftFeedbackMessage, LessonBlock } from '../types';
 import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -537,6 +537,28 @@ export const dataService = {
 
   addAssignment: async (assignment: Assignment) => {
     try {
+      // Phase 1e — answer keys are written to the admin-only assignment_keys
+      // collection, never to the student-readable assignments doc.
+      const keyBlocks = (assignment.lessonBlocks || []).map((block) => {
+        const key: Record<string, unknown> = { id: block.id, type: block.type };
+        if (block.correctAnswer !== undefined) key.correctAnswer = block.correctAnswer;
+        if (block.acceptedAnswers !== undefined) key.acceptedAnswers = block.acceptedAnswers;
+        if (block.sortItems !== undefined) key.sortItems = block.sortItems;
+        if (block.items !== undefined) key.items = block.items;
+        return key;
+      });
+      const safeBlocks = (assignment.lessonBlocks || []).map((block) => {
+        const { correctAnswer: _ca, acceptedAnswers: _aa, ...rest } = block as LessonBlock & { correctAnswer?: number; acceptedAnswers?: string[] };
+        if (rest.sortItems) {
+          rest.sortItems = rest.sortItems.map((si: { text: string; correct: string }) => ({ ...si, correct: '' as 'left' | 'right' }));
+        }
+        if (rest.type === 'RANKING') {
+          // The ordered items[] array IS the ranking answer key.
+          delete (rest as Partial<LessonBlock>).items;
+        }
+        return rest;
+      });
+
       const data: Record<string, unknown> = {
         title: assignment.title,
         description: assignment.description,
@@ -551,7 +573,7 @@ export const dataService = {
         dueDate: assignment.dueDate || null,
         targetSections: assignment.targetSections && assignment.targetSections.length > 0 ? assignment.targetSections : [],
         scheduledAt: assignment.scheduledAt || null,
-        lessonBlocks: assignment.lessonBlocks && assignment.lessonBlocks.length > 0 ? assignment.lessonBlocks : [],
+        lessonBlocks: safeBlocks.length > 0 ? safeBlocks : [],
         isAssessment: assignment.isAssessment || false,
         assessmentConfig: assignment.assessmentConfig
           ? {
@@ -572,13 +594,45 @@ export const dataService = {
             data.createdAt = new Date().toISOString();
           }
           await setDoc(doc(db, 'assignments', assignment.id), data, { merge: true });
+          await setDoc(doc(db, 'assignment_keys', assignment.id), {
+            lessonBlocks: keyBlocks,
+            updatedAt: new Date().toISOString(),
+          });
       } else {
         data.createdAt = new Date().toISOString();
-        await addDoc(collection(db, 'assignments'), data);
+        const ref = await addDoc(collection(db, 'assignments'), data);
+        await setDoc(doc(db, 'assignment_keys', ref.id), {
+          lessonBlocks: keyBlocks,
+          updatedAt: new Date().toISOString(),
+        });
       }
     } catch (error) {
       reportError(error, { method: 'addAssignment' });
       throw error;
+    }
+  },
+
+  // Phase 1e — admins/teacher editors read answer keys back from the
+  // admin-only assignment_keys collection, falling back to inline keys
+  // on legacy (pre-migration) assignment docs.
+  getAssignmentKeys: async (assignmentId: string): Promise<Record<string, unknown> | null> => {
+    try {
+      const keysSnap = await getDoc(doc(db, 'assignment_keys', assignmentId));
+      if (keysSnap.exists()) return keysSnap.data();
+      const aSnap = await getDoc(doc(db, 'assignments', assignmentId));
+      if (!aSnap.exists()) return null;
+      const inline = (aSnap.data().lessonBlocks || []) as Array<Record<string, unknown>>;
+      return { lessonBlocks: inline.map((b) => {
+        const key: Record<string, unknown> = { id: b.id, type: b.type };
+        if (b.correctAnswer !== undefined) key.correctAnswer = b.correctAnswer;
+        if (b.acceptedAnswers !== undefined) key.acceptedAnswers = b.acceptedAnswers;
+        if (b.sortItems !== undefined) key.sortItems = b.sortItems;
+        if (b.items !== undefined) key.items = b.items;
+        return key;
+      }) };
+    } catch (error) {
+      reportError(error, { method: 'getAssignmentKeys' });
+      return null;
     }
   },
 

@@ -17,6 +17,46 @@ import {
 // ==========================================
 
 /**
+ * Phase 1e — Answer-key resolution (backward compatible).
+ *
+ * Answer keys (correctAnswer / acceptedAnswers / sortItems[].correct /
+ * ranking items[]) are being migrated out of `assignments/{id}.lessonBlocks`
+ * into `assignment_keys/{id}.lessonBlocks` (admin-only collection).
+ *
+ * Read path: prefer `assignment_keys`, fall back to inline keys on the
+ * assignment doc so grading is identical before/after the migration runs.
+ */
+export type GradingBlock = Record<string, unknown> & { id: string };
+
+export async function resolveGradingBlocks(
+  db: admin.firestore.Firestore,
+  assignmentId: string,
+  inlineBlocks: Array<Record<string, unknown>>,
+  get?: (path: string) => Promise<admin.firestore.DocumentSnapshot>,
+): Promise<GradingBlock[]> {
+  const keysSnap = get ? await get(`assignment_keys/${assignmentId}`) : await db.doc(`assignment_keys/${assignmentId}`).get();
+  if (keysSnap.exists) {
+    const keyBlocks = keysSnap.data()?.lessonBlocks;
+    if (Array.isArray(keyBlocks) && keyBlocks.length > 0) {
+      // INLINED from lib/gradingKeys.ts (functions rootDir excludes ../../lib).
+      // Keep in sync — drift guard: lib/__tests__/grading-keys.test.ts.
+      const keyById = new Map<string, Record<string, unknown>>();
+      for (const kb of keyBlocks as Array<Record<string, unknown>>) {
+        if (kb && typeof kb.id === "string") keyById.set(kb.id, kb);
+      }
+      if (keyById.size === 0) return inlineBlocks as GradingBlock[];
+      const mergeKeyInto = (block: Record<string, unknown>): GradingBlock => {
+        const keyBlock = keyById.get(block.id as string);
+        return (keyBlock ? { ...block, ...keyBlock } : block) as GradingBlock;
+      };
+      return inlineBlocks.map(mergeKeyInto);
+    }
+  }
+  // Fallback: pre-migration docs carry keys inline.
+  return inlineBlocks as GradingBlock[];
+}
+
+/**
  * Tombstone envelope written by the client when a response is deleted
  * client-side ({__delete__: true, blockId}). Mirrors lib/persistentWrite.ts —
  * inlined because functions/ tsconfig rootDir excludes ../../lib imports.
@@ -303,7 +343,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         ([, v]) => !isResponseTombstone(v),
       ),
     ) as Record<string, unknown>;
-    const blocks = assignment.lessonBlocks || [];
+    const blocks = await resolveGradingBlocks(db, assignmentId, assignment.lessonBlocks || [], (p) => transaction.get(db.doc(p)));
     const gradeResult = gradeAssessmentBlocks(blocks, cleanedResponses);
 
     // 5a. Server-side elapsed time validation
@@ -748,7 +788,7 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   }
 
   // 5. Grade using shared helper
-  const blocks = assignment.lessonBlocks || [];
+  const blocks = await resolveGradingBlocks(db, assignmentId, assignment.lessonBlocks || []);
   const { correct, total, percentage, perBlock } = gradeAssessmentBlocks(blocks, responses);
 
   // 6. Find and validate session token

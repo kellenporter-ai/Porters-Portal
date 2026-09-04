@@ -16,7 +16,7 @@ import {
   assertSucceeds,
   assertFails,
 } from '@firebase/rules-unit-testing';
-import { doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 
 const PROJECT = 'porter-portal-rules-tests';
@@ -373,6 +373,57 @@ describe('lesson_block_responses: session gating', () => {
         userId: STUDENT_A,
         assignmentId: ASSIGNMENT,
         responses: { b1: 'x' },
+      }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 1e — assignment_keys (answer keys, admin-only collection)
+// ---------------------------------------------------------------------------
+describe('assignment_keys: admin-only answer keys', () => {
+  const keysDoc = { lessonBlocks: [{ id: 'b1', type: 'MC', correctAnswer: 1 }] };
+
+  async function seedKeysDoc() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'assignment_keys', ASSIGNMENT), keysDoc);
+    });
+  }
+
+  it('student CANNOT read assignment_keys', async () => {
+    await seedKeysDoc();
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(getDoc(doc(student, 'assignment_keys', ASSIGNMENT)));
+  });
+
+  it('student CANNOT write assignment_keys', async () => {
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      setDoc(doc(student, 'assignment_keys', ASSIGNMENT), keysDoc),
+    );
+    await seedKeysDoc();
+    await assertFails(
+      updateDoc(doc(student, 'assignment_keys', ASSIGNMENT), {
+        'lessonBlocks.b1.correctAnswer': 0,
+      }),
+    );
+  });
+
+  it('unauthenticated user CANNOT read assignment_keys', async () => {
+    await seedKeysDoc();
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'assignment_keys', ASSIGNMENT)));
+  });
+
+  it('admin CAN read and write assignment_keys', async () => {
+    const admin = testEnv.authenticatedContext('admin-uid', { admin: true }).firestore();
+    await assertSucceeds(
+      setDoc(doc(admin, 'assignment_keys', ASSIGNMENT), keysDoc),
+    );
+    await assertSucceeds(getDoc(doc(admin, 'assignment_keys', ASSIGNMENT)));
+    await assertSucceeds(
+      updateDoc(doc(admin, 'assignment_keys', ASSIGNMENT), {
+        'lessonBlocks.b1.correctAnswer': 2,
       }),
     );
   });

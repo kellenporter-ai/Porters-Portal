@@ -100,9 +100,18 @@ service cloud.firestore {
     match /assignments/{assignmentId} {
       // Any whitelisted user can read assignments
       allow read: if isAuthenticated();
-      
+
       // Only admin can create/edit/delete assignments
       allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // ASSIGNMENT KEYS (answer keys — admin only, NEVER student-readable)
+    // Phase 1e: keys are extracted from lessonBlocks into this collection.
+    // Students receive nothing; grading Cloud Functions use Admin SDK.
+    // ==========================================
+    match /assignment_keys/{assignmentId} {
+      allow read, write: if isAdmin();
     }
 
     // ==========================================

@@ -589,3 +589,170 @@ export const migrateSpecializationsV1ToV2 = onCall({ memory: "1GiB", timeoutSeco
 
   return { dryRun, migrated, skipped, errors: errors.slice(0, 20) };
 });
+
+// ==========================================
+// PHASE 1e — assignment answer keys → assignment_keys
+// ==========================================
+
+const ASSIGNMENT_KEY_FIELDS = ["correctAnswer", "acceptedAnswers", "sortItems", "items"] as const;
+
+interface AssignmentKeyBlock { id?: string; type?: string; [key: string]: unknown }
+
+function extractAssignmentKeyBlock(block: AssignmentKeyBlock): AssignmentKeyBlock {
+  const key: AssignmentKeyBlock = { id: block.id, type: block.type };
+  for (const field of ASSIGNMENT_KEY_FIELDS) {
+    if (block[field] !== undefined) key[field] = block[field];
+  }
+  return key;
+}
+
+/**
+ * Moves answer keys out of `assignments/{id}.lessonBlocks` into the
+ * admin-only `assignment_keys/{id}` collection (Phase 1e).
+ *
+ * For each assignment doc:
+ *  1. Builds a key-only lessonBlocks array (correctAnswer / acceptedAnswers /
+ *     sortItems / RANKING items[]) and writes it to assignment_keys/{id}.
+ *  2. Rewrites assignments/{id}.lessonBlocks with key fields stripped
+ *     (sortItems[].correct blanked; RANKING items[] removed).
+ *
+ * Idempotent: assignments with no key fields in any block are skipped, and
+ * re-running after a successful pass finds nothing to strip. Safe to call
+ * multiple times. dryRun defaults to true. Admin-only.
+ *
+ * NOTE: grading stays correct before, during, and after this migration —
+ * resolveGradingBlocks in assessment.ts prefers assignment_keys and falls
+ * back to inline keys (lib/gradingKeys.ts merge logic).
+ */
+export const migrateAssignmentKeys = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
+  await verifyAdmin(request.auth);
+
+  const { dryRun: dryRunRaw = true, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRunRaw !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
+  }
+  const dryRun = dryRunRaw !== false; // default true for safety
+
+  const db = admin.firestore();
+  const BATCH_SIZE = 400;
+
+  let totalScanned = 0;
+  let migrated = 0;
+  let skippedNoKeys = 0;
+  let skippedMissingBlocks = 0;
+  const errors: string[] = [];
+  const preview: Array<{ id: string; blocks: number; keyFields: string[] }> = [];
+
+  let lastDoc: admin.firestore.QueryDocumentSnapshot | null = null;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    let query: admin.firestore.Query = db.collection("assignments").orderBy(admin.firestore.FieldPath.documentId()).limit(500);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    totalScanned += snapshot.size;
+
+    interface PendingDoc {
+      ref: admin.firestore.DocumentReference;
+      keysRef: admin.firestore.DocumentReference;
+      keyBlocks: AssignmentKeyBlock[];
+      safeBlocks: AssignmentKeyBlock[];
+      keyFields: string[];
+      blockCount: number;
+    }
+    const pending: PendingDoc[] = [];
+
+    for (const docSnap of snapshot.docs) {
+      try {
+        const data = docSnap.data();
+        const blocks = data.lessonBlocks;
+        if (!Array.isArray(blocks) || blocks.length === 0) {
+          skippedMissingBlocks++;
+          continue;
+        }
+
+        let hasKeys = false;
+        const keyFields = new Set<string>();
+        const keyBlocks: AssignmentKeyBlock[] = [];
+        const safeBlocks: AssignmentKeyBlock[] = [];
+
+        for (const rawBlock of blocks as AssignmentKeyBlock[]) {
+          const block = rawBlock || {};
+          const key = extractAssignmentKeyBlock(block);
+          for (const field of ASSIGNMENT_KEY_FIELDS) {
+            if (key[field] !== undefined) { hasKeys = true; keyFields.add(field); }
+          }
+          keyBlocks.push(key);
+
+          const restBlock = { ...block };
+          delete restBlock.correctAnswer;
+          delete restBlock.acceptedAnswers;
+          if (Array.isArray(restBlock.sortItems)) {
+            restBlock.sortItems = (restBlock.sortItems as Array<{ text: string; correct: string }>).map((si) => ({
+              text: si.text,
+              correct: "",
+            }));
+          }
+          if (restBlock.type === "RANKING") {
+            // The ordered items[] array IS the ranking answer key.
+            delete restBlock.items;
+          }
+          safeBlocks.push(restBlock);
+        }
+
+        if (!hasKeys) { skippedNoKeys++; continue; }
+
+        if (preview.length < 20) {
+          preview.push({ id: docSnap.id, blocks: blocks.length, keyFields: Array.from(keyFields) });
+        }
+        pending.push({
+          ref: docSnap.ref,
+          keysRef: db.doc(`assignment_keys/${docSnap.id}`),
+          keyBlocks,
+          safeBlocks,
+          keyFields: Array.from(keyFields),
+          blockCount: blocks.length,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${docSnap.id}: ${msg}`);
+      }
+    }
+
+    if (!dryRun && pending.length > 0) {
+      for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+        const chunk = pending.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        for (const p of chunk) {
+          batch.set(p.keysRef, {
+            lessonBlocks: p.keyBlocks,
+            updatedAt: new Date().toISOString(),
+          });
+          batch.update(p.ref, { lessonBlocks: p.safeBlocks });
+        }
+        await batch.commit();
+        migrated += chunk.length;
+      }
+    } else {
+      migrated += pending.length;
+    }
+
+    if (snapshot.size < 500) break;
+  }
+
+  logWithCorrelation('info', 'migrateAssignmentKeys complete', correlationId, {
+    dryRun,
+    totalScanned,
+    migrated,
+    skippedNoKeys,
+    skippedMissingBlocks,
+    errorCount: errors.length,
+  });
+
+  return { dryRun, totalScanned, migrated, skippedNoKeys, skippedMissingBlocks, errors: errors.slice(0, 20), preview };
+});

@@ -377,6 +377,34 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   const { confirm } = useConfirm();
   const toast = useToast();
 
+  // Phase 1e — answer keys no longer ship on the student-readable assignment
+  // doc. Admins fetch them from assignment_keys and merge onto a local copy
+  // for grading display (correct-answer annotations in the review UI).
+  const [keyBlocks, setKeyBlocks] = React.useState<Record<string, Partial<LessonBlock>>>({});
+  React.useEffect(() => {
+    if (!selectedAssessmentId) { setKeyBlocks({}); return; }
+    let cancelled = false;
+    dataService.getAssignmentKeys(selectedAssessmentId).then((keys) => {
+      if (cancelled || !keys?.lessonBlocks) return;
+      const map: Record<string, Partial<LessonBlock>> = {};
+      for (const kb of keys.lessonBlocks as Array<Record<string, unknown> & { id?: string }>) {
+        if (kb?.id) map[kb.id] = kb as Partial<LessonBlock>;
+      }
+      setKeyBlocks(map);
+    });
+    return () => { cancelled = true; };
+  }, [selectedAssessmentId]);
+
+  const assessmentWithKeys: Assignment | null = React.useMemo(() => {
+    if (!selectedAssessment) return null;
+    if (Object.keys(keyBlocks).length === 0) return selectedAssessment;
+    return {
+      ...selectedAssessment,
+      lessonBlocks: (selectedAssessment.lessonBlocks || []).map((b) =>
+        keyBlocks[b.id] ? ({ ...b, ...keyBlocks[b.id] } as LessonBlock) : b),
+    };
+  }, [selectedAssessment, keyBlocks]);
+
   // Peer similarity flags for current student
   const peerFlags = React.useMemo(() => {
     if (!integrityReport || !sub) return [] as SimilarityPair[];
@@ -499,9 +527,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                 )}
               </div>
             </div>
-          ) : selectedAssessment?.lessonBlocks ? (
+          ) : assessmentWithKeys?.lessonBlocks ? (
             <div className="space-y-2">
-              {selectedAssessment.lessonBlocks
+              {assessmentWithKeys.lessonBlocks
                 .filter((block: LessonBlock) => INTERACTIVE_BLOCK_TYPES.includes(block.type))
                 .map((block: LessonBlock, qi: number) => {
                   const rawAnswer = draftResponses[block.id] as Record<string, unknown> | undefined;
@@ -739,9 +767,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           />
         )}
 
-        {sub.assessmentScore?.perBlock && selectedAssessment?.lessonBlocks ? (
+        {sub.assessmentScore?.perBlock && assessmentWithKeys?.lessonBlocks ? (
           <div className="space-y-2">
-            {selectedAssessment.lessonBlocks
+            {assessmentWithKeys.lessonBlocks
               .filter((block: LessonBlock) => INTERACTIVE_BLOCK_TYPES.includes(block.type))
               .map((block: LessonBlock, qi: number) => {
                 const blockResult = sub.assessmentScore?.perBlock?.[block.id];
