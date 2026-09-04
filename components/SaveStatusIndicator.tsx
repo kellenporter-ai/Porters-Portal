@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Check, AlertTriangle } from 'lucide-react';
 import type { WriteStatus } from '../lib/persistentWrite';
+import { useT } from '../lib/i18n';
 
 // Augment Window for custom portal events
 declare global {
@@ -30,6 +31,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
   sessionInvalid = false,
   lsKey = null,
 }) => {
+  const t = useT();
   const [visible, setVisible] = useState(false);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
@@ -118,26 +120,26 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
   const config = {
     saving: {
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      text: 'Saving...',
+      text: t('save.saving'),
       className: 'text-blue-300 bg-blue-500/10 border-blue-500/20',
     },
     saved: {
       icon: <Check className="w-3 h-3" />,
-      text: 'Saved',
+      text: t('save.saved'),
       className: 'text-green-300 bg-green-500/10 border-green-500/20',
     },
     retrying: {
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      text: 'Retrying save...',
+      text: t('save.retrying'),
       className: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
     },
     error: {
       icon: <AlertTriangle className={`w-3 h-3 ${prolongedError ? 'animate-pulse' : ''}`} />,
       text: assessmentSessionInvalid || sessionInvalid
-        ? 'Session expired — refresh to restore your work'
+        ? t('save.error.session')
         : prolongedError
-          ? 'Can\'t save to server — DO NOT refresh or close this tab! Work is only in this tab.'
-          : 'Save failed — work is safe in this tab only',
+          ? t('save.error.prolonged')
+          : t('save.error.short'),
       className: prolongedError || assessmentSessionInvalid || sessionInvalid
         ? 'text-red-600 dark:text-red-400 bg-red-500/20 border-red-500/40 animate-pulse'
         : 'text-red-300 bg-red-500/10 border-red-500/20',
@@ -163,7 +165,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
           className="flex items-center gap-1.5 text-[11.5px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 uppercase tracking-widest"
         >
           <AlertTriangle className="w-3 h-3" />
-          Offline — work saved locally
+          {t('save.offline')}
         </div>
       )}
       {storageUnavailable && isAssessment && (
@@ -172,7 +174,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
           className="flex items-center gap-1.5 text-[11.5px] font-bold text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase tracking-widest"
         >
           <Loader2 className="w-3 h-3" />
-          Saving to server only
+          {t('save.serverOnly')}
         </div>
       )}
       {(assessmentSessionInvalid || sessionInvalid) && isAssessment && (
@@ -181,7 +183,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
           className="flex items-center gap-1.5 text-[11.5px] font-bold text-red-600 dark:text-red-400 bg-red-500/20 px-2.5 py-1 rounded-full border border-red-500/40 uppercase tracking-widest animate-pulse"
         >
           <AlertTriangle className="w-3 h-3" />
-          Session expired — refresh to restore work
+          {t('save.sessionExpiredChip')}
         </div>
       )}
     </>

@@ -14,6 +14,7 @@ import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
 import { useToast } from './ToastProvider';
+import { useT } from '../lib/i18n';
 import { persistentWrite, draftKey, readDraft, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
 import { renderReadingContent } from '../lib/renderReadingContent';
 import { assessmentSessionKey, assessmentSessionSigKey, legacyAssessmentSessionKey, legacyAssessmentSessionSigKey } from '../lib/assessmentSessionKeys';
@@ -236,6 +237,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   });
 
   const toast = useToast();
+  const t = useT();
   // F3: Proctor's own draft key — the session-invalid listener must only react
   // to events for THIS draft, not another consumer's (per-lsKey streak isolation).
   const ownDraftLsKey = userId && assignmentId ? draftKey('draft', userId, assignmentId) : null;
@@ -334,7 +336,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       }
       // All retries failed
       if (!cancelled) {
-        setSessionTokenError('Unable to start assessment session. Please check your internet connection and refresh the page.');
+        setSessionTokenError(t('proctor.session.tokenError'));
         onSessionToken?.(null);
       }
     };
@@ -1692,7 +1694,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             <div className="flex items-center gap-4 flex-wrap">
                 <div className={`flex items-center gap-2 ${hasSidebar ? 'text-xs' : 'text-sm'} font-bold ${isActive ? 'text-green-600 dark:text-green-400' : 'text-yellow-500'}`}>
                     {isActive ? <PlayCircle className={hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} /> : <Clock className={`${hasSidebar ? 'w-3 h-3' : 'w-4 h-4'} animate-pulse`} />}
-                    {hasSidebar ? (isActive ? 'Active' : 'Paused') : (isActive ? 'Active Session' : 'Away (Paused)')}
+                    {hasSidebar ? (isActive ? t('proctor.session.active') : t('proctor.session.paused')) : (isActive ? t('proctor.session.active') : t('proctor.session.paused'))}
                 </div>
                 {!hasSidebar && (
                   <div className="text-xs text-[var(--text-tertiary)] font-mono bg-[var(--panel-bg)] px-2 py-1 rounded" translate="no">

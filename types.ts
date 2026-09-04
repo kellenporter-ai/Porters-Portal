@@ -21,6 +21,7 @@ export interface UserSettings {
   soundVolume?: number; // 0.0–1.0 master volume (default 0.5)
   pushNotifications?: boolean; // Browser push notification permission granted
   themeMode?: 'light' | 'dark';
+  preferredLocale?: 'en' | 'es'; // UI language (Phase 4a i18n)
 }
 
 export interface ClassConfig {

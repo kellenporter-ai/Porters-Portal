@@ -4,17 +4,23 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { User, UserRole, UserSettings } from '../types';
 import { NAVIGATION, NavItem, NavGroup } from '../constants';
 
-// Display-name overrides for sidebar primary label (UX audit 2.2 — function-first dual naming).
-// The canonical NavItem.name remains the route/tab key; this map only affects what the user reads.
-const NAV_DISPLAY_NAMES: Record<string, string> = {
-  'Loadout': 'Gear',
-  'Flux Shop': 'Shop',
-  'Intel Dossier': 'My Stats',
-  'Resource Editor': 'Lesson Editor',
-  'XP Command': 'Gamification',
-  'Operatives': 'Students',
-  'XP Protocols': 'Rewards',
-  'Boss Ops': 'Boss Battles',
+// Display-name overrides moved into lib/i18n dictionaries (nav.* keys) in Phase 4a —
+// NAV_NAME_KEYS below maps canonical names to dictionary keys.
+
+// i18n lookup wrapper — resolves the display name for a nav item in the active
+// locale. Unknown names (e.g. children like 'Analytics') pass through verbatim.
+function navDisplayName(name: string, t: (key: string) => string): string {
+  const key = NAV_NAME_KEYS[name];
+  return key ? t(key) : name;
+}
+
+// Flavor subtitle overrides (constants.tsx NAVIGATION) — keyed for i18n lookup.
+const FLAVOR_KEYS: Record<string, string> = {
+  'Gear': 'navFlavor.loadout',
+  'Flux': 'navFlavor.fluxShop',
+  'Achievements': 'navFlavor.badges',
+  'Encounters': 'navFlavor.bossEncounters',
+  'Dossier': 'navFlavor.intelDossier',
 };
 import { TAB_TO_PATH, PATH_TO_TAB } from '../lib/routes';
 import { LogOut, Settings, Menu, X, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Zap, Bug, Music } from 'lucide-react';
@@ -27,6 +33,21 @@ import CommandPalette, { CommandPaletteItem } from './CommandPalette';
 import { dataService } from '../services/dataService';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
+import { useLocale, useT } from '../lib/i18n';
+
+// Display-name overrides for sidebar primary label (UX audit 2.2 — function-first dual naming).
+// The canonical NavItem.name remains the route/tab key; this map only affects what the user reads.
+// Keys index into the i18n dictionaries (lib/i18n/en.ts) so the same override works in EN and ES.
+const NAV_NAME_KEYS: Record<string, string> = {
+  'Loadout': 'nav.loadout',
+  'Flux Shop': 'nav.fluxShop',
+  'Intel Dossier': 'nav.intelDossier',
+  'Resource Editor': 'nav.resourceEditor',
+  'XP Command': 'nav.xpCommand',
+  'Operatives': 'nav.operatives',
+  'XP Protocols': 'nav.xpProtocols',
+  'Boss Ops': 'nav.bossOps',
+};
 
 interface LayoutProps {
   user: User;
@@ -42,6 +63,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { enabledFeatures } = useClassConfig();
   const { theme } = useTheme();
+  const { locale } = useLocale();
+  const t = useT();
   const isLight = theme === 'light';
   // Collapsible sidebar — default to collapsed on narrow screens (<1440px)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -126,14 +149,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     if (parent) setExpandedParent(parent.name);
   }, [activeTab]);
 
-  // Group labels for nav sections
+  // Group labels for nav sections (keys into the i18n dictionaries)
   const NAV_GROUP_LABELS: Record<NavGroup, string> = {
-    learning: 'Learning',
-    operations: 'Operations',
-    intel: 'Intel',
-    admin_ops: 'Operations',
-    classroom: 'Classroom',
-    systems: 'Systems',
+    learning: t('navGroup.learning'),
+    operations: t('navGroup.operations'),
+    intel: t('navGroup.intel'),
+    admin_ops: t('navGroup.admin_ops'),
+    classroom: t('navGroup.classroom'),
+    systems: t('navGroup.systems'),
   };
 
   // Persist collapsed groups in localStorage
@@ -214,7 +237,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <span className={isActive ? 'text-[var(--sidebar-text-active)]' : ''}>
                 <AnimatedIcon src={item.iconSrc} alt={item.name} size={item.iconSize || 40} disableAnimation={settings.performanceMode} />
               </span>
-              {showUrgencyDot && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
+              {showUrgencyDot && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" role="img" aria-label={t('nav.urgencyDot.aria')} />
+              )}
             </button>
           </div>
         );
@@ -256,12 +281,18 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             </span>
             <span className="flex-1 text-left min-w-0">
               <span className="flex items-center gap-2">
-                <span className="font-medium text-sm truncate">{NAV_DISPLAY_NAMES[item.name] ?? item.name}</span>
-                {showUrgencyDot && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0" />}
+                <span className="font-medium text-sm truncate">{navDisplayName(item.name, t)}</span>
+                {showUrgencyDot && (
+                  <span
+                    className="w-2 h-2 bg-red-500 rounded-full shrink-0"
+                    role="img"
+                    aria-label={t('nav.urgencyDot.aria')}
+                  />
+                )}
               </span>
               {item.flavor && (
                 <span className="block text-xs font-mono text-[var(--text-tertiary,var(--sidebar-text-muted))] leading-tight mt-0.5 truncate">
-                  {item.flavor}
+                  {FLAVOR_KEYS[item.flavor] ? t(FLAVOR_KEYS[item.flavor]) : item.flavor}
                 </span>
               )}
             </span>
@@ -395,7 +426,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         items.push({
           ...item,
           navTarget: `${item.name}:${item.children[0].name}`,
-          displayName: NAV_DISPLAY_NAMES[item.name] ?? item.name,
+          displayName: navDisplayName(item.name, t),
         });
         item.children.forEach(child => {
           items.push({
@@ -404,18 +435,18 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             iconSize: child.iconSize,
             role: item.role,
             navTarget: `${item.name}:${child.name}`,
-            displayName: `${NAV_DISPLAY_NAMES[item.name] ?? item.name} › ${child.name}`,
+            displayName: `${navDisplayName(item.name, t)} › ${child.name}`,
           });
         });
       } else {
         items.push({
           ...item,
-          displayName: NAV_DISPLAY_NAMES[item.name] ?? item.name,
+          displayName: navDisplayName(item.name, t),
         });
       }
     });
     return items;
-  }, [user.role, enabledFeatures]);
+  }, [user.role, enabledFeatures, t, locale]);
 
   // Arrow key navigation within sidebar nav items
   const handleNavKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
@@ -433,7 +464,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     <div className={`flex flex-col lg:flex-row h-screen overflow-hidden text-[var(--text-primary)] relative ${settings.performanceMode ? 'perf-mode' : ''}`}>
       {/* Skip to main content link */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:bg-purple-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">
-        Skip to main content
+        {t('app.skipToContent')}
       </a>
 
       {/* 1. Static Background (Base Layer) */}
@@ -461,11 +492,17 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       {showCrosBanner && (
         <div className="fixed top-0 left-0 right-0 z-[var(--z-sticky)] flex items-center justify-center gap-3 px-4 py-3 bg-purple-100 dark:bg-purple-900/95 border-b border-purple-300 dark:border-purple-500/30 backdrop-blur-md text-sm text-purple-800 dark:text-white animate-in slide-in-from-top duration-300">
           <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="text-purple-700 dark:text-purple-200">On a Chromebook? Enable <strong>Performance Mode</strong> for smoother scrolling.</span>
+          <span className="text-purple-700 dark:text-purple-200">
+            {locale === 'en' ? (
+              <>On a Chromebook? Enable <strong>Performance Mode</strong> for smoother scrolling.</>
+            ) : (
+              t('app.crosBanner.text')
+            )}
+          </span>
           <button onClick={enablePerfMode} className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-bold transition">
-            Enable
+            {t('app.crosBanner.enable')}
           </button>
-          <button onClick={dismissCrosBanner} className="text-gray-600 dark:text-gray-400 hover:text-white transition" aria-label="Dismiss">
+          <button onClick={dismissCrosBanner} className="text-gray-600 dark:text-gray-400 hover:text-white transition" aria-label={t('app.crosBanner.dismiss')}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -475,14 +512,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       <header className={`lg:hidden flex items-center justify-between p-4 bg-[var(--surface-overlay)] backdrop-blur-md border-b border-[var(--border)] z-30 ${isFullscreen ? 'hidden' : ''}`}>
           <div className="flex items-center gap-2">
               <PortalLogo size={36} />
-              <h1 className="font-bold text-[var(--text-primary)] text-lg">Porter's Portal</h1>
+              <h1 className="font-bold text-[var(--text-primary)] text-lg">{t('app.title')}</h1>
           </div>
           <div className="flex items-center gap-1">
               <NotificationBell userId={user.id} settings={settings} onUpdateSettings={handleUpdateSettings} />
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-2 text-[var(--text-primary)] hover:bg-[var(--surface-glass)]/10 rounded-lg transition"
-                aria-label="Open navigation menu"
+                aria-label={t('app.nav.openMenu')}
               >
                   <Menu className="w-6 h-6" />
               </button>
@@ -503,16 +540,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                               {user.name.charAt(0)}
                           </div>
                           <div>
-                              <p className="text-sm font-bold text-[var(--sidebar-text)]">{settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}</p>
+                              <p className="text-sm font-bold text-[var(--sidebar-text)]">{settings.privacyMode ? (user.gamification?.codename || t('app.footer.agent')) : user.name}</p>
                               <p className="text-[11.5px] text-[var(--sidebar-text-muted)]">{user.role}</p>
                           </div>
                       </div>
-                      <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]" aria-label="Close navigation menu">
+                      <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]" aria-label={t('app.nav.closeMenu')}>
                           <X className="w-6 h-6" />
                       </button>
                   </div>
 
-                  <nav className="flex-1 space-y-2 overflow-y-auto" role="tablist" aria-label="Mobile navigation" onKeyDown={handleNavKeyDown}>
+                  <nav className="flex-1 space-y-2 overflow-y-auto" role="tablist" aria-label={t('app.nav.mobileAria')} onKeyDown={handleNavKeyDown}>
                       <NavItems forceExpanded />
                   </nav>
 
@@ -522,14 +559,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                           className="w-full flex items-center gap-3 p-3 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-xl transition"
                       >
                           <Settings className="w-5 h-5" />
-                          <span className="font-medium">Settings</span>
+                          <span className="font-medium">{t('app.footer.settings')}</span>
                       </button>
                       <button
                           onClick={onLogout}
                           className="w-full flex items-center gap-3 p-3 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-xl transition"
                       >
                           <LogOut className="w-5 h-5" />
-                          <span className="font-medium">Sign Out</span>
+                          <span className="font-medium">{t('app.footer.signOut')}</span>
                       </button>
                   </div>
               </div>
@@ -546,8 +583,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <button
                 onClick={toggleSidebar}
                 className="p-1.5 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                aria-label="Expand sidebar"
-                title="Expand sidebar"
+                aria-label={t('app.footer.expandSidebar')}
+                title={t('app.footer.expandSidebar')}
               >
                 <PanelLeftOpen className="w-4 h-4" />
               </button>
@@ -556,16 +593,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             <div className="flex items-center px-4 py-3 border-b border-[var(--sidebar-border)] gap-3">
               <PortalLogo size={40} />
               <div className="min-w-0 flex-1">
-                <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">Porter's Portal</h1>
+                <h1 className="font-bold text-sm tracking-tight text-[var(--sidebar-text)] whitespace-nowrap">{t('app.title')}</h1>
                 <div className="flex items-center gap-1">
                   <p className="text-[11.5px] text-[var(--sidebar-text-muted)] font-medium tracking-widest uppercase">
-                    {user.role === UserRole.ADMIN ? 'Admin System' : 'Operative Terminal'}
+                    {user.role === UserRole.ADMIN ? t('app.subtitle.admin') : t('app.subtitle.student')}
                   </p>
                   <button
                     onClick={toggleSidebar}
                     className="p-1 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition shrink-0"
-                    aria-label="Collapse sidebar"
-                    title="Collapse sidebar"
+                    aria-label={t('app.footer.collapseSidebar')}
+                    title={t('app.footer.collapseSidebar')}
                   >
                     <PanelLeftClose className="w-4 h-4" />
                   </button>
@@ -574,45 +611,45 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             </div>
           )}
 
-          <nav className={`flex-1 space-y-2 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? 'p-2' : 'p-4'}`} role="tablist" aria-label="Main navigation" onKeyDown={handleNavKeyDown}>
+          <nav className={`flex-1 space-y-2 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? 'p-2' : 'p-4'}`} role="tablist" aria-label={t('app.nav.mainAria')} onKeyDown={handleNavKeyDown}>
             <NavItems />
           </nav>
 
           {/* Profile / Footer */}
           {sidebarCollapsed ? (
             <div className="p-3 border-t border-[var(--sidebar-border)] bg-black/5 dark:bg-black/10 rounded-b-3xl flex flex-col items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20" title={settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20" title={settings.privacyMode ? (user.gamification?.codename || t('app.footer.agent')) : user.name}>
                 {user.name.charAt(0)}
               </div>
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                aria-label="Open settings"
-                title="Settings"
+                aria-label={t('app.footer.openSettings')}
+                title={t('app.footer.settings')}
               >
                 <Settings className="w-4 h-4" />
               </button>
               <button
                 onClick={onLogout}
                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                aria-label="Sign out"
-                title="Sign Out"
+                aria-label={t('app.footer.signOut')}
+                title={t('app.footer.signOut')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('porters:openBugReport'))}
                 className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                aria-label="Report a bug"
-                title="Report a bug"
+                aria-label={t('app.footer.reportBug')}
+                title={t('app.footer.reportBug')}
               >
                 <Bug className="w-4 h-4" />
               </button>
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('porters:openSongRequest'))}
                 className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                aria-label="Request a song"
-                title="Request a song"
+                aria-label={t('app.footer.requestSong')}
+                title={t('app.footer.requestSong')}
               >
                 <Music className="w-4 h-4" />
               </button>
@@ -622,21 +659,21 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
               <div className="flex items-center gap-0.5 flex-wrap">
                 <div
                   className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-inner border border-white/20 shrink-0 mr-1"
-                  title={settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
+                  title={settings.privacyMode ? (user.gamification?.codename || t('app.footer.agent')) : user.name}
                 >
                   {user.name.charAt(0)}
                 </div>
                 <div className="flex flex-col items-start gap-0.5 min-w-0 mr-auto" aria-hidden="true">
                   <span className="text-xs font-bold text-[var(--sidebar-text)] leading-none truncate max-w-[7.5rem]">
-                    {settings.privacyMode ? (user.gamification?.codename || 'Agent') : user.name}
+                    {settings.privacyMode ? (user.gamification?.codename || t('app.footer.agent')) : user.name}
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] leading-none">Level {user.gamification?.level || 1}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--sidebar-text-muted)] leading-none">{t('app.footer.level').replace('{level}', String(user.gamification?.level || 1))}</span>
                 </div>
                 <button
                   onClick={onLogout}
                   className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition"
-                  aria-label="Sign out"
-                  title="Sign out"
+                  aria-label={t('app.footer.signOut')}
+                  title={t('app.footer.signOut')}
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -644,8 +681,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 <button
                   onClick={() => setIsSettingsOpen(true)}
                   className="p-2 text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text-active)] hover:bg-[var(--sidebar-border)] rounded-lg transition"
-                  aria-label="Open settings"
-                  title="Settings"
+                  aria-label={t('app.footer.openSettings')}
+                  title={t('app.footer.settings')}
                 >
                   <Settings className="w-4 h-4" />
                 </button>
@@ -680,11 +717,11 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* Mobile bottom nav — quick access to key pages (below lg breakpoint) */}
       {user.role === UserRole.STUDENT && (
-        <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-[var(--surface-overlay)] backdrop-blur-md border-t border-[var(--border)] flex items-center justify-around px-2 ${isFullscreen ? 'hidden' : ''}`} role="tablist" aria-label="Quick navigation">
+        <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-30 h-14 bg-[var(--surface-overlay)] backdrop-blur-md border-t border-[var(--border)] flex items-center justify-around px-2 ${isFullscreen ? 'hidden' : ''}`} role="tablist" aria-label={t('app.nav.quickAria')}>
           {([
-            { name: 'Home', iconSrc: '/assets/icons/icon-home.png', tab: 'Home' },
-            { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', tab: 'Resources' },
-            { name: 'Progress', iconSrc: '/assets/icons/icon-progress.png', tab: 'Progress' },
+            { key: 'nav.home', iconSrc: '/assets/icons/icon-home.png', tab: 'Home' },
+            { key: 'nav.resources', iconSrc: '/assets/icons/icon-resources.png', tab: 'Resources' },
+            { key: 'nav.progress', iconSrc: '/assets/icons/icon-progress.png', tab: 'Progress' },
           ] as const).map(item => {
             const isActive = activeTab === item.tab;
             return (
@@ -699,8 +736,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   isActive ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                 }`}
               >
-                <AnimatedIcon src={item.iconSrc} alt={item.name} size={32} disableAnimation={settings.performanceMode} groupHover={false} />
-                <span className="text-xs font-bold">{item.name}</span>
+                <AnimatedIcon src={item.iconSrc} alt={t(item.key)} size={32} disableAnimation={settings.performanceMode} groupHover={false} />
+                <span className="text-xs font-bold">{t(item.key)}</span>
               </button>
             );
           })}

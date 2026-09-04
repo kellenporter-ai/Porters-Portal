@@ -18,6 +18,7 @@ import { reportError } from './lib/errorReporting';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { setSfxEnabled, setSfxVolume, preloadSounds } from './lib/sfx';
 import { ThemeProvider } from './lib/ThemeContext';
+import { LocaleProvider } from './lib/i18n';
 import { usePushNotifications } from './lib/usePushNotifications';
 import BugReporter from './components/BugReporter';
 import NotFound from './components/NotFound';
@@ -407,6 +408,7 @@ const App: React.FC = () => {
     <ConfirmProvider>
     <ToastProvider>
     <ThemeProvider userSettings={user.settings} onUpdateSettings={handleThemeSettingsUpdate}>
+    <LocaleProvider userSettings={user.settings} onUpdateSettings={handleThemeSettingsUpdate}>
     <AppDataProvider user={user}>
 <>
       {updateAvailable && <UpdateBanner onReload={reload} onDismiss={dismiss} />}
@@ -506,7 +508,6 @@ const App: React.FC = () => {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-
       <BugReporter user={user} />
       <SongRequester user={user} />
       {user.role === UserRole.STUDENT && (
@@ -516,6 +517,7 @@ const App: React.FC = () => {
       )}
     </>
     </AppDataProvider>
+    </LocaleProvider>
     </ThemeProvider>
     </ToastProvider>
     </ConfirmProvider>

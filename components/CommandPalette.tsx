@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavItem } from '../constants';
 import { Search } from 'lucide-react';
 import { useFocusTrap } from '../lib/useFocusTrap';
+import { useT } from '../lib/i18n';
 
 export interface CommandPaletteItem extends NavItem {
   /** Optional override for what handleNavigate should be called with (e.g. "Parent:Child" for nested children). */
@@ -31,6 +32,7 @@ const fuzzyMatch = (query: string, target: string): boolean => {
 };
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect, items }) => {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -122,7 +124,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
       className="fixed inset-0 z-[80] flex items-start justify-center pt-[15vh] px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Command palette — search navigation"
+      aria-label={t('palette.ariaLabel')}
       onKeyDown={handleKeyDown}
     >
       {/* Backdrop */}
@@ -145,8 +147,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
             type="text"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setActiveIdx(0); }}
-            placeholder="Search tabs…"
-            aria-label="Search navigation tabs"
+            placeholder={t('palette.placeholder')}
+            aria-label={t('palette.searchAria')}
             className="flex-1 bg-transparent outline-none text-[var(--text-primary)] placeholder:text-[var(--text-secondary,var(--text-primary))] placeholder:opacity-50 text-sm"
           />
           <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20 dark:bg-white/10 text-[var(--text-primary)] opacity-60">Esc</kbd>
@@ -156,7 +158,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
         <div ref={listRef} className="max-h-[50vh] overflow-y-auto py-1.5" role="listbox">
           {results.length === 0 ? (
             <div className="px-4 py-6 text-center text-sm text-[var(--text-primary)] opacity-50">
-              No matching tabs.
+              {t('palette.noResults')}
             </div>
           ) : (
             results.map((item, idx) => {
@@ -184,7 +186,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, onSelect
                     )}
                   </span>
                   {item.children && (
-                    <span className="text-[10px] uppercase tracking-wider opacity-50">group</span>
+                    <span className="text-[10px] uppercase tracking-wider opacity-50">{t('palette.groupTag')}</span>
                   )}
                 </button>
               );
