@@ -14,7 +14,7 @@ import { sfx } from '../lib/sfx';
 import { reportError } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
 import { useToast } from './ToastProvider';
-import { useT } from '../lib/i18n';
+import { useT, useInterpolate } from '../lib/i18n';
 import { persistentWrite, draftKey, readDraft, clearDraft, syncDirtyDraft, WriteStatus } from '../lib/persistentWrite';
 import { renderReadingContent } from '../lib/renderReadingContent';
 import { assessmentSessionKey, assessmentSessionSigKey, legacyAssessmentSessionKey, legacyAssessmentSessionSigKey } from '../lib/assessmentSessionKeys';
@@ -238,6 +238,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   const toast = useToast();
   const t = useT();
+  const interpolate = useInterpolate();
   // F3: Proctor's own draft key — the session-invalid listener must only react
   // to events for THIS draft, not another consumer's (per-lsKey streak isolation).
   const ownDraftLsKey = userId && assignmentId ? draftKey('draft', userId, assignmentId) : null;
@@ -660,13 +661,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           // F6: a failed tombstone persist means cleared responses may linger
           // server-side — surface it, don't fail silently.
           setSaveStatus('error');
-          toast.error("Couldn't clear your saved responses on the server — they may reappear. Please try again.");
+          toast.error(t('proctor.body.clearResponsesFailed'));
         }
       }
     }
     setSavedBlockResponses({});
     setBlockResetKey(prev => prev + 1); // Force remount of LessonBlocks
-  }, [userId, assignmentId, clearSavedResponses, flushNow, previewMode, setSaveStatus, toast]);
+  }, [userId, assignmentId, clearSavedResponses, flushNow, previewMode, setSaveStatus, toast, t]);
 
   // Export lesson block progress to PDF
   const handleExportBlocksPdf = useCallback(() => {
@@ -1524,16 +1525,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
     const onContextMenu = (e: Event) => {
       e.preventDefault();
-      recordViolation('Please use the provided tools during the assessment');
+      recordViolation(t('proctor.body.violationTools'));
     };
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = '';
-      recordViolation('Please stay on this page to keep your work counted');
+      recordViolation(t('proctor.body.violationStayPage'));
     };
     const onVisibilityChange = () => {
       if (document.hidden) {
-        recordViolation('Please stay in this tab so your work is counted');
+        recordViolation(t('proctor.body.violationStayTab'));
       }
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -1542,24 +1543,24 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         const key = e.key.toLowerCase();
         if (['c', 'v', 'x', 's', 'p'].includes(key)) {
           e.preventDefault();
-          recordViolation('Keyboard shortcuts are disabled during the assessment');
+          recordViolation(t('proctor.body.violationShortcuts'));
         }
         if (key === 'u') { // View source
           e.preventDefault();
-          recordViolation('Keyboard shortcuts are disabled during the assessment');
+          recordViolation(t('proctor.body.violationShortcuts'));
         }
       }
       // F12 (devtools)
       if (e.key === 'F12') {
         e.preventDefault();
-        recordViolation('Please focus on your assessment');
+        recordViolation(t('proctor.body.violationFocus'));
       }
       // Ctrl+Shift+I/J/C
       if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
         const key = e.key.toLowerCase();
         if (['i', 'j', 'c'].includes(key)) {
           e.preventDefault();
-          recordViolation('Please focus on your assessment');
+          recordViolation(t('proctor.body.violationFocus'));
         }
       }
     };
@@ -1668,13 +1669,13 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     return (
       <div className="flex flex-col items-center justify-center h-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-8 text-center">
         <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400 mb-4" />
-        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Cannot Start Assessment</h3>
+        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{t('proctor.body.cannotStart')}</h3>
         <p className="text-[var(--text-secondary)] text-sm max-w-md mb-4">{sessionTokenError}</p>
         <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
         >
-          Refresh Page
+          {t('proctor.body.refreshPage')}
         </button>
       </div>
     );
@@ -1738,17 +1739,17 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 {moduleCompleted && bridgeConnected && (
                     showReplayPrompt ? (
                         <div className="flex items-center gap-2 bg-[var(--backdrop)] rounded-lg px-3 py-1 border border-[var(--border)]">
-                            <span className="text-[11.5px] text-[var(--text-tertiary)]">Replay from start?</span>
-                            <button onClick={handleReplayClick} className="text-[11.5px] font-bold text-green-600 dark:text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">Yes</button>
-                            <button onClick={() => setShowReplayPrompt(false)} className="text-[11.5px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded transition">Cancel</button>
+                            <span className="text-[11.5px] text-[var(--text-tertiary)]">{t('proctor.body.replayPrompt')}</span>
+                            <button onClick={handleReplayClick} className="text-[11.5px] font-bold text-green-600 dark:text-green-400 hover:text-green-300 px-2 py-0.5 bg-green-500/10 rounded transition">{t('proctor.body.replayYes')}</button>
+                            <button onClick={() => setShowReplayPrompt(false)} className="text-[11.5px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded transition">{t('proctor.body.replayCancel')}</button>
                         </div>
                     ) : (
                         <button
                             onClick={() => setShowReplayPrompt(true)}
                             className="flex items-center gap-1.5 text-[11.5px] text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1 rounded-full border border-blue-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
-                            title="Replay this module from the start (your completion record is preserved)"
+                            title={t('proctor.body.replayTitle')}
                         >
-                            <RotateCcw className="w-3 h-3" /> Replay
+                            <RotateCcw className="w-3 h-3" /> {t('proctor.body.replayLabel')}
                         </button>
                     )
                 )}
@@ -1756,10 +1757,10 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     <button
                         onClick={toggleFullscreen}
                         className="flex items-center gap-1.5 text-[11.5px] text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/20 uppercase font-bold tracking-widest transition-colors cursor-pointer"
-                        title={isFullscreen ? 'Exit full screen (Esc)' : 'Full screen'}
+                        title={isFullscreen ? t('proctor.body.exitFullscreenTitle') : t('proctor.body.fullscreenTitle')}
                     >
                         {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-                        {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+                        {isFullscreen ? t('proctor.body.exitFullScreen') : t('proctor.body.fullScreen')}
                     </button>
                 )}
                 {!hasSidebar && bridgeConnected && (
@@ -1783,7 +1784,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             ? 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20'
                             : 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
                     }`}>
-                        <AlertTriangle className="w-3 h-3" /> Lockdown Violations: {lockdownViolations}
+                        <AlertTriangle className="w-3 h-3" /> {interpolate(t('proctor.body.lockdownViolations'), { count: lockdownViolations })}
                     </div>
                 )}
                 {isAssessment && (
@@ -1800,15 +1801,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                                 className="w-4 h-4 accent-purple-600"
                                 aria-describedby="assistive-tech-helper"
                             />
-                            <span>I used dictation, auto-correct, or voice typing</span>
+                            <span>{t('proctor.body.assistiveTechLabel')}</span>
                         </label>
                         <span id="assistive-tech-helper" className="sr-only">
-                            Check this box if you used dictation, voice typing, screen reader, or other assistive technology.
-                            This prevents false integrity flags on your submission.
+                            {t('proctor.body.assistiveTechSr')}
                         </span>
                         {/* Visible tooltip for sighted users */}
                         <span className="hidden lg:inline text-[10px] text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded ml-1">
-                          Using dictation or voice typing? Check this.
+                          {t('proctor.body.assistiveTechTooltip')}
                         </span>
                     </div>
                 )}
@@ -1848,12 +1848,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             <div className="absolute inset-0 z-40 bg-amber-900/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="bg-[var(--panel-bg)] border border-amber-500/30 rounded-2xl p-6 max-w-sm text-center shadow-2xl mx-4">
                     <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-                    <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-2">Please Stay Focused</h3>
+                    <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-2">{t('proctor.body.stayFocusedTitle')}</h3>
                     <p className="text-[var(--text-secondary)] text-sm mb-2">
-                        We noticed this tab was left a few times. That is okay — you can still finish your assessment.
+                        {t('proctor.body.stayFocusedBody')}
                     </p>
                     <p className="text-[11px] text-purple-600 dark:text-purple-400 mb-4">
-                        If you need accommodations, contact your teacher after submitting.
+                        {t('proctor.body.stayFocusedAccommodations')}
                     </p>
                     <button
                         onClick={() => {
@@ -1862,7 +1862,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                         }}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-bold transition-colors"
                     >
-                        Return to Assessment
+                        {t('proctor.body.returnToAssessment')}
                     </button>
                 </div>
             </div>
@@ -1884,7 +1884,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             ref={iframeRef}
                             src={resolvedContentUrl || ''}
                             className="w-full h-full min-h-0 border-none bg-white"
-                            title="Resource Viewer"
+                            title={t('proctor.body.resourceViewerTitle')}
                             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
                             allow="fullscreen"
                             allowFullScreen
@@ -1896,7 +1896,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 const LessonsPanel = (
                     <div className="h-full overflow-y-auto bg-[var(--surface-base)]/95 p-6 text-[var(--text-secondary)] custom-scrollbar">
                         {savedBlockResponses === undefined ? (
-                            <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading progress...</div>
+                            <div className="flex items-center justify-center h-32 text-[var(--text-muted)]"><Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('proctor.body.loadingProgress')}</div>
                         ) : (
                             <LessonBlocks key={blockResetKey} blocks={lessonBlocks!} onBlockComplete={handleBlockComplete} showSidebar engagementTime={displayTime} xpEarned={xpEarnedSession} savedResponses={savedBlockResponses} onResponseChange={handleBlockResponseChange} onExportPdf={handleExportBlocksPdf} onClearResponses={handleClearBlockResponses} />
                         )}
@@ -1909,7 +1909,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             <iframe
                                 src={studyMaterial.storageUrl || studyMaterialBlobUrl || ''}
                                 className="w-full h-full border-none"
-                                title="Reference Material"
+                                title={t('proctor.body.referenceMaterialTitle')}
                                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                             />
                         ) : (
@@ -1941,7 +1941,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-full text-[var(--text-muted)]">
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading reference material...
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" /> {t('proctor.body.loadingReference')}
                     </div>
                 );
 
@@ -1959,7 +1959,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                                                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
                                         }`}
                                     >
-                                        <Play className="w-3 h-3" /> Simulation
+                                        <Play className="w-3 h-3" /> {t('proctor.body.tabSimulation')}
                                     </button>
                                 )}
                                 {hasLessons && (
@@ -1971,7 +1971,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                                                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
                                         }`}
                                     >
-                                        <BookOpen className="w-3 h-3" /> Lesson Blocks
+                                        <BookOpen className="w-3 h-3" /> {t('proctor.body.tabLessonBlocks')}
                                     </button>
                                 )}
                                 {showStudyTab && (
@@ -1983,7 +1983,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                                                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
                                         }`}
                                     >
-                                        <BookOpenText className="w-3 h-3" /> Reference
+                                        <BookOpenText className="w-3 h-3" /> {t('proctor.body.tabReference')}
                                     </button>
                                 )}
                             </div>
@@ -2013,7 +2013,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                     <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] italic">
                         <div className="text-center">
                             <Eye className="w-12 h-12 mx-auto mb-2 opacity-10" />
-                            <p className="font-mono text-sm uppercase">No interactive link found.</p>
+                            <p className="font-mono text-sm uppercase">{t('proctor.body.noInteractiveLink')}</p>
                         </div>
                     </div>
                 );
@@ -2023,7 +2023,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 <div className="h-1/3 bg-[var(--surface-base)]/95 border-t border-[var(--border)] overflow-y-auto p-6 text-[var(--text-secondary)] shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 custom-scrollbar">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-[var(--text-primary)] font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                            <Maximize2 className="w-4 h-4 text-[var(--accent-text)]" /> Operational Context
+                            <Maximize2 className="w-4 h-4 text-[var(--accent-text)]" /> {t('proctor.body.operationalContext')}
                         </h3>
                         {ttsText && <ProctorTTS textContent={ttsText} />}
                     </div>

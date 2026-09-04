@@ -4,6 +4,7 @@ import { X, RotateCcw, MessageSquare, FileText, Trophy, Check, XCircle, Clock, S
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
+import { useT, useInterpolate } from '../lib/i18n';
 
 interface AssessmentWorkspaceProps {
   // Mode
@@ -79,6 +80,8 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   onReviewWork,
 }) => {
   // Hooks must be called before any conditional return
+  const t = useT();
+  const interpolate = useInterpolate();
   const [takingSelectedSkill, setTakingSelectedSkill] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [immersiveMode, setImmersiveMode] = useState(false);
@@ -177,10 +180,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 }
               }}
               className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition-all"
-              title={immersiveMode ? 'Exit focus mode (Esc)' : 'Enter focus mode'}
+              title={immersiveMode ? t('workspace.exitFocusTitle') : t('workspace.enterFocusTitle')}
             >
               {immersiveMode ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-              {immersiveMode ? 'Exit Focus' : 'Focus'}
+              {immersiveMode ? t('workspace.exitFocus') : t('workspace.focus')}
             </button>
           </div>
         </div>
@@ -194,7 +197,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
               type="button"
               onClick={() => setSidebarCollapsed(v => !v)}
               className="self-end p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition mb-1"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? t('workspace.expandSidebar') : t('workspace.collapseSidebar')}
             >
               {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
             </button>
@@ -202,7 +205,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             {!sidebarCollapsed && (
               <>
                 <p className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold mb-1 px-1">
-                  Rubric
+                  {t('workspace.rubric')}
                 </p>
                 {takingQuestions.map((question) => (
                   <button
@@ -234,7 +237,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center gap-2 border border-transparent"
                 >
                   <LogOut className="w-3.5 h-3.5 shrink-0" />
-                  Save & Exit
+                  {t('workspace.saveExit')}
                 </button>
 
                 {/* Submit */}
@@ -244,7 +247,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2"
                 >
                   <Send className="w-3.5 h-3.5 shrink-0" />
-                  Submit
+                  {t('workspace.submit')}
                 </button>
               </>
             )}
@@ -255,7 +258,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   type="button"
                   onClick={onExit}
                   className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center justify-center"
-                  title="Save & Exit"
+                  title={t('workspace.saveExit')}
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -263,7 +266,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   type="button"
                   onClick={() => onSubmit?.()}
                   className="p-2 rounded-lg font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center justify-center"
-                  title="Submit"
+                  title={t('workspace.submit')}
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -282,10 +285,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   type="button"
                   onClick={() => setSidebarCollapsed(v => !v)}
                   className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
-                  title="Toggle sidebar"
+                  title={t('workspace.toggleSidebar')}
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">Sidebar</span>
+                  <span className="hidden sm:inline">{t('workspace.sidebar')}</span>
                 </button>
                 <div className="w-px h-4 bg-[var(--border)]" />
                 <button
@@ -294,7 +297,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Save & Exit</span>
+                  <span className="hidden sm:inline">{t('workspace.saveExit')}</span>
                 </button>
                 <button
                   type="button"
@@ -302,7 +305,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg transition-all"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Submit</span>
+                  <span className="hidden sm:inline">{t('workspace.submit')}</span>
                 </button>
               </div>
             )}
@@ -475,7 +478,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
           </div>
           <div>
             <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Assessment Returned for Revision</p>
-            <p className="text-xs text-amber-700 dark:text-amber-400/70">Your teacher returned this assessment. Review the feedback and click Retake to submit a revised version.</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400/70">{t('workspace.returnedBanner')}</p>
           </div>
         </div>
       )}
@@ -522,7 +525,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             >
               <span className="flex items-center gap-2">
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                Teacher Feedback
+                {t('workspace.teacherFeedback')}
               </span>
             </button>
           )}
@@ -536,7 +539,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             >
               <span className="flex items-center gap-2">
                 <FileText className="w-3.5 h-3.5 shrink-0" />
-                My Work
+                {t('workspace.myWork')}
               </span>
             </button>
           )}
@@ -552,10 +555,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
               className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] text-[var(--text-secondary)] hover:bg-purple-500/10 hover:text-purple-300 transition-all flex items-center gap-2 border border-transparent"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-              Retake
+              {t('workspace.retake')}
               {attemptsRemaining !== null && !isUnlimited && (
                 <span className="text-xs text-[var(--text-muted)] ml-auto">
-                  {attemptsRemaining} left
+                  {interpolate('workspace.attemptsLeft', { count: attemptsRemaining ?? 0, plural: attemptsRemaining === 1 ? '' : 's' })}
                 </span>
               )}
               {isUnlimited && (
@@ -571,7 +574,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2 border border-transparent"
           >
             <X className="w-3.5 h-3.5 shrink-0" />
-            Exit
+            {t('workspace.exit')}
           </button>
 
           {/* Spacer to push content up */}
@@ -832,6 +835,8 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   const [savedIndicators, setSavedIndicators] = useState<Record<string, boolean>>({});
   const [saveErrors, setSaveErrors] = useState<Record<string, boolean>>({});
   const toast = useToast();
+  const t = useT();
+  const interpolate = useInterpolate();
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const notesInitialized = useRef(false);
 
@@ -870,10 +875,10 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           reportError(error, { method: 'MyWorkPanel.saveNote', submissionId, blockId });
           setSaveErrors((prev) => ({ ...prev, [blockId]: true }));
           const detail = error instanceof Error && error.message ? ` ${error.message}` : '';
-          toast.error(`Couldn't save study note —${detail || ' check your connection.'}`);
+          toast.error(detail ? interpolate(t('workspace.noteSaveFailed'), { detail }) : t('workspace.noteSaveFailedDefault'));
         });
     },
-    [submissionId, toast],
+    [submissionId, toast, t, interpolate],
   );
 
   const handleNoteChange = useCallback(
@@ -903,9 +908,9 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   if (!blockResponses || Object.keys(blockResponses).length === 0) {
     return (
       <div className="max-w-3xl mx-auto space-y-4">
-        <h2 className="text-lg font-bold text-[var(--text-primary)]">My Work</h2>
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('workspace.myWork')}</h2>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] p-8 text-center">
-          <p className="text-base text-[var(--text-muted)]">No responses submitted yet.</p>
+          <p className="text-base text-[var(--text-muted)]">{t('workspace.noResponses')}</p>
         </div>
       </div>
     );
@@ -946,20 +951,20 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
     if (perBlock.needsReview) {
       return (
         <span className="inline-flex items-center gap-1 text-[13px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
-          <Clock className="w-3 h-3" /> Pending Review
+          <Clock className="w-3 h-3" /> {t('workspace.pendingReview')}
         </span>
       );
     }
     if (perBlock.correct) {
       return (
         <span className="inline-flex items-center gap-1 text-[13px] font-medium text-green-600 dark:text-green-400 bg-green-500/15 px-2 py-0.5 rounded-full">
-          <Check className="w-3 h-3" /> Correct
+          <Check className="w-3 h-3" /> {t('workspace.correct')}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 text-[13px] font-medium text-red-600 dark:text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full">
-        <XCircle className="w-3 h-3" /> Incorrect
+        <XCircle className="w-3 h-3" /> {t('workspace.incorrect')}
       </span>
     );
   };
@@ -973,7 +978,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
       if (!noteValue) return null;
       return (
         <div className="mt-3 rounded-lg bg-[var(--surface-glass)] p-3 select-none" style={{ pointerEvents: 'none' }}>
-          <p className="text-[13px] font-medium text-[var(--text-muted)] mb-1">Study Notes</p>
+          <p className="text-[13px] font-medium text-[var(--text-muted)] mb-1">{t('workspace.studyNotes')}</p>
           <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{noteValue}</p>
         </div>
       );
@@ -986,13 +991,13 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           value={noteValue}
           onChange={(e) => handleNoteChange(blockId, e.target.value)}
           onBlur={() => handleNoteBlur(blockId)}
-          placeholder="Add study notes..."
+          placeholder={t('workspace.addStudyNotes')}
           rows={2}
           className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-purple-500/40 resize-y"
         />
         {saveErrors[blockId] && !savedIndicators[blockId] && (
           <span className="absolute top-2 right-2 text-xs text-red-600 dark:text-red-400 font-medium">
-            Couldn't save — check connection
+            {t('workspace.couldntSave')}
           </span>
         )}
         {savedIndicators[blockId] && (
@@ -1033,7 +1038,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[var(--text-primary)]">My Work</h2>
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('workspace.myWork')}</h2>
         <button
           type="button"
           onClick={onReviewWork}
@@ -1045,7 +1050,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
 
       {interactiveBlocks.map((block) => {
         questionIndex++;
-        const label = block.title || `Question ${questionIndex}`;
+        const label = block.title || interpolate(t('workspace.question'), { number: questionIndex });
         const questionText = block.content || null;
         return renderCard(block.id, label, questionText);
       })}
@@ -1060,7 +1065,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
 
       {orphanIds.map((id) => {
         questionIndex++;
-        return renderCard(id, `Question ${questionIndex}`, null);
+        return renderCard(id, interpolate(t('workspace.question'), { number: questionIndex }), null);
       })}
     </div>
   );
