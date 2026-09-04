@@ -36,7 +36,6 @@ const TeacherDashboard = lazyWithRetry(() => import('./components/TeacherDashboa
 const UserManagement = lazyWithRetry(() => import('./components/UserManagement'));
 const XPManagement = lazyWithRetry(() => import('./components/XPManagement'));
 const StudentDashboard = lazyWithRetry(() => import('./components/StudentDashboard'));
-const EvidenceLocker = lazyWithRetry(() => import('./components/EvidenceLocker'));
 const Leaderboard = lazyWithRetry(() => import('./components/Leaderboard'));
 const EnrollmentCodes = lazyWithRetry(() => import('./components/EnrollmentCodes'));
 const LessonEditorPage = lazyWithRetry(() => import('./components/LessonEditorPage'));
@@ -489,9 +488,6 @@ const App: React.FC = () => {
               </FeatureErrorBoundary></Suspense>
             } />
           </Route>
-          <Route path="/forensics" element={
-            <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Evidence Locker"><EvidenceLocker user={user} /></FeatureErrorBoundary></Suspense>
-          } />
           <Route path="/leaderboard" element={
             <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Leaderboard"><Leaderboard user={user} /></FeatureErrorBoundary></Suspense>
           } />
