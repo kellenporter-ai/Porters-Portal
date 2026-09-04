@@ -365,7 +365,6 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               <span className="text-[11.5px] text-[var(--text-muted)] font-mono">{items.length}</span>
                             </button>
                             {isUnitExpanded && items.map(a => {
-                              const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
                               const hasHtml = !!a.contentUrl;
                               const isDraft = a.status === AssignmentStatus.DRAFT;
                               const isArchived = a.status === AssignmentStatus.ARCHIVED;
@@ -406,7 +405,6 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                           edited
                                         </span>
                                       )}
-                                      {hasBlocks && <span className="text-[8px] text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
                                       {hasHtml && <span className="text-[8px] text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
                                       {isDraft && <span className="text-[8px] text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
                                       {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}
@@ -529,7 +527,6 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                   </div>
                 )}
                 {expandedUnits.has(unit) && sortResources(items, unit).map(a => {
-                  const hasBlocks = a.lessonBlocks && a.lessonBlocks.length > 0;
                   const hasHtml = !!a.contentUrl;
                   const isDraft = a.status === AssignmentStatus.DRAFT;
                   const isArchived = a.status === AssignmentStatus.ARCHIVED;
@@ -570,7 +567,6 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                               edited
                             </span>
                           )}
-                          {hasBlocks && <span className="text-[8px] text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1 rounded font-mono">{a.lessonBlocks!.length}b</span>}
                           {hasHtml && <span className="text-[8px] text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 rounded font-mono">html</span>}
                           {isDraft && <span className="text-[8px] text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1 rounded font-mono">draft</span>}
                           {isArchived && <span className="text-[8px] text-gray-500 bg-gray-500/10 px-1 rounded font-mono">arch</span>}

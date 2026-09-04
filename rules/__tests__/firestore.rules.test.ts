@@ -379,6 +379,61 @@ describe('lesson_block_responses: session gating', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Phase 2a — assignment_content (heavy payload, same read access as assignments)
+// ---------------------------------------------------------------------------
+describe('assignment_content: content split from assignments', () => {
+  const contentDoc = {
+    htmlContent: '<p>hello</p>',
+    lessonBlocks: [{ id: 'b1', type: 'text', content: 'hi' }],
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
+  async function seedContentDoc() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'assignment_content', ASSIGNMENT), contentDoc);
+    });
+  }
+
+  it('student CAN read assignment_content (content not secret)', async () => {
+    await seedContentDoc();
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertSucceeds(getDoc(doc(student, 'assignment_content', ASSIGNMENT)));
+  });
+
+  it('student CANNOT write assignment_content', async () => {
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      setDoc(doc(student, 'assignment_content', ASSIGNMENT), contentDoc),
+    );
+    await seedContentDoc();
+    await assertFails(
+      updateDoc(doc(student, 'assignment_content', ASSIGNMENT), {
+        htmlContent: '<p>tampered</p>',
+      }),
+    );
+  });
+
+  it('unauthenticated user CANNOT read assignment_content', async () => {
+    await seedContentDoc();
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'assignment_content', ASSIGNMENT)));
+  });
+
+  it('admin CAN read and write assignment_content', async () => {
+    const admin = testEnv.authenticatedContext('admin-uid', { admin: true }).firestore();
+    await assertSucceeds(
+      setDoc(doc(admin, 'assignment_content', ASSIGNMENT), contentDoc),
+    );
+    await assertSucceeds(getDoc(doc(admin, 'assignment_content', ASSIGNMENT)));
+    await assertSucceeds(
+      updateDoc(doc(admin, 'assignment_content', ASSIGNMENT), {
+        htmlContent: '<p>updated</p>',
+      }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Phase 1e — assignment_keys (answer keys, admin-only collection)
 // ---------------------------------------------------------------------------
 describe('assignment_keys: admin-only answer keys', () => {

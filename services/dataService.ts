@@ -34,6 +34,41 @@ export interface AssessmentStats {
 /** Strip undefined values from an object before passing to Firestore setDoc(). */
 const stripUndefined = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
+/** Strip answer-key fields from lesson blocks before they reach any client. */
+const stripBlockKeys = (blocks: LessonBlock[]): LessonBlock[] =>
+  (blocks || []).map((block) => {
+    const { correctAnswer: _ca, acceptedAnswers: _aa, ...safeBlock } = block as LessonBlock & { correctAnswer?: number; acceptedAnswers?: string[] };
+    if (safeBlock.sortItems) {
+      safeBlock.sortItems = safeBlock.sortItems.map((si) => ({ ...si, correct: '' as 'left' | 'right' }));
+    }
+    return safeBlock;
+  });
+
+// Phase 2a — TTL metadata cache for the assignments list (localStorage only).
+const ASSIGNMENTS_CACHE_KEY = 'pp.assignments.meta.v1';
+const ASSIGNMENTS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+
+function readAssignmentsCache(): Assignment[] | null {
+  try {
+    const raw = localStorage.getItem(ASSIGNMENTS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { t: number; a: Assignment[] };
+    if (!parsed || !Array.isArray(parsed.a)) return null;
+    if (Date.now() - (parsed.t || 0) > ASSIGNMENTS_CACHE_TTL_MS) return null;
+    return parsed.a;
+  } catch { return null; }
+}
+
+function writeAssignmentsCache(assignments: Assignment[]) {
+  try {
+    localStorage.setItem(ASSIGNMENTS_CACHE_KEY, JSON.stringify({ t: Date.now(), a: assignments }));
+  } catch { /* quota/serialization — best-effort */ }
+}
+
+function invalidateAssignmentsCache() {
+  try { localStorage.removeItem(ASSIGNMENTS_CACHE_KEY); } catch { /* best-effort */ }
+}
+
 export const dataService = {
   // --- HELPERS ---
   getWeekId: (): string => {
@@ -225,7 +260,24 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'users' }));
   },
 
+  // Phase 2a — metadata-only. Heavy fields (htmlContent, lessonBlocks) live in
+  // `assignment_content/{id}` and are fetched on demand via getAssignmentContent.
+  // Legacy (unmigrated) docs may still carry them inline — callers must use
+  // getAssignmentContent, never read them from the listener.
+  //
+  // TTL metadata cache: with heavy fields split out, the assignments list is
+  // small (KBs), so a localStorage snapshot gives instant first paint on
+  // repeat visits. The live listener still attaches and overwrites the cache
+  // on the first snapshot — freshness is bounded by TTL only for the initial
+  // paint, never for the settled state. Writes via addAssignment evict.
+  // localStorage only (NO IndexedDB persistence — past corruption incidents).
   subscribeToAssignments: (callback: (assignments: Assignment[]) => void) => {
+    // Serve a warm snapshot immediately so repeat visits paint before the
+    // listener's first server round-trip.
+    try {
+      const cached = readAssignmentsCache();
+      if (cached) callback(cached);
+    } catch { /* cache is best-effort */ }
     const q = collection(db, 'assignments');
     return onSnapshot(q, (snapshot) => {
       const assignments = snapshot.docs.map(doc => {
@@ -238,10 +290,9 @@ export const dataService = {
           status: data.status as AssignmentStatus,
           unit: data.unit || 'Unassigned Unit',
           category: data.category || 'Supplemental',
-          htmlContent: data.htmlContent,
-          contentUrl: data.contentUrl, 
+          contentUrl: data.contentUrl,
           resources: data.resources || [],
-          publicComments: (data.publicComments || []).sort((a: Comment, b: Comment) => 
+          publicComments: (data.publicComments || []).sort((a: Comment, b: Comment) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           ),
           dueDate: data.dueDate,
@@ -249,16 +300,6 @@ export const dataService = {
           scheduledAt: data.scheduledAt || undefined,
           createdAt: data.createdAt || undefined,
           updatedAt: data.updatedAt || undefined,
-          lessonBlocks: data.isAssessment
-            ? (data.lessonBlocks || []).map((block: Record<string, unknown>) => {
-                // Strip answer keys from assessment blocks to prevent client-side cheating
-                const { correctAnswer, acceptedAnswers, ...safeBlock } = block;
-                if (block.sortItems) {
-                  safeBlock.sortItems = (block.sortItems as Array<{ text: string; correct: string }>).map(si => ({ text: si.text, correct: '' }));
-                }
-                return safeBlock;
-              })
-            : (data.lessonBlocks || []),
           isAssessment: data.isAssessment || false,
           assessmentConfig: data.assessmentConfig
             ? {
@@ -274,6 +315,7 @@ export const dataService = {
           classroomLinks: data.classroomLinks || undefined,
         };
       });
+      try { writeAssignmentsCache(assignments); } catch { /* cache is best-effort */ }
       callback(assignments);
     }, (error: unknown) => reportError(error, { subscription: 'assignments' }));
   },
@@ -539,6 +581,7 @@ export const dataService = {
 
   addAssignment: async (assignment: Assignment) => {
     try {
+      invalidateAssignmentsCache();
       // Phase 1e — answer keys are written to the admin-only assignment_keys
       // collection, never to the student-readable assignments doc.
       const keyBlocks = (assignment.lessonBlocks || []).map((block) => {
@@ -568,14 +611,16 @@ export const dataService = {
         status: assignment.status,
         unit: assignment.unit || 'Unassigned Unit',
         category: assignment.category || 'Lesson',
-        htmlContent: assignment.htmlContent || '',
         contentUrl: assignment.contentUrl || null,
         resources: assignment.resources || [],
         publicComments: assignment.publicComments || [],
         dueDate: assignment.dueDate || null,
         targetSections: assignment.targetSections && assignment.targetSections.length > 0 ? assignment.targetSections : [],
         scheduledAt: assignment.scheduledAt || null,
-        lessonBlocks: safeBlocks.length > 0 ? safeBlocks : [],
+        // Phase 2a — heavy fields go to assignment_content/{id}, NOT the
+        // assignments doc. Strip any stale inline copy on update.
+        htmlContent: deleteField(),
+        lessonBlocks: deleteField(),
         isAssessment: assignment.isAssessment || false,
         assessmentConfig: assignment.assessmentConfig
           ? {
@@ -590,6 +635,12 @@ export const dataService = {
         updatedAt: new Date().toISOString(),
       };
 
+      const contentData = {
+        htmlContent: assignment.htmlContent || '',
+        lessonBlocks: safeBlocks.length > 0 ? safeBlocks : [],
+        updatedAt: new Date().toISOString(),
+      };
+
       if (assignment.id) {
           // Lazy backfill: if existing resource has no createdAt, set it now
           if (!assignment.createdAt) {
@@ -600,6 +651,7 @@ export const dataService = {
             lessonBlocks: keyBlocks,
             updatedAt: new Date().toISOString(),
           });
+          await setDoc(doc(db, 'assignment_content', assignment.id), contentData);
       } else {
         data.createdAt = new Date().toISOString();
         const ref = await addDoc(collection(db, 'assignments'), data);
@@ -607,6 +659,7 @@ export const dataService = {
           lessonBlocks: keyBlocks,
           updatedAt: new Date().toISOString(),
         });
+        await setDoc(doc(db, 'assignment_content', ref.id), contentData);
       }
     } catch (error) {
       reportError(error, { method: 'addAssignment' });
@@ -634,6 +687,35 @@ export const dataService = {
       }) };
     } catch (error) {
       reportError(error, { method: 'getAssignmentKeys' });
+      return null;
+    }
+  },
+
+  // Phase 2a — heavy payload (htmlContent + lessonBlocks) lives in
+  // assignment_content/{id}. Prefers that collection and falls back to inline
+  // fields on legacy (pre-migration) assignment docs. Assessment blocks are
+  // key-stripped before reaching any client (same rule as the old listener).
+  // Callers MUST `await` this — the assignments-list listener no longer
+  // carries heavy fields.
+  getAssignmentContent: async (assignmentId: string): Promise<Pick<Assignment, 'htmlContent' | 'lessonBlocks'> | null> => {
+    try {
+      const contentSnap = await getDoc(doc(db, 'assignment_content', assignmentId));
+      if (contentSnap.exists()) {
+        const data = contentSnap.data();
+        return {
+          htmlContent: data.htmlContent,
+          lessonBlocks: stripBlockKeys(data.lessonBlocks || []),
+        };
+      }
+      const aSnap = await getDoc(doc(db, 'assignments', assignmentId));
+      if (!aSnap.exists()) return null;
+      const inline = aSnap.data();
+      return {
+        htmlContent: inline.htmlContent,
+        lessonBlocks: stripBlockKeys(inline.lessonBlocks || []),
+      };
+    } catch (error) {
+      reportError(error, { method: 'getAssignmentContent' });
       return null;
     }
   },

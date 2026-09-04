@@ -756,3 +756,104 @@ export const migrateAssignmentKeys = onCall({ memory: "1GiB", timeoutSeconds: 30
 
   return { dryRun, totalScanned, migrated, skippedNoKeys, skippedMissingBlocks, errors: errors.slice(0, 20), preview };
 });
+
+/**
+ * Phase 2a — moves heavy payload fields (htmlContent, lessonBlocks) out of
+ * `assignments/{id}` into `assignment_content/{id}` so the assignments list
+ * listener stays metadata-only. Content written verbatim (Phase 1e already
+ * stripped answer keys from lessonBlocks). Idempotent; dryRun default true.
+ * Readers stay correct before/during/after via dataService.getAssignmentContent
+ * (prefers assignment_content, falls back to inline).
+ */
+export const migrateAssignmentContent = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
+  await verifyAdmin(request.auth);
+
+  const { dryRun: dryRunRaw = true, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRunRaw !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
+  }
+  const dryRun = dryRunRaw !== false;
+
+  const db = admin.firestore();
+  const BATCH_SIZE = 400;
+
+  let totalScanned = 0;
+  let migrated = 0;
+  let skippedAlreadyMigrated = 0;
+  const errors: string[] = [];
+  const preview: Array<{ id: string; htmlBytes: number; blockCount: number }> = [];
+
+  let lastDoc: admin.firestore.QueryDocumentSnapshot | null = null;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    let query: admin.firestore.Query = db.collection("assignments").orderBy(admin.firestore.FieldPath.documentId()).limit(500);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    totalScanned += snapshot.size;
+
+    const pending: Array<{
+      ref: admin.firestore.DocumentReference;
+      contentRef: admin.firestore.DocumentReference;
+      content: Record<string, unknown>;
+    }> = [];
+
+    for (const docSnap of snapshot.docs) {
+      try {
+        const data = docSnap.data();
+        const hasHtml = typeof data.htmlContent === "string" && data.htmlContent.length > 0;
+        const hasBlocks = Array.isArray(data.lessonBlocks) && data.lessonBlocks.length > 0;
+        if (!hasHtml && !hasBlocks) { skippedAlreadyMigrated++; continue; }
+
+        const htmlContent = typeof data.htmlContent === "string" ? data.htmlContent : "";
+        const lessonBlocks = Array.isArray(data.lessonBlocks) ? data.lessonBlocks : [];
+        if (preview.length < 20) {
+          preview.push({ id: docSnap.id, htmlBytes: htmlContent.length, blockCount: lessonBlocks.length });
+        }
+        pending.push({
+          ref: docSnap.ref,
+          contentRef: db.doc(`assignment_content/${docSnap.id}`),
+          content: { htmlContent, lessonBlocks, updatedAt: new Date().toISOString() },
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${docSnap.id}: ${msg}`);
+      }
+    }
+
+    if (!dryRun && pending.length > 0) {
+      for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+        const chunk = pending.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        for (const p of chunk) {
+          batch.set(p.contentRef, p.content);
+          batch.update(p.ref, {
+            htmlContent: admin.firestore.FieldValue.delete(),
+            lessonBlocks: admin.firestore.FieldValue.delete(),
+          });
+        }
+        await batch.commit();
+        migrated += chunk.length;
+      }
+    } else {
+      migrated += pending.length;
+    }
+
+    if (snapshot.size < 500) break;
+  }
+
+  logWithCorrelation('info', 'migrateAssignmentContent complete', correlationId, {
+    dryRun,
+    totalScanned,
+    migrated,
+    skippedAlreadyMigrated,
+    errorCount: errors.length,
+  });
+
+  return { dryRun, totalScanned, migrated, skippedAlreadyMigrated, errors: errors.slice(0, 20), preview };
+});

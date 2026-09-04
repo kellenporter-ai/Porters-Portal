@@ -598,7 +598,13 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     let cancelled = false;
     const timer = setTimeout(async () => {
       const subs = groupsData.sectionFilteredSubs;
-      const blocks = selectedAssessment.lessonBlocks || [];
+      // Phase 2a — lessonBlocks no longer ride on the assignments-list
+      // listener; fetch them from assignment_content on demand.
+      const content = selectedAssessmentId
+        ? await dataService.getAssignmentContent(selectedAssessmentId)
+        : null;
+      if (cancelled) return;
+      const blocks = content?.lessonBlocks ?? selectedAssessment.lessonBlocks ?? [];
 
       // Use Web Worker for classes > 30 students to prevent UI freezing
       if (subs.length > 30 && typeof Worker !== 'undefined') {

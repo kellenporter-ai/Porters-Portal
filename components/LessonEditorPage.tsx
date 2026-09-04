@@ -471,7 +471,10 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     if (assignment) {
       setSelectedId(id);
       setIsNewResource(false);
-      setBlocks(assignment.lessonBlocks || []);
+      setBlocks([]); // Phase 2a — lessonBlocks load async from assignment_content
+      dataService.getAssignmentContent(id).then((content) => {
+        if (content) setBlocks(content.lessonBlocks || []);
+      }).catch((err: unknown) => reportError(err, { context: 'load assignment content in editor', assignmentId: id }));
       setResTitle(assignment.title);
       setResUnit(assignment.unit || 'Unit 1: Overview');
       setResCategory(migrateResourceCategory(assignment.category));

@@ -115,6 +115,18 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // ASSIGNMENT CONTENT (heavy payload — Phase 2a)
+    // htmlContent + lessonBlocks moved out of assignments/{id} so the
+    // metadata list listener stays small. Content is not secret (answer
+    // keys live in assignment_keys, admin-only). Same read access as
+    // assignments: any authenticated user; writes admin-only.
+    // ==========================================
+    match /assignment_content/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
     // SUBMISSIONS
     // ==========================================
     match /submissions/{submissionId} {

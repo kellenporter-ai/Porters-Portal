@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, UserRole, TelemetryMetrics, Submission } from '../types';
+import { User, UserRole, TelemetryMetrics, Submission, Assignment } from '../types';
 import { useAssignments } from '../lib/AppDataContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
@@ -108,6 +108,26 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const isRetakingRef = useRef(false);
 
   const activeAssignment = assignments.find(a => a.id === id) || null;
+  // Phase 2a — heavy fields (htmlContent, lessonBlocks) no longer ride on the
+  // assignments-list listener; fetch them on demand from assignment_content.
+  const [assignmentContent, setAssignmentContent] = useState<Pick<Assignment, 'htmlContent' | 'lessonBlocks'> | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setAssignmentContent(null);
+    dataService.getAssignmentContent(id).then((content) => {
+      if (!cancelled) setAssignmentContent(content);
+    });
+    return () => { cancelled = true; };
+  }, [id]);
+  // Content-aware views merge the metadata record with the fetched payload.
+  // Consumers of htmlContent/lessonBlocks must read through activeAssignmentFull.
+  const activeAssignmentFull: Assignment | null = React.useMemo(
+    () => activeAssignment
+      ? ({ ...activeAssignment, htmlContent: assignmentContent?.htmlContent ?? activeAssignment.htmlContent, lessonBlocks: assignmentContent?.lessonBlocks ?? activeAssignment.lessonBlocks } as Assignment)
+      : null,
+    [activeAssignment, assignmentContent],
+  );
   const isPreview = user.role === UserRole.ADMIN;
   const isAssessment = activeAssignment?.isAssessment === true;
   const isLiveAssessment = isAssessment && !isPreview;
@@ -517,7 +537,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }
 
   // Review mode — read-only view of submitted answers
-  if (reviewMode && existingSubmission?.blockResponses && activeAssignment?.lessonBlocks) {
+  if (reviewMode && existingSubmission?.blockResponses && activeAssignmentFull?.lessonBlocks) {
     return (
       <div className="fixed inset-0 z-50 bg-[var(--surface-base)] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--panel-bg)] shrink-0">
@@ -537,7 +557,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
         <div className="flex-1 overflow-y-auto p-4">
           <Suspense fallback={<LazyFallback />}>
             <LessonBlocks
-              blocks={activeAssignment.lessonBlocks}
+              blocks={activeAssignmentFull?.lessonBlocks}
               savedResponses={existingSubmission.blockResponses as BlockResponseMap}
               readOnly={true}
             />
@@ -559,7 +579,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       <Suspense fallback={<LazyFallback />}>
         <AssessmentWorkspace
           mode="results"
-          activeAssignment={activeAssignment}
+          activeAssignment={activeAssignmentFull ?? activeAssignment}
           assessmentResult={assessmentResult}
           existingSubmission={existingSubmission}
           showScore={showScore}
@@ -844,9 +864,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             <Suspense fallback={<LazyFallback />}>
               <AssessmentWorkspace
                 mode="taking"
-                activeAssignment={activeAssignment}
+                activeAssignment={activeAssignmentFull ?? activeAssignment}
                 existingSubmission={existingSubmission}
-                lessonBlocks={activeAssignment.lessonBlocks}
+                lessonBlocks={activeAssignmentFull?.lessonBlocks}
                 blockResponses={liveBlockResponses}
                 lockdownMode={isLiveAssessment}
                 onScrollToBlock={(blockId) => {
@@ -858,7 +878,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 {/* Study Notes banner for retakes */}
                 {isRetakingRef.current && existingSubmission?.studentNotes && Object.keys(existingSubmission.studentNotes).length > 0 && (() => {
                   const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
-                  const interactiveBlocks = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type));
+                  const interactiveBlocks = (activeAssignmentFull?.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type));
                   const notes = existingSubmission.studentNotes;
                   return (
                     <div className="mx-1 mb-3 bg-amber-500/5 border border-amber-500/20 rounded-xl overflow-hidden">
@@ -900,7 +920,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {
                     const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
-                    const total = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
+                    const total = (activeAssignmentFull?.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
                     setBlockProgress(total > 0 ? completed / total : 0);
                     setAnsweredBlocks(completed);
                     setTotalBlocks(total);
@@ -911,11 +931,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                     }
                   }}
                   contentUrl={activeAssignment.contentUrl}
-                  htmlContent={activeAssignment.htmlContent}
+                  htmlContent={activeAssignmentFull?.htmlContent}
                   userId={user.id}
                   assignmentId={activeAssignment.id}
                   classType={activeAssignment.classType}
-                  lessonBlocks={activeAssignment.lessonBlocks}
+                  lessonBlocks={activeAssignmentFull?.lessonBlocks}
                   isAssessment={isAssessment}
                   allowStudyMaterial={config.allowStudyMaterial}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
@@ -933,7 +953,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 {/* Study Notes banner for retakes (non-assessment or preview path) */}
                 {isRetakingRef.current && existingSubmission?.studentNotes && Object.keys(existingSubmission.studentNotes).length > 0 && (() => {
                   const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
-                  const interactiveBlocks = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type));
+                  const interactiveBlocks = (activeAssignmentFull?.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type));
                   const notes = existingSubmission.studentNotes;
                   return (
                     <div className="mx-1 mb-3 bg-amber-500/5 border border-amber-500/20 rounded-xl overflow-hidden">
@@ -975,24 +995,24 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {
                     const INTERACTIVE = ['MC', 'SHORT_ANSWER', 'CHECKLIST', 'SORTING', 'RANKING', 'LINKED', 'DRAWING', 'MATH_RESPONSE'];
-                    const total = (activeAssignment.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
+                    const total = (activeAssignmentFull?.lessonBlocks || []).filter(b => INTERACTIVE.includes(b.type)).length;
                     setBlockProgress(total > 0 ? completed / total : 0);
                     setAnsweredBlocks(completed);
                     setTotalBlocks(total);
                   }}
                   contentUrl={activeAssignment.contentUrl}
-                  htmlContent={activeAssignment.htmlContent}
+                  htmlContent={activeAssignmentFull?.htmlContent}
                   userId={user.id}
                   assignmentId={activeAssignment.id}
                   classType={activeAssignment.classType}
-                  lessonBlocks={activeAssignment.lessonBlocks}
+                  lessonBlocks={activeAssignmentFull?.lessonBlocks}
                   isAssessment={isAssessment}
                   allowStudyMaterial={config.allowStudyMaterial}
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
                   onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}
                   previewMode={isPreview}
-                  hasSidebar={!!(activeAssignment.lessonBlocks && activeAssignment.lessonBlocks.length >= 3)}
+                  hasSidebar={!!(activeAssignmentFull?.lessonBlocks && activeAssignmentFull?.lessonBlocks.length >= 3)}
                 />
               </div>
               {adminViewMode === 'ADMIN' && user.role === UserRole.ADMIN && (
