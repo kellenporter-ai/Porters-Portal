@@ -17,6 +17,7 @@ import {
   Circle,
 } from 'lucide-react';
 import { sortUnitKeys } from '../../lib/sortUnitKeys';
+import { useT, useInterpolate } from '../../lib/i18n';
 
 /*
  * ResourcesTab — Variation D ("Anchored") rebuild.
@@ -40,15 +41,15 @@ import { sortUnitKeys } from '../../lib/sortUnitKeys';
 
 // ─── Helpers ─────────────────────────────────
 
-function formatRelativeDate(isoString: string): string {
+function formatRelativeDate(isoString: string, t: (key: string) => string, interpolate: (key: string, params: Record<string, string | number | boolean>) => string): string {
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays <= 7) return `${diffDays}d ago`;
+  if (diffDays === 0) return t('resources.relative.today');
+  if (diffDays === 1) return t('resources.relative.yesterday');
+  if (diffDays <= 7) return interpolate('resources.relative.daysAgo', { count: diffDays });
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -92,6 +93,11 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Supplemental': <Layers className="w-5 h-5" />,
 };
 
+/** Localized display label for a resource category key. */
+function categoryLabel(category: string, t: (key: string) => string): string {
+  return t(`resources.category.${category}`);
+}
+
 type EnrichedAssignment = Assignment & { lastEngagement: string | null; engagementTime: number };
 type UnitStatus = 'active' | 'next' | 'past' | 'future';
 
@@ -120,6 +126,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'newest' | 'oldest' | 'alpha' | 'type'>('default');
+  const t = useT();
+  const interpolate = useInterpolate();
 
   const getResourceOrder = useCallback((unit: string): string[] | undefined => {
     if (!activeClass) return undefined;
@@ -339,7 +347,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     const iconSize = emphasis === 'primary' ? 'w-11 h-11' : 'w-10 h-10';
     const mutedTitleTone = emphasis === 'muted' ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]';
 
-    const badgeLabel = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) ?? 'Supplemental');
+    const badgeCategory = isLessonOnly ? 'Lesson' : (migrateResourceCategory(resource.category) ?? 'Supplemental');
+    const badgeLabel = categoryLabel(badgeCategory, t);
 
     // Accent bar for the primary in-progress row of the active unit — inline
     // style so we can use the CSS custom property without a hex literal.
@@ -363,7 +372,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
           ) : isLessonOnly ? (
             <GraduationCap className="w-5 h-5" aria-hidden="true" />
           ) : (
-            CATEGORY_ICONS[badgeLabel] ?? <Circle className="w-5 h-5" aria-hidden="true" />
+            CATEGORY_ICONS[badgeCategory] ?? <Circle className="w-5 h-5" aria-hidden="true" />
           )}
         </div>
 
@@ -375,12 +384,12 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             </span>
             {resource.isAssessment && (
               <span className="font-black text-[10px] uppercase tracking-[0.2em] text-red-700 dark:text-red-300">
-                ▲ Assessment
+                {t('resources.assessment')}
               </span>
             )}
             {inProgress && !resource.isAssessment && (
               <span className="font-black text-[10px] uppercase tracking-[0.2em] text-[var(--accent-text)]">
-                ● In progress
+                {t('resources.inProgress')}
               </span>
             )}
             {isModuleCompleted && (completion?.totalCompletions || 0) > 1 && (
@@ -390,7 +399,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             )}
             {hasLessonBlocks && emphasis !== 'primary' && !isModuleCompleted && (
               <span className="text-[10px] font-mono text-[var(--text-muted)]">
-                {resource.lessonBlocks!.length} blocks
+                {interpolate('resources.blocks', { count: resource.lessonBlocks!.length })}
               </span>
             )}
           </div>
@@ -412,26 +421,26 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {hasScore && assessmentConfig.showScoreOnSubmit !== false && (
                 <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${scorePillClass}`}>
-                  {effectiveScore}% best score
+                  {interpolate('resources.bestScore', { score: effectiveScore })}
                 </span>
               )}
               <span className="text-[11px] text-[var(--text-muted)] font-mono">
                 {isUnlimitedAttempts
-                  ? `Attempt ${latestSub.attemptNumber || 1}`
-                  : `Attempt ${latestSub.attemptNumber || 1} of ${maxAttempts}`}
+                  ? interpolate('resources.attempt', { count: latestSub.attemptNumber || 1 })
+                  : interpolate('resources.attemptOf', { count: latestSub.attemptNumber || 1, max: maxAttempts })}
               </span>
               {canStillRetake && (
                 <span className="text-[11px] text-[var(--accent-text)] font-mono flex items-center gap-0.5">
-                  <Play className="w-2.5 h-2.5 fill-current" aria-hidden="true" /> Retake available
+                  <Play className="w-2.5 h-2.5 fill-current" aria-hidden="true" /> {t('resources.retakeAvailable')}
                 </span>
               )}
               {!canStillRetake && (
                 <span className="text-[11px] text-[var(--text-muted)] font-mono">
-                  {assessmentConfig.allowResubmission === false ? 'No retakes allowed' : 'No retakes left'}
+                  {t(assessmentConfig.allowResubmission === false ? 'resources.noRetakesAllowed' : 'resources.noRetakesLeft')}
                 </span>
               )}
               {latestSub.flaggedAsAI && (
-                <span className="text-[11px] text-[var(--text-tertiary)] font-mono">Flagged</span>
+                <span className="text-[11px] text-[var(--text-tertiary)] font-mono">{t('resources.flagged')}</span>
               )}
             </div>
           )}
@@ -441,22 +450,22 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             {resource.createdAt && (
               <span
                 className="text-[11px] text-[var(--text-muted)] font-mono"
-                title={`Posted ${new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
+                title={interpolate('resources.postedFull', { date: new Date(resource.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) })}
               >
-                Posted {formatRelativeDate(resource.createdAt)}
+                {interpolate('resources.posted', { date: formatRelativeDate(resource.createdAt, t, interpolate) })}
               </span>
             )}
             {resource.lastEngagement && engMin > 0 && (
-              <span className="text-[11px] text-[var(--text-tertiary)] font-mono">{engMin}m engaged</span>
+              <span className="text-[11px] text-[var(--text-tertiary)] font-mono">{interpolate('resources.engaged', { minutes: engMin })}</span>
             )}
             {isModuleCompleted && completion?.bestScore != null && completion.bestScore > 0 && !resource.isAssessment && (
               <span className="text-[11px] text-[var(--text-tertiary)] font-mono">
-                Best: {completion.bestScore}%
+                {interpolate('resources.best', { score: completion.bestScore })}
               </span>
             )}
             {emphasis === 'primary' && hasLessonBlocks && (
               <span className="text-[11px] text-[var(--text-tertiary)] font-mono">
-                {resource.lessonBlocks!.length} blocks
+                {interpolate('resources.blocks', { count: resource.lessonBlocks!.length })}
               </span>
             )}
           </div>
@@ -466,9 +475,9 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
         <div className="flex flex-col items-end gap-1 shrink-0">
           {hasUnreadFeedback && (
             <span
-              title="New teacher feedback"
+              title={t('resources.newFeedbackTitle')}
               role="status"
-              aria-label="New teacher feedback available"
+              aria-label={t('resources.newFeedbackAria')}
               className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--accent-muted)] border border-[var(--border)]"
             >
               <MessageSquare className="w-3 h-3 text-[var(--accent-text)]" aria-hidden="true" />
@@ -480,17 +489,15 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
               title={dueDate!.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
             >
               {daysUntilDue <= 0
-                ? `OVERDUE`
+                ? t('resources.dueBadge.overdue')
                 : daysUntilDue === 1
-                  ? 'DUE TOMORROW'
-                  : daysUntilDue <= 7
-                    ? `Due ${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                    : `Due ${dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                  ? t('resources.dueBadge.tomorrow')
+                  : interpolate('resources.dueBadge.due', { date: dueDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) })}
             </span>
           )}
           {resource.isAssessment && !latestSub && !hasDue && (
             <span className="text-[11px] font-bold text-red-700 dark:text-red-300 flex items-center gap-0.5">
-              <Target className="w-2.5 h-2.5" aria-hidden="true" /> Not yet submitted
+              <Target className="w-2.5 h-2.5" aria-hidden="true" /> {t('resources.notYetSubmitted')}
             </span>
           )}
           {isModuleCompleted && !resource.isAssessment && completion?.bestScore != null && completion.bestScore > 0 ? (
@@ -498,10 +505,10 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
               {completion.bestScore}%
             </span>
           ) : isModuleCompleted ? (
-            <span className="text-[11px] font-mono text-[var(--text-tertiary)]">Completed</span>
+            <span className="text-[11px] font-mono text-[var(--text-tertiary)]">{t('resources.completed')}</span>
           ) : hasDue ? null : (
             <span className="text-[11px] font-bold whitespace-nowrap text-[var(--text-tertiary)]">
-              {resource.isAssessment ? 'Not submitted' : notStarted ? 'Not started' : 'In progress'}
+              {t(resource.isAssessment ? 'resources.notSubmitted' : notStarted ? 'resources.notStarted' : 'resources.inProgressShort')}
             </span>
           )}
           {hasDue && isModuleCompleted && (
@@ -543,10 +550,10 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     const eyebrowTone = status === 'active' ? 'text-[var(--accent-text)]' : status === 'past' ? 'text-[var(--text-muted)]' : 'text-[var(--text-tertiary)]';
     const chevTone = status === 'active' ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)]';
 
-    const statusLabel =
-      status === 'active' ? 'Current'
-      : status === 'past' ? (progress.pct === 100 ? 'Complete' : 'Past')
-      : 'Upcoming';
+    const statusLabel = t(
+      status === 'active' ? 'resources.unitStatus.current'
+      : status === 'past' ? (progress.pct === 100 ? 'resources.unitStatus.complete' : 'resources.unitStatus.past')
+      : 'resources.unitStatus.upcoming');
 
     const sortedItems = sortItems(items, unitKey);
 
@@ -577,7 +584,8 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
       let lastCategory: string | null = null;
       sortedItems.forEach((r, idx) => {
         const isLessonOnly = !!(r.lessonBlocks && r.lessonBlocks.length > 0 && !r.contentUrl);
-        const category = isLessonOnly ? 'Lesson' : (migrateResourceCategory(r.category) || 'Supplemental');
+        const categoryKey = isLessonOnly ? 'Lesson' : (migrateResourceCategory(r.category) || 'Supplemental');
+        const category = categoryLabel(categoryKey, t);
         if (category !== lastCategory) {
           out.push(
             <div key={`subheader-${unitKey}-${category}`} className="flex items-center gap-2 py-1.5 px-2">
@@ -631,7 +639,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
               id={`unit-zone-${unitKey}`}
               className={`text-[10px] font-black tracking-[0.3em] uppercase whitespace-nowrap ${eyebrowTone}`}
             >
-              {displayNumber !== null ? `Unit ${displayNumber} · ${statusLabel}` : statusLabel}
+              {displayNumber !== null ? interpolate('resources.unitLabel', { number: displayNumber, status: statusLabel }) : statusLabel}
             </div>
             <div className={`font-black tracking-tight leading-tight mt-0.5 ${titleSize} ${titleTone}`}>
               {unitKey}
@@ -640,7 +648,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
           <div className="flex-1" />
           <div className="text-right shrink-0">
             <div className="text-[11px] font-mono text-[var(--text-tertiary)]">
-              {progress.completed} of {progress.total} done
+              {interpolate('resources.progress', { completed: progress.completed, total: progress.total })}
               {progress.total > 0 && <span className="ml-1">· {progress.pct}%</span>}
             </div>
             {(status === 'active' || (status === 'past' && progress.pct === 100)) && progress.total > 0 && (
@@ -650,7 +658,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
                 aria-valuenow={progress.pct}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label={`${unitKey} progress: ${progress.pct}%`}
+                aria-label={interpolate('resources.progressAria', { unit: unitKey, pct: progress.pct })}
               >
                 <div
                   className="h-full rounded-full"
@@ -685,19 +693,21 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
       {/* Page header */}
       <header className="mb-8">
         <div className="text-[10px] font-black tracking-[0.32em] uppercase text-[var(--accent-text)] mb-2">
-          {activeClass || 'Class'}
+          {activeClass || t('resources.classFallback')}
         </div>
         <h2 className="text-[32px] sm:text-[40px] font-black leading-[1.05] tracking-tight text-[var(--text-primary)]">
-          Resources
+          {t('resources.title')}
         </h2>
         <div className="mt-2 text-xs font-bold uppercase tracking-widest text-[var(--text-tertiary)]">
-          {summary.totalResources} resource{summary.totalResources === 1 ? '' : 's'}
-          {' · '}
-          {summary.totalUnits} unit{summary.totalUnits === 1 ? '' : 's'}
+          {interpolate('resources.summary', {
+            resources: summary.totalResources,
+            resourcePlural: summary.totalResources === 1 ? '' : 's',
+            units: summary.totalUnits,
+            unitPlural: summary.totalUnits === 1 ? '' : 's',
+          })}
           {summary.unread > 0 && (
             <span className="text-[var(--accent-text)]">
-              {' · '}
-              {summary.unread} unread
+              {interpolate('resources.unread', { count: summary.unread })}
             </span>
           )}
         </div>
@@ -711,19 +721,19 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search resources by title, description, or unit..."
-            aria-label="Search resources"
+            placeholder={t('resources.searchPlaceholder')}
+            aria-label={t('resources.searchAria')}
             className="w-full rounded-xl pl-10 pr-20 py-3 text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] bg-[var(--surface-glass)] border border-transparent focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-muted)] transition"
           />
           {searchQuery && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <span className="text-[11px] text-[var(--text-muted)] font-mono">
-                {Object.values(filteredUnitGroups).reduce((a, b) => a + b.length, 0)} results
+                {interpolate('resources.results', { count: Object.values(filteredUnitGroups).reduce((a, b) => a + b.length, 0) })}
               </span>
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                aria-label="Clear search"
+                aria-label={t('resources.clearAria')}
                 className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] rounded"
               >
                 <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -733,7 +743,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
         </div>
         <div className="flex items-center gap-1 text-xs">
           <ArrowUpDown size={12} className="text-[var(--text-muted)] mr-1" aria-hidden="true" />
-          <span className="sr-only">Sort by</span>
+          <span className="sr-only">{t('resources.sortAria')}</span>
           {(['default', 'newest', 'oldest', 'alpha', 'type'] as const).map(option => (
             <button
               key={option}
@@ -746,15 +756,15 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
                   : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-glass)]'
               }`}
             >
-              {option === 'default'
-                ? 'Default'
+              {t(option === 'default'
+                ? 'resources.sort.default'
                 : option === 'newest'
-                  ? 'Newest'
+                  ? 'resources.sort.newest'
                   : option === 'oldest'
-                    ? 'Oldest'
+                    ? 'resources.sort.oldest'
                     : option === 'alpha'
-                      ? 'A–Z'
-                      : 'By type'}
+                      ? 'resources.sort.alpha'
+                      : 'resources.sort.type')}
             </button>
           ))}
         </div>
@@ -763,7 +773,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
       {/* Unit zones */}
       {sortedUnitKeys.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-muted)] italic">
-          {searchQuery ? `No resources matching "${searchQuery}".` : 'No resources have been posted yet. Check back soon!'}
+          {searchQuery ? interpolate('resources.emptySearch', { query: searchQuery }) : t('resources.empty')}
         </div>
       ) : (
         <div>

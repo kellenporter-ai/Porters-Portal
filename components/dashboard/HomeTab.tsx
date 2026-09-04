@@ -13,6 +13,7 @@ import {
 import AnimatedIcon from '../AnimatedIcon';
 import CortisolCheckIn from './CortisolCheckIn';
 import { dataService } from '../../services/dataService';
+import { useT, useInterpolate } from '../../lib/i18n';
 
 /*
  * HomeTab — Variation D ("Anchored") rebuild.
@@ -65,29 +66,29 @@ interface HomeTabProps {
 
 // ─── Helpers ─────────────────────────────────
 
-function timeOfDayGreeting(): string {
+function timeOfDayGreeting(t: (key: string) => string): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return t('home.greeting.morning');
+  if (h < 18) return t('home.greeting.afternoon');
+  return t('home.greeting.evening');
 }
 
-function shortRelative(iso: string): string {
+function shortRelative(iso: string, t: (key: string) => string, interpolate: (key: string, params: Record<string, string | number | boolean>) => string): string {
   const diffDays = Math.ceil((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return 'Overdue';
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays <= 7) return `In ${diffDays} days`;
+  if (diffDays < 0) return t('home.upNext.overdue');
+  if (diffDays === 0) return t('home.upNext.today');
+  if (diffDays === 1) return t('home.upNext.tomorrow');
+  if (diffDays <= 7) return interpolate('home.upNext.inDays', { count: diffDays });
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function urgencyLabel(iso: string): { text: string; tone: 'danger' | 'warn' | 'info' | 'muted' } {
+function urgencyLabel(iso: string, t: (key: string) => string, interpolate: (key: string, params: Record<string, string | number | boolean>) => string): { text: string; tone: 'danger' | 'warn' | 'info' | 'muted' } {
   const diffDays = Math.ceil((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return { text: 'OVERDUE', tone: 'danger' };
-  if (diffDays === 0) return { text: 'TODAY', tone: 'warn' };
-  if (diffDays === 1) return { text: 'TOMORROW', tone: 'warn' };
-  if (diffDays <= 3) return { text: `${diffDays}d`, tone: 'info' };
-  return { text: `${diffDays}d`, tone: 'muted' };
+  if (diffDays < 0) return { text: t('home.upNext.overdueBadge'), tone: 'danger' };
+  if (diffDays === 0) return { text: t('home.upNext.todayBadge'), tone: 'warn' };
+  if (diffDays === 1) return { text: t('home.upNext.tomorrowBadge'), tone: 'warn' };
+  if (diffDays <= 3) return { text: interpolate('home.upNext.daysBadge', { count: diffDays }), tone: 'info' };
+  return { text: interpolate('home.upNext.daysBadge', { count: diffDays }), tone: 'muted' };
 }
 
 function badgeClassFor(tone: 'danger' | 'warn' | 'info' | 'muted'): string {
@@ -127,6 +128,8 @@ const HomeTab: React.FC<HomeTabProps> = ({
   userId,
 }) => {
   const navigate = useNavigate();
+  const t = useT();
+  const interpolate = useInterpolate();
 
   // ── Onboarding "Reduce animations" banner ──
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(readBannerDismissed);
@@ -266,8 +269,8 @@ const HomeTab: React.FC<HomeTabProps> = ({
   }, [submissions, classAssignments, teacherName]);
 
   const section = userClassSections?.[activeClass] || userSection;
-  const greeting = timeOfDayGreeting();
-  const upNextBadge = upNextAssignment ? urgencyLabel(upNextAssignment.dueDate!) : null;
+  const greeting = timeOfDayGreeting(t);
+  const upNextBadge = upNextAssignment ? urgencyLabel(upNextAssignment.dueDate!, t, interpolate) : null;
 
   // Format study-time for the small metric in Zone 02
   const studyTime = useMemo(() => {
@@ -296,9 +299,9 @@ const HomeTab: React.FC<HomeTabProps> = ({
         >
           <Sparkles className="w-5 h-5 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-[var(--text-primary)]">Welcome!</div>
+            <div className="text-sm font-bold text-[var(--text-primary)]">{t('home.banner.title')}</div>
             <div className="text-xs text-[var(--text-tertiary)]">
-              Want a calmer interface? Toggle to reduce animations across the app.
+              {t('home.banner.body')}
             </div>
           </div>
           <button
@@ -306,7 +309,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
             onClick={togglePerfPreview}
             role="switch"
             aria-checked={bannerPerfMode}
-            aria-label={`Reduce animations: currently ${bannerPerfMode ? 'on' : 'off'}`}
+            aria-label={interpolate('home.banner.toggleAria', { state: t(bannerPerfMode ? 'home.banner.on' : 'home.banner.off') })}
             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${
               bannerPerfMode
                 ? 'bg-[var(--accent-muted)] border-[var(--border-strong)]'
@@ -322,7 +325,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           <button
             type="button"
             onClick={dismissBanner}
-            aria-label="Dismiss onboarding tip"
+            aria-label={t('home.banner.dismissAria')}
             className="shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <X className="w-4 h-4" />
@@ -350,18 +353,18 @@ const HomeTab: React.FC<HomeTabProps> = ({
             {loginStreak > 0 && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-[var(--accent-text)] bg-[var(--accent-muted)] border border-[var(--border)]"
-                aria-label={`${loginStreak} day login streak`}
+                aria-label={interpolate('home.streak.aria', { count: loginStreak })}
               >
                 <span aria-hidden="true">🔥</span>
-                {loginStreak} Day streak
+                {interpolate('home.streak.label', { count: loginStreak })}
               </span>
             )}
             {userCodename && userLevel != null && (
               <span
                 className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-[var(--text-muted)] bg-[var(--surface-glass-heavy)] border border-[var(--border)]"
-                aria-label={`Operative ${userCodename}, level ${userLevel}`}
+                aria-label={interpolate('home.codename.aria', { codename: userCodename, level: userLevel })}
               >
-                {userCodename} · Lv {userLevel}
+                {userCodename} · {t('home.codename.lv')} {userLevel}
               </span>
             )}
             <span className="flex-1 h-px bg-[var(--border)]" />
@@ -391,7 +394,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                       aria-valuenow={upNextProgress.pct}
                       aria-valuemin={0}
                       aria-valuemax={100}
-                      aria-label={`Assignment progress: ${upNextProgress.pct}% complete`}
+                      aria-label={interpolate('home.upNext.progressAria', { pct: upNextProgress.pct })}
                     >
                       <div
                         className="h-full rounded-full"
@@ -399,7 +402,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                       />
                     </div>
                     <span className="text-xs font-bold font-mono text-[var(--text-secondary)]">
-                      {upNextProgress.pct}% · {upNextProgress.blocksLeft} blocks left
+                      {interpolate('home.upNext.blocksLeft', { pct: upNextProgress.pct, count: upNextProgress.blocksLeft })}
                     </span>
                   </div>
                 )}
@@ -410,7 +413,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   onClick={() => onStartAssignment?.(upNextAssignment.id)}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-white shadow-lg whitespace-nowrap bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
                 >
-                  {upNextProgress && upNextProgress.answered > 0 ? 'Continue' : 'Start'}
+                  {upNextProgress && upNextProgress.answered > 0 ? t('home.upNext.continue') : t('home.upNext.start')}
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
@@ -424,10 +427,10 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   {currentUnit ? <span> · {currentUnit}</span> : null}
                 </div>
                 <h2 className="text-[28px] lg:text-[42px] font-black leading-[1.05] tracking-tight text-[var(--text-primary)]">
-                  You're all caught up
+                  {t('home.upNext.caughtUp')}
                 </h2>
                 <div className="mt-4 text-sm text-[var(--text-tertiary)]">
-                  No assignments due in the next week. Explore resources or review past work.
+                  {t('home.upNext.caughtUpBody')}
                 </div>
               </div>
               <div className="flex lg:justify-end">
@@ -436,7 +439,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   onClick={() => onNavigate('Resources')}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-white shadow-lg whitespace-nowrap bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
                 >
-                  Browse resources
+                  {t('home.upNext.browse')}
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
@@ -466,20 +469,20 @@ const HomeTab: React.FC<HomeTabProps> = ({
         {/* This week — 3/5 */}
         <div className="lg:col-span-3 relative rounded-[24px] p-6 sm:p-7 bg-[var(--surface-glass)] border border-[var(--border)]">
           <div className="relative flex items-center gap-3 mb-5">
-            <span className="text-[10px] font-black tracking-[0.32em] uppercase text-[var(--text-tertiary)]">This week</span>
+            <span className="text-[10px] font-black tracking-[0.32em] uppercase text-[var(--text-tertiary)]">{t('home.week.label')}</span>
             <span className="flex-1 h-px bg-[var(--border)]" />
             <button
               type="button"
               onClick={() => onNavigate('Calendar')}
               className="text-[11px] font-bold text-[var(--accent-text)] hover:opacity-70 transition flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] rounded"
             >
-              Calendar <ChevronRight className="w-3 h-3" aria-hidden="true" />
+              {t('home.week.calendar')} <ChevronRight className="w-3 h-3" aria-hidden="true" />
             </button>
           </div>
 
           {upcomingDue.length === 0 ? (
             <div className="relative text-sm text-[var(--text-muted)] italic py-6 text-center bg-[var(--surface-sunken)] rounded-xl border border-dashed border-[var(--border)]">
-              No upcoming due dates
+              {t('home.week.empty')}
             </div>
           ) : (
             <ul className="relative space-y-1">
@@ -488,7 +491,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 const dayNum = due.getDate();
                 const monthAbbrev = due.toLocaleDateString('en-US', { month: 'short' });
                 const weekdayAbbrev = due.toLocaleDateString('en-US', { weekday: 'short' });
-                const badge = urgencyLabel(a.dueDate!);
+                const badge = urgencyLabel(a.dueDate!, t, interpolate);
                 const isDominant = idx === 0 && !a.isCompleted;
                 return (
                   <li key={a.id}>
@@ -518,7 +521,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                         </div>
                         <div className="text-xs mt-0.5 text-[var(--text-tertiary)]">
                           {a.unit ? `${a.unit} · ` : ''}
-                          {a.isCompleted ? 'Completed' : shortRelative(a.dueDate!)}
+                          {a.isCompleted ? t('home.week.completed') : shortRelative(a.dueDate!, t, interpolate)}
                         </div>
                       </div>
                       {a.isCompleted ? (
@@ -542,7 +545,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
         <div className="lg:col-span-2 relative rounded-[24px] p-6 sm:p-7 bg-[var(--surface-glass)] border border-[var(--border)]">
           <div className="relative flex items-center gap-3 mb-5">
             <span className="text-[10px] font-black tracking-[0.32em] uppercase whitespace-nowrap text-[var(--text-tertiary)]">
-              This unit
+              {t('home.unit.label')}
             </span>
             <span className="flex-1 h-px bg-[var(--border)]" />
             <button
@@ -550,7 +553,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               onClick={() => onNavigate('Progress')}
               className="text-[11px] font-bold text-[var(--accent-text)] hover:opacity-70 transition flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] rounded"
             >
-              Details <ChevronRight className="w-3 h-3" aria-hidden="true" />
+              {t('home.unit.details')} <ChevronRight className="w-3 h-3" aria-hidden="true" />
             </button>
           </div>
 
@@ -563,7 +566,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
             </div>
             <div className="text-xs font-bold uppercase tracking-widest mt-2 text-[var(--text-tertiary)]">
               {currentUnit ? `${currentUnit} · ` : ''}
-              {stats.completed} of {stats.total} complete
+              {interpolate('home.unit.complete', { completed: stats.completed, total: stats.total, plural: stats.total === 1 ? '' : 's' })}
             </div>
             <div
               className="mt-3 h-1 rounded-full overflow-hidden bg-[var(--surface-sunken)]"
@@ -571,7 +574,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
               aria-valuenow={stats.pct}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={`Unit completion: ${stats.pct} percent`}
+              aria-label={interpolate('home.unit.completionAria', { pct: stats.pct })}
             >
               <div
                 className="h-full rounded-full"
@@ -592,7 +595,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 <span className="text-xs font-medium text-[var(--text-muted)]">{studyTime.suffix}</span>
               </div>
               <div className="text-xs font-bold uppercase tracking-widest mt-1.5 text-[var(--text-tertiary)]">
-                Study
+                {t('home.unit.study')}
               </div>
             </div>
             <div>
@@ -600,7 +603,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                 {stats.practicesMastered}
               </div>
               <div className="text-xs font-bold uppercase tracking-widest mt-1.5 text-[var(--text-tertiary)]">
-                Mastered
+                {t('home.unit.mastered')}
               </div>
             </div>
           </div>
@@ -611,7 +614,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
       <section className="px-1">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-[10px] font-black tracking-[0.32em] uppercase whitespace-nowrap text-[var(--text-tertiary)]">
-            Go to
+            {t('home.goTo.label')}
           </span>
           <span className="flex-1 h-px bg-[var(--border)]" />
         </div>
@@ -620,7 +623,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('Resources')}
-            aria-label="Go to Resources"
+            aria-label={t('home.goTo.resourcesAria')}
             className="md:col-span-2 md:row-span-2 relative flex flex-col justify-between p-5 rounded-2xl text-left overflow-hidden border border-[var(--border)] transition motion-safe:hover:scale-[1.01] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             style={{
               background: 'linear-gradient(135deg, var(--accent-muted), var(--surface-glass))',
@@ -635,29 +638,29 @@ const HomeTab: React.FC<HomeTabProps> = ({
             />
             <div>
               <div className="text-[10px] font-black tracking-[0.22em] uppercase mb-1 text-[var(--accent-text)]">
-                ● Most visited
+                {t('home.goTo.mostVisited')}
               </div>
-              <div className="text-xl font-black text-[var(--text-primary)]">Resources</div>
+              <div className="text-xl font-black text-[var(--text-primary)]">{t('home.goTo.resources')}</div>
               <div className="text-xs mt-1 text-[var(--text-tertiary)]">
-                {stats.total} assignment{stats.total === 1 ? '' : 's'}
-                {unreadFeedbackItems.length > 0 && ` · ${unreadFeedbackItems.length} feedback`}
+                {interpolate('home.goTo.assignments', { count: stats.total, plural: stats.total === 1 ? '' : 's' })}
+                {unreadFeedbackItems.length > 0 && ` · ${interpolate('home.goTo.feedbackCount', { count: unreadFeedbackItems.length })}`}
               </div>
             </div>
           </button>
 
           {/* Secondary tiles */}
           {[
-            { label: 'Loadout', nav: 'Loadout', icon: '/assets/icons/icon-agent-loadout.png' },
-            { label: 'Progress', nav: 'Progress', icon: '/assets/icons/icon-progress.png' },
-            { label: 'Badges', nav: 'Badges', icon: '/assets/icons/icon-badges.png' },
-            { label: 'Calendar', nav: 'Calendar', icon: '/assets/icons/icon-calendar.png' },
-            { label: 'Leaders', nav: 'Leaderboard', icon: '/assets/icons/icon-leaderboard.png' },
+            { label: t('home.goTo.loadout'), nav: 'Loadout', icon: '/assets/icons/icon-agent-loadout.png' },
+            { label: t('home.goTo.progress'), nav: 'Progress', icon: '/assets/icons/icon-progress.png' },
+            { label: t('home.goTo.badges'), nav: 'Badges', icon: '/assets/icons/icon-badges.png' },
+            { label: t('home.goTo.calendar'), nav: 'Calendar', icon: '/assets/icons/icon-calendar.png' },
+            { label: t('home.goTo.leaders'), nav: 'Leaderboard', icon: '/assets/icons/icon-leaderboard.png' },
           ].map(tile => (
             <button
               key={tile.label}
               type="button"
               onClick={() => onNavigate(tile.nav)}
-              aria-label={`Go to ${tile.label}`}
+              aria-label={interpolate('home.goTo.aria', { label: tile.label })}
               className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] min-h-[88px]"
             >
               <AnimatedIcon src={tile.icon} alt="" size={40} disableAnimation={performanceMode} />
@@ -676,7 +679,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
       <section className="px-1 pb-4">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-[10px] font-black tracking-[0.32em] uppercase whitespace-nowrap text-[var(--text-tertiary)]">
-            Latest
+            {t('home.latest.label')}
           </span>
           <span className="flex-1 h-px bg-[var(--border)]" />
           <button
@@ -684,7 +687,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
             onClick={() => onNavigate('Resources')}
             className="text-[11px] font-bold text-[var(--accent-text)] hover:opacity-70 transition flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] rounded"
           >
-            All resources <ChevronRight className="w-3 h-3" aria-hidden="true" />
+            {t('home.latest.allResources')} <ChevronRight className="w-3 h-3" aria-hidden="true" />
           </button>
         </div>
 
@@ -693,25 +696,25 @@ const HomeTab: React.FC<HomeTabProps> = ({
           <button
             type="button"
             onClick={() => navigate('/feedback')}
-            aria-label={`View ${unreadFeedbackItems.length} unread teacher feedback item${unreadFeedbackItems.length === 1 ? '' : 's'}`}
+            aria-label={interpolate('home.latest.viewFeedbackAria', { count: unreadFeedbackItems.length, plural: unreadFeedbackItems.length === 1 ? '' : 's' })}
             className="w-full flex items-center gap-3 px-4 py-3 mb-3 rounded-xl border border-[var(--border)] bg-[var(--accent-muted)] hover:bg-[var(--surface-glass-heavy)] transition text-left focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <MessageSquare className="w-5 h-5 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-[var(--text-primary)]">
-                New feedback from {unreadFeedbackItems[0].gradedBy}
+                {interpolate('home.latest.newFeedback', { name: unreadFeedbackItems[0].gradedBy })}
               </div>
               <div className="text-xs text-[var(--text-tertiary)] truncate">
-                {unreadFeedbackItems.length} unread item{unreadFeedbackItems.length === 1 ? '' : 's'}
+                {interpolate('home.latest.unreadItems', { count: unreadFeedbackItems.length, plural: unreadFeedbackItems.length === 1 ? '' : 's' })}
                 {unreadFeedbackItems[0]?.assignmentTitle
-                  ? ` · starting with "${unreadFeedbackItems[0].assignmentTitle}"`
+                  ? interpolate('home.latest.startingWith', { title: unreadFeedbackItems[0].assignmentTitle })
                   : ''}
               </div>
             </div>
             <span
               className="px-2 py-0.5 text-xs font-bold rounded-full shrink-0 text-[var(--accent-text)] bg-[var(--surface-raised)] border border-[var(--border)]"
               role="status"
-              aria-label={`${unreadFeedbackItems.length} unread`}
+              aria-label={interpolate('home.latest.unreadAria', { count: unreadFeedbackItems.length })}
             >
               {unreadFeedbackItems.length}
             </span>
@@ -727,7 +730,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           >
             <Zap className="w-5 h-5 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
             <span className="text-sm font-bold flex-1 text-[var(--text-primary)]">
-              {activeEvent.title} — {activeEvent.multiplier}x XP active
+              {interpolate('home.latest.xpActive', { title: activeEvent.title, multiplier: activeEvent.multiplier })}
             </span>
           </div>
         )}
@@ -735,7 +738,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
         {/* Recent activity list */}
         {recentActivity.length === 0 ? (
           <div className="text-sm text-[var(--text-muted)] italic py-6 text-center bg-[var(--surface-sunken)] rounded-xl border border-dashed border-[var(--border)]">
-            No recent activity yet
+            {t('home.latest.noActivity')}
           </div>
         ) : (
           <ul className="space-y-0.5">
@@ -776,7 +779,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                       </div>
                       <div className="text-xs mt-0.5 text-[var(--text-tertiary)] truncate">
                         {s.unit ? `${s.unit} · ` : ''}
-                        {s.status === 'SUCCESS' ? 'Submitted' : s.status === 'FLAGGED' ? 'Flagged' : 'In progress'}
+                        {s.status === 'SUCCESS' ? t('home.latest.submitted') : s.status === 'FLAGGED' ? t('home.latest.flagged') : t('home.latest.inProgress')}
                       </div>
                     </div>
                     {typeof s.score === 'number' && s.score > 0 ? (
@@ -784,7 +787,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
                         {s.score}%
                       </span>
                     ) : (
-                      <span className="text-xs font-bold text-[var(--text-tertiary)]">Read</span>
+                      <span className="text-xs font-bold text-[var(--text-tertiary)]">{t('home.latest.read')}</span>
                     )}
                   </button>
                 </li>
