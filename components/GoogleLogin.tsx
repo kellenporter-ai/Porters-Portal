@@ -4,15 +4,16 @@ import { auth, googleProvider } from '../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import { AlertTriangle, FileCode } from 'lucide-react';
 import { reportError } from '../lib/errorReporting';
+import { useT } from '../lib/i18n';
 
 /** Strip Firebase config details (API keys, project IDs) from error messages shown to users. */
-function sanitizeFirebaseError(message: string): string {
+function sanitizeFirebaseError(message: string, t: (key: string) => string): string {
   // Known Firebase auth error codes → friendly messages
-  if (message.includes('auth/popup-closed-by-user')) return 'Sign-in popup was closed. Please try again.';
-  if (message.includes('auth/cancelled-popup-request')) return 'Sign-in was cancelled. Please try again.';
-  if (message.includes('auth/network-request-failed')) return 'Network error. Check your connection and try again.';
-  if (message.includes('api-key-not-valid')) return 'Firebase API key is not configured correctly.';
-  if (message.includes('auth/unauthorized-domain')) return 'This domain is not authorized for sign-in.';
+  if (message.includes('auth/popup-closed-by-user')) return t('auth.errorPopupClosed');
+  if (message.includes('auth/cancelled-popup-request')) return t('auth.errorCancelled');
+  if (message.includes('auth/network-request-failed')) return t('auth.errorNetwork');
+  if (message.includes('api-key-not-valid')) return t('auth.errorApiKey');
+  if (message.includes('auth/unauthorized-domain')) return t('auth.errorUnauthorizedDomain');
   // Strip any remaining keys/config values from the raw message
   return message
     .replace(/AIza[A-Za-z0-9_-]{35}/g, '[REDACTED]')
@@ -23,6 +24,7 @@ function sanitizeFirebaseError(message: string): string {
 const GoogleLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const t = useT();
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -37,8 +39,8 @@ const GoogleLogin: React.FC = () => {
         await signInWithPopup(auth, googleProvider);
     } catch (error) {
         reportError(error, { component: 'GoogleLogin' });
-        const raw = error instanceof Error ? error.message : "Login failed";
-        setErrorMessage(sanitizeFirebaseError(raw));
+        const raw = error instanceof Error ? error.message : t('auth.errorGeneric');
+        setErrorMessage(sanitizeFirebaseError(raw, t));
         setLoading(false);
     }
   };
@@ -56,27 +58,25 @@ const GoogleLogin: React.FC = () => {
           <div className="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg transform -rotate-3 transition hover:rotate-0">
              <span className="text-3xl">⚛️</span>
           </div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Welcome Back</h1>
-          <p className="text-[var(--text-secondary)] mb-8">Porter's Physics & Forensics Portal</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">{t('auth.welcomeBack')}</h1>
+          <p className="text-[var(--text-secondary)] mb-8">{t('auth.subtitle')}</p>
           
           {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-500/30 dark:text-red-400 rounded-xl text-sm text-left animate-in slide-in-from-top-2">
               <div className="flex items-start gap-3">
                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                  <div className="break-words">
-                    <strong>Login Failed:</strong> {errorMessage}
+                    <strong>{t('auth.loginFailed')}</strong> {errorMessage}
                  </div>
               </div>
               {isApiKeyError && (
                  <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400">
                     <div className="flex items-center gap-2 font-bold mb-1">
                         <FileCode className="w-4 h-4" />
-                        Action Required:
+                        {t('auth.actionRequired')}
                     </div>
                     <p className="text-xs leading-relaxed">
-                        The app is missing your Firebase API Key.
-                        Please open <code>lib/firebase.ts</code> and replace
-                        <code>"INSERT_YOUR_API_KEY_HERE"</code> with your actual key from the Firebase Console.
+                        {t('auth.apiKeyHelp')}
                     </p>
                  </div>
               )}
@@ -99,15 +99,15 @@ const GoogleLogin: React.FC = () => {
                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05" />
                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                     </svg>
-                    <span>Sign in with Google</span>
+                    <span>{t('auth.signInWithGoogle')}</span>
                 </>
             )}
           </button>
           
           <div className="flex items-center gap-4 justify-center text-xs text-[var(--text-tertiary)]">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full"></span> Secure Connection</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full"></span> {t('auth.secureConnection')}</span>
             <span>•</span>
-            <span>Firebase Auth</span>
+            <span>{t('auth.firebaseAuth')}</span>
           </div>
         </div>
       </div>

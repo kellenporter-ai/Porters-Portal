@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Home, ArrowLeft } from 'lucide-react';
+import { useT } from '../lib/i18n';
 
 const NotFound: React.FC = () => {
   const navigate = useNavigate();
+  const t = useT();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -15,9 +17,9 @@ const NotFound: React.FC = () => {
       </div>
 
       <h1 className="text-5xl font-black text-[var(--text-primary)] mb-2 tracking-tight">404</h1>
-      <p className="text-lg font-bold text-[var(--text-secondary)] mb-1">Signal Lost</p>
+      <p className="text-lg font-bold text-[var(--text-secondary)] mb-1">{t('misc.notFoundTitle')}</p>
       <p className="text-sm text-[var(--text-tertiary)] text-center max-w-sm mb-8">
-        The transmission you requested could not be located. It may have been moved, declassified, or never existed.
+        {t('misc.notFoundBody')}
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-3">
@@ -25,13 +27,13 @@ const NotFound: React.FC = () => {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 px-5 py-2.5 bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-bold hover:bg-[var(--surface-glass)] transition"
         >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Go Back
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> {t('misc.goBack')}
         </button>
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-purple-500/20"
         >
-          <Home className="w-4 h-4" aria-hidden="true" /> Return to Base
+          <Home className="w-4 h-4" aria-hidden="true" /> {t('misc.returnToBase')}
         </button>
       </div>
 

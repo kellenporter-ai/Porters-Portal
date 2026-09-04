@@ -10,6 +10,7 @@ import { useIsMounted } from '../../lib/useIsMounted';
 import { getDifficultyClasses, getBossTierClasses } from '../../lib/difficultyPills';
 import BattleScene from './BattleScene';
 import BattleFeed from './BattleFeed';
+import { useT, useInterpolate } from '../../lib/i18n';
 
 
 interface BossQuizPanelProps {
@@ -60,6 +61,8 @@ const StudentEndgame: React.FC<{
   quiz: BossEvent;
   progress: BossEventProgress | null;
 }> = ({ quiz, progress }) => {
+  const t = useT();
+  const interpolate = useInterpolate();
   const stats = progress?.combatStats;
   const rewardTier = (progress as Record<string, unknown> | null)?.rewardTier as number | undefined;
   const rewardMultiplier = (progress as Record<string, unknown> | null)?.rewardMultiplier as number | undefined;
@@ -77,28 +80,28 @@ const StudentEndgame: React.FC<{
       {/* Victory Banner */}
       <div className="text-center py-4">
         <Crown className="w-10 h-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
-        <h4 className="text-lg font-black text-yellow-600 dark:text-yellow-400">Boss Defeated!</h4>
-        <p className="text-xs text-[var(--text-muted)]">{quiz.bossName} has been vanquished</p>
+        <h4 className="text-lg font-black text-yellow-600 dark:text-yellow-400">{t('boss.defeatedTitle')}</h4>
+        <p className="text-xs text-[var(--text-muted)]">{interpolate('boss.defeatedSub', { boss: quiz.bossName })}</p>
       </div>
 
       {/* Reward Tier */}
       {participated ? (
         <div className="text-center p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-yellow-500/20">
           {tierLabel && (
-            <div className={`text-2xl font-black ${tierColors[(rewardTier || 1) - 1] || 'text-gray-600 dark:text-gray-400'}`}>{tierLabel} Place</div>
+            <div className={`text-2xl font-black ${tierColors[(rewardTier || 1) - 1] || 'text-gray-600 dark:text-gray-400'}`}>{interpolate('boss.place', { place: tierLabel })}</div>
           )}
           <div className="flex items-center justify-center gap-4 mt-2 text-sm">
             <span className="text-yellow-600 dark:text-yellow-400 font-bold">{Math.round((quiz.rewards?.xp || 0) * (rewardMultiplier || 1))} XP</span>
             <span className="text-cyan-700 dark:text-cyan-400 font-bold">{Math.round((quiz.rewards?.flux || 0) * (rewardMultiplier || 1))} Flux</span>
             {rewardMultiplier && rewardMultiplier > 1 && (
-              <span className="text-pink-600 dark:text-pink-400 font-bold text-xs">({rewardMultiplier}x bonus!)</span>
+              <span className="text-pink-600 dark:text-pink-400 font-bold text-xs">{interpolate('boss.bonus', { mult: rewardMultiplier })}</span>
             )}
           </div>
         </div>
       ) : participated === false ? (
         <div className="text-center p-3 rounded-xl bg-red-500/5 border border-red-500/20">
-          <p className="text-sm text-red-600 dark:text-red-400 font-bold">Did not qualify for rewards</p>
-          <p className="text-[11.5px] text-[var(--text-muted)] mt-1">Needed {BOSS_PARTICIPATION_MIN_ATTEMPTS} attempts and {BOSS_PARTICIPATION_MIN_CORRECT} correct answer</p>
+          <p className="text-sm text-red-600 dark:text-red-400 font-bold">{t('boss.notQualified')}</p>
+          <p className="text-[11.5px] text-[var(--text-muted)] mt-1">{interpolate('boss.requirement', { attempts: BOSS_PARTICIPATION_MIN_ATTEMPTS, correct: BOSS_PARTICIPATION_MIN_CORRECT })}</p>
         </div>
       ) : null}
 
@@ -106,28 +109,28 @@ const StudentEndgame: React.FC<{
       {stats && (
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Swords className="w-3 h-3" /> Damage Dealt</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Swords className="w-3 h-3" /> {t('boss.damageDealt')}</div>
             <div className="text-lg font-black text-amber-600 dark:text-amber-400">{stats.totalDamageDealt.toLocaleString()}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Target className="w-3 h-3" /> Accuracy</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Target className="w-3 h-3" /> {t('boss.accuracy')}</div>
             <div className="text-lg font-black text-green-600 dark:text-green-400">{accuracy}%</div>
             <div className="text-[11.5px] text-[var(--text-muted)]">{correct}/{attempted}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Zap className="w-3 h-3" /> Critical Hits</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Zap className="w-3 h-3" /> {t('boss.criticalHits')}</div>
             <div className="text-lg font-black text-red-600 dark:text-red-400">{stats.criticalHits}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Shield className="w-3 h-3" /> Damage Mitigated</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Shield className="w-3 h-3" /> {t('boss.damageMitigated')}</div>
             <div className="text-lg font-black text-cyan-700 dark:text-cyan-400">{stats.damageReduced}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> Longest Streak</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> {t('boss.longestStreak')}</div>
             <div className="text-lg font-black text-purple-600 dark:text-purple-400">{stats.longestStreak}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Heart className="w-3 h-3" /> Healing Received</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Heart className="w-3 h-3" /> {t('boss.healingReceived')}</div>
             <div className="text-lg font-black text-emerald-700 dark:text-emerald-400">{stats.healingReceived}</div>
           </div>
         </div>
@@ -167,6 +170,8 @@ const TrialEndgame: React.FC<{
   committing?: boolean;
   onCommit?: () => void;
 }> = ({ result, specId, committed, committing, onCommit }) => {
+  const t = useT();
+  const interpolate = useInterpolate();
   const stats = result.stats;
   const passed = result.passed ?? result.success;
 
@@ -175,26 +180,26 @@ const TrialEndgame: React.FC<{
       {passed && committed ? (
         <>
           <Award className="w-14 h-14 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
-          <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">Specialization Unlocked!</h4>
+          <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">{t('boss.specUnlocked')}</h4>
           <p className="text-sm text-[var(--text-secondary)]">
-            You have committed to the {specId} specialization.
+            {interpolate('boss.committedToSpec', { spec: specId ?? '' })}
           </p>
         </>
       ) : passed && !committed ? (
         <>
           <Award className="w-14 h-14 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
-          <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">Tutorial Passed!</h4>
+          <h4 className="text-xl font-black text-yellow-600 dark:text-yellow-400">{t('boss.tutorialPassed')}</h4>
           <p className="text-sm text-[var(--text-secondary)]">
-            You passed the {specId} tutorial. Do you want to commit to this specialization?
+            {interpolate('boss.tutorialPassedPrompt', { spec: specId ?? '' })}
           </p>
           <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto">
-            You can only have one specialization. Choose carefully — this cannot be changed later.
+            {t('boss.oneSpecWarning')}
           </p>
         </>
       ) : (
         <>
           <XCircle className="w-14 h-14 text-red-600 dark:text-red-400 mx-auto mb-1" />
-          <h4 className="text-xl font-black text-red-600 dark:text-red-400">Tutorial Complete</h4>
+          <h4 className="text-xl font-black text-red-600 dark:text-red-400">{t('boss.tutorialComplete')}</h4>
           <p className="text-sm text-[var(--text-secondary)]">
             {result.message}
           </p>
@@ -204,15 +209,15 @@ const TrialEndgame: React.FC<{
       {stats && (
         <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
           <div className="bg-black/30 rounded-xl p-2 border border-white/5">
-            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">Correct</div>
+            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">{t('boss.correct')}</div>
             <div className="text-lg font-black text-green-600 dark:text-green-400">{stats.correct}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-2 border border-white/5">
-            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">Attempted</div>
+            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">{t('boss.attempted')}</div>
             <div className="text-lg font-black text-[var(--text-primary)]">{stats.attempted}</div>
           </div>
           <div className="bg-black/30 rounded-xl p-2 border border-white/5">
-            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">Accuracy</div>
+            <div className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold">{t('boss.accuracy')}</div>
             <div className="text-lg font-black text-amber-600 dark:text-amber-400">{stats.accuracy}%</div>
           </div>
         </div>
@@ -226,7 +231,7 @@ const TrialEndgame: React.FC<{
             className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold rounded-xl text-sm hover:opacity-90 transition"
           >
             <ArrowRight className="w-4 h-4" />
-            Go to Skills
+            {t('boss.goToSkills')}
           </button>
         ) : passed && !committed ? (
           <>
@@ -239,12 +244,12 @@ const TrialEndgame: React.FC<{
               {committing ? (
                 <>
                   <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  Committing...
+                  {t('boss.committing')}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Yes, Commit to {specId}
+                  {interpolate('boss.commitToSpec', { spec: specId ?? '' })}
                 </>
               )}
             </button>
@@ -256,13 +261,13 @@ const TrialEndgame: React.FC<{
                   await dataService.declineSpecialization(specId);
                   window.location.reload();
                 } catch (err) {
-                  alert(err instanceof Error ? err.message : 'Failed to decline specialization');
+                  alert(err instanceof Error ? err.message : t('boss.failedDecline'));
                 }
               }}
               className="flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 text-[var(--text-secondary)] font-bold rounded-xl text-sm hover:bg-white/10 transition"
             >
               <XCircle className="w-4 h-4" />
-              Not Now
+              {t('boss.notNow')}
             </button>
           </>
         ) : (
@@ -274,13 +279,13 @@ const TrialEndgame: React.FC<{
                 await dataService.startSpecializationTrial(specId, true);
                 window.location.reload();
               } catch (err) {
-                alert(err instanceof Error ? err.message : 'Failed to restart tutorial');
+                alert(err instanceof Error ? err.message : t('boss.failedRestart'));
               }
             }}
             className="flex items-center gap-2 px-6 py-2.5 bg-amber-600/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-sm hover:bg-amber-600/30 transition"
           >
             <RotateCcw className="w-4 h-4" />
-            Try Again
+            {t('boss.tryAgain')}
           </button>
         )}
       </div>
@@ -419,6 +424,8 @@ const QuizBossCard: React.FC<{
   const [committing, setCommitting] = useState(false);
   const trialEvaluatedRef = useRef(false);
   const cardToast = useToast();
+  const t = useT();
+  const interpolate = useInterpolate();
   useEffect(() => {
     if (!quiz.isTrial || trialEvaluatedRef.current) return;
     if (bossDefeated || allAnswered) {
@@ -433,7 +440,7 @@ const QuizBossCard: React.FC<{
           }
         })
         .catch((err) => {
-          cardToast.error(err instanceof Error ? err.message : 'Trial evaluation failed');
+          cardToast.error(err instanceof Error ? err.message : t('boss.trialEvalFailed'));
         });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -447,7 +454,7 @@ const QuizBossCard: React.FC<{
       setCommitted(true);
       cardToast.success(result.message);
     } catch (err) {
-      cardToast.error(err instanceof Error ? err.message : 'Failed to commit specialization');
+      cardToast.error(err instanceof Error ? err.message : t('boss.failedCommit'));
     } finally {
       setCommitting(false);
     }
@@ -556,11 +563,11 @@ const QuizBossCard: React.FC<{
                   <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-900/90 to-transparent p-4 text-center animate-in slide-in-from-top duration-300">
                     <div className="text-lg font-black text-red-600 dark:text-red-400 uppercase tracking-wider animate-[shake_0.4s_ease-in-out]">{showAbility.name}</div>
                     <div className="text-xs text-red-300">
-                      {showAbility.effect === 'AOE_DAMAGE' && `All students take ${showAbility.value} damage!`}
-                      {showAbility.effect === 'HEAL_BOSS' && `Boss regenerates ${showAbility.value}% HP!`}
-                      {showAbility.effect === 'ENRAGE' && `Boss damage increased by ${showAbility.value}%!`}
-                      {showAbility.effect === 'SILENCE' && `Critical hits disabled!`}
-                      {showAbility.effect === 'FOCUS_FIRE' && `Top damage dealer targeted!`}
+                      {showAbility.effect === 'AOE_DAMAGE' && interpolate('boss.aoeDamage', { value: showAbility.value })}
+                      {showAbility.effect === 'HEAL_BOSS' && interpolate('boss.healBoss', { value: showAbility.value })}
+                      {showAbility.effect === 'ENRAGE' && interpolate('boss.enrage', { value: showAbility.value })}
+                      {showAbility.effect === 'SILENCE' && t('boss.silence')}
+                      {showAbility.effect === 'FOCUS_FIRE' && t('boss.focusFire')}
                     </div>
                   </div>
                 </div>
@@ -590,10 +597,10 @@ const QuizBossCard: React.FC<{
           {/* Boss HP bar */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-red-600 dark:text-red-400 font-mono">{currentHp} HP</span>
+              <span className="text-red-600 dark:text-red-400 font-mono">{currentHp}{t('boss.hpUnit')}</span>
               <span className="text-gray-600">{effectiveMaxHp}</span>
             </div>
-            <div className="relative w-full bg-white/5 rounded-full h-3 overflow-hidden" role="progressbar" aria-valuenow={currentHp} aria-valuemin={0} aria-valuemax={effectiveMaxHp} aria-label="Boss health">
+            <div className="relative w-full bg-white/5 rounded-full h-3 overflow-hidden" role="progressbar" aria-valuenow={currentHp} aria-valuemin={0} aria-valuemax={effectiveMaxHp} aria-label={t('boss.bossHealth')}>
               <div
                 className="h-3 rounded-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-500"
                 style={{ width: `${hpPercent}%` }}
@@ -621,10 +628,10 @@ const QuizBossCard: React.FC<{
           {/* Player HP bar */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-emerald-700 dark:text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> Your HP: {playerHp === -1 ? playerMaxHp : playerHp}</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-mono flex items-center gap-1"><Heart className="w-3 h-3" /> {interpolate('boss.yourHp', { hp: playerHp === -1 ? playerMaxHp : playerHp })}</span>
               <span className="text-gray-600">{playerMaxHp}</span>
             </div>
-            <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden" role="progressbar" aria-valuenow={playerHp === -1 ? playerMaxHp : playerHp} aria-valuemin={0} aria-valuemax={playerMaxHp} aria-label="Your health">
+            <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden" role="progressbar" aria-valuenow={playerHp === -1 ? playerMaxHp : playerHp} aria-valuemin={0} aria-valuemax={playerMaxHp} aria-label={t('boss.yourHealth')}>
               <div
                 className={`h-2.5 rounded-full transition-all duration-500 ${playerHpPercent > 50 ? 'bg-gradient-to-r from-emerald-600 to-green-500' : playerHpPercent > 25 ? 'bg-gradient-to-r from-yellow-600 to-orange-500' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
                 style={{ width: `${playerHpPercent}%` }}
@@ -649,9 +656,9 @@ const QuizBossCard: React.FC<{
 
           {/* Phase Transition Overlay */}
           {showPhaseTransition && (
-            <div role="alertdialog" aria-label={`Phase shift: ${showPhaseTransition.name}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-500">
+            <div role="alertdialog" aria-label={interpolate('boss.phaseShiftAria', { name: showPhaseTransition.name })} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-500">
               <div className="text-center space-y-4 animate-in zoom-in-95 duration-700">
-                <div className="text-6xl font-black text-red-500 animate-pulse">PHASE SHIFT</div>
+                <div className="text-6xl font-black text-red-500 animate-pulse">{t('boss.phaseShift')}</div>
                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{showPhaseTransition.name}</div>
                 {showPhaseTransition.dialogue && (
                   <div className="text-lg text-gray-300 italic max-w-md mx-auto">"{showPhaseTransition.dialogue}"</div>
@@ -665,26 +672,26 @@ const QuizBossCard: React.FC<{
             <div role="alert" className="text-center py-6 space-y-4">
               <XCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-2" />
               <div>
-                <p className="text-sm font-bold text-red-600 dark:text-red-400">Knocked Out!</p>
-                <p className="text-xs text-[var(--text-muted)] mt-1">Every defeat is a lesson. Review your performance and try again!</p>
+                <p className="text-sm font-bold text-red-600 dark:text-red-400">{t('boss.knockedOut')}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{t('boss.knockoutLesson')}</p>
               </div>
 
               {/* Study Report Mini */}
               {progress?.combatStats && (
                 <div className="bg-black/30 rounded-xl p-4 border border-white/5 text-left space-y-2">
-                  <div className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase">Study Report</div>
+                  <div className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase">{t('boss.studyReport')}</div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>Accuracy: <span className="text-amber-400">{Math.round((progress.combatStats.questionsCorrect / Math.max(1, progress.combatStats.questionsAttempted)) * 100)}%</span></div>
-                    <div>Damage Dealt: <span className="text-amber-400">{progress.combatStats.totalDamageDealt}</span></div>
-                    <div>Best Streak: <span className="text-amber-400">{progress.combatStats.longestStreak}</span></div>
-                    <div>Crits: <span className="text-amber-400">{progress.combatStats.criticalHits}</span></div>
+                    <div>{interpolate('boss.accuracyShort', { pct: Math.round((progress.combatStats.questionsCorrect / Math.max(1, progress.combatStats.questionsAttempted)) * 100) })}</div>
+                    <div>{interpolate('boss.damageShort', { dmg: progress.combatStats.totalDamageDealt })}</div>
+                    <div>{interpolate('boss.bestStreakShort', { streak: progress.combatStats.longestStreak })}</div>
+                    <div>{interpolate('boss.critsShort', { crits: progress.combatStats.criticalHits })}</div>
                   </div>
                   <div className="text-[11.5px] text-[var(--text-muted)] pt-1 border-t border-white/5">
                     {progress.combatStats.incorrectByDifficulty.HARD > 0 && (
-                      <span>Focus on HARD questions — you missed {progress.combatStats.incorrectByDifficulty.HARD}. </span>
+                      <span>{interpolate('boss.hardFocus', { count: progress.combatStats.incorrectByDifficulty.HARD })}</span>
                     )}
                     {progress.combatStats.bossDamageTaken > 50 && (
-                      <span>Consider equipping more Analysis (armor) gear. </span>
+                      <span>{t('boss.armorAdvice')}</span>
                     )}
                   </div>
                 </div>
@@ -702,7 +709,7 @@ const QuizBossCard: React.FC<{
                 }}
                 className="px-6 py-2.5 bg-amber-600/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-xl text-sm font-bold hover:bg-amber-600/30 transition"
               >
-                Start New Attempt
+                {t('boss.startNewAttempt')}
               </button>
             </div>
           ) : trialResult ? (
@@ -716,8 +723,8 @@ const QuizBossCard: React.FC<{
           ) : allAnswered ? (
             <div className="text-center py-8">
               <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-300">All questions answered!</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Check back for more questions tomorrow.</p>
+              <p className="text-sm text-gray-300">{t('boss.allAnswered')}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{t('boss.comeBackTomorrow')}</p>
             </div>
           ) : questionLoading ? (
             <div className="text-center py-8">
@@ -733,16 +740,16 @@ const QuizBossCard: React.FC<{
           ) : question ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>Question {(attemptStats?.attempted || 0) + 1} / {quiz.questions?.length || '?'}</span>
+                <span>{interpolate('boss.questionProgress', { n: (attemptStats?.attempted || 0) + 1, total: quiz.questions?.length || '?' })}</span>
                 <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${getDifficultyClasses(question.difficulty)}`}>
                   {question.difficulty}
-                  {question.damageBonus ? ` (+${question.damageBonus} dmg)` : ''}
+                  {question.damageBonus ? interpolate('boss.dmgBonus', { bonus: question.damageBonus }) : ''}
                 </span>
               </div>
 
               <p className="text-base text-white font-semibold leading-relaxed">{question.stem}</p>
 
-              <div className="space-y-2.5" role="radiogroup" aria-label="Answer options">
+              <div className="space-y-2.5" role="radiogroup" aria-label={t('boss.answerOptions')}>
                 {question.options.map((option, idx) => {
                   const isSelected = selectedAnswer === idx;
                   const showResult = answerResult && isSelected;
@@ -778,11 +785,11 @@ const QuizBossCard: React.FC<{
                 <div role="status" aria-live="polite" className="text-center space-y-1">
                   <div className="text-base text-amber-600 dark:text-amber-400 font-bold animate-bounce">
                     <Zap className="w-5 h-5 inline mr-1" />
-                    {answerResult.isCrit ? 'CRITICAL HIT! ' : ''}-{answerResult.damage} HP to boss!
+                    {answerResult.isCrit ? t('boss.critHit') : ''}{interpolate('boss.dmgToBoss', { dmg: answerResult.damage })}
                   </div>
                   {answerResult.healAmount && answerResult.healAmount > 0 && (
                     <div className="text-sm text-emerald-700 dark:text-emerald-400 font-bold">
-                      <Heart className="w-4 h-4 inline mr-1" /> +{answerResult.healAmount} HP healed
+                      <Heart className="w-4 h-4 inline mr-1" /> {interpolate('boss.hpHealed', { heal: answerResult.healAmount })}
                     </div>
                   )}
                 </div>
@@ -790,13 +797,13 @@ const QuizBossCard: React.FC<{
               {answerResult && !answerResult.correct && answerResult.shieldBlocked && (
                 <div role="status" aria-live="polite" className="text-center text-sm text-cyan-700 dark:text-cyan-400 font-bold animate-bounce">
                   <Shield className="w-4 h-4 inline mr-1" />
-                  Shield blocked the attack!
+                  {t('boss.shieldBlocked')}
                 </div>
               )}
               {answerResult && !answerResult.correct && !answerResult.shieldBlocked && answerResult.playerDamage && answerResult.playerDamage > 0 && (
                 <div role="status" aria-live="polite" className="text-center text-sm text-red-600 dark:text-red-400 font-bold animate-bounce">
                   <Heart className="w-4 h-4 inline mr-1" />
-                  Boss hits you for {answerResult.playerDamage} damage!
+                  {interpolate('boss.bossHitsYou', { dmg: answerResult.playerDamage })}
                 </div>
               )}
             </div>
@@ -807,12 +814,10 @@ const QuizBossCard: React.FC<{
             <div className="text-[11.5px] text-[var(--text-tertiary)] text-center pt-1">
               {(progress.combatStats?.questionsAttempted || 0) < BOSS_PARTICIPATION_MIN_ATTEMPTS || (progress.combatStats?.questionsCorrect || 0) < BOSS_PARTICIPATION_MIN_CORRECT ? (
                 <span>
-                  Rewards: {progress.combatStats?.questionsAttempted || 0}/{BOSS_PARTICIPATION_MIN_ATTEMPTS} attempts
-                  {' '}&middot;{' '}
-                  {progress.combatStats?.questionsCorrect || 0}/{BOSS_PARTICIPATION_MIN_CORRECT} correct needed
+                  {interpolate('boss.rewardsProgress', { attempts: progress.combatStats?.questionsAttempted || 0, minAttempts: BOSS_PARTICIPATION_MIN_ATTEMPTS, correct: progress.combatStats?.questionsCorrect || 0, minCorrect: BOSS_PARTICIPATION_MIN_CORRECT })}
                 </span>
               ) : (
-                <span className="text-green-600">Reward participation met</span>
+                <span className="text-green-600">{t('boss.rewardsMet')}</span>
               )}
             </div>
           )}
@@ -822,10 +827,10 @@ const QuizBossCard: React.FC<{
 
           {/* Rewards */}
           <div className="flex items-center gap-3 text-[11.5px] text-[var(--text-muted)] border-t border-white/5 pt-3">
-            <span>Defeat rewards:</span>
+            <span>{t('boss.defeatRewards')}</span>
             <span className="text-yellow-600 dark:text-yellow-400">{quiz.rewards.xp} XP</span>
             <span className="text-cyan-700 dark:text-cyan-400">{quiz.rewards.flux} Flux</span>
-            {quiz.rewards.itemRarity && <span className="text-purple-600 dark:text-purple-400">{quiz.rewards.itemRarity} item</span>}
+            {quiz.rewards.itemRarity && <span className="text-purple-600 dark:text-purple-400">{interpolate('boss.itemReward', { rarity: quiz.rewards.itemRarity })}</span>}
           </div>
         </>
       )}
@@ -837,6 +842,8 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
   const [allQuizzes, setAllQuizzes] = useState<BossEvent[]>([]);
   const [quizzesLoaded, setQuizzesLoaded] = useState(false);
   const toast = useToast();
+  const t = useT();
+  const interpolate = useInterpolate();
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -873,30 +880,30 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     try {
       const result = await dataService.answerBossEvent(quizId, questionId, answer);
       if (result.alreadyAnswered) {
-        toast.info('Already answered this question!');
+        toast.info(t('boss.alreadyAnswered'));
       } else if (result.correct) {
         sfx.bossHit();
         if (result.bossDefeated) {
           sfx.bossDefeated();
-          toast.success('Boss defeated! Completion rewards distributed to all contributors!');
+          toast.success(t('boss.defeatedToast'));
         } else if (result.isCrit) {
-          toast.success(`CRITICAL HIT! Dealt ${result.damage} damage!`);
+          toast.success(interpolate('boss.critToast', { dmg: result.damage }));
         } else {
-          toast.success(`Correct! Dealt ${result.damage} damage!`);
+          toast.success(interpolate('boss.correctToast', { dmg: result.damage }));
         }
       } else {
         if (result.shieldBlocked) {
-          toast.info('Shield blocked the attack!');
+          toast.info(t('boss.shieldToast'));
         } else if (result.playerDamage && result.playerDamage > 0) {
-          toast.error(`Wrong! The boss hits you for ${result.playerDamage} damage!`);
+          toast.error(interpolate('boss.wrongHit', { dmg: result.playerDamage }));
         } else {
-          toast.error('Incorrect. No damage dealt.');
+          toast.error(t('boss.wrongNoDamage'));
         }
       }
       if (result.knockedOut) sfx.bossHit();
       callbacks.onResult(result);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to submit answer');
+      toast.error(err instanceof Error ? err.message : t('boss.failedSubmit'));
       // Signal card to re-enable its submit button
       callbacks.onResult({ correct: false, damage: 0 });
     }
@@ -904,7 +911,7 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
 
   if (!quizzesLoaded) {
     return (
-      <div className="space-y-4" role="status" aria-label="Loading">
+      <div className="space-y-4" role="status" aria-label={t('boss.loading')}>
         <div className="animate-pulse flex items-center gap-2">
           <div className="w-5 h-5 bg-[var(--text-muted)]/20 rounded" />
           <div className="h-5 w-44 bg-[var(--text-muted)]/20 rounded" />
@@ -930,14 +937,14 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
   if (quizzes.length === 0) return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-[var(--text-secondary)] flex items-center gap-2">
-        <BrainCircuit className="w-5 h-5 text-amber-500" /> Boss Quiz Challenge
+        <BrainCircuit className="w-5 h-5 text-amber-500" /> {t('boss.panelTitle')}
       </h3>
       <div className="text-center py-10 px-6 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-glass)]/50">
         <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
           <BrainCircuit className="w-7 h-7 text-amber-500/60" />
         </div>
-        <p className="text-sm font-semibold text-[var(--text-secondary)] mb-1">No quiz challenges available</p>
-        <p className="text-xs text-[var(--text-muted)] max-w-[260px] mx-auto">Your teacher hasn&apos;t deployed a quiz boss yet. Check back later for a new challenge.</p>
+        <p className="text-sm font-semibold text-[var(--text-secondary)] mb-1">{t('boss.emptyTitle')}</p>
+        <p className="text-xs text-[var(--text-muted)] max-w-[260px] mx-auto">{t('boss.emptyDesc')}</p>
       </div>
     </div>
   );
@@ -945,7 +952,7 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
-        <Brain className="w-5 h-5" /> Boss Quiz Challenge
+        <Brain className="w-5 h-5" /> {t('boss.panelTitle')}
       </h3>
 
       {quizzes.map(quiz => (

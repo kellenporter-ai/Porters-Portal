@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from './PublicLayout';
 import LandingPage from './LandingPage';
 import GoogleLogin from '../GoogleLogin';
+import { LocaleProvider } from '../../lib/i18n';
 
 const PublicApp: React.FC = () => {
   return (
@@ -27,7 +28,9 @@ const PublicApp: React.FC = () => {
         path="/login"
         element={
           <PublicLayout lang="en">
-            <GoogleLogin />
+            <LocaleProvider key="en">
+              <GoogleLogin />
+            </LocaleProvider>
           </PublicLayout>
         }
       />

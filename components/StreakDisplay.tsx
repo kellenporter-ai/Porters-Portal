@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Flame, Snowflake, Trophy } from 'lucide-react';
 import { StreakData } from '../types';
 import { dataService } from '../services/dataService';
+import { useT, useInterpolate } from '../lib/i18n';
 
 interface StreakDisplayProps {
   userId: string;
@@ -37,6 +38,8 @@ function sanitizeStreakData(data: Partial<StreakData> | null | undefined): Strea
 const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compact }) => {
   const [streak, setStreak] = useState<StreakData | null>(sanitizeStreakData(streakData));
   const [showToast, setShowToast] = useState<{ message: string; type: 'streak' | 'freeze' | 'milestone' } | null>(null);
+  const t = useT();
+  const interpolate = useInterpolate();
 
   // Update streak on mount (once per day) and fetch fresh data
   useEffect(() => {
@@ -52,10 +55,10 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
         }
 
         if (result.freezeUsed) {
-          setShowToast({ message: 'Streak Freeze used! Streak saved.', type: 'freeze' });
+          setShowToast({ message: t('streak.freezeUsed'), type: 'freeze' });
           setTimeout(() => setShowToast(null), 3000);
         } else if (result.newMilestone) {
-          setShowToast({ message: `${result.newMilestone}-day streak milestone!`, type: 'milestone' });
+          setShowToast({ message: interpolate('streak.milestoneToast', { days: result.newMilestone }), type: 'milestone' });
           setTimeout(() => setShowToast(null), 3000);
         }
       } catch {
@@ -64,6 +67,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
     };
     updateStreak();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Update local state when prop changes
@@ -87,7 +91,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
           {streak.currentStreak}
         </span>
         {streak.freezeTokens > 0 && (
-          <div className="flex items-center gap-0.5 ml-1" title={`${streak.freezeTokens} streak freeze${streak.freezeTokens !== 1 ? 's' : ''}`}>
+          <div className="flex items-center gap-0.5 ml-1" title={streak.freezeTokens !== 1 ? interpolate('streak.freezePlural', { tokens: streak.freezeTokens }) : interpolate('streak.freezeSingular', { tokens: streak.freezeTokens })}>
             {Array.from({ length: streak.freezeTokens }).map((_, i) => (
               <Snowflake key={i} className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
             ))}
@@ -128,14 +132,14 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ userId, streakData, compa
             <Flame className={`w-7 h-7 ${flameIntensity}`} />
             <div>
               <div className={`text-2xl font-bold ${streak.currentStreak > 0 ? 'text-amber-300' : 'text-[var(--text-tertiary)]'}`}>
-                {streak.currentStreak} Day{streak.currentStreak !== 1 ? 's' : ''}
+                {streak.currentStreak} {streak.currentStreak !== 1 ? t('streak.dayPlural') : t('streak.daySingular')}
               </div>
               <div className="text-[11.5px] text-[var(--text-muted)] uppercase tracking-widest font-bold">
-                Current Streak | Best: {streak.longestStreak}
+                {interpolate('streak.currentStreakLabel', { best: streak.longestStreak })}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1" title={`${streak.freezeTokens} / ${streak.maxFreezeTokens} freeze tokens`}>
+          <div className="flex items-center gap-1" title={interpolate('streak.freezeTitle', { tokens: streak.freezeTokens, max: streak.maxFreezeTokens })}>
             {Array.from({ length: streak.maxFreezeTokens }).map((_, i) => (
               <Snowflake key={i} className={`w-5 h-5 ${i < streak.freezeTokens ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-700'}`} />
             ))}

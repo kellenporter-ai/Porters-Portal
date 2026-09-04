@@ -6,6 +6,7 @@ import { dataService } from '../services/dataService';
 import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
 import { getRankDetails, levelForXp } from '../lib/gamification';
 import { useReducedMotion } from '../lib/useReducedMotion';
+import { useT, useInterpolate } from '../lib/i18n';
 import PlayerInspectModal from './xp/PlayerInspectModal';
 import ProfileFrame from './dashboard/ProfileFrame';
 
@@ -39,6 +40,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
+  const t = useT();
+  const interpolate = useInterpolate();
   const handleInspect = useCallback((id: string) => setInspectUserId(id), []);
   const handleCloseInspect = useCallback(() => setInspectUserId(null), []);
 
@@ -85,9 +88,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
     <div className="w-full max-w-6xl mx-auto pt-8 px-4">
         <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 dark:from-purple-400 to-pink-700 dark:to-pink-600 mb-2">
-                Class Rankings
+                {t('leaderboard.title')}
             </h1>
-            <p className="text-[var(--text-tertiary)] mb-6">Top operatives by XP accumulated.</p>
+            <p className="text-[var(--text-tertiary)] mb-6">{t('leaderboard.subtitle')}</p>
             
             <div className="inline-block relative">
                 <select 
@@ -114,7 +117,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                         const u = leaders[rank];
                         if (!u) return null;
                         const isPrivate = u.settings?.privacyMode;
-                        const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
+                        const displayName = isPrivate ? (u.gamification?.codename || t('leaderboard.unknownAgent')) : u.name;
                         const classXP = u.gamification?.classXp?.[selectedClass] || 0;
                         const lvl = levelForXp(classXP);
                         const rd = getRankDetails(lvl);
@@ -145,7 +148,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
                                     <div className={`text-[11.5px] font-mono uppercase ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
                                     <button onClick={() => handleInspect(u.id)} className="mt-1 text-[11.5px] text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
-                                        <Eye className="w-3 h-3" /> Inspect
+                                        <Eye className="w-3 h-3" /> {t('leaderboard.inspect')}
                                     </button>
                                 </div>
                                 {/* Podium bar */}
@@ -160,16 +163,16 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
             {leaders.length === 0 ? (
                 <div className="p-10 text-center text-[var(--text-muted)] italic flex flex-col items-center gap-2">
                     <Users className="w-8 h-8 opacity-20" />
-                    No operatives ranked in {selectedClass}.
+                    {interpolate('leaderboard.empty', { class: selectedClass })}
                 </div>
             ) : (
-                <div ref={listParentRef} className="max-h-[480px] overflow-auto" role="list" aria-label={`${selectedClass} rankings`}>
+                <div ref={listParentRef} className="max-h-[480px] overflow-auto" role="list" aria-label={interpolate('leaderboard.rankingsAria', { class: selectedClass })}>
                     <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
                         {rowVirtualizer.getVirtualItems().map(virtualRow => {
                             const u = restOfList[virtualRow.index];
                             const i = leaders.length >= 3 ? virtualRow.index + 3 : virtualRow.index;
                             const isPrivate = u.settings?.privacyMode;
-                            const displayName = isPrivate ? (u.gamification?.codename || 'Unknown Agent') : u.name;
+                            const displayName = isPrivate ? (u.gamification?.codename || t('leaderboard.unknownAgent')) : u.name;
                             const classXP = u.gamification?.classXp?.[selectedClass] || 0;
                             const level = levelForXp(classXP);
                             const rankDetails = getRankDetails(level);
@@ -180,7 +183,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     ref={rowVirtualizer.measureElement}
                                     data-index={virtualRow.index}
                                     role="listitem"
-                                    aria-label={`Rank ${i + 1}: ${displayName}, ${classXP.toLocaleString()} XP`}
+                                    aria-label={interpolate('leaderboard.rankAria', { rank: i + 1, name: displayName, xp: classXP.toLocaleString() })}
                                     className="p-5 flex items-center gap-5 transition hover:bg-[var(--surface-glass)] border-b border-[var(--border)] absolute top-0 left-0 w-full"
                                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                                 >
@@ -217,12 +220,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                         <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500">
                                             {classXP.toLocaleString()}
                                         </div>
-                                        <div className="text-[11.5px] text-[var(--text-muted)] font-mono tracking-widest">CLASS XP</div>
+                                        <div className="text-[11.5px] text-[var(--text-muted)] font-mono tracking-widest">{t('leaderboard.classXp')}</div>
                                     </div>
                                     <button
                                         onClick={() => handleInspect(u.id)}
                                         className="p-2 text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition rounded-lg hover:bg-[var(--surface-glass)]"
-                                        aria-label={`Inspect ${displayName}`}
+                                        aria-label={`${t('leaderboard.inspect')} ${displayName}`}
                                     >
                                         <Eye className="w-4 h-4" />
                                     </button>

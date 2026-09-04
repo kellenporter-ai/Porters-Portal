@@ -7,6 +7,7 @@ import { Bell, CheckCheck, Zap, Crosshair, Megaphone, Package, ArrowUp, Radio, B
 import { dataService } from '../services/dataService';
 import { sfx } from '../lib/sfx';
 import { isPushSupported, getPushPermission, requestPushPermission } from '../lib/usePushNotifications';
+import { useT, useInterpolate } from '../lib/i18n';
 
 interface NotificationBellProps {
   userId: string;
@@ -37,6 +38,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const t = useT();
+  const interpolate = useInterpolate();
 
   useFocusTrap(panelRef, isOpen);
 
@@ -126,10 +129,10 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
 
   const formatTime = (ts: string) => {
     const diff = Date.now() - new Date(ts).getTime();
-    if (diff < 60000) return 'just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return `${Math.floor(diff / 86400000)}d ago`;
+    if (diff < 60000) return t('notifications.justNow');
+    if (diff < 3600000) return interpolate('notifications.minAgo', { m: Math.floor(diff / 60000) });
+    if (diff < 86400000) return interpolate('notifications.hrAgo', { h: Math.floor(diff / 3600000) });
+    return interpolate('notifications.dayAgo', { d: Math.floor(diff / 86400000) });
   };
 
   const handleToggle = () => {
@@ -170,13 +173,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
           }}
         >
           <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
-            <h4 className="text-sm font-bold text-[var(--text-primary)]">Notifications</h4>
+            <h4 className="text-sm font-bold text-[var(--text-primary)]">{t('notifications.title')}</h4>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 className="flex items-center gap-1 text-[11.5px] text-[var(--accent-text)] hover:text-purple-300 font-bold uppercase tracking-widest transition"
               >
-                <CheckCheck className="w-3 h-3" /> Mark all read
+                <CheckCheck className="w-3 h-3" /> {t('notifications.markAllRead')}
               </button>
             )}
           </div>
@@ -187,7 +190,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
               <div className="flex items-start gap-2">
                 <BellRing className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-[var(--text-secondary)] leading-tight">Get desktop alerts for quests, loot, and announcements?</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-tight">{t('notifications.pushPrompt')}</p>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={async () => {
@@ -199,13 +202,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
                       }}
                       className="px-2 py-1 bg-purple-600 text-white text-[11.5px] font-bold rounded-lg hover:bg-purple-500 transition"
                     >
-                      Enable
+                      {t('notifications.enable')}
                     </button>
                     <button
                       onClick={() => setShowPushPrompt(false)}
                       className="px-2 py-1 bg-[var(--surface-glass)] text-[var(--text-tertiary)] text-[11.5px] font-bold rounded-lg hover:bg-[var(--surface-glass-heavy)] transition"
                     >
-                      Not now
+                      {t('notifications.notNow')}
                     </button>
                   </div>
                 </div>
@@ -217,7 +220,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, settings, o
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-[var(--text-muted)]">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                <p className="text-xs">No notifications yet</p>
+                <p className="text-xs">{t('notifications.empty')}</p>
               </div>
             ) : (
               notifications.slice(0, 30).map(n => (

@@ -15,6 +15,7 @@ import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
+import { useT, useInterpolate } from '../../lib/i18n';
 import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles, Sword, Shield, Crosshair, Brain } from 'lucide-react';
 
 // ========================================
@@ -43,6 +44,8 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
   const [showTrialInfo, setShowTrialInfo] = useState<SpecializationId | null>(null);
   const toast = useToast();
   const { confirm } = useConfirm();
+  const t = useT();
+  const interpolate = useInterpolate();
 
   const hasChosen = !!(specialization && SKILL_TREES_V2[specialization]);
   const activeSpec = selectedSpec || 'JUGGERNAUT';
@@ -59,10 +62,10 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
     if (!hasChosen) {
       const specName = SKILL_TREES_V2[activeSpec].name;
       const confirmed = await confirm({
-        title: 'Permanent Specialization',
-        message: `You are about to commit to the ${specName} specialization. This choice is PERMANENT and cannot be changed. Are you sure?`,
-        confirmLabel: `Commit to ${specName}`,
-        cancelLabel: 'Go Back',
+        title: t('skills.permSpecTitle'),
+        message: interpolate('skills.permSpecMsg', { spec: specName }),
+        confirmLabel: interpolate('skills.commitTo', { spec: specName }),
+        cancelLabel: t('skills.goBack'),
         variant: 'warning',
       });
       if (!confirmed) return;
@@ -72,9 +75,9 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
     try {
       await dataService.unlockSkill(skillId, activeSpec);
       sfx.skillUnlock();
-      toast.success('Skill unlocked!');
+      toast.success(t('skills.unlocked'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to unlock');
+      toast.error(err instanceof Error ? err.message : t('skills.unlockFailed'));
     }
     setUnlocking(null);
   };
@@ -87,7 +90,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
 
   const handleStartTrial = (specId: SpecializationId) => {
     if (!onStartTrial) {
-      toast.info('Trial battles are not yet available.');
+      toast.info(t('skills.trialUnavailable'));
       return;
     }
     onStartTrial(specId);
@@ -293,7 +296,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                         onClick={() => handleStartTrial(activeSpec)}
                         className={`mt-3 w-full py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r ${SPEC_COLORS_V2[activeSpec].gradient} hover:opacity-90 transition`}
                       >
-                        Start Trial
+                        {t('skills.startTrial')}
                       </button>
                     </>
                   );
@@ -310,7 +313,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
           const tierNodes = treeNodes.filter(n => n.tier === tier);
           return (
             <div key={tier}>
-              <p className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Tier {tier}</p>
+              <p className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">{interpolate('skills.tier', { tier })}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {tierNodes.map(node => {
                   const isUnlocked = unlockedSkills.includes(node.id);
@@ -339,7 +342,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                       {!isUnlocked && (
                         <div className="mt-1 flex items-center gap-2">
                           <span className="text-[11.5px] font-mono text-[var(--text-muted)]">
-                            Cost: {node.cost} SP
+                            {interpolate('skills.cost', { cost: node.cost })}
                           </span>
                           {node.effect.condition && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-muted)]">

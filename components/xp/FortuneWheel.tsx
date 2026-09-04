@@ -6,6 +6,7 @@ import { sfx } from '../../lib/sfx';
 import { useThrottle } from '../../lib/rateLimiting';
 import { useToast } from '../ToastProvider';
 import { useReducedMotion } from '../../lib/useReducedMotion';
+import { useT, useInterpolate } from '../../lib/i18n';
 
 interface FortuneWheelProps {
   currency: number;
@@ -24,6 +25,8 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const toast = useToast();
   const reducedMotion = useReducedMotion();
+  const t = useT();
+  const interpolate = useInterpolate();
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   const today = new Date().toISOString().split('T')[0];
@@ -52,7 +55,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
         setResult(data.rewardDescription);
         setSpinning(false);
         if (data.prizeType !== 'NOTHING') {
-          toast.success(`You won: ${data.rewardDescription}!`);
+          toast.success(interpolate('fortune.wonToast', { reward: data.rewardDescription }));
         } else {
           toast.info(data.rewardDescription);
         }
@@ -61,7 +64,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
       timersRef.current.push(timerId);
     } catch (err) {
       setSpinning(false);
-      toast.error(err instanceof Error ? err.message : 'Spin failed');
+      toast.error(err instanceof Error ? err.message : t('fortune.spinFailed'));
     }
   }, [canSpin, classType, toast]);
 
@@ -73,9 +76,9 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
   return (
     <div className="flex flex-col items-center gap-6">
       <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-        Fortune Terminal
+        {t('fortune.title')}
       </h3>
-      <p className="text-xs text-gray-500">Spend {WHEEL_COST} Flux for a daily spin</p>
+      <p className="text-xs text-gray-500">{interpolate('fortune.subtitle', { cost: WHEEL_COST })}</p>
 
       <div className="relative w-full max-w-[min(90vw,320px)] aspect-square mx-auto">
         {/* Pointer */}
@@ -135,14 +138,14 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
             })}
             {/* Center circle */}
             <circle cx="0" cy="0" r="18" fill="#1a1b26" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-            <text x="0" y="0" fill="white" fontSize="8" fontWeight="bold" textAnchor="middle" dominantBaseline="central">SPIN</text>
+            <text x="0" y="0" fill="white" fontSize="8" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{t('fortune.spin')}</text>
           </g>
         </svg>
       </div>
 
       {result && (
         <div className="text-center animate-in fade-in zoom-in duration-300">
-          <p className="text-sm text-gray-300">You won:</p>
+          <p className="text-sm text-gray-300">{t('fortune.wonLabel')}</p>
           <p className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500">{result}</p>
         </div>
       )}
@@ -156,7 +159,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ currency, lastSpin, classTy
             : 'bg-white/5 text-gray-600 cursor-not-allowed'
         }`}
       >
-        {spinning ? 'Spinning...' : alreadySpun ? 'Come back tomorrow!' : `Spin (${WHEEL_COST} Flux)`}
+        {spinning ? t('fortune.spinning') : alreadySpun ? t('fortune.comeBack') : interpolate('fortune.spinBtn', { cost: WHEEL_COST })}
       </button>
     </div>
   );

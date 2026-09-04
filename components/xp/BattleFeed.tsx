@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dataService } from '../../services/dataService';
 import { Zap } from 'lucide-react';
+import { useT } from '../../lib/i18n';
 
 interface BattleFeedProps {
   bossId: string;
@@ -19,6 +20,7 @@ interface FeedEntry {
 const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
   const [entries, setEntries] = useState<FeedEntry[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     const unsub = dataService.subscribeToBossQuizDamageLog(bossId, (log) => {
@@ -39,7 +41,7 @@ const BattleFeed: React.FC<BattleFeedProps> = ({ bossId, maxEntries = 5 }) => {
   return (
     <div className="space-y-1">
       <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest flex items-center gap-1">
-        <Zap className="w-2.5 h-2.5" /> Live Battle Feed
+        <Zap className="w-2.5 h-2.5" /> {t('boss.liveBattleFeed')}
       </div>
       <div ref={containerRef} className="max-h-24 overflow-y-auto custom-scrollbar space-y-0.5">
         {entries.map((entry, i) => (

@@ -4,6 +4,7 @@ import { DailyChallenge, DailyChallengeProgress } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
+import { useT, useInterpolate } from '../../lib/i18n';
 import { Target, CheckCircle2, Gift, Calendar, Zap } from 'lucide-react';
 
 interface DailyChallengesPanelProps {
@@ -16,6 +17,8 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
   const [challenges, setChallenges] = useState<DailyChallenge[]>([]);
   const [claiming, setClaiming] = useState<string | null>(null);
   const toast = useToast();
+  const t = useT();
+  const interpolate = useInterpolate();
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -37,9 +40,12 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
     try {
       const result = await dataService.claimDailyChallenge(challengeId, classType);
       sfx.dailyReward();
-      toast.success(`Claimed! +${result.xpReward} XP${result.fluxReward ? ` +${result.fluxReward} Flux` : ''}`);
+      toast.success(interpolate('challenges.claimedToast', {
+        xp: result.xpReward,
+        flux: result.fluxReward ? ` +${result.fluxReward} Flux` : '',
+      }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Claim failed');
+      toast.error(err instanceof Error ? err.message : t('challenges.claimFailed'));
     }
     setClaiming(null);
   };
@@ -105,7 +111,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
                 disabled={!!claiming}
                 className="mt-2 px-3 py-1 bg-gradient-to-r from-yellow-600 to-amber-600 text-white text-xs font-bold rounded-lg hover:scale-105 transition-all"
               >
-                {claiming === challenge.id ? 'Claiming...' : 'Claim Reward'}
+                {claiming === challenge.id ? t('challenges.claiming') : t('challenges.claim')}
               </button>
             )}
           </div>
@@ -117,7 +123,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-        <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" /> Daily Challenges
+        <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" /> {t('challenges.title')}
       </h3>
 
       <div className="space-y-2">
@@ -127,7 +133,7 @@ const DailyChallengesPanel: React.FC<DailyChallengesPanelProps> = ({ activeChall
       {weeklyChallenges.length > 0 && (
         <>
           <h4 className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mt-4 flex items-center gap-1">
-            <Zap className="w-3 h-3 text-cyan-600 dark:text-cyan-400" /> Weekly Challenge
+            <Zap className="w-3 h-3 text-cyan-600 dark:text-cyan-400" /> {t('challenges.weekly')}
           </h4>
           <div className="space-y-2">
             {weeklyChallenges.map(renderChallenge)}
