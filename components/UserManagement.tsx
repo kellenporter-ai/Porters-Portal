@@ -202,7 +202,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const [isEditingGroup, setIsEditingGroup] = useState(false);
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupFeatures, setGroupFeatures] = useState({
-      evidenceLocker: false,
       leaderboard: true,
       bossFights: true
   });
@@ -384,7 +383,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           setGroupFeatures(config.features);
           setGroupXpPerMinute(config.xpPerMinute || 10);
       } else {
-          setGroupFeatures({ evidenceLocker: false, leaderboard: true, bossFights: true });
+          setGroupFeatures({ leaderboard: true, bossFights: true });
           setGroupXpPerMinute(10);
       }
       setIsGroupModalOpen(true);
@@ -665,7 +664,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <button 
                 onClick={() => {
                     setGroupName('');
-                    setGroupFeatures({ evidenceLocker: false, leaderboard: true, bossFights: true });
+                    setGroupFeatures({ leaderboard: true, bossFights: true });
                     setIsEditingGroup(false);
                     setIsGroupModalOpen(true);
                 }}
@@ -921,8 +920,6 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   <label className="block text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-3">Modular Feature Access</label>
                   <div className="space-y-3">
                       <label className="flex items-center gap-3 cursor-pointer group">
-                          <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.evidenceLocker} onChange={e => setGroupFeatures({...groupFeatures, evidenceLocker: e.target.checked})} />
-                          <span className="text-sm text-gray-700 font-medium group-hover:text-purple-600 transition">Evidence Log (Weekly Portfolio)</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer group">
                           <input type="checkbox" className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" checked={groupFeatures.leaderboard} onChange={e => setGroupFeatures({...groupFeatures, leaderboard: e.target.checked})} />

@@ -163,7 +163,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
       if (existing) {
         await dataService.saveClassConfig({ ...existing, resourceOrder: newResourceOrder });
       } else {
-        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: undefined, resourceOrder: newResourceOrder, features: { evidenceLocker: false, leaderboard: false, bossFights: true } } as ClassConfig);
+        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: undefined, resourceOrder: newResourceOrder, features: { leaderboard: false, bossFights: true } } as ClassConfig);
       }
       toast.success('Resource order saved!');
       setPendingResourceOrder(null);
@@ -196,7 +196,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
           className: filterClass,
           unitOrder: undefined,
           unitMeta: nextUnitMeta,
-          features: { evidenceLocker: false, leaderboard: false, bossFights: true },
+          features: { leaderboard: false, bossFights: true },
         } as ClassConfig);
       }
       toast.success('Unit label saved');
@@ -229,7 +229,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
       if (existing) {
         await dataService.saveClassConfig({ ...existing, unitOrder: pendingOrder });
       } else {
-        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: pendingOrder, features: { evidenceLocker: false, leaderboard: false, bossFights: true } } as ClassConfig);
+        await dataService.saveClassConfig({ id: filterClass, className: filterClass, unitOrder: pendingOrder, features: { leaderboard: false, bossFights: true } } as ClassConfig);
       }
       toast.success('Unit order saved!');
       setPendingOrder(null);

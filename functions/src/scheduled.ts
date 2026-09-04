@@ -1,7 +1,6 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 import { queueEmail } from "./classroom";
 import { isSchoolDay, schoolDaysInWindow } from "./schoolCalendar";
@@ -10,74 +9,6 @@ import { isSchoolDay, schoolDaysInWindow } from "./schoolCalendar";
 // SCHEDULED FUNCTIONS
 // ==========================================
 
-// Weekly reset — Cleans up evidence locker uploads (images in Storage + Firestore docs)
-// to keep storage costs down. NO other data is touched — submissions, assignments, etc.
-// all persist indefinitely.
-export const sundayReset = onSchedule(
-  { schedule: "59 23 * * 0", timeZone: "America/New_York", memory: "1GiB", timeoutSeconds: 300 },
-  async () => {
-    const correlationId = generateCorrelationId();
-    const db = admin.firestore();
-    const bucket = admin.storage().bucket();
-
-    logWithCorrelation('info', 'Starting weekly evidence cleanup...', correlationId);
-
-    // 1. Delete uploaded images from Storage + Firestore docs in paginated batches
-    let storageDeleted = 0;
-    let count = 0;
-    let lastDoc: any = null;
-
-    while (true) {
-      let evidenceSnap: FirebaseFirestore.QuerySnapshot;
-      try {
-        let query = db.collection("evidence").orderBy("__name__").limit(499);
-        if (lastDoc) query = query.startAfter(lastDoc);
-        evidenceSnap = await query.get();
-      } catch (err) {
-        logWithCorrelation('error', 'sundayReset: Evidence query failed, aborting.', correlationId, { error: err instanceof Error ? err.message : String(err) });
-        break;
-      }
-      if (evidenceSnap.empty) break;
-
-      // Delete images from Storage
-      for (const docSnap of evidenceSnap.docs) {
-        const data = docSnap.data();
-        if (data.imageUrl) {
-          try {
-            const urlPath = decodeURIComponent(new URL(data.imageUrl).pathname);
-            const match = urlPath.match(/\/o\/(.+)/);
-            if (match) {
-              try {
-                await bucket.file(match[1]).delete();
-                storageDeleted++;
-              } catch (err) {
-                logger.error("Exception swallowed", { error: err instanceof Error ? err.message : String(err), correlationId });
-              }
-            }
-          } catch (err) {
-            logger.warn("Exception swallowed", { error: err instanceof Error ? err.message : String(err), correlationId });
-          }
-        }
-      }
-
-      // Batch delete Firestore docs
-      const chunk = db.batch();
-      evidenceSnap.docs.forEach((d) => chunk.delete(d.ref));
-      try {
-        await chunk.commit();
-        count += evidenceSnap.size;
-      } catch (err) {
-        logWithCorrelation('error', 'sundayReset: Batch delete failed, skipping to next batch.', correlationId, { error: err instanceof Error ? err.message : String(err) });
-      }
-
-      lastDoc = evidenceSnap.docs[evidenceSnap.docs.length - 1];
-      if (evidenceSnap.size < 499) break;
-    }
-
-    logWithCorrelation('info', 'Deleted evidence images from Storage', correlationId, { storageDeleted });
-    logWithCorrelation('info', 'Deleted evidence documents from Firestore', correlationId, { count });
-  }
-);
 // ==========================================
 // EARLY WARNING SYSTEM — Predictive Analytics
 // ==========================================

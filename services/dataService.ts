@@ -1,8 +1,8 @@
 
-import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
+import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
 import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
 import type { IntegrityReport } from '../lib/integrityAnalysis';
@@ -172,44 +172,6 @@ export const dataService = {
       } catch (error) {
           reportError(error, { method: 'updateAppearance' });
           throw error;
-      }
-  },
-
-  // --- EVIDENCE LOCKER ---
-
-  subscribeToEvidence: (userId: string, weekId: string, callback: (logs: EvidenceLog[]) => void) => {
-    const q = query(
-      collection(db, 'evidence'), 
-      where('studentId', '==', userId),
-      where('weekId', '==', weekId)
-    );
-    return onSnapshot(q, (snapshot) => {
-      const logs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EvidenceLog));
-      callback(logs);
-    }, (error: unknown) => reportError(error, { subscription: 'evidence' }));
-  },
-
-  uploadEvidence: async (log: EvidenceLog) => {
-    await setDoc(doc(db, 'evidence', log.id), log, { merge: true });
-  },
-
-  deleteWeeklyEvidence: async (logs: EvidenceLog[]) => {
-      try {
-          const storagePromises = logs.map(log => {
-              if (!log.imageUrl) return Promise.resolve();
-              const fileRef = ref(storage, log.imageUrl);
-              return deleteObject(fileRef).catch(err => reportError(err, { method: 'deleteWeeklyEvidence', logId: log.id }));
-          });
-          await Promise.all(storagePromises);
-
-          const docPromises = logs.map(log => {
-              return deleteDoc(doc(db, 'evidence', log.id));
-          });
-          await Promise.all(docPromises);
-          
-      } catch (error) {
-          reportError(error, { method: 'clearWeeklyEvidence' });
-          throw new Error("Failed to clear evidence log.");
       }
   },
 

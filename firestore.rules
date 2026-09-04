@@ -22,12 +22,6 @@ service cloud.firestore {
     }
 
     // ─── Data shape validators ───
-    function validEvidence() {
-      let d = request.resource.data;
-      return d.title is string && d.title.size() <= 500
-        && d.studentId is string
-        && d.keys().hasAll(['title', 'studentId', 'createdAt']);
-    }
 
     function validLabReport() {
       let d = request.resource.data;
@@ -187,18 +181,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ==========================================
-    // EVIDENCE LOCKER
-    // ==========================================
-    match /evidence/{evidenceId} {
-      // Students can read/write their own evidence, admin reads all
-      allow read: if isAdmin() || 
-        (isAuthenticated() && resource.data.studentId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid && validEvidence();
-      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid && validEvidence();
-      allow delete: if isAdmin() ||
-        (isAuthenticated() && resource.data.studentId == request.auth.uid);
-    }
 
     // ==========================================
     // LAB REPORTS

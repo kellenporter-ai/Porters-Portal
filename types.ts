@@ -36,7 +36,6 @@ export interface ClassConfig {
     displayNumber?: string | null;
   }>;
   features: {
-    evidenceLocker: boolean;
     leaderboard: boolean;
     bossFights: boolean;
   };
@@ -602,18 +601,6 @@ export interface XPEvent {
   expiresAt?: string | null;
   scheduledAt?: string | null; // ISO date — deploy at this time; null/undefined = immediate
   targetSections?: string[];
-}
-
-export interface EvidenceLog {
-  id: string;
-  studentId: string;
-  classType?: string; 
-  weekId: string; 
-  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
-  imageUrl: string;
-  timestamp: string; 
-  exifDate: string | null; 
-  reflection: string; 
 }
 
 export interface LabReport {

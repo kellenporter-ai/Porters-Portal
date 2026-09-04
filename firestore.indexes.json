@@ -157,14 +157,6 @@
       ]
     },
     {
-      "collectionGroup": "evidence",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "studentId", "order": "ASCENDING" },
-        { "fieldPath": "weekId", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "behavior_awards",
       "queryScope": "COLLECTION",
       "fields": [

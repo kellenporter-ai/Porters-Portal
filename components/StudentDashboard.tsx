@@ -52,7 +52,6 @@ interface StudentDashboardProps {
   submissions: Submission[];
   classConfigs?: ClassConfig[];
   enabledFeatures: {
-    evidenceLocker: boolean;
     leaderboard: boolean;
     bossFights: boolean;
   };
