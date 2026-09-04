@@ -74,31 +74,47 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
-  // Preload heavy gamification chunks during idle time
-  useEffect(() => {
+  // Preload-on-intent: heavy gamification chunks load when the student shows
+  // intent for a tab (hover/focus/touchstart on its nav entry) or after first
+  // paint via requestIdleCallback. Keeps tab switches instant without forcing
+  // all chunks onto the critical path on mount.
+  const preloadTab = useCallback((tab: StudentTab) => {
     const safeImport = (loader: () => Promise<unknown>) => loader().catch(() => {});
-    const preload = () => {
-      safeImport(() => import('./dashboard/HomeTab'));
-      safeImport(() => import('./dashboard/ResourcesTab'));
-      safeImport(() => import('./dashboard/AgentLoadoutTab'));
-      safeImport(() => import('./dashboard/BadgesTab'));
-      safeImport(() => import('./dashboard/ProgressDashboard'));
-      safeImport(() => import('./dashboard/TopicMasteryAnalytics'));
-      safeImport(() => import('./dashboard/CalendarView'));
-      safeImport(() => import('./xp/SkillTreePanel'));
-      safeImport(() => import('./xp/FortuneWheel'));
-      safeImport(() => import('./xp/FluxShopPanel'));
-      safeImport(() => import('./xp/BossEncounterPanel'));
-      safeImport(() => import('./xp/BossQuizPanel'));
-    };
-    if ('requestIdleCallback' in window) {
-      const id = requestIdleCallback(preload, { timeout: 5000 });
-      return () => cancelIdleCallback(id);
-    } else {
-      const id = setTimeout(preload, 3000);
-      return () => clearTimeout(id);
+    switch (tab) {
+      case 'HOME': safeImport(() => import('./dashboard/HomeTab')); break;
+      case 'RESOURCES': safeImport(() => import('./dashboard/ResourcesTab')); break;
+      case 'LOADOUT': safeImport(() => import('./dashboard/AgentLoadoutTab')); break;
+      case 'ACHIEVEMENTS': safeImport(() => import('./dashboard/BadgesTab')); break;
+      case 'SKILLS': safeImport(() => import('./xp/SkillTreePanel')); break;
+      case 'FORTUNE': safeImport(() => import('./xp/FortuneWheel')); break;
+      case 'FLUX_SHOP': safeImport(() => import('./xp/FluxShopPanel')); break;
+      case 'PROGRESS':
+        safeImport(() => import('./dashboard/ProgressDashboard'));
+        safeImport(() => import('./dashboard/TopicMasteryAnalytics'));
+        break;
+      case 'CALENDAR': safeImport(() => import('./dashboard/CalendarView')); break;
+      case 'BOSS':
+        safeImport(() => import('./xp/BossEncounterPanel'));
+        safeImport(() => import('./xp/BossQuizPanel'));
+        break;
+      default: break;
     }
   }, []);
+
+  useEffect(() => {
+    // Low-priority idle preload of the most likely next tabs only.
+    const preloadIdle = () => {
+      preloadTab('RESOURCES');
+      preloadTab('LOADOUT');
+    };
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(preloadIdle, { timeout: 8000 });
+      return () => cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(preloadIdle, 8000);
+      return () => clearTimeout(id);
+    }
+  }, [preloadTab]);
 
   // Practice progress (completion badges)
   const [practiceCompletion, setPracticeCompletion] = useState<Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>>({});
@@ -133,6 +149,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       return () => { if (tabExitRef.current) clearTimeout(tabExitRef.current); };
     }
   }, [studentTab]);
+
+  // Preload the incoming tab's chunk as soon as a tab switch starts — the
+  // 150ms exit animation plus this head start keeps the switch instant, and
+  // the chunk is fetched on intent rather than at mount.
+  useEffect(() => {
+    preloadTab(studentTab);
+  }, [studentTab, preloadTab]);
+
   const activeTab = displayTab;
 
   const [showProfile, setShowProfile] = useState(false);

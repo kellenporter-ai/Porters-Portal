@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Search } from 'lucide-react';
 import { hasClassroomLinks } from '../../types';
 import type { Assignment, User } from '../../types';
-import { getAssessmentStats } from '../../services/dataService';
+import { getAssessmentStatsBatch } from '../../services/dataService';
 import type { AssessmentStats } from '../../services/dataService';
 
 interface AssessmentListPageProps {
   assessmentAssignments: Assignment[];
+  /** @deprecated Not used since the batch stats endpoint — kept so existing callers don't break. */
   users: User[];
 }
 
@@ -19,7 +20,7 @@ function getClassBadgeStyle(classType: string): string {
   return 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] border border-[var(--border)]';
 }
 
-const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssignments, users }) => {
+const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssignments }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statsByAssessment, setStatsByAssessment] = useState<Record<string, AssessmentStats>>({});
@@ -33,16 +34,26 @@ const AssessmentListPage: React.FC<AssessmentListPageProps> = ({ assessmentAssig
   useEffect(() => {
     let cancelled = false;
     setStatsLoading(true);
-    Promise.all(
-      assessmentAssignments.map(a =>
-        getAssessmentStats(a.id, a, users).then(stats => [a.id, stats] as const)
-      )
-    ).then(entries => {
-      if (cancelled) return;
-      setStatsByAssessment(Object.fromEntries(entries));
-      setStatsLoading(false);
-    });
-    return () => { cancelled = true; };
+
+    const fetchStats = () =>
+      getAssessmentStatsBatch(assessmentAssignments.map(a => a.id))
+        .then(stats => {
+          if (cancelled) return;
+          setStatsByAssessment(stats);
+          setStatsLoading(false);
+        });
+
+    fetchStats();
+
+    // Refresh when the tab regains focus so stale stats don't linger.
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchStats();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentIdsKey]);
 

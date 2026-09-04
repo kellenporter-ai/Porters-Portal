@@ -1,6 +1,6 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, EvidenceLog, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -320,6 +320,18 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'assignments' }));
   },
   
+  // ⚠️ CAP WARNING: delivers only the most recent `maxResults` submissions
+  // (default 200), ordered by submittedAt desc. Views that consume this feed
+  // see a TRUNCATED set and may under-count or miss older data:
+  //   - TeacherDashboard: EngagementSummary, AnalyticsTab (completion rates),
+  //     per-student panel in StudentDetailDrawer, ActivityMonitor
+  //   - GradingPage fallback (submissions.filter(s => s.isAssessment)) when no
+  //     assessment is selected — falls back to bounded per-assessment
+  //     listeners instead when one is selected
+  //   - lib/AdminDataContext: user stats enrichment (resources accessed / time)
+  //   - ResourcesTab, ProgressDashboard, reports widgets
+  // Any correctness-sensitive count should use a bounded per-assignment or
+  // per-user query (or a Cloud Function aggregate) rather than this feed.
   subscribeToSubmissions: (callback: (submissions: Submission[]) => void, maxResults = 200) => {
     const q = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'), limit(maxResults));
     return onSnapshot(q, (snapshot) => {
@@ -416,6 +428,38 @@ export const dataService = {
    * getAssessmentStats Cloud Function. Never throws: logs and returns zeroed
    * stats on error.
    */
+  /**
+   * Batch variant of getAssessmentStats: one Cloud Function call for many
+   * assessments (max 100). The server runs each assessment's three Firestore
+   * queries in parallel and returns one payload — avoids N parallel CF calls
+   * and 3N+ round trips from the client. Each assessment still respects the
+   * 500-doc cap per collection (submissions, sessions, responses). Never
+   * throws: logs and returns zeroed stats for all ids on error.
+   */
+  getAssessmentStatsBatch: async (
+    assignmentIds: string[],
+    enrolledStudentsByAssignment?: Record<string, User[]>,
+  ): Promise<Record<string, AssessmentStats>> => {
+    const zeroed = (): AssessmentStats => ({ submitted: 0, graded: 0, flagged: 0, aiFlagged: 0, draft: 0, notStarted: 0 });
+    if (assignmentIds.length === 0) return {};
+    try {
+      const enrolledStudentIdsByAssignment: Record<string, string[]> = {};
+      if (enrolledStudentsByAssignment) {
+        for (const [id, students] of Object.entries(enrolledStudentsByAssignment)) {
+          enrolledStudentIdsByAssignment[id] = students.map(u => u.id);
+        }
+      }
+      const result = await callGetAssessmentStatsBatch({ assignmentIds, enrolledStudentIdsByAssignment });
+      const stats = (result.data as { stats: Record<string, AssessmentStats> }).stats || {};
+      const out: Record<string, AssessmentStats> = {};
+      for (const id of assignmentIds) out[id] = stats[id] || zeroed();
+      return out;
+    } catch (error) {
+      reportError(error, { method: 'getAssessmentStatsBatch', count: assignmentIds.length });
+      return Object.fromEntries(assignmentIds.map(id => [id, zeroed()]));
+    }
+  },
+
   getAssessmentStats: async (
     assignmentId: string,
     _assignment?: Assignment,
@@ -559,16 +603,21 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'userSubmissions' }));
   },
 
+  // allowed_emails is one doc per invited email — expected size is small
+  // (a few hundred max). Intentionally unbounded: teachers/admins need the
+  // full roster to manage access, and an artificial cap could silently hide
+  // legitimate users. Wrapped in resilientSnapshot for permission-denied
+  // resilience.
   subscribeToWhitelist: (callback: (whitelist: WhitelistedUser[]) => void) => {
     const q = collection(db, 'allowed_emails');
-    return onSnapshot(q, (snapshot) => {
-      const whitelist = snapshot.docs.map(doc => ({
+    return resilientSnapshot('allowed_emails', q, (snapshot: any) => {
+      const whitelist = snapshot.docs.map((doc: any) => ({
           email: doc.id,
           classType: doc.data().classType as ClassType,
           classTypes: (doc.data().classTypes || [doc.data().classType].filter(Boolean)) as ClassType[]
       }));
       callback(whitelist);
-    }, (error: unknown) => reportError(error, { subscription: 'whitelist' }));
+    });
   },
 
   subscribeToClassConfigs: (callback: (configs: ClassConfig[]) => void) => {
@@ -1937,8 +1986,16 @@ export const dataService = {
 
   // --- EARLY WARNING SYSTEM ---
 
+  // Bounded to the most recent 200 undismissed alerts (ordered by createdAt,
+  // most recent first). Older undismissed alerts beyond the cap are not
+  // delivered until newer ones are dismissed or age out of the window.
   subscribeToStudentAlerts: (callback: (alerts: StudentAlert[]) => void) => {
-    const q = query(collection(db, 'student_alerts'), where('isDismissed', '==', false));
+    const q = query(
+      collection(db, 'student_alerts'),
+      where('isDismissed', '==', false),
+      orderBy('createdAt', 'desc'),
+      limit(200),
+    );
     return resilientSnapshot('student_alerts', q, (snapshot: any) => {
       const alerts = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as StudentAlert));
       alerts.sort((a: StudentAlert, b: StudentAlert) => {
@@ -1959,8 +2016,11 @@ export const dataService = {
 
   // --- TELEMETRY BUCKETS ---
 
+  // Bounded to 1000 bucket profiles. One profile per student with telemetry —
+  // well above expected enrollment; guard against unbounded growth.
   subscribeToStudentBuckets: (callback: (profiles: StudentBucketProfile[]) => void) => {
-    return resilientSnapshot('student_buckets', collection(db, 'student_buckets'), (snapshot: any) => {
+    const q = query(collection(db, 'student_buckets'), limit(1000));
+    return resilientSnapshot('student_buckets', q, (snapshot: any) => {
       const profiles = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as StudentBucketProfile));
       callback(profiles);
     });
@@ -2093,11 +2153,12 @@ export const dataService = {
     return code;
   },
 
+  // Bounded to the 100 most recent enrollment codes.
   subscribeToEnrollmentCodes: (callback: (codes: EnrollmentCode[]) => void) => {
-    const q = query(collection(db, 'enrollment_codes'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as EnrollmentCode)));
-    }, (error: unknown) => reportError(error, { subscription: 'enrollmentCodes' }));
+    const q = query(collection(db, 'enrollment_codes'), orderBy('createdAt', 'desc'), limit(100));
+    return resilientSnapshot('enrollment_codes', q, (snapshot: any) => {
+      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as EnrollmentCode)));
+    });
   },
 
   deactivateEnrollmentCode: async (codeId: string) => {
@@ -2407,4 +2468,12 @@ export const dataService = {
  */
 export async function getAssessmentStats(assignmentId: string, assignment?: Assignment, enrolledStudents?: User[]): Promise<AssessmentStats> {
   return dataService.getAssessmentStats(assignmentId, assignment, enrolledStudents);
+}
+
+/**
+ * Top-level export mirror of dataService.getAssessmentStatsBatch. See the
+ * dataService method docs for cap and error semantics.
+ */
+export async function getAssessmentStatsBatch(assignmentIds: string[], enrolledStudentsByAssignment?: Record<string, User[]>): Promise<Record<string, AssessmentStats>> {
+  return dataService.getAssessmentStatsBatch(assignmentIds, enrolledStudentsByAssignment);
 }

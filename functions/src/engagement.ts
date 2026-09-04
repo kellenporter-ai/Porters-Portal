@@ -263,7 +263,9 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
  * @param {object} request - The callable request.
  * @return {object} Result with XP awarded.
  */
-export const awardQuestionXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+// Warm instance: called per answered question from Proctor — cold start lands
+// in the answer-feedback loop. Cost: ~$5.94/mo idle (256MiB provisioned).
+export const awardQuestionXP = onCall({ memory: "256MiB", timeoutSeconds: 60, minInstances: 1 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const {
     assignmentId, questionId, xpAmount, classType,

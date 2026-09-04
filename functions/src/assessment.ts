@@ -136,7 +136,9 @@ function gradeAssessmentBlocks(
 // ==========================================
 // START ASSESSMENT SESSION — Issue cryptographic session token
 // ==========================================
-export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+// Warm instance: blocks assessment entry — cold start lands directly in the
+// student's start-assessment path. Cost: ~$5.94/mo idle (256MiB provisioned).
+export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds: 60, minInstances: 1 }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
   const uid = request.auth.uid;
   const correlationId = generateCorrelationId();

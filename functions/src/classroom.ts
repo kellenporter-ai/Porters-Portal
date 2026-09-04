@@ -40,74 +40,105 @@ export const onNewAssignment = onDocumentCreated(
     const correlationId = generateCorrelationId();
     logWithCorrelation('info', 'New assignment published', correlationId, { title, classType });
 
-    // Find all students enrolled in this class (paginated)
+    // Find students enrolled in this class. The users schema stores class
+    // membership in `enrolledClasses` (ClassType[]), so an array-contains
+    // query narrows to just the relevant students instead of scanning every
+    // user. Same query shape as functions/src/alerts.ts:31 (teacher lookup).
+    // role + isWhitelisted are filtered client-side below; if the composite
+    // index for role + array-contains is ever missing in a new environment
+    // (failed-precondition), we fall back to a capped paginated scan.
     const db = admin.firestore();
     let emailsSent = 0;
-    let lastDoc: any = null;
 
-    while (true) {
-      let query = db.collection("users")
-        .where("role", "==", "STUDENT")
-        .where("isWhitelisted", "==", true)
-        .orderBy("__name__")
-        .limit(499);
-      if (lastDoc) query = query.startAfter(lastDoc);
-      const studentsSnap = await query.get();
-      if (studentsSnap.empty) break;
-      lastDoc = studentsSnap.docs[studentsSnap.docs.length - 1];
+    const buildEmail = (email: string): Promise<void> =>
+      queueEmail(
+        email,
+        `New Assignment: ${title}`,
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
+            <h2 style="color: #a78bfa; margin: 0 0 8px;">📋 New Assignment Posted</h2>
+            <h3 style="color: #ffffff; margin: 0 0 16px;">${title}</h3>
+            <p style="color: #9ca3af; margin: 0 0 8px;">Class: <strong style="color: #e5e7eb;">${classType}</strong></p>
+            ${dueDate ? `<p style="color: #9ca3af; margin: 0 0 8px;">Due: <strong style="color: #fbbf24;">${dueDate}</strong></p>` : ""}
+            ${data.description ? `<p style="color: #9ca3af; margin: 16px 0 0;">${data.description}</p>` : ""}
+            <hr style="border: 1px solid #374151; margin: 16px 0;" />
+            <p style="color: #6b7280; font-size: 12px;">Porter's Portal — ${classType}</p>
+          </div>
+        </div>
+        `,
+      );
 
+    // Shared per-student filter + email queue logic.
+    const processStudents = async (studentDocs: FirebaseFirestore.QueryDocumentSnapshot[]): Promise<number> => {
       const emailPromises: Promise<void>[] = [];
-
-      studentsSnap.docs.forEach((doc) => {
+      for (const doc of studentDocs) {
         const student = doc.data();
-        const enrolled: string[] = student.enrolledClasses || [];
-        if (!enrolled.includes(classType)) return;
+        if (student.role !== "STUDENT") continue;
+        if (student.isWhitelisted !== true) continue;
 
         // Section filtering
         if (data.targetSections?.length) {
           const studentSection = student.classSections?.[classType] || student.section || "";
-          if (!data.targetSections.includes(studentSection)) return;
+          if (!data.targetSections.includes(studentSection)) continue;
         }
 
         const email = student.email as string;
-        if (!email) return;
+        if (!email) continue;
 
-        emailsSent++;
-        emailPromises.push(
-          queueEmail(
-            email,
-            `New Assignment: ${title}`,
-            `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: #1a0a2e; padding: 24px; border-radius: 12px;">
-                <h2 style="color: #a78bfa; margin: 0 0 8px;">📋 New Assignment Posted</h2>
-                <h3 style="color: #ffffff; margin: 0 0 16px;">${title}</h3>
-                <p style="color: #9ca3af; margin: 0 0 8px;">Class: <strong style="color: #e5e7eb;">${classType}</strong></p>
-                ${dueDate ? `<p style="color: #9ca3af; margin: 0 0 8px;">Due: <strong style="color: #fbbf24;">${dueDate}</strong></p>` : ""}
-                ${data.description ? `<p style="color: #9ca3af; margin: 16px 0 0;">${data.description}</p>` : ""}
-                <hr style="border: 1px solid #374151; margin: 16px 0;" />
-                <p style="color: #6b7280; font-size: 12px;">Porter's Portal — ${classType}</p>
-              </div>
-            </div>
-            `,
-          ),
-        );
-
-        // Batch emails in groups of 100
-        if (emailPromises.length >= 100) {
-          // Intentionally not awaited inside forEach — handled below
-        }
-      });
-
+        emailPromises.push(buildEmail(email));
+      }
       // Send emails in batches of 100
       for (let i = 0; i < emailPromises.length; i += 100) {
         await Promise.all(emailPromises.slice(i, i + 100));
       }
+      return emailPromises.length;
+    };
 
-      if (studentsSnap.size < 499) break;
+    let targetedSnap: FirebaseFirestore.QuerySnapshot | null = null;
+    try {
+      targetedSnap = await db.collection("users")
+        .where("role", "==", "STUDENT")
+        .where("enrolledClasses", "array-contains", classType)
+        .get();
+    } catch (err: any) {
+      // failed-precondition = missing composite index in a fresh environment.
+      // Fall through to the capped scan below.
+      logWithCorrelation('warn', 'onNewAssignment: targeted query failed, falling back to scan', correlationId, { classType, code: err?.code });
+      targetedSnap = null;
     }
 
-    logWithCorrelation('info', 'Queued emails for new assignment', correlationId, { emailsSent, title, classType });
+    if (targetedSnap) {
+      emailsSent = await processStudents(targetedSnap.docs);
+    } else {
+      // Fallback: capped paginated scan over whitelisted students.
+      // TODO(perf): add a (role, enrolledClasses CONTAINS) composite index and
+      // remove this path. Hard cap at 5 pages (≈2.5k students) to bound the
+      // 60s function timeout — emails beyond the cap are skipped, not queued.
+      const CAP_PAGES = 5;
+      let lastDoc: any = null;
+      for (let page = 0; page < CAP_PAGES; page++) {
+        let query = db.collection("users")
+          .where("role", "==", "STUDENT")
+          .where("isWhitelisted", "==", true)
+          .orderBy("__name__")
+          .limit(499);
+        if (lastDoc) query = query.startAfter(lastDoc);
+        const studentsSnap = await query.get();
+        if (studentsSnap.empty) break;
+        lastDoc = studentsSnap.docs[studentsSnap.docs.length - 1];
+
+        const matching = studentsSnap.docs.filter((doc) => {
+          const enrolled: string[] = doc.data().enrolledClasses || [];
+          return enrolled.includes(classType);
+        });
+        emailsSent += await processStudents(matching);
+
+        if (studentsSnap.size < 499) break;
+      }
+    }
+
+    logWithCorrelation('info', 'Queued emails for new assignment', correlationId, { emailsSent, title, classType, targeted: targetedSnap !== null });
   },
 );
 /**
