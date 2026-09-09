@@ -668,7 +668,10 @@ export const dataService = {
           await setDoc(doc(db, 'assignment_content', assignment.id), contentData);
       } else {
         data.createdAt = new Date().toISOString();
-        const ref = await addDoc(collection(db, 'assignments'), data);
+        // addDoc() rejects deleteField() sentinels — new docs have no stale
+        // inline htmlContent/lessonBlocks to strip, so omit them entirely.
+        const { htmlContent: _stripHtml, lessonBlocks: _stripBlocks, ...createData } = data;
+        const ref = await addDoc(collection(db, 'assignments'), createData);
         await setDoc(doc(db, 'assignment_keys', ref.id), {
           lessonBlocks: keyBlocks,
           updatedAt: new Date().toISOString(),
