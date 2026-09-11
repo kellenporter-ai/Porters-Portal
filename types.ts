@@ -1,4 +1,6 @@
 
+import { Timestamp } from 'firebase/firestore';
+
 export enum UserRole {
   ADMIN = 'ADMIN',
   STUDENT = 'STUDENT'
@@ -373,6 +375,35 @@ export interface WhitelistedUser {
 }
 
 export type ResourceCategory = 'Lesson' | 'Lab' | 'Simulation' | 'Practice' | 'Supplemental';
+
+// ==========================================
+// LIBRARY ITEMS (Hosted Content Library)
+// ==========================================
+
+export type LibraryHostingType = 'bundled' | 'storage' | 'external';
+export type LibraryContentKind = 'activity' | 'tool' | 'textbook' | 'deck' | 'document' | 'utility';
+
+/** Registry of reusable hosted content on the Portal domain (teacher-only). */
+export interface LibraryItem {
+  id: string; // Firestore doc id
+  title: string;
+  description: string;
+  /** Relative path (/circuit-diagram-builder) or absolute URL. */
+  url: string;
+  hostingType: LibraryHostingType;
+  contentKind: LibraryContentKind;
+  subject?: string; // e.g. 'AP Physics 1', 'Honors Physics', 'Forensics'
+  tags: string[];
+  /** Prefill for the assign flow (closed enum, matches ResourceCategory). */
+  suggestedCategory: ResourceCategory;
+  /** True when scan-created and not yet curated. */
+  untagged: boolean;
+  status: 'active' | 'archived';
+  /** Stable dedup key for scans (relative path or storage object path). */
+  sourceFingerprint: string;
+  createdAt?: string | Timestamp; // ISO date or Firestore Timestamp
+  updatedAt?: string | Timestamp; // ISO date or Firestore Timestamp
+}
 
 /** Map legacy Firestore category values to the current ResourceCategory set. */
 export function migrateResourceCategory(raw: string | undefined): ResourceCategory {

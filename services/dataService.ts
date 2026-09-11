@@ -590,7 +590,7 @@ export const dataService = {
       }, (error: unknown) => reportError(error, { subscription: 'classConfigs' }));
   },
 
-  addAssignment: async (assignment: Assignment) => {
+  addAssignment: async (assignment: Assignment): Promise<string> => {
     try {
       invalidateAssignmentsCache();
       // Phase 1e — answer keys are written to the admin-only assignment_keys
@@ -666,6 +666,7 @@ export const dataService = {
             updatedAt: new Date().toISOString(),
           });
           await setDoc(doc(db, 'assignment_content', assignment.id), contentData);
+          return assignment.id;
       } else {
         data.createdAt = new Date().toISOString();
         // addDoc() rejects deleteField() sentinels — new docs have no stale
@@ -677,6 +678,7 @@ export const dataService = {
           updatedAt: new Date().toISOString(),
         });
         await setDoc(doc(db, 'assignment_content', ref.id), contentData);
+        return ref.id;
       }
     } catch (error) {
       reportError(error, { method: 'addAssignment' });

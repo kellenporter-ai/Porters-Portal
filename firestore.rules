@@ -577,6 +577,14 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // LIBRARY ITEMS (Hosted Content Library registry)
+    // Teacher-only: students get no access.
+    // ==========================================
+    match /library_items/{itemId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {

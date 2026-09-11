@@ -64,6 +64,26 @@
         "destination": "/codeword-lookup.html"
       },
       {
+        "source": "/circuit-diagram-builder",
+        "destination": "/circuit-diagram-builder.html"
+      },
+      {
+        "source": "/electroscope-charge-assessment",
+        "destination": "/electroscope-charge-assessment.html"
+      },
+      {
+        "source": "/tools/bar-chart",
+        "destination": "/tools/bar-chart.html"
+      },
+      {
+        "source": "/tools/force-diagram",
+        "destination": "/tools/force-diagram.html"
+      },
+      {
+        "source": "/textbook/ch2-kinematics-1d",
+        "destination": "/textbook/ch2-kinematics-1d/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

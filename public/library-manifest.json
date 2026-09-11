@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-09-11T01:48:19.483Z",
+  "items": [
+    {
+      "path": "/circuit-diagram-builder.html",
+      "fingerprint": "/circuit-diagram-builder.html",
+      "sizeBytes": 44432
+    },
+    {
+      "path": "/codeword-lookup.html",
+      "fingerprint": "/codeword-lookup.html",
+      "sizeBytes": 8883
+    },
+    {
+      "path": "/electroscope-charge-assessment.html",
+      "fingerprint": "/electroscope-charge-assessment.html",
+      "sizeBytes": 362647
+    },
+    {
+      "path": "/privacy.html",
+      "fingerprint": "/privacy.html",
+      "sizeBytes": 9618
+    },
+    {
+      "path": "/textbook/ch2-kinematics-1d/",
+      "fingerprint": "/textbook/ch2-kinematics-1d/",
+      "sizeBytes": 180722
+    },
+    {
+      "path": "/tools/bar-chart.html",
+      "fingerprint": "/tools/bar-chart.html",
+      "sizeBytes": 41570
+    },
+    {
+      "path": "/tools/force-diagram.html",
+      "fingerprint": "/tools/force-diagram.html",
+      "sizeBytes": 40019
+    },
+    {
+      "path": "/tools/tangent-secant-explorer.html",
+      "fingerprint": "/tools/tangent-secant-explorer.html",
+      "sizeBytes": 15713
+    }
+  ]
+}

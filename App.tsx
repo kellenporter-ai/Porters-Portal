@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams, Outlet, useSearchParams } from 'react-router-dom';
 import { User, UserRole, Submission, DefaultClassTypes, Assignment, isValidUser } from './types';
 import { dataService, clearDeniedCollections } from './services/dataService';
 import { auth, db } from './lib/firebase';
@@ -191,10 +191,13 @@ const EditorRoute: React.FC = () => {
   const { assignments } = useAssignments();
   const { classConfigs } = useClassConfig();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialAssignmentId = searchParams.get('assignment');
   return (
     <LessonEditorPage
       assignments={assignments}
       onClose={() => navigate('/dashboard')}
+      initialAssignmentId={initialAssignmentId ?? undefined}
       classConfigs={classConfigs}
       users={rawUsers}
       availableSections={availableSections}

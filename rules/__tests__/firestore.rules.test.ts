@@ -484,6 +484,42 @@ describe('assignment_keys: admin-only answer keys', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// LIBRARY ITEMS — teacher-only registry
+// ---------------------------------------------------------------------------
+describe('library_items access control', () => {
+  const itemDoc = {
+    title: 'Circuit Diagram Builder',
+    description: '',
+    url: '/circuit-diagram-builder',
+    hostingType: 'bundled',
+    contentKind: 'tool',
+    tags: [],
+    suggestedCategory: 'Simulation',
+    untagged: false,
+    status: 'active',
+    sourceFingerprint: '/circuit-diagram-builder.html',
+  };
+
+  it('student CANNOT read or write library_items', async () => {
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(getDoc(doc(student, 'library_items', 'item-1')));
+    await assertFails(setDoc(doc(student, 'library_items', 'item-1'), itemDoc));
+  });
+
+  it('unauthenticated user CANNOT read library_items', async () => {
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'library_items', 'item-1')));
+  });
+
+  it('admin CAN read and write library_items', async () => {
+    const admin = testEnv.authenticatedContext('admin-uid', { admin: true }).firestore();
+    await assertSucceeds(setDoc(doc(admin, 'library_items', 'item-1'), itemDoc));
+    await assertSucceeds(getDoc(doc(admin, 'library_items', 'item-1')));
+    await assertSucceeds(updateDoc(doc(admin, 'library_items', 'item-1'), { untagged: true }));
+  });
+});
+
 // Sanity check that the test env is wired to the emulator, not production.
 describe('emulator wiring', () => {
   it('uses the emulator project id', () => {
