@@ -38,6 +38,13 @@ export const CONTENT = {
       loginBtnAria: 'Student login',
       coursesBtnAria: 'Explore courses',
     },
+    announcement: {
+      label: 'The Forgery Files',
+      text: 'Find your secret codeword',
+      button: 'Look it up',
+      href: '/codeword',
+      buttonAria: 'Look up your secret codeword for The Forgery Files',
+    },
     courses: {
       h2: 'Courses',
       sub: 'What my students are learning this year, at a glance.',
@@ -155,6 +162,13 @@ export const CONTENT = {
       coursesBtn: 'Ver los Cursos',
       loginBtnAria: 'Acceso de estudiantes',
       coursesBtnAria: 'Ver los cursos',
+    },
+    announcement: {
+      label: 'Los Archivos de Falsificación',
+      text: 'Encuentra tu palabra clave secreta',
+      button: 'Buscarla',
+      href: '/codeword',
+      buttonAria: 'Buscar tu palabra clave secreta para Los Archivos de Falsificación',
     },
     courses: {
       h2: 'Cursos',

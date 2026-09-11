@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a1a">
+<title>The Forgery Files — Codeword Lookup</title>
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --card: rgba(255, 255, 255, 0.05);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #e0e0e0;
+    --muted: #a0a0b0;
+    --accent: #6366f1;
+    --accent-hi: #818cf8;
+    --success: #22c55e;
+    --error: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    background: radial-gradient(1200px 800px at 50% -10%, #1a1a2e 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 48px;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { text-align: center; margin: 16px 0 24px; }
+  h1 {
+    font-size: 28px;
+    letter-spacing: 0.04em;
+    background: linear-gradient(90deg, #a5b4fc, var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-top: 6px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .instruction { font-size: 16px; line-height: 1.45; margin-bottom: 16px; }
+  form { display: flex; flex-direction: column; gap: 12px; }
+  label { font-size: 13px; color: var(--muted); }
+  input {
+    width: 100%;
+    font-size: 24px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--text);
+    text-align: center;
+    letter-spacing: 0.12em;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    font-size: 18px;
+    font-weight: 600;
+    padding: 15px 20px;
+    min-height: 56px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+  button:hover { background: var(--accent-hi); }
+  button:active { transform: scale(0.98); }
+  #result { margin-top: 20px; }
+  .hidden { display: none !important; }
+  .codeword-box {
+    text-align: center;
+    padding: 20px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    background: rgba(34, 197, 94, 0.08);
+  }
+  .codeword-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; }
+  .codeword {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--success);
+    margin: 8px 0 10px;
+    overflow-wrap: anywhere;
+  }
+  .reminder { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .error-box {
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.08);
+    color: #fca5a5;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: center;
+  }
+  footer {
+    margin-top: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>The Forgery Files</h1>
+      <div class="subtitle">Codeword Lookup</div>
+    </header>
+
+    <div class="card">
+      <p class="instruction">Enter your school ID number to get your secret codeword.</p>
+      <form id="lookup-form" autocomplete="off">
+        <label for="sid">School ID number</label>
+        <input id="sid" name="sid" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" required>
+        <button type="submit">Show my codeword</button>
+      </form>
+
+      <div id="result" class="hidden" aria-live="polite"></div>
+    </div>
+
+    <footer>Physics &middot; The Forgery Files</footer>
+  </div>
+
+<script>
+"use strict";
+const MAP = {"62c1eb8457fd8ba8ac5f9bedc6688d10feb13ce8cc31d66930018b6cd3dd474f":"ISOTOPE","fc2ce36b7522456231b0fa6f162f082cc89a645889dfb8e07f9ca33f36b1ee46":"PARCHMENT","4cc63c8462d6d9c57fb25c5cd3673116ea5273cca9d53fb6881b5dc6894a1270":"FOSSIL","e768ae23c497975ae4be6488603ac9e7e5388cf56ab276b03c2e091dd6565da0":"RUDDER","a02a17fc4dc1ff23a1fe327c7819a4b37c85ec6974c5094983fb814bafe8485d":"COBALT","e920fae86058b89ab5291b04657774702420e8008aa4d46ad22b641bc75ff820":"LANTERN","31b1e272eb524ce86940f463ba3719444ee073c2ae389d08d43058ded4a752d0":"EVEREST","10f9effcb1d0ced17e68885cd6042b1a307ab4123d066076539d44880206e170":"FIREBOX","55bba0f5c0ebb520ee894870cc125daf979cf09ba1913450580e1ced28af7bb2":"VULTURE","634ad99fa5f2e1c9cce0f0295a8067ddd09b13e4a14bb965b95f9f32eb3ce769":"FALCON","9c9ba15fce1be93deeab3961e6247f0fb0946163f4d0dfdef5473beae7e075d1":"JUNIPER","103564dfdcf211121d13d07f745643678aba80bab2d8959b4d9b1d83305727eb":"PICKLE","199fc9086eaa5c24fedcf7449fa45ee3d03d89f3786b974ffc2f4a785e42057e":"CANYON","21b7e8a6d87b7dd70e35a82fd4de1cd7598f55d036f7d0bc56f64e0eeba7ba50":"XYLEM","eb8f77b0cf338844eda31da29f9103f2ebf027403187ae58c4ff697c89a9a10b":"UPDRAFT","78d161d71ca6df64e30397f4ce235a5396a2d86c9f002a86b5c69e9b839f36a4":"TURTLE","fa5098f5ca3f6351cea0ef80f00350defd5a8447bcae7ed7375f01e014cb838d":"TOPAZ","90b0e02961ea644bc3986032a59da14c2b24209463c0f62f1a35b92f2e8be703":"GADGET","e4a6718f8fcee30cea550b677004ab41efc107b47a998cca8542480c30d4d1fe":"PROPELLER","4c88c7fc23502d20125aedd6fe5f5b06e085086f078b5d4209585b84171dea1f":"EMBER","0db753cce711377ca3ad12147d29f8f3a0a718294e4ee8c10721accdeca96dc5":"EVEREST","86b000e39ea51d47545d0d367b250f4643ab4000f857d748b9f2046dee285839":"GALAXY","aa4f8e6bbbad7b9feb61f1b7613c4ab9d6411d412d8e88fcaf6c079aca43fcdd":"ECHO","0c50366f9e290b7ac08ef905062ce33af3d93a5a18965e8a6a9ae21edf8e702c":"VORTEX","da0576709a91cab8af5ad8fd81e75138b8a841cc42718dc89c6efc305cb64859":"RIFFLE","092d11ad2e58efc0fe63f54cb8e2bdcaa826003b18af25260a6484d4750be467":"XYLEM","129ab07deae26a4a3ee09d7eca089cf5ded896a629eb03ab7e5f50bf160d267c":"MAPLE","006b090a637043c7f85cb7b2e61355c42fc210eca274d3d7ef804c440dc2c405":"LANTERN","01da98cf1752e9b851984a4dc1c8dc2606f097dee447a7a9a91d8d690028d624":"VELVET","2df22007d73838fbe1d77eebf878483b281ed69c0c23bb221553409d48c6051a":"KOALA","69c7dbfae759979f1040758029e85d9057e49c8831649bf4408f6fc866212ad5":"HAMMOCK","482be5dfc21fa1b968c97e4b9a9f1325a00a7de4a1e59557861ef5546a587dc3":"TALISMAN","8a9003e835b5dcde52784dc79467418937b9697350bbfef2c0d8c5cf24313326":"ORCHID","dd732d9e4070c4fc1b3b0e1f19bcf023c80e12ca7df5ff39898c9a49ef016766":"WILLOW","4c354712b596e29e486b0305d80c9a0fdbee1a4effd3c6797cb358491c11cd08":"FALCON","c817cce7aec2fb5452aab4db458ea29a5aec6ba7878f346e54518dcff9fd7edc":"PARCHMENT","a29d6c51e589c438e965e89caa95f0e4a8080068beff47ac65c073bf2660d6fe":"NUGGET","3470779e4d6b3d8c7fac170e3874d1ab8d255e3b5f682b07ebf86e5bdc6f5e6d":"JACKPOT","962cc909009f6cc866c2665b23e3222cf497d4c5eaa229f94c5cef2db003a972":"OTTER","0a39e156a35b65be430b24e1f7cc8fb38f559d3a7b7a0d4091e371a349ebabd8":"CANYON"};
+
+const form = document.getElementById("lookup-form");
+const input = document.getElementById("sid");
+const result = document.getElementById("result");
+
+async function sha256Hex(text) {
+  const data = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function showCodeword(word) {
+  result.classList.remove("hidden");
+  result.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "codeword-box";
+  const label = document.createElement("div");
+  label.className = "codeword-label";
+  label.textContent = "Your secret codeword";
+  const wordEl = document.createElement("div");
+  wordEl.className = "codeword";
+  wordEl.textContent = word;
+  const reminder = document.createElement("p");
+  reminder.className = "reminder";
+  reminder.textContent = "Write this word on the BACK of your sheet. Keep it secret. No name on the front.";
+  box.append(label, wordEl, reminder);
+  result.appendChild(box);
+}
+
+function showError() {
+  result.classList.remove("hidden");
+  result.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "error-box";
+  box.textContent = "ID not found. Double-check the number, or see Mr. Porter.";
+  result.appendChild(box);
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const typed = input.value.trim();
+  if (!typed) return;
+  let hash;
+  try {
+    hash = await sha256Hex(typed);
+  } catch (err) {
+    showError();
+    return;
+  }
+  const word = MAP[hash];
+  if (word) {
+    showCodeword(word);
+  } else {
+    showError();
+  }
+});
+</script>
+</body>
+</html>

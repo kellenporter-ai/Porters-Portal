@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, FileText, Mail, Phone, MapPin, Atom, Microscope, FlaskConical } from 'lucide-react';
+import { BookOpen, FileText, FileSearch, Mail, Phone, MapPin, Atom, Microscope, FlaskConical } from 'lucide-react';
 import { CONTENT, type PublicLang } from './landingContent';
 
 interface LandingPageProps {
@@ -55,6 +55,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
           </div>
         </div>
       </section>
+
+      {/* Seasonal announcement strip — remove after the Forgery Files activity */}
+      {c.announcement && (
+        <section
+          aria-label={c.announcement.label}
+          className="border-b border-indigo-200 bg-indigo-50 dark:border-indigo-500/20 dark:bg-indigo-500/10"
+        >
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-4 sm:px-6 lg:px-8 sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <FileSearch className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+              <p className="truncate text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                {c.announcement.label}
+                <span className="mx-2 text-indigo-400 dark:text-indigo-500" aria-hidden="true">&middot;</span>
+                <span className="font-normal text-indigo-600 dark:text-indigo-400">{c.announcement.text}</span>
+              </p>
+            </div>
+            {/* Plain <a>, not <Link> — the lookup page is a standalone HTML file outside the SPA router */}
+            <a
+              href={c.announcement.href}
+              aria-label={c.announcement.buttonAria}
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-colors focus-visible:outline-offset-2 min-w-[44px]"
+            >
+              {c.announcement.button}
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* Courses */}
       <section id="courses" className="py-16 sm:py-20 lg:py-24 bg-[var(--surface-raised)]">
