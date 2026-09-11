@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tangent / Secant Explorer</title>
+<style>
+  :root{
+    --bg:#0a0a1a; --bg2:#111128; --card:#16162e; --card2:#1e1e38;
+    --indigo:#6366f1; --indigo-lt:#818cf8; --white:#f0f0f8;
+    --body:#c8c8dc; --muted:#8a8aa5; --line:#2a2a4a;
+    --green:#22c55e; --amber:#f59e0b; --cyan:#4cd7f6; --violet:#b78ef0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);
+    font-family:system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:var(--white);}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(600px 400px at 15% 0%, rgba(99,102,241,.16), transparent 70%),
+      radial-gradient(500px 380px at 90% 100%, rgba(76,215,246,.10), transparent 70%);
+  }
+  #app{max-width:1100px;margin:0 auto;padding:10px 14px 16px;}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 2px 10px;}
+  header h1{font-size:19px;margin:0;letter-spacing:.02em;}
+  header .sub{font-size:12.5px;color:var(--muted);}
+  #plots{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:820px){#plots{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:8px 10px 6px;}
+  .panel h2{font-size:14px;margin:2px 2px 4px;color:var(--indigo-lt);}
+  .panel h2 .dim{color:var(--muted);font-weight:400;font-size:12px;}
+  canvas{display:block;width:100%;border-radius:8px;touch-action:none;}
+  #xtCanvas{aspect-ratio:560/300;background:#f7f9ff;cursor:grab;}
+  #vtCanvas{aspect-ratio:560/300;background:#f7f9ff;}
+  #controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin:12px 0 10px;}
+  .modebtn{font:inherit;font-size:15px;font-weight:700;color:var(--body);
+    background:var(--card2);border:2px solid var(--line);border-radius:10px;
+    padding:10px 18px;min-height:44px;cursor:pointer;min-width:150px;}
+  .modebtn.active{border-color:var(--indigo);color:var(--white);
+    background:rgba(99,102,241,.22);}
+  .actbtn{font:inherit;font-size:15px;font-weight:700;border-radius:10px;
+    padding:10px 16px;min-height:44px;cursor:pointer;border:2px solid var(--indigo);
+    background:rgba(99,102,241,.20);color:var(--white);}
+  .actbtn.secondary{border-color:var(--line);background:var(--card2);color:var(--body);}
+  .actbtn:disabled{opacity:.38;cursor:not-allowed;}
+  #readout{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 10px;}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;font-size:14px;min-height:40px;display:flex;
+    align-items:center;}
+  .chip b{color:var(--white);}
+  .chip .k{color:var(--muted);font-size:12px;margin-right:6px;}
+  #pointCount{min-width:44px;text-align:center;color:var(--indigo-lt);font-weight:800;}
+  #hint{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  #footer{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Tangent / Secant Explorer</h1>
+    <span class="sub">x&#8209;t data on top · build the v&#8209;t graph point by point below</span>
+  </header>
+
+  <div id="controls">
+    <button id="btnTangent" class="modebtn active">Tangent mode</button>
+    <button id="btnSecant" class="modebtn">Secant mode</button>
+    <button id="btnMidT" class="modebtn" style="display:none">Show middle-time tangent</button>
+    <button id="btnPlot" class="actbtn" disabled>Plot this point</button>
+    <button id="btnFit" class="actbtn secondary" disabled>Show best-fit line</button>
+    <button id="btnReset" class="actbtn secondary">Reset</button>
+    <span id="pointCount" title="points plotted">0</span>
+  </div>
+
+  <div id="readout">
+    <span class="chip" id="chipA"></span>
+    <span class="chip" id="chipB"></span>
+    <span class="chip" id="chipC"></span>
+  </div>
+
+  <div id="plots">
+    <div class="panel">
+      <h2>Position vs time <span class="dim">· the given data</span></h2>
+      <canvas id="xtCanvas" width="560" height="300"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Velocity vs time <span class="dim">· you build this</span></h2>
+      <canvas id="vtCanvas" width="560" height="300"></canvas>
+    </div>
+  </div>
+  <div id="hint"></div>
+  <div id="footer">Drag the round handles on the top graph. Readouts snap to 0.1.</div>
+</div>
+
+<script>
+"use strict";
+/* ---- physics (hardcoded to this dataset) ----
+   position x = 2 t^2 (cm); instantaneous rate dx/dt = 4 t (cm/s)        */
+function xOf(t){ return 2*t*t; }
+function vOf(t){ return 4*t; }
+function secantSlope(t0,t1){ return (xOf(t1)-xOf(t0))/(t1-t0); }
+
+var T_MAX=5, X_MAX=52, V_MAX=22;
+var DATA=[[0,0],[1,2],[2,8],[3,18],[4,32],[5,50]];
+
+var mode="tangent";
+var tT=3.0;                 // tangent marker time
+var t0=1.0, t1=4.0;         // secant markers
+var vtPoints=[];            // plotted {t,v}
+var showFit=false;
+var showMidTangent=false;   // secant-mode midpoint tangent toggle
+
+/* ---- canvases / geometry ---- */
+var xtC=document.getElementById("xtCanvas"), xt=xtC.getContext("2d");
+var vtC=document.getElementById("vtCanvas"), vt=vtC.getContext("2d");
+var XT, VT; // plot rects
+
+function setupCanvas(c,ctx){
+  var dpr=window.devicePixelRatio||1;
+  var w=c.clientWidth||560, h=c.clientHeight||300;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){
+    c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {w:w,h:h};
+}
+function makeRect(w,h){
+  return {L:Math.round(w*0.14), R:w-14, T:22, B:h-Math.round(h*0.16)};
+}
+function x2px(r,t){ return r.L + (t/T_MAX)*(r.R-r.L); }
+function y2px(r,val,max){ return r.B - (val/max)*(r.B-r.T); }
+function px2t(r,px){ return ((px-r.L)/(r.R-r.L))*T_MAX; }
+function clampT(t){ return Math.max(0,Math.min(T_MAX,t)); }
+function snapT(t){ return Math.round(t*10)/10; }
+
+var AXIS="#111111", GRID="#d7dcea", RED="#e05252", AMBERC="#d97706",
+    INDIGO="#4f46e5", CYAN="#0891b2", GREEN="#16a34a", VIOLET="#7c3aed";
+
+function drawGrid(ctx,r,xMax,yMax,xLabel,yLabel){
+  ctx.fillStyle="#f7f9ff"; ctx.fillRect(0,0,r.R+40,r.B+40);
+  ctx.strokeStyle=GRID; ctx.lineWidth=1; ctx.fillStyle=AXIS;
+  ctx.font="11px system-ui,sans-serif"; ctx.textAlign="center";
+  var i, px, py;
+  for(i=0;i<=5;i++){ px=x2px(r,i);
+    ctx.beginPath(); ctx.moveTo(px,r.T); ctx.lineTo(px,r.B); ctx.stroke();
+    ctx.fillText(String(i),px,r.B+16); }
+  var step=yMax>30?10:5;
+  for(i=0;i*step<=yMax;i++){ var v=i*step; py=y2px(r,v,yMax);
+    ctx.beginPath(); ctx.moveTo(r.L,py); ctx.lineTo(r.R,py); ctx.stroke();
+    ctx.textAlign="right"; ctx.fillText(String(Math.round(v)),r.L-6,py+4);
+    ctx.textAlign="center"; }
+  ctx.strokeStyle=AXIS; ctx.lineWidth=1.8;
+  ctx.beginPath(); ctx.moveTo(r.L,r.T); ctx.lineTo(r.L,r.B); ctx.lineTo(r.R,r.B); ctx.stroke();
+  ctx.font="bold 11px system-ui,sans-serif";
+  ctx.textAlign="left"; ctx.fillText(yLabel,r.L,r.T-7);
+  ctx.textAlign="right"; ctx.fillText(xLabel,r.R,r.B+30);
+}
+
+function drawParabola(ctx,r){
+  ctx.strokeStyle=INDIGO; ctx.lineWidth=3; ctx.beginPath();
+  for(var i=0;i<=100;i++){ var t=T_MAX*i/100, px=x2px(r,t), py=y2px(r,xOf(t),X_MAX);
+    if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+  ctx.stroke();
+}
+function drawScatter(ctx,r){
+  ctx.fillStyle=AXIS;
+  DATA.forEach(function(p){ var px=x2px(r,p[0]), py=y2px(r,p[1],X_MAX);
+    ctx.beginPath(); ctx.arc(px,py,4.2,0,Math.PI*2); ctx.fill(); });
+}
+function drawHandle(ctx,px,py,color){
+  ctx.beginPath(); ctx.arc(px,py,11,0,Math.PI*2);
+  ctx.fillStyle="#ffffff"; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
+  ctx.lineWidth=3; ctx.strokeStyle=color; ctx.stroke();
+  ctx.beginPath(); ctx.arc(px,py,4.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+}
+function drawRiseRun(ctx,r,t,m,len,color){
+  var x0=Math.max(0,t-len/2), x1=Math.min(T_MAX,t+len/2);
+  var yA=xOf(t)+m*(x0-t), yB=xOf(t)+m*(x1-t);
+  var px0=x2px(r,x0), py0=y2px(r,yA,X_MAX);
+  var px1=x2px(r,x1), py1=y2px(r,yB,X_MAX);
+  // extend the line along its own direction so the drawn slope still equals m
+  var pySlope=(py1-py0)/(px1-px0); // px y per px x (already data-accurate)
+  var extA=14, extB=14;
+  var epx0=px0-extA, epy0=py0-pySlope*extA;
+  var epx1=px1+extB, epy1=py1+pySlope*extB;
+  ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(epx0,epy0); ctx.lineTo(epx1,epy1); ctx.stroke();
+  ctx.setLineDash([6,5]); ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(px0,py0); ctx.lineTo(px1,py0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px1,py0); ctx.lineTo(px1,py1); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=color; ctx.font="bold 11px system-ui,sans-serif";
+  ctx.textAlign="left"; ctx.fillText("run", (px0+px1)/2-8, py0-6);
+  ctx.fillText("rise", px1+6, (py0+py1)/2);
+}
+
+function drawXT(){
+  var s=setupCanvas(xtC,xt); XT=makeRect(s.w,s.h);
+  xt.clearRect(0,0,s.w,s.h);
+  drawGrid(xt,XT,T_MAX,X_MAX,"time t (s)","position x (cm)");
+  drawParabola(xt,XT); drawScatter(xt,XT);
+  if(mode==="tangent"){
+    var m=vOf(tT);
+    drawRiseRun(xt,XT,tT,m,1.6,AMBERC);
+    drawHandle(xt,x2px(XT,tT),y2px(XT,xOf(tT),X_MAX),RED);
+  } else {
+    var tm=(t0+t1)/2, mS=secantSlope(t0,t1), mT=vOf(tm);
+    xt.strokeStyle=VIOLET; xt.lineWidth=3.5; xt.setLineDash([]);
+    xt.beginPath();
+    xt.moveTo(x2px(XT,t0),y2px(XT,xOf(t0),X_MAX));
+    xt.lineTo(x2px(XT,t1),y2px(XT,xOf(t1),X_MAX));
+    xt.stroke();
+    drawHandle(xt,x2px(XT,t0),y2px(XT,xOf(t0),X_MAX),RED);
+    drawHandle(xt,x2px(XT,t1),y2px(XT,xOf(t1),X_MAX),RED);
+    // small cyan tick marking the middle time (no line unless toggled on)
+    var tmPx=x2px(XT,tm), tmPy=y2px(XT,xOf(tm),X_MAX);
+    xt.strokeStyle=CYAN; xt.lineWidth=3; xt.setLineDash([]);
+    xt.beginPath(); xt.moveTo(tmPx,tmPy-11); xt.lineTo(tmPx,tmPy+11); xt.stroke();
+    if(showMidTangent){ drawRiseRun(xt,XT,tm,mT,1.6,CYAN); }
+  }
+}
+
+function drawVT(){
+  var s=setupCanvas(vtC,vt); VT=makeRect(s.w,s.h);
+  vt.clearRect(0,0,s.w,s.h);
+  drawGrid(vt,VT,T_MAX,V_MAX,"time t (s)","velocity v (cm/s)");
+  vtPoints.forEach(function(p){
+    vt.beginPath(); vt.arc(x2px(VT,p.t),y2px(VT,p.v,V_MAX),5,0,Math.PI*2);
+    vt.fillStyle=RED; vt.fill(); });
+  if(showFit){
+    vt.strokeStyle=GREEN; vt.lineWidth=2.5; vt.setLineDash([7,5]);
+    vt.beginPath(); vt.moveTo(x2px(VT,0),y2px(VT,0,V_MAX));
+    vt.lineTo(x2px(VT,T_MAX),y2px(VT,vOf(T_MAX),V_MAX)); vt.stroke();
+    vt.setLineDash([]);
+    vt.fillStyle=GREEN; vt.font="bold 12px system-ui,sans-serif";
+    vt.textAlign="left"; vt.fillText("best fit",x2px(VT,3.4),y2px(VT,vOf(3.4),V_MAX)-10);
+  }
+}
+
+/* ---- readouts / buttons ---- */
+var chipA=document.getElementById("chipA"), chipB=document.getElementById("chipB"),
+    chipC=document.getElementById("chipC"),
+    btnPlot=document.getElementById("btnPlot"), btnFit=document.getElementById("btnFit"),
+    countEl=document.getElementById("pointCount"), hint=document.getElementById("hint");
+
+function f1(n){ return n.toFixed(1); }
+function updateUI(){
+  var plotted;
+  if(mode==="tangent"){
+    var m=vOf(tT);
+    chipA.innerHTML='<span class="k">t =</span><b>'+f1(tT)+' s</b>';
+    chipB.innerHTML='<span class="k">tangent slope</span><b>'+f1(m)+' cm/s</b>';
+    chipC.innerHTML='<span class="k">instantaneous velocity</span><b>'+f1(m)+' cm/s</b>';
+    plotted=vtPoints.some(function(p){return Math.abs(p.t-tT)<0.05;});
+    hint.textContent="Drag the red handle along the curve. The dashed triangle shows rise over run at that instant.";
+  } else {
+    var tm=(t0+t1)/2, mS=secantSlope(t0,t1), mT=vOf(tm);
+    chipA.innerHTML='<span class="k">between t\u2080 =</span><b>'+f1(t0)+' s</b>'+
+                    '<span class="k">and t\u2081 =</span><b>'+f1(t1)+' s</b>';
+    chipB.innerHTML='<span class="k">average velocity</span><b>'+f1(mS)+' cm/s</b>';
+    if(showMidTangent){
+      chipC.innerHTML='<span class="k">tangent at middle t = '+f1(tm)+' s</span><b>'+f1(mT)+' cm/s</b>';
+      hint.textContent="Drag the two red handles. The dashed line is the tangent at the middle time. Plot the point at the MIDDLE time, not at t\u2080.";
+    } else {
+      chipC.innerHTML='';
+      hint.textContent="Drag the two red handles to choose the interval. Try to estimate where the curve's slope equals the average velocity \u2014 then plot the point at the MIDDLE time, not at t\u2080.";
+    }
+    plotted=vtPoints.some(function(p){return Math.abs(p.t-tm)<0.05;});
+  }
+  btnPlot.disabled=plotted;
+  btnPlot.textContent=plotted?"Plotted \u2713":"Plot this point";
+  countEl.textContent=vtPoints.length;
+  btnFit.disabled=!(vtPoints.length>=3)||showFit;
+  btnFit.textContent=showFit?"Best-fit line shown":"Show best-fit line";
+}
+
+function render(){
+  drawXT(); drawVT(); updateUI();
+}
+
+/* ---- drag handling ---- */
+var drag=null; // {which:'tT'|'t0'|'t1', pointerId}
+function hitHandle(px,py){
+  function near(t,xOfVal,max){ var hx=x2px(XT,t), hy=y2px(XT,xOfVal,max);
+    return Math.hypot(px-hx,py-hy)<=26; }
+  if(mode==="tangent"){
+    if(near(tT,xOf(tT),X_MAX)) return "tT";
+  } else {
+    if(near(t1,xOf(t1),X_MAX)) return "t1";   // right handle wins ties
+    if(near(t0,xOf(t0),X_MAX)) return "t0";
+  }
+  return null;
+}
+xtC.addEventListener("pointerdown",function(e){
+  if(drag) return;
+  var r=xtC.getBoundingClientRect();
+  var px=e.clientX-r.left, py=e.clientY-r.top;
+  var which=hitHandle(px,py);
+  if(!which){
+    // tap anywhere else: jump the active marker(s)
+    var t=snapT(clampT(px2t(XT,px)));
+    if(mode==="tangent"){ tT=t; }
+    else { var mid=(t0+t1)/2; if(t<mid) t0=Math.min(t,t1-0.2); else t1=Math.max(t,t0+0.2); }
+    render(); return;
+  }
+  drag={which:which,pointerId:e.pointerId};
+  xtC.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+xtC.addEventListener("pointermove",function(e){
+  if(!drag||e.pointerId!==drag.pointerId) return;
+  var r=xtC.getBoundingClientRect();
+  var t=snapT(clampT(px2t(XT,e.clientX-r.left)));
+  if(drag.which==="tT") tT=t;
+  else if(drag.which==="t0") t0=Math.min(t,t1-0.2);
+  else t1=Math.max(t,t0+0.2);
+  render();
+});
+function endDrag(e){
+  if(drag&&e.pointerId===drag.pointerId){ drag=null; }
+}
+xtC.addEventListener("pointerup",endDrag);
+xtC.addEventListener("pointercancel",endDrag);
+
+/* ---- buttons ---- */
+document.getElementById("btnTangent").addEventListener("click",function(){
+  mode="tangent"; setModeUI(); render(); });
+document.getElementById("btnSecant").addEventListener("click",function(){
+  mode="secant"; setModeUI(); render(); });
+var btnMidT=document.getElementById("btnMidT");
+function setModeUI(){
+  document.getElementById("btnTangent").classList.toggle("active",mode==="tangent");
+  document.getElementById("btnSecant").classList.toggle("active",mode==="secant");
+  btnMidT.style.display=mode==="secant"?"":"none";
+  btnMidT.classList.toggle("active",showMidTangent);
+  btnMidT.textContent=showMidTangent?"Hide middle-time tangent":"Show middle-time tangent";
+}
+btnMidT.addEventListener("click",function(){
+  showMidTangent=!showMidTangent; setModeUI(); render(); });
+btnPlot.addEventListener("click",function(){
+  if(btnPlot.disabled) return;
+  if(mode==="tangent"){ vtPoints.push({t:tT,v:vOf(tT)}); }
+  else { var tm=(t0+t1)/2; vtPoints.push({t:tm,v:secantSlope(t0,t1)}); }
+  vtPoints.sort(function(a,b){return a.t-b.t;});
+  render();
+});
+btnFit.addEventListener("click",function(){ showFit=true; render(); });
+document.getElementById("btnReset").addEventListener("click",function(){
+  vtPoints=[]; showFit=false; showMidTangent=false; tT=3.0; t0=1.0; t1=4.0; mode="tangent";
+  setModeUI(); render();
+});
+
+window.addEventListener("resize",render);
+render();
+</script>
+</body>
+</html>
