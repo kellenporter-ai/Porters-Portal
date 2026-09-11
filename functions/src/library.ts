@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { randomUUID } from "crypto";
 import { generateCorrelationId, logWithCorrelation, verifyAdmin } from "./core";
 
 // ==========================================
@@ -82,21 +83,45 @@ async function fetchBundledManifest(correlationId: string): Promise<ScannedItem[
   }));
 }
 
+/**
+ * Ensure a Firebase download token exists on a Storage object and return the
+ * anonymous-access URL (`https://firebasestorage.googleapis.com/v0/b/...`).
+ * Raw `storage.googleapis.com` URLs require GCS auth and 403 for anonymous
+ * callers. Reuses the first existing token; only mints one when absent, so it
+ * never rotates tokens already embedded in other stored URLs. Metadata merge
+ * preserves any other custom metadata on the object.
+ */
+export async function ensureStorageDownloadUrl(objectName: string): Promise<string> {
+  // Explicit bucket name — Admin SDK bucket resolution can fail without it
+  // outside the Functions runtime (proven by repair-script run, pipeline 55faaaa8).
+  const bucket = admin.storage().bucket("porters-portal.firebasestorage.app");
+  const file = bucket.file(objectName);
+  const [metadata] = await file.getMetadata();
+  const custom = metadata.metadata ?? {};
+  let token = custom.firebaseStorageDownloadTokens;
+  if (!token) {
+    token = randomUUID();
+    await file.setMetadata({ metadata: { ...custom, firebaseStorageDownloadTokens: token } });
+  }
+  const firstToken = String(token).split(",")[0].trim();
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(objectName)}?alt=media&token=${firstToken}`;
+}
+
 async function listStorageItems(correlationId: string): Promise<ScannedItem[]> {
   try {
-    const [files] = await admin.storage().bucket().getFiles({ prefix: "resources/html/" });
-    return files
-      .filter((f) => !f.name.endsWith("/")) // skip folder placeholders
-      .map((f) => {
-        const encoded = encodeURIComponent(f.name);
-        return {
-          title: titleFromFilename(f.name),
-          url: `https://storage.googleapis.com/${admin.storage().bucket().name}/${encoded}`,
-          hostingType: "storage" as const,
-          contentKind: guessContentKind(f.name),
-          sourceFingerprint: f.name,
-        };
+    const [files] = await admin.storage().bucket("porters-portal.firebasestorage.app").getFiles({ prefix: "resources/html/" });
+    const items: ScannedItem[] = [];
+    for (const f of files) {
+      if (f.name.endsWith("/")) continue; // skip folder placeholders
+      items.push({
+        title: titleFromFilename(f.name),
+        url: await ensureStorageDownloadUrl(f.name),
+        hostingType: "storage" as const,
+        contentKind: guessContentKind(f.name),
+        sourceFingerprint: f.name,
       });
+    }
+    return items;
   } catch (error) {
     logWithCorrelation("error", "Failed to list storage objects under resources/html/", correlationId, { error });
     // Storage listing is best-effort — bundled content still scans without it.
