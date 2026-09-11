@@ -168,6 +168,101 @@ describe('LibraryTab', () => {
     expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
   });
 
+  it('shows default classes in the assign modal when class_configs is empty', () => {
+    mockState.libraryDocs = [makeDoc('item-1', SAMPLE_ITEM)];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: /list view/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Assign Kinematics Lab' }));
+    const classSelect = screen.getByLabelText(/class/i) as HTMLSelectElement;
+    const options = Array.from(classSelect.options).map(o => o.textContent);
+    expect(options).toContain('AP Physics');
+    expect(options).toContain('Honors Physics');
+    expect(options).toContain('Forensic Science');
+    expect(options).not.toContain('Uncategorized');
+  });
+
+  it('groups storage re-uploads by prefix-stripped base filename and badges latest vs older', () => {
+    mockState.libraryDocs = [
+      makeDoc('item-new', {
+        ...SAMPLE_ITEM,
+        title: 'Momentum Practice v2',
+        hostingType: 'storage',
+        sourceFingerprint: 'library/a1b2c3d_momentum-practice.pdf',
+        createdAt: '2026-09-10T00:00:00.000Z',
+      }),
+      makeDoc('item-old', {
+        ...SAMPLE_ITEM,
+        title: 'Momentum Practice v1',
+        hostingType: 'storage',
+        sourceFingerprint: 'library/xyz9q21_momentum-practice.pdf',
+        createdAt: '2026-09-01T00:00:00.000Z',
+        updatedAt: '2026-09-05T00:00:00.000Z',
+      }),
+      // Different base name, should land in its own group (not rendered).
+      makeDoc('item-other', {
+        ...SAMPLE_ITEM,
+        title: 'Chapter 6 Embedded',
+        hostingType: 'storage',
+        sourceFingerprint: 'library/k3j5m8n_chapter-6-embedded.pdf',
+      }),
+    ];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /duplicates/i }));
+    const group = screen.getByRole('rowgroup', { name: /momentum-practice\.pdf duplicate group, 2 copies/i });
+    expect(group).toBeInTheDocument();
+    expect(screen.queryByRole('rowgroup', { name: /chapter-6-embedded/ })).not.toBeInTheDocument();
+    expect(within(group).getByText('Latest')).toBeInTheDocument();
+    expect(within(group).getByText('Older copy')).toBeInTheDocument();
+    // Newest first: v2 row appears before v1 row.
+    const rows = within(group).getAllByRole('row').slice(1);
+    expect(rows[0].textContent).toContain('Momentum Practice v2');
+    expect(rows[1].textContent).toContain('Momentum Practice v1');
+  });
+
+  it('pre-selects older copies on entering the duplicates view only', () => {
+    mockState.libraryDocs = [
+      makeDoc('item-new', {
+        ...SAMPLE_ITEM,
+        title: 'Momentum Practice v2',
+        hostingType: 'storage',
+        sourceFingerprint: 'library/a1b2c3d_momentum-practice.pdf',
+        createdAt: '2026-09-10T00:00:00.000Z',
+      }),
+      makeDoc('item-old', {
+        ...SAMPLE_ITEM,
+        title: 'Momentum Practice v1',
+        hostingType: 'storage',
+        sourceFingerprint: 'library/xyz9q21_momentum-practice.pdf',
+        createdAt: '2026-09-01T00:00:00.000Z',
+      }),
+    ];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /duplicates/i }));
+    expect(screen.getByRole('checkbox', { name: 'Select Momentum Practice v1' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Select Momentum Practice v2' })).not.toBeChecked();
+    // Deselect the older copy, then re-render via search change: pre-selection must not reapply.
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Momentum Practice v1' }));
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Momentum' } });
+    expect(screen.getByRole('checkbox', { name: 'Select Momentum Practice v1' })).not.toBeChecked();
+  });
+
+  it('archives selected items with a batch patch of status and updatedAt only', async () => {
+    mockState.libraryDocs = [
+      makeDoc('item-1', SAMPLE_ITEM),
+      makeDoc('item-2', { ...SAMPLE_ITEM, title: 'Momentum Practice' }),
+    ];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all visible items' }));
+    fireEvent.click(within(screen.getByRole('region', { name: 'Bulk actions' })).getByRole('button', { name: /^archive$/i }));
+    await vi.waitFor(() => expect(mockState.batchCommit).toHaveBeenCalledTimes(1));
+    expect(mockState.batchUpdate).toHaveBeenCalledTimes(2);
+    const patch = mockState.batchUpdate.mock.calls[0][1] as Record<string, unknown>;
+    expect(Object.keys(patch).sort()).toEqual(['status', 'updatedAt']);
+    expect(patch.status).toBe('archived');
+    expect(patch.updatedAt).toBe('server-timestamp');
+  });
+
   it('adds a tag without duplicating an existing one', async () => {
     mockState.libraryDocs = [makeDoc('item-1', { ...SAMPLE_ITEM, untagged: true })];
     render(<LibraryTab />);

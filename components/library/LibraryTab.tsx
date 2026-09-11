@@ -4,14 +4,14 @@ import {
   Loader2, FolderOpen, HardDrive, Link2, LayoutGrid, List, Tag, CheckCheck,
   ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react';
-import { collection, onSnapshot, doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, writeBatch, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
 import { withErrorToast } from '../../lib/errorReporting';
 import { useToast } from '../ToastProvider';
 import Modal from '../Modal';
 import type { LibraryItem, ResourceCategory } from '../../types';
-import { AssignmentStatus } from '../../types';
+import { AssignmentStatus, DefaultClassTypes } from '../../types';
 
 const CATEGORIES: ResourceCategory[] = ['Lesson', 'Lab', 'Simulation', 'Practice', 'Supplemental'];
 
@@ -34,6 +34,28 @@ type SortKey = 'title' | 'kind' | 'subject' | 'untagged';
 type SortDir = 'asc' | 'desc';
 type ViewMode = 'grid' | 'list';
 
+/** Millis timestamp for sorting (createdAt, falling back to updatedAt). */
+const timestampOf = (item: LibraryItem): number => {
+  const raw = item.createdAt ?? item.updatedAt;
+  if (!raw) return 0;
+  if (typeof raw === 'string') return Date.parse(raw) || 0;
+  return (raw as Timestamp).toMillis ? (raw as Timestamp).toMillis() : 0;
+};
+
+/** Duplicates grouping key: normalized base filename for storage items, lowercased title otherwise. */
+const duplicateKey = (item: LibraryItem): string => {
+  if (item.hostingType === 'storage') {
+    const base = (item.sourceFingerprint || item.title).split('/').pop() || item.title;
+    return base.replace(/^[a-z0-9]{7}[_-]/, '').trim().toLowerCase();
+  }
+  return (item.title || '').trim().toLowerCase();
+};
+
+interface DuplicateGroup {
+  key: string;
+  items: LibraryItem[];
+}
+
 const SORT_COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'title', label: 'Title' },
   { key: 'kind', label: 'Kind' },
@@ -50,6 +72,7 @@ const LibraryTab: React.FC = () => {
   const [kindFilter, setKindFilter] = useState<'all' | LibraryItem['contentKind']>('all');
   const [untaggedOnly, setUntaggedOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [editing, setEditing] = useState<LibraryItem | null>(null);
   const [assigning, setAssigning] = useState<LibraryItem | null>(null);
@@ -63,7 +86,7 @@ const LibraryTab: React.FC = () => {
   const [bulkTag, setBulkTag] = useState('');
 
   // List view is the default while curating untagged items.
-  const view: ViewMode = viewMode ?? (untaggedOnly ? 'list' : 'grid');
+  const view: ViewMode = viewMode ?? (untaggedOnly || showDuplicates ? 'list' : 'grid');
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'library_items'), (snap) => {
@@ -95,11 +118,13 @@ const LibraryTab: React.FC = () => {
       if (!showArchived && i.status === 'archived') return false;
       if (untaggedOnly && !i.untagged) return false;
       if (subjectFilter !== 'all' && i.subject !== subjectFilter) return false;
+      // Duplicates view only groups active items; archived copies are managed separately.
+      if (showDuplicates && i.status === 'archived') return false;
       if (kindFilter !== 'all' && i.contentKind !== kindFilter) return false;
       if (q && ![i.title, i.description, ...(i.tags || [])].some(v => (v || '').toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [items, search, subjectFilter, kindFilter, untaggedOnly, showArchived]);
+  }, [items, search, subjectFilter, kindFilter, untaggedOnly, showArchived, showDuplicates]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -118,6 +143,38 @@ const LibraryTab: React.FC = () => {
     });
     return arr;
   }, [filtered, sortKey, sortDir]);
+
+  // Group filtered items by duplicate key (newest first); only groups with 2+ items.
+  const duplicateGroups = useMemo<DuplicateGroup[]>(() => {
+    if (!showDuplicates) return [];
+    const byKey = new Map<string, LibraryItem[]>();
+    filtered.forEach(i => {
+      const key = duplicateKey(i);
+      const group = byKey.get(key);
+      if (group) group.push(i);
+      else byKey.set(key, [i]);
+    });
+    return Array.from(byKey.entries())
+      .filter(([, g]) => g.length >= 2)
+      .map(([key, g]) => ({ key, items: g.slice().sort((a, b) => timestampOf(b) - timestampOf(a)) }))
+      .sort((a, b) => b.items.length - a.items.length);
+  }, [filtered, showDuplicates]);
+
+  // Pre-select the older copies once on entering the duplicates view so Kellen can review, deselect exceptions, and archive in one click.
+  const duplicatesInitialized = useRef(false);
+  useEffect(() => {
+    if (!showDuplicates) {
+      duplicatesInitialized.current = false;
+      return;
+    }
+    if (duplicatesInitialized.current) return;
+    duplicatesInitialized.current = true;
+    setSelected(prev => {
+      const next = new Set(prev);
+      duplicateGroups.forEach(g => g.items.slice(1).forEach(i => next.add(i.id)));
+      return next;
+    });
+  }, [showDuplicates, duplicateGroups]);
 
   // Drop selections that fall out of the filtered set.
   useEffect(() => {
@@ -231,6 +288,10 @@ const LibraryTab: React.FC = () => {
     void runBulkUpdate('Bulk mark curated', item => (item.untagged ? { untagged: false } : null));
   };
 
+  const handleBulkArchive = () => {
+    void runBulkUpdate('Bulk archive', item => (item.status === 'archived' ? null : { status: 'archived' }));
+  };
+
   const handleScan = async () => {
     setScanning(true);
     try {
@@ -296,6 +357,15 @@ const LibraryTab: React.FC = () => {
               className="w-3.5 h-3.5 rounded accent-purple-600"
             />
             Untagged only
+          </label>
+          <label className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showDuplicates}
+              onChange={e => setShowDuplicates(e.target.checked)}
+              className="w-3.5 h-3.5 rounded accent-purple-600"
+            />
+            Duplicates
           </label>
           <label className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] cursor-pointer">
             <input
@@ -395,6 +465,14 @@ const LibraryTab: React.FC = () => {
           </button>
           <button
             type="button"
+            onClick={handleBulkArchive}
+            disabled={bulkBusy}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition disabled:opacity-50"
+          >
+            <Archive className="w-3 h-3" aria-hidden="true" /> Archive
+          </button>
+          <button
+            type="button"
             onClick={() => setSelected(new Set())}
             disabled={bulkBusy}
             className="ml-auto px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] transition disabled:opacity-50"
@@ -415,19 +493,29 @@ const LibraryTab: React.FC = () => {
           {items.length === 0 ? 'The library is empty. Run a scan to detect hosted content.' : 'No items match the current filters.'}
         </p>
       ) : view === 'list' ? (
-        <LibraryListView
-          items={sorted}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onToggleSelectAll={toggleSelectAll}
-          allVisibleSelected={allVisibleSelected}
-          headerCheckboxRef={headerCheckboxRef}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          onSort={handleSort}
-          onAssign={setAssigning}
-          onEdit={setEditing}
-        />
+        showDuplicates ? (
+          <LibraryDuplicatesView
+            groups={duplicateGroups}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onAssign={setAssigning}
+            onEdit={setEditing}
+          />
+        ) : (
+          <LibraryListView
+            items={sorted}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            allVisibleSelected={allVisibleSelected}
+            headerCheckboxRef={headerCheckboxRef}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+            onAssign={setAssigning}
+            onEdit={setEditing}
+          />
+        )
       ) : (
         <LibraryGridView
           items={filtered}
@@ -605,6 +693,126 @@ const LibraryListView: React.FC<{
   );
 };
 
+// ── Duplicates view (grouped by base filename, newest first) ──────────
+
+const LibraryDuplicatesView: React.FC<{
+  groups: DuplicateGroup[];
+  selected: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onAssign: (item: LibraryItem) => void;
+  onEdit: (item: LibraryItem) => void;
+}> = ({ groups, selected, onToggleSelect, onAssign, onEdit }) => {
+  if (groups.length === 0) {
+    return (
+      <p className="text-sm text-[var(--text-tertiary)] py-12 text-center">
+        No duplicate groups found in the current filter. Re-uploads of the same file will appear here.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {groups.map(group => (
+        <div
+          key={group.key}
+          role="rowgroup"
+          aria-label={`${group.key} duplicate group, ${group.items.length} copies`}
+          className="overflow-x-auto rounded-xl border border-[var(--border)]"
+        >
+          <table className="w-full text-sm border-collapse">
+            <caption className="sr-only">{group.key} duplicate group</caption>
+            <thead>
+              <tr className="bg-[var(--surface-raised)] text-left">
+                <th scope="col" className="w-10 px-3 py-2">
+                  <span className="sr-only">Select</span>
+                </th>
+                <th scope="col" className="px-3 py-2">
+                  <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-primary)]">
+                    {group.key}
+                    <span className="text-[var(--text-muted)] normal-case tracking-normal font-bold">{group.items.length} copies</span>
+                  </span>
+                </th>
+                <th scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Version</th>
+                <th scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Uploaded</th>
+                <th scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {group.items.map((item, index) => {
+                const isLatest = index === 0;
+                const isSelected = selected.has(item.id);
+                return (
+                  <tr
+                    key={item.id}
+                    className={`border-t border-[var(--border)] transition ${isSelected ? 'bg-purple-500/10' : 'hover:bg-[var(--surface-raised)]'}`}
+                  >
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onToggleSelect(item.id)}
+                        aria-label={`Select ${item.title}`}
+                        className="w-3.5 h-3.5 rounded accent-purple-600"
+                      />
+                    </td>
+                    <td className="px-3 py-2 font-bold text-[var(--text-primary)] leading-snug">{item.title}</td>
+                    <td className="px-3 py-2">
+                      {isLatest ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                          Latest
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                          Older copy
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-[var(--text-secondary)]">
+                      {item.createdAt
+                        ? new Date(timestampOf(item)).toLocaleDateString()
+                        : item.updatedAt
+                          ? new Date(timestampOf(item)).toLocaleDateString()
+                          : 'Unknown'}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Preview ${item.title}`}
+                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] border border-transparent hover:border-[var(--border)] transition"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => onAssign(item)}
+                          aria-label={`Assign ${item.title}`}
+                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-600 dark:hover:text-purple-300 hover:bg-[var(--surface-raised)] border border-transparent hover:border-[var(--border)] transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEdit(item)}
+                          aria-label={`Edit ${item.title}`}
+                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] border border-transparent hover:border-[var(--border)] transition"
+                        >
+                          <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ── Grid view (card layout, unchanged behavior) ───────────────────────
 
 const LibraryGridView: React.FC<{
@@ -777,7 +985,13 @@ const AssignModal: React.FC<{
   const [saving, setSaving] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
 
-  const classNames = useMemo(() => classConfigs.map(c => c.className).filter((n): n is string => Boolean(n)), [classConfigs]);
+  // Mirror LessonEditorPage: default classes minus Uncategorized, unioned with configured classNames.
+  // class_configs docs are empty in production post-rollover, so config-only lists leave the dropdown empty.
+  const classNames = useMemo(() => {
+    const defaults = Object.values(DefaultClassTypes).filter((c): c is string => c !== DefaultClassTypes.UNCATEGORIZED);
+    const configs = classConfigs.map(c => c.className).filter((n): n is string => Boolean(n));
+    return Array.from(new Set([...defaults, ...configs]));
+  }, [classConfigs]);
   const units = useMemo(() => classConfigs.find(c => c.className === classType)?.unitOrder || [], [classConfigs, classType]);
 
   const handleCreate = async () => {
