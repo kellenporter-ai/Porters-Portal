@@ -1,11 +1,35 @@
 // @vitest-environment happy-dom
 import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 const mockErrorToast = vi.fn();
-let libraryErrorHandler: ((err: unknown) => void) | null = null;
+
+const mockState = vi.hoisted(() => ({
+  libraryDocs: [] as unknown[],
+  libraryErrorHandler: null as ((err: unknown) => void) | null,
+  batchCommit: vi.fn(async () => {}),
+  batchUpdate: vi.fn(),
+}));
+
+const makeDoc = (id: string, data: Record<string, unknown>) => ({
+  id,
+  data: () => data,
+});
+
+const SAMPLE_ITEM = {
+  title: 'Kinematics Lab',
+  description: 'A motion lab',
+  subject: 'AP Physics 1',
+  tags: ['kinematics'],
+  contentKind: 'activity',
+  hostingType: 'bundled',
+  url: 'https://example.com/lab',
+  status: 'active',
+  untagged: false,
+  suggestedCategory: 'Lab',
+};
 
 vi.mock('../../lib/firebase', () => ({
   db: {},
@@ -35,13 +59,14 @@ vi.mock('../../components/Modal', () => ({
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   onSnapshot: vi.fn((_ref: unknown, onNext: (snap: { docs: unknown[] }) => void, onError?: (err: unknown) => void) => {
-    onNext({ docs: [] });
-    if (onError) libraryErrorHandler = onError;
+    onNext({ docs: mockState.libraryDocs });
+    if (onError) mockState.libraryErrorHandler = onError;
     return vi.fn();
   }),
   doc: vi.fn(),
   updateDoc: vi.fn(),
-  serverTimestamp: vi.fn(),
+  writeBatch: vi.fn(() => ({ update: mockState.batchUpdate, commit: mockState.batchCommit })),
+  serverTimestamp: vi.fn(() => 'server-timestamp'),
 }));
 
 vi.mock('firebase/functions', () => ({
@@ -53,7 +78,10 @@ import LibraryTab from '../../components/library/LibraryTab';
 describe('LibraryTab', () => {
   beforeEach(() => {
     mockErrorToast.mockClear();
-    libraryErrorHandler = null;
+    mockState.libraryErrorHandler = null;
+    mockState.libraryDocs = [];
+    mockState.batchCommit.mockClear();
+    mockState.batchUpdate.mockClear();
   });
 
   it('associates the search input with its label via id/htmlFor', () => {
@@ -67,8 +95,8 @@ describe('LibraryTab', () => {
 
   it('shows a distinct toast when the library snapshot fails with permission-denied', () => {
     render(<LibraryTab />);
-    expect(libraryErrorHandler).toBeTruthy();
-    libraryErrorHandler!({ code: 'permission-denied' });
+    expect(mockState.libraryErrorHandler).toBeTruthy();
+    mockState.libraryErrorHandler!({ code: 'permission-denied' });
     expect(mockErrorToast).toHaveBeenCalledWith(
       'Access to the content library was lost. Refresh the page to reconnect.',
     );
@@ -76,9 +104,78 @@ describe('LibraryTab', () => {
 
   it('shows the generic toast for non-permission snapshot errors', () => {
     render(<LibraryTab />);
-    libraryErrorHandler!({ code: 'unavailable' });
+    mockState.libraryErrorHandler!({ code: 'unavailable' });
     expect(mockErrorToast).toHaveBeenCalledWith(
       'Failed to load the content library. Please try again.',
     );
+  });
+
+  it('defaults to list view when Untagged only is active', () => {
+    mockState.libraryDocs = [makeDoc('item-1', { ...SAMPLE_ITEM, untagged: true })];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /untagged only/i }));
+    expect(screen.getByRole('table', { name: /content library items/i })).toBeInTheDocument();
+  });
+
+  it('switches between grid and list views via the view toggle', () => {
+    mockState.libraryDocs = [makeDoc('item-1', SAMPLE_ITEM)];
+    render(<LibraryTab />);
+    expect(screen.getByRole('list')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+    expect(screen.getByRole('table', { name: /content library items/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Grid view' }));
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('shows the bulk bar and commits a batch write when Mark curated is clicked', async () => {
+    mockState.libraryDocs = [
+      makeDoc('item-1', { ...SAMPLE_ITEM, untagged: true }),
+      makeDoc('item-2', { ...SAMPLE_ITEM, title: 'Momentum Practice', untagged: true }),
+    ];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all visible items' }));
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('region', { name: 'Bulk actions' })).getByRole('button', { name: /mark curated/i }));
+    await vi.waitFor(() => expect(mockState.batchCommit).toHaveBeenCalledTimes(1));
+  });
+
+  it('marks curated with a batch patch containing only untagged and updatedAt', async () => {
+    mockState.libraryDocs = [makeDoc('item-1', { ...SAMPLE_ITEM, untagged: true })];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Kinematics Lab' }));
+    fireEvent.click(within(screen.getByRole('region', { name: 'Bulk actions' })).getByRole('button', { name: /mark curated/i }));
+    await vi.waitFor(() => expect(mockState.batchUpdate).toHaveBeenCalledTimes(1));
+    const patch = mockState.batchUpdate.mock.calls[0][1] as Record<string, unknown>;
+    expect(Object.keys(patch).sort()).toEqual(['untagged', 'updatedAt']);
+    expect(patch).not.toHaveProperty('tags');
+    expect(patch).not.toHaveProperty('subject');
+  });
+
+  it('prunes stale selections when the subject filter changes, dropping the bulk count', async () => {
+    mockState.libraryDocs = [
+      makeDoc('item-1', SAMPLE_ITEM),
+      makeDoc('item-2', { ...SAMPLE_ITEM, title: 'Momentum Practice', subject: 'AP Physics 2' }),
+    ];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all visible items' }));
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/filter by subject/i), { target: { value: 'AP Physics 2' } });
+    await vi.waitFor(() => expect(screen.getByText('1 selected')).toBeInTheDocument());
+    expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+  });
+
+  it('adds a tag without duplicating an existing one', async () => {
+    mockState.libraryDocs = [makeDoc('item-1', { ...SAMPLE_ITEM, untagged: true })];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Kinematics Lab' }));
+    fireEvent.change(screen.getByLabelText(/tag to add/i), { target: { value: 'Kinematics' } });
+    fireEvent.click(within(screen.getByRole('region', { name: 'Bulk actions' })).getByRole('button', { name: /add tag/i }));
+    // Item already has "kinematics" (case-insensitive), so no batch write should occur.
+    await vi.waitFor(() => expect(mockState.batchCommit).not.toHaveBeenCalled());
   });
 });

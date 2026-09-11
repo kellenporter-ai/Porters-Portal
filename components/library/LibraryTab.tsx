@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search, RefreshCw, ExternalLink, Plus, Pencil, Archive, ArchiveRestore,
-  Loader2, FolderOpen, HardDrive, Link2,
+  Loader2, FolderOpen, HardDrive, Link2, LayoutGrid, List, Tag, CheckCheck,
+  ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react';
-import { collection, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
 import { withErrorToast } from '../../lib/errorReporting';
@@ -29,6 +30,17 @@ const HOSTING_META: Record<LibraryItem['hostingType'], { label: string; Icon: ty
   external: { label: 'External link', Icon: Link2 },
 };
 
+type SortKey = 'title' | 'kind' | 'subject' | 'untagged';
+type SortDir = 'asc' | 'desc';
+type ViewMode = 'grid' | 'list';
+
+const SORT_COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'kind', label: 'Kind' },
+  { key: 'subject', label: 'Subject' },
+  { key: 'untagged', label: 'Untagged' },
+];
+
 const LibraryTab: React.FC = () => {
   const toast = useToast();
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -42,6 +54,16 @@ const LibraryTab: React.FC = () => {
   const [editing, setEditing] = useState<LibraryItem | null>(null);
   const [assigning, setAssigning] = useState<LibraryItem | null>(null);
   const [classConfigs, setClassConfigs] = useState<{ className?: string; unitOrder?: string[] }[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('title');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkSubject, setBulkSubject] = useState('');
+  const [bulkTag, setBulkTag] = useState('');
+
+  // List view is the default while curating untagged items.
+  const view: ViewMode = viewMode ?? (untaggedOnly ? 'list' : 'grid');
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'library_items'), (snap) => {
@@ -78,6 +100,136 @@ const LibraryTab: React.FC = () => {
       return true;
     });
   }, [items, search, subjectFilter, kindFilter, untaggedOnly, showArchived]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case 'title':
+          return a.title.localeCompare(b.title) * dir;
+        case 'kind':
+          return KIND_LABELS[a.contentKind].localeCompare(KIND_LABELS[b.contentKind]) * dir;
+        case 'subject':
+          return (a.subject || '').localeCompare(b.subject || '') * dir;
+        case 'untagged':
+          return (Number(b.untagged) - Number(a.untagged)) * dir;
+      }
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  // Drop selections that fall out of the filtered set.
+  useEffect(() => {
+    setSelected(prev => {
+      const visible = new Set(filtered.map(i => i.id));
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach(id => {
+        if (visible.has(id)) next.add(id);
+        else changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [filtered]);
+
+  const selectedItems = useMemo(() => filtered.filter(i => selected.has(i.id)), [filtered, selected]);
+  const allVisibleSelected = filtered.length > 0 && selectedItems.length === filtered.length;
+
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = selectedItems.length > 0 && !allVisibleSelected;
+    }
+  }, [selectedItems.length, allVisibleSelected]);
+
+  const toggleSelectAll = () => {
+    setSelected(prev => {
+      if (allVisibleSelected) return new Set<string>();
+      const next = new Set(prev);
+      filtered.forEach(i => next.add(i.id));
+      return next;
+    });
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const runBulkUpdate = async (label: string, mutate: (item: LibraryItem) => Record<string, unknown> | null) => {
+    const targets = selectedItems;
+    if (targets.length === 0 || bulkBusy) return;
+    const updates = targets
+      .map(item => ({ item, patch: mutate(item) }))
+      .filter((u): u is { item: LibraryItem; patch: Record<string, unknown> } => u.patch !== null);
+    if (updates.length === 0) {
+      toast.info('Nothing to change for the selected items.');
+      return;
+    }
+    setBulkBusy(true);
+    let succeeded = 0;
+    try {
+      // Firestore batches are capped at 500 writes; chunk to stay under the limit.
+      for (let i = 0; i < updates.length; i += 500) {
+        const chunk = updates.slice(i, i + 500);
+        const batch = writeBatch(db);
+        chunk.forEach(({ item, patch }) => {
+          batch.update(doc(db, 'library_items', item.id), { ...patch, updatedAt: serverTimestamp() });
+        });
+        await batch.commit();
+        succeeded += chunk.length;
+      }
+      toast.success(`Updated ${updates.length} item${updates.length === 1 ? '' : 's'}`);
+      setSelected(new Set());
+      setBulkSubject('');
+      setBulkTag('');
+    } catch (err) {
+      const failed = updates.length - succeeded;
+      if (succeeded > 0) {
+        // Earlier chunks committed; keep the selection so the user can retry the remainder.
+        toast.error(`${label} partially completed: updated ${succeeded} of ${updates.length} item${updates.length === 1 ? '' : 's'}, ${failed} failed. Selection kept so you can retry to continue.`);
+      } else {
+        await withErrorToast(toast, async () => { throw err; }, `${label} failed. Please try again.`);
+      }
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleBulkSetSubject = () => {
+    const subject = bulkSubject.trim();
+    if (!subject) return;
+    void runBulkUpdate('Bulk subject update', item => (item.subject === subject ? null : { subject }));
+  };
+
+  const handleBulkAddTag = () => {
+    const tag = bulkTag.trim();
+    if (!tag) return;
+    const lower = tag.toLowerCase();
+    void runBulkUpdate('Bulk tag update', item => {
+      const existing = item.tags || [];
+      if (existing.some(t => t.toLowerCase() === lower)) return null;
+      return { tags: [...existing, tag] };
+    });
+  };
+
+  const handleBulkMarkCurated = () => {
+    void runBulkUpdate('Bulk mark curated', item => (item.untagged ? { untagged: false } : null));
+  };
 
   const handleScan = async () => {
     setScanning(true);
@@ -154,6 +306,26 @@ const LibraryTab: React.FC = () => {
             />
             Show archived
           </label>
+          <div role="group" aria-label="Library view" className="flex items-center rounded-lg border border-[var(--border)] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              aria-pressed={view === 'grid'}
+              aria-label="Grid view"
+              className={`p-2 transition ${view === 'grid' ? 'bg-purple-600 text-white' : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              aria-pressed={view === 'list'}
+              aria-label="List view"
+              className={`p-2 transition ${view === 'list' ? 'bg-purple-600 text-white' : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--surface-glass)]'}`}
+            >
+              <List className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <button
           onClick={handleScan}
@@ -165,7 +337,74 @@ const LibraryTab: React.FC = () => {
         </button>
       </div>
 
-      {/* Card grid */}
+      {/* Bulk action bar */}
+      {selectedItems.length > 0 && (
+        <div
+          role="region"
+          aria-label="Bulk actions"
+          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-purple-500/30 rounded-xl shadow-lg"
+        >
+          <span className="text-xs font-bold text-[var(--text-primary)]" aria-live="polite">
+            {selectedItems.length} selected
+          </span>
+          <label className="sr-only" htmlFor="library-bulk-subject">Set subject for selected items</label>
+          <select
+            id="library-bulk-subject"
+            value={bulkSubject}
+            onChange={e => setBulkSubject(e.target.value)}
+            disabled={bulkBusy}
+            className="px-2 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 disabled:opacity-50"
+          >
+            <option value="">Set subject...</option>
+            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={handleBulkSetSubject}
+            disabled={bulkBusy || !bulkSubject.trim()}
+            className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[11px] font-bold transition disabled:opacity-50"
+          >
+            Apply subject
+          </button>
+          <label className="sr-only" htmlFor="library-bulk-tag">Tag to add to selected items</label>
+          <input
+            id="library-bulk-tag"
+            type="text"
+            value={bulkTag}
+            onChange={e => setBulkTag(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBulkAddTag(); } }}
+            placeholder="Tag to add"
+            disabled={bulkBusy}
+            className="px-2 py-1.5 w-32 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={handleBulkAddTag}
+            disabled={bulkBusy || !bulkTag.trim()}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[11px] font-bold transition disabled:opacity-50"
+          >
+            <Tag className="w-3 h-3" aria-hidden="true" /> Add tag
+          </button>
+          <button
+            type="button"
+            onClick={handleBulkMarkCurated}
+            disabled={bulkBusy}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition disabled:opacity-50"
+          >
+            <CheckCheck className="w-3 h-3" aria-hidden="true" /> Mark curated
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            disabled={bulkBusy}
+            className="ml-auto px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] transition disabled:opacity-50"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
+      {/* Item views */}
       {loading ? (
         <div className="flex items-center justify-center py-16" role="status" aria-live="polite">
           <Loader2 className="w-6 h-6 animate-spin text-[var(--text-muted)]" aria-hidden="true" />
@@ -175,74 +414,27 @@ const LibraryTab: React.FC = () => {
         <p className="text-sm text-[var(--text-tertiary)] py-12 text-center">
           {items.length === 0 ? 'The library is empty. Run a scan to detect hosted content.' : 'No items match the current filters.'}
         </p>
+      ) : view === 'list' ? (
+        <LibraryListView
+          items={sorted}
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          allVisibleSelected={allVisibleSelected}
+          headerCheckboxRef={headerCheckboxRef}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+          onAssign={setAssigning}
+          onEdit={setEditing}
+        />
       ) : (
-        <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" role="list">
-          {filtered.map(item => {
-            const HostingIcon = HOSTING_META[item.hostingType].Icon;
-            return (
-              <li key={item.id} className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 flex flex-col gap-3 ${item.status === 'archived' ? 'opacity-60' : ''}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)] leading-snug">{item.title}</h3>
-                  <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
-                    {KIND_LABELS[item.contentKind]}
-                  </span>
-                </div>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
-                  {item.description || 'No description yet.'}
-                </p>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {item.untagged && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                      Untagged
-                    </span>
-                  )}
-                  {item.subject && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border)]">
-                      {item.subject}
-                    </span>
-                  )}
-                  {(item.tags || []).map(tag => (
-                    <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <p className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)]">
-                  <HostingIcon className="w-3 h-3" aria-hidden="true" /> {HOSTING_META[item.hostingType].label}
-                </p>
-                <div className="flex items-center gap-2 mt-auto pt-1">
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
-                  >
-                    <ExternalLink className="w-3 h-3" aria-hidden="true" /> Preview
-                  </a>
-                  <button
-                    onClick={() => setAssigning(item)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[11px] font-bold transition"
-                  >
-                    <Plus className="w-3 h-3" aria-hidden="true" /> Assign
-                  </button>
-                  <button
-                    onClick={() => setEditing(item)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
-                  >
-                    <Pencil className="w-3 h-3" aria-hidden="true" /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleToggleArchive(item)}
-                    className="p-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-purple-500/30 transition"
-                    aria-label={item.status === 'archived' ? `Restore ${item.title}` : `Archive ${item.title}`}
-                  >
-                    {item.status === 'archived' ? <ArchiveRestore className="w-3.5 h-3.5" aria-hidden="true" /> : <Archive className="w-3.5 h-3.5" aria-hidden="true" />}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <LibraryGridView
+          items={filtered}
+          onAssign={setAssigning}
+          onEdit={setEditing}
+          onToggleArchive={handleToggleArchive}
+        />
       )}
 
       {editing && (
@@ -260,6 +452,235 @@ const LibraryTab: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+// ── List view (sortable table with bulk selection) ────────────────────
+
+type ListViewSortKey = SortKey;
+
+const LibraryListView: React.FC<{
+  items: LibraryItem[];
+  selected: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  allVisibleSelected: boolean;
+  headerCheckboxRef: React.RefObject<HTMLInputElement | null>;
+  sortKey: ListViewSortKey;
+  sortDir: SortDir;
+  onSort: (key: SortKey) => void;
+  onAssign: (item: LibraryItem) => void;
+  onEdit: (item: LibraryItem) => void;
+}> = ({ items, selected, onToggleSelect, onToggleSelectAll, allVisibleSelected, headerCheckboxRef, sortKey, sortDir, onSort, onAssign, onEdit }) => {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+      <table className="w-full text-sm border-collapse">
+        <caption className="sr-only">Content library items</caption>
+        <thead>
+          <tr className="bg-[var(--surface-raised)] text-left">
+            <th scope="col" className="w-10 px-3 py-2">
+              <input
+                ref={headerCheckboxRef}
+                type="checkbox"
+                checked={allVisibleSelected}
+                onChange={onToggleSelectAll}
+                aria-label="Select all visible items"
+                className="w-3.5 h-3.5 rounded accent-purple-600"
+              />
+            </th>
+            {SORT_COLUMNS.map(col => {
+              const active = sortKey === col.key;
+              const SortIcon = active ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+              return (
+                <th
+                  key={col.key}
+                  scope="col"
+                  aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  className="px-3 py-2"
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSort(col.key)}
+                    aria-label={`Sort by ${col.label}${active ? ` (${sortDir === 'asc' ? 'ascending' : 'descending'})` : ''}`}
+                    className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide transition ${active ? 'text-purple-600 dark:text-purple-300' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                  >
+                    {col.label}
+                    <SortIcon className="w-3 h-3" aria-hidden="true" />
+                  </button>
+                </th>
+              );
+            })}
+            <th scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Tags</th>
+            <th scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Hosting</th>
+            <th scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(item => {
+            const HostingIcon = HOSTING_META[item.hostingType].Icon;
+            const tags = item.tags || [];
+            const isSelected = selected.has(item.id);
+            return (
+              <tr
+                key={item.id}
+                className={`border-t border-[var(--border)] transition ${isSelected ? 'bg-purple-500/10' : 'hover:bg-[var(--surface-raised)]'} ${item.status === 'archived' ? 'opacity-60' : ''}`}
+              >
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(item.id)}
+                    onClick={e => e.stopPropagation()}
+                    aria-label={`Select ${item.title}`}
+                    className="w-3.5 h-3.5 rounded accent-purple-600"
+                  />
+                </td>
+                <td className="px-3 py-2 font-bold text-[var(--text-primary)] leading-snug">{item.title}</td>
+                <td className="px-3 py-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                    {KIND_LABELS[item.contentKind]}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-xs text-[var(--text-secondary)]">{item.subject || 'None set'}</td>
+                <td className="px-3 py-2">
+                  {item.untagged ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      Untagged
+                    </span>
+                  ) : null}
+                </td>
+                <td className="px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-1">
+                    {tags.slice(0, 2).map(tag => (
+                      <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                        {tag}
+                      </span>
+                    ))}
+                    {tags.length > 2 && (
+                      <span className="text-[10px] font-bold text-[var(--text-muted)]">+{tags.length - 2}</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-3 py-2">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)]" title={HOSTING_META[item.hostingType].label}>
+                    <HostingIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span className="sr-only">{HOSTING_META[item.hostingType].label}</span>
+                  </span>
+                </td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-1">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Preview ${item.title}`}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] border border-transparent hover:border-[var(--border)] transition"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => onAssign(item)}
+                      aria-label={`Assign ${item.title}`}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-600 dark:hover:text-purple-300 hover:bg-[var(--surface-raised)] border border-transparent hover:border-[var(--border)] transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(item)}
+                      aria-label={`Edit ${item.title}`}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] border border-transparent hover:border-[var(--border)] transition"
+                    >
+                      <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// ── Grid view (card layout, unchanged behavior) ───────────────────────
+
+const LibraryGridView: React.FC<{
+  items: LibraryItem[];
+  onAssign: (item: LibraryItem) => void;
+  onEdit: (item: LibraryItem) => void;
+  onToggleArchive: (item: LibraryItem) => void;
+}> = ({ items, onAssign, onEdit, onToggleArchive }) => {
+  return (
+    <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" role="list">
+      {items.map(item => {
+        const HostingIcon = HOSTING_META[item.hostingType].Icon;
+        return (
+          <li key={item.id} className={`bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 flex flex-col gap-3 ${item.status === 'archived' ? 'opacity-60' : ''}`}>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-bold text-[var(--text-primary)] leading-snug">{item.title}</h3>
+              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                {KIND_LABELS[item.contentKind]}
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+              {item.description || 'No description yet.'}
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {item.untagged && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  Untagged
+                </span>
+              )}
+              {item.subject && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border)]">
+                  {item.subject}
+                </span>
+              )}
+              {(item.tags || []).map(tag => (
+                <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <p className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)]">
+              <HostingIcon className="w-3 h-3" aria-hidden="true" /> {HOSTING_META[item.hostingType].label}
+            </p>
+            <div className="flex items-center gap-2 mt-auto pt-1">
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+              >
+                <ExternalLink className="w-3 h-3" aria-hidden="true" /> Preview
+              </a>
+              <button
+                onClick={() => onAssign(item)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[11px] font-bold transition"
+              >
+                <Plus className="w-3 h-3" aria-hidden="true" /> Assign
+              </button>
+              <button
+                onClick={() => onEdit(item)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
+              >
+                <Pencil className="w-3 h-3" aria-hidden="true" /> Edit
+              </button>
+              <button
+                onClick={() => onToggleArchive(item)}
+                className="p-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-purple-500/30 transition"
+                aria-label={item.status === 'archived' ? `Restore ${item.title}` : `Archive ${item.title}`}
+              >
+                {item.status === 'archived' ? <ArchiveRestore className="w-3.5 h-3.5" aria-hidden="true" /> : <Archive className="w-3.5 h-3.5" aria-hidden="true" />}
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 };
 

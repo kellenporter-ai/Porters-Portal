@@ -30,11 +30,14 @@ interface ScannedItem {
   sourceFingerprint: string;
 }
 
-/** "circuit-diagram-builder.html" -> "Circuit Diagram Builder" */
+/** "p5a77av_circuit-diagram-builder.html" -> "Circuit Diagram Builder" */
 function titleFromFilename(path: string): string {
   const base = path.split("/").pop() ?? path;
   const stem = base.replace(/\.html?$/i, "").replace(/\.(pdf|pptx?|docx?)$/i, "");
-  const spaced = stem.replace(/[-_]+/g, " ").trim();
+  // Strip the 7-char random upload prefix that Storage objects carry
+  // (e.g. "p5a77av_circuit-diagram-builder" -> "circuit-diagram-builder").
+  const stripped = stem.replace(/^[a-z0-9]{7}[_-]/, "");
+  const spaced = stripped.replace(/[-_]+/g, " ").trim();
   return spaced.replace(/\b\w/g, (c) => c.toUpperCase()) || path;
 }
 
