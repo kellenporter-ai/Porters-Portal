@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Announcement, DefaultClassTypes } from '../types';
+import { Announcement } from '../types';
 import { Megaphone, Plus, Trash2, AlertTriangle, Info, AlertOctagon, ChevronUp } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useConfirm } from './ConfirmDialog';
 import { useToast } from './ToastProvider';
 import SectionPicker from './SectionPicker';
+import { useClassList } from '../lib/AppDataContext';
 
 interface AnnouncementManagerProps {
   announcements: Announcement[];
@@ -20,6 +21,7 @@ const PRIORITY_STYLES = {
 };
 
 const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds, availableSections = [] }) => {
+  const classList = useClassList();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -105,7 +107,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements
               <label className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block mb-1">Audience</label>
               <select value={classType} onChange={(e) => setClassType(e.target.value)} className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]">
                 <option value="GLOBAL">All Classes</option>
-                {Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized').map(c => (
+                {classList.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

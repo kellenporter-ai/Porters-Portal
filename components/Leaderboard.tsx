@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, DefaultClassTypes } from '../types';
+import { User } from '../types';
 import { dataService } from '../services/dataService';
 import { Trophy, Medal, Lock, ChevronDown, Users, Eye } from 'lucide-react';
 import { getRankDetails, levelForXp } from '../lib/gamification';
 import { useReducedMotion } from '../lib/useReducedMotion';
+import { useClassList } from '../lib/AppDataContext';
 import { useT, useInterpolate } from '../lib/i18n';
 import PlayerInspectModal from './xp/PlayerInspectModal';
 import ProfileFrame from './dashboard/ProfileFrame';
@@ -35,8 +36,11 @@ const LeaderboardSkeleton = React.memo(() => (
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const [allStudents, setAllStudents] = useState<User[]>([]);
-  // Default to the student's currently active class
-  const [selectedClass, setSelectedClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || DefaultClassTypes.AP_PHYSICS);
+  // Default to the student's currently active class, else the first configured class (none if none exist)
+  const classList = useClassList();
+  const derivedClass = user.classType || user.enrolledClasses?.[0] || classList[0] || '';
+  const [selectedOverride, setSelectedOverride] = useState<string | null>(null);
+  const selectedClass = selectedOverride ?? derivedClass;
   const [isLoading, setIsLoading] = useState(true);
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
@@ -57,11 +61,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   const availableClasses = useMemo(() => {
     const enrolled = user.enrolledClasses || [];
     if (enrolled.length > 0) return enrolled.sort();
-    // Fallback: derive from all students (shouldn't normally happen)
-    const classes = new Set<string>();
-    allStudents.forEach(u => u.enrolledClasses?.forEach(c => classes.add(c)));
-    return Array.from(classes).sort();
-  }, [user.enrolledClasses, allStudents]);
+    // Fallback: first configured class, else none
+    return classList[0] ? [classList[0]] : [];
+  }, [user.enrolledClasses, classList]);
 
   const leaders = useMemo(() => {
     return allStudents
@@ -95,11 +97,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
             <div className="inline-block relative">
                 <select 
                     value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
+                    onChange={(e) => setSelectedOverride(e.target.value)}
                     className="appearance-none bg-[var(--surface-glass)] border border-[var(--border-strong)] text-[var(--text-primary)] font-bold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-purple-500 cursor-pointer min-w-[200px]"
                 >
                     {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                    {availableClasses.length === 0 && <option>{selectedClass}</option>}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
             </div>

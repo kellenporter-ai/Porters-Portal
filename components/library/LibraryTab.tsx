@@ -8,10 +8,11 @@ import { collection, onSnapshot, doc, updateDoc, writeBatch, serverTimestamp, Ti
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
 import { withErrorToast } from '../../lib/errorReporting';
+import { useClassConfig } from '../../lib/AppDataContext';
 import { useToast } from '../ToastProvider';
 import Modal from '../Modal';
-import type { LibraryItem, ResourceCategory } from '../../types';
-import { AssignmentStatus, DefaultClassTypes } from '../../types';
+import type { LibraryItem, ResourceCategory, ClassConfig } from '../../types';
+import { AssignmentStatus } from '../../types';
 
 const CATEGORIES: ResourceCategory[] = ['Lesson', 'Lab', 'Simulation', 'Practice', 'Supplemental'];
 
@@ -76,7 +77,8 @@ const LibraryTab: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const [editing, setEditing] = useState<LibraryItem | null>(null);
   const [assigning, setAssigning] = useState<LibraryItem | null>(null);
-  const [classConfigs, setClassConfigs] = useState<{ className?: string; unitOrder?: string[] }[]>([]);
+  // Class configs come from the shared AppDataContext (single source of truth)
+  const { classConfigs } = useClassConfig();
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('title');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -100,10 +102,7 @@ const LibraryTab: React.FC = () => {
         toast.error('Failed to load the content library. Please try again.');
       }
     });
-    const unsubConfigs = onSnapshot(collection(db, 'class_configs'), (snap) => {
-      setClassConfigs(snap.docs.map(d => d.data() as { className?: string; unitOrder?: string[] }));
-    });
-    return () => { unsub(); unsubConfigs(); };
+    return () => { unsub(); };
   }, []);
 
   const subjects = useMemo(() => {
@@ -976,7 +975,7 @@ const EditMetadataModal: React.FC<{ item: LibraryItem; onClose: () => void; onSa
 
 const AssignModal: React.FC<{
   item: LibraryItem;
-  classConfigs: { className?: string; unitOrder?: string[] }[];
+  classConfigs: ClassConfig[];
   onClose: () => void;
 }> = ({ item, classConfigs, onClose }) => {
   const toast = useToast();
@@ -985,13 +984,10 @@ const AssignModal: React.FC<{
   const [saving, setSaving] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
 
-  // Mirror LessonEditorPage: default classes minus Uncategorized, unioned with configured classNames.
-  // class_configs docs are empty in production post-rollover, so config-only lists leave the dropdown empty.
-  const classNames = useMemo(() => {
-    const defaults = Object.values(DefaultClassTypes).filter((c): c is string => c !== DefaultClassTypes.UNCATEGORIZED);
-    const configs = classConfigs.map(c => c.className).filter((n): n is string => Boolean(n));
-    return Array.from(new Set([...defaults, ...configs]));
-  }, [classConfigs]);
+  // Class dropdown derives from live class_configs only (single source of truth)
+  const classNames = useMemo(() =>
+    classConfigs.map(c => c.className).filter(Boolean).sort(),
+  [classConfigs]);
   const units = useMemo(() => classConfigs.find(c => c.className === classType)?.unitOrder || [], [classConfigs, classType]);
 
   const handleCreate = async () => {

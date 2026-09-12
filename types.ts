@@ -8,12 +8,8 @@ export enum UserRole {
 
 export type ClassType = string;
 
-export const DefaultClassTypes = {
-  AP_PHYSICS: 'AP Physics',
-  HONORS_PHYSICS: 'Honors Physics',
-  FORENSICS: 'Forensic Science',
-  UNCATEGORIZED: 'Uncategorized'
-};
+/** Standalone sentinel — never a class_configs doc. */
+export const UNCATEGORIZED = 'Uncategorized';
 
 export interface UserSettings {
   performanceMode: boolean;

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, Outlet, useSearchParams } from 'react-router-dom';
-import { User, UserRole, Submission, DefaultClassTypes, Assignment, isValidUser } from './types';
+import { User, UserRole, Submission, UNCATEGORIZED, Assignment, isValidUser } from './types';
 import { dataService, clearDeniedCollections } from './services/dataService';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
@@ -182,8 +182,7 @@ const UserManagementRoute: React.FC = () => {
 
 const EnrollmentRoute: React.FC = () => {
   const { availableSections } = useAdminData();
-  const { classConfigs } = useClassConfig();
-  return <EnrollmentCodes classConfigs={classConfigs} availableSections={availableSections} />;
+  return <EnrollmentCodes availableSections={availableSections} />;
 };
 
 const EditorRoute: React.FC = () => {
@@ -296,11 +295,11 @@ const App: React.FC = () => {
 
       const isWhitelisted = whitelistDoc.exists() || isAdmin;
       const whitelistData = whitelistDoc.exists() ? whitelistDoc.data() : null;
-      const assignedClass = whitelistData?.classType || DefaultClassTypes.UNCATEGORIZED;
-      const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== DefaultClassTypes.UNCATEGORIZED ? [assignedClass] : []);
+      const assignedClass = whitelistData?.classType || UNCATEGORIZED;
+      const assignedClasses: string[] = whitelistData?.classTypes || (assignedClass !== UNCATEGORIZED ? [assignedClass] : []);
       const assignedSection: string | null = whitelistData?.section || null;
       // Only apply the section when it maps to a real class — never key classSections on Uncategorized.
-      const sectionForClass = assignedSection && assignedClass !== DefaultClassTypes.UNCATEGORIZED ? assignedSection : null;
+      const sectionForClass = assignedSection && assignedClass !== UNCATEGORIZED ? assignedSection : null;
 
       await runTransaction(db, async (transaction) => {
         const userSnap = await transaction.get(userRef);
@@ -333,7 +332,7 @@ const App: React.FC = () => {
             const merged = Array.from(new Set([...existing, ...assignedClasses]));
             if (merged.length !== existing.length) {
               updates.enrolledClasses = merged;
-              if (!existingData.classType || existingData.classType === DefaultClassTypes.UNCATEGORIZED) {
+              if (!existingData.classType || existingData.classType === UNCATEGORIZED) {
                 updates.classType = assignedClasses[0];
               }
             }

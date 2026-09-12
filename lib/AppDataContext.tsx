@@ -54,6 +54,18 @@ export const useClassConfig = (): ClassConfigData => {
   return ctx ?? EMPTY_CLASS_CONFIG_DATA;
 };
 
+/**
+ * Sorted class names derived from live class_configs docs — the single source
+ * of truth for class lists. Empty while configs load or when none exist.
+ */
+export const useClassList = (): string[] => {
+  const { classConfigs } = useClassConfig();
+  return useMemo(
+    () => classConfigs.map(c => c.className).filter((n): n is string => Boolean(n)).sort(),
+    [classConfigs]
+  );
+};
+
 /** Composite hook — returns all slices. Prefer specific hooks when possible. */
 export const useAppData = (): AppData => {
   const assignments = useAssignments();

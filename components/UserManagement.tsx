@@ -1,13 +1,14 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { User, ClassType, DefaultClassTypes, ClassConfig, WhitelistedUser, getUserSectionForClass } from '../types';
+import { User, ClassType, UNCATEGORIZED, ClassConfig, WhitelistedUser, getUserSectionForClass } from '../types';
 import { ChevronDown, ChevronUp, CheckSquare, Square, Trash2, UserPlus, UserX, Settings, Loader2, Plus, X, Mail, ShieldCheck, ShieldAlert, HelpCircle, Upload, FileText, AlertTriangle, Zap } from 'lucide-react';
 import Modal from './Modal';
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
+import { useClassList } from '../lib/AppDataContext';
 import BehaviorQuickAward from './BehaviorQuickAward';
 
 interface UserManagementProps {
@@ -179,7 +180,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const toast = useToast();
   const { confirm } = useConfirm();
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-  const [targetClass, setTargetClass] = useState<ClassType>(DefaultClassTypes.AP_PHYSICS);
+  const [targetClass, setTargetClass] = useState<ClassType>('');
   const [isWhitelistOpen, setIsWhitelistOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [showBulkAward, setShowBulkAward] = useState(false);
@@ -194,7 +195,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   // Whitelist Form
   const [newEmail, setNewEmail] = useState('');
-  const [newClass, setNewClass] = useState<ClassType>(DefaultClassTypes.AP_PHYSICS);
+  const [newClass, setNewClass] = useState<ClassType>('');
   const [newSection, setNewSection] = useState('');
 
   // Group Form
@@ -271,26 +272,25 @@ const UserManagement: React.FC<UserManagementProps> = ({
     return whitelistedEmails.filter(w => !users.some(u => u.email.toLowerCase() === w.email.toLowerCase()));
   }, [whitelistedEmails, users]);
 
-  // Combine Default Types and Custom Configs, ensuring UNCATEGORIZED is included but at the end
-  const availableClasses = useMemo(() => {
-    const curriculumClasses = Array.from(new Set([
-        ...Object.values(DefaultClassTypes).filter(c => c !== DefaultClassTypes.UNCATEGORIZED),
-        ...classConfigs.map(c => c.className)
-    ])).sort();
-    
-    return [...curriculumClasses, DefaultClassTypes.UNCATEGORIZED];
-  }, [classConfigs]);
+  // Class list comes from live class_configs only (single source of truth)
+  const classList = useClassList();
+
+  // Default form selections to the first config class once configs load
+  React.useEffect(() => {
+    if (!targetClass && classList.length > 0) setTargetClass(classList[0]);
+    if (!newClass && classList.length > 0) setNewClass(classList[0]);
+  }, [classList, targetClass, newClass]);
+
+  // Config classes plus the Uncategorized sentinel (always last)
+  const availableClasses = useMemo(() => [...classList, UNCATEGORIZED], [classList]);
 
   // Only render class sections for classes that actually have a Firestore config,
   // plus Uncategorized. This prevents showing placeholder sections for deleted classes.
-  const displayClasses = useMemo(() => {
-    const configured = classConfigs.map(c => c.className).sort();
-    return [...configured, DefaultClassTypes.UNCATEGORIZED];
-  }, [classConfigs]);
+  const displayClasses = useMemo(() => [...classList, UNCATEGORIZED], [classList]);
 
   const toggleSelectAll = (classType: ClassType) => {
     // Select all students who are in this class view
-    const classStudents = students.filter(s => s.enrolledClasses?.includes(classType) || (classType === DefaultClassTypes.UNCATEGORIZED && (s.enrolledClasses?.length === 0 || !s.enrolledClasses)));
+    const classStudents = students.filter(s => s.enrolledClasses?.includes(classType) || (classType === UNCATEGORIZED && (s.enrolledClasses?.length === 0 || !s.enrolledClasses)));
     const allSelected = classStudents.every(s => selectedUsers.has(s.id));
     const newSelected = new Set(selectedUsers);
     classStudents.forEach(s => {
@@ -321,7 +321,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             const current = user.enrolledClasses || [];
             // If moving from Uncategorized to a real class, remove Uncategorized
             const updated = Array.from(new Set([
-                ...current.filter(c => c !== DefaultClassTypes.UNCATEGORIZED), 
+                ...current.filter(c => c !== UNCATEGORIZED), 
                 targetClass
             ]));
             await dataService.updateUserEnrolledClasses(userId, updated);
@@ -363,7 +363,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   const handleDeleteGroup = async (classType: ClassType) => {
-    if (classType === DefaultClassTypes.UNCATEGORIZED) return;
+    if (classType === UNCATEGORIZED) return;
     if (await confirm({ message: `Delete group config ${classType}? Students will remain but the group settings will be lost.`, confirmLabel: "Delete Config" })) {
          dataService.deleteClassConfig(classType);
     }
@@ -376,7 +376,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   };
   
   const handleEditGroup = (classType: ClassType, config?: ClassConfig) => {
-      if (classType === DefaultClassTypes.UNCATEGORIZED) return;
+      if (classType === UNCATEGORIZED) return;
       setGroupName(classType);
       setIsEditingGroup(true);
       if (config) {
@@ -418,7 +418,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         // Support comma or tab separated
         const parts = line.includes('\t') ? line.split('\t') : line.split(',');
         const email = (parts[0] || '').trim().toLowerCase();
-        const classType = (parts[1] || '').trim() || DefaultClassTypes.AP_PHYSICS;
+        const classType = (parts[1] || '').trim() || classList[0] || '';
         const section = (parts[2] || '').trim();
         
         let status: 'pending' | 'duplicate' | 'invalid' = 'pending';
@@ -442,6 +442,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
     let successCount = 0;
     for (const row of toImport) {
       try {
+        if (!row.classType) {
+          row.status = 'invalid';
+          continue;
+        }
         await dataService.addToWhitelist(row.email, row.classType);
         if (row.section) {
           await dataService.updateWhitelistSection(row.email, row.section, row.classType);
@@ -488,7 +492,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   }
 
   const renderClassSection = (type: ClassType) => {
-    const isUncategorized = type === DefaultClassTypes.UNCATEGORIZED;
+    const isUncategorized = type === UNCATEGORIZED;
     // Filter by enrolledClasses array, or catch "ghosts" in Uncategorized
     const sort = classSort[type] || { col: 'name', dir: 'asc' };
     const classStudents = [...students.filter(s =>
@@ -725,13 +729,13 @@ const UserManagement: React.FC<UserManagementProps> = ({
               onChange={(e) => setTargetClass(e.target.value as ClassType)}
               className="w-full sm:w-auto appearance-none bg-[var(--panel-bg)] border border-[var(--border-strong)] text-[var(--text-secondary)] py-2 pl-4 pr-10 rounded-lg text-sm font-medium focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 cursor-pointer"
             >
-              {availableClasses.filter(c => c !== DefaultClassTypes.UNCATEGORIZED).map(c => <option key={c} value={c}>Apply {c} Access</option>)}
+              {availableClasses.filter(c => c !== UNCATEGORIZED).map(c => <option key={c} value={c}>Apply {c} Access</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
           </div>
           <button 
             onClick={handleEnroll}
-            disabled={selectedUsers.size === 0}
+            disabled={selectedUsers.size === 0 || !targetClass}
             className="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" /> 
@@ -781,7 +785,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     value={newClass}
                     onChange={e => setNewClass(e.target.value as ClassType)}
                 >
-                    {availableClasses.filter(c => c !== DefaultClassTypes.UNCATEGORIZED).map(c => <option key={c} value={c}>{c}</option>)}
+                    {availableClasses.filter(c => c !== UNCATEGORIZED).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
             </div>
             <div>

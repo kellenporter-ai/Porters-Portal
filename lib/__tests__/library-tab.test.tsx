@@ -73,6 +73,15 @@ vi.mock('firebase/functions', () => ({
   httpsCallable: vi.fn(),
 }));
 
+// Class configs come from the shared AppDataContext, not a local snapshot.
+const mockClassConfigs = vi.hoisted(() => ({
+  configs: [] as { id: string; className: string; unitOrder?: string[]; features: { leaderboard: boolean; bossFights: boolean } }[],
+}));
+
+vi.mock('../../lib/AppDataContext', () => ({
+  useClassConfig: () => ({ classConfigs: mockClassConfigs.configs, enabledFeatures: { leaderboard: true, bossFights: true } }),
+}));
+
 import LibraryTab from '../../components/library/LibraryTab';
 
 describe('LibraryTab', () => {
@@ -82,6 +91,7 @@ describe('LibraryTab', () => {
     mockState.libraryDocs = [];
     mockState.batchCommit.mockClear();
     mockState.batchUpdate.mockClear();
+    mockClassConfigs.configs = [];
   });
 
   it('associates the search input with its label via id/htmlFor', () => {
@@ -168,7 +178,11 @@ describe('LibraryTab', () => {
     expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
   });
 
-  it('shows default classes in the assign modal when class_configs is empty', () => {
+  it('shows configured classes in the assign modal', () => {
+    mockClassConfigs.configs = [
+      { id: 'Forensic Science', className: 'Forensic Science', features: { leaderboard: true, bossFights: true } },
+      { id: 'AP Physics', className: 'AP Physics', features: { leaderboard: true, bossFights: true } },
+    ];
     mockState.libraryDocs = [makeDoc('item-1', SAMPLE_ITEM)];
     render(<LibraryTab />);
     fireEvent.click(screen.getByRole('button', { name: /list view/i }));
@@ -176,9 +190,19 @@ describe('LibraryTab', () => {
     const classSelect = screen.getByLabelText(/class/i) as HTMLSelectElement;
     const options = Array.from(classSelect.options).map(o => o.textContent);
     expect(options).toContain('AP Physics');
-    expect(options).toContain('Honors Physics');
     expect(options).toContain('Forensic Science');
     expect(options).not.toContain('Uncategorized');
+  });
+
+  it('shows only the placeholder in the assign modal when no class configs exist', () => {
+    mockClassConfigs.configs = [];
+    mockState.libraryDocs = [makeDoc('item-1', SAMPLE_ITEM)];
+    render(<LibraryTab />);
+    fireEvent.click(screen.getByRole('button', { name: /list view/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Assign Kinematics Lab' }));
+    const classSelect = screen.getByLabelText(/class/i) as HTMLSelectElement;
+    const options = Array.from(classSelect.options).map(o => o.textContent);
+    expect(options).toEqual(['Select a class']);
   });
 
   it('groups storage re-uploads by prefix-stripped base filename and badges latest vs older', () => {

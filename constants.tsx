@@ -1,26 +1,39 @@
 
-import { Atom, Microscope, Zap } from 'lucide-react';
-import { DefaultClassTypes } from './types';
+import { Atom, BookOpen, Microscope, Zap } from 'lucide-react';
+import type { ReactElement } from 'react';
+import { UNCATEGORIZED } from './types';
 
 export const ADMIN_EMAIL = 'kellporter2@paps.net';
 export const TEACHER_DISPLAY_NAME = 'Mr. Porter';
 
-export const CLASS_CONFIGS = {
-  [DefaultClassTypes.AP_PHYSICS]: {
+export const CLASS_CONFIGS: Record<string, { icon: ReactElement; color: string; borderColor: string }> = {
+  'AP Physics': {
     icon: <Zap className="w-6 h-6" />,
     color: 'bg-blue-600',
     borderColor: 'border-blue-200'
   },
-  [DefaultClassTypes.HONORS_PHYSICS]: {
+  'Honors Physics': {
     icon: <Atom className="w-6 h-6" />,
     color: 'bg-purple-600',
     borderColor: 'border-purple-200'
   },
-  [DefaultClassTypes.FORENSICS]: {
+  'Forensic Science': {
     icon: <Microscope className="w-6 h-6" />,
     color: 'bg-emerald-600',
     borderColor: 'border-emerald-200'
+  },
+  [UNCATEGORIZED]: {
+    icon: <BookOpen className="w-6 h-6" />,
+    color: 'bg-slate-500',
+    borderColor: 'border-slate-200'
   }
+};
+
+/** Generic default for classes not in the map above. */
+export const DEFAULT_CLASS_CONFIG = {
+  icon: <BookOpen className="w-6 h-6" />,
+  color: 'bg-slate-500',
+  borderColor: 'border-slate-200'
 };
 
 export type NavGroup = 'learning' | 'operations' | 'intel' | 'admin_ops' | 'classroom' | 'systems';

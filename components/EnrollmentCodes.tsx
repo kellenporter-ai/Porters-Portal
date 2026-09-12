@@ -1,22 +1,23 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { EnrollmentCode, DefaultClassTypes, ClassConfig } from '../types';
+import { EnrollmentCode } from '../types';
 import { KeyRound, Plus, Copy, X, Check, Ban } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
+import { useClassList } from '../lib/AppDataContext';
 
 interface EnrollmentCodesProps {
-  classConfigs?: ClassConfig[];
   availableSections: string[];
 }
 
-const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availableSections }) => {
+const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ availableSections }) => {
+  const classList = useClassList();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [codes, setCodes] = useState<EnrollmentCode[]>([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [newClass, setNewClass] = useState(DefaultClassTypes.AP_PHYSICS);
+  const [newClass, setNewClass] = useState('');
   const [newSection, setNewSection] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -30,6 +31,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
   }, []);
 
   const handleCreate = async () => {
+    if (!newClass) return;
     try {
       const code = await dataService.createEnrollmentCode(newClass, newSection || undefined, newMaxUses ? parseInt(newMaxUses) : undefined);
       toast.success(`Code created: ${code}`);
@@ -56,9 +58,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
     }
   };
 
-  const classOptions = classConfigs && classConfigs.length > 0
-    ? classConfigs.map(c => c.className)
-    : Object.values(DefaultClassTypes).filter(c => c !== 'Uncategorized');
+  const classOptions = classList;
   const activeCodes = codes.filter(c => c.isActive);
   const inactiveCodes = codes.filter(c => !c.isActive);
 
@@ -78,7 +78,11 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
         <div className="mb-5 p-4 bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
           <div className="flex gap-3">
             <select value={newClass} onChange={e => setNewClass(e.target.value)} aria-label="Class" className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)]">
-              {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
+              {classOptions.length === 0 ? (
+                <option value="" disabled>Select a class</option>
+              ) : (
+                classOptions.map(c => <option key={c} value={c}>{c}</option>)
+              )}
             </select>
             <select value={newSection} onChange={e => setNewSection(e.target.value)} aria-label="Section" className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)]">
               <option value="">No Section</option>
@@ -87,7 +91,7 @@ const EnrollmentCodes: React.FC<EnrollmentCodesProps> = ({ classConfigs, availab
           </div>
           <div className="flex gap-3 items-center">
             <input type="number" min="1" placeholder="Max uses (unlimited if empty)" aria-label="Max uses" value={newMaxUses} onChange={e => setNewMaxUses(e.target.value)} className="flex-1 bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-emerald-500/50" />
-            <button onClick={handleCreate} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">Create</button>
+            <button onClick={handleCreate} disabled={!newClass} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition">Create</button>
             <button onClick={() => setShowCreate(false)} className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"><X className="w-4 h-4" /></button>
           </div>
         </div>

@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDebounce } from '../lib/rateLimiting';
-import { LessonBlock, BlockType, Assignment, AssignmentStatus, DefaultClassTypes, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass, migrateResourceCategory } from '../types';
+import { LessonBlock, BlockType, Assignment, AssignmentStatus, ClassConfig, ResourceCategory, User, Rubric, getSectionsForClass, migrateResourceCategory } from '../types';
 import { parseRubricMarkdown, validateRubric } from '../lib/rubricParser';
 import { validateBlock } from '../lib/validateBlock';
 import LessonBlocks from './LessonBlocks';
@@ -322,11 +322,10 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     return groups;
   }, [assignments]);
 
-  const availableClasses = useMemo<string[]>(() => {
-    const defaults = Object.values(DefaultClassTypes).filter((c): c is string => c !== DefaultClassTypes.UNCATEGORIZED);
-    const configs = (classConfigs || []).map((c: ClassConfig) => c.className);
-    return Array.from(new Set([...defaults, ...configs]));
-  }, [classConfigs]);
+  // Class list comes from live class_configs only (single source of truth)
+  const availableClasses = useMemo<string[]>(() =>
+    (classConfigs || []).map((c: ClassConfig) => c.className).filter(Boolean).sort(),
+  [classConfigs]);
 
   const students = useMemo(() => users.filter(u => u.role === 'STUDENT'), [users]);
 
@@ -371,7 +370,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
   const [resCategory, setResCategory] = useState<ResourceCategory>('Lesson');
   const [resDescription, setResDescription] = useState('');
   const [resContentUrl, setResContentUrl] = useState<string | null>(null);
-  const [resClasses, setResClasses] = useState<Set<string>>(new Set([availableClasses[0] || DefaultClassTypes.AP_PHYSICS]));
+  const [resClasses, setResClasses] = useState<Set<string>>(new Set([availableClasses[0] || '']));
   const [resSections, setResSections] = useState<string[]>([]);
   const [resScheduleDate, setResScheduleDate] = useState('');
   const [resDueDate, setResDueDate] = useState('');
@@ -524,7 +523,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
     setResCategory('Lesson');
     setResDescription('');
     setResContentUrl(null);
-    setResClasses(new Set([availableClasses[0] || DefaultClassTypes.AP_PHYSICS]));
+    setResClasses(new Set([availableClasses[0] || '']));
     setResSections([]);
     setResScheduleDate('');
     setResDueDate('');
@@ -827,7 +826,8 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
 
   const handleDeploy = useCallback(async (status: AssignmentStatus, scheduledAt?: string) => {
     if (!resTitle.trim()) { toast.error('Title is required.'); return; }
-    if (resClasses.size === 0) { toast.error('Select a target class.'); return; }
+    const validClasses = Array.from(resClasses).filter(Boolean);
+    if (validClasses.length === 0) { toast.error('Select a target class.'); return; }
     setIsSaving(true);
     try {
       const payload = buildPayload(status, scheduledAt);
@@ -836,7 +836,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
           // Update existing resource in its current class
           await onCreateAssignment({ ...payload, classType: selectedAssignment.classType });
           // Deploy to any additional classes as new resources
-          const additionalClasses = Array.from(resClasses).filter(c => c !== selectedAssignment.classType);
+          const additionalClasses = validClasses.filter(c => c !== selectedAssignment.classType);
           if (additionalClasses.length > 0) {
             const { id: _id, ...payloadWithoutId } = payload;
             await Promise.all(additionalClasses.map(className =>
@@ -845,12 +845,12 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
             toast.success(`Also deployed to ${additionalClasses.length} additional class${additionalClasses.length > 1 ? 'es' : ''}.`);
           }
         } else {
-          await Promise.all(Array.from(resClasses).map(className =>
+          await Promise.all(validClasses.map(className =>
             onCreateAssignment!({ ...payload, classType: className })
           ));
         }
       } else {
-        for (const className of Array.from(resClasses)) {
+        for (const className of validClasses) {
           if (selectedAssignment?.id && !isNewResource && className === selectedAssignment.classType) {
             await dataService.addAssignment({ ...selectedAssignment, ...payload, classType: className } as Assignment);
           } else {
