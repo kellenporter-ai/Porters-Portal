@@ -84,6 +84,10 @@
         "destination": "/textbook/ch2-kinematics-1d/index.html"
       },
       {
+        "source": "/texas-blackout-articles",
+        "destination": "/texas-blackout-articles/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T00:03:16.859Z",
+  "generatedAt": "2026-09-13T11:40:30.377Z",
   "items": [
     {
       "path": "/circuit-diagram-builder.html",
@@ -20,6 +20,41 @@
       "path": "/privacy.html",
       "fingerprint": "/privacy.html",
       "sizeBytes": 9618
+    },
+    {
+      "path": "/texas-blackout-articles/",
+      "fingerprint": "/texas-blackout-articles/",
+      "sizeBytes": 15516
+    },
+    {
+      "path": "/texas-blackout-articles/article-1.html",
+      "fingerprint": "/texas-blackout-articles/article-1.html",
+      "sizeBytes": 16140
+    },
+    {
+      "path": "/texas-blackout-articles/article-2.html",
+      "fingerprint": "/texas-blackout-articles/article-2.html",
+      "sizeBytes": 15743
+    },
+    {
+      "path": "/texas-blackout-articles/article-3.html",
+      "fingerprint": "/texas-blackout-articles/article-3.html",
+      "sizeBytes": 17522
+    },
+    {
+      "path": "/texas-blackout-articles/article-4.html",
+      "fingerprint": "/texas-blackout-articles/article-4.html",
+      "sizeBytes": 16510
+    },
+    {
+      "path": "/texas-blackout-articles/article-5.html",
+      "fingerprint": "/texas-blackout-articles/article-5.html",
+      "sizeBytes": 15767
+    },
+    {
+      "path": "/texas-blackout-articles/article-6.html",
+      "fingerprint": "/texas-blackout-articles/article-6.html",
+      "sizeBytes": 14107
     },
     {
       "path": "/textbook/ch2-kinematics-1d/",

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>&#8220;I hate the dark&#8221;: Dallas Kids Have Dealt With So Much: Texas Blackout Article 6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --measure: 65ch;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 19px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .display {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .eyebrow {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: var(--dash);
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+
+  .lang-toggle button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .lang-toggle button + button { border-left: var(--dash); }
+
+  .lang-toggle button.active {
+    color: var(--accent);
+    background: rgba(255, 77, 38, 0.06);
+  }
+
+  html[lang="en"] .lang-es { display: none !important; }
+  html[lang="es"] .lang-en { display: none !important; }
+
+  .masthead {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .back-link {
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border: var(--dash);
+    padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .article-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 32px 48px;
+  }
+
+  .article-eyebrow { margin-bottom: 32px; }
+
+  .header-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .article-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(80px, 10vw, 140px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .article-title {
+    font-size: clamp(32px, 4.5vw, 56px);
+    max-width: 20ch;
+  }
+
+  html[lang="es"] .article-title { font-size: clamp(28px, 3.8vw, 48px); max-width: 24ch; }
+
+  .article-meta {
+    margin-top: 28px;
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .article-date { font-size: 14px; color: var(--ink-soft); }
+
+  .article-source {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ── Article hero image (21:9 editorial banner, dashed frame) ── */
+  .article-figure {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    padding: 0 32px;
+  }
+
+  .article-figure .frame {
+    border: var(--dash);
+    padding: 10px;
+  }
+
+  .article-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+  }
+
+  .article-body {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 32px 72px;
+  }
+
+  .article-body p { margin-bottom: 1.6em; }
+
+  .article-body p.lede { font-size: 22px; line-height: 1.55; }
+
+  .pull-quote {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(24px, 3vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--accent);
+    margin: 2em 0;
+    padding: 24px 0;
+    border-top: var(--dash);
+    border-bottom: var(--dash);
+  }
+
+  .source-line {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: var(--dash);
+    font-size: 13px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  .prev-next {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .pn-card {
+    border: var(--dash);
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .pn-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .pn-card.next { text-align: right; align-items: flex-end; }
+
+  .pn-label {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .pn-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .pn-title {
+    font-family: 'Archivo', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    max-width: 28ch;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .pn-card { transition: none; }
+    .pn-card:hover { transform: none; }
+  }
+
+  @media (max-width: 700px) {
+    body { font-size: 17px; }
+    .header-flex { flex-direction: column; gap: 20px; }
+    .prev-next { grid-template-columns: 1fr; }
+    .article-body p.lede { font-size: 19px; }
+    html[lang="es"] .article-title { font-size: clamp(24px, 8vw, 36px); }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="masthead">
+    <a href="index.html" class="back-link"><span class="lang-en">&larr; All articles</span><span class="lang-es">&larr; Todos los artículos</span></a>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </nav>
+
+  <header class="article-header">
+    <p class="eyebrow article-eyebrow"><span class="lang-en">Texas Blackout &middot; Article 6 of 6</span><span class="lang-es">Apagón en Texas &middot; Artículo 6 de 6</span></p>
+    <div class="header-flex">
+      <div class="article-num">06</div>
+      <h1 class="article-title display"><span class="lang-en">&#8220;I hate the dark&#8221;: Dallas Kids Have Dealt With So Much</span><span class="lang-es">&ldquo;Odio la oscuridad&rdquo;: Los niños de Dallas han lidiado con tantas cosas</span></h1>
+    </div>
+    <div class="article-meta">
+      <span class="article-date lang-en">February 19, 2021</span>
+      <span class="article-date lang-es">19 de febrero del 2021</span>
+      <span class="article-source">Dallas Morning News</span>
+    </div>
+  </header>
+
+  <figure class="article-figure">
+    <div class="frame">
+      <img src="images/article-6.jpg" alt="A closed elementary school with an empty, snow-dusted playground" width="1280" height="549" loading="lazy" style="object-position: 60% 55%;">
+    </div>
+  </figure>
+
+  <main class="article-body">
+
+    <p class="lede reveal lang-en">Every year in East Dallas, Texas, kids at Frank Guzick Elementary celebrate the 100th Day of School. They decorate T-shirts and dye their hair gray. The 2020-2021 school year had been difficult because of the COVID-19 pandemic. Many students lost family members and friends to the virus. Children had gone more than 11 months without seeing friends or attending classes in person.</p>
+
+    <p class="lede reveal lang-es">Cada año en el este de Dallas, Texas, los niños de la escuela primaria Frank Guzick celebran el 100° día de clases. Decoran camisetas y se tiñen el pelo de gris. El año escolar 2020-2021 había sido difícil debido a la pandemia de COVID-19. Muchos estudiantes perdieron familiares y amigos por el virus. Los niños habían pasado más de 11 meses sin ver amigos ni asistir a clases en persona.</p>
+
+    <p class="reveal lang-en">So the community was looking forward to a special day to be together. Rosa Mendoza, a mother with two children at the school, said, &#8220;It had a different kind of feeling, like &#8216;Hey, we made it!&#8217;&#8221;</p>
+
+    <p class="reveal lang-es">Así que la comunidad esperaba un día especial para estar juntos. Rosa Mendoza, una madre con dos hijos en la escuela, dijo: "Tuve un tipo de sentimiento diferente, como '¡Oye, lo logramos!'"</p>
+
+    <div class="pull-quote reveal lang-es">"Tuve un tipo de sentimiento diferente, como '¡Oye, lo logramos!'"</div>
+
+    <div class="pull-quote reveal lang-en">&#8220;It had a different kind of feeling, like &#8216;Hey, we made it!&#8217;&#8221;</div>
+
+    <p class="reveal lang-en">But the 100th Day celebrations were canceled. The school shut down because a giant winter storm was headed toward Texas. The storm was predicted to cause dangerous driving conditions and many power outages.</p>
+
+    <p class="reveal lang-es">Pero las celebraciones del Día 100 fueron canceladas. La escuela cerró porque una gigantesca tormenta invernal se dirigía hacia Texas. Se predijo que la tormenta causaría condiciones de conducción peligrosas y muchos cortes de energía.</p>
+
+    <p class="reveal lang-en">After a power outage due to the storm, Rosa Mendoza&#8217;s pipes burst. She felt so frustrated. Her son had already lived through many unprecedented events in his seven short years. When he complains, she doesn&#8217;t know how to answer him, because he really has dealt with so much. She worries about the storm causing her son more anxiety and distress than he&#8217;s already experienced.</p>
+
+    <p class="reveal lang-es">Tras un corte de luz por la tormenta, las tuberías de Rosa Mendoza estallaron. Se sintió tan frustrada. Su hijo ya había vivido muchos eventos sin precedentes en sus siete cortos años. Cuando él se queja, ella no sabe cómo responderle, porque realmente ha lidiado con muchas cosas. Le preocupa que la tormenta le cause a su hijo más ansiedad y angustia de la que ya ha experimentado.</p>
+
+    <p class="reveal lang-en">Mendoza knows that her son was sad not to get a chance to see his friends during the storm. She tried to set his mind at ease that it would be over soon.</p>
+
+    <p class="reveal lang-es">Mendoza sabe que su hijo estaba triste por no tener la oportunidad de ver a sus amigos durante la tormenta. Trató de tranquilizarlo pensando que todo terminaría pronto.</p>
+
+    <div class="source-line reveal lang-en">
+      Source: Adapted from Richman, T., &amp; Smith, C. (2021, February 19). The Dallas Morning News.
+    </div>
+
+    <div class="source-line reveal lang-es">
+      Referencias: Adaptado de Richman, T. y Smith, C. (2021, 19 de febrero). The Dallas Morning News.
+    </div>
+
+  </main>
+
+  <nav class="prev-next">
+    <a href="article-5.html" class="pn-card prev">
+      <span class="pn-label lang-en">Previous</span>
+      <span class="pn-label lang-es">Anterior</span>
+      <span class="pn-num">05</span>
+      <span class="pn-title lang-en">Wind Turbines Don&#8217;t Deserve the Blame for Texas Blackouts</span>
+      <span class="pn-title lang-es">Los aerogeneradores no merecen la culpa de los apagones en Texas</span>
+    </a>
+    <a href="index.html" class="pn-card next">
+      <span class="pn-label lang-en">All articles</span>
+      <span class="pn-label lang-es">Todos los artículos</span>
+      <span class="pn-num">&rarr;</span>
+      <span class="pn-title lang-en">Back to the hub</span>
+      <span class="pn-title lang-es">Volver al centro de artículos</span>
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      var KEY = 'tbLang';
+      var root = document.documentElement;
+      function setLang(lang) {
+        if (lang !== 'es') lang = 'en';
+        root.setAttribute('lang', lang);
+        try { localStorage.setItem(KEY, lang); } catch (e) {}
+        document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+      }
+      var stored = 'en';
+      try { stored = localStorage.getItem(KEY) || 'en'; } catch (e) {}
+      setLang(stored);
+      document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+        b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+      });
+
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>

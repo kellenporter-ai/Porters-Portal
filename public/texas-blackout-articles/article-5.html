@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wind Turbines Don&#8217;t Deserve the Blame for Texas Blackouts: Texas Blackout Article 5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --measure: 65ch;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 19px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .display {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .eyebrow {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: var(--dash);
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+
+  .lang-toggle button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .lang-toggle button + button { border-left: var(--dash); }
+
+  .lang-toggle button.active {
+    color: var(--accent);
+    background: rgba(255, 77, 38, 0.06);
+  }
+
+  html[lang="en"] .lang-es { display: none !important; }
+  html[lang="es"] .lang-en { display: none !important; }
+
+  .masthead {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .back-link {
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border: var(--dash);
+    padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .article-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 32px 48px;
+  }
+
+  .article-eyebrow { margin-bottom: 32px; }
+
+  .header-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .article-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(80px, 10vw, 140px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .article-title {
+    font-size: clamp(32px, 4.5vw, 56px);
+    max-width: 20ch;
+  }
+
+  html[lang="es"] .article-title { font-size: clamp(28px, 3.8vw, 48px); max-width: 24ch; }
+
+  .article-meta {
+    margin-top: 28px;
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .article-date { font-size: 14px; color: var(--ink-soft); }
+
+  .article-source {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ── Article hero image (21:9 editorial banner, dashed frame) ── */
+  .article-figure {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    padding: 0 32px;
+  }
+
+  .article-figure .frame {
+    border: var(--dash);
+    padding: 10px;
+  }
+
+  .article-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+  }
+
+  .article-body {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 32px 72px;
+  }
+
+  .article-body p { margin-bottom: 1.6em; }
+
+  .article-body p.lede { font-size: 22px; line-height: 1.55; }
+
+  .pull-quote {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(24px, 3vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--accent);
+    margin: 2em 0;
+    padding: 24px 0;
+    border-top: var(--dash);
+    border-bottom: var(--dash);
+  }
+
+  .source-line {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: var(--dash);
+    font-size: 13px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  .prev-next {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .pn-card {
+    border: var(--dash);
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .pn-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .pn-card.next { text-align: right; align-items: flex-end; }
+
+  .pn-label {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .pn-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .pn-title {
+    font-family: 'Archivo', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    max-width: 28ch;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .pn-card { transition: none; }
+    .pn-card:hover { transform: none; }
+  }
+
+  @media (max-width: 700px) {
+    body { font-size: 17px; }
+    .header-flex { flex-direction: column; gap: 20px; }
+    .prev-next { grid-template-columns: 1fr; }
+    .article-body p.lede { font-size: 19px; }
+    html[lang="es"] .article-title { font-size: clamp(24px, 8vw, 36px); }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="masthead">
+    <a href="index.html" class="back-link"><span class="lang-en">&larr; All articles</span><span class="lang-es">&larr; Todos los artículos</span></a>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </nav>
+
+  <header class="article-header">
+    <p class="eyebrow article-eyebrow"><span class="lang-en">Texas Blackout &middot; Article 5 of 6</span><span class="lang-es">Apagón en Texas &middot; Artículo 5 de 6</span></p>
+    <div class="header-flex">
+      <div class="article-num">05</div>
+      <h1 class="article-title display"><span class="lang-en">Wind Turbines Don&#8217;t Deserve the Blame for Texas Blackouts</span><span class="lang-es">Los aerogeneradores no merecen la culpa de los apagones en Texas</span></h1>
+    </div>
+    <div class="article-meta">
+      <span class="article-date lang-en">February 17, 2021</span>
+      <span class="article-date lang-es">17 de febrero del 2021</span>
+      <span class="article-source">USA Today</span>
+    </div>
+  </header>
+
+  <figure class="article-figure">
+    <div class="frame">
+      <img src="images/article-5.jpg" alt="A frosted natural gas power plant with steam rising from its stacks" width="1280" height="549" loading="lazy" style="object-position: center 42%;">
+    </div>
+  </figure>
+
+  <main class="article-body">
+
+    <p class="lede reveal lang-en">More than 35 people in Texas have been confirmed dead. That number is expected to go up over the next several days.</p>
+
+    <p class="reveal lang-es">Se ha confirmado la muerte de más de 35 personas en Texas. Se espera que esa cifra aumente en los próximos días.</p>
+
+    <p class="reveal lang-en">Mark Henry, Galveston County&#8217;s judge, asked the state early in the week to send a refrigerated truck requested by the local medical examiner, who expected an influx of bodies.</p>
+
+    <p class="reveal lang-es">Mark Henry, juez del condado de Galveston, pidió al Estado a principios de semana que enviara un camión frigorífico solicitado por el forense local, que esperaba una afluencia de cadáveres.</p>
+
+    <div class="pull-quote reveal lang-en">&ldquo;If they had been honest with us from the beginning, we would have ordered evacuations.&rdquo;</div>
+    <div class="pull-quote reveal lang-es">&ldquo;Si hubieran sido honestos con nosotros desde el principio, habríamos ordenado evacuaciones&rdquo;, dijo Mark Henry, juez de Texas.</div>
+
+    <p class="reveal lang-en">&#8220;If they had been honest with us from the beginning, we would have ordered evacuations,&#8221; said Mark Henry, a judge in Texas. &#8220;But they didn&#8217;t tell us that. What&#8217;s not manageable is to lose your power for days with a temperature in the single to double digits.&#8221;</p>
+
+    <p class="reveal lang-es">"Si hubieran sido honestos con nosotros desde el principio, habríamos ordenado evacuaciones", dijo Mark Henry, juez de Texas. "Pero no nos lo dijeron. Lo que no es manejable es quedarse sin electricidad durante días con una temperatura de uno a dos dígitos."</p>
+
+    <p class="reveal lang-en">But what is to blame for this crisis? Some people say an overreliance on wind-power caused the problem.</p>
+
+    <p class="reveal lang-es">Pero, ¿cuál es la culpa de esta crisis? Algunos dicen que la excesiva dependencia de la energía eólica ha causado el problema.</p>
+
+    <p class="reveal lang-en">In a Facebook post, Texas Agriculture Commissioner Sid Miller said that the state&#8217;s Public Utility Commission should focus on building more coal and oil infrastructure, due to the recent failure of the Texas grid. This post was shared 9,000 times. &#8220;We should never build another wind turbine in Texas. The experiment failed bigtime,&#8221; he wrote.</p>
+
+    <p class="reveal lang-es">En una publicación de Facebook, el comisionado de Agricultura de Texas, Sid Miller, dijo que la Comisión de Servicios Públicos del estado debería enfocarse en construir más infraestructura de carbón y petróleo, debido a la reciente falla de la red de Texas. Esta publicación fue compartida 9,000 veces. "Nunca deberíamos construir otra turbina eólica en Texas. El experimento fracasó a lo grande", escribió.</p>
+
+    <p class="reveal lang-en">But are windmills really the problem? Wind, solar, and other renewables only make up a small part of the power infrastructure in Texas. The state relies mostly on natural gas and oil for electricity. Wind power has received far too much blame.</p>
+
+    <p class="reveal lang-es">Pero, ¿los molinos de viento son realmente el problema? La energía eólica, solar y otras energías renovables solo constituyen una pequeña parte de la infraestructura de energía en Texas. El estado depende principalmente del gas natural y el petróleo para la electricidad. La energía eólica ha recibido demasiada culpa.</p>
+
+    <p class="reveal lang-en">The Electric Reliability Council of Texas, or ERCOT, runs the Texas electric grid. ERCOT&#8217;s January report shows that only around 25% of Texas electricity last year came from wind, while 60% came from natural gas and coal. ERCOT officials said natural gas providers were mostly to be blamed for the outages, according to The Texas Tribune. Windmills actually performed relatively well compared to other sources.</p>
+
+    <p class="reveal lang-es">El Consejo de Confiabilidad Eléctrica de Texas, o ERCOT, administra la red eléctrica de Texas. El informe de enero de ERCOT muestra que solo alrededor del 25 % de la electricidad de Texas el año pasado provino del viento, mientras que el 60 % provino del gas natural y el carbón. Los funcionarios de ERCOT dijeron que los proveedores de gas natural eran los principales culpables de los cortes, según El Tribuno de Texas. Los molinos de viento en realidad funcionaron relativamente bien en comparación con otras fuentes.</p>
+
+    <div class="source-line reveal lang-en">
+      Source: Adapted from Rouan, R. (2021, February 17). &#8220;Frozen wind turbines don&#8217;t deserve all the blame for Texas blackouts.&#8221; USA Today. Retrieved April 11, 2021, from https://www.usatoday.com/story/news/factcheck/2021/02/17/fact-check-frozen-wind-turbines-not-onlyreason-texas-blackouts/6784789002/
+    </div>
+
+    <div class="source-line reveal lang-es">
+      Referencias: Adaptado de Rouan, R. (2021, 17 de febrero). “Las turbinas eólicas congeladas no merecen toda la culpa de los apagones en Texas”. EE.UU. USA Today. Recuperado el 11 de abril de 2021 de https://www.usatoday.com/story/news/factcheck/2021/02/17/fact-check-frozen-wind-turbines-not-only-reason-texas-blackouts/6784789002 /
+    </div>
+
+  </main>
+
+  <nav class="prev-next">
+    <a href="article-4.html" class="pn-card prev">
+      <span class="pn-label lang-en">Previous</span>
+      <span class="pn-label lang-es">Anterior</span>
+      <span class="pn-num">04</span>
+      <span class="pn-title lang-en">Windmills Are Blamed for Texas Blackouts</span>
+      <span class="pn-title lang-es">Los molinos de viento son los culpables de los apagones en Texas</span>
+    </a>
+    <a href="article-6.html" class="pn-card next">
+      <span class="pn-label lang-en">Next</span>
+      <span class="pn-label lang-es">Siguiente</span>
+      <span class="pn-num">06</span>
+      <span class="pn-title lang-en">&#8220;I hate the dark&#8221;: Dallas Kids Have Dealt With So Much</span>
+      <span class="pn-title lang-es">&ldquo;Odio la oscuridad&rdquo;: Los niños de Dallas han lidiado con tantas cosas</span>
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      var KEY = 'tbLang';
+      var root = document.documentElement;
+      function setLang(lang) {
+        if (lang !== 'es') lang = 'en';
+        root.setAttribute('lang', lang);
+        try { localStorage.setItem(KEY, lang); } catch (e) {}
+        document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+      }
+      var stored = 'en';
+      try { stored = localStorage.getItem(KEY) || 'en'; } catch (e) {}
+      setLang(stored);
+      document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+        b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+      });
+
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>

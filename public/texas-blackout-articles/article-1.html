@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>February&#8217;s Winter Storm in Texas Caused More Than 111 Deaths: Texas Blackout Article 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --measure: 65ch;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 19px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .display {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .eyebrow {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Language toggle ──────────────────── */
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: var(--dash);
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+
+  .lang-toggle button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .lang-toggle button + button { border-left: var(--dash); }
+
+  .lang-toggle button.active {
+    color: var(--accent);
+    background: rgba(255, 77, 38, 0.06);
+  }
+
+  html[lang="en"] .lang-es { display: none !important; }
+  html[lang="es"] .lang-en { display: none !important; }
+
+  /* ── Masthead ─────────────────────────── */
+  .masthead {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .back-link {
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border: var(--dash);
+    padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Article header ───────────────────── */
+  .article-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 32px 48px;
+  }
+
+  .article-eyebrow { margin-bottom: 32px; }
+
+  .header-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .article-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(80px, 10vw, 140px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .article-title {
+    font-size: clamp(32px, 4.5vw, 56px);
+    max-width: 20ch;
+  }
+
+  html[lang="es"] .article-title { font-size: clamp(28px, 3.8vw, 48px); max-width: 24ch; }
+
+  .article-meta {
+    margin-top: 28px;
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .article-date {
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .article-source {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ── Article hero image (21:9 editorial banner, dashed frame) ── */
+  .article-figure {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    padding: 0 32px;
+  }
+
+  .article-figure .frame {
+    border: var(--dash);
+    padding: 10px;
+  }
+
+  .article-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+  }
+
+  /* ── Body ─────────────────────────────── */
+  .article-body {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 32px 72px;
+  }
+
+  .article-body p {
+    margin-bottom: 1.6em;
+  }
+
+  .article-body p.lede {
+    font-size: 22px;
+    line-height: 1.55;
+  }
+
+  .pull-quote {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(24px, 3vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--accent);
+    margin: 2em 0;
+    padding: 24px 0;
+    border-top: var(--dash);
+    border-bottom: var(--dash);
+  }
+
+  .source-line {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: var(--dash);
+    font-size: 13px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  /* ── Prev / Next ──────────────────────── */
+  .prev-next {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .pn-card {
+    border: var(--dash);
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .pn-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+  }
+
+  .pn-card.next { text-align: right; align-items: flex-end; }
+
+  .pn-label {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .pn-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .pn-title {
+    font-family: 'Archivo', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    max-width: 28ch;
+  }
+
+  /* ── Reveal ───────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .pn-card { transition: none; }
+    .pn-card:hover { transform: none; }
+  }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 700px) {
+    body { font-size: 17px; }
+    .header-flex { flex-direction: column; gap: 20px; }
+    .prev-next { grid-template-columns: 1fr; }
+    .article-body p.lede { font-size: 19px; }
+    html[lang="es"] .article-title { font-size: clamp(24px, 8vw, 36px); }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="masthead">
+    <a href="index.html" class="back-link"><span class="lang-en">&larr; All articles</span><span class="lang-es">&larr; Todos los artículos</span></a>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </nav>
+
+  <header class="article-header">
+    <p class="eyebrow article-eyebrow"><span class="lang-en">Texas Blackout &middot; Article 1 of 6</span><span class="lang-es">Apagón en Texas &middot; Artículo 1 de 6</span></p>
+    <div class="header-flex">
+      <div class="article-num">01</div>
+      <h1 class="article-title display"><span class="lang-en">February&#8217;s Winter Storm in Texas Caused More Than 111 Deaths</span><span class="lang-es">Tormenta de invierno de febrero en Texas causó más de 111 muertes</span></h1>
+    </div>
+    <div class="article-meta">
+      <span class="article-date lang-en">March 26, 2021</span>
+      <span class="article-date lang-es">26 de marzo del 2021</span>
+      <span class="article-source">NPR</span>
+    </div>
+  </header>
+
+  <figure class="article-figure">
+    <div class="frame">
+      <img src="images/article-1.jpg" alt="An unlit residential street at midnight with snow-covered cars and ice-laden trees" width="1280" height="549" loading="lazy" style="object-position: center 55%;">
+    </div>
+  </figure>
+
+  <main class="article-body">
+
+    <p class="lede reveal lang-en">The devastating storm in Texas this February killed 111 people, according to a new analysis published by the Texas Department of State Health Services. This number is approximately double the earlier estimates of 57 deaths. The storm and the devastation it caused showed that the Texas power grid has massive problems. Because of the storm, temperatures in the region got very low, much colder than a typical February in Texas. The storm also dumped surprising amounts of ice and snow. Power grid failures caused millions to have to wait in the dark, in homes with no heat or decent insulation. The Electric Reliability Council of Texas (ERCOT) controls the Texas power grid. ERCOT officials told state lawmakers that the Texas power grid was minutes from collapse, and that something had to be done to conserve power. In response, power companies intentionally caused &#8220;rolling blackouts&#8221; through certain neighborhoods.</p>
+
+    <p class="reveal lang-es">La devastadora tormenta en Texas este febrero mató a 111 personas, según un nuevo análisis publicado por el Departamento Estatal de Servicios de Salud de Texas. Este número es aproximadamente el doble de las estimaciones anteriores de 57 muertes. La tormenta y la devastación que causó demostraron que la red eléctrica de Texas tiene problemas masivos.</p>
+
+    <p class="reveal lang-es">Debido a la tormenta, las temperaturas en la región bajaron mucho, mucho más frías que un febrero típico en Texas. La tormenta también arrojó cantidades sorprendentes de hielo y nieve. Las fallas en la red eléctrica hicieron que millones tuvieran que esperar en la oscuridad, en hogares sin calefacción o aislamiento decente. El Consejo de Confiabilidad Eléctrica de Texas (ERCOT) controla la red eléctrica de Texas. Los funcionarios de ERCOT dijeron a los legisladores estatales que la red eléctrica de Texas estaba a minutos de colapsar y que había que hacer algo para conservar la energía. En respuesta, las compañías eléctricas causaron intencionalmente “apagones continuos” en ciertos vecindarios.</p>
+
+    <p class="reveal lang-en">The crisis claimed victims from 47 counties in Texas. An 11-year-old boy was found on Feb. 16, dead from hypothermia. Countless others died from accidents on unsafe roads, falls, and fires. People who relied on electricity to run medical equipment died when they couldn&#8217;t maintain power. Still others were poisoned by carbon monoxide and other fumes while attempting to stay warm by heating their homes with a stove, or using the heaters in their cars.</p>
+
+    <p class="reveal lang-es">La crisis cobró víctimas en 47 condados de Texas. Un niño de 11 años fue encontrado el 16 de febrero muerto por hipotermia. Muchos otros murieron por accidentes en caminos inseguros, caídas e incendios. Las personas que dependían de la electricidad para hacer funcionar los equipos médicos murieron cuando no podían mantener la energía. Otros más fueron envenenados por monóxido de carbono y otros vapores mientras intentaban mantenerse calientes calentando sus casas con una estufa o usando los calefactores de sus autos.</p>
+
+    <div class="pull-quote reveal lang-en">&ldquo;The death toll from the storm is worse than anyone could have imagined.&rdquo;</div>
+    <div class="pull-quote reveal lang-es">&ldquo;El número de muertos por la tormenta es peor de lo que nadie podría haber imaginado&rdquo;.</div>
+
+    <p class="reveal lang-en">The storm only lasted a few days, but it took much longer for power and water services to return to Texas citizens. According to a tweet from U.S. Rep. Joaquin Castro, a Democrat from San Antonio, the death toll from the storm is &#8220;worse than anyone could have imagined.&#8221;</p>
+
+    <p class="reveal lang-es">La tormenta solo duró unos días, pero los servicios de electricidad y agua tardaron mucho más en volver a los ciudadanos de Texas. Según un tuit del representante estadounidense Joaquín Castro, demócrata de San Antonio, el número de muertos por la tormenta es "peor de lo que nadie podría haber imaginado".</p>
+
+    <div class="source-line reveal lang-en">
+      Source: Whelan, C. (2021, March 26). Texas death toll in February&#8217;s winter storm nearly doubles to 111. National Public Radio. Retrieved April 11, 2021, from https://www.npr.org/2021/03/26/981594093/texas-death-toll-infebruarys-winter-storm-nearly-doubles-to-111#
+    </div>
+
+    <div class="source-line reveal lang-es">
+      Referencias: Whelan, C. (2021, 26 de marzo). El número de muertos en Texas en la tormenta de invierno de febrero casi se duplica a 111. National Public Radio. Recuperado el 11 de abril de 2021 de https://www.npr.org/2021/03/26/981594093/texas-death-toll-in-februarys-winter-storm-nearly-doubles-to-111#
+    </div>
+
+  </main>
+
+  <nav class="prev-next">
+    <a href="article-6.html" class="pn-card prev">
+      <span class="pn-label lang-en">Previous</span>
+      <span class="pn-label lang-es">Anterior</span>
+      <span class="pn-num">06</span>
+      <span class="pn-title lang-en">&#8220;I hate the dark&#8221;: Dallas Kids Have Dealt With So Much</span>
+      <span class="pn-title lang-es">&ldquo;Odio la oscuridad&rdquo;: Los niños de Dallas han lidiado con tantas cosas</span>
+    </a>
+    <a href="article-2.html" class="pn-card next">
+      <span class="pn-label lang-en">Next</span>
+      <span class="pn-label lang-es">Siguiente</span>
+      <span class="pn-num">02</span>
+      <span class="pn-title lang-en">Two Million Homes in Texas Regain Power</span>
+      <span class="pn-title lang-es">Dos millones de hogares en Texas recuperan energía</span>
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      // ── Language toggle ──
+      var KEY = 'tbLang';
+      var root = document.documentElement;
+      function setLang(lang) {
+        if (lang !== 'es') lang = 'en';
+        root.setAttribute('lang', lang);
+        try { localStorage.setItem(KEY, lang); } catch (e) {}
+        document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+      }
+      var stored = 'en';
+      try { stored = localStorage.getItem(KEY) || 'en'; } catch (e) {}
+      setLang(stored);
+      document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+        b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+      });
+
+      // ── Reveal on scroll ──
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>

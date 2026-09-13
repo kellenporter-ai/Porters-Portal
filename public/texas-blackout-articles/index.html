@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When the Grid Went Dark: Texas Blackout Articles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .display {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .eyebrow {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Language toggle ──────────────────── */
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: var(--dash);
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+
+  .lang-toggle button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .lang-toggle button + button { border-left: var(--dash); }
+
+  .lang-toggle button.active {
+    color: var(--accent);
+    background: rgba(255, 77, 38, 0.06);
+  }
+
+  html[lang="en"] .lang-es { display: none !important; }
+  html[lang="es"] .lang-en { display: none !important; }
+
+  /* ── Hero ─────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 48px 24px;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 28px;
+  }
+
+  .hero h1 {
+    font-size: clamp(52px, 9vw, 128px);
+    max-width: 11ch;
+  }
+
+  html[lang="es"] .hero h1 { font-size: clamp(44px, 7.5vw, 104px); }
+
+  .hero h1 .accent { color: var(--accent); }
+
+  .hero-sub {
+    margin-top: 32px;
+    font-size: clamp(15px, 1.6vw, 18px);
+    color: var(--ink-soft);
+    max-width: 46ch;
+    line-height: 1.55;
+  }
+
+  html[lang="es"] .hero-sub { max-width: 52ch; }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-family: 'Archivo', sans-serif;
+    font-weight: 500;
+  }
+
+  /* ── Hero figure (dashed frame, overlaps headline bottom edge) ── */
+  .hero-figure {
+    width: min(840px, 92vw);
+    margin-top: 8px;
+    border: var(--dash);
+    padding: 10px;
+    background: var(--paper);
+  }
+
+  .hero-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+    object-position: center 62%;
+  }
+
+  /* ── Card image (16:9 crop, dashed frame) ── */
+  .card-img {
+    border: var(--dash);
+    padding: 6px;
+    margin-bottom: 20px;
+    background: var(--paper);
+  }
+
+  .card-img img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  /* ── Collage ──────────────────────────── */
+  .collage {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 96px 32px 120px;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 32px 28px;
+    position: relative;
+  }
+
+  .card {
+    border: var(--dash);
+    padding: 32px 28px 28px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    position: relative;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+  }
+
+  .card-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(56px, 6vw, 84px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(20px, 2vw, 26px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  html[lang="es"] .card-title { font-size: clamp(19px, 1.8vw, 24px); }
+
+  .card-meta {
+    margin-top: auto;
+    padding-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card-date {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .card-source {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* Asymmetric placement */
+  .c1 { grid-column: 1 / span 5; grid-row: 1; }
+  .c2 { grid-column: 8 / span 4; grid-row: 1; margin-top: 72px; }
+  .c3 { grid-column: 3 / span 4; grid-row: 2; margin-top: -24px; }
+  .c4 { grid-column: 9 / span 4; grid-row: 2; margin-top: 48px; }
+  .c5 { grid-column: 1 / span 4; grid-row: 3; margin-top: 16px; }
+  .c6 { grid-column: 6 / span 5; grid-row: 3; margin-top: 64px; }
+
+  /* ── Simulation link ──────────────────── */
+  .sim-link-wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+    text-align: center;
+  }
+
+  .sim-link {
+    display: inline-block;
+    border: var(--dash);
+    padding: 12px 22px;
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .sim-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* ── Footer ───────────────────────────── */
+  footer {
+    border-top: var(--dash);
+    padding: 28px 32px;
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Reveal ───────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .card { transition: none; }
+    .card:hover { transform: none; }
+  }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 900px) {
+    .collage { grid-template-columns: 1fr; gap: 24px; padding: 64px 24px 80px; }
+    .c1, .c2, .c3, .c4, .c5, .c6 {
+      grid-column: 1 / -1;
+      grid-row: auto;
+      margin-top: 0;
+    }
+    .hero h1 { font-size: clamp(44px, 12vw, 72px); }
+    html[lang="es"] .hero h1 { font-size: clamp(36px, 10vw, 64px); }
+  }
+</style>
+</head>
+<body>
+
+  <section class="hero">
+    <p class="eyebrow hero-eyebrow">OpenSciEd Unit P.1 &middot; Lesson 1</p>
+    <h1 class="display"><span class="lang-en">When the grid went <span class="accent">dark</span></span><span class="lang-es">Cuando la red se apag&oacute;</span></h1>
+    <p class="hero-sub lang-en">Six news stories from February 2021, when a winter storm pushed the Texas power system into crisis and millions of people were left without heat, light, or water.</p>
+    <p class="hero-sub lang-es">Seis noticias de febrero de 2021, cuando una tormenta invernal empujó al sistema eléctrico de Texas a la crisis y millones de personas se quedaron sin calefacción, luz ni agua.</p>
+    <figure class="hero-figure">
+      <img src="images/hub-hero.jpg" alt="A dark, snow-covered neighborhood at twilight with a single candle-lit window glowing" width="1280" height="548" fetchpriority="high">
+    </figure>
+    <p class="scroll-cue lang-en">Scroll</p>
+    <p class="scroll-cue lang-es">Desplázate</p>
+    <div class="lang-toggle" style="position:absolute; top:28px; right:32px;" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </section>
+
+  <main class="collage">
+
+    <a href="article-1.html" class="card c1 reveal">
+      <div class="card-img"><img src="images/article-1.jpg" alt="An unlit residential street at midnight with snow-covered cars and ice-laden trees" width="1280" height="720" loading="lazy"></div>
+      <div class="card-num">01</div>
+      <h2 class="card-title"><span class="lang-en">February&rsquo;s Winter Storm in Texas Caused More Than 111 Deaths</span><span class="lang-es">Tormenta de invierno de febrero en Texas causó más de 111 muertes</span></h2>
+      <div class="card-meta">
+        <span class="card-date lang-en">March 26, 2021</span>
+        <span class="card-date lang-es">26 de marzo del 2021</span>
+        <span class="card-source">NPR</span>
+      </div>
+    </a>
+
+    <a href="article-2.html" class="card c2 reveal">
+      <div class="card-img"><img src="images/article-2.jpg" alt="A lineworker in an orange safety jacket repairing iced power lines from a bucket truck at dawn" width="1280" height="720" loading="lazy" style="object-position: 62% 40%;"></div>
+      <div class="card-num">02</div>
+      <h2 class="card-title"><span class="lang-en">Two Million Homes in Texas Regain Power</span><span class="lang-es">Dos millones de hogares en Texas recuperan energía</span></h2>
+      <div class="card-meta">
+        <span class="card-date lang-en">February 18, 2021</span>
+        <span class="card-date lang-es">18 de febrero de 2021</span>
+        <span class="card-source">Washington Post</span>
+      </div>
+    </a>
+
+    <a href="article-3.html" class="card c3 reveal">
+      <div class="card-img"><img src="images/article-3.jpg" alt="An empty grocery store aisle with bare shelves under cold fluorescent lights" width="1280" height="720" loading="lazy" style="object-position: center 45%;"></div>
+      <div class="card-num">03</div>
+      <h2 class="card-title"><span class="lang-en">Winter Storm Crisis in Texas</span><span class="lang-es">Crisis de tormenta de invierno en Texas</span></h2>
+      <div class="card-meta">
+        <span class="card-date lang-en">February 21, 2021</span>
+        <span class="card-date lang-es">21 de febrero del 2021</span>
+        <span class="card-source">Associated Press</span>
+      </div>
+    </a>
+
+    <a href="article-4.html" class="card c4 reveal">
+      <div class="card-img"><img src="images/article-4.jpg" alt="Wind turbines coated in ice standing in a freezing fog" width="1280" height="720" loading="lazy" style="object-position: center 38%;"></div>
+      <div class="card-num">04</div>
+      <h2 class="card-title"><span class="lang-en">Windmills Are Blamed for Texas Blackouts</span><span class="lang-es">Los molinos de viento son los culpables de los apagones en Texas</span></h2>
+      <div class="card-meta">
+        <span class="card-date lang-en">February 15, 2021</span>
+        <span class="card-date lang-es">15 de febrero del 2021</span>
+        <span class="card-source">Reuters</span>
+      </div>
+    </a>
+
+    <a href="article-5.html" class="card c5 reveal">
+      <div class="card-img"><img src="images/article-5.jpg" alt="A frosted natural gas power plant with steam rising from its stacks" width="1280" height="720" loading="lazy" style="object-position: center 42%;"></div>
+      <div class="card-num">05</div>
+      <h2 class="card-title"><span class="lang-en">Wind Turbines Don&rsquo;t Deserve the Blame for Texas Blackouts</span><span class="lang-es">Los aerogeneradores no merecen la culpa de los apagones en Texas</span></h2>
+      <div class="card-meta">
+        <span class="card-date lang-en">February 17, 2021</span>
+        <span class="card-date lang-es">17 de febrero del 2021</span>
+        <span class="card-source">USA Today</span>
+      </div>
+    </a>
+
+    <a href="article-6.html" class="card c6 reveal">
+      <div class="card-img"><img src="images/article-6.jpg" alt="A closed elementary school with an empty, snow-dusted playground" width="1280" height="720" loading="lazy" style="object-position: 60% 55%;"></div>
+      <div class="card-num">06</div>
+      <h2 class="card-title"><span class="lang-en">&ldquo;I hate the dark&rdquo;: Dallas Kids Have Dealt With So Much</span><span class="lang-es">&ldquo;Odio la oscuridad&rdquo;: Los niños de Dallas han lidiado con tantas cosas</span></h2>
+      <div class="card-meta">
+        <span class="card-date lang-en">February 19, 2021</span>
+        <span class="card-date lang-es">19 de febrero del 2021</span>
+        <span class="card-source">Dallas Morning News</span>
+      </div>
+    </a>
+
+  </main>
+
+  <footer>
+    <p class="lang-en">Adapted from published news coverage for classroom use. OpenSciEd Unit P.1, Lesson 1.</p>
+    <p class="lang-es">Adaptado de cobertura noticiosa publicada para uso en el aula. OpenSciEd Unidad P.1, Lección 1.</p>
+  </footer>
+
+  <script>
+    (function () {
+      // ── Language toggle ──
+      var KEY = 'tbLang';
+      var root = document.documentElement;
+      function setLang(lang) {
+        if (lang !== 'es') lang = 'en';
+        root.setAttribute('lang', lang);
+        try { localStorage.setItem(KEY, lang); } catch (e) {}
+        var btns = document.querySelectorAll('.lang-toggle button');
+        btns.forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+      }
+      var stored = 'en';
+      try { stored = localStorage.getItem(KEY) || 'en'; } catch (e) {}
+      setLang(stored);
+      document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+        b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+      });
+
+      // ── Reveal on scroll ──
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>
