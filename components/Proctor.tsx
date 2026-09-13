@@ -19,18 +19,13 @@ import { persistentWrite, draftKey, readDraft, clearDraft, syncDirtyDraft, Write
 import { renderReadingContent } from '../lib/renderReadingContent';
 import { assessmentSessionKey, assessmentSessionSigKey, legacyAssessmentSessionKey, legacyAssessmentSessionSigKey } from '../lib/assessmentSessionKeys';
 import { bridgeRecoveryKey, legacyBridgeRecoveryKey, extractRecoveryData } from '../lib/bridgeRecovery';
+import { resolveResourceContentUrl } from '../lib/resourceContentUrl';
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Convert Google Drive share/view links to embeddable preview URLs. */
-const toGoogleDrivePreview = (url: string): string => {
-  const fileIdMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileIdMatch) return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
-  const openIdMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-  if (openIdMatch) return `https://drive.google.com/file/d/${openIdMatch[1]}/preview`;
-  return url;
-};
+const toGoogleDrivePreview = resolveResourceContentUrl;
 
 interface ProctorProps {
   onComplete: (metrics: TelemetryMetrics) => void;

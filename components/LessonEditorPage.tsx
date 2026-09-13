@@ -32,6 +32,7 @@ import { db, storage } from '../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { normalizeBlocks } from '../lib/normalizeBlocks';
+import { resolveResourceContentUrl } from '../lib/resourceContentUrl';
 import { useToast } from './ToastProvider';
 import InlineBlockEditor, { inputClass, textareaClass, labelClass } from './lesson-editor/InlineBlockEditor';
 import ResourceSidebar from './lesson-editor/ResourceSidebar';
@@ -985,11 +986,6 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
               <button type="button" onClick={() => setPreviewMode(!previewMode)} className={`flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider transition ${previewMode ? 'text-purple-300 bg-purple-500/20 border-purple-500/30' : 'text-gray-300 bg-white/5 border-white/10 hover:text-white'}`}>
                 <Eye className="w-3 h-3" /> {previewMode ? 'Edit' : 'Preview'}
               </button>
-              {selectedAssignment?.id && !isNewResource && (
-                <button type="button" onClick={() => window.open(`/resources/${selectedAssignment.id}`, '_blank')} className="flex items-center gap-1.5 text-[11.5px] text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg border border-amber-500/20 uppercase font-bold tracking-wider transition">
-                  <Eye className="w-3 h-3" /> Student View
-                </button>
-              )}
               <button type="button" onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} className="flex items-center gap-1.5 text-[11.5px] text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-40 px-3 py-1.5 rounded-lg border border-emerald-500/20 uppercase font-bold tracking-wider transition">
                 <Save className="w-3 h-3" /> {isSaving ? 'Saving...' : 'Save'}
               </button>
@@ -1047,7 +1043,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
               {resContentUrl && (
                 <div className={`relative bg-white ${blocks.length > 0 ? 'flex-[3]' : 'flex-1'}`}>
                   <iframe
-                    src={resContentUrl}
+                    src={resolveResourceContentUrl(resContentUrl)}
                     className="w-full h-full border-none bg-white"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
                     title="Resource Preview"

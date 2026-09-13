@@ -108,6 +108,15 @@
       ]
     },
     {
+      "collectionGroup": "student_alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isDismissed", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
