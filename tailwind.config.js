@@ -6,6 +6,7 @@ export default {
     "./index.html",
     "./*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
+    "./components/ui/**/*.{js,ts,jsx,tsx}",
     "./lib/**/*.{js,ts,jsx,tsx}",
     "./services/**/*.{js,ts,jsx,tsx}"
   ],
@@ -50,6 +51,13 @@ export default {
           text: 'var(--sidebar-text)',
           border: 'var(--sidebar-border)',
         },
+      },
+      fontSize: {
+        // Kicker / context-line token — formalizes the existing convention seen in
+        // LessonBlockEditor.tsx, LessonBlocks.tsx, BehaviorQuickAward.tsx:
+        //   text-[11.5px] text-[var(--text-muted)] uppercase font-bold tracking-widest
+        // Use as: <p className="kicker text-[var(--text-muted)]">Section</p>
+        kicker: ['0.71875rem', { lineHeight: '1rem', letterSpacing: '0.1em' }],
       },
       keyframes: {
         'glass-turn': {
