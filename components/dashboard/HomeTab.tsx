@@ -6,11 +6,11 @@ import {
   Check,
   ChevronRight,
   MessageSquare,
+  Search,
   Sparkles,
   X,
   Zap,
 } from 'lucide-react';
-import AnimatedIcon from '../AnimatedIcon';
 import CortisolCheckIn from './CortisolCheckIn';
 import { dataService } from '../../services/dataService';
 import { useT, useInterpolate } from '../../lib/i18n';
@@ -35,6 +35,15 @@ import { Card } from '../ui/card';
 
 // ─── Onboarding banner constants ─────────────
 const ONBOARDING_BANNER_DISMISS_KEY = 'onboarding-anim-banner-dismissed-v1';
+
+// Show the ⌘ glyph only on Apple platforms (macOS/iOS); students on ChromeOS
+// must see "Ctrl K". The keyboard binding itself (metaKey || ctrlKey + K) is
+// already platform-agnostic in Layout.tsx — this is purely the visible hint.
+const IS_APPLE_PLATFORM =
+  typeof navigator !== 'undefined' &&
+  (/Mac|iPhone|iPad|iPod/.test(navigator.platform) ||
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform === 'macOS');
+const COMMAND_PALETTE_SHORTCUT_LABEL = IS_APPLE_PLATFORM ? '⌘K' : 'Ctrl K';
 
 function readBannerDismissed(): boolean {
   if (typeof window === 'undefined') return true;
@@ -435,16 +444,6 @@ const HomeTab: React.FC<HomeTabProps> = ({
                   {t('home.upNext.caughtUpBody')}
                 </div>
               </div>
-              <div className="flex lg:justify-end">
-                <button
-                  type="button"
-                  onClick={() => onNavigate('Resources')}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-white shadow-lg whitespace-nowrap bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
-                >
-                  {t('home.upNext.browse')}
-                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -620,56 +619,19 @@ const HomeTab: React.FC<HomeTabProps> = ({
           </span>
           <span className="flex-1 h-px bg-[var(--border)]" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          {/* Hero tile — Resources */}
-          <button
-            type="button"
-            onClick={() => onNavigate('Resources')}
-            aria-label={t('home.goTo.resourcesAria')}
-            className="md:col-span-2 md:row-span-2 relative flex flex-col justify-between p-5 rounded-2xl text-left overflow-hidden border border-[var(--border)] transition motion-safe:hover:scale-[1.01] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-            style={{
-              background: 'linear-gradient(135deg, var(--accent-muted), var(--surface-glass))',
-              minHeight: '140px',
-            }}
-          >
-            <AnimatedIcon
-              src="/assets/icons/icon-resources.png"
-              alt=""
-              size={64}
-              disableAnimation={performanceMode}
-            />
-            <div>
-              <div className="text-[10px] font-black tracking-[0.22em] uppercase mb-1 text-[var(--accent-text)]">
-                {t('home.goTo.mostVisited')}
-              </div>
-              <div className="text-xl font-black text-[var(--text-primary)]">{t('home.goTo.resources')}</div>
-              <div className="text-xs mt-1 text-[var(--text-tertiary)]">
-                {interpolate('home.goTo.assignments', { count: stats.total, plural: stats.total === 1 ? '' : 's' })}
-                {unreadFeedbackItems.length > 0 && ` · ${interpolate('home.goTo.feedbackCount', { count: unreadFeedbackItems.length })}`}
-              </div>
-            </div>
-          </button>
-
-          {/* Secondary tiles */}
-          {[
-            { label: t('home.goTo.loadout'), nav: 'Loadout', icon: '/assets/icons/icon-agent-loadout.png' },
-            { label: t('home.goTo.progress'), nav: 'Progress', icon: '/assets/icons/icon-progress.png' },
-            { label: t('home.goTo.badges'), nav: 'Badges', icon: '/assets/icons/icon-badges.png' },
-            { label: t('home.goTo.calendar'), nav: 'Calendar', icon: '/assets/icons/icon-calendar.png' },
-            { label: t('home.goTo.leaders'), nav: 'Leaderboard', icon: '/assets/icons/icon-leaderboard.png' },
-          ].map(tile => (
-            <button
-              key={tile.label}
-              type="button"
-              onClick={() => onNavigate(tile.nav)}
-              aria-label={interpolate('home.goTo.aria', { label: tile.label })}
-              className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] min-h-[88px]"
-            >
-              <AnimatedIcon src={tile.icon} alt="" size={40} disableAnimation={performanceMode} />
-              <span className="text-xs font-bold text-[var(--text-secondary)]">{tile.label}</span>
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('porters:openCommandPalette'))}
+          aria-label={t('home.goTo.jumpToAria')}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass-heavy)] transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] text-left"
+        >
+          <Search className="w-4 h-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
+          <span className="flex-1 text-sm font-bold text-[var(--text-primary)]">{t('home.goTo.jumpTo')}</span>
+          <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--surface-raised)] text-[10px] font-bold text-[var(--text-muted)]">
+            {COMMAND_PALETTE_SHORTCUT_LABEL}
+          </kbd>
+          <ChevronRight className="w-3.5 h-3.5 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />
+        </button>
       </section>
 
       {/* ═══════════ ZONE 04 — Preservation (feedback + activity + XP event) ═══════════

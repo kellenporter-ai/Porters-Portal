@@ -40,6 +40,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
   const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'calendar' | 'library'>('dashboard');
   const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students' | 'wellness' | 'bugs' | 'songs'>('alerts');
+  // Set by the "New Announcement" quick action so the manager mounts with the composer open.
+  // Consumed (reset) once the announcements tab has mounted with it — otherwise the latch
+  // stays true and the composer re-opens on every subsequent visit to the tab.
+  const [openComposerOnAnnouncements, setOpenComposerOnAnnouncements] = useState(false);
+
+  useEffect(() => {
+    if (openComposerOnAnnouncements && overviewTab === 'announcements') {
+      // Defer the reset so AnnouncementManager's mount still reads `true` as its
+      // `initialComposerOpen` prop before the flag flips back.
+      const t = window.setTimeout(() => setOpenComposerOnAnnouncements(false), 0);
+      return () => window.clearTimeout(t);
+    }
+  }, [openComposerOnAnnouncements, overviewTab]);
   const [wellnessCheckins, setWellnessCheckins] = useState<WellnessCheckin[]>([]);
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [songRequests, setSongRequests] = useState<SongRequest[]>([]);
@@ -156,11 +169,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         </button>
         <div className="w-px h-5 bg-[var(--border)] mx-1" />
         <button
-          onClick={() => { setAdminTab('dashboard'); setOverviewTab('announcements'); }}
+          onClick={() => { setAdminTab('dashboard'); setOverviewTab('announcements'); setOpenComposerOnAnnouncements(true); }}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:border-purple-500/30 transition"
           title="A"
         >
-          <Megaphone className="w-3.5 h-3.5" aria-hidden="true" /> Announcement
+          <Megaphone className="w-3.5 h-3.5" aria-hidden="true" /> New Announcement
         </button>
         <button
           onClick={() => setShowBehaviorAward(true)}
@@ -217,23 +230,23 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       {/* STAT STRIP */}
       <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-3 lg:px-6 lg:py-0 lg:flex lg:items-center lg:gap-6 lg:h-12" role="group" aria-label="Class overview statistics">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:flex lg:items-center lg:gap-0">
-          <button onClick={() => navigate('/users')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+          <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <Users className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{totalStudents}</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Students</span>
-          </button>
+          </div>
           <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
-          <button onClick={() => navigate('/xp/Operatives')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+          <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <Zap className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{totalXP.toLocaleString()}</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">XP Awarded</span>
-          </button>
+          </div>
           <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
-          <button onClick={() => navigate('/reports')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+          <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <FileText className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{totalResourcesAccessed}</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Resources Viewed</span>
-          </button>
+          </div>
           <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
           <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <Clock className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
@@ -308,7 +321,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
       )}
 
       {overviewTab === 'announcements' && (
-        <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} />
+        <AnnouncementManager announcements={announcements} studentIds={students.map(s => s.id)} availableSections={availableSections} initialComposerOpen={openComposerOnAnnouncements} />
       )}
 
       {overviewTab === 'students' && (

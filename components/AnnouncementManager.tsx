@@ -12,6 +12,8 @@ interface AnnouncementManagerProps {
   announcements: Announcement[];
   studentIds: string[];
   availableSections?: string[];
+  /** When true, mount with the broadcast composer already open (e.g. "New Announcement" quick action). */
+  initialComposerOpen?: boolean;
 }
 
 const PRIORITY_STYLES = {
@@ -20,11 +22,11 @@ const PRIORITY_STYLES = {
   URGENT: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-600 dark:text-red-400', icon: <AlertOctagon className="w-4 h-4" /> },
 };
 
-const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds, availableSections = [] }) => {
+const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({ announcements, studentIds, availableSections = [], initialComposerOpen = false }) => {
   const classList = useClassList();
   const { confirm } = useConfirm();
   const toast = useToast();
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [isComposerOpen, setIsComposerOpen] = useState(initialComposerOpen);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<'INFO' | 'WARNING' | 'URGENT'>('INFO');

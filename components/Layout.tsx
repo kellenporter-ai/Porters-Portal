@@ -408,6 +408,14 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // In-view triggers (e.g. HomeTab "Jump to…" row) can request the palette via event,
+  // since the palette state lives here in Layout while content renders in <Outlet />.
+  useEffect(() => {
+    const onOpenPalette = () => setIsCommandPaletteOpen(true);
+    window.addEventListener('porters:openCommandPalette', onOpenPalette);
+    return () => window.removeEventListener('porters:openCommandPalette', onOpenPalette);
+  }, []);
+
   // Build flat list of palette items from NAVIGATION, filtered by role + feature flags.
   // Children are flattened as "Parent:Child" entries so the palette can jump to nested tabs.
   const commandPaletteItems = React.useMemo<CommandPaletteItem[]>(() => {
